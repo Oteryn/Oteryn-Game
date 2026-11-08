@@ -719,13 +719,77 @@ jobs:
           fi
           exit 0
 
+  node_boot:
+    name: PR heavy / Node boot against the real Platform
+    if: >-
+      github.event.pull_request.draft == false
+      && github.event.pull_request.user.login != 'dependabot[bot]'
+      && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
+      && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Verify exact PR head SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal
+
+      # The qualification builds game-server in target/debug; protected-main artifacts make
+      # that build incremental. A cache hit never substitutes for running the qualification.
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.event.pull_request.head.sha }}
+          restore-keys: |
+            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+
+      - name: Run node boot qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set -euo pipefail
+          bash -n tools/qualification/node_boot/run.sh
+          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
+          bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+
   # A non-heavy event may race with heavy-tests being added: check live labels.
   # If this head already has a passing non-heavy heavy-gate, that stale success
   # stays visible until the real run finishes. Do not enable auto-merge in that
   # window; wait for the real run or push after labelling.
   heavy_gate:
     name: heavy-gate
-    needs: [build, durability_postgres]
+    needs: [build, durability_postgres, node_boot]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -740,6 +804,7 @@ jobs:
           IS_REAL_RUN: ${{ github.event.action != 'labeled' || github.event.label.name == 'heavy-tests' }}
           BUILD_RESULT: ${{ needs.build.result }}
           POSTGRES_RESULT: ${{ needs.durability_postgres.result }}
+          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}
           REPOSITORY: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -760,8 +825,8 @@ jobs:
             exit 0
           fi
           if [[ "$IS_REAL_RUN" == 'true' ]]; then
-            echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT"
-            [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' ]]
+            echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT node_boot=$NODE_BOOT_RESULT"
+            [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' && "$NODE_BOOT_RESULT" == 'success' ]]
             exit
           fi
           # Other label events have skipped dependencies: mirror the latest

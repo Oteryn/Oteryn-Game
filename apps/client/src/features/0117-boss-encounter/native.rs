@@ -20,6 +20,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Remove slot",
                 "Rewards",
                 "Next rewards",
+                "Soul War boss",
+                "Rotten Blood boss",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.boss_encounter;
@@ -40,6 +42,17 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 for (index, value) in values.into_iter().enumerate() {
                     super::super::input::edit(&mut mailbox.boss_encounter, index, value);
                 }
+                if let Some(chain) = match action {
+                    12 => Some(oteryn_client_ui::boss_encounter::EndgameChain::SoulWar),
+                    13 => Some(oteryn_client_ui::boss_encounter::EndgameChain::RottenBlood),
+                    _ => None,
+                } {
+                    oteryn_client_ui::boss_encounter::select_next_boss(
+                        &mut mailbox.boss_encounter,
+                        chain,
+                    );
+                    return;
+                }
                 let intent = match action {
                     0 => Intent::Refresh,
                     1 => Intent::Next,
@@ -53,6 +66,40 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     9 => Intent::SlotRemove,
                     10 => Intent::Rewards,
                     11 => Intent::RewardsNext,
+                    _ => return,
+                };
+                super::super::input::enqueue(mailbox, commands, intent);
+            },
+        },
+    );
+}
+
+/// Independent window; closing the main Bosstiary panel leaves this tracker open.
+pub(in crate::play) fn cooldown_window(link: &PlayLink) {
+    use crate::play::feature_0115_mail::view::native::{Form, open};
+    open(
+        link,
+        Form {
+            title: "Boss cooldown tracker",
+            labels: &[],
+            buttons: &["Refresh", "Next page"],
+            snapshot: |mailbox| {
+                let p = &mailbox.boss_encounter;
+                let elapsed = p.cooldown_received_at.map_or(0, |at| {
+                    u64::try_from(at.elapsed().as_millis()).unwrap_or(u64::MAX)
+                });
+                (
+                    p.cooldowns_open,
+                    p.pending,
+                    vec![],
+                    oteryn_client_ui::boss_encounter::cooldown_text(p, elapsed),
+                )
+            },
+            set_open: |mailbox, value| mailbox.boss_encounter.cooldowns_open = value,
+            submit: |mailbox, commands, action, _| {
+                let intent = match action {
+                    0 => Intent::Refresh,
+                    1 => Intent::Next,
                     _ => return,
                 };
                 super::super::input::enqueue(mailbox, commands, intent);

@@ -84,13 +84,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         // A definition-targeted USE names its source item directly. Reject an item which
-        // has no taming rule before taking the spell permit or reading any durable fence.
+        // has no applicable taming rule before taking the spell permit or reading any durable fence.
         if let UseTarget::ItemByDefinition(wanted) = intent.target {
             let (key, _) = index.definition_at(wanted).ok_or(reject)?;
-            if !rules()
-                .iter()
-                .any(|rule| rule.single_item_use() && rule.item_key == key)
-            {
+            let self_use = intent.use_with.is_none()
+                && intent.use_with_map_item.is_none()
+                && intent.use_with_position.is_none();
+            if !rules().iter().any(|rule| {
+                rule.single_item_use()
+                    && rule.item_key == key
+                    && (!self_use || rule.target_item_key.as_deref() == Some(key))
+            }) {
                 return Ok(None);
             }
         }
@@ -183,15 +187,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        let item_target = item_target.and_then(|key| match key {
-            ItemKey::Instance(id) => bag
-                .entries
-                .iter()
-                .chain(inventory.nested.iter().map(|(_, entry)| entry))
-                .find(|entry| entry.item.item_instance_id == id)
-                .map(|entry| (id, entry.item.definition.production_key.as_str())),
-            _ => None,
-        });
+        let item_target = item_target
+            .and_then(|key| match key {
+                ItemKey::Instance(id) => bag
+                    .entries
+                    .iter()
+                    .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                    .find(|entry| entry.item.item_instance_id == id)
+                    .map(|entry| (id, entry.item.definition.production_key.as_str())),
+                _ => None,
+            })
+            .or_else(|| {
+                // Crystal mounts.lua constructs these mounts by using the carried
+                // object itself. An explicit target must never fall back to self-USE.
+                (intent.use_with.is_none()
+                    && intent.use_with_map_item.is_none()
+                    && intent.use_with_position.is_none()
+                    && rules().iter().any(|rule| {
+                        rule.item_key == entry.item.definition.production_key
+                            && rule.target_item_key.as_deref() == Some(rule.item_key.as_str())
+                    }))
+                .then_some((item_id, entry.item.definition.production_key.as_str()))
+            });
         if intent.use_with.is_some() && !visible {
             return Err(Some(UseDisposition::NoTarget));
         }

@@ -12,7 +12,6 @@ struct Staged<'a> {
     tracks: BTreeMap<String, i64>,
     observed: BTreeMap<String, i64>,
     changed: BTreeSet<String>,
-    track_limit: usize,
     inventory: NpcInventorySnapshot,
     outfits: BTreeMap<u16, u8>,
     topic: i32,
@@ -31,7 +30,6 @@ impl<'a> Staged<'a> {
             tracks: input.tracks.clone(),
             observed: BTreeMap::new(),
             changed: BTreeSet::new(),
-            track_limit: MAX_NPC_TRACK_CHANGES,
             inventory: input.inventory.clone(),
             outfits: input.outfits.clone(),
             topic: input.topic,
@@ -72,7 +70,7 @@ impl<'a> Staged<'a> {
         }
         self.tracks.insert(key.to_owned(), value);
         self.changed.insert(key.to_owned());
-        if self.changed.len() > self.track_limit {
+        if self.changed.len() > MAX_NPC_TRACK_CHANGES {
             return Err(NpcRuleError::LimitExceeded);
         }
         Ok(())
@@ -347,19 +345,6 @@ pub(super) fn plan(
             }
             if !eligible {
                 continue;
-            }
-            // A single, immutable donor acceptance is the sole eleven-track owner.
-            // Generic planners and every other rule retain the ordinary eight-track cap.
-            if storage_only
-                && rule.key
-                    == "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept"
-                && !rule.continue_matching
-                && selected_rule_keys.is_empty()
-                && NpcRuleCatalog::embedded()?
-                    .program(&program.document.quest)
-                    .is_some_and(|original| original.digest == program.digest)
-            {
-                state.track_limit = 11;
             }
             for effect in &rule.effects {
                 if storage_only

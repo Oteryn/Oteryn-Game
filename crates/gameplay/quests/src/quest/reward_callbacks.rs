@@ -533,11 +533,13 @@ fn validate_document(document: Document, maximum: usize) -> Result<Document, Str
                 + c.state_ops.len()
                 + participant_count
                 + usize::from(c.counter.is_some())
-                > 8
+                > super::QUESTSTATE0_RL_02
             || c.participants.iter().any(|p| {
                 p.quest == c.quest
                     || !slug(&p.quest, "oteryn:", b"._/:-", 128)
                     || (p.storage.is_empty() && p.state_ops.is_empty())
+                    // Foreign participant receipts retain their separate eight-track contract.
+                    || p.storage.len() + p.state_ops.len() > 8
                     || p.state_ops.iter().any(|s| !s.valid())
                     || p.storage
                         .iter()
@@ -586,7 +588,7 @@ fn validate_document(document: Document, maximum: usize) -> Result<Document, Str
                 .iter()
                 .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
             || (c.storage.is_empty() && c.state_ops.is_empty() && !c.value_only_guarded())
-            || c.storage.len() > 8
+            || c.storage.len() > super::QUESTSTATE0_RL_02
             || c.minimum_level == Some(0)
             || tracks.len() != c.storage.len()
             || c.requires_actor_conditions.len() > 8
@@ -1131,6 +1133,43 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
+        let mut callback = super::load()?.into_iter().next().ok_or("callback")?;
+        callback.storage = (0..16)
+            .map(|i| super::Storage {
+                track: format!("oteryn:quest-progress/atomic/{i}"),
+                minimum: 0,
+                maximum: 0,
+                set: 1,
+                set_if: None,
+                add: None,
+                preserve: false,
+                at_least: false,
+                increment: false,
+                read_only: false,
+            })
+            .collect();
+        let document = |callback: &super::RewardCallback| {
+            serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()
+        };
+        assert!(super::parse(&document(&callback)).is_ok());
+        callback.storage.push(super::Storage {
+            track: "oteryn:quest-progress/atomic/16".into(),
+            minimum: 0,
+            maximum: 0,
+            set: 1,
+            set_if: None,
+            add: None,
+            preserve: false,
+            at_least: false,
+            increment: false,
+            read_only: false,
+        });
+        assert!(super::parse(&document(&callback)).is_err());
+        Ok(())
+    }
+
     #[test]
     fn paid_repeatable_key_sales_require_price_preserved_guards_and_one_key() -> Result<(), String>
     {

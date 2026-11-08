@@ -82,6 +82,18 @@ pub fn activated_reward_boss_fixture(
     ContentActivationController,
     crate::content::NativeEntryContentPin,
 ) {
+    activated_reward_boss_corpse_capacity_fixture(world, source_world, None)
+}
+
+/// Test-only pinned loot metadata variant; ordinary fixture semantics stay unchanged.
+pub fn activated_reward_boss_corpse_capacity_fixture(
+    world: oteryn_protocol_oteryn::WorldId,
+    source_world: Option<&[u8]>,
+    capacity: Option<u32>,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
     let mut supplied = manifest_input();
     let mut creatures: CreatureProfilesDocument =
         serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
@@ -99,6 +111,26 @@ pub fn activated_reward_boss_fixture(
         .expect("source rat details")
         .system_eligibility
         .reward_boss = true;
+    if let Some(capacity) = capacity {
+        let corpse = profile
+            .details
+            .as_ref()
+            .expect("rat details")
+            .corpse_item
+            .as_ref()
+            .expect("rat corpse");
+        let mut loot: serde_json::Value =
+            serde_json::from_slice(&supplied.loot_tables.as_ref().expect("loot tables").bytes)
+                .unwrap();
+        let facts = loot["items"]
+            .as_array_mut()
+            .expect("loot items")
+            .iter_mut()
+            .find(|facts| facts["item"]["key"] == corpse.key)
+            .expect("rat corpse facts");
+        facts["container_capacity"] = serde_json::json!(capacity);
+        supplied.loot_tables = Some(pinned(&serde_json::to_vec(&loot).unwrap()));
+    }
     refresh_fixture_attack_roots(rat);
     supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
     supplied.source_world = source_world.map(pinned);

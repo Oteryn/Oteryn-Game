@@ -415,20 +415,59 @@ fn source_time_guard_and_cooldown_use_supplied_epoch_seconds() -> Result<(), Npc
 }
 
 #[test]
-fn father_acceptance_refuses_all_eleven_atomic_writes_without_splitting() -> Result<(), NpcRuleError>
+fn father_acceptance_plans_all_eleven_atomic_writes_without_splitting() -> Result<(), NpcRuleError>
 {
     let catalog = NpcRuleCatalog::from_json_documents(&[include_str!(
         "test-fixtures/father_acceptance.json"
     )])?;
     let facts = Facts::empty();
-    // Coordinator ANSWER preserves the existing eight-write contract and forbids
-    // splitting one donor transaction: PR2843#issuecomment-6589517205, point 5.
-    assert!(matches!(
-        catalog.plan(&facts.input("oteryn:npc.tereban", "yes", 1)),
-        Err(NpcRuleError::LimitExceeded)
-    ));
+    let plan = catalog
+        .plan(&facts.input("oteryn:npc.tereban", "yes", 1))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing acceptance".into()))?;
+    assert_eq!(plan.track_changes.len(), 11);
     assert!(facts.tracks.is_empty());
     assert_eq!(facts.inventory, NpcInventorySnapshot::default());
+    Ok(())
+}
+
+#[test]
+fn generic_track_capacity_is_sixteen_and_refuses_seventeen() -> Result<(), NpcRuleError> {
+    for count in [9, 16, 17] {
+        let mut document = fixture_document(vec![]);
+        let template = document["tracks"][0].clone();
+        let tracks: Vec<_> = (0..count)
+            .map(|i| {
+                let mut track = template.clone();
+                track["key"] = format!("oteryn:quest-progress/test/value-{i}").into();
+                track
+            })
+            .collect();
+        let effects: Vec<_> = tracks
+            .iter()
+            .map(|track| {
+                serde_json::json!({
+                    "kind":"set", "track":track["key"], "value":1
+                })
+            })
+            .collect();
+        document["tracks"] = tracks.into();
+        document["rules"] = vec![fixture_rule("capacity", effects.into())].into();
+        let catalog = fixture_catalog(&document)?;
+        let facts = Facts::empty();
+        let result = catalog.plan_storage(&facts.input("oteryn:npc.test", "mission", 0));
+        if count == 17 {
+            assert!(matches!(result, Err(NpcRuleError::LimitExceeded)));
+        } else {
+            assert_eq!(
+                result?
+                    .ok_or_else(|| NpcRuleError::Invalid("missing plan".into()))?
+                    .track_changes
+                    .len(),
+                count
+            );
+        }
+        assert!(facts.tracks.is_empty());
+    }
     Ok(())
 }
 
@@ -808,12 +847,11 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
 }
 
 #[test]
-fn storage_owner_commits_exact_father_acceptance_without_raising_general_cap()
--> Result<(), NpcRuleError> {
+fn storage_owner_plans_exact_father_acceptance_with_shared_cap() -> Result<(), NpcRuleError> {
     let source = NpcRuleCatalog::runtime()?;
     let facts = Facts::empty();
     let input = facts.input("oteryn:npc.tereban", "yes", 1);
-    assert_eq!(MAX_NPC_TRACK_CHANGES, 8);
+    assert_eq!(MAX_NPC_TRACK_CHANGES, 16);
     let plan = source
         .plan_storage(&input)?
         .ok_or_else(|| NpcRuleError::Invalid("father acceptance".into()))?;

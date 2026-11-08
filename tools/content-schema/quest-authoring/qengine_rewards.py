@@ -14,6 +14,7 @@ import sys
 import tarfile
 import xml.etree.ElementTree as ET
 import questl2_ready
+import taming_cosmetics
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -202,6 +203,8 @@ def build():
             existing = next(m for m in mappings if m['grant_key'] == row['grant_key'])
             if existing['target'] != row['target']:
                 existing['outfit_aliases'] = [row['target']['outfit_key']]
+    # Taming uses the same production cosmetics owner as quest/item grants.
+    taming_cosmetics.append(ROOT, doc, looks)
     nx5_promotions = {row['path']: row for row in nx5['promotions']}
     quest_outfits = len(outfits) - len(nx5_doc['outfits'])
     for path in sorted(cosmetics.promotion_paths(doc)):
@@ -1110,7 +1113,8 @@ def validate_callbacks(document):
                 or callback.get('completes',False) or counter['track'] in all_keys
                 or counter['track'] in {r['track'] for r in callback.get('requires',[])}):
             raise ValueError('invalid owned reward counter '+callback['key'])
-        if (len(all_keys)>8 or len(all_keys)!=len(set(all_keys))
+        if (len(all_keys)+int(counter is not None)>16 or len(all_keys)!=len(set(all_keys))
+            or any(len(p['storage'])+len(p.get('state_ops',[]))>8 for p in participants)
             or len({p['quest'] for p in participants})!=len(participants)
             or any(p['quest']==callback['quest'] for p in participants)
             or any(s['minimum']>s['maximum'] for s in participant_storage)

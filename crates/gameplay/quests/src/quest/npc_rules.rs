@@ -25,10 +25,8 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-/// Preserve the existing QuestState bound; an oversized donor transaction is
-/// refused whole, never split. Coordinator ANSWER, point 5:
-/// https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205
-pub const MAX_NPC_TRACK_CHANGES: usize = 8;
+/// Share the receipt writer's atomic bound; oversized plans are refused whole.
+pub const MAX_NPC_TRACK_CHANGES: usize = super::QUESTSTATE0_RL_02;
 pub const MAX_NPC_EFFECTS: usize = 128;
 const SOURCE_PIN: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:";
 

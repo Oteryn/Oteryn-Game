@@ -19,10 +19,17 @@ impl PlayView {
         {
             return false;
         }
-        if let Some(tile) = oteryn_client_ui::minimap::click(self.own, x, y)
-            && tile != self.own
+        let goal = {
+            let map = super::state::lock(&self.minimap);
+            map.position((x / 4.0) as i32, (y / 4.0) as i32)
+        };
+        if let Some((x, y, floor)) = goal
+            && floor == self.floor
         {
-            self.walk_to(tile);
+            let tile = oteryn_renderer::TileCoord::new(x, y);
+            if tile != self.own {
+                self.walk_to(tile);
+            }
         }
         true
     }
@@ -40,3 +47,20 @@ impl PlayView {
         Ok(())
     }
 }
+
+impl PlayView {
+    pub fn bind_minimap_world(&mut self, world: &str) {
+        super::state::lock(&self.minimap).bind_world(world);
+    }
+    pub fn minimap_input(&mut self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+        if !oteryn_client_ui::minimap::editor_key(events) {
+            return false;
+        }
+        #[cfg(windows)]
+        native::open(self.minimap.clone(), (self.own.x, self.own.y, self.floor));
+        true
+    }
+}
+#[cfg(windows)]
+#[path = "native.rs"]
+mod native;

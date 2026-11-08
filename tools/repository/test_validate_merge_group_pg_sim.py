@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "031c88fb778a2d6c0ece625debbf6e5e07d4d16a"
+APPROVED = "a652e0a5e1e045c546d739e7e543df79b43e7dd3"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -294,7 +294,49 @@ def _world_bundle_queue_canaries(original: str, core) -> None:
     print("World bundle MQ PASS: protected routing, exact synthetic checkout and fail-closed fan-in cases")
 
 
+def test_cargo_deny_install_fallback_preserves_findings():
+    spec = importlib.util.spec_from_file_location("deny_policy_core", ROOT / "tools/repository/validate_repository_policy_core.py")
+    core = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(core)
+    for filename in ("merge-gate.yml", "merge-group-gate.yml"):
+        workflow = (ROOT / ".github/workflows" / filename).read_text()
+        job = core.indented_yaml_mapping_block(workflow, "rust_supply_chain", 2)
+        step = job.split("      - name: Check advisories licenses bans and sources\n", 1)[1]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0])
+        assert "continue-on-error:" not in workflow
+        assert "steps.deny.outcome" not in workflow
+        for download, checksum, install, finding in ((0, 0, 0, 0), (1, 0, 0, 0),
+                                                    (0, 1, 0, 0), (1, 0, 1, 0),
+                                                    (0, 0, 0, 1), (1, 0, 0, 1)):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                binary = root / "cargo-deny"
+                binary.write_text('#!/bin/bash\necho check >> "$CALLS"\nexit "$FINDING"\n')
+                binary.chmod(0o755)
+                for command, body in {
+                    "rustup": 'exit 0',
+                    "curl": 'exit "$DOWNLOAD"',
+                    "sha256sum": 'cat >/dev/null; exit "$CHECKSUM"',
+                    "tar": 'cp "$BINARY" "$RUNNER_TEMP/deny-root/bin/cargo-deny"',
+                    "cargo": 'echo install >> "$CALLS"; test "$*" = "+1.99.1 install --locked --quiet cargo-deny --version =0.20.2 --root $RUNNER_TEMP/deny-root" || exit 90; test "$INSTALL" = 0 || exit 1; cp "$BINARY" "$RUNNER_TEMP/deny-root/bin/cargo-deny"',
+                }.items():
+                    tool = root / command
+                    tool.write_text("#!/bin/bash\n" + body + "\n")
+                    tool.chmod(0o755)
+                result = subprocess.run(["bash", "-c", script], env=dict(
+                    os.environ, PATH=directory + os.pathsep + os.environ["PATH"],
+                    RUNNER_TEMP=directory, BINARY=str(binary), CALLS=str(root / "calls"),
+                    DOWNLOAD=str(download), CHECKSUM=str(checksum), INSTALL=str(install),
+                    FINDING=str(finding)), capture_output=True, text=True)
+                calls = (root / "calls").read_text().splitlines() if (root / "calls").exists() else []
+                fallback = bool(download or checksum)
+                assert calls.count("install") == int(fallback), (filename, calls, result.stderr)
+                assert calls.count("check") == int(not (fallback and install)), (filename, calls)
+                assert (result.returncode == 0) == (not finding and not (fallback and install)), result.stderr
+
+
 def main() -> int:
+    test_cargo_deny_install_fallback_preserves_findings()
     _postgres_cache_consumer_regressions()
     spec = importlib.util.spec_from_file_location(
         "queue_policy_core", Path(__file__).with_name("validate_repository_policy_core.py")

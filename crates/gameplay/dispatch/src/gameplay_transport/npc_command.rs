@@ -128,6 +128,9 @@ pub struct PendingBank {
 #[derive(Default)]
 pub struct NpcConversations {
     sessions: Mutex<HashMap<GameSessionId, SessionNpc>>,
+    #[cfg(test)]
+    fixture_callback_rows:
+        std::sync::OnceLock<Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>>,
 }
 
 #[cfg(test)]
@@ -738,6 +741,16 @@ pub(super) async fn npc_bank_talk(
     );
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
+        return ordinary;
+    }
+    // A live route quote owns its confirmation before any quest adapter runs.
+    // The paid owner repeats this exact scope/expiry check before departure.
+    if admission
+        .states
+        .npc_conversations
+        .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+        .is_some_and(|context| admission.has_pending_paid_confirmation(command, &intent, &context))
+    {
         return ordinary;
     }
     if let Some(step) = marriage::prepare(admission, actor, command, &intent, &runtime) {

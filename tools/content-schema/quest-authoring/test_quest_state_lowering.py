@@ -48,6 +48,20 @@ def lower(records):
 
 
 class QuestStateLoweringTests(unittest.TestCase):
+    def test_atomic_effect_capacity_accepts_sixteen_and_refuses_seventeen(self):
+        for count in (9, 16, 17):
+            quest = lower([definition('capacity', [
+                progress(f'canary:quest-progress/quest/capacity/value{i}',
+                         [write('action_1', to=1)]) for i in range(count)
+            ])])[0]
+            effects = [transition['effects'][0] for transition in quest['transitions']]
+            quest['transitions'] = [{**quest['transitions'][0], 'effects': effects}]
+            if count == 17:
+                with self.assertRaises(ValueError):
+                    tool.validate([quest])
+            else:
+                tool.validate([quest])
+
     def test_keys_bounds_effects_and_bindings(self):
         quest = lower([definition('x', [
             progress(STAGE, [write('npc_1', to=1, npc='canary:npc/x'),

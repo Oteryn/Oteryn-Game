@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "af19d064fcb78a26399231df50b5b99d9a279864
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "6745809a11b87234b9a50358e42f28d419cf138146cf5d3f455225e0cf000c9b"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "031c88fb778a2d6c0ece625debbf6e5e07d4d16a"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "a652e0a5e1e045c546d739e7e543df79b43e7dd3"
 EXPECTED_POST_MERGE_RUST_SHA256 = "1c8c047cd989f6fead273a8a08ca80b846e802fefe2d7f106eae266f903124ce"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -638,9 +638,11 @@ def main() -> int:
             ),
             "rust_supply_chain": (
                 "    name: Merge Queue / Rust supply chain\n",
-                "EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25",
-                "      command: check\n",
-                "      arguments: --all-features\n",
+                'curl --fail --location --retry 5 --retry-all-errors',
+                'cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz',
+                '9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f',
+                'cargo +1.99.1 install --locked --quiet cargo-deny --version "=0.20.2"',
+                '"$deny_root/bin/cargo-deny" --all-features check',
             ),
             "node_boot": (
                 "    name: Merge Queue / Node boot against the real Platform\n",

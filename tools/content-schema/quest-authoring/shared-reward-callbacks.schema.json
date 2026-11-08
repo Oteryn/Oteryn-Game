@@ -223,7 +223,7 @@
         "storage": {
           "type": "array",
           "minItems": 0,
-          "maxItems": 8,
+          "maxItems": 16,
           "items": {
             "$ref": "#/$defs/storage"
           }
@@ -366,7 +366,7 @@
         },
         "state_ops": {
           "type": "array",
-          "maxItems": 8,
+          "maxItems": 16,
           "items": {
             "$ref": "#/$defs/stateOperation"
           }

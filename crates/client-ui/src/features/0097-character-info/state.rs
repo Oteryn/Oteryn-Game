@@ -10,6 +10,10 @@ pub enum Intent {
 pub struct Panel {
     pub selected: bool,
     pub open: bool,
+    pub titles_open: bool,
+    pub own_titles: Option<super::titles::OwnTitles>,
+    pub title_search: String,
+    pub title_filter: super::titles::TitleFilter,
     pub pending: bool,
     pub pending_kind: u32,
     pub fields: [String; 4],

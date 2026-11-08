@@ -3,6 +3,30 @@ use super::super::reward_claim_mint::quest::QuestRewardAdmission;
 use super::*;
 
 impl DurabilityRoot {
+    /// Isolated source fixtures exercise the production reward transaction without adding quest content.
+    #[cfg(feature = "test-support")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "fixture preserves every production authority and reward admission input"
+    )]
+    pub async fn commit_fixture_quest_reward(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        admission: QuestRewardAdmission<'_>,
+        callback: oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner_resolved::<_, 0>(
+            authority, node, fence, request, catalogue, None, None, None, None,
+            &grizzly::NoGrizzlyPremium, None, None, Some(admission), None, None,
+            vec![callback],
+        )
+        .await
+    }
+
     /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
     /// under the current recovery fence without session authority; another cause kind on the
     /// same key conflicts. A new request is fenced like an XP award, refused while a death's
@@ -314,6 +338,50 @@ impl DurabilityRoot {
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
         )>,
     ) -> Result<QuestTransitionOutcome> {
+        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        self.commit_quest_inner_resolved(
+            authority, node, fence, request, catalogue, context, grizzly_action,
+            grizzly_boss, grizzly_party, grizzly_gate, grizzly_policy, payment,
+            reward_admission, native, benevola, reward_callbacks,
+        )
+        .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "shared fenced transaction receives the already resolved immutable source catalogue"
+    )]
+    async fn commit_quest_inner_resolved<G: grizzly::GrizzlyPremiumGate, const N: usize>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        context: Option<(
+            &super::super::spell_owner_commit::SpellLanePermit,
+            super::super::quest_world_callback::QuestWorldContext,
+            Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+            Option<QuestRewardAdmission<'_>>,
+        )>,
+        grizzly_action: Option<oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction>,
+        grizzly_boss: Option<(
+            &super::super::spell_owner_commit::SpellLanePermit,
+            grizzly_boss::GrizzlyBossEntryContext,
+        )>,
+        grizzly_party: Option<crate::foundation::PartySnapshot>,
+        grizzly_gate: &G,
+        grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
+        payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
+        reward_admission: Option<QuestRewardAdmission<'_>>,
+        native: Option<super::native_kills::NativeQuestDeath>,
+        benevola: Option<(
+            &super::super::spell_owner_commit::SpellLanePermit,
+            super::super::world_event::changes::counters::benevola::BenevolaHandover,
+        )>,
+        reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
+    ) -> Result<QuestTransitionOutcome> {
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
@@ -328,9 +396,6 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let reward_callbacks =
-            oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
-                .map_err(|_| CharacterProgressionError::InvalidInput)?;
         if reward_callbacks.iter().any(|c| {
             c.participants.iter().enumerate().any(|(i, _)| {
                 oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&c.key, i)

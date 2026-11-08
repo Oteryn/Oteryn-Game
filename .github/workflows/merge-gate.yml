@@ -1033,24 +1033,22 @@ jobs:
 
       - name: Check advisories licenses bans and sources
         if: steps.jr_hit.outputs.hit != 'true'
-        id: deny
-        continue-on-error: true
-        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # cargo-deny 0.20.2
-        with:
-          rust-version: '1.99.1'
-          command: check
-          arguments: --all-features
-
-      # cargo-deny-action downloads its binary from GitHub releases without a retry. When that
-      # download fails, run the same pinned cargo-deny built from crates.io; a real advisory,
-      # license, ban or source finding still fails this step.
-      - name: Check advisories licenses bans and sources (crates.io fallback)
-        if: steps.deny.outcome == 'failure'
         run: |
           set -euo pipefail
           rustup toolchain install 1.99.1 --profile minimal --no-self-update
-          cargo +1.99.1 install --locked --quiet cargo-deny --version "=0.20.2" --root "$RUNNER_TEMP/deny-root"
-          PATH="$RUNNER_TEMP/deny-root/bin:$PATH" cargo +1.99.1 deny --all-features check
+          archive="$RUNNER_TEMP/cargo-deny.tar.gz"
+          deny_root="$RUNNER_TEMP/deny-root"
+          mkdir -p "$deny_root/bin"
+          if curl --fail --location --retry 5 --retry-all-errors \
+              https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz \
+              --output "$archive" && \
+              echo "9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f  $archive" | sha256sum --check; then
+            tar -xzf "$archive" --strip-components=1 -C "$deny_root/bin" \
+              cargo-deny-0.20.2-x86_64-unknown-linux-musl/cargo-deny
+          else
+            cargo +1.99.1 install --locked --quiet cargo-deny --version "=0.20.2" --root "$deny_root"
+          fi
+          "$deny_root/bin/cargo-deny" --all-features check
 
       - name: Record job-result marker
         if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'

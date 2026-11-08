@@ -1,14 +1,17 @@
 //! Live boss encounter status from the admitted character's server snapshot.
 #[path = "protocol/auxiliary.rs"]
 mod auxiliary;
+#[path = "input/chains.rs"]
+mod chains;
 mod input;
 mod protocol;
 mod state;
 mod view;
-pub use input::open_key;
+pub use chains::{EndgameChain, select_next_boss};
+pub use input::{cooldowns_key, open_key};
 pub use protocol::{Intent, apply_result, request};
 pub use state::BossEncounterPanel;
-pub use view::panel_text;
+pub use view::{cooldown_text, panel_text};
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;

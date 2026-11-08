@@ -228,3 +228,109 @@ fn pc05_reward_chest_paging_uses_only_last_server_death_id() -> Result<(), Strin
     assert!(panel_text(&panel).contains("Reward groups: 0"));
     Ok(())
 }
+
+#[test]
+fn endgame_chain_selection_covers_both_chains_without_claiming_progress()
+-> Result<(), Box<dyn std::error::Error>> {
+    for (chain, expected) in [
+        (
+            EndgameChain::SoulWar,
+            vec![
+                "goshnar_s_cruelty",
+                "goshnar_s_greed",
+                "goshnar_s_hatred",
+                "goshnar_s_malice",
+                "goshnar_s_spite",
+                "goshnar_s_megalomania_purple",
+            ],
+        ),
+        (
+            EndgameChain::RottenBlood,
+            vec!["ichgahal", "murcion", "vemiath", "chagorz", "bakragore"],
+        ),
+    ] {
+        let mut panel = BossEncounterPanel::default();
+        assert!(!select_next_boss(&mut panel, chain));
+        panel.selected = true;
+        for boss in &expected {
+            assert!(select_next_boss(&mut panel, chain));
+            let key = format!("oteryn:creature.{boss}");
+            assert_eq!(panel.fields[0], key);
+            let command = request(&mut panel, Intent::Enter).ok_or("entry command")?;
+            assert_eq!(command.kind, 178);
+            assert_eq!(
+                command.payload,
+                oteryn_client_runtime::boss_encounter::encode_boss_key(&key)
+                    .map_err(|error| format!("{error:?}"))?
+            );
+            let before = panel.clone();
+            assert!(!select_next_boss(&mut panel, chain));
+            assert_eq!(panel, before);
+            panel.pending = false;
+            assert!(
+                panel.snapshot.is_none(),
+                "selecting a boss cannot fabricate quest progress"
+            );
+        }
+        assert!(select_next_boss(&mut panel, chain));
+        assert_eq!(panel.fields[0], format!("oteryn:creature.{}", expected[0]));
+    }
+    Ok(())
+}
+
+#[test]
+fn cooldown_widget_counts_down_confirmed_deadlines_and_keeps_progress_out() {
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(request(&mut panel, Intent::Refresh).is_some());
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: vec![
+                8, 100, 18, 7, 10, 3, b'a', b':', b'b', 16, 120, 34, 7, 10, 3, b'a', b':', b'b',
+                16, 3, 40, 5
+            ],
+        }
+    ));
+    assert!(panel.cooldown_received_at.is_some());
+    assert!(cooldown_text(&panel, 0).contains("a:b: 20 ms remaining"));
+    assert!(cooldown_text(&panel, 15).contains("a:b: 5 ms remaining"));
+    assert!(cooldown_text(&panel, u64::MAX).contains("a:b: Ready"));
+    assert!(!cooldown_text(&panel, 0).contains("3 kills"));
+    assert!(panel.snapshot.as_ref().is_some_and(|s| s.now == 100));
+}
+
+#[test]
+fn cooldown_shortcut_requires_exact_modifiers_and_a_fresh_press()
+-> Result<(), oteryn_input_actions::InputError> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let code = KeyCode::new(13)?;
+    let modifiers = Modifiers::NONE
+        .with(Modifier::Control)
+        .with(Modifier::Alt)
+        .with(Modifier::Shift);
+    let event = |modifiers, repeat| NormalizedInputEvent::Key {
+        code,
+        state: ButtonState::Pressed,
+        modifiers,
+        repeat,
+    };
+    assert!(cooldowns_key(&[event(modifiers, false)]));
+    assert!(!cooldowns_key(&[event(modifiers, true)]));
+    assert!(!cooldowns_key(&[event(
+        modifiers.with(Modifier::Super),
+        false
+    )]));
+    assert!(!cooldowns_key(&[event(
+        Modifiers::NONE
+            .with(Modifier::Control)
+            .with(Modifier::Shift),
+        false
+    )]));
+    Ok(())
+}

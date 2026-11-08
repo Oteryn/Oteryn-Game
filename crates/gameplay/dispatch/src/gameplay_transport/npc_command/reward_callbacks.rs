@@ -25,6 +25,18 @@ struct Offer {
     reply: Vec<String>,
 }
 
+#[cfg(test)]
+impl NpcConversations {
+    pub(in crate::gameplay_transport) fn fixture_reward_callbacks(
+        &self,
+        rows: Vec<reward_callbacks::RewardCallback>,
+    ) -> Result<(), String> {
+        self.fixture_callback_rows
+            .set(rows)
+            .map_err(|_| "reward callback fixture already installed".to_owned())
+    }
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -34,6 +46,13 @@ pub(super) fn prepare(
 ) -> Option<Step> {
     let catalogue = admission.quest_catalogue.as_deref()?;
     let callbacks = reward_callbacks::load_for(catalogue).ok()?;
+    #[cfg(test)]
+    let callbacks = admission
+        .states
+        .npc_conversations
+        .fixture_callback_rows
+        .get()
+        .unwrap_or(&callbacks);
     let mut offers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
