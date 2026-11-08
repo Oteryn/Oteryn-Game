@@ -61,8 +61,24 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 panel.healing = panel.healing.saturating_add(value);
                 panel.healing_chart.add(seconds, value);
             }
-            AnalyserFact::DamageInput { value, .. } => {
-                panel.received = panel.received.saturating_add(u64::from(value.get()))
+            AnalyserFact::DamageInput {
+                value,
+                element,
+                source,
+            } => {
+                use oteryn_client_runtime::analyser::AnalyserDamageSource;
+                let value = u64::from(value.get());
+                panel.received = panel.received.saturating_add(value);
+                panel.received_chart.add(seconds, value);
+                let total = panel.input_types.entry(element.wire()).or_default();
+                *total = total.saturating_add(value);
+                let key = match source {
+                    AnalyserDamageSource::Creature(race) => (1, race.map_or(0, |race| race.get())),
+                    AnalyserDamageSource::Player => (2, 0),
+                    AnalyserDamageSource::None => (3, 0),
+                };
+                let total = panel.input_sources.entry(key).or_default();
+                *total = total.saturating_add(value);
             }
             AnalyserFact::Dropped(count) => {
                 panel.dropped = panel.dropped.saturating_add(u64::from(count.get()))

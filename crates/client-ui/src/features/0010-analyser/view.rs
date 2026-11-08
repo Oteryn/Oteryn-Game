@@ -16,7 +16,7 @@ pub fn panel_text(panel: &Panel) -> String {
         super::Tool::Loot => loot_text(panel, panel.clock.seconds()),
         super::Tool::Supply => supply_text(panel, panel.clock.seconds()),
         super::Tool::Impact => impact_text(panel, panel.clock.seconds()),
-        super::Tool::Input => format!("Input Analyser\r\nDamage received: {}", panel.received),
+        super::Tool::Input => input_text(panel, panel.clock.seconds()),
         super::Tool::Session => format!("Hunting Session\r\n{}", overview(panel)),
         super::Tool::Party => "Party Hunt\r\nNo party accounting received".into(),
         super::Tool::LootTracker => format!("Loot Tracker\r\nLoot: {} items", panel.loot_items),
@@ -217,6 +217,40 @@ pub(super) fn impact_text(panel: &Panel, seconds: u64) -> String {
             element_name(*element),
             gauge(*value, total)
         );
+    }
+    text
+}
+
+pub(super) fn input_text(panel: &Panel, seconds: u64) -> String {
+    use std::fmt::Write;
+    let total = u128::from(panel.received);
+    let mut text = format!(
+        "Input Analyser\r\nElapsed: {seconds} seconds\r\nDamage received: {}\r\nIncoming DPS: {}\r\n{}",
+        panel.received,
+        rate(panel.received, seconds),
+        panel.received_chart.chart(seconds)
+    );
+    if total == 0 {
+        text.push_str("\r\nNo damage received yet");
+    }
+    text.push_str("\r\nDamage types");
+    for (element, value) in &panel.input_types {
+        let _ = write!(
+            text,
+            "\r\n{}: {value} {}",
+            element_name(*element),
+            gauge(*value, total)
+        );
+    }
+    text.push_str("\r\nSources");
+    for ((kind, race), value) in &panel.input_sources {
+        let name = match (kind, race) {
+            (1, 0) => "Creature (race unavailable)".into(),
+            (1, race) => format!("Creature race #{race}"),
+            (2, _) => "Player".into(),
+            _ => "Unattributed".into(),
+        };
+        let _ = write!(text, "\r\n{name}: {value} {}", gauge(*value, total));
     }
     text
 }

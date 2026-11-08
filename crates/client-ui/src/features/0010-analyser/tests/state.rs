@@ -330,3 +330,37 @@ fn impact_uses_wire_damage_types_healing_rates_gauges_and_charts() -> Result<(),
     assert!(super::view::impact_text(&Panel::default(), 0).contains("No impact yet"));
     Ok(())
 }
+
+#[test]
+fn input_preserves_wire_sources_elements_rates_and_reset() -> Result<(), &'static str> {
+    // Creature race 7, unknown creature race, player, and explicitly unattributed.
+    let facts = oteryn_client_runtime::analyser::decode_analyser_facts(&[
+        10, 10, 42, 8, 8, 60, 16, 2, 24, 1, 32, 7, 10, 8, 42, 6, 8, 30, 16, 1, 24, 1, 10, 8, 42, 6,
+        8, 20, 16, 2, 24, 2, 10, 8, 42, 6, 8, 10, 16, 3, 24, 3,
+    ])
+    .map_err(|_| "input wire")?;
+    let mut panel = Panel {
+        selected: true,
+        tool: Tool::Input,
+        ..Default::default()
+    };
+    apply_at(&mut panel, &facts, 0);
+    let text = super::view::input_text(&panel, 60);
+    for expected in [
+        "Incoming DPS: 2.00",
+        "Fire: 80",
+        "Creature race #7: 60",
+        "Creature (race unavailable): 30",
+        "Player: 20",
+        "Unattributed: 10",
+        "50.00%",
+    ] {
+        assert!(text.contains(expected), "{text}");
+    }
+    assert_eq!(panel.received_chart.values(60), vec![120, 0]);
+    reset(&mut panel);
+    assert!(panel.input_types.is_empty() && panel.input_sources.is_empty());
+    assert_eq!(panel.received_chart.values(0), vec![0]);
+    assert!(panel_text(&panel).contains("No damage received yet"));
+    Ok(())
+}
