@@ -865,7 +865,7 @@ fn details(
 }
 /// Canary 47dfd51 item.cpp/config.lua.dist defaults; owner decision 22:
 /// not verified against Global. These are display values, never combat authority.
-fn tier_description(record: &ItemProfileRecord, tier: u8) -> String {
+pub(super) fn tier_description(record: &ItemProfileRecord, tier: u8) -> String {
     use crate::content::{ReferenceEquipmentSlot as Slot, ReferenceItemField::Known};
     if tier == 0 {
         return "0".into();

@@ -7,6 +7,12 @@ use oteryn_client_runtime::{
 use std::time::{Duration, Instant};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Content {
+    Effects(wire::Effects),
+    Exaltation {
+        receipt: reply::Receipt,
+        target: Option<wire::Effects>,
+        donor: Option<wire::Effects>,
+    },
     Confirm {
         operation: Operation,
         quote: Option<wire::ResourceQuote>,
@@ -136,6 +142,12 @@ fn receipt_text(receipt: &reply::Receipt) -> String {
 }
 pub fn dialog_text(content: &Content, row: usize) -> String {
     match content {
+        Content::Effects(e) => super::exaltation::effects_text(e),
+        Content::Exaltation {
+            receipt,
+            target,
+            donor,
+        } => super::exaltation::result_text(receipt, target.as_ref(), donor.as_ref()),
         Content::Confirm { operation, quote } => confirmation_text(*operation, *quote),
         Content::Message(message) => message.clone(),
         Content::Result(reply::Reply::CurrentDust { dust, limit }) => {

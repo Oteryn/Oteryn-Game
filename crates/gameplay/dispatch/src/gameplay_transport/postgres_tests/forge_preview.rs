@@ -167,6 +167,13 @@ pub(super) async fn exercise(
             &mut command,
         )
         .await?;
+        super::exaltation::read_effects(
+            &mut client,
+            current.continuity.connection_generation,
+            &mut command,
+            swords[0].handle,
+        )
+        .await?;
         assert_eq!(
             assets(h).await?,
             before,
@@ -232,9 +239,9 @@ pub(super) async fn exercise(
         current
             .continuity
             .next_command_id
-            .checked_add(7)
+            .checked_add(9)
             .ok_or("expected command overflow")?,
-        "one connection executes Browse, Quote, three resource reads, paid writer and exact occurrence replay"
+        "one connection executes Browse, Quote, three resource reads, two effect reads, paid writer and exact occurrence replay"
     );
     let after = result.map_err(|error| {
         format!("Preview one-connection flow failed: {error}; server: {summary}")

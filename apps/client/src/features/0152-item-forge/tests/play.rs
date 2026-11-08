@@ -130,3 +130,6 @@ mod preview_session;
 
 #[path = "resource_session.rs"]
 mod resource_session;
+
+#[path = "exaltation_session.rs"]
+mod exaltation_session;

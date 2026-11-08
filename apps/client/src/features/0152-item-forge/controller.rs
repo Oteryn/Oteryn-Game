@@ -13,6 +13,7 @@ use tokio::sync::mpsc::UnboundedSender;
 )]
 pub(in crate::play) enum Action {
     CurrentDust,
+    Effects,
     ConfirmResource(u64),
     DismissResource(u64),
     Legacy(Operation),
@@ -55,6 +56,21 @@ pub(in crate::play) fn activate(
         return;
     }
     match action {
+        Action::Effects => {
+            let Some(handle) =
+                oteryn_client_runtime::cui3::item_view::ItemHandle::new(panel.first_item)
+            else {
+                return;
+            };
+            if let Some(command) = oteryn_client_ui::item_forge::preview_request(
+                panel,
+                wire::Selection::Effects(handle),
+            ) && commands.send(PlayCommand::Feature(command)).is_err()
+            {
+                panel.preview.pending = None;
+                panel.feedback = Some("The session has ended".into());
+            }
+        }
         Action::CurrentDust => {
             let command = oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
                 capability: 152,

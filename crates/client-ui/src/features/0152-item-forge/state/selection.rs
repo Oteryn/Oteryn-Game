@@ -117,6 +117,7 @@ impl ItemForgePanel {
         self.selection()?.canonical(occurrence)
     }
     pub fn scope_changed(&mut self) {
+        self.tier_effects.clear();
         self.resource_dialog.reset();
         self.pending = false;
         self.submitted = None;
@@ -155,6 +156,7 @@ impl ItemForgePanel {
         if self.resource_dialog.confirming() {
             self.resource_dialog.reset();
         }
+        self.tier_effects.clear();
         self.preview.live = live;
         self.preview.invalidate();
         self.preview.page = None;

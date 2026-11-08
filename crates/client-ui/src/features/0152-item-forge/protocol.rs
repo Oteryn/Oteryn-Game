@@ -93,6 +93,11 @@ pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
                     }
                     return;
                 }
+                if let super::reply::Reply::Result(receipt) = &reply
+                    && attempt.operation.requires_pair()
+                {
+                    super::exaltation::show_result(p, attempt, receipt.clone());
+                }
                 p.retry = None;
                 p.preview.invalidate();
             }

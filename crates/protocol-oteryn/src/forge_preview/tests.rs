@@ -235,3 +235,51 @@ fn forge_resource_quote_is_additive_strict_and_does_not_change_original_wire()
     );
     Ok(())
 }
+#[test]
+fn exaltation_effects_codec_binds_handle_and_bounds_reference_tiers() -> Result<(), &'static str> {
+    let handle = ItemHandle::new(2).ok_or("handle")?;
+    let request = Request {
+        nonce: 1,
+        selection: Selection::Effects(handle),
+    };
+    let mut expected = 1_u64.to_le_bytes().to_vec();
+    expected.push(3);
+    expected.extend(2_u64.to_le_bytes());
+    assert_eq!(request.encode(), Some(expected.clone()));
+    assert_eq!(Request::decode(&expected), Some(request));
+    let item = Item {
+        handle,
+        definition_ref: 1,
+        appearance: 3264,
+        name: "Test sword".into(),
+        classification: 1,
+        tier: 0,
+        maximum_tier: 1,
+        container: false,
+    };
+    let effects = Effects {
+        item,
+        tiers: vec!["0".into(), "1 (0.50% Onslaught)".into()],
+    };
+    let reply = Reply {
+        nonce: 1,
+        payload: Payload::Effects(effects.clone()),
+    };
+    let bytes = reply.encode().ok_or("reply")?;
+    assert_eq!(Reply::decode(&bytes), Some(reply));
+    for n in 0..bytes.len() {
+        assert!(Reply::decode(&bytes[..n]).is_none());
+    }
+    let mut extra = bytes;
+    extra.push(0);
+    assert!(Reply::decode(&extra).is_none());
+    let invalid = Reply {
+        nonce: 1,
+        payload: Payload::Effects(Effects {
+            tiers: vec!["0".into()],
+            ..effects
+        }),
+    };
+    assert!(invalid.encode().is_none());
+    Ok(())
+}

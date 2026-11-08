@@ -1,4 +1,6 @@
 //! Native controls for Item Forge.
+#[path = "state/exaltation.rs"]
+pub mod exaltation;
 mod input;
 #[path = "protocol/preview.rs"]
 pub mod preview;

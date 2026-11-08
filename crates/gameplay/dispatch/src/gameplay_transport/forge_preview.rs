@@ -86,7 +86,9 @@ pub(super) async fn read(
         return Outcome::Rejected;
     };
     let selection = match request.selection {
-        wire::Selection::Browse { .. } | wire::Selection::Resource(_) => None,
+        wire::Selection::Browse { .. }
+        | wire::Selection::Resource(_)
+        | wire::Selection::Effects(_) => None,
         pair @ wire::Selection::Pair { first, second, .. } => {
             let (Some(ItemKey::Instance(first)), Some(ItemKey::Instance(second))) =
                 (views.resolve(first), views.resolve(second))
@@ -122,6 +124,8 @@ pub(super) async fn read(
         return Outcome::Rejected;
     }
     let payload = match request.selection {
+        wire::Selection::Effects(handle) => effects(&snapshot.items, views, native, handle)
+            .map_or(wire::Payload::Refused, wire::Payload::Effects),
         wire::Selection::Resource(operation) => resource_quote(snapshot.resources, operation)
             .map_or(wire::Payload::Refused, wire::Payload::Resource),
         wire::Selection::Browse { after } => {
@@ -404,3 +408,7 @@ mod resource_tests {
         Ok(())
     }
 }
+
+#[path = "forge_preview/effects.rs"]
+mod effects_reader;
+use effects_reader::effects;

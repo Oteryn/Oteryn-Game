@@ -60,6 +60,23 @@ pub fn apply(panel: &mut ItemForgePanel, command: &FeatureCommand, result: &Gate
         return;
     };
     match (request.selection, reply.payload) {
+        (wire::Selection::Effects(handle), wire::Payload::Effects(e))
+            if e.item.handle == handle
+                && panel.first_item == handle.get()
+                && panel
+                    .preview
+                    .item(handle.get())
+                    .is_some_and(|i| i.definition_ref == e.item.definition_ref) =>
+        {
+            panel.tier_effects.retain(|old| old.item.handle != handle);
+            if panel.tier_effects.len() >= 2 {
+                panel.tier_effects.remove(0);
+            }
+            panel.tier_effects.push(e.clone());
+            panel.resource_dialog.reset();
+            panel.resource_dialog.content =
+                Some(crate::item_forge::resource_dialog::Content::Effects(e));
+        }
         (wire::Selection::Resource(operation), wire::Payload::Resource(quote))
             if quote.operation == operation =>
         {

@@ -125,6 +125,8 @@ fn run(
         let confirm = matches!(content, Content::Confirm { .. });
         let history = matches!(content, Content::Result(Reply::History(_)));
         let title = match &content {
+            Content::Effects(_) => "Item tier reference effects",
+            Content::Exaltation { .. } => "Exaltation result",
             Content::Confirm { .. } => "Review Forge resource operation",
             Content::Result(Reply::History(_)) => "Forge operation history",
             _ => "Forge resource result",

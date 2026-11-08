@@ -10,6 +10,7 @@ pub const PAGE_SIZE: usize = 32;
 pub const MAX_NAME_BYTES: usize = 128;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Selection {
+    Effects(ItemHandle),
     Resource(Operation),
     Browse {
         after: u64,
@@ -123,8 +124,15 @@ impl ResourceQuote {
             }
     }
 }
+/// Reference descriptions from the server's existing inspection owner, indexed by tier.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Effects {
+    pub item: Item,
+    pub tiers: Vec<String>,
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Payload {
+    Effects(Effects),
     Resource(ResourceQuote),
     Page(Page),
     Quote(Quote),
@@ -169,6 +177,10 @@ impl Request {
         }
         let mut out = self.nonce.to_le_bytes().to_vec();
         match self.selection {
+            Selection::Effects(handle) => {
+                out.push(3);
+                out.extend(handle.get().to_le_bytes());
+            }
             Selection::Resource(operation) if resource_operation(operation) => {
                 out.extend([2, operation as u8]);
             }
@@ -193,6 +205,9 @@ impl Request {
             return None;
         }
         let selection = match bytes[8] {
+            3 if bytes.len() == 17 => Selection::Effects(ItemHandle::new(u64::from_le_bytes(
+                bytes[9..].try_into().ok()?,
+            ))?),
             2 if bytes.len() == 10 => Selection::Resource(match bytes[9] {
                 5 => Operation::DustToSlivers,
                 6 => Operation::SliversToCores,

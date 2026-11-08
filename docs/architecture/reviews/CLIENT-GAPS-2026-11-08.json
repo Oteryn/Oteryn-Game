@@ -856,9 +856,10 @@
   "src": "TIBAUD-1",
   "area": "Exaltation",
   "feature": "Tier effects i rezultat exaltation",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Są wyniki forge i item effects; brak pełnej prezentacji tier bonuses i wyniku.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0152-item-forge/controller.rs:59 + exaltation_actual_session_effects_and_receipt_reach_native_dialog; exaltation_postgres_real_effect_descriptions_are_readonly_and_handle_fenced (51.08s)"
  },
  {
   "id": "T119",
