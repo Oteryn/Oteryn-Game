@@ -546,7 +546,10 @@ def main() -> int:
         for path, data in generated.items():
             destination = ROOT / path
             destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_bytes(data)
+            # Cargo fingerprints these generated pins and included JSON files.
+            # Preserve their timestamps when regeneration changes no bytes.
+            if not destination.is_file() or destination.read_bytes() != data:
+                destination.write_bytes(data)
     print(f"PASS registered spell import files={len(generated)} activation=false")
     return 0
 

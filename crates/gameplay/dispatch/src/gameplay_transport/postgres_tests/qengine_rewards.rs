@@ -36,7 +36,9 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                     floor: -7,
                 }
             } else if name == "qengine-rewards-cook-contacts" {
-                Position { x:32844, y:32138, floor:-6 }
+                // The shared harness places the player one tile west of trigger.
+                // Keep that player at32844, beside Cheaty at32843.
+                Position { x:32845, y:32138, floor:-6 }
             } else if name.starts_with("qengine-rewards-banshees") {
                 Position { x: 32276, y: 31903, floor: -13 }
             } else if name == "qengine-rewards-serpentine" {

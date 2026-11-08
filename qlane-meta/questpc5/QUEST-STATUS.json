@@ -75,9 +75,9 @@
         "error": "source NPC placement absent"
       },
       "subsequent_red": {
-        "seconds": 198.007994378,
-        "error": "Json(\"authored callback missing recipe witness\")",
-        "repair": "Selected recipe citation added through qengine_rewards authorer; fresh test binary and PG rerun pending."
+        "seconds": 155.198691592,
+        "error": "CellOccupied",
+        "cause": "Shared scenario starts player at trigger.x-1, exactly Cheaty32843; trigger now32845 so player starts32844. Fresh PG rerun pending."
       },
       "implemented": [
         "Exact retained Cheaty/Draccoon positions",
@@ -275,7 +275,7 @@
     "title": "Nomads Land Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "The mandatory Sacred Casket/Book Native Item identity is unresolved. The saved Muhad donor has the start but no casket completion branch; the Wiki confirms a second completion path when the casket is outside the backpack. A guessed generic box or forced consume would change the source.",
+    "blocker": "Identities resolved to parchment2814 and stolen jewel case7527. Selected cabinet delivery needs the existing mint-plan readable text surfaced on shared ItemReward; ENGINE-REQUEST sent, QENGINE2parent predicate188ab6f79 available for reuse.",
     "from_lanes": [
       "questpc2"
     ],
@@ -284,7 +284,27 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00300-00351.json",
       "pointer": "/records/20/definition"
-    }
+    },
+    "item_identity_resolution": {
+      "book_id": 2814,
+      "case_id": 7527,
+      "book_page": 19138,
+      "book_sha256": "79a10d75049fbdf37dfd1b16f8aca32cca1989b85d8fd6f6d46d4f08d4cbb214",
+      "case_page": 9518,
+      "case_sha256": "9310ea370e4e535981b353c5e2dbea9af1a2a07999d4955ab017588fea5154bb",
+      "donor_items_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+      "muhad_sha256": "da135cc046e9dc68900de3ed6810d42c0dc16921c07be63399a8d15d73294642",
+      "completed_parent_feature": "qengine2/188ab6f79c3d53f7dfe7893b6a342e177ccb305b",
+      "book_text_surface": "ENGINE_REQUEST",
+      "classification": "DERIVED_TIBN_SUFFIX_AND_MATCHING_DONOR_XML",
+      "book_url": "https://www.tibiawiki.com.br/wiki/The_Sacred_Casket_(Book)",
+      "case_url": "https://www.tibiawiki.com.br/wiki/Jewel_Case_(Vermelho)",
+      "quest_url": "https://www.tibiawiki.com.br/wiki/Arito%27s_Task_Quest",
+      "book_witness": "Book page TIBN1 ends2814; donor XML2814 is parchment, weight200, writeable1, maxtextlen1023.",
+      "case_witness": "Donor7527 alone matches the stolen nomads treasure description; weight170 agrees with Wiki1.70oz.",
+      "qualification": false
+    },
+    "active_phase": "source facts resolved; prepare owned recipe while text binding is supplied by qengine2"
   },
   {
     "canonical": "oteryn:quest.authored.nomads_mini_world_change",

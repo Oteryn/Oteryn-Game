@@ -80,7 +80,8 @@ def refresh_item_keys(output: Path = ITEM_KEYS) -> str:
     raw = item_keys()
     if len(raw) > LIMITS['item_keys']:
         raise ValueError('Native input exceeds bounded provider size: item_keys')
-    output.write_bytes(raw)
+    if not output.is_file() or output.read_bytes() != raw:
+        output.write_bytes(raw)
     return digest(raw)
 
 

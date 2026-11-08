@@ -145,12 +145,37 @@ fn client_placement_pin_text(text: &str, digest: &str) -> Result<String, Error> 
 }
 
 fn write(path: &Path, text: &str) -> Result<(), Error> {
+    if fs::read(path).is_ok_and(|existing| existing.as_slice() == text.as_bytes()) {
+        return Ok(());
+    }
     fs::write(path, text).map_err(|e| Error::Format(format!("{}: {e}", path.display())))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unchanged_pin_refresh_preserves_cargo_input_timestamp()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory =
+            std::env::temp_dir().join(format!("questpc5-pin-mtime-{}", std::process::id()));
+        fs::create_dir_all(&directory)?;
+        let path = directory.join("pin.json");
+        write(&path, "first\n")?;
+        let stamp = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_650_000_000);
+        fs::File::options()
+            .write(true)
+            .open(&path)?
+            .set_times(fs::FileTimes::new().set_modified(stamp))?;
+        write(&path, "first\n")?;
+        assert_eq!(fs::metadata(&path)?.modified()?, stamp);
+        write(&path, "second\n")?;
+        assert_eq!(fs::read_to_string(&path)?, "second\n");
+        assert_ne!(fs::metadata(&path)?.modified()?, stamp);
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
 
     #[test]
     fn client_pin_refresh_preserves_other_pins_and_refuses_ambiguous_sources() -> Result<(), Error>

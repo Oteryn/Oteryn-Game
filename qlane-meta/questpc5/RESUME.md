@@ -1,3 +1,9 @@
+## Grouped repair checkpoint — 2026-11-08 02:58 UTC
+
+Completed entirebaseline: dispatch1604run1597PASS7FAIL2178.853s; content/quests/NPC672run632PASS40FAIL1821.991s. Exactlyfourrootgroups:44missingrecipewitness, emptycollectiblefixture1, starterbase/overlayrepartition1, reviewedOrnamentedfullcharges1. Fixedalltogetherwithoutweakeningguards. Freshfocused15:14PASS; CookcontactsRED155.198691592sCellOccupied becausefixtureplayerorigin=trigger.x-1 landedonCheaty. Correctedtrigger32845→player32844, nextPGpending. AllpriorBanshee/materialsPGgreen. FourcontentregressionsPASS. Timestampno-opproducersPython3RED→GREEN; Worldcompilerbinary9PASS149.73s andlibunitspassed; releasecompilerrebuilt. Nextpinrefresh/check, finalworkspace/fmt, compilingcheckpointpush, thenfreshcontactPG/fullunitrerun. NativegeneratorsnowpreserveunchangedRust/JSON/keytimestamps; pinwriterdoeslikewise, preventingneedlessCargo invalidation.
+
+NomadsLandfactsresolved2814parchment/7527stolencase, proofJSONsourceURL/hashrecorded; no rawWikibodycommitted. ExistingQENGINE2parentcompletionfeature188ab6f79forreuse. ENGINE-REQUESTreadabletextforwardingmustcoverNPCandWorldUSEItemRewardpaths; existingmintplanroot_text isalreadyavailable. Wholecountsremain13QUALIFIED/10remaining.
+
 ## Compiling checkpoint ready — 2026-11-08 02:09 UTC
 
 PostpinworkspacealltargetsPASS6m59s, fmtPASS. Pinrefresh/check, bindingfreshness, duplicate-migrationcheck and sourcefact/equivalence gatesPASS. PushcompilingWIP now underPREPUSH-2 exception; ownPGfreshGREEN, allcrateunitcompletion and freshClippy remainpending. No qualification added. Currenttestsusepre-witness-fixembeddedcallbacks; do not overwrite their dispatchbinary before collection completes. Next batches: generateallpins BEFORE the singlecheck/build queue to avoid another fullcheck rerun. Foreign1300notstaged.

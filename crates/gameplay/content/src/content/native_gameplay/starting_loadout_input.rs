@@ -68,6 +68,30 @@ mod reaudit_starting_progression {
         let extra = pin(include_bytes!(
             "../../../../../../content/items/definitions/starting-loadout-profiles.json"
         ));
+        // Three original starter profiles now belong to the base provider.
+        // Keep the complete thirteen-item assertion across the actual partition.
+        let provider: ItemProfilesDocument = serde_json::from_slice(include_bytes!(
+            "../../../../../../content/items/definitions/spell-native-profiles.json"
+        ))
+        .map_err(|_| invalid("starter base fixture"))?;
+        let moved: Vec<_> = provider
+            .records
+            .into_iter()
+            .filter(|r| {
+                matches!(
+                    r.production_definition.production_key.as_str(),
+                    "oteryn:item.tibia.i3571"
+                        | "oteryn:item.tibia.i3572"
+                        | "oteryn:item.tibia.i7991"
+                )
+            })
+            .collect();
+        assert_eq!(moved.len(), 3);
+        let base = pin(&serde_json::to_vec(&ItemProfilesDocument {
+            schema: "OTERYN_NATIVE_ITEM_PROFILES/v1".into(),
+            records: moved,
+        })
+        .map_err(|_| invalid("starter base fixture encoding"))?);
         let merged = merge(Some(base.clone()), Some(extra.clone()))?
             .ok_or_else(|| invalid("merged provider"))?;
         let items: ItemProfilesDocument =

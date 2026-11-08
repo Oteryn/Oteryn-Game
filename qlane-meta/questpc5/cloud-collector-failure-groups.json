@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "baseline": {
+    "dispatch": {
+      "run": 1604,
+      "passed": 1597,
+      "failed": 7,
+      "seconds": 2178.853
+    },
+    "catalogues": {
+      "run": 672,
+      "passed": 632,
+      "failed": 40,
+      "seconds": 1821.991
+    }
+  },
+  "groups": {
+    "recipe_witness": 44,
+    "empty_collectible_fixture": 1,
+    "starter_base_overlay_partition": 1,
+    "reviewed_full_charge_projection": 1
+  },
+  "repairs": [
+    "Add mandatory selected-recipe witness",
+    "Exercise retired fallback negative guards through a private unit fixture seam",
+    "Retain thirteen-starter union assertion with three base-owned profiles",
+    "Keep seven partial-charge cases and add full-default150 case with explicit partial-override refusal"
+  ],
+  "focused": {
+    "run": 15,
+    "passed": 14,
+    "failed": 1,
+    "error": "CellOccupied in Cook fixture; trigger offset corrected, fresh PG pending"
+  },
+  "timestamp_regressions": {
+    "python_tests": 3,
+    "compiler_binary_tests": 9,
+    "compiler_binary_seconds": 149.73
+  },
+  "qualification_added": false
+}

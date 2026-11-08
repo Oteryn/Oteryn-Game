@@ -120,7 +120,7 @@ def main() -> int:
         if not OUTPUT.is_file() or OUTPUT.read_text() != encoded:
             print('Grizzly map room qualification is stale', file=sys.stderr)
             return 1
-    else:
+    elif not OUTPUT.is_file() or OUTPUT.read_text() != encoded:
         OUTPUT.write_text(encoded)
     print(f"Grizzly rooms: {sum(r['qualified'] for r in data['rooms'])}/{len(data['rooms'])} map-qualified")
     return 0

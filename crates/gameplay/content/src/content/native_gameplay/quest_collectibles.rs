@@ -10,7 +10,7 @@ struct Packet {
     schema: u32,
     entries: Vec<Entry>,
 }
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Entry {
     profile: ItemProfileRecord,
@@ -38,8 +38,16 @@ pub(super) fn extend(
     admitted: &mut BTreeMap<String, super::super::project::ProjectV2SourceIdentityBinding>,
     records: &[ItemProfileRecord],
 ) -> Result<(), ContentError> {
+    extend_entries(admitted, records, packet()?.entries)
+}
+
+fn extend_entries(
+    admitted: &mut BTreeMap<String, super::super::project::ProjectV2SourceIdentityBinding>,
+    records: &[ItemProfileRecord],
+    entries: Vec<Entry>,
+) -> Result<(), ContentError> {
     let mut seen = BTreeSet::new();
-    for entry in packet()?.entries {
+    for entry in entries {
         let expected = entry.profile;
         let binding = &expected.production_binding;
         let number = binding
@@ -125,14 +133,24 @@ pub(super) fn extend(
 #[cfg(test)]
 mod tests {
     use super::*;
+    mod fixture;
     #[test]
     fn reviewed_collectible_refuses_modified_profile_and_binding_collision()
     -> Result<(), ContentError> {
-        let records: Vec<_> = packet()?
+        let production_records: Vec<_> = packet()?
             .entries
             .into_iter()
             .map(|entry| entry.profile)
             .collect();
+        let mut production = BTreeMap::new();
+        extend(&mut production, &production_records)?;
+        assert_eq!(production.len(), production_records.len());
+        // Exercise every negative guard even after all live fallbacks retire.
+        let entry = fixture::reviewed_entry()?;
+        let records = vec![entry.profile.clone()];
+        let extend = |admitted: &mut BTreeMap<_, _>, records: &[ItemProfileRecord]| {
+            extend_entries(admitted, records, vec![entry.clone()])
+        };
         let mut admitted = BTreeMap::new();
         extend(&mut admitted, &records)?;
         assert_eq!(admitted.len(), records.len());

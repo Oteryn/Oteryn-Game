@@ -1101,7 +1101,6 @@ mod container_tests {
             "quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet",
             "quest.u15_24.targuna.silver_amulet_chest",
             "quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield",
-            "kv.ornamentedshield",
             "kv.goblintemple2",
             "quest.u7_9.dreamers_challenge.chests_wine",
             "kv.present_box",
@@ -1144,6 +1143,55 @@ mod container_tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn ornamented_variant_uses_reviewed_full_default_without_partial_charge_override() {
+        let source = authored("kv.ornamentedshield").expect("source variant");
+        let parsed = candidate(source.as_object().expect("definition"), &|_| true)
+            .expect("decoded")
+            .expect("reviewed full-default bag");
+        assert_eq!(parsed.placements.len(), 1);
+        let children = &parsed.placements[0].contents;
+        assert_eq!(children.len(), 5);
+        assert_eq!(children[2].item.key().as_str(), "oteryn:item.tibia.i3083");
+        assert_eq!(children[2].count, 1);
+        assert_eq!(children[2].charges_remaining, None);
+        assert_eq!(
+            source["source_variant"]["charge_dispositions"][0]["definition_charges"]["value"],
+            150
+        );
+        let profiles: Value = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))
+        .expect("native defaults");
+        let necklace = profiles["records"]
+            .as_array()
+            .expect("profiles")
+            .iter()
+            .find(|r| r["production_definition"]["production_key"] == "oteryn:item.tibia.i3083")
+            .expect("canonical necklace");
+        assert_eq!(
+            necklace["semantics"]["charges"]["value"]["count"]["value"],
+            150
+        );
+        for field in ["schema", "source_sha256"] {
+            let mut bad = source.clone();
+            bad["native_contents"][field] = "invalid".into();
+            assert!(
+                candidate(bad.as_object().expect("definition"), &|_| true)
+                    .expect("decoded")
+                    .is_err()
+            );
+        }
+        let mut partial = source;
+        partial["native_contents"]["placements"][0]["contents"][2]["charges_remaining"] = 1.into();
+        assert!(
+            candidate(partial.as_object().expect("definition"), &|_| true)
+                .expect("decoded")
+                .is_err(),
+            "partial charges still require their own exact source choice"
+        );
     }
 
     #[test]
