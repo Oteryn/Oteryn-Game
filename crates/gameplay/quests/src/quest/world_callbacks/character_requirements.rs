@@ -34,3 +34,118 @@ impl CharacterRequirements {
             && self.blessings.iter().collect::<BTreeSet<_>>().len() == self.blessings.len()
     }
 }
+
+/// Closed chosen-entry profile; source provenance is not broadened to arbitrary URLs.
+pub(super) fn entry_admitted(callback: &super::Callback) -> bool {
+    use super::{ActorKind, Position, Trigger};
+    let Some(requirements) = &callback.character_requirements else {
+        return false;
+    };
+    let Some(native) = &callback.selector.native else {
+        return false;
+    };
+    let (route, source, shape) = match callback.quest.as_str() {
+        "oteryn:quest.25_years_of_tibia_quest" => {
+            let Some(part) = callback
+                .key
+                .strip_prefix("oteryn:quest-callback/m03/time-machine-entry-")
+                .and_then(|part| part.parse::<u8>().ok())
+                .filter(|part| *part < 9)
+            else {
+                return false;
+            };
+            let regular = [
+                "the_spiritual_shielding",
+                "the_embrace_of_tibia",
+                "the_fire_of_the_suns",
+                "the_spark_of_the_phoenix",
+                "the_wisdom_of_solitude",
+            ];
+            (
+                "25_years_of_tibia_quest",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
+                callback.trigger == Trigger::Use
+                    && callback.minimum_level == Some(20)
+                    && requirements.promoted
+                    && requirements.blessings.len() == 5
+                    && regular.iter().all(|stem| {
+                        requirements
+                            .blessings
+                            .contains(&format!("oteryn:blessing.{stem}"))
+                    })
+                    && native.position
+                        == Position {
+                            x: 32429 + u16::from(part % 3),
+                            y: 32164 + u16::from(part / 3),
+                            floor: -8,
+                        }
+                    && native.ordinal == 1
+                    && native.appearance == 25091 + u16::from(part)
+                    && callback.teleport
+                        == Some(Position {
+                            x: 33453,
+                            y: 31030,
+                            floor: -8,
+                        }),
+            )
+        }
+        "oteryn:quest.the_pits_of_inferno_quest" => (
+            "the_pits_of_inferno_quest",
+            "content/quests/definitions/quests-00000-00099.json#/records/89",
+            callback.key == "oteryn:quest-callback/m03/pits-of-inferno-entry"
+                && callback.trigger == Trigger::StepIn
+                && callback.minimum_level == Some(80)
+                && !requirements.promoted
+                && requirements.blessings.is_empty()
+                && native.position
+                    == Position {
+                        x: 32795,
+                        y: 32335,
+                        floor: -8,
+                    }
+                && native.ordinal == 0
+                && native.appearance == 354
+                && callback.teleport.is_none()
+                && callback.sources.iter().any(|source| {
+                    source == "https://www.tibiawiki.com.br/wiki/Pits_of_Inferno_Quest"
+                }),
+        ),
+        _ => return false,
+    };
+    shape
+        && requirements.premium
+        && callback.requires_world_admission
+        && callback.actor_kind == ActorKind::Player
+        && callback.return_on_failure
+        && callback.selector.position == Some(native.position)
+        && callback.selector.appearance == Some(native.appearance)
+        && callback.selector.unique.is_none()
+        && callback.selector.action.is_none()
+        && callback.lever.is_none()
+        && !callback.reversible
+        && !callback.opening_only
+        && callback.passages.is_empty()
+        && callback.offerings.is_empty()
+        && callback.item_on_target.is_none()
+        && callback.native_rule.is_none()
+        && callback.effects.is_empty()
+        && callback.state_ops.is_empty()
+        && callback.experience.is_none()
+        && callback.monk_reward.is_none()
+        && callback.sources.iter().any(|entry| entry == source)
+        && callback.storage.len() == 1
+        && callback.storage.iter().all(|storage| {
+            storage.track == format!("oteryn:quest-progress/chosen-source/{route}/s1")
+                && storage.minimum == 0
+                && storage.maximum == 1
+                && storage.set == 1
+                && storage.at_least
+                && !storage.increment
+                && !storage.preserve
+        })
+}
+
+/// Chosen first-entry counters start at zero; legacy donor storage keeps -1.
+pub(super) fn entry_initial(callback: &super::Callback, storage: &super::Storage) -> Option<i64> {
+    (entry_admitted(callback) && callback.storage.first() == Some(storage)).then_some(0)
+}

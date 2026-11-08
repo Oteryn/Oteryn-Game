@@ -526,6 +526,7 @@ impl DurabilityRoot {
                             || c.item_on_target.is_some()
                             || c.world_change.is_some()
                             || c.minimum_level.is_some()
+                            || c.character_requirements.is_some()
                             || c.experience.is_some()
                             || c.monk_reward.is_some()
                             || c.native_rule.is_some()

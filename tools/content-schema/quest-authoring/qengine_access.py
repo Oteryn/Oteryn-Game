@@ -73,6 +73,8 @@ def document():
                 player['from'] = player.pop('from_')
     import questpc_explore_bindings
     rows.extend(questpc_explore_bindings.callbacks(ROOT))
+    import qmech_m03_entry_bindings
+    rows.extend(qmech_m03_entry_bindings.callbacks(ROOT))
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
 
 

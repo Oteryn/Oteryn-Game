@@ -124,7 +124,10 @@ mod tests {
                 sqlx::query("INSERT INTO game_character_promotions(character_id,purchase_occurrence_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
                     .bind(character.as_bytes().as_slice()).bind(harness::id(201).as_slice()).execute(&mut *tx).await?;
                 assert!(satisfied(&mut tx, character, &requirements).await?);
-                requirements.blessings = vec!["oteryn:blessing.the_spiritual_shielding".into(), "oteryn:blessing.the_spark_of_the_phoenix".into()];
+                requirements.blessings = oteryn_gameplay_quests::quest::world_callbacks::load()?.into_iter()
+                    .find(|callback| callback.key == "oteryn:quest-callback/m03/time-machine-entry-4")
+                    .and_then(|callback| callback.character_requirements).ok_or("registered time machine requirements")?.blessings;
+                assert_eq!(requirements.blessings.len(), 5);
                 assert!(!satisfied(&mut tx, character, &requirements).await?);
                 for key in &requirements.blessings {
                     sqlx::query("INSERT INTO game_character_blessings(character_id,blessing_key,provenance) VALUES(encode($1,'hex')::uuid,$2,'m03-fixture')")

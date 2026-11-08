@@ -670,3 +670,7 @@ pub(super) async fn consume_npc_inputs(
     }
     Ok(true)
 }
+
+#[cfg(test)]
+#[path = "quest_world_callback/entry_postgres_tests.rs"]
+mod entry_postgres_tests;

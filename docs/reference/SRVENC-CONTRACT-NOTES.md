@@ -2026,3 +2026,35 @@ The compiled M03 PG cases were executed again with a clean proof log: 2 PASS,
 6.52 s (wall 6.523 s). Workspace all-target check passed in 307.226 s; format
 check and duplicate-migration check passed. The initial compile error from a
 borrowed Premium gate was fixed before these successful checks.
+
+## M03: production quest entrance wiring
+
+The existing shared-access generator now installs 19 native bindings: the nine
+source machine entry positions, nine unconditional return positions, and the
+source-selected PoI entrance at32795,32335,8. The retained B3 is read by the
+new generator to bind exact appearances and top-level ordinals; return corners
+contain extra decorations and therefore use ordinal2. No World tile is edited.
+Source URLs and exact chosen-recipe boundaries are recorded in
+`docs/reference/content-prep/qmech-m03/source-notes.md`.
+
+The closed chosen-entry profile validates both real recipe guards and source
+positions. It is the only new exception to donor-script provenance validation;
+arbitrary URLs and altered guards are rejected. Its first-stage counters start
+at0 and raise to1 without undoing later progress. Generic quest writers cannot
+impersonate these source-bound world entries. Return travel is not gated by
+Premium, promotion or blessings after the player has entered.
+
+RED production-catalogue test: missing M03 time-machine entry. GREEN: production
+catalogue includes all19 selectors and the real chosen first-stage counters.
+Generator tests:3PASS, including return ordinals and refusal after recipe drift.
+Real PG production PoI STEP:69.82s, including missing-Premium refusal, generic
+caller refusal, a committed stage counter, exact replay and a fresh refusal;
+exactly one receipt persists. Actual five-blessing source guard PG:7.00s;
+account/transaction Premium PG:6.74s. Content-tree validation:97/97 PASS.
+No migration or numeric identifier is allocated (assigned range2180–2189 unused).
+Quest-authoring checks passed in329.385s; the full unit runner passed all113
+modules in543.359s. Native regeneration passed in295.367s. M03 schema tests:
+3PASS; production entry catalogue test:PASS. Changed crates clippy passed
+in105.548s. The subsequent workspace check exhausted disk before completion;
+inactive compiler caches were removed and it is rerun after the requested
+qmech merge. No test or assertion was weakened.

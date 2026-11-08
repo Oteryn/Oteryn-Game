@@ -480,8 +480,14 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (!callback.offerings.is_empty() && !callback.has_personal_state())
             || (callback.key.starts_with("oteryn:quest-callback/m01b/")
                 && !imported_explore::admitted(callback))
+            || ((callback
+                .key
+                .starts_with("oteryn:quest-callback/m03/time-machine-entry-")
+                || callback.key == "oteryn:quest-callback/m03/pits-of-inferno-entry")
+                && !character_requirements::entry_admitted(callback))
             || callback.sources.is_empty()
             || !(imported_explore::admitted(callback)
+                || character_requirements::entry_admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                     source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
@@ -1654,6 +1660,30 @@ mod qn1_lifecycle_tests {
 #[cfg(test)]
 mod srvenc_live_requirements_tests {
     use super::*;
+
+    #[test]
+    fn m03_chosen_entry_refuses_loosened_guards_and_unqualified_sources() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/m03/pits-of-inferno-entry")
+            .ok_or("registered PoI")?;
+        let original = serde_json::to_value(callback).map_err(|error| error.to_string())?;
+        for case in 0..5 {
+            let mut value = original.clone();
+            match case {
+                0 => value["minimum_level"] = 79.into(),
+                1 => value["character_requirements"]["premium"] = false.into(),
+                2 => value["character_requirements"] = serde_json::Value::Null,
+                3 => value["sources"] = serde_json::json!(["https://example.com/unqualified"]),
+                _ => value["selector"]["native"]["ordinal"] = 1.into(),
+            }
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[value]}).to_string()).is_err(),
+                "M03 accepted altered profile {case}"
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn m03_live_premium_requirement_is_native_bound() -> Result<(), String> {
