@@ -190,6 +190,11 @@ impl ApplicationHandler for Application {
         if let (Some(play), Some(window)) = (&self.play, &self.window) {
             play.link.item_drag_tick(&play.view, window);
         }
+        if self.play.is_some()
+            && let Some(window) = &self.window
+        {
+            oteryn_client::miniwindow::native::update(window);
+        }
         self.update_hud();
         if let Some(window) = &self.window
             && redraw_eligible(

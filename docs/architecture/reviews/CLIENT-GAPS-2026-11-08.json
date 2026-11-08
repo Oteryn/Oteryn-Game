@@ -1353,9 +1353,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Układ interfejsu i okna boczne",
-  "status": "PARTIAL",
-  "gap": "Brakuje dokowanych, przeciąganych i zapamiętywanych miniokien w kolumnach interfejsu; istnieją osobne okna Win32 i przełączniki widoczności.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Miniokna są dziećmi okna gry, zachowują własne wątki i rzeczywistych konsumentów; przeciąganie/resize, dokowanie w kolumnach, kolejność i układ po restarcie są wspólne dla natywnych paneli.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/miniwindow/native.rs:79 + o033_native_sidebar_actions_preserve_order_resize_and_closed_siblings"
  },
  {
   "id": "O035",
