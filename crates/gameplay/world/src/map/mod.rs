@@ -158,6 +158,8 @@ pub struct WorldBase {
     /// `(global entry index, unique, appearance)` of every top-level entry with a `unique`, in
     /// ascending entry index.
     uniques: Vec<(u32, u16, Option<u16>)>,
+    /// Palette-resolved appearances retained for UID-free native authored bindings.
+    appearances: std::collections::BTreeMap<u32, u16>,
 }
 
 /// The number of sector rows: 16 native floors of 2,048 `sy` each.
@@ -359,6 +361,7 @@ impl WorldBase {
             ids,
             depths,
             uniques,
+            appearances: self.appearances.clone(),
         })
     }
     /// Rebuild a pinned base with its admitted immutable epoch composition.
@@ -401,6 +404,12 @@ impl WorldBase {
             ids: builder.ids,
             depths: builder.depths,
             uniques: builder.uniques,
+            appearances: builder
+                .palette
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|entry| entry.appearance.map(|appearance| (entry.id, appearance)))
+                .collect(),
         })
     }
 
@@ -619,6 +628,12 @@ fn load_daily_spawns(
             ids: builder.ids,
             depths: builder.depths,
             uniques: builder.uniques,
+            appearances: builder
+                .palette
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|entry| entry.appearance.map(|appearance| (entry.id, appearance)))
+                .collect(),
         },
         spawns,
     ))
@@ -775,5 +790,16 @@ impl crate::content::world_reward_claims::RewardClaimTile for TileView<'_> {
 
     fn unique(&self, ordinal: u8) -> Option<UniqueEntry> {
         self.unique(ordinal)
+    }
+
+    fn appearance(&self, ordinal: u8) -> Option<u16> {
+        let at = self
+            .depths()
+            .iter()
+            .enumerate()
+            .filter(|(_, depth)| **depth == 0)
+            .nth(usize::from(ordinal))?
+            .0;
+        self.base.appearances.get(&self.ids()[at]).copied()
     }
 }
