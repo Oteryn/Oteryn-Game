@@ -1161,6 +1161,16 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
 fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
     callback.world_requirements.iter().all(|requirement| {
         let position = tile(requirement.position);
+        // Portable stack predicates are checked by the fenced Item/Quest SQL
+        // participant below; a map appearance is never their custody witness.
+        if requirement.ground_stack.is_some() {
+            return !map.facts.house_tile(position)
+                && map
+                    .overlay
+                    .base()
+                    .tile(position.x, position.y, position.floor)
+                    .is_some();
+        }
         !map.facts.house_tile(position)
             && map
                 .overlay

@@ -1149,3 +1149,36 @@ input changed, so the standing rule requires pin/lock verification, not World
 regeneration. Production caller: `dispatch::gameplay_transport::source_item_cycle`
 reads the runtime's exact scope/generation and calls `drain_spell_item_deadlines`;
 its Ground invalidation is retained when a physical Item changes.
+
+## M02 — first engine slice: exact physical Ground stack predicates
+
+Claim: INDEX M02 (previously OPEN/none), ENCX. No new migration or public number.
+The optional `world_requirements[].ground_stack` lists one root per entry,
+bottom to top, with its exact Item key and quantity. It is read-only and requires
+a personal player callback, so it cannot bypass the existing fenced quest writer.
+The writer reissues current scope/node/recovery authority in the same physical
+transaction, holds the existing Ground-owner lock (advisory namespace33) and locks
+the actual Item/custody rows through COMMIT. No overlay is accepted as custody.
+No synthetic catalogue, custody table, reward or Item producer is introduced.
+
+Reference: Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`,
+`src/items/tile.cpp:1443–1493,1635–1667` distinguishes actual ordered Item roots
+from the ground tile/creatures/top projections. URL:
+https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/tile.cpp#L1443
+This is OTS_HYPOTHESIS_ONLY for Global; Oteryn's existing Item owner supplies the
+physical stack ordinals and the 64-root bound, not donor pointer identities.
+Nomads Land's accepted authored recipe s4 requests crates/amphorae blocking the
+window, with source spoiler revision1002600:
+https://tibia.fandom.com/index.php?curid=22842&oldid=1002600
+The existing captured recipe is evidence of that selected objective, not a
+claim that its currently unresolved exact trigger/placement bindings are ready.
+
+RED: `m02_ground_stack_predicate_preserves_order_and_requires_a_durable_player_callback`
+failed with unknown `ground_stack` (0.02s); the same case now passes (0.02s).
+All340 quests library tests passed (41.57s). Real PostgreSQL18.6 case
+`m02_ground_stack_postgres_exact_order_quantity_and_scope` passed (6.25s total,
+312.548ms for the native MINT/predicate/lock scenario), including nonconsecutive
+ordinals, swapped roots, wrong quantity/key/cardinality/map/content/frame/address,
+and a competing backend denied the Ground-owner lock. All source guards stay on.
+This is an engine slice; canonical Nomads window binding and full quest passage
+remain the next piece. M02 is not claimed DONE by this checkpoint.

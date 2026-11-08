@@ -146,12 +146,23 @@ impl ActorKind {
     }
 }
 
-/// A read-only exact appearance predicate on a native, immovable map entry.
+/// One physical Ground root; the containing list is ordered bottom to top.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct GroundStackItem {
+    pub item: String,
+    pub quantity: u16,
+}
+
+/// An immutable map appearance or an exact read-only physical Ground stack.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
     pub position: Position,
     pub appearance: u16,
+    /// Bottom to top, one entry per physical root; never an appearance overlay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ground_stack: Option<Vec<GroundStackItem>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -378,11 +389,28 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
             || callback.world_requirements.len() > MAX_EFFECTS
-            || callback
+            || callback.world_requirements.iter().any(|r| {
+                !valid_pos(r.position)
+                    || r.appearance == 0
+                    || r.ground_stack.as_ref().is_some_and(|stack| {
+                        stack.is_empty()
+                            || stack.len() > MAX_EFFECTS
+                            || stack.iter().any(|item| {
+                                item.quantity == 0
+                                    || !item.item.starts_with("oteryn:item.")
+                                    || item.item.len() > 512
+                            })
+                    })
+            })
+            || (callback
                 .world_requirements
                 .iter()
-                .any(|r| !valid_pos(r.position) || r.appearance == 0)
-            || (!callback.world_requirements.is_empty()
+                .any(|r| r.ground_stack.is_some())
+                && (callback.actor_kind != ActorKind::Player || !callback.has_personal_state()))
+            || (callback
+                .world_requirements
+                .iter()
+                .any(|r| r.ground_stack.is_none())
                 && (!!callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
@@ -668,6 +696,9 @@ mod clock_tests;
 mod literal_text_tests;
 
 #[cfg(test)]
+mod ground_stack_tests;
+
+#[cfg(test)]
 mod cycle_tests;
 
 #[cfg(test)]
@@ -852,6 +883,7 @@ mod tests {
                 floor: -7,
             },
             appearance: 2773,
+            ground_stack: None,
         }];
         parse(&wire(&callback))?;
         callback.experience = Some(1);
