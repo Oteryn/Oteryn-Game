@@ -153,6 +153,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(item) = carried else {
             return Ok(None);
         };
+        // Crystal 201189f8 data/scripts/actions/tools/watch.lua:3-8 and
+        // data/libs/functions/functions.lua:42-50. Watches read the same World
+        // clock as the connection's CLOCK-1 projection; they never consume an item.
+        if matches!(
+            item.definition.production_key.as_str(),
+            "oteryn:item.tibia.i2906" | "oteryn:item.tibia.i6091"
+        ) {
+            if intent.use_with.is_some()
+                || intent.use_with_map_item.is_some()
+                || intent.use_with_position.is_some()
+            {
+                return Ok(None);
+            }
+            let runtime = self.runtime.lock().await;
+            if !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+                || !runtime
+                    .bound_attacker_lease(actor, command.game_session_id)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
+                || runtime.binding().runtime_scope() != fence.runtime_scope
+                || runtime.binding().scope_generation() != fence.scope_ownership_generation
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let now =
+                super::connection::FreshAdmissionAuthority::world_clock_utc_ms(self).ok_or(())?;
+            let minute = crate::world_clock::WorldClockSource::new(
+                crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
+            )
+            .tibian_minute(now)
+            .ok_or(())?;
+            self.states.chat.push_quest_feedback(
+                command.game_session_id,
+                &format!("The time is {}:{:02}.", minute / 60, minute % 60),
+            );
+            return Ok(Some(outcome(UseDisposition::Committed)));
+        }
         // Reward containers retain the existing craft receipt owner and its route.
         if !novelty_items::is_novelty(&item.definition.production_key) {
             return Ok(None);
