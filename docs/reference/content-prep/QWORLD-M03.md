@@ -20,5 +20,20 @@ The tests assert the actual production schema used, live Premium refusal,
 durable flags, destination and replay. Authoring checks, all 112 Python unit
 modules and content-tree validation also passed.
 
-M03 remains PARTIAL: live blessing/promotion enforcement and an entry binding for
-25 Years of Tibia Quest or The Pits of Inferno Quest are the next slices.
+M03 now reuses the complete admission implementation and both initial-entry
+bindings merged from qmech at 0326dc2e5. The production reader checks durable
+promotion and all seven non-Twist blessings; the account Premium port is read
+live. No second admission implementation was added.
+
+The focused `qworld_live_admission_postgres` target strengthens the existing
+`qm03_world_admission_live_blessings_promotion_premium_fences_and_replay` case:
+promotion and all blessing grants use their purchase owners with SQL guards
+enabled, and lost blessings are consumed by the death owner before replay.
+Its successful PostgreSQL execution took 42.506019042 seconds. Earlier runs
+exposed and corrected the fixture's missing world policy, NPC selection,
+Premium purchase port and guarded blessing-consumption setup.
+
+The two `test_qm03_world_admission.py` tests passed in 0.692 seconds and verify
+both production entry bindings and their selectors against the retained native
+map. This qualifies the admission mechanic and initial entry bindings; it does
+not assert completion of either quest's later storyline.
