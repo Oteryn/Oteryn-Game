@@ -146,12 +146,23 @@ impl ActorKind {
     }
 }
 
-/// A read-only exact appearance predicate on a native, immovable map entry.
+/// One exact root instance in a Ground stack, ordered bottom to top.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct GroundStackItem {
+    pub item: String,
+    pub count: u16,
+}
+
+/// A read-only immutable map predicate or a fenced mutable Ground stack.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
     pub position: Position,
+    /// Zero only for a mutable Ground stack; otherwise the legacy map appearance.
     pub appearance: u16,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ground_stack: Vec<GroundStackItem>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -183,7 +194,7 @@ pub struct Callback {
     /// Evaluated with SET_NOW against the fenced writer transaction clock.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<super::reward_callbacks::StateOperation>,
-    /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.
+    /// Immutable map predicates use the Channel turn; portable stacks use the fenced SQL receipt.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub world_requirements: Vec<WorldRequirement>,
     /// Checked against the progression owner in the same fenced quest transaction.
@@ -378,11 +389,40 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
             || callback.world_requirements.len() > MAX_EFFECTS
-            || callback
+            || callback.world_requirements.iter().any(|r| {
+                !valid_pos(r.position)
+                    || if r.ground_stack.is_empty() {
+                        r.appearance == 0
+                    } else {
+                        r.appearance != 0
+                            || r.ground_stack.len() > MAX_EFFECTS
+                            || r.ground_stack.iter().any(|item| {
+                                !(1..=100).contains(&item.count)
+                                    || !item.item.starts_with("oteryn:item.")
+                                    || !super::valid_quest_key(&item.item)
+                            })
+                    }
+            })
+            || (callback
                 .world_requirements
                 .iter()
-                .any(|r| !valid_pos(r.position) || r.appearance == 0)
+                .any(|r| !r.ground_stack.is_empty())
+                && (!callback.has_personal_state()
+                    || callback.reversible
+                    || callback.opening_only
+                    || callback.actor_kind != ActorKind::Player
+                    || callback
+                        .world_requirements
+                        .iter()
+                        .map(|r| r.position)
+                        .collect::<BTreeSet<_>>()
+                        .len()
+                        != callback.world_requirements.len()))
             || (!callback.world_requirements.is_empty()
+                && callback
+                    .world_requirements
+                    .iter()
+                    .all(|r| r.ground_stack.is_empty())
                 && (!!callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
@@ -846,6 +886,7 @@ mod tests {
         }
         callback.actor_kind = ActorKind::Player;
         callback.world_requirements = vec![WorldRequirement {
+            ground_stack: Vec::new(),
             position: Position {
                 x: 1,
                 y: 1,

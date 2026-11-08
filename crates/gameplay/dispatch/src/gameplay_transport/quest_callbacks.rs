@@ -1160,6 +1160,12 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
 
 fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
     callback.world_requirements.iter().all(|requirement| {
+        // Portable Item custody/quantity/order is checked by the fenced Quest SQL
+        // participant, never by this immutable-map projection. Catalogue validation
+        // admits these prerequisites only on durable personal callbacks.
+        if !requirement.ground_stack.is_empty() {
+            return true;
+        }
         let position = tile(requirement.position);
         !map.facts.house_tile(position)
             && map

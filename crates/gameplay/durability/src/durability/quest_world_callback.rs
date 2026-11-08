@@ -1,6 +1,7 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
 pub(super) mod completion;
+mod ground_stack;
 pub mod shared_count;
 pub mod shared_switch;
 use super::{
@@ -189,6 +190,9 @@ pub(super) async fn consume(
         if level.is_none_or(|level| level < i64::from(minimum)) {
             return Ok(false);
         }
+    }
+    if !ground_stack::matches(tx, permit, fence, context, &callback.world_requirements).await? {
+        return Ok(false);
     }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
