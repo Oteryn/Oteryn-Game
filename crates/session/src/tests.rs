@@ -261,6 +261,8 @@ mod e2e_i13;
 include!("session_tests_chat.rs");
 #[path = "tests/e2e_i14.rs"]
 mod e2e_i14;
+#[path = "tests/e2e_s04b.rs"]
+mod e2e_s04b;
 include!("session_tests_items.rs");
 include!("session_tests_refusal_details.rs");
 include!("session_tests_browse_field.rs");
