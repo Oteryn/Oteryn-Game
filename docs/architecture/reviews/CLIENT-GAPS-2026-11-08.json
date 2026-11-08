@@ -1164,10 +1164,10 @@
   "src": "TIBAUD-1",
   "area": "Modal dialogs",
   "feature": "Blessings / death protection overview",
-  "status": "PARTIAL",
-  "gap": "Stan i death notices są; brak pełnego dedykowanego Blessings dialog.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/protocol.rs:290 + blessings_overview_distinguishes_empty_protection_from_unloaded_state; PARTIAL: dedicated native Blessings window remains"
+  "evidence": "apps/client/src/features/0199-cyclopedia-character/view/blessings.rs:22 + blessings_dialog_requests_self_and_reduces_the_real_server_reply; capability 199 / command 388 StoreSummary wired through PlayLink/Outbox; dedicated self-only window, refusal/retry and shortcut tests"
  },
  {
   "id": "T162",
