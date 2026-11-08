@@ -711,9 +711,10 @@
   "src": "TIBAUD-1",
   "area": "Trackers",
   "feature": "Boss cooldowns",
-  "status": "PARTIAL",
-  "gap": "Odczyt cooldowns w zbiorczym formularzu; brak samodzielnego widget.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0117-boss-encounter/input.rs:17 + cooldown_shortcut_opens_only_the_tracker_and_queries_real_command"
  },
  {
   "id": "T101",

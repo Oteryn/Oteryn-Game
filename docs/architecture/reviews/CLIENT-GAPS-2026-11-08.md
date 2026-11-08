@@ -93,7 +93,7 @@ Zasady przeciw dublowaniu:
 | O050 | Quest | Dziennik zadań i śledzenie | PARTIAL | Brakuje wyszukiwania i sortowania dziennika; istnieją wybór zadania/misji, opis i przełączanie śledzenia. |
 | T098 | Trackers | Bestiary tracker | DONE | evidence: apps/client/src/features/0197-cyclopedia-tracker/input.rs:6 + tracker_widgets_round_trip_admitted_commands_and_keep_independent_state |
 | T099 | Trackers | Bosstiary tracker | DONE | evidence: apps/client/src/features/0197-cyclopedia-tracker/input.rs:6 + tracker_widgets_round_trip_admitted_commands_and_keep_independent_state |
-| T100 | Trackers | Boss cooldowns | PARTIAL | Odczyt cooldowns w zbiorczym formularzu; brak samodzielnego widget. |
+| T100 | Trackers | Boss cooldowns | DONE | evidence: apps/client/src/features/0117-boss-encounter/input.rs:17 + cooldown_shortcut_opens_only_the_tracker_and_queries_real_command |
 | T101 | Trackers | Imbuement remaining time | PARTIAL | Stan imbuement/timed items jest; brak dedykowanego trackera wyposażenia i alertów. |
 | O030 | Trackers | Tracker czasu imbuementów wyposażenia | PARTIAL | Brakuje stale widocznego trackera wszystkich wyposażonych imbuementów z filtrami czasu; czas jest pokazany tylko dla przedmiotu w oknie imbuingu. |
 
