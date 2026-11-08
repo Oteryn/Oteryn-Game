@@ -1,9 +1,10 @@
-"""M18: native collision for the donor exit carpet, through the normal Item importer.
+"""M18: donor exit carpet and corpse decay, through the normal Item importer.
 
 Crystal201189f data/items/items.xml:35502-35504 names ornate carpet17400;
 its appearances.dat clip/unmove flags and items.cpp:233-244 establish the
 nonblocking, immovable Ground-only object. No identity or inventory capability
-is invented. The already accepted canonical presentation wins.
+is invented. items.xml:48202-48217 supplies corpse25065 and its decay chain.
+The already accepted canonical presentation wins.
 """
 from __future__ import annotations
 import argparse
