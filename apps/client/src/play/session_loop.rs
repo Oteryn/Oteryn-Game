@@ -111,6 +111,7 @@ pub async fn run_session<T: Stepper>(
     outbox.target_move_initialize(session.feature_selected(64));
     outbox.creature_push_initialize(session.feature_selected(82));
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
+    outbox.hotkey_equip_smart_mode(session.server_mechanic_selected(180));
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
     outbox.store_initialize(session.server_mechanic_selected(154));

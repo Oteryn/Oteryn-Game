@@ -149,6 +149,7 @@ impl Settings {
         state.open_help_report(Some(link));
         state.sync_battle_lists(link);
         state.sync_skills_layout(link);
+        state.sync_item_hotkeys(link);
         state.sync_spellbook_filter(link);
         state.sync_archive_bindings(link);
         if let Err(error) = state.restore(view, viewport) {

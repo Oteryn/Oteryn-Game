@@ -122,6 +122,8 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub hotkey_profiles: HotkeyProfiles,
     #[serde(default)]
+    pub item_hotkeys: crate::play::feature_0179_hotkey_equip::view::ItemHotkeys,
+    #[serde(default)]
     pub english: bool,
     /// Requested world zoom percentage, fitted to the current viewport when projected.
     #[serde(default = "default_scale")]
@@ -152,6 +154,7 @@ impl Default for ReferencePreferences {
             keybindings: std::collections::BTreeMap::new(),
             secondary_keybindings: std::collections::BTreeMap::new(),
             hotkey_profiles: HotkeyProfiles::default(),
+            item_hotkeys: Default::default(),
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),
