@@ -1484,9 +1484,10 @@
   "src": "OTCAUD1108",
   "area": "Cyclopedia",
   "feature": "Cyklopedia: katalog przedmiotów",
-  "status": "PARTIAL",
-  "gap": "Brakuje katalogu przedmiotów z kategoriami i wyszukiwaniem oraz powiązanych ofert/dropów; istnieje inspekcja wybranego przedmiotu i osobny rynek.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0132-inspection/input/catalogue.rs:24 + item_catalogue_search_drops_and_market_use_production_queues; crates/gameplay/dispatch/src/gameplay_transport/inspection/catalogue.rs:7 + item_catalogue_projects_real_search_categories_and_inverse_loot"
  },
  {
   "id": "O078",

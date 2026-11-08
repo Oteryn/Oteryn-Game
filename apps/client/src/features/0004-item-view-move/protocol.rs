@@ -29,6 +29,8 @@ impl Outbox {
         mailbox.item_movement = Default::default();
         mailbox.item_count_selected = false;
         mailbox.inventory_shutdown = true;
+        // Public template references belong to this inventory session too.
+        mailbox.discovery.inspection = Default::default();
     }
 }
 

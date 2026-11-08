@@ -62,6 +62,7 @@ impl Application {
                 || play.link.prey_input(events)
                 || play.link.task_board_input(events)
                 || play.link.wheel_input(events)
+                || play.link.item_catalogue_input(events)
                 || play.link.discovery_input(events)
                 || play.link.exiva_input(events)
                 || play.link.analyser_input(events)
