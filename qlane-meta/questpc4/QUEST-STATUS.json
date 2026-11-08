@@ -10927,7 +10927,73 @@
       "decision": "Reuse existing capture, source qualifier and custody proof. All eight are nonstackable, nonfluid, noncontainer, no-equipment items; preserve UNKNOWN protection. No NPC custom-use/finale activation.",
       "reuse": "Qengine2e6bacdda6 has none of these profiles; main source259-rule NPC program retained. Default Stag capture remains byte-identical after parameterized authoring reuse.",
       "validation": "19 source/pin controls PASS25.648s; RuffPASS. Independent pin RED3776 vs3768. Eight PG RED cases compiling; no native admission yet.",
-      "state": "IN_PROGRESS custody slice; whole quest remains IN_PROGRESS."
+      "state": "Physical custody slice qualified; whole quest remains IN_PROGRESS.",
+      "upstream_merge": {
+        "main": "6f61ac15d",
+        "merge": "4b34dda9b",
+        "conflicts": 0,
+        "scope": "Reuse MAINRED3032 NPC physical-item lane proof; no competing implementation. Superseded pre-merge build/unit run cancelled, no success claimed.",
+        "validation": "Restarted own eight PG RED cases; final gates now include content+durability clippy and content+dispatch+durability units."
+      },
+      "unit_run_correction": {
+        "passed": 433,
+        "failed_to_launch": 2746,
+        "executed_assertion_failures": 0,
+        "reason": "Invalidated by removal of a still-scheduled executable during cache cleanup; fresh merged-head unit rebuild/rerun required."
+      },
+      "red_postgres": {
+        "passed": 0,
+        "failed": 8,
+        "total_seconds": 172.406,
+        "case_seconds": [
+          43.454,
+          43.581,
+          43.249,
+          43.631,
+          43.187,
+          43.004,
+          41.858,
+          42.512
+        ],
+        "proof": "All eight actual PostgreSQL18.6 version markers and missing native-policy errors on merged main6f61ac15d."
+      },
+      "native_delta": "3730->3738 raw profiles; exactly8758-8763/8818/8819 added, no prior record changed or removed; equipment3776 from independent captured cohort8.",
+      "freshness": "NATIVE=0 STAG=0 CAPTURE=0 EQUIPMENT=0 MATRIX=0 VARIANT=0; existing Stag capture unchanged.",
+      "green_postgres": {
+        "passed": 14,
+        "failed": 0,
+        "new_yalahar_cases": 8,
+        "stag_regressions": 6,
+        "durations_seconds": {
+          "l6_stag_material_bronze_native_custody_and_replay": 60.227,
+          "l6_stag_material_certificate_native_custody_and_replay": 60.206,
+          "l6_stag_material_iron_native_custody_and_replay": 58.856,
+          "l6_stag_material_silver_native_custody_and_replay": 58.918,
+          "l6_stag_source_compass_has_native_custody_and_exact_replay": 49.605,
+          "l6_stag_source_sword_has_native_custody_and_exact_replay": 49.597,
+          "l6_yalahar_item_8758_native_custody_and_replay": 44.411,
+          "l6_yalahar_item_8759_native_custody_and_replay": 44.278,
+          "l6_yalahar_item_8760_native_custody_and_replay": 44.591,
+          "l6_yalahar_item_8761_native_custody_and_replay": 44.491,
+          "l6_yalahar_item_8762_native_custody_and_replay": 45.018,
+          "l6_yalahar_item_8763_native_custody_and_replay": 44.925,
+          "l6_yalahar_item_8818_native_custody_and_replay": 44.768,
+          "l6_yalahar_item_8819_native_custody_and_replay": 44.747
+        },
+        "proof": "PostgreSQL18.6 version/completion markers in all isolated process logs; YALAHAR_GREEN_PASSED=14 FAILED=0; /tmp/questpc4b-yalahar-pg-green.log"
+      },
+      "workspace_check": "PASS4m34s on main6f61ac15d plus current cohort.",
+      "publication_checks": {
+        "workspace": "PASS4m34s",
+        "dispatch_clippy": "alltargets/allfeatures -Dwarnings PASS3m40s",
+        "content_durability_clippy": "alltargets/allfeatures -Dwarnings PASS1m47s",
+        "fmt": "PASS",
+        "postgres": "14/14 actualPG18.6 PASS: eightYalahar plus sixStag; eightREDcontrols before admission",
+        "freshness": "Native,Stag,Yalahar,equipment,matrix,variant checksEXIT0; RuffPASS;19source/pin controlsPASS25.648s",
+        "duplicate_migrations": 0,
+        "main": "6f61ac15d merged4b34dda9b, no conflicts; upstream physical-item lane fix reused",
+        "unit_crates": "Fresh content+dispatch+durability nextestallfeatures rebuild started after gates; pending under PREPUSH-2 step3 cadence allowance. Earlier failed-launch run invalid, not a code pass."
+      }
     }
   }
 }

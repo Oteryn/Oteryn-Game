@@ -445,7 +445,8 @@
         "dependency": null,
         "reuse_from_main": "f641d8d6c",
         "native_evidence": [
-          "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS."
+          "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS.",
+          "Eight plain NPC items8758-8763/8818/8819: PG18.6 RED missing policy41.858-43.631s, then all8 custody/drop/exact-replay cases GREEN44.278-45.018s; six Stag regressions alsoGREEN. Raw3730->3738, prior records unchanged; independent equipment3776. Physical custody only; whole route remainsIN_PROGRESS. /tmp/questpc4b-yalahar-pg-green.log"
         ]
       },
       "sources": [
