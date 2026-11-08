@@ -7,6 +7,7 @@ use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
 pub(super) mod physical_spell;
+pub(super) mod source_heals;
 mod source_items;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -207,6 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Transaction is read-only. Keep its scope lock until every synchronous consumer ends.
                 drop(reader);
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
+                source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
                 owner
                     .tick_creature_fields(&mut tx, &authority, runtime, states, room, native, now)
                     .await?;

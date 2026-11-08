@@ -267,10 +267,24 @@ impl NativeMonsterMeleeProfile {
                     .bytes()
                     .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
         };
-        if !matches!(
-            self.source_repository.as_str(),
-            "opentibiabr/canary" | "zimbadev/crystalserver"
-        ) || !source_hex(&self.source_revision, 40)
+        // M28 admits one fully pinned OTServBR-derived Fugue body. This is not
+        // a repository-wide admission for arbitrary third-party creature rows.
+        let fugue_source = self.source_repository == "Meth28/global"
+            && self.source_revision == "d959b2a99136978fc714622d42f6906b6d90e892"
+            && self.source_sha256
+                == "834ff4317ac9072021905921751056e5dc466dc216589292c8274e250a19595c"
+            && self.source_path == "data/monster/quests/the_order_of_the_lion/fugue.lua"
+            && self.ability.key == "oteryn:ability.creature.fugue.attack-1"
+            && self.minimum == 150
+            && self.maximum == 700
+            && self.interval_ms == 2000
+            && self.chance_ppm == 1_000_000;
+        if !(fugue_source
+            || matches!(
+                self.source_repository.as_str(),
+                "opentibiabr/canary" | "zimbadev/crystalserver"
+            ))
+            || !source_hex(&self.source_revision, 40)
             || !source_hex(&self.source_sha256, 64)
             || self.source_path.is_empty()
             || self.source_path.starts_with('/')
@@ -3023,6 +3037,41 @@ mod tests {
             }
         }
     }
+    #[test]
+    fn fugue_melee_admission_is_limited_to_the_exact_source_body() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/creatures/definitions/spell-native-profiles.json");
+        let document: CreatureProfilesDocument =
+            serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+        let row = document
+            .records
+            .iter()
+            .find(|r| r.profile.target.key == "oteryn:creature.fugue")
+            .expect("production Fugue body");
+        let melee = row.monster_melee.clone().expect("source melee");
+        let ProjectV2AuthoringProfileData::Behavior(behavior) =
+            &row.behavior.as_ref().unwrap().data
+        else {
+            unreachable!()
+        };
+        assert!(melee.validate(behavior).is_ok());
+        for mutation in 0..6 {
+            let mut changed = melee.clone();
+            match mutation {
+                0 => changed.source_repository = "unknown/creatures".into(),
+                1 => changed.source_revision = "0".repeat(40),
+                2 => changed.source_sha256 = "0".repeat(64),
+                3 => changed.source_path = "other/fugue.lua".into(),
+                4 => changed.minimum += 1,
+                _ => changed.maximum += 1,
+            }
+            assert!(
+                changed.validate(behavior).is_err(),
+                "unqualified Fugue source mutation {mutation}"
+            );
+        }
+    }
+
     #[test]
     fn monster_melee_requires_exact_active_schedule_and_explicit_approximation_status() {
         let mut creatures: CreatureProfilesDocument =

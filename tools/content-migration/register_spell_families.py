@@ -328,6 +328,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     generated = current_sources.outputs(root, generated)
     from compose_monster_current_sources import compose
     generated = compose(root, baseline, generated)
+    import engenc2_fugue_profile
+    engenc2_fugue_profile.admit(root, generated, spell_import.canonical_bytes)
     admit_overlay_profiles(root, generated)
     admit_consumable_profiles(root, generated)
     admit_agony_field(root, generated)

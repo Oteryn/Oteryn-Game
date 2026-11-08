@@ -3,6 +3,7 @@
 use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition};
 use std::collections::BTreeMap;
 
+mod fugue;
 mod phase_settlements;
 
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
@@ -22,11 +23,20 @@ pub struct Counter {
 impl Counter {
     #[must_use]
     pub fn gate_bounds(self) -> (i64, i64) {
-        phase_settlements::gate_bounds(&self).unwrap_or((1, 1))
+        if fugue::matches(&self) {
+            (2, 2)
+        } else {
+            phase_settlements::gate_bounds(&self).unwrap_or((1, 1))
+        }
     }
 
     pub(crate) fn transition(self) -> QuestTransition {
-        if let Some(effects) = phase_settlements::effects(&self) {
+        let settlement = if fugue::matches(&self) {
+            Some(fugue::effects())
+        } else {
+            phase_settlements::effects(&self)
+        };
+        if let Some(effects) = settlement {
             return QuestTransition {
                 world_change: None,
                 key: self.transition.into(),
@@ -143,6 +153,7 @@ fn counters() -> impl Iterator<Item = &'static Counter> {
     COUNTERS
         .iter()
         .chain(qworld::counters().unwrap_or_default())
+        .chain(fugue::COUNTERS)
 }
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
