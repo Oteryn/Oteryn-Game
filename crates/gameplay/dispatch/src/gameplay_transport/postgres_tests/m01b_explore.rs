@@ -3,6 +3,9 @@ use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
+#[path = "m01b_explore/fire_axe.rs"]
+mod fire_axe;
+
 #[path = "m01b_explore/koshei.rs"]
 mod koshei;
 
@@ -244,11 +247,28 @@ fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
     result
 }
 
+pub(super) fn start(name: &str, trigger: Position) -> Position {
+    if name == "m01b/fire-axe/s1/entry" {
+        Position {
+            y: trigger.y + 1,
+            ..trigger
+        }
+    } else {
+        Position {
+            x: trigger.x + 1,
+            ..trigger
+        }
+    }
+}
+
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if name == "m01b/fire-axe/s1/entry" {
+        return fire_axe::world(native);
+    }
     if name.starts_with("m01b/koshei-the-deathless/") {
         return koshei::world(native);
     }
@@ -513,6 +533,14 @@ async fn exercise_premium(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if let Some(minimum) = callback.minimum_level {
+        koshei::seed_level(h, i64::from(minimum)).await?;
+    }
+    let (entry, exit) = if callback.key.ends_with("m01b/fire-axe/s1/entry") {
+        (StepDirection::North, StepDirection::South)
+    } else {
+        (StepDirection::West, StepDirection::East)
+    };
     let premium = owner
         .premium_coordinator
         .take()
@@ -535,16 +563,7 @@ async fn exercise_premium(
         .fetch_one(&h.pool)
         .await
     };
-    for (index, direction) in [
-        StepDirection::West,
-        StepDirection::East,
-        StepDirection::West,
-        StepDirection::East,
-        StepDirection::West,
-    ]
-    .into_iter()
-    .enumerate()
-    {
+    for (index, direction) in [entry, exit, entry, exit, entry].into_iter().enumerate() {
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))

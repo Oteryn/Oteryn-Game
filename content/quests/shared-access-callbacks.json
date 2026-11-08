@@ -366,6 +366,62 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/fire-axe/s1/entry",
+      "quest": "oteryn:quest.fire_axe_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33098,
+          "y": 31701,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4409,
+        "native": {
+          "position": {
+            "x": 33098,
+            "y": 31701,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/fire_axe_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/fire_axe_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/107",
+        "https://tibia.fandom.com/index.php?curid=19176&oldid=1114456",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 60
+    },
+    {
       "key": "oteryn:quest-callback/m01b/geomancer/s1/entry",
       "quest": "oteryn:quest.geomancer_quest",
       "trigger": "step_in",

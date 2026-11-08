@@ -21,6 +21,28 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_chosen_area_approaches_keep_the_pinned_marker_unchanged(self):
+        bindings = (
+            ('oteryn:quest.dragon_tower_quest', 's1',
+             'area-approach:oteryn:area.hunting_place.shadowthorn', 'chosen-source/dragon_tower_quest'),
+            ('oteryn:quest.berserk_potion_quest', 's1',
+             'area-approach:oteryn:area.hunting_place.helheim', 'chosen-source/berserk_potion_quest'),
+        )
+        before = (ROOT / explore.AREA).read_bytes()
+        with mock.patch.object(explore, 'BINDINGS', bindings):
+            callbacks = explore.callbacks(ROOT)
+            self.assertEqual([c['selector']['position'] for c in callbacks], [
+                dict(x=33075, y=32169, floor=-7), dict(x=32479, y=31179, floor=-7)])
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+        self.assertEqual((ROOT / explore.AREA).read_bytes(), before)
+
+    def test_fire_axe_entry_is_active_with_level_sixty_and_current_premium(self):
+        callback = next((c for c in explore.callbacks(ROOT)
+                         if c['quest'] == 'oteryn:quest.fire_axe_quest'), None)
+        self.assertIsNotNone(callback, 'Fire Axe EXPLORE entry is bound')
+        self.assertEqual(callback['minimum_level'], 60)
+        self.assertEqual(callback['admission'], {'premium': True})
+
     def test_koshei_activation_contains_all_four_fragment_visits(self):
         callbacks = [c for c in explore.callbacks(ROOT)
                      if c['quest'] == 'oteryn:quest.koshei_the_deathless_quest']

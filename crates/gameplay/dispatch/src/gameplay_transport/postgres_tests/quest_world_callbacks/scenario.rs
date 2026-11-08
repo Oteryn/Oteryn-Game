@@ -40,7 +40,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = m01b_explore || small_ruby
+    let native_crop = m01b_explore
+        || small_ruby
         || mead
         || spirit
         || tomb_native
@@ -55,7 +56,7 @@ fn scenario_case(
         || native_story
         || native_upper;
     let start = if m01b_explore {
-        Position { x: trigger.x + 1, ..trigger }
+        super::super::m01b_explore::start(name, trigger)
     } else if native_upper {
         super::super::l6_paradox_upper::start(name)
     } else if native_story {
@@ -327,7 +328,9 @@ fn scenario_case(
         let generation = controller.active().ok_or("generation")?;
         let world = if m01b_explore {
             super::super::m01b_explore::world(
-                generation.native_gameplay().ok_or("native explore policies")?,
+                generation
+                    .native_gameplay()
+                    .ok_or("native explore policies")?,
                 name,
             )?
         } else if native_upper {

@@ -154,7 +154,7 @@ pub(super) async fn exercise(
 
 // Administrator arrangement only, matching grizzly_durability::seed. SET LOCAL
 // ends at commit; all subsequent native commands use the normal fenced writer.
-async fn seed_level(h: &Harness, level: i64) -> TestResult {
+pub(super) async fn seed_level(h: &Harness, level: i64) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
