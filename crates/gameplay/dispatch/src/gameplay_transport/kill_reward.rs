@@ -1579,6 +1579,10 @@ pub fn record_creature_kill(
                 )
             };
             let mut entry = entry;
+            // Crystal magma_bubble_death.lua:12-23 and the M24 chosen kill
+            // steps use actual damaging players independently of corpse MINT
+            // qualification. Preserve the native lethal ledger on the rowless path.
+            entry.damage_shares = damage_shares;
             // Only the actual lethal producer supplies the retained Instance clock.
             entry.activity_death = activity_death;
             entry.world_change = world_change;
