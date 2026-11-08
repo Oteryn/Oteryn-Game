@@ -47,4 +47,6 @@
 | Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
 | M36 — NPC outfit/addon grants and real outfit snapshot | engoutfit | none planned; 1820–1829 reserved | In Service of Yalahar; Rock Steady / Deepling | CLAIMED |
 
+| M19 — authoritative transaction clock in world callbacks (reuse existing quest clock) | qready1 | none planned; QMECH range 2090–2099 only | Bewitched; Threatened Dreams | CLAIMED |
+
 | M29 — Primal Ordeal Instance corpse stage/deadline and party prerequisite refusal | encx | 2200 reserved; coordinator-assigned 2200–2209 only | The Primal Ordeal | CLAIMED; party refusal fix transferred in ed8f218de, Instance corpse deadline implementation next |
