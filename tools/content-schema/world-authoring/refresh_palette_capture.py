@@ -1,7 +1,7 @@
 """Refresh palette statistics from committed regions after catalogue qualification.
 
-The base map and all other captured source facts remain unchanged. The XML input
-must match the digest already recorded by convert_world_base.py.
+The base map and source evidence remain unchanged; occurrence counts are decoded.
+The XML input must match the digest already recorded by convert_world_base.py.
 """
 
 from __future__ import annotations
@@ -30,15 +30,22 @@ def outputs(items_xml: Path, root: Path = base.ROOT) -> dict[str, bytes]:
     declared = base.items_xml_ids(xml)
     index = json.loads((root / "content/world/placements/index.json").read_bytes())
     used: Counter[int] = Counter()
+    attributes: Counter[str] = Counter()
+    region_bytes = 0
     for region in index["regions"]:
         raw = (root / region["path"]).read_bytes()
         if hashlib.sha256(raw).hexdigest() != region["sha256"]:
             raise ValueError(f"palette capture region differs: {region['path']}")
+        region_bytes += len(raw)
         for _, tiles in codec.decode_region(raw)[3]:
             for _, _, _, _, _, items in tiles:
                 used.update(slot for slot, _, _ in items)
+                for _, _, attrs in items:
+                    attributes.update(name for name in (attrs or {}) if name != "depth")
     if sum(used.values()) != index["totals"]["items"]:
         raise ValueError("palette capture occurrence count differs from the map")
+    summary["item_attributes"] = dict(sorted(attributes.items()))
+    summary["bytes_on_disk"] = region_bytes
     families = {
         name: {"entries": 0, "occurrences": 0}
         for name in ("terrain", "world_object", "item")

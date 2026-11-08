@@ -2137,7 +2137,7 @@
           "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
           "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
           "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
-          "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
+          "selector": "AIDs40016–40020; config coordinates are source placements, not runtime position predicates",
           "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
           "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
         },
@@ -2160,7 +2160,7 @@
         "first_pg_driver_failure": {
           "duration_ms": 65825,
           "exact_error": "async fn resumed after completion in test cancellation poll_fn",
-          "database_evidence": "5 actual source receipts; Fairy01\u201305 each1; FairiesCounter5; inspected then exact failed test DB dropped",
+          "database_evidence": "5 actual source receipts; Fairy01–05 each1; FairiesCounter5; inspected then exact failed test DB dropped",
           "fix": "latch stopped future completion; never poll it again; production mechanisms unchanged",
           "log": "/tmp/questpc3-fairies-green.log",
           "sha256": "8f1d6eb6285e30f8c4edd2349f22820dd55be8a545b4daa9dface3bba9b560df",
@@ -2798,7 +2798,7 @@
         ],
         "red_log": "/tmp/questpc3-beginning-equipment-red-marked.log",
         "whole_entry_status": "Beginning IN_PROGRESS; four owned whole quests remain; no engine deferral.",
-        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
+        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4–8/L2 callbacks.",
         "first_red": {
           "log": "/tmp/questpc3-beginning-equipment-red.log",
           "sha256": "45de478a54e47db5abc09db3ee85089374c348c20d3e02850f37f7553822eafe",
@@ -4788,7 +4788,7 @@
           "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
           "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
           "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
-          "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
+          "selector": "AIDs40016–40020; config coordinates are source placements, not runtime position predicates",
           "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
           "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
         },
@@ -4811,7 +4811,7 @@
         "first_pg_driver_failure": {
           "duration_ms": 65825,
           "exact_error": "async fn resumed after completion in test cancellation poll_fn",
-          "database_evidence": "5 actual source receipts; Fairy01\u201305 each1; FairiesCounter5; inspected then exact failed test DB dropped",
+          "database_evidence": "5 actual source receipts; Fairy01–05 each1; FairiesCounter5; inspected then exact failed test DB dropped",
           "fix": "latch stopped future completion; never poll it again; production mechanisms unchanged",
           "log": "/tmp/questpc3-fairies-green.log",
           "sha256": "8f1d6eb6285e30f8c4edd2349f22820dd55be8a545b4daa9dface3bba9b560df",
@@ -5675,7 +5675,7 @@
       ],
       "remaining_scope": "Four wholequestsIN_PROGRESS. Bridge/log8, coat replacement, fiveGROUNDwood/cart; otherquest remainingcomponents per status. No further work by this thread."
     },
-    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R\u2013S entries assigned to other split lanes are scope evidence only",
+    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
     "phase": "Collector integration compiling/generated publication under PREPUSH-2 step3 cadence exception; source branch then frozen",
     "previous_batch": {
       "id": "carlos-report-paid-fur-merge",
@@ -10153,7 +10153,7 @@
   },
   "historical_inventory": {
     "snapshot": "c5cdcd6ae:qlane-meta/questpc3/QUEST-STATUS.json",
-    "scope": "R\u2013S; migrations1040\u20131059; no new commands/capabilities",
+    "scope": "R–S; migrations1040–1059; no new commands/capabilities",
     "counts": {
       "inventory": 56,
       "qualified": 19,
@@ -10684,7 +10684,7 @@
         ]
       }
     ],
-    "note": "Other original R\u2013S mechanisms belong to other split lanes. Do not reopen finished entries."
+    "note": "Other original R–S mechanisms belong to other split lanes. Do not reopen finished entries."
   },
   "phase": "AUTHORING",
   "quests": [
@@ -10970,7 +10970,7 @@
       "1228_quest_carried_world_rewards.sql",
       "1229_quest_reward_occurrence_guards.sql"
     ],
-    "status": "QUALIFIED: lane1220\u20131229, canonical QENGINE2 shared files unchanged; new StepIn MINT and prior selected USE rewards PostgreSQL18.6 proven",
+    "status": "QUALIFIED: lane1220–1229, canonical QENGINE2 shared files unchanged; new StepIn MINT and prior selected USE rewards PostgreSQL18.6 proven",
     "red_point": "Registry and treasure slice complete; whole four-quest scope remains active.",
     "post_rename_postgresql": {
       "marker": "REWARD-CLAIM-MINT-PG server_version_num=180006; POSTGRES_CASE_COMPLETED questl2-peer-outputs",
@@ -10998,8 +10998,8 @@
     }
   },
   "current_main_integration": {
-    "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
-    "state": "publication ready on captured main47baa: workspace/Clippy/fmt and348units PASS; current10PG building",
+    "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+    "state": "main QREADY merge resolved; generation and compile gates running; Carlos cause-constraint forward migration requested",
     "published_parent": "bdb7ce79bb811ead06fd1c0700f5efe5797d4454",
     "migrations": "own 1220-1229 retained; incoming 1250-1258 retained; duplicate check passed",
     "decisions": [
@@ -11008,8 +11008,8 @@
       "Write canonical single-bound native-death receipts and recognize exact historical double-bound replay hashes.",
       "Keep one world item MINT with lane repeatable/provenance guards; reuse main completion, fluids and admission owners."
     ],
-    "checks": "Captured main47baa7bb8 fetched and merged before this prepush sequence. Current workspace-all-targets PASS5m57s; five-crate Clippy-Dwarnings PASS2m49s; fmt-all-checkPASS. Quest348unitPASS86.05s; provisioning2unitPASS0.103s; canonical native/allcentral regenerationPASS; repo pin-refresh unchanged62543f3e. Own10PG building /tmp/questpc3b-mainred3038-own-pg.log; remaining crate unit suites PENDING under explicit PREPUSH-2 step3 cadence exception. Original30e2 scoped8PASS2FAIL remains baseline-only, not repairedPG evidence. No new wholequest qualification.",
-    "latest_main": "47baa7bb8",
+    "checks": "Current c77d436d8 merge checks running; prior72de evidence retained only in scoped_pg_result. QREADY2 chest tests2/2 PASS3.125s and QREADY1 source tests11/11 PASS7.376s. No new wholequest qualification.",
+    "latest_main": "c77d436d8",
     "local_merge_commits": [
       "4933f9bbd",
       "5b9b2b2f8",
@@ -11017,7 +11017,7 @@
       "7998af2c7"
     ],
     "final_world_pin": "62543f3e8b65186e3edb555417fd492246eaf1379fa0caee0d6148d1714b3ae4",
-    "equipment_profile_union": 3792,
+    "equipment_profile_union": 3802,
     "quest_unit_log": "/tmp/questpc3b-pc4-quests-unit-final.log",
     "own_pg_log": "/tmp/questpc3b-mainred3038-own-pg.log",
     "lane_migration_files": [
@@ -11039,14 +11039,14 @@
       "oteryn-gameplay-dispatch"
     ],
     "scoped_pg_result": {
-      "head": "30e2ff3b7fbaf77d910d454eba51702152fd1f77",
-      "log": "/tmp/questpc3b-pc4-own-pg.log",
-      "sha256": "1a50c8d9652bf68f256ea6dc28a5889d3fc6a6e28d332f946a2e3c9f945676f0",
-      "duration_seconds": 464.78,
+      "head": "72de110ec12136db2269f21cb8df481b35cd539d",
+      "log": "/tmp/questpc3b-mainred3038-own-pg.log",
+      "sha256": "92916d44ab3eed841b42662f479a621612ba416c06b3be577c2b8dff1a734c5f",
+      "duration_seconds": 419.491,
       "passed": 8,
       "failed": 2,
       "postgres": "18.6",
-      "red_point": "Carlos real food sale commits gold/items but admission_binding registry omits its existing canonical trade continuation, leaving Greet6 rather than7. Both Carlos scenarios fail this assertion."
+      "red_point": "Both Carlos cases fail Greet6!=7. Main1258 replaces receipt cause constraint without trade_obligation; exact schema probe reproduces rejection. Forward repair SQL tested on temporary clone; migration number above1258 needs allocation because1220-1229 full."
     },
     "trade_repair": {
       "root": "canonical trade transitions missing from bound registry",

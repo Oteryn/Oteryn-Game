@@ -140,7 +140,7 @@ def grant_semantics(root, definition):
     return semantics
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical):
+def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'content-schema/reward-claim-authoring'))
@@ -177,6 +177,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     keys.update(('oteryn:item.tibia.i3272', 'oteryn:item.tibia.i3053',
                  'oteryn:item.tibia.i3091', 'oteryn:item.tibia.i3587',
                  'oteryn:item.tibia.i3466'))
+    keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         reward = callback.get('effects', {}).get('item_reward')
         if reward:
