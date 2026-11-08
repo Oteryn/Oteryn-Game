@@ -466,9 +466,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Help: FAQ/manual/client help/reports",
-  "status": "PARTIAL",
-  "gap": "Raportowanie jest osobno; brak kompletnej strony pomocy/nawigacji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/help.rs:56 + help_navigation_opens_reviewed_report_through_live_caller"
  },
  {
   "id": "T073",

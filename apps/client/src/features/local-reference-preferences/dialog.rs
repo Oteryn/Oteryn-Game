@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            mut guide,
             screenshots,
             gameplay,
             arcs,
@@ -129,6 +130,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             arcs.show(state.page == SettingsPage::Arcs);
             gameplay.show(state.page == SettingsPage::Gameplay);
             screenshots.show(state.page == SettingsPage::Screenshots);
+            guide.update(&state);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
@@ -198,6 +200,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if guide.action(action, &mut state) {
+                    continue;
+                }
                 if screenshots.action(action, &mut state) {
                     continue;
                 }
@@ -368,21 +373,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            let page_help = match state.page {
-                SettingsPage::CustomHotkeys => {
-                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Object, text and passive action assignment is not available yet."
-                }
-                SettingsPage::BarHotkeys => {
-                    "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
-                }
-                SettingsPage::Graphics => {
-                    "Renderer and window options use the supported native renderer. Additional controls are not available yet."
-                }
-                SettingsPage::Sound => {
-                    "Master volume % (0–100). Changes apply to playback immediately."
-                }
-                _ => "",
-            };
+            let page_help = controls::page_hint(state.page);
             SetWindowTextW(
                 feedback,
                 wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),

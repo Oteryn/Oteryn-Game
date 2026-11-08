@@ -6,6 +6,9 @@ mod options;
 #[path = "gameplay.rs"]
 mod gameplay;
 
+#[path = "help.rs"]
+mod help;
+
 #[path = "screenshots.rs"]
 mod screenshots;
 

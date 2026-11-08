@@ -12,6 +12,8 @@ use std::sync::Arc;
 mod bindings;
 #[path = "gameplay.rs"]
 mod gameplay;
+#[path = "help.rs"]
+pub mod help;
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "screenshot.rs"]

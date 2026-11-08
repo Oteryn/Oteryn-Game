@@ -20,10 +20,11 @@ pub enum SettingsPage {
     Sound,
     Screenshots,
     Help,
+    HelpGuide,
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 11] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
@@ -34,6 +35,7 @@ impl SettingsPage {
         Self::Sound,
         Self::Screenshots,
         Self::Help,
+        Self::HelpGuide,
     ];
 
     pub const fn label(self) -> &'static str {
@@ -48,6 +50,7 @@ impl SettingsPage {
             Self::Sound => "Sound",
             Self::Screenshots => "Screenshots",
             Self::Help => "Help / settings transfer",
+            Self::HelpGuide => "Help / guide and support",
         }
     }
 }
@@ -64,6 +67,7 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 ];
 
 pub struct SettingsState {
+    pub(super) help_report: Option<super::help::Report>,
     pub(super) screenshot_runtime: super::screenshot::ScreenshotRuntime,
     pub(super) screenshot_requested: bool,
     window_action: Option<&'static str>,
@@ -143,6 +147,7 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            help_report: None,
             screenshot_runtime: Default::default(),
             screenshot_requested: false,
             window_action: None,

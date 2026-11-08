@@ -171,6 +171,7 @@ impl Settings {
             }
         }
         let mut state = lock(&self.shared);
+        state.open_help_report(link);
         state.sync_battle_lists(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
@@ -261,7 +262,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 250..=251)
+                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 250..=251 | 260..=261)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);

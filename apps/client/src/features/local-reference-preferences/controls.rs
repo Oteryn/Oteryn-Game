@@ -9,11 +9,15 @@ use arc_controls::ArcControls;
 #[path = "gameplay_controls.rs"]
 mod gameplay_controls;
 use gameplay_controls::GameplayControls;
+#[path = "help_controls.rs"]
+mod help_controls;
+pub(super) use help_controls::{HelpControls, page_hint};
 #[path = "screenshot_controls.rs"]
 mod screenshot_controls;
 use screenshot_controls::ScreenshotControls;
 
 pub(super) struct Controls {
+    pub(super) guide: HelpControls,
     pub(super) screenshots: ScreenshotControls,
     pub(super) gameplay: GameplayControls,
     pub(super) arcs: ArcControls,
@@ -56,6 +60,7 @@ impl Controls {
             let arcs = ArcControls::new(hwnd)?;
             let gameplay = GameplayControls::new(hwnd)?;
             let screenshots = ScreenshotControls::new(hwnd)?;
+            let guide = HelpControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
                 hwnd,
@@ -317,6 +322,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                guide,
                 screenshots,
                 gameplay,
                 arcs,
