@@ -10,6 +10,7 @@ use std::{
 use windows_sys::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM},
     UI::{
+        Controls::EM_SETLIMITTEXT,
         Shell::{DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass},
         WindowsAndMessaging::*,
     },
@@ -160,7 +161,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106)
+                && matches!(id, 103 | 106 | 110..=113)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -212,7 +213,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             760,
-            400,
+            540,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -287,9 +288,66 @@ fn run(shared: Arc<Mutex<Shared>>) {
             BS_AUTOCHECKBOX as u32,
         );
         let apply = control(hwnd, "BUTTON", "Apply", 106, [380, 145, 110, 26], 0);
-        let feedback = control(hwnd, "STATIC", "", 0, [10, 200, 710, 100], 0);
+        let transfer_label = control(
+            hwnd,
+            "STATIC",
+            "Settings transfer file (JSON). Import/defaults save a recoverable backup.",
+            0,
+            [10, 195, 720, 25],
+            0,
+        );
+        let transfer_path = control(
+            hwnd,
+            "EDIT",
+            "",
+            114,
+            [10, 225, 710, 26],
+            WS_BORDER | ES_AUTOHSCROLL as u32,
+        );
+        SendMessageW(transfer_path, EM_SETLIMITTEXT, 240, 0);
+        let import = control(hwnd, "BUTTON", "Import...", 110, [10, 265, 150, 30], 0);
+        let export = control(
+            hwnd,
+            "BUTTON",
+            "Export new file",
+            111,
+            [175, 265, 160, 30],
+            0,
+        );
+        let backup = control(
+            hwnd,
+            "BUTTON",
+            "Restore backup...",
+            112,
+            [350, 265, 170, 30],
+            0,
+        );
+        let defaults = control(
+            hwnd,
+            "BUTTON",
+            "Restore defaults...",
+            113,
+            [535, 265, 185, 30],
+            0,
+        );
+        let feedback = control(hwnd, "STATIC", "", 0, [10, 320, 710, 150], 0);
         if [
-            help, list, chord, rebind, label, scale, volume, mute, apply, feedback,
+            help,
+            list,
+            chord,
+            rebind,
+            label,
+            scale,
+            volume,
+            mute,
+            apply,
+            feedback,
+            transfer_label,
+            transfer_path,
+            import,
+            export,
+            backup,
+            defaults,
         ]
         .iter()
         .any(|h| h.is_null())
@@ -327,6 +385,34 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if (110..=113).contains(&action) {
+                    drop(state);
+                    let confirmed = action == 111
+                        || MessageBoxW(
+                            hwnd,
+                            wide("Replace your current settings? A backup will be saved first.")
+                                .as_ptr(),
+                            wide("Oteryn Settings").as_ptr(),
+                            MB_YESNO | MB_ICONQUESTION,
+                        ) == IDYES;
+                    state = lock(&shared);
+                    if !confirmed || state.shutdown {
+                        continue;
+                    }
+                    let path = std::path::PathBuf::from(text(transfer_path));
+                    let result = match action {
+                        110 => state.import_from(&path),
+                        111 => state.export_to(&path),
+                        112 => state.restore_backup(),
+                        _ => state.reset_defaults(),
+                    };
+                    state.feedback = match result {
+                        Ok(()) if action == 111 => "Export saved. Existing files are never overwritten.".into(),
+                        Ok(()) => "Settings replaced and saved. The previous settings are available through Restore backup.".into(),
+                        Err(error) => format!("Settings transfer failed: {error}"),
+                    };
+                    continue;
+                }
                 let mut preferences = state.preferences.clone();
                 if action == 103 {
                     if let Some(binding) = bindings.get(selected.max(0) as usize) {
