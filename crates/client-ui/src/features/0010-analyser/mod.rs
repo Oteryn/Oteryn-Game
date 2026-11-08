@@ -3,7 +3,7 @@ mod input;
 pub mod protocol;
 mod state;
 mod view;
-pub use input::{open_key, select_tool};
+pub use input::{open_key, select_tool, set_xp_goal};
 pub use state::{Panel, Tool};
 pub use view::panel_text;
 #[cfg(test)]

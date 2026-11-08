@@ -1,7 +1,16 @@
-// oteryn-choice: saturating local counters retain constant space, including when the window is closed.
+#[path = "state/measurements.rs"]
+mod measurements;
+pub use measurements::{Clock, Series, eta_seconds, per_hour};
+// Measurements continue while the window is closed; charts retain at most 60 minute buckets.
 #[derive(Debug, Clone, Default)]
 pub struct Panel {
     pub tool: Tool,
+    pub clock: Clock,
+    pub xp_chart: Series,
+    pub raw_xp_chart: Series,
+    pub goal_xp: Option<u64>,
+    pub goal_input: String,
+    pub feedback: Option<&'static str>,
     pub selected: bool,
     pub open: bool,
     pub kills: u64,

@@ -2,6 +2,10 @@ use super::Panel;
 pub use oteryn_client_runtime::analyser::{AnalyserFact, AnalyserImpact};
 /// Count kills only from Kill, never from loot fragments (analyser-emission-v1.md:7-13).
 pub fn apply(panel: &mut Panel, facts: &[AnalyserFact]) {
+    apply_at(panel, facts, panel.clock.seconds());
+}
+/// Shared reducer with an explicit monotonic time for deterministic replay.
+pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
     if !panel.selected {
         return;
     }
@@ -9,6 +13,8 @@ pub fn apply(panel: &mut Panel, facts: &[AnalyserFact]) {
         match fact {
             AnalyserFact::Kill { .. } => panel.kills = panel.kills.saturating_add(1),
             AnalyserFact::Experience { raw, gained } => {
+                panel.xp_chart.add(seconds, *gained);
+                panel.raw_xp_chart.add(seconds, *raw);
                 panel.raw_xp = panel.raw_xp.saturating_add(*raw);
                 panel.gained_xp = panel.gained_xp.saturating_add(*gained);
             }
@@ -39,8 +45,13 @@ pub fn apply(panel: &mut Panel, facts: &[AnalyserFact]) {
     }
 }
 pub fn reset(panel: &mut Panel) {
+    let remaining = panel
+        .goal_xp
+        .map(|goal| goal.saturating_sub(panel.gained_xp));
     *panel = Panel {
         tool: panel.tool,
+        goal_xp: remaining,
+        goal_input: remaining.map_or_else(String::new, |value| value.to_string()),
         selected: panel.selected,
         open: panel.open,
         ..Panel::default()

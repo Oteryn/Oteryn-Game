@@ -60,3 +60,38 @@ fn analytics_selector_opens_independent_tools_over_confirmed_totals() {
     assert!(!select_tool(&mut panel, "unknown"));
     assert_eq!(panel.tool, Tool::Kills);
 }
+
+#[test]
+fn xp_rates_goal_eta_and_minute_chart_follow_confirmed_experience() {
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(super::set_xp_goal(&mut panel, "1200"));
+    apply_at(
+        &mut panel,
+        &[AnalyserFact::Experience {
+            raw: 400,
+            gained: 600,
+        }],
+        0,
+    );
+    apply_at(
+        &mut panel,
+        &[AnalyserFact::Experience {
+            raw: 100,
+            gained: 200,
+        }],
+        120,
+    );
+    let text = super::view::xp_text(&panel, 240);
+    assert!(text.contains("XP/h: 12000"));
+    assert!(text.contains("Raw XP/h: 7500"));
+    assert!(text.contains("Level goal remaining: 400 XP"));
+    assert!(text.contains("Estimated time to level goal: 120 seconds"));
+    assert_eq!(panel.xp_chart.values(120), vec![600, 0, 200]);
+    assert_eq!(panel.xp_chart.values(60 * 100).len(), 60);
+    assert!(super::view::xp_text(&Panel::default(), 0).contains("Collect experience"));
+    assert!(!super::set_xp_goal(&mut panel, "invalid"));
+    assert_eq!(panel.goal_xp, Some(1200));
+}

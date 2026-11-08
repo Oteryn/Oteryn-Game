@@ -11,7 +11,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         link,
         Form {
             title: "Analysers",
-            labels: &[],
+            labels: &["XP still needed for your level goal (blank disables)"],
             buttons: &[
                 "Overview",
                 "XP",
@@ -24,23 +24,28 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Loot tracker",
                 "Kill tracker",
                 "Reset session",
+                "Apply level goal",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.analyser;
                 (
                     panel.open,
                     false,
-                    vec![],
+                    vec![panel.goal_input.clone()],
                     oteryn_client_ui::analyser::panel_text(panel),
                 )
             },
             set_open: |mailbox, value| mailbox.analyser.open = value,
 
-            submit: |mailbox, _, action, _| {
+            submit: |mailbox, _, action, values| {
                 if let Some(tool) = oteryn_client_ui::analyser::Tool::ALL.get(action) {
                     oteryn_client_ui::analyser::select_tool(&mut mailbox.analyser, tool.key());
                 } else if action == 10 {
                     oteryn_client_ui::analyser::protocol::reset(&mut mailbox.analyser);
+                } else if action == 11
+                    && let Some(value) = values.first()
+                {
+                    oteryn_client_ui::analyser::set_xp_goal(&mut mailbox.analyser, value);
                 }
             },
         },

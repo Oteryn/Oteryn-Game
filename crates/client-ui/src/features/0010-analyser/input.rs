@@ -16,3 +16,25 @@ pub fn select_tool(panel: &mut super::Panel, key: &str) -> bool {
         false
     }
 }
+
+/// Set the XP still needed for the player's chosen level goal.
+pub fn set_xp_goal(panel: &mut super::Panel, value: &str) -> bool {
+    let value = value.trim();
+    let goal = if value.is_empty() {
+        None
+    } else {
+        let Some(goal) = value
+            .parse::<u64>()
+            .ok()
+            .and_then(|remaining| panel.gained_xp.checked_add(remaining))
+        else {
+            panel.feedback = Some("Enter the XP still needed for your level goal");
+            return false;
+        };
+        Some(goal)
+    };
+    panel.goal_xp = goal;
+    panel.goal_input = value.into();
+    panel.feedback = None;
+    true
+}
