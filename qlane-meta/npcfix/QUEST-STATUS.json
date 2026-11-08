@@ -350,10 +350,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 256,
+    "QUALIFIED": 261,
     "EXCLUDED": 24,
     "PENDING": 7,
-    "AUTHORED; QUALIFICATION PENDING": 30,
+    "AUTHORED; QUALIFICATION PENDING": 25,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -1799,10 +1799,17 @@
       "npc": "Pompan",
       "town": "Farmine",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Add ten Wiki-confirmed ammunition, weapon and flag offers.",
+      "work": "Exact retained shop offers and all source anchors qualified through real PostgreSQL caller proof.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/277; content/services/trade/trade-00000-00326.json:1#/records/232",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_postgres_retained_exact_shop_prices_and_replay; npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "shop_seconds": 367.901,
+        "physical_seconds": 108.252,
+        "contract_sha256": "3739b6e742c8315fc17672334ee0d302d6ea323487be0fac8e5826be3655f372",
+        "proof_log_sha256": "174b1167f3af4a0cc3d6ff319ff1313e79c2ec4398ecd3abe94acccd0d6dc00e"
+      }
     },
     {
       "npc": "Zalamon",
@@ -1913,16 +1920,23 @@
       "npc": "Toffee",
       "town": "Feyrist",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Add seven candy buyback offers, including Pastry Dragon95000.",
+      "work": "Exact retained shop offers and all source anchors qualified through real PostgreSQL caller proof.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/313; content/services/trade/trade-00000-00326.json:1#/records/291",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING",
+      "test": "npcfix_postgres_retained_exact_shop_prices_and_replay; npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
       "physical_proof": {
         "batch": "npcfix-reviewed-ground-cells-42",
         "red_seconds": 94.0,
         "green_seconds": 149.47,
         "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
         "scope": "Exact audited cell and name; candy buyback service remains open."
+      },
+      "qualification": {
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "shop_seconds": 367.901,
+        "physical_seconds": 108.252,
+        "contract_sha256": "3739b6e742c8315fc17672334ee0d302d6ea323487be0fac8e5826be3655f372",
+        "proof_log_sha256": "174b1167f3af4a0cc3d6ff319ff1313e79c2ec4398ecd3abe94acccd0d6dc00e"
       }
     },
     {
@@ -3328,10 +3342,17 @@
       "npc": "Dixi",
       "town": "Rookgaard",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Buy Chain Helmet from player for17 instead of12.",
+      "work": "Exact retained shop offers and all source anchors qualified through real PostgreSQL caller proof.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/78; content/services/trade/trade-00000-00326.json:1#/records/78",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_postgres_retained_exact_shop_prices_and_replay; npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "shop_seconds": 367.901,
+        "physical_seconds": 108.252,
+        "contract_sha256": "3739b6e742c8315fc17672334ee0d302d6ea323487be0fac8e5826be3655f372",
+        "proof_log_sha256": "174b1167f3af4a0cc3d6ff319ff1313e79c2ec4398ecd3abe94acccd0d6dc00e"
+      }
     },
     {
       "npc": "The Gatekeeper",
@@ -4327,10 +4348,17 @@
       "npc": "Lubo",
       "town": "Thais",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Sell Torch for2.",
+      "work": "Exact retained shop offers and all source anchors qualified through real PostgreSQL caller proof.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/208; content/services/trade/trade-00000-00326.json:1#/records/185",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_postgres_retained_exact_shop_prices_and_replay; npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "shop_seconds": 367.901,
+        "physical_seconds": 108.252,
+        "contract_sha256": "3739b6e742c8315fc17672334ee0d302d6ea323487be0fac8e5826be3655f372",
+        "proof_log_sha256": "174b1167f3af4a0cc3d6ff319ff1313e79c2ec4398ecd3abe94acccd0d6dc00e"
+      }
     },
     {
       "npc": "Markwin",
@@ -4974,10 +5002,17 @@
       "npc": "Shiantis",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Add sixteen Wiki-confirmed pillow/pick offers.",
+      "work": "Exact retained shop offers and all source anchors qualified through real PostgreSQL caller proof.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/299; content/services/trade/trade-00000-00326.json:1#/records/265",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_postgres_retained_exact_shop_prices_and_replay; npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "shop_seconds": 367.901,
+        "physical_seconds": 108.252,
+        "contract_sha256": "3739b6e742c8315fc17672334ee0d302d6ea323487be0fac8e5826be3655f372",
+        "proof_log_sha256": "174b1167f3af4a0cc3d6ff319ff1313e79c2ec4398ecd3abe94acccd0d6dc00e"
+      }
     },
     {
       "npc": "Solkrin",
@@ -5322,7 +5357,7 @@
       "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
       "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
     },
-    "regressions": "All18 original S10T routes, transaction rollback, exact price/confirmation, actual arrival, durable position, one fee/receipt per occurrence and replay retained. Tarak uses its canonical non-walkable water target, an adversarial nearer-house candidate and admitted shore. Existing fallback iterator body byte-identical; only exported for reuse.",
+    "regressions": "All16 original S10T routes, transaction rollback, exact price/confirmation, actual arrival, durable position, one fee/receipt per occurrence and replay retained. Tarak uses its canonical non-walkable water target, an adversarial nearer-house candidate and admitted shore. Existing fallback iterator body byte-identical; only exported for reuse.",
     "checks": "fmt PASS; changed entities and dispatch check alltargets/allfeatures PASS; same crates strict Clippy -D warnings PASS. No World terrain/pin/generated-file change."
   },
   "concurrent_cooldown_status": {
@@ -6886,7 +6921,7 @@
         "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
         "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
       },
-      "regressions": "All18 original S10T routes, transaction rollback, exact price/confirmation, actual arrival, durable position, one fee/receipt per occurrence and replay retained. Tarak uses its canonical non-walkable water target, an adversarial nearer-house candidate and admitted shore. Existing fallback iterator body byte-identical; only exported for reuse.",
+      "regressions": "All16 original S10T routes, transaction rollback, exact price/confirmation, actual arrival, durable position, one fee/receipt per occurrence and replay retained. Tarak uses its canonical non-walkable water target, an adversarial nearer-house candidate and admitted shore. Existing fallback iterator body byte-identical; only exported for reuse.",
       "checks": "fmt PASS; changed entities and dispatch check alltargets/allfeatures PASS; same crates strict Clippy -D warnings PASS. No World terrain/pin/generated-file change."
     },
     {
@@ -7700,6 +7735,41 @@
       "postgres_red_log": "/tmp/npcfix-evidence/full-anchor-six-ground-pg-red.log",
       "new_anchors": 14,
       "guards": "Normal compiler, full source positions and exact identity assertions retained; bound32691 Item custody preserved,50820 strictly sourced Terrain,81 absent floor cells with immutable capture witnesses."
+    },
+    {
+      "name": "npcfix-retained-exact-shops-46",
+      "state": "QUALIFIED",
+      "entries": [
+        "Dixi",
+        "Lubo",
+        "Pompan",
+        "Shiantis",
+        "Toffee"
+      ],
+      "offers": 35,
+      "postgres_green": {
+        "name": "five-shops",
+        "filter": "npcfix_postgres_retained_exact_shop_prices_and_replay",
+        "exit": 0,
+        "seconds": 367.901,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-five-shops.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 5,
+        "expected_tests": 1,
+        "execution_proven": true
+      },
+      "physical_green": {
+        "name": "physical",
+        "filter": "npcfix_fading_and_retained_placements_postgres",
+        "exit": 0,
+        "seconds": 108.252,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-physical.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 1,
+        "expected_tests": 1,
+        "execution_proven": true
+      },
+      "guards": "Exact prices, wrong-price refusal, no extra charge, quantities, durable receipts, replay and nested Toffee custody unchanged."
     }
   ],
   "shared_engine_lookup": {
@@ -9748,8 +9818,8 @@
       "Restore previously published merchant/Postman checks under the existing transaction lock.",
       "Initialize new Main constructor fields with prior ordinary defaults."
     ],
-    "generation": "All18 repo tooling steps passed, including native freshness, equipment3818, world pins and duplicate migrations.",
-    "tests": "Prior current PG collected all8 groups:5 passed,3 failed. Three roots fixed together; fresh post-merge PG and crate unit reruns pending. No new qualification.",
+    "generation": "All16 repo tooling steps passed, including native freshness, equipment3818, world pins and duplicate migrations.",
+    "tests": "All eight focused PG groups GREEN on pushed c54db1b311eabe271ceeb6d8de8ddf9cb688b033; every expected test and PostgreSQL start marker verified. Crate units still running; source c54.",
     "migration_files": [
       "1230_quest_atomic_track_capacity.sql",
       "1233_quest_reward_absolute_deadlines.sql",
@@ -9767,6 +9837,142 @@
       "exit": 0,
       "seconds": 26.827
     },
-    "publication": "Compiling integration checkpoint under PREPUSH-2 cadence exception. Fresh unit/PG reruns pending; no new qualifications."
+    "publication": "Compiling integration checkpoint under PREPUSH-2 cadence exception. Fresh unit/PG reruns pending; no new qualifications.",
+    "clippy": {
+      "exit": 0,
+      "seconds": 146.025,
+      "scope": "six changed production libraries; -D warnings"
+    },
+    "pushed_checkpoint": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+    "postgres_green": [
+      {
+        "name": "five-shops",
+        "filter": "npcfix_postgres_retained_exact_shop_prices_and_replay",
+        "exit": 0,
+        "seconds": 367.901,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-five-shops.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 5,
+        "expected_tests": 1,
+        "execution_proven": true,
+        "log_sha256": "174b1167f3af4a0cc3d6ff319ff1313e79c2ec4398ecd3abe94acccd0d6dc00e"
+      },
+      {
+        "name": "ahmet-fluid",
+        "filter": "npcfix_postgres_ahmet_filled_fluid_mints_exact_matching_and_replay",
+        "exit": 0,
+        "seconds": 130.598,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-ahmet-fluid.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 1,
+        "expected_tests": 1,
+        "execution_proven": true,
+        "log_sha256": "7062785fe4b3ebfd59b54bb0f4e9ea9923b0d3aad3aa4f81b75c8d118b8984b6"
+      },
+      {
+        "name": "state-three",
+        "filter": "npcfix_state_postgres_",
+        "exit": 0,
+        "seconds": 246.059,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-state-three.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 3,
+        "expected_tests": 3,
+        "execution_proven": true,
+        "log_sha256": "5aaa84daac36c1c98c9978005d7dd346b011fcc2f5daf0da3d1cb8059a9b4e11"
+      },
+      {
+        "name": "physical",
+        "filter": "npcfix_fading_and_retained_placements_postgres",
+        "exit": 0,
+        "seconds": 108.252,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-physical.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 1,
+        "expected_tests": 1,
+        "execution_proven": true,
+        "log_sha256": "485ec3bcef0ca5a2a041f501627100eb05bb6f70b3b14b92d8694b0d676c6b00"
+      },
+      {
+        "name": "retained-services",
+        "filter": "npcfix_postgres_dispatch_services_and_replay",
+        "exit": 0,
+        "seconds": 858.699,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-retained-services.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 13,
+        "expected_tests": 1,
+        "execution_proven": true,
+        "log_sha256": "b1ffe447c44ec3896c96bedd0bc9d79a401aa3ddefaf2f91bb6f55ddd530fbd4"
+      },
+      {
+        "name": "atomic-eleven",
+        "filter": "npcfix_eleven_track_postgres_atomic_receipt_replay_and_rollback",
+        "exit": 0,
+        "seconds": 65.766,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-atomic-eleven.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 3,
+        "expected_tests": 1,
+        "execution_proven": true,
+        "log_sha256": "fea4fe35c52cbb6e0301366e98306d667400b2a9a0211138383dfc4b6bcfb09e"
+      },
+      {
+        "name": "guardian",
+        "filter": "npcfix_postgres_guardian_sorted_literal_topics_and_multipart_order",
+        "exit": 0,
+        "seconds": 106.928,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-guardian.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 1,
+        "expected_tests": 1,
+        "execution_proven": true,
+        "log_sha256": "d7f4a5ce11efad21b3049ea6b02df090e8956eed099744914cc503da2c0f2192"
+      },
+      {
+        "name": "al-dee-pick",
+        "filter": "npcfix_reward_postgres_al_dee_costed_pick_repeats",
+        "exit": 0,
+        "seconds": 97.395,
+        "log": "/tmp/npcfix-evidence/questpc4-fixed-pg-al-dee-pick.log",
+        "source_head": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "actual_pg_start_markers": 1,
+        "expected_tests": 1,
+        "execution_proven": true,
+        "log_sha256": "efa344d9b8548f38a93512ee0415bd18e9436d4b6e4e0d0251d87e961316b21b"
+      }
+    ]
+  },
+  "mainred3032_integration": {
+    "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+    "merge": "clean;13 Rust files, no content or migration source changes",
+    "qualification_source": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033, already pushed; five shops and cumulative physical placement PG GREEN",
+    "regeneration": "All16 repo stages PASS, including3818 equipment profiles, native freshness and duplicate migrations. Unit process resumed automatically; generated outputs unchanged.",
+    "tests_pending": "Main changed dispatch/durability unit and focused PG reruns. Prior c54 ten-crate unit run remains incomplete; do not claim full unit green.",
+    "clippy": "Strict dispatch/durability libraries PASS5m28s",
+    "compile_red": "E0061: atomic fixture lacked new physical-item permit. Reused incoming test pattern: acquire permit before sequencer, pass as fourth argument.",
+    "workspace_check": {
+      "exit": 0,
+      "seconds": 389.253
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 21.993
+    },
+    "publication": "Five quests qualified from all-green pushed c54 source; publish clean Main merge with exact permit fixture adaptation. Post-merge focused atomic/state PG and changed-crate units pending under PREPUSH-2 cadence exception."
+  },
+  "next_six_names_red": {
+    "exit": 101,
+    "seconds": 109.308,
+    "marker_present": true,
+    "binary_source": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+    "binary_sha256": "144d9920eac5dcf94d8ef0e1c3e4ec441bd6681f6ba94d389425b280f3478434",
+    "incoming_main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+    "new_cases": 6,
+    "new_anchors": 11,
+    "case_packet_restored": true,
+    "log_sha256": "dd6a464a29ee0efb8a2987d42b66aa9b5bba953ffed88700d35d19e7dc56b7df",
+    "exact_red": "Captain Marie Denise Banner != Captain Marie-Denise Banner",
+    "state": "ACTUAL_PG_RED; five exact source display fields still not applied"
   }
 }

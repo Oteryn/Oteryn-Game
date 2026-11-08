@@ -129,8 +129,9 @@ fn scenario() -> TestResult {
                     let (controller, _) = crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
                     let active = controller.active().ok_or("active acceptance generation")?;
                     let native = active.native_gameplay().ok_or("native acceptance content")?;
+                    let item_permit = owner.spell_lane_permit().await.ok_or("NPC item lane")?;
                     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-                    slot.commit_npc_program(&h.root, &authority, &h.node, fence, npc_request.clone(), Arc::clone(&catalogue),
+                    slot.commit_npc_program(&h.root, &authority, &h.node, &item_permit, fence, npc_request.clone(), Arc::clone(&catalogue),
                         &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native))
                         .await.map_err(debug)?.transition
                 } else {
