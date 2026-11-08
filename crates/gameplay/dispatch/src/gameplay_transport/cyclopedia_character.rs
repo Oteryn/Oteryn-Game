@@ -63,6 +63,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 wire::encode_badges(&badges).map_err(|_| ())
             }
             wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
+                if payload.first() == Some(&wire::achievements::SELECTOR) {
+                    let request = wire::achievements::decode_request(payload).map_err(|_| ())?;
+                    let target = match request.target {
+                        Some(bytes) => {
+                            crate::domain::CharacterId::from_bytes(bytes).map_err(|_| ())?
+                        }
+                        None => fence.character_id,
+                    };
+                    let (name, facts) = self
+                        .root
+                        .read_cyclopedia_achievement_facts(
+                            self.character,
+                            self.holder,
+                            fence,
+                            target,
+                        )
+                        .await
+                        .map_err(|_| ())?;
+                    let page = self
+                        .achievements
+                        .account_achievements_page(&facts, u32::from(request.page))
+                        .map_err(|_| ())?;
+                    return wire::achievements::AchievementPage {
+                        character: *target.as_bytes(),
+                        name,
+                        page,
+                    }
+                    .encode()
+                    .map_err(|_| ());
+                }
                 let request = wire::decode_tab_request(payload).map_err(|_| ())?;
                 let target = match request.target {
                     Some(bytes) => crate::domain::CharacterId::from_bytes(bytes).map_err(|_| ())?,
