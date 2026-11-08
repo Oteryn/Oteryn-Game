@@ -1160,14 +1160,21 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
 
 fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
     callback.world_requirements.iter().all(|requirement| {
-        // Until the durable Ground readset is integrated, this new kind fails
-        // closed here; it is never authorized by a static map appearance read.
+        // Ground contents are proved by the fenced quest transaction, never
+        // by static map appearances. Here admit only an existing non-house tile.
         let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement::Map {
             position,
             appearance,
         } = requirement
         else {
-            return false;
+            let position = tile(requirement.position());
+            return callback.has_personal_state()
+                && !map.facts.house_tile(position)
+                && map
+                    .overlay
+                    .base()
+                    .tile(position.x, position.y, position.floor)
+                    .is_some();
         };
         let position = tile(*position);
         !map.facts.house_tile(position)
