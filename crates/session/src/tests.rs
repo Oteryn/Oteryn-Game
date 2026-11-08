@@ -82,14 +82,6 @@ mod e2e_m09;
 mod e2e_m11a;
 #[path = "tests/e2e_p11.rs"]
 mod e2e_p11;
-#[path = "tests/e2e_w01a.rs"]
-mod e2e_w01a;
-#[path = "tests/e2e_w01b.rs"]
-mod e2e_w01b;
-#[path = "tests/e2e_w01c.rs"]
-mod e2e_w01c;
-#[path = "tests/e2e_w05a.rs"]
-mod e2e_w05a;
 #[cfg(test)]
 #[path = "tests/e2e_s04c.rs"]
 mod e2e_s04c;
@@ -111,6 +103,14 @@ mod e2e_s15b;
 #[cfg(test)]
 #[path = "tests/e2e_s16a.rs"]
 mod e2e_s16a;
+#[path = "tests/e2e_w01a.rs"]
+mod e2e_w01a;
+#[path = "tests/e2e_w01b.rs"]
+mod e2e_w01b;
+#[path = "tests/e2e_w01c.rs"]
+mod e2e_w01c;
+#[path = "tests/e2e_w05a.rs"]
+mod e2e_w05a;
 #[path = "features/0004-item-view-move/tests.rs"]
 mod item_movement_tests;
 #[path = "features/0004-item-view-move/tests/e2e_i05.rs"]
