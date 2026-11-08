@@ -247,7 +247,7 @@ impl DurabilityRoot {
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
         )>,
     ) -> Result<QuestTransitionOutcome> {
-        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
+        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let world_callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
@@ -340,7 +340,8 @@ impl DurabilityRoot {
             )
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         }
-        if reward_callback.is_none() && benevola.is_none()
+        if reward_callback.is_none()
+            && benevola.is_none()
             && catalogue
                 .transition(&request.transition_key)
                 .is_some_and(|t| t.effects.is_empty() && !t.completes)
@@ -952,8 +953,9 @@ impl DurabilityRoot {
                         let (cause, ordinal) = request.cause.key();
                         let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key))
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
-                        super::super::character_appearance::grant_callback_outfit(
-                            &mut tx, fence.character_id, &occurrence, reward).await?;
+                        super::super::character_appearance::grant_content_outfit(
+                            &mut tx, fence.character_id, &occurrence, reward,
+                            context.as_ref().and_then(|(_, _, native)| *native).ok_or(DurabilityError::InvalidStoredState)?).await?;
                     }
                     if let Some((permit, handover)) = benevola.as_ref()
                         && !super::super::world_event::changes::counters::benevola::consume(
