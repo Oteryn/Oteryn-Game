@@ -100,6 +100,7 @@ fn is_false(value: &bool) -> bool {
 }
 
 mod native;
+mod nomads_land;
 use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
@@ -298,6 +299,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::fire_feathered_native::callbacks());
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
+    callbacks.push(nomads_land::callback()?);
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
