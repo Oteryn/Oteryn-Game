@@ -14,6 +14,7 @@ mod encounter;
 mod execute;
 mod ground_stack;
 pub(super) mod monsters;
+mod phase;
 mod rewards;
 mod shared_gate;
 mod soul_war_reward;
@@ -324,7 +325,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.iter().any(|pending| {
             callbacks().iter().any(|callback| {
                 callback.key == pending.callback
-                    && (callback.admission.as_ref().is_some_and(|a| a.premium)
+                    && (callback.requires_live_premium()
                         || callback
                             .effects
                             .item_reward
@@ -749,7 +750,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let [callback] = selected.as_slice() else {
             return None;
         };
-        if callback.admission.as_ref().is_some_and(|a| a.premium)
+        if callback.requires_live_premium()
             || callback
                 .effects
                 .item_reward
@@ -903,7 +904,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
             return entered;
         };
-        let selected = (0..base.depths().iter().filter(|d| **d == 0).count())
+        let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)
+        else {
+            return entered;
+        };
+        let cause = QuestCause::Step(command);
+        let mut selected = (0..base.depths().iter().filter(|d| **d == 0).count())
             .filter_map(|o| {
                 let key = placement_key(at, u8::try_from(o).ok()?)?;
                 if map.facts.base_hidden(key) {
@@ -922,23 +928,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
+        let had_callbacks = !selected.is_empty();
+        self.select_step_phase(&mut selected, actor, session, entered, &cause);
         // Ambiguous content never chooses one action by incidental registration order.
         let [(callback, key)] = selected.as_slice() else {
-            if selected.is_empty() && trigger == Trigger::StepIn {
+            if !had_callbacks && trigger == Trigger::StepIn {
                 return self
                     .step_daily_world_gate(permit, actor, session, origin, entered)
                     .await;
             }
             return entered;
         };
-        if callback.admission.as_ref().is_some_and(|a| a.premium) {
+        if callback.requires_live_premium() {
             let _ = self.session_premium_gate(session).await;
         }
-        let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)
-        else {
-            return entered;
-        };
-        let cause = QuestCause::Step(command);
         let operation = async {
             let fence = if character_fence_required(callback) {
                 self.current_quest_fence(session).await.ok().flatten()

@@ -671,6 +671,7 @@ fn scenario() -> TestResult {
         let world = super::quest_world_callbacks::world(
             &Callback {
                 admission: None,
+                requires_premium: false,
                 world_change: None,
                 actor_kind: Default::default(),
                 opening_only: false,

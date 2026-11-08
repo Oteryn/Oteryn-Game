@@ -294,6 +294,9 @@ fn scenario_case(
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
+    if name.starts_with("qengine-rewards-qworld-phase-") {
+        callback = super::super::qworld_phase_steps::geometry(callback, name)?;
+    }
     let world = world(&callback, trigger)?;
     run(async |admin| {
         let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" {
@@ -511,6 +514,7 @@ fn scenario_case(
             || name.contains("l10-documents-")
             || name.contains("l11-")
             || name.contains("l12-")
+            || name.starts_with("qengine-rewards-qworld-phase-")
             || spirit
             || name.starts_with("qengine-rewards-questpc4-paradox")
         {
@@ -583,6 +587,13 @@ fn scenario_case(
                 owner.quest_catalogue.as_ref().ok_or("Mead catalogue")?,
                 &callback,
             )?));
+        }
+        if name.starts_with("qengine-rewards-qworld-phase-") {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::qworld_phase_steps::catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("catalogue")?,
+                )?,
+            ));
         }
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")

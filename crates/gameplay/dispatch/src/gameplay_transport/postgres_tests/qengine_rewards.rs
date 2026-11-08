@@ -26,7 +26,9 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
+            if name.starts_with("qengine-rewards-qworld-phase-") {
+                super::qworld_phase_steps::SOURCE
+            } else if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
                 super::l6_paradox_upper::start(name)
             } else if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
                 super::l6_paradox_story::start()
@@ -771,6 +773,9 @@ pub(super) async fn exercise(
 ) -> TestResult {
     if name.starts_with("qengine-rewards-m09-tower-") {
         return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-qworld-phase-") {
+        return super::qworld_phase_steps::exercise(owner, admitted, h, authority, name).await;
     }
     if name == "qengine-rewards-m39-any-topic" {
         return m39_any_topic::exercise(owner, admitted, h).await;

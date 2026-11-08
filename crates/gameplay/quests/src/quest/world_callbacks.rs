@@ -34,6 +34,8 @@ mod counterparts;
 mod effects;
 mod ground_stack;
 mod imported_explore;
+mod live_admission;
+pub mod phase;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
@@ -217,6 +219,9 @@ pub struct Callback {
     /// Checked against the progression owner in the same fenced quest transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
+    /// Rechecked through the existing transaction-bound Premium owner.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub requires_premium: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub world_change: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -306,6 +311,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/l6-tools.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qworld-feaster.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-world-puzzles.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -357,7 +365,7 @@ pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
-    let mut selectors = BTreeSet::new();
+    let mut selectors = std::collections::BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
@@ -368,9 +376,11 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             super::children_puzzle::binding(&callback.key).map(|(_, solved)| solved),
         ))
         .map_err(|error| error.to_string())?;
-        if !selectors.insert(selector) {
+        let peers = selectors.entry(selector).or_default();
+        if peers.len() >= 16 || peers.iter().any(|peer| !phase::exclusive(peer, callback)) {
             return Err("duplicate callback selector across registries".into());
         }
+        peers.push(callback);
     }
     Ok(())
 }
@@ -420,11 +430,12 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (callback.actor_kind == ActorKind::Monster
                 && (callback.selector.position.is_none()
                     || callback.trigger == Trigger::Use
-                    || !!callback.has_personal_state()
+                    || callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.teleport.is_some()
                     || callback.minimum_level.is_some()
+                    || callback.requires_premium
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
@@ -453,6 +464,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.effects.mount_reward.is_some()
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
+            || (callback.requires_premium && !callback.has_personal_state())
             || callback.world_requirements.len() > MAX_EFFECTS
             || callback.world_requirements.iter().any(|r| {
                 !valid_pos(r.position)
@@ -470,6 +482,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
+                    || callback.requires_premium
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
@@ -497,7 +510,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         || callback.passages.len() != 1
                         || callback.lever.is_none()
                         || !callback.reversible
-                        || !!callback.has_personal_state()
+                        || callback.has_personal_state()
                         || callback.teleport.is_some()
                         || callback.item_on_target.is_some()
                         || !callback.offerings.is_empty()
@@ -545,7 +558,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || !(imported_explore::admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                    source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                    phase::authored_source(callback, source)
+                        || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                         || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                         || (callback.effects.outfit_reward.is_some()
                             && source
@@ -623,6 +637,7 @@ fn extend_callbacks(
     catalogue: QuestStateCatalogue,
     callbacks: &[Callback],
 ) -> Result<QuestStateCatalogue, String> {
+    let inherited: BTreeSet<_> = catalogue.tracks.keys().cloned().collect();
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for callback in callbacks.iter().filter(|c| c.has_personal_state()) {
@@ -636,7 +651,9 @@ fn extend_callbacks(
                 storage.set.max(storage.maximum)
             };
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
-                if callback.native_rule.is_none() && !storage.preserve {
+                if callback.native_rule.is_none()
+                    && (!storage.preserve || !inherited.contains(&storage.track))
+                {
                     track.max = track.max.max(maximum);
                 }
             } else {
@@ -1602,6 +1619,10 @@ mod worldchg_grimvale_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "world_callbacks/phase_tests.rs"]
+mod phase_tests;
 
 #[cfg(test)]
 #[path = "world_callbacks/readable_text_tests.rs"]

@@ -40,7 +40,7 @@ pub const SOURCES: [OrbSource; 3] = [
 ];
 pub const GUARDIAN_NATIVE_POSITION: (u16, u16, i8) = (33553, 31624, -14);
 pub fn callbacks() -> Vec<Callback> {
-    SOURCES.iter().enumerate().map(|(index,(key,pos,appearance,input,consume))|Callback{admission: None,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
+    SOURCES.iter().enumerate().map(|(index,(key,pos,appearance,input,consume))|Callback{admission: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
         key:(*key).into(),quest:QUEST.into(),trigger:Trigger::Use,
         selector:Selector{native: None,position:Some(Position{x:pos.0,y:pos.1,floor:pos.2}),unique:None,action:None,appearance:Some(*appearance)},
         lever:None,reversible:false,passages:vec![],teleport:None,

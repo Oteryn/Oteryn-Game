@@ -418,6 +418,7 @@ fn scenario_in_world(
             // ground. An unknown storage track refuses before any callback mutation.
             let fixture = Callback {
                 admission: None,
+                requires_premium: false,
                 world_change: None,
                 actor_kind: Default::default(),
                 opening_only: false,
