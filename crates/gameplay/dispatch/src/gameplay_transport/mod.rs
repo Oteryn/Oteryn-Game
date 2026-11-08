@@ -16,6 +16,7 @@ mod activity_recovery_admission;
 pub mod activity_runtime;
 mod activity_terminal_release;
 pub mod actor_spell;
+mod admission_queue;
 mod analyser;
 pub mod atelier;
 mod attack;

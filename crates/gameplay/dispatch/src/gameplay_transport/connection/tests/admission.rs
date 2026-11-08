@@ -299,3 +299,20 @@ fn admission_post_admission_input_closes_without_gameplay() -> Result<(), Box<dy
         Ok(())
     })
 }
+
+#[test]
+fn authenticated_queue_refusal_crosses_the_real_connection_driver() -> Result<(), Box<dyn Error>> {
+    run(async {
+        use oteryn_protocol_oteryn::admission_queue::{AdmissionQueue, decode_queue, encode_queue_refusal};
+        let queue = AdmissionQueue { position: 3, retry_after_ms: 2_000 };
+        let refusal = AdmissionRefusal::Queued(queue);
+        let authority = Authority::new(Err(refusal));
+        let (end, frames) = drive(&authority, &[bootstrap(1, 1, b"grant")]).await?;
+        assert_eq!(end, ConnectionEnd::AdmissionRefused(refusal));
+        assert_eq!(authority.calls.get(), 1);
+        assert_eq!(frames, vec![encode_queue_refusal(queue)?]);
+        let envelope = decode_wire_envelope(&frames[0])?;
+        assert_eq!(decode_queue(envelope.payload())?, Some(queue));
+        Ok(())
+    })
+}

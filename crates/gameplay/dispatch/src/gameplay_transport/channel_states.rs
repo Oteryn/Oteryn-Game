@@ -11,6 +11,7 @@ use tokio::sync::Mutex;
 /// Channel-local session state; keep fields sorted by name.
 #[derive(Default)]
 pub struct ChannelSessionStates {
+    pub(super) admission_queue: std::sync::Mutex<super::admission_queue::AdmissionWaitQueue>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     /// APP-3: the appearance-change command state of each session, forgotten with the session.
     pub appearance_commands: appearance_change::AppearanceCommands,

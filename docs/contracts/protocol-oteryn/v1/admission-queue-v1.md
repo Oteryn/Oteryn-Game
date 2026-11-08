@@ -21,6 +21,13 @@ identity or admission permission is granted by the metadata.
 The producer must authenticate the grant and preserve the existing N8 refusal
 precedence before revealing a position. Positions refer only to that runtime's
 waiting list; entries need bounded leases and removal on successful reservation.
-The wire codec and real client-session reader are implemented first. The real
-server waiting-list producer and the position display remain tracked as T003
-PARTIAL until their callers and tests are wired.
+The authenticated production owner hashes the verified grant as the retry key and
+keeps at most 128 wait leases across its runtime scopes. Positions are FIFO within
+one actual runtime scope, retries renew a six-second lease without reordering,
+and successful reservation removes the entry. The retry interval is two seconds.
+Expired heads cannot block a live waiter, and another channel cannot consume its
+position. A full wait list falls back to the legacy 1115 refusal.
+
+The wire codec, real session reader, runtime FIFO producer and connection writer
+are implemented. The position display remains tracked as T003 PARTIAL until the
+native caller forwards the metadata.

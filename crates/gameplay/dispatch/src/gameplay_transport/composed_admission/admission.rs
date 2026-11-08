@@ -201,7 +201,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // but before the durable GameSession mutation. M+1 therefore rejects
             // without creating a playable/committed session.
             // A busy holder on the assignment read reserves nothing: retry the round.
-            let reservation = match self.reserve_runtime_player(attempt.game_session_id).await {
+            let reservation = match self
+                .reserve_runtime_player(
+                    attempt.game_session_id,
+                    <sha2::Sha256 as sha2::Digest>::digest(attempt.admission_material).into(),
+                )
+                .await
+            {
                 Ok(reservation) => reservation,
                 Err(refusal) => {
                     if budget.retries_unavailable(refusal).await {
@@ -524,19 +530,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn reserve_runtime_player(
         &self,
         game_session_id: GameSessionId,
+        queue_key: [u8; 32],
     ) -> Result<PlayerActorReservation, AdmissionRefusal> {
-        use AdmissionRefusal::{Classified, Unavailable};
         self.reserve_precondition().await?;
-        self.runtime
+        let mut runtime = self.runtime.lock().await;
+        self.states
+            .admission_queue
             .lock()
-            .await
-            .reserve_fresh_session(game_session_id)
-            .map_err(|error| match error {
-                CarrierError::CapacityExceeded => {
-                    Classified(FoundationProtocolError::AdmissionCapacityExceeded)
-                }
-                _ => Unavailable,
-            })
+            .map_err(|_| AdmissionRefusal::Unavailable)?
+            .reserve(
+                &mut runtime,
+                game_session_id,
+                queue_key,
+                std::time::Instant::now(),
+            )
     }
 
     /// The current assignment still names this node incarnation and matches

@@ -405,6 +405,8 @@ pub enum AdmissionRefusal {
     /// Refused with an N8 admission refusal code (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); nothing
     /// was admitted. The client receives the code in one `ProtocolError` before the close.
     Classified(FoundationProtocolError),
+    /// Authenticated capacity refusal with a bounded server-owned FIFO position.
+    Queued(oteryn_protocol_oteryn::admission_queue::AdmissionQueue),
     /// ADMIT0 §4: an authenticated recovery whose support lacks the Channel's required set.
     /// Sent as `RECOVERY_CAPABILITY_REQUIRED` (1118, CP D1187); no claim is released and no
     /// recovery grant is consumed.
@@ -827,6 +829,16 @@ where
                 let _ = tokio::time::timeout(
                     ADMISSION_REFUSAL_WRITE_BOUND,
                     send_error(stream, error, 0),
+                )
+                .await;
+            }
+            if let AdmissionRefusal::Queued(queue) = refusal
+                && let Ok(frame) =
+                    oteryn_protocol_oteryn::admission_queue::encode_queue_refusal(queue)
+            {
+                let _ = tokio::time::timeout(
+                    ADMISSION_REFUSAL_WRITE_BOUND,
+                    write_frame(stream, &frame),
                 )
                 .await;
             }
