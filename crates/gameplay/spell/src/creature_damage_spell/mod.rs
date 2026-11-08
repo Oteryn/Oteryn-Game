@@ -760,6 +760,9 @@ impl SpellSource {
             && !matches!(
                 ep.damage_type.as_str(),
                 "physical"
+                    // Crystal src/creatures/monsters/monsters.hpp:244 defaults an omitted family
+                    // to Undefined; Cake Golem's second attack preserves it.
+                    | "undefined"
                     | "fire"
                     | "earth"
                     | "energy"

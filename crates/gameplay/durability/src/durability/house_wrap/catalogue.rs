@@ -1,9 +1,9 @@
 //! A bounded projection, never a future mutation grant.
-use super::*;
 use super::super::item_mint::TypedDefinitionRef;
+use super::*;
 
 pub struct HouseFurnitureCandidate {
-    pub item: [u8;16],
+    pub item: [u8; 16],
     pub definition: String,
     pub revision: u64,
     pub action: oteryn_protocol_oteryn::house_wrap::Action,
@@ -15,9 +15,22 @@ pub struct HouseFurnitureCatalogue {
 }
 impl DurabilityRoot {
     pub async fn house_furniture_catalogue(
-        &self,node: &NodeIncarnationProof,fence: CurrentCharacterItemFence,house: HouseId,
-    ) -> Result<Result<HouseFurnitureCatalogue,Refusal>,DurabilityError> {
-        if fence.runtime_scope != house.runtime_scope()? { return Ok(Err(Refusal::NotInHouse)); }
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        house: HouseId,
+    ) -> Result<Result<HouseFurnitureCatalogue, Refusal>, DurabilityError> {
+        if fence.runtime_scope != house.runtime_scope()? {
+            return Ok(Err(Refusal::NotInHouse));
+        }
+        // Crystal src/items/decay/decay.cpp:29-54: an idle House's elapsed
+        // timers must advance before its current furniture actions are projected.
+        if !self
+            .settle_house_timed_decorations(node, fence, house.clone())
+            .await?
+        {
+            return Ok(Err(Refusal::Stale));
+        }
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder,deadline).await?;

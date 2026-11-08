@@ -17,28 +17,28 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        427,
-        "90f37c4458b928aa7645edb3c572e594e684869b01bbee27193557af6d6a620b",
+        418,
+        "c4a89b37a6469d28d7237de37e521c92ba5dc606459f46f74b496c6fb90a75b1",
     ),
     (
         "definitions/declarations.json",
-        27_782_656,
-        "8ea2549f8cc1c4643e08da9de6e31d077edd17fbd2f49f77e1b3327122b385bb",
+        27_789_388,
+        "cc4e1b2427cba025b465d126bdd36b76f52f4312ca072644442055af85bfedcc",
     ),
     (
         "definitions/reference.json",
-        27_389_422,
-        "accdef2f0cb626996f77b69f6209d3bb7f1c290ed19672959eec4f4c4fc99571",
+        27_392_657,
+        "2a0677dca5bf18dbb2cb2a4d35ee26484d34eef4125d6c3eca75c500804e8a41",
     ),
     (
         "editor/author.json",
-        120557,
+        120_557,
         "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
     ),
     (
         "manifest.json",
-        1960,
-        "aa0e40669830016efdcab5918568a916788436f9aa27905b75f2592164cac981",
+        1957,
+        "5dee43dac6802ce6d9bcb96d5fa13a7176ca7ee3aea6f0aae68308dfa8075f37",
     ),
     (
         "presentations/bindings.json",
@@ -47,18 +47,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        411,
-        "8e406639d8f94c466f1b00bb802ad29ea389a7a8afbb7c7970f3e9113b9db8c7",
+        408,
+        "d3cca18ce0d03e4f2878cd81a00d8abc930b87544ee00f3d27c981c6a53192a2",
     ),
     (
         "provenance/imports.json",
-        6_773_322,
-        "ba6e6ac791b4799e695d7eaab9a54c974c56b798d1d43bd40809af5ed75eba8d",
+        6_773_975,
+        "dc291fbe0517cdf75ec8f18fa82e7ff4b29aeb516ff238a5ac51179ca75c1e63",
     ),
     (
         "provenance/sources.json",
-        1666853,
-        "6414fc9da96985e0529bf986fd2e021a75a145ba6cb899af5ad992e4699147c6",
+        1_667_515,
+        "8cccedce1f947efb3bcaf4b79bf69e915781bcef21b5c3f4e39822a9d7c116c1",
     ),
     (
         "worlds/world.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c6b0d962cfe5c96875907c38eefca8dacdcd2b85a7cced7712ccdd7388086295";
+const TREE_SHA256: &str = "a36690ef76871e794e391198db3262afdfeb0433fc3430f69b848cfb77a1d287";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -150,12 +150,12 @@ const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 /// Full generated population, including qualified source proxies and Wiki metadata.
-const CREATURES: usize = 1_863;
-const CREATURE_RECORDS: usize = 26_194;
-const CREATURE_PROFILES: usize = 25_052;
+const CREATURES: usize = 1_864;
+const CREATURE_RECORDS: usize = 26_208;
+const CREATURE_PROFILES: usize = 25_065;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
-const NPC_RECORDS: usize = 2564;
+const NPC_RECORDS: usize = 2_564;
 // Includes BANK-3's Henricus blessing Service.
 // S10 adds one bank, three promotion and six blessing Service declarations.
 const NPC_DECLARATIONS: usize = 2517;
@@ -185,7 +185,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 29,
+        max_import_records: 30,
         max_reimport_states: 404,
     }
 }
@@ -394,10 +394,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "e06-market-crystal-parity-20261031-r1"
+        "seasonal-cake-creature-20261107-r1"
     );
-    // E06 adds the client market mint batch ahead of the Crystal parity batch.
-    assert_eq!(project.imports().len(), 35);
+    // E06 adds its client market mint batch; Cake adds one separate qualified batch.
+    assert_eq!(project.imports().len(), 36);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -409,6 +409,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "item-drown-protection-5460-13995"
                 && b.batch_id != "item-market-crystal-parity-201189f"
                 && b.batch_id != "item-client-market-mint-2dfa943b"
+                && b.batch_id != "seasonal-cake-creature-crystal-201189f-r1"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
@@ -1174,7 +1175,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 29);
+    assert_eq!(v2.sources.len(), 30);
     let source_for = |batch: &str| {
         v2.sources
             .iter()
@@ -1531,6 +1532,38 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let mut outfit_ids = BTreeSet::new();
     let mut mount_ids = BTreeSet::new();
     let mut item_ids = BTreeSet::new();
+    // Crystal201189f cake_golem.lua:1-108 closure is a separate, source-qualified
+    // successor. Historical Crystal1530 bindings retain their original revision.
+    let cake_bytes = include_bytes!(
+        "../../../tools/content-schema/native-gameplay/cake-creature-admission.json"
+    );
+    let cake_packet: serde_json::Value =
+        serde_json::from_slice(cake_bytes).expect("Cake source capture");
+    let cake_bindings: Vec<ProjectV2SourceIdentityBinding> =
+        serde_json::from_value(cake_packet["staged"]["source_identity_bindings"].clone())
+            .expect("Cake typed binding");
+    assert_eq!(cake_bindings.len(), 1);
+    assert_eq!(
+        cake_packet["staged"]["records"]
+            .as_array()
+            .expect("Cake records")
+            .len(),
+        14
+    );
+    assert_eq!(
+        cake_packet["staged"]["authoring_profiles"]
+            .as_array()
+            .expect("Cake profiles")
+            .len(),
+        13
+    );
+    let cake_source = source_for("seasonal-cake-creature-crystal-201189f-r1");
+    assert_eq!(cake_source.key, "oteryn:source.crystalserver");
+    assert_eq!(
+        cake_source.revision,
+        "crystalserver-creature-1530:201189f871d23597b82caf88fd611454a2ddefb8"
+    );
+    assert_eq!(cake_source.sha256, world_project_sha256(cake_bytes));
     let mut creature_files = BTreeSet::new();
     let mut npc_bindings = 0;
     let mut crystal_creatures = 0;
@@ -1565,6 +1598,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             binding.disposition,
             ProjectV2SourceIdentityDisposition::Exact
         );
+        if cake_bindings.contains(binding) {
+            assert_eq!(binding.target.family, ProjectV2Family::Creature);
+            assert_eq!(binding.target.key, "oteryn:creature.cake_golem");
+            assert!(creature_files.insert(&binding.external_id));
+            continue;
+        }
         if binding.target.family == ProjectV2Family::Creature {
             if binding.source_key == "oteryn:source.tibiawiki" {
                 // D44 wiki-authored creature, checked above.
