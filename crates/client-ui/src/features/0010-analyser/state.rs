@@ -7,6 +7,7 @@ pub use measurements::{Clock, Series, chart_values, eta_seconds, per_hour};
 // Measurements continue while the window is closed; charts retain at most 60 minute buckets.
 #[derive(Debug, Clone, Default)]
 pub struct Panel {
+    pub party_import: Option<super::party_import::Summary>,
     pub boss_drops: std::collections::VecDeque<super::bosses::Drop>,
     pub boss_drops_truncated: bool,
     pub tool: Tool,
