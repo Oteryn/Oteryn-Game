@@ -169,6 +169,15 @@ impl DurabilityRoot {
                     .bind(bound(QUESTGATE0_RL_10))
                     .fetch_all(&mut *tx)
                     .await?;
+                    // The native death owner retains every real Primal damager, including
+                    // capped/no-op Hazard results. Read its immutable proof under the same
+                    // root lock; no second completion writer or revision change is needed.
+                    let primal_completed: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_character_primal_hazard_receipts WHERE character_id=encode($1,'hex')::uuid)",
+                    )
+                    .bind(id)
+                    .fetch_one(&mut *tx)
+                    .await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
@@ -192,6 +201,12 @@ impl DurabilityRoot {
                             .insert(row.try_get("track_key")?, row.try_get("value")?);
                     }
                     oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut copy.tracks);
+                    if primal_completed {
+                        copy.tracks
+                            .entry(super::super::character_hazard::PRIMAL_MENACE_KILLED_TRACK.into())
+                            .and_modify(|value| *value = (*value).max(1))
+                            .or_insert(1);
+                    }
                     if copy.tracks.len() > QUESTSTATE0_RL_08_TRACKS {
                         return Err(DurabilityError::InvalidStoredState);
                     }

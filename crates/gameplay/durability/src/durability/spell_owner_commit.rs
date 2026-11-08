@@ -137,11 +137,16 @@ impl SpellLanePermit {
     pub async fn of_fresh_scope(
         scope: crate::foundation::RuntimeScopeRefV1,
     ) -> Result<Self, DurabilityError> {
+        Ok(Self::of_fresh_scope_lane(scope).await)
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
+    pub(crate) async fn of_fresh_scope_lane(scope: RuntimeScopeRefV1) -> Self {
         let lane = SpellLane::for_scope(scope);
-        Ok(Self {
+        Self {
             scope,
             guard: Arc::clone(&lane.state).lock_owned().await,
-        })
+        }
     }
 
     #[cfg(any(test, feature = "test-support"))]

@@ -110,7 +110,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let mut rates = TrainingRates::from_json(include_bytes!(
             "../../../../../../../rulesets/training/crystal-201189f-v1.json"
@@ -191,7 +191,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
         let wrong_cells = wrong_world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
-        owner.movement_cells = &wrong_cells;
+        owner.movement_cells = (&wrong_cells).into();
         let wrong_payload = payload(&mut items, statue(wrong_world.base().digest())?)?;
         let refused = crate::gameplay_transport::loop_training::wire::dispatch(
             &owner,
@@ -209,7 +209,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
         ).bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(still_active, (2, 0));
 
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.clock_origin -= Duration::from_secs(1);
         let bytes = payload(&mut items, statue(world.base().digest())?)?;
         let result = crate::gameplay_transport::loop_training::wire::dispatch(
@@ -316,7 +316,7 @@ fn scenario() -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let mut rates = TrainingRates::from_json(include_bytes!(
             "../../../../../../../rulesets/training/crystal-201189f-v1.json"

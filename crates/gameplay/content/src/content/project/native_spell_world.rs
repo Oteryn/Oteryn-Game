@@ -315,6 +315,26 @@ pub fn qualify(
     bytes: &[u8],
     scope: EngineeringStaticCellScope,
 ) -> Result<QualifiedNativeSpellWorld, ProjectError> {
+    if let Some(bundle) = source_region_bundle(bytes)? {
+        let mut world = qualify(bundle.channel.as_bytes(), scope.clone())?;
+        let region = qualify_primal_region(bundle.primal.as_bytes(), scope)?;
+        for (cell, tile) in region.cells {
+            if world.cells.contains_key(&cell) {
+                return Err(invalid());
+            }
+            if let Some(known) = &tile {
+                world.immutable_tiles.insert(cell, known.clone());
+            }
+            world.bounds[0] = world.bounds[0].min(cell.x);
+            world.bounds[1] = world.bounds[1].min(cell.y);
+            world.bounds[2] = world.bounds[2].max(cell.x);
+            world.bounds[3] = world.bounds[3].max(cell.y);
+            world.bounds[4] = world.bounds[4].min(cell.z);
+            world.bounds[5] = world.bounds[5].max(cell.z);
+            world.cells.insert(cell, tile);
+        }
+        return Ok(world);
+    }
     if bytes.len() > MAX_BYTES
         || scope.generation_digest == [0; 32]
         || scope.coordinate_frame.as_str() != SOURCE_WORLD_FRAME
@@ -627,6 +647,35 @@ pub struct SourceWorldClientDocument {
     pub cells: Vec<SourceWorldClientCell>,
 }
 pub fn client_projection(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
+    if let Some(bundle) = source_region_bundle(bytes)? {
+        let mut client: SourceWorldClientDocument =
+            serde_json::from_slice(&client_projection(bundle.channel.as_bytes())?)
+                .map_err(|_| invalid())?;
+        let region: PrimalRegionDocument =
+            serde_json::from_str(&bundle.primal).map_err(|_| invalid())?;
+        for tile in region.tiles {
+            let [x, y, z] = tile.source_position;
+            let pending = !tile.semantics.unmaterialized_dynamic_items.is_empty();
+            client.cells.push(SourceWorldClientCell {
+                position: [x - 5854, y - 5298, -z],
+                ground: tile
+                    .semantics
+                    .ground
+                    .map(|id| format!("oteryn:terrain.source.crystal.id{id}")),
+                immutable_items: if pending {
+                    Vec::new()
+                } else {
+                    tile.semantics
+                        .top_ids
+                        .iter()
+                        .map(|id| format!("oteryn:item.source.crystal.id{id}"))
+                        .collect()
+                },
+                owner_pending: pending,
+            });
+        }
+        return serde_json::to_vec(&client).map_err(|_| invalid());
+    }
     if bytes.len() > MAX_BYTES || hex(&crate::content::digest::sha256(bytes)) != DOCUMENT_SHA {
         return Err(invalid());
     }
@@ -677,6 +726,139 @@ pub fn client_projection(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
     .map_err(|_| invalid())
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SourceRegionBundle {
+    schema: String,
+    channel: String,
+    primal: String,
+}
+
+/// Resolve the unchanged channel document inside a provenance-checked carrier.
+pub(in crate::content) fn channel_source_document(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
+    if let Some(bundle) = source_region_bundle(bytes)? {
+        return Ok(bundle.channel.into_bytes());
+    }
+    if hex(&crate::content::digest::sha256(bytes)) != DOCUMENT_SHA {
+        return Err(invalid());
+    }
+    Ok(bytes.to_vec())
+}
+
+fn source_region_bundle(bytes: &[u8]) -> Result<Option<SourceRegionBundle>, ProjectError> {
+    if bytes.len() > MAX_BYTES {
+        return Err(invalid());
+    }
+    let Ok(bundle) = serde_json::from_slice::<SourceRegionBundle>(bytes) else {
+        return Ok(None);
+    };
+    // Each document retains its own exact source proof. The carrier hashes both
+    // sections and the independent client projection before activation.
+    if bundle.schema != "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1"
+        || hex(&crate::content::digest::sha256(bundle.channel.as_bytes())) != DOCUMENT_SHA
+        || bundle.primal.as_bytes() != PRIMAL_SOURCE
+    {
+        return Err(invalid());
+    }
+    Ok(Some(bundle))
+}
+
+const PRIMAL_SOURCE: &[u8] = include_bytes!(
+    "../../../../../../tools/content-schema/native-gameplay/crystal-primal-region.json"
+);
+
+/// Source-qualified region facts. This type does not issue an activated room,
+/// artifact pin, mutable placement or encounter instance.
+pub(in crate::content) struct QualifiedPrimalRegion {
+    scope: EngineeringStaticCellScope,
+    cells: BTreeMap<LogicalCell, Option<QualifiedSpellTile>>,
+}
+
+impl QualifiedPrimalRegion {
+    pub(in crate::content) fn scope(&self) -> &EngineeringStaticCellScope {
+        &self.scope
+    }
+
+    pub(in crate::content) fn lookup(
+        &self,
+        scope: &EngineeringStaticCellScope,
+        cell: LogicalCell,
+    ) -> Result<CollisionClass, StaticCellEngineError> {
+        if scope != &self.scope {
+            return Err(StaticCellEngineError::ScopeMismatch);
+        }
+        let tile = self
+            .cells
+            .get(&cell)
+            .ok_or(StaticCellEngineError::Absent)?
+            .as_ref()
+            .ok_or(StaticCellEngineError::Unqualified)?;
+        Ok(if tile.ground_present() && !tile.flags().block_solid {
+            CollisionClass::Walkable
+        } else {
+            CollisionClass::Blocked
+        })
+    }
+}
+
+#[derive(Deserialize)]
+struct PrimalRegionDocument {
+    tiles: Vec<PrimalRegionTile>,
+}
+
+#[derive(Deserialize)]
+struct PrimalRegionTile {
+    source_position: [i32; 3],
+    otbm_flags: u32,
+    semantics: SourceSemantics,
+}
+
+pub(in crate::content) fn qualify_primal_region(
+    bytes: &[u8],
+    scope: EngineeringStaticCellScope,
+) -> Result<QualifiedPrimalRegion, ProjectError> {
+    // Crystal 201189f the_primal_manace.lua:8-20 defines source placements.
+    // The generator verifies map, appearances and item XML Git blobs before
+    // emitting this exact document. Substituted or expanded input is rejected.
+    if bytes != PRIMAL_SOURCE
+        || scope.coordinate_frame.as_str() != SOURCE_WORLD_FRAME
+        || scope.map_revision.as_str() != SOURCE_WORLD_MAP
+    {
+        return Err(invalid());
+    }
+    let document: PrimalRegionDocument = serde_json::from_slice(bytes).map_err(|_| invalid())?;
+    if document.tiles.len() != 510 {
+        return Err(invalid());
+    }
+    let mut cells = BTreeMap::new();
+    for row in document.tiles {
+        let [x, y, z] = row.source_position;
+        let cell = LogicalCell {
+            x: x - 5854,
+            y: y - 5298,
+            z: -z,
+        };
+        let facts = row.semantics;
+        let tile = facts.unmaterialized_dynamic_items.is_empty().then(|| {
+            QualifiedSpellTile::from_source_world(
+                facts.ground,
+                facts.ground_speed,
+                facts.top_ids,
+                facts.flags,
+                facts.height_count,
+                facts.floor_changes,
+                row.otbm_flags & 1 == 0 && row.otbm_flags & 4 != 0,
+                row.otbm_flags & 1 == 0 && row.otbm_flags & 4 == 0 && row.otbm_flags & 16 != 0,
+                row.otbm_flags & 8 != 0,
+            )
+        });
+        if cells.insert(cell, tile).is_some() {
+            return Err(invalid());
+        }
+    }
+    Ok(QualifiedPrimalRegion { scope, cells })
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -698,6 +880,59 @@ mod tests {
     const SOURCE: &[u8] = include_bytes!(
         "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
     );
+    #[test]
+    fn source_region_bundle_admits_primal_and_projects_both_regions() {
+        let bundle = serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1",
+            "channel": std::str::from_utf8(SOURCE).unwrap(),
+            "primal": std::str::from_utf8(PRIMAL_SOURCE).unwrap(),
+        }))
+        .unwrap();
+        let map = qualify(&bundle, scope()).expect("source region bundle");
+        let boss = LogicalCell {
+            x: 33558 - 5854,
+            y: 32759 - 5298,
+            z: -15,
+        };
+        assert_eq!(map.lookup(map.scope(), boss), Ok(CollisionClass::Walkable));
+        let projection: serde_json::Value =
+            serde_json::from_slice(&client_projection(&bundle).unwrap()).unwrap();
+        assert_eq!(projection["cells"].as_array().unwrap().len(), 2833 + 510);
+    }
+    #[test]
+    fn primal_region_admits_source_placements_and_refuses_pending_teleport() {
+        let region = qualify_primal_region(PRIMAL_SOURCE, scope()).expect("Primal source region");
+        let boss = LogicalCell {
+            x: 33558 - 5854,
+            y: 32759 - 5298,
+            z: -15,
+        };
+        assert_eq!(
+            region.lookup(region.scope(), boss),
+            Ok(CollisionClass::Walkable)
+        );
+        let exit = LogicalCell {
+            x: 33520 - 5854,
+            y: 32871 - 5298,
+            z: -15,
+        };
+        assert_eq!(
+            region.lookup(region.scope(), exit),
+            Ok(CollisionClass::Walkable)
+        );
+        let pending = LogicalCell {
+            x: 33567 - 5854,
+            y: 32758 - 5298,
+            z: -15,
+        };
+        assert_eq!(
+            region.lookup(region.scope(), pending),
+            Err(StaticCellEngineError::Unqualified)
+        );
+        let mut changed = PRIMAL_SOURCE.to_vec();
+        changed.push(b' ');
+        assert!(qualify_primal_region(&changed, scope()).is_err());
+    }
     #[test]
     fn wheel_removal_uses_the_source_rectangle_and_a_current_qualified_pz_tile() {
         let mut map = qualify(SOURCE, scope()).expect("source map");

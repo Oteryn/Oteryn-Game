@@ -26,7 +26,7 @@ pub(super) async fn scenario(
     let (deps, rat) = dependencies(active, &pin)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = deps.room.movement_cells();
+    owner.movement_cells = (deps.room.movement_cells()).into();
     if !replay_only && !missing_child {
         super::shared_budget::exercise(harness, &deps, &owner, rat).await?;
         // The budget test completed the walkback. Start the summon case from the pinned

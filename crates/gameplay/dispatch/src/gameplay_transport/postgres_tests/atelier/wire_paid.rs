@@ -573,7 +573,7 @@ fn scenario(case: Case) -> TestResult {
             Arc::new(WheelRuleset::from_catalogue(data.revision(), data.wheel()).map_err(debug)?);
         let mut owner = deps.owner(&h, &authority);
         if let Some(bundle) = resource_bundle.as_ref() {
-            owner.movement_cells = bundle.movement_cells();
+            owner.movement_cells = (bundle.movement_cells()).into();
             owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(bundle));
         }
         if matches!(case, Case::ExAction | Case::Resources) {

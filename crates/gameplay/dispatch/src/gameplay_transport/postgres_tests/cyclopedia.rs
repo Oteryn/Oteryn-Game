@@ -147,7 +147,7 @@ fn scenario(canonical: bool) -> TestResult {
                 Some(h.root.clone()),
             );
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         deps.initialize(&owner).await;
@@ -421,7 +421,7 @@ fn scenario(canonical: bool) -> TestResult {
         std::sync::Arc::get_mut(&mut owner.states)
             .expect("W02: isolated fixture state")
             .command_ingress = commands;
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         let (status, replay) =
@@ -542,7 +542,7 @@ fn scenario(canonical: bool) -> TestResult {
         std::sync::Arc::get_mut(&mut owner.states)
             .expect("W02: isolated fixture state")
             .command_ingress = commands;
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         assert_eq!(
