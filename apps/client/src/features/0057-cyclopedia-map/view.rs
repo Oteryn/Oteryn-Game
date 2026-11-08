@@ -33,6 +33,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Donate",
                 "Query Houses",
                 "Next Houses",
+                "Previous analyser",
+                "Next analyser",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -58,6 +60,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         mailbox.discovery.inspection.category =
                             values.get(2).cloned().unwrap_or_default();
                     }
+                    return;
+                }
+                if action == 15 || action == 16 {
+                    select_analytics(mailbox, action == 15);
                     return;
                 }
                 if action == 13 || action == 14 {
@@ -123,6 +129,25 @@ fn section_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
     format!("Cyclopedia > {}\r\n{body}", panel.section.title())
 }
 
+#[cfg(any(windows, test))]
+fn select_analytics(mailbox: &mut crate::play::mailbox::Mailbox, previous: bool) {
+    use oteryn_client_ui::{analyser::Tool, cyclopedia_map::Section};
+    let index = Tool::ALL
+        .iter()
+        .position(|tool| *tool == mailbox.analyser.tool)
+        .unwrap_or(0);
+    let index = if previous {
+        (index + Tool::ALL.len() - 1) % Tool::ALL.len()
+    } else {
+        (index + 1) % Tool::ALL.len()
+    };
+    crate::play::feature_0010_analyser::input::select_tool(&mut mailbox.analyser, index);
+    mailbox
+        .properties
+        .cyclopedia_map
+        .navigate(Section::Analytics);
+}
+
 #[cfg(test)]
 mod navigation_tests {
     #[test]
@@ -163,5 +188,20 @@ mod navigation_tests {
         assert!(text.contains("oteryn:house.harbour"));
         assert!(text.contains("rent 500"));
         assert!(text.contains("900"));
+    }
+    #[test]
+    fn analytics_selector_cycles_tools_without_resetting_confirmed_totals() {
+        use oteryn_client_ui::analyser::Tool;
+        let mut mailbox = crate::play::mailbox::Mailbox::default();
+        mailbox.analyser.selected = true;
+        mailbox.analyser.kills = 9;
+        super::select_analytics(&mut mailbox, false);
+        assert_eq!(mailbox.analyser.tool, Tool::Hunting);
+        assert!(super::section_text(&mailbox).contains("Kills: 9"));
+        super::select_analytics(&mut mailbox, true);
+        super::select_analytics(&mut mailbox, true);
+        assert_eq!(mailbox.analyser.tool, Tool::Healing);
+        assert_eq!(mailbox.analyser.kills, 9);
+        assert!(!super::section_text(&mailbox).contains("Kills:"));
     }
 }
