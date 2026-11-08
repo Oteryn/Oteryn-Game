@@ -2,6 +2,8 @@ use crate::play::play_channel;
 use oteryn_session::{AppliedDelta, SessionEvent, analyser_transport::AnalyserFact};
 #[path = "bosses.rs"]
 mod boss_tracker_tests;
+#[path = "outgoing.rs"]
+mod outgoing_view_tests;
 #[path = "party_import.rs"]
 mod party_summary_tests;
 #[test]
