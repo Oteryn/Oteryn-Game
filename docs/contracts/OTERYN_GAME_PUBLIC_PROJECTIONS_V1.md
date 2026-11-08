@@ -7,8 +7,10 @@
   architect review (protocol, privacy, persistence), which the control plane runs. Revision 2
   fixes the vocation ids (§4.0), adds `guild_visible` with its shared wire fixtures
   (§4.2) and its revision trigger (§5), and records the owner decisions
-  Q2 to Q4 (§12). `character_deaths`, `guild` and `house` stay **CANDIDATE** (revision 1,
-  GAME-PUBLIC-PROJ-0, 2026-10-08) and authorize no runtime work until their own acceptance.
+  Q2 to Q4 (§12). `character_deaths`, `guild` and `house` are **ACCEPTED**, owner decision
+  2026-11-07 (PUBPROJ, “1 tak, 2 zgoda”), under the V2 profile in
+  `OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md`, replacing their candidate revision 1
+  wire shapes below. The accepted V1 families and watermark enum are unchanged.
   Each implementing child needs its own #1622 allocation.
 - Contract ID: `oteryn-game-public-projections-v1`
 - Coordination: #1622 (P5); Oteryn/Oteryn-Platform#1476 (Platform mirror; P8 DECANARY-PUBLIC-1
@@ -278,7 +280,10 @@ different content, `429` rate limited, `503` unavailable.
   presence), `ChannelId`, position, sex, comments, house (the `house` family names its owner),
   creation time. Adding a field is a new `contract_version`.
 
-### 4.3 `character_deaths`
+### 4.3 `character_deaths` (ACCEPTED as V2, 2026-11-07)
+
+The following V1 example is superseded by the accepted V2 profile, including
+stable killer identity, in `OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md`.
 
 ```json
 {"contract_version":1,"operation":"PublishCharacterDeathsV1","source_authority":"oteryn:game:primary","character_id":"01934f10-7c04-7001-805b-3b1122334401","projection_epoch":"1","projection_revision":"3","source_observed_at":"1790000000","deaths":[{"occurred_at":"1789990000","level":"413","pvp":true,"killers":["Beren","Mira"]}]}
@@ -301,7 +306,10 @@ different content, `429` rate limited, `503` unavailable.
   marks and kill points. Platform hides entries older than `PUBPROJ-DEATHS-WINDOW` (30 days) at
   read time, so aging needs no publication.
 
-### 4.4 `guild` (consistent with GUILD-0, candidate)
+### 4.4 `guild` (ACCEPTED as V2, 2026-11-07)
+
+The following candidate V1 shape is superseded by V2 stable member CharacterIds
+and `(rank_level, character_id)` ordering; see `OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md`.
 
 ```json
 {"contract_version":1,"operation":"PublishGuildV1","source_authority":"oteryn:game:primary","guild_id":"01934f10-7c06-7001-805b-3b1122334401","projection_epoch":"1","projection_revision":"5","source_observed_at":"1790000000","guild":[{"world_id":"01934f10-7c02-7001-805b-3b1122334401","name":"Red Rose","state":"ACTIVE","founded_at":"1789000000","ranks":[{"level":1,"name":"Leader"},{"level":2,"name":"Vice Leader"},{"level":3,"name":"Member"}],"members":[{"name":"Aldric","rank_level":1,"joined_at":"1789000000"}]}]}
@@ -323,7 +331,10 @@ different content, `429` rate limited, `503` unavailable.
   invitations, applications, the activity log and every guildhall ACL. A member's other characters
   are never linked (GUILD-0 §4.2).
 
-### 4.5 `house` (consistent with HOUSE-OWN-0, candidate)
+### 4.5 `house` (ACCEPTED as V2, 2026-11-07)
+
+The body below is accepted unchanged under the V2 envelope and route; see
+`OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md`.
 
 ```json
 {"contract_version":1,"operation":"PublishHouseV1","source_authority":"oteryn:game:primary","world_id":"01934f10-7c02-7001-805b-3b1122334401","house_key":"oteryn:content.house.example-street-1","projection_epoch":"1","projection_revision":"12","source_observed_at":"1790000000","house":[{"name":"Example Street 1","kind":"private_house","town":"oteryn:content.area.city.example","size_sqm":"24","beds":"2","rent_gold":"5000","status":"OWNED","owner_kind":"CHARACTER","owner_name":"Aldric","paid_until":"1792000000"}]}

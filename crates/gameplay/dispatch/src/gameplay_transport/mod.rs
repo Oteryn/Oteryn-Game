@@ -111,6 +111,7 @@ mod loop_move;
 mod loop_training;
 pub mod mail;
 mod map_door;
+mod map_ladder;
 mod mining;
 mod monk_save;
 mod monster_ai_cycle;
@@ -146,6 +147,7 @@ mod private_channel_world;
 mod proficiency_checkpoint;
 mod promotion_death;
 mod promotion_login;
+mod public_kill_statistics;
 mod pvp_death;
 mod pvp_expert;
 mod pvp_live;
@@ -155,6 +157,7 @@ mod quest_death_loot;
 mod quest_disguise;
 mod quest_kills;
 mod quest_log_source;
+mod quest_timer_cycle;
 mod raid_live;
 mod raid_live_world;
 mod raid_notices;
@@ -1614,6 +1617,7 @@ fn player_death_request<const N: usize>(
         .map(|byte| format!("{byte:02x}"))
         .collect();
     crate::durability::character_death::CharacterDeathRequest {
+        public_cause: death.public_cause,
         pvp_contributors: Vec::new(),
         occurrence: death.occurrence,
         context: progression.context.clone(),

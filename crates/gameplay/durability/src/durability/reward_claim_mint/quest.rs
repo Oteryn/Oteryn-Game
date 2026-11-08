@@ -169,13 +169,6 @@ pub(crate) async fn apply(
         }
     }
     if callback
-        .outfit
-        .as_ref()
-        .is_some_and(|reward| !outfit_compatible(admission.native, reward))
-    {
-        return Ok(false);
-    }
-    if callback
         .cosmetic_targets()
         .any(|reward| !outfit_compatible(admission.native, reward))
     {
@@ -468,6 +461,8 @@ pub(crate) async fn give_world(
     if let Some(input) = &callback.item_on_target {
         take.push(
             oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+ fluid_subtype: None,
+
                 item: input.item.clone(),
                 count: input.count,
             },
@@ -539,6 +534,16 @@ async fn mint_with_source(
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
+    if reward.premium {
+        let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        let account = account
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if !admission.weights.wheel_premium_current(account) {
+            return Ok(None);
+        }
+    }
     let resolve = |key: &str| {
         let id = key
             .strip_prefix("oteryn:item.tibia.i")
@@ -587,12 +592,29 @@ async fn mint_with_source(
         contents: (if reward.backpack_outputs.is_empty() { &reward.contents } else { &reward.backpack_outputs })
             .iter()
             .map(|i| {
+                if i.fluid_subtype.is_some() {
+                    use oteryn_gameplay_content::content::{
+                        ReferenceItemField, ReferenceItemFluid,
+                    };
+                    let policy = admission
+                        .native
+                        .item_policy(&i.item, "definition-r1")
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    if !matches!(
+                        &policy.record().semantics.fluid,
+                        ReferenceItemField::Known(ReferenceItemFluid {
+                            fluid_type: ReferenceItemField::NotApplicable
+                        })
+                    ) {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                }
                 Ok(RewardClaimMintContent {
+                    fluid_subtype: i.fluid_subtype,
                     item: resolve(&i.item)?,
                     quantity: u32::from(i.count),
                     key_number: None,
                     text: None,
-                    fluid_subtype: None,
                     charges_remaining: None,
                 })
             })

@@ -23,14 +23,16 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 /// Words that ask what the NPC offers.
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
-const REWARD_CALLBACKS: &str =
-    include_str!("../../../../content/quests/shared-reward-callbacks.json");
-const CHOSEN_REWARD_CALLBACKS: &str =
-    include_str!("../../../../content/quests/chosen-reward-callbacks.json");
-const CHOSEN_REWARD_GREETINGS: &str =
-    include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json");
-const REWARD_GREETINGS: &str =
-    include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json");
+const REWARD_CALLBACKS: &[&str] = &[
+    include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
+];
+const REWARD_GREETINGS: &[&str] = &[
+    include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
+];
 
 #[derive(serde::Deserialize)]
 struct RewardMessages {
@@ -48,22 +50,21 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
     }
     static DATA: std::sync::OnceLock<Option<Vec<RewardMessages>>> = std::sync::OnceLock::new();
     let rows = DATA.get_or_init(|| {
-        let mut source: Document = serde_json::from_str(REWARD_GREETINGS).ok()?;
-        let chosen: Document = serde_json::from_str(CHOSEN_REWARD_GREETINGS).ok()?;
-        if source.schema != 1 || chosen.schema != 1 || source.npcs.len() + chosen.npcs.len() > 256 {
-            return None;
-        }
+        let mut rows = Vec::new();
         let mut keys = std::collections::BTreeSet::new();
-        if source
-            .npcs
-            .iter()
-            .chain(&chosen.npcs)
-            .any(|row| !keys.insert(&row.npc))
-        {
-            return None;
+        for source in REWARD_GREETINGS {
+            let document = serde_json::from_str::<Document>(source).ok()?;
+            if document.schema != 1 {
+                return None;
+            }
+            for row in document.npcs {
+                if !keys.insert(row.npc.clone()) {
+                    return None;
+                }
+                rows.push(row);
+            }
         }
-        source.npcs.extend(chosen.npcs);
-        Some(source.npcs)
+        (rows.len() <= 256).then_some(rows)
     });
     reward_callback_npc(key).then_some(())?;
     rows.as_ref()?.iter().find(|r| r.npc == key)
@@ -84,23 +85,23 @@ fn reward_callback_npc(key: &str) -> bool {
     static NPCS: std::sync::OnceLock<std::collections::BTreeSet<String>> =
         std::sync::OnceLock::new();
     NPCS.get_or_init(|| {
-        let documents = [REWARD_CALLBACKS, CHOSEN_REWARD_CALLBACKS]
-            .into_iter()
-            .map(serde_json::from_str::<Document>)
-            .collect::<Result<Vec<_>, _>>();
-        let Ok(documents) = documents else {
-            return Default::default();
+        let parse = || -> Option<std::collections::BTreeSet<String>> {
+            let mut count = 0_usize;
+            let mut keys = std::collections::BTreeSet::new();
+            for source in REWARD_CALLBACKS {
+                let document = serde_json::from_str::<Document>(source).ok()?;
+                if document.schema != 1 {
+                    return None;
+                }
+                count = count.checked_add(document.callbacks.len())?;
+                if count > 256 {
+                    return None;
+                }
+                keys.extend(document.callbacks.into_iter().map(|c| c.npc));
+            }
+            Some(keys)
         };
-        if documents.iter().any(|d| d.schema != 1)
-            || documents.iter().map(|d| d.callbacks.len()).sum::<usize>() > 256
-        {
-            return Default::default();
-        }
-        documents
-            .into_iter()
-            .flat_map(|d| d.callbacks)
-            .map(|c| c.npc)
-            .collect()
+        parse().unwrap_or_default()
     })
     .contains(key)
 }
@@ -306,7 +307,7 @@ impl NpcTalkBook {
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::grizzly_shop::book_digest(
                         model.source_tree_digest()
@@ -321,10 +322,8 @@ impl NpcTalkBook {
                     OROCKLE_TRADE
                 ),
                 isle_of_evil::revision_material(),
-                REWARD_CALLBACKS,
-                REWARD_GREETINGS,
-                CHOSEN_REWARD_CALLBACKS,
-                CHOSEN_REWARD_GREETINGS,
+                REWARD_CALLBACKS.join("\0"),
+                REWARD_GREETINGS.join("\0"),
                 crate::content::npc_catalogue::healing::DATA,
                 crate::content::npc_catalogue::travel::revision_material(),
                 YASIR_SOURCE,
@@ -847,7 +846,15 @@ mod tests {
             .service_model_for_project()
             .map_err(|e| format!("{e:?}"))?;
         let book = NpcTalkBook::from_model(&model);
-        for name in ["morgan", "navigator", "costello", "budrik", "sam"] {
+        for name in [
+            "morgan",
+            "navigator",
+            "costello",
+            "budrik",
+            "sam",
+            "oldrak",
+            "zoltan",
+        ] {
             let key = format!("oteryn:npc.{name}");
             let entry = book
                 .get(&key)
@@ -858,6 +865,12 @@ mod tests {
                 "no scripted reward branch opens through talk rules"
             );
         }
+        assert!(
+            book.get("oteryn:npc.zoltan")
+                .ok_or("Zoltan")?
+                .greeting_reply
+                .contains("student of the arcane arts")
+        );
         assert!(!reward_callback_npc("oteryn:npc.unqualified"));
         Ok(())
     }

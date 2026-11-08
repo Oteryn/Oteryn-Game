@@ -767,10 +767,11 @@ pub fn destination(key: &str, actor: Position) -> Option<Position> {
     Some(target)
 }
 pub fn callbacks() -> Vec<Callback> {
-    GATES.iter().enumerate().map(|(index,gate)|Callback {
+    GATES.iter().enumerate().map(|(index,gate)|Callback {actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, world_requirements: Vec::new(),
         key:gate_key(index),quest:super::shared_world_progress::HIVE_QUEST.into(),trigger:Trigger::Use,
-        selector:Selector {position:Some(gate.position),ordinal:None,unique:None,action:None,appearance:Some(gate.appearance)},
-        use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],lever:None,reversible:false,passages:vec![],teleport:Some(gate.position),storage:vec![],minimum_level:None,
+use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],
+        selector:Selector {ordinal:None,native: None,position:Some(gate.position),unique:None,action:None,appearance:Some(gate.appearance)},
+        lever:None,reversible:false,passages:vec![],teleport:Some(gate.position),storage:vec![],minimum_level:None,
         experience: None, world_change: None,monk_reward:None,offerings:vec![],item_on_target:None,return_on_failure:false,
         failure_message:Some("The Hive rejects your scent.".into()),success_message:None,native_rule:None,effects:Default::default(),
         sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/actions/objects/hive_gates.lua:3-24; wiki56902@930222:20; native B3 exact gates, authored east/west membership".into()],

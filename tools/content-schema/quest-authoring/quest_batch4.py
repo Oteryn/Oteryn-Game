@@ -5,7 +5,7 @@ The committed packets are authored inputs, not an executable Lua interpreter.
 Existing callback keys outside those inputs retain their values. The combined
 registry is sorted by key, matching the batch-three compiler.
 No dialogue manifest, NPC qualification, item, map or quest recipe is changed.
-The default requires all 21 packets. Explicit --quests and --available modes
+The default requires every registered packet. Explicit --quests and --available modes
 support regenerating independently cherry-picked quest inputs.
 """
 import argparse
@@ -27,7 +27,7 @@ QUEST_ORDER = (
     'svargrond_arena', 'thais_lighthouse', 'the_explorer_society',
     'the_first_dragon', 'the_hunt_for_the_sea_serpent', 'the_lost_brother',
     'the_order_of_lion_quest', 'the_spike_tasks', 'tibia_tales',
-    'unnatural_selection',
+    'triangle_tower_quest', 'unnatural_selection', 'waterfall',
 )
 QUEST_OWNERS = {
     'cults_of_tibia': 'oteryn:quest.cults_of_tibia_quest',
@@ -51,7 +51,9 @@ QUEST_OWNERS = {
     'the_order_of_lion_quest': 'oteryn:quest.the_order_of_the_lion_quest',
     'the_spike_tasks': 'oteryn:quest.spike_task',
     'tibia_tales': 'oteryn:quest.tibia_tales',
+    'triangle_tower_quest': 'oteryn:quest.triangle_tower_quest',
     'unnatural_selection': 'oteryn:quest.unnatural_selection_quest',
+    'waterfall': 'oteryn:quest.waterfall_quest',
 }
 
 PACKET_FIELDS = {
@@ -62,7 +64,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'effects', 'sources',
+    'success_message', 'native_rule', 'sources', 'facing', 'effects',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -219,17 +221,30 @@ def validate_native(callback, context):
             context + ': native rule source file differs')
     require(all(callback.get(field) is None for field in (
         'lever', 'teleport', 'minimum_level', 'experience', 'monk_reward',
-        'item_on_target', 'failure_message', 'success_message',
+        'item_on_target', 'failure_message', 'success_message', 'facing',
     )) and not callback['reversible'] and not callback['return_on_failure']
-        and not callback['passages'] and not callback['offerings'],
+        and not callback['passages'] and not callback['offerings'] and not callback.get('effects'),
         context + ': native rule has unrelated effects or feedback')
 
 
 def validate_effects(callback, context):
     """The optional Channel effects share the Rust world_callbacks closed shape."""
+    legacy_facing = callback.get('facing')
+    require(legacy_facing is None or integer(legacy_facing, 0, 3)
+            and callback.get('teleport') is not None, context + ': invalid facing')
     effects = callback.get('effects', {})
+    if isinstance(effects, list):
+        require(len(effects) <= MAX_EFFECTS, context + ': invalid effects')
+        for effect in effects:
+            fields(effect, {'position','effect'}, {'position','effect'}, context + ': effect')
+            position(effect['position'], context + ': effect')
+            require(integer(effect['effect'],1,65535), context + ': invalid effect')
+        require(callback.get('native_rule') is None or not effects, context + ': native rule has unrelated effects')
+        effects = {}
     allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
     fields(effects, set(), allowed, context + ': effects')
+    require(legacy_facing is None or effects.get('facing') is None,
+            context + ': conflicting destination facings')
     outfit = effects.get('outfit_reward')
     if outfit is not None:
         fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
@@ -337,18 +352,26 @@ def validate_callback(callback, directory):
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')
+    if callback.get('facing') is not None:
+        require(integer(callback['facing'], 0, 3) and callback.get('teleport') is not None,
+                key + ': invalid facing')
     for field in ('passages', 'storage', 'offerings'):
         require(isinstance(callback[field], list) and len(callback[field]) <= MAX_EFFECTS,
                 key + ': invalid or excessive ' + field)
     seen = set()
     for storage in callback['storage']:
         fields(storage, {'track', 'minimum', 'maximum', 'set'},
-               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only'}, key + ': storage')
+               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only', 'increment', 'at_least'}, key + ': storage')
         require(valid_key(storage['track']) and storage['track'] not in seen, key + ': duplicate or invalid track')
         seen.add(storage['track'])
         require(all(integer(storage[field], -(2 ** 63), 2 ** 63 - 1) for field in ('minimum', 'maximum', 'set'))
                 and storage['minimum'] <= storage['maximum'], key + ': invalid storage range')
         require(type(storage.get('preserve', False)) is bool, key + ': invalid preserve')
+        require(type(storage.get('increment', False)) is bool, key + ': invalid increment')
+        if storage.get('increment', False):
+            require(storage['set'] > 0 and not storage.get('preserve', False)
+                    and callback.get('native_rule') is None
+                    and storage['maximum'] <= 2 ** 63 - 1 - storage['set'], key + ': invalid increment')
         require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
     if any(entry.get('read_only', False) for entry in callback['storage']):
         require(all(entry.get('read_only', False) and not entry.get('preserve', False)
@@ -361,11 +384,21 @@ def validate_callback(callback, directory):
                 key + ': invalid read-only callback')
     seen = set()
     for passage in callback['passages']:
-        fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement'}, key + ': passage')
+        fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement', 'create_on_close'}, key + ': passage')
         location = position(passage['position'], key + ': passage')
         require(location not in seen and integer(passage['appearance'], 0, 65535), key + ': invalid or duplicate passage')
         seen.add(location)
         nullable_id(passage.get('replacement'), key + ': passage replacement')
+        create = passage.get('create_on_close')
+        if create is not None:
+            require(integer(create, 1, 65535) and create != passage['appearance']
+                    and passage.get('replacement') is None and len(callback['passages']) == 1
+                    and callback.get('lever') is not None and callback['reversible']
+                    and not callback['storage'] and callback.get('teleport') is None
+                    and callback.get('item_on_target') is None and not callback['offerings']
+                    and not callback.get('effects') and callback.get('experience') is None
+                    and callback.get('monk_reward') is None and callback.get('success_message') is None,
+                    key + ': invalid asymmetric wall')
     seen = set()
     for offering in callback['offerings']:
         fields(offering, {'position', 'item', 'count'}, {'position', 'item', 'count'}, key + ': offering')
@@ -375,11 +408,18 @@ def validate_callback(callback, directory):
         seen.add(location)
     item = callback.get('item_on_target')
     if item is not None:
-        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement'}, key + ': item_on_target')
+        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement', 'reusable', 'alternatives'}, key + ': item_on_target')
         require(valid_key(item['item']) and integer(item['count'], 1, 100)
                 and bool(callback['storage']) and callback['trigger'] == 'use', key + ': invalid item_on_target')
         if item.get('replacement') is not None:
             require(valid_key(item['replacement']) and item['count'] == 1, key + ': invalid item replacement')
+        require(type(item.get('reusable', False)) is bool, key + ': invalid reusable')
+        require(not item.get('reusable', False) or item['count'] == 1
+                and item.get('replacement') is None, key + ': invalid reusable replacement')
+        alternatives = item.get('alternatives', [])
+        require(isinstance(alternatives, list) and len(alternatives) <= 3
+                and all(valid_key(value) and value != item['item'] for value in alternatives)
+                and len(set(alternatives)) == len(alternatives), key + ': invalid alternatives')
         nullable_id(item.get('target_replacement'), key + ': target replacement')
         require(item.get('target_replacement') != 0, key + ': zero target replacement')
     if callback.get('minimum_level') is not None:
@@ -389,7 +429,7 @@ def validate_callback(callback, directory):
     require(callback.get('monk_reward') is None, key + ': Monk rewards are outside batch four')
     text_message(callback.get('failure_message'), key + ': failure_message')
     text_message(callback.get('success_message'), key + ': success_message')
-    provenance(callback['sources'], key, outfit=callback.get('effects',{}).get('outfit_reward') is not None)
+    provenance(callback['sources'], key, outfit=isinstance(callback.get('effects'), dict) and callback['effects'].get('outfit_reward') is not None)
     validate_native(callback, key)
     validate_effects(callback, key)
 
@@ -413,7 +453,7 @@ def select_quests(root, selected=None, available=False):
     actual = {path.name for path in directory.glob('*.json')}
     expected = {name + '.json' for name in QUEST_ORDER}
     if selected is None and not available:
-        require(actual == expected, 'batch four requires exactly 21 named inputs; missing=' +
+        require(actual == expected, f'batch four requires exactly {len(QUEST_ORDER)} named inputs; missing=' +
                 ','.join(sorted(expected - actual)) + '; foreign=' + ','.join(sorted(actual - expected)))
         return QUEST_ORDER
     require(actual <= expected, 'foreign batch-four input names: ' + ','.join(sorted(actual - expected)))

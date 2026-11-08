@@ -681,6 +681,21 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
     // while preserving their source data. Falcon uses its separate cycle owner.
     let candidates = report.unbound_claims_by_reason().values().sum::<usize>();
     assert_eq!(candidates, 328);
+    for key in [
+        "oteryn:reward-claim.kv.ornamentedshield",
+        "oteryn:reward-claim.kv.triangletower",
+        "oteryn:reward-claim.kv.powerring2",
+    ] {
+        assert_eq!(
+            report.unbound.iter().filter(|row| row.claim == key).count(),
+            1,
+            "{key}"
+        );
+        assert!(
+            !report.left_out.iter().any(|(left_out, _)| left_out == key),
+            "{key}"
+        );
+    }
     assert!(report.served.is_empty());
     assert_eq!(
         report

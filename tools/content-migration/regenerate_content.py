@@ -90,6 +90,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
@@ -554,6 +555,7 @@ def main() -> int:
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
         for census in ("equipment", "audit_sites", "room_sites"):
             run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
+        run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
         if not args.skip_checks:
             run(["python3", "tools/content-migration/register_spell_families.py", "--check"])
         return 0
@@ -585,6 +587,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
     for census in ("equipment", "audit_sites", "room_sites"):
         run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
+    run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

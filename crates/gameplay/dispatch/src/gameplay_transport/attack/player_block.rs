@@ -323,7 +323,7 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 .prey_percent(runtime, target, target_session, c.race, 2, now.get())
         });
         let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
-        let hit = self.states.apply_creature_damage_kind(
+        let hit = self.states.apply_creature_damage_kind_from(
             runtime,
             target,
             target_session,
@@ -335,6 +335,12 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                     .as_ref()
                     .and_then(|charm| super::super::analyser::race(charm.race)),
             ),
+            self.charm.as_ref().and_then(|charm| {
+                crate::gameplay_transport::actor_spell::native_public_death_cause(
+                    runtime,
+                    charm.source,
+                )
+            }),
         )?;
         if !was_dead && let (Some(death), Some(charm)) = (hit.death, &self.charm) {
             self.attack.capture_death_charm(
