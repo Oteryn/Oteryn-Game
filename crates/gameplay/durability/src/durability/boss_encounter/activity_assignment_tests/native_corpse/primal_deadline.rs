@@ -108,7 +108,7 @@ async fn prove(h: &fixture::Harness) -> TestResult {
     assert_eq!(
         current,
         (true, false, false),
-        "SQL proof independently rejects foreign identity and stale generation"
+        "SQL proof independently rejects foreign identity and non-current generation"
     );
     assert!(sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms=expires_at_unix_ms-1 WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(item.as_slice()).execute(&h.pool).await.is_err(), "source deadlines remain immutable");
@@ -116,7 +116,38 @@ async fn prove(h: &fixture::Harness) -> TestResult {
     tokio::time::sleep(std::time::Duration::from_millis(10100)).await;
     let alias =
         RuntimeScopeRefV1::channel(world, ChannelId::decode(&id(88)).map_err(fixture::debug)?);
+    // Both owners are genuinely assigned and ready. The UUID, world, node and
+    // generation match; only the Channel/Instance namespace differs.
+    sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)")
+        .bind(world.as_bytes().as_slice()).bind(id(88).as_slice()).execute(&h.pool).await?;
+    committed(
+        h.writer
+            .submit(&super::request(
+                145,
+                AssignmentCommand::Assign {
+                    scope: alias,
+                    target: h.node.fact(),
+                },
+            )?)
+            .await,
+    )?;
+    h.root
+        .publish_runtime_readiness(&h.node, &readiness(h, alias, 1, 1).await?)
+        .await
+        .map_err(fixture::debug)?;
+    assert!(runtime_fence(h, alias, 1, &h.node).await?);
     let wrong_permit = SpellLanePermit::of_fresh_scope(alias).await?;
+    assert_eq!(
+        h.root
+            .drain_spell_item_deadlines(&wrong_permit, &authority, &h.node, alias, 1)
+            .await
+            .map_err(fixture::debug)?,
+        0,
+        "a current Channel owner must not consume its same-UUID Instance corpse deadline"
+    );
+    let untouched: (String, String) = sqlx::query_as("SELECT definition_production_key,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(item.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(untouched, ("oteryn:item.tibia.i39530".into(), "1".into()));
     assert!(
         h.root
             .drain_spell_item_deadlines(&wrong_permit, &authority, &h.node, scope, 1)
