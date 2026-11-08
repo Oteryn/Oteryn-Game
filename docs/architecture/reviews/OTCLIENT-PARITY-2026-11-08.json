@@ -1,0 +1,2923 @@
+[
+  {
+    "feature": "Ładowanie assetów według wersji OT",
+    "otclient_path": [
+      "modules/client_assets/client_assets.lua"
+    ],
+    "oteryn_status": "N/A",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-minimap/scene.rs",
+        "line": 13,
+        "detail": "Rzeczywista projekcja świata w natywnym rendererze; Infrastruktura zgodności z wersjami OT; Oteryn używa własnego pakietu assetów, nie jest to osobny panel gry"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Tło ekranu logowania",
+    "otclient_path": [
+      "modules/client_background/background.lua"
+    ],
+    "oteryn_status": "N/A",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-native-login/native.rs",
+        "line": 26,
+        "detail": "Natywne okno logowania; Warstwa kompozycji ekranu, bez samodzielnej funkcji ani wiadomości gry"
+      },
+      {
+        "path": "apps/client/src/native_entry/authorize.rs",
+        "line": 3,
+        "detail": "Rzeczywista autoryzacja wejścia przez Platform; nie protokół logowania OT"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Kalendarz wydarzeń i ekran nowości",
+    "otclient_path": [
+      "modules/client_bottommenu/bottommenu.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0053-world-event/native.rs",
+        "line": 29,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0053-world-event/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &WorldEventPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0053-world-event/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn world_event_result(&self, result: &GatedCommandResult)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0053-world-event/protocol.rs",
+        "line": 25,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut WorldEventPanel, result: &GatedCommandResult)`"
+      },
+      {
+        "path": "apps/client/src/features/0151-daily-boost/native.rs",
+        "line": 20,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0151-daily-boost/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(p: &DailyBoostPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0151-daily-boost/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn daily_boost_result(&self, result: &GatedCommandResult)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0151-daily-boost/protocol.rs",
+        "line": 48,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(p: &mut DailyBoostPanel, r: &GatedCommandResult)`"
+      }
+    ],
+    "mechanics_row": [
+      "W05d",
+      "W13"
+    ],
+    "missing": "Brakuje przeglądanego miesiącami kalendarza zaplanowanych wydarzeń i ekranu nowości; dostępny jest tylko bieżący komunikat wydarzenia."
+  },
+  {
+    "feature": "Informacje debug/statystyki klienta",
+    "otclient_path": [
+      "modules/client_debug_info/debug_info.lua"
+    ],
+    "oteryn_status": "N/A",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 118,
+        "detail": "Granica negatywnego dowodu: rzeczywisty mailbox paneli, nie implementacja brakującej funkcji; Narzędzie diagnostyczne OTClient, poza parytetem gracza"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 294,
+        "detail": "Dyspozycja push do istniejących reducerów; brak handlera funkcji wskazanej jako MISSING"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Logowanie i wybór postaci",
+    "otclient_path": [
+      "modules/client_entergame/entergame.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-native-login/native.rs",
+        "line": 26,
+        "detail": "Natywne okno logowania"
+      },
+      {
+        "path": "apps/client/src/native_entry/authorize.rs",
+        "line": 3,
+        "detail": "Rzeczywista autoryzacja wejścia przez Platform; nie protokół logowania OT"
+      },
+      {
+        "path": "apps/client/src/features/local-character-selection/native.rs",
+        "line": 56,
+        "detail": "Natywny wybór postaci/kanału po odpowiedzi Platform"
+      },
+      {
+        "path": "apps/client/src/features/local-character-selection/mod.rs",
+        "line": 33,
+        "detail": "OwnerCharacter oraz DirectorySnapshot są przekształcane w wiersze wyboru świata/kanału"
+      }
+    ],
+    "mechanics_row": [
+      "UI-LOGIN",
+      "UI-CHARACTERS"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Lokalizacja interfejsu",
+    "otclient_path": [
+      "modules/client_locales/locales.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-reference-preferences/native.rs",
+        "line": 205,
+        "detail": "Natywne ustawienia lokalne; nie konsumują wiadomości serwera"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings.rs",
+        "line": 55,
+        "detail": "Rzeczywisty zapisany model: audio, skróty, PL/EN, skala i widoczność paneli"
+      }
+    ],
+    "mechanics_row": [
+      "UI-PREFERENCES"
+    ],
+    "missing": "Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN."
+  },
+  {
+    "feature": "Opcje i ustawienia",
+    "otclient_path": [
+      "modules/client_options/options.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-reference-preferences/native.rs",
+        "line": 205,
+        "detail": "Natywne ustawienia lokalne; nie konsumują wiadomości serwera"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings.rs",
+        "line": 55,
+        "detail": "Rzeczywisty zapisany model: audio, skróty, PL/EN, skala i widoczność paneli"
+      }
+    ],
+    "mechanics_row": [
+      "UI-PREFERENCES"
+    ],
+    "missing": "Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji."
+  },
+  {
+    "feature": "Lista dowolnych serwerów OT",
+    "otclient_path": [
+      "modules/client_serverlist/serverlist.lua"
+    ],
+    "oteryn_status": "EXCLUDED",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-native-login/native.rs",
+        "line": 26,
+        "detail": "Natywne okno logowania; Funkcja ekosystemu OT, wyłączona przez właściciela; wybór świata/kanału Oteryn nie oznacza listy zewnętrznych OTS"
+      },
+      {
+        "path": "apps/client/src/native_entry/authorize.rs",
+        "line": 3,
+        "detail": "Rzeczywista autoryzacja wejścia przez Platform; nie protokół logowania OT"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Fonty i style modułów",
+    "otclient_path": [
+      "modules/client_styles/styles.lua"
+    ],
+    "oteryn_status": "N/A",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-native-login/native.rs",
+        "line": 26,
+        "detail": "Natywne okno logowania; Infrastruktura prezentacji, bez osobnego przepływu serwerowego"
+      },
+      {
+        "path": "apps/client/src/native_entry/authorize.rs",
+        "line": 3,
+        "detail": "Rzeczywista autoryzacja wejścia przez Platform; nie protokół logowania OT"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Terminal Lua",
+    "otclient_path": [
+      "modules/client_terminal/terminal.lua"
+    ],
+    "oteryn_status": "N/A",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 118,
+        "detail": "Granica negatywnego dowodu: rzeczywisty mailbox paneli, nie implementacja brakującej funkcji; Narzędzie deweloperskie OTClient; Lua/API dawcy dodatkowo wyłączone jako X06"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 294,
+        "detail": "Dyspozycja push do istniejących reducerów; brak handlera funkcji wskazanej jako MISSING"
+      }
+    ],
+    "mechanics_row": [
+      "X06"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Górne menu i przyciski okien",
+    "otclient_path": [
+      "modules/client_topmenu/topmenu.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-reference-preferences/native.rs",
+        "line": 205,
+        "detail": "Natywne ustawienia lokalne; nie konsumują wiadomości serwera"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings.rs",
+        "line": 55,
+        "detail": "Rzeczywisty zapisany model: audio, skróty, PL/EN, skala i widoczność paneli"
+      }
+    ],
+    "mechanics_row": [
+      "UI-PREFERENCES"
+    ],
+    "missing": "Brakuje wspólnego paska przycisków otwierających okna i zarządzającego ich stanem; Oteryn udostępnia okna przez skróty."
+  },
+  {
+    "feature": "Konfigurowalne paski akcji",
+    "otclient_path": [
+      "modules/game_actionbar/game_actionbar.lua",
+      "modules/game_actionbar/logics/ActionAssignmentWindows.lua",
+      "modules/game_actionbar/logics/ActionBarLayout.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/view.rs",
+        "line": 62,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &crate::play::PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/local-spell-action-bar/view.rs",
+        "line": 6,
+        "detail": "Prezentacja stanu: `pub fn panel_text( panel: &super::ActionBarPanel, catalog: &oteryn_client_runtime::spell_catalog::CatalogState, ) -> String`"
+      },
+      {
+        "path": "crates/client-ui/src/features/local-spell-action-bar/input.rs",
+        "line": 8,
+        "detail": "Konkretny limit: cztery sloty"
+      },
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/protocol.rs",
+        "line": 7,
+        "detail": "Rzeczywisty konsument SessionEvent::ActorCooldowns i ActorVitals"
+      }
+    ],
+    "mechanics_row": [
+      "UI-SPELL-BAR",
+      "UI-PREFERENCES"
+    ],
+    "missing": "Brakuje wielu konfigurowalnych pasków z akcjami przedmiotu/tekstu i układem slotów; natywny pasek obsługuje cztery przypisania czarów."
+  },
+  {
+    "feature": "Analizery polowania, XP, łupu, zapasów, obrażeń i drużyny",
+    "otclient_path": [
+      "modules/game_analyser/analyser.lua",
+      "modules/game_analyser/classes/BossCooldown.lua",
+      "modules/game_analyser/classes/Controller.lua",
+      "modules/game_analyser/classes/DropTrackerAnalyser.lua",
+      "modules/game_analyser/classes/HuntingAnalyser.lua",
+      "modules/game_analyser/classes/ImpactAnalyser.lua",
+      "modules/game_analyser/classes/InputAnalyser.lua",
+      "modules/game_analyser/classes/LootAnalyser.lua",
+      "modules/game_analyser/classes/PartyHuntAnalyser.lua",
+      "modules/game_analyser/classes/SupplyAnalyser.lua",
+      "modules/game_analyser/classes/XPAanalyser.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0010-analyser/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0010-analyser/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0010-analyser/protocol.rs",
+        "line": 11,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn reduce( mailbox: &mut crate::play::mailbox::Mailbox, events: &[oteryn_session::SessionEvent], )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0010-analyser/protocol.rs",
+        "line": 4,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply(panel: &mut Panel, facts: &[AnalyserFact])`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0010-analyser/view.rs",
+        "line": 8,
+        "detail": "Rzeczywisty zakres wyświetlanych sum"
+      }
+    ],
+    "mechanics_row": [
+      "S12"
+    ],
+    "missing": "Brakuje osobnych analizatorów z wykresami/stawkami w czasie, party hunt i boss cooldown/drop tracker; istnieje jeden panel sum kill/XP/loot/supply/damage/heal."
+  },
+  {
+    "feature": "Aury, skrzydła i attached effects OT",
+    "otclient_path": [
+      "modules/game_attachedeffects/attachedeffects.lua"
+    ],
+    "oteryn_status": "EXCLUDED",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-minimap/scene.rs",
+        "line": 13,
+        "detail": "Rzeczywista projekcja świata w natywnym rendererze; Kosmetyka OT wyłączona przez właściciela"
+      }
+    ],
+    "mechanics_row": [
+      "W14e"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Battle list i wybór celu",
+    "otclient_path": [
+      "modules/game_battle/battle.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0017-attack/native.rs",
+        "line": 52,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0017-attack/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn row_text(entity: &WorldSpatialEntity) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0017-attack/protocol.rs",
+        "line": 29,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn battle_result( &self, report: CombatReport, state: Option<oteryn_session::ActorCombatState>, panel_command: Option<CombatCommand>, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0017-attack/protocol.rs",
+        "line": 3,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn replace_entities(&mut self, entities: &[WorldSpatialEntity], own_floor: Option<i16>)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0017-attack/protocol.rs",
+        "line": 12,
+        "detail": "Rzeczywiste sortowanie listy po encji"
+      }
+    ],
+    "mechanics_row": [
+      "C01",
+      "C13",
+      "ADD-0286"
+    ],
+    "missing": "Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora."
+  },
+  {
+    "feature": "Błogosławieństwa i ochrona po śmierci",
+    "otclient_path": [
+      "modules/game_blessing/blessing.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "crates/client-ui/src/features/0384-mechanics-status/view.rs",
+        "line": 26,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &MechanicsStatusPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0384-mechanics-status/protocol.rs",
+        "line": 50,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn mechanics_status_result( &self, result: &oteryn_session::GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/native.rs",
+        "line": 126,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(p: &CyclopediaCharacterPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn cyclopedia_character_result(&self, result: &GatedCommandResult)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0199-cyclopedia-character/protocol.rs",
+        "line": 69,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool`"
+      },
+      {
+        "path": "apps/client/src/features/0384-mechanics-status/protocol.rs",
+        "line": 30,
+        "detail": "Rzeczywisty natywny host Character effects"
+      },
+      {
+        "path": "crates/client-ui/src/features/0384-mechanics-status/view.rs",
+        "line": 56,
+        "detail": "Prezentacja zużytych błogosławieństw i Twist of Fate"
+      }
+    ],
+    "mechanics_row": [
+      "P16",
+      "C20c"
+    ],
+    "missing": "Brakuje panelu prognozy kary XP/PvP i utraty ekwipunku przed śmiercią; dostępne są listy błogosławieństw i ich zużycia po śmierci."
+  },
+  {
+    "feature": "Zgłoszenie błędu",
+    "otclient_path": [
+      "modules/game_bugreport/bugreport.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0076-player-report/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Intent::Bug, kategoria/map position i decode_player_report_reply w natywnym formularzu"
+      },
+      {
+        "path": "crates/client-ui/src/features/0076-player-report/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0076-player-report/protocol.rs",
+        "line": 59,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/0076-player-report/protocol.rs",
+        "line": 72,
+        "detail": "Konkretny payload odpowiedzi: `decode_player_report_reply`"
+      }
+    ],
+    "mechanics_row": [
+      "S12"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Kompendium: poradnik, aktualizacje i pomoc",
+    "otclient_path": [
+      "modules/game_compendium/game_compendium.lua"
+    ],
+    "oteryn_status": "MISSING",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 118,
+        "detail": "Granica negatywnego dowodu: rzeczywisty mailbox paneli, nie implementacja brakującej funkcji"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 294,
+        "detail": "Dyspozycja push do istniejących reducerów; brak handlera funkcji wskazanej jako MISSING"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": "Brakuje okna kompendium z kategoriami poradnika, aktualizacji, informacji o funkcjach i pomocy."
+  },
+  {
+    "feature": "Czat lokalny, prywatny i kanały",
+    "otclient_path": [
+      "modules/game_console/console.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0007-chat/native.rs",
+        "line": 54,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Obsługa wiadomości, otwierania kanałów i prywatnych pokoi; nie jest to deklaracja identyczności wszystkich preferencji konsoli"
+      },
+      {
+        "path": "crates/client-ui/src/features/0007-chat/view.rs",
+        "line": 5,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &ChatPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0007-chat/protocol.rs",
+        "line": 6,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn local_chat_result(&self, outcome: &oteryn_session::ChatOutcome)`"
+      },
+      {
+        "path": "apps/client/src/features/0259-chat-public-channels/native.rs",
+        "line": 56,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0259-chat-public-channels/view.rs",
+        "line": 33,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &ChatPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0259-chat-public-channels/protocol.rs",
+        "line": 32,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn chat_public_result(&self, outcome: &ChatOutcome)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0259-chat-public-channels/protocol.rs",
+        "line": 39,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut ChatPanel, outcome: &ChatOutcome)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0080-chat-private-channel/view.rs",
+        "line": 6,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &ChatPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0080-chat-private-channel/protocol.rs",
+        "line": 17,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn chat_private_result( &self, intent: &ChatIntent, outcome: &ChatOutcome, ) -> bool`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0080-chat-private-channel/protocol.rs",
+        "line": 47,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut ChatPanel, outcome: &ChatOutcome)`"
+      },
+      {
+        "path": "apps/client/src/features/0240-chat-party-room/native.rs",
+        "line": 32,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0240-chat-party-room/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &ChatPartyRoomPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0240-chat-party-room/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn chat_party_room_result(&self)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0240-chat-party-room/protocol.rs",
+        "line": 24,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut ChatPartyRoomPanel)`"
+      }
+    ],
+    "mechanics_row": [
+      "S04b",
+      "S04c",
+      "S18",
+      "ADD-0240"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Kontenery i zagnieżdżone plecaki",
+    "otclient_path": [
+      "modules/game_containers/containers.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0014-container-tree/native.rs",
+        "line": 44,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; ContainerViews/ContainerViewOutcome, lista drzewa i sortowanie"
+      },
+      {
+        "path": "crates/client-ui/src/features/0014-container-tree/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &ContainerPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0014-container-tree/protocol.rs",
+        "line": 18,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn container_result(&self, outcome: Option<ContainerViewOutcome>)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0014-container-tree/protocol.rs",
+        "line": 6,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut ContainerPanel, outcome: Option<ContainerViewOutcome>)`"
+      },
+      {
+        "path": "apps/client/src/features/0146-container-sort/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0146-container-sort/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0146-container-sort/protocol.rs",
+        "line": 24,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      }
+    ],
+    "mechanics_row": [
+      "I01",
+      "ADD-0146"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Cooldowny czarów i grup",
+    "otclient_path": [
+      "modules/game_cooldown/cooldown.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/view.rs",
+        "line": 62,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &crate::play::PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/local-spell-action-bar/view.rs",
+        "line": 6,
+        "detail": "Prezentacja stanu: `pub fn panel_text( panel: &super::ActionBarPanel, catalog: &oteryn_client_runtime::spell_catalog::CatalogState, ) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/protocol.rs",
+        "line": 7,
+        "detail": "Projekcja ActorVitals/SpellCooldowns do natywnego HUD/paska"
+      },
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/protocol.rs",
+        "line": 7,
+        "detail": "Rzeczywisty konsument SessionEvent::ActorCooldowns i ActorVitals"
+      }
+    ],
+    "mechanics_row": [
+      "C04",
+      "UI-SPELL-BAR"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Nazwy, zdrowie i ikony nad stworzeniami",
+    "otclient_path": [
+      "modules/game_creatureinformation/creatureinformation.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0134-party-skull/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0134-party-skull/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0134-party-skull/protocol.rs",
+        "line": 14,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/local-world-object-overlay/protocol.rs",
+        "line": 4,
+        "detail": "Istniejąca projekcja nazw/obiektów; nie dowodzi kompletnego widgetu informacji stworzenia"
+      }
+    ],
+    "mechanics_row": [
+      "ADD-0286",
+      "S02",
+      "S08"
+    ],
+    "missing": "Brakuje pełnego zestawu pasków zdrowia i ikon party/skull nad postacią w widoku świata; potwierdzone tarcze/czaszki są prezentowane w osobnym panelu."
+  },
+  {
+    "feature": "Cyklopedia: nawigacja między działami",
+    "otclient_path": [
+      "modules/game_cyclopedia/game_cyclopedia.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/native.rs",
+        "line": 126,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(p: &CyclopediaCharacterPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn cyclopedia_character_result(&self, result: &GatedCommandResult)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0199-cyclopedia-character/protocol.rs",
+        "line": 69,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool`"
+      }
+    ],
+    "mechanics_row": [
+      "P12c"
+    ],
+    "missing": "Brakuje wspólnego okna Cyklopedii łączącego działy; Oteryn otwiera oddzielne formularze postaci, bestiariusza, mapy i inspekcji."
+  },
+  {
+    "feature": "Przełączniki kompatybilności protokołu OT",
+    "otclient_path": [
+      "modules/game_features/features.lua"
+    ],
+    "oteryn_status": "N/A",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 118,
+        "detail": "Granica negatywnego dowodu: rzeczywisty mailbox paneli, nie implementacja brakującej funkcji; Infrastruktura wielowersyjnego OTClient; Oteryn negocjuje własne capabilities, bez wymogu protokołu Tibia"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 294,
+        "detail": "Dyspozycja push do istniejących reducerów; brak handlera funkcji wskazanej jako MISSING"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Kuźnia egzaltacji",
+    "otclient_path": [
+      "modules/game_forge/game_forge.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0152-item-forge/native.rs",
+        "line": 145,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Natywny wybór operacji oraz potwierdzony ServerMechanicResponse"
+      },
+      {
+        "path": "crates/client-ui/src/features/0152-item-forge/view.rs",
+        "line": 1,
+        "detail": "Prezentacja stanu: `pub fn panel_text(p: &super::ItemForgePanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0152-item-forge/protocol.rs",
+        "line": 6,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn item_forge_result( &self, response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0152-item-forge/protocol.rs",
+        "line": 58,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse)`"
+      }
+    ],
+    "mechanics_row": [
+      "P18"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Okręgi HP/MP i status mnicha",
+    "otclient_path": [
+      "modules/game_healthcircle/game_healthcircle.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/view.rs",
+        "line": 62,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &crate::play::PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/local-spell-action-bar/view.rs",
+        "line": 6,
+        "detail": "Prezentacja stanu: `pub fn panel_text( panel: &super::ActionBarPanel, catalog: &oteryn_client_runtime::spell_catalog::CatalogState, ) -> String`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0278-battle-instinct-status/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &BattleInstinctStatusPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0278-battle-instinct-status/protocol.rs",
+        "line": 49,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn battle_instinct_status_result( &self, result: &oteryn_session::GatedCommandResult, )`"
+      }
+    ],
+    "mechanics_row": [
+      "C11",
+      "UI-SPELL-BAR"
+    ],
+    "missing": "Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD."
+  },
+  {
+    "feature": "HP, MP, soul i warunki",
+    "otclient_path": [
+      "modules/game_healthinfo/healthinfo.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/view.rs",
+        "line": 62,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &crate::play::PlayLink)`; ActorVitals oraz snapshoty warunków i odpoczynku; odpowiedniki rozdzielone między HUD i okna statusu"
+      },
+      {
+        "path": "crates/client-ui/src/features/local-spell-action-bar/view.rs",
+        "line": 6,
+        "detail": "Prezentacja stanu: `pub fn panel_text( panel: &super::ActionBarPanel, catalog: &oteryn_client_runtime::spell_catalog::CatalogState, ) -> String`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0276-condition-status/view.rs",
+        "line": 35,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &ConditionStatusPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0276-condition-status/protocol.rs",
+        "line": 49,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn condition_status_result( &self, result: &oteryn_session::GatedCommandResult, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0277-rest-status/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &RestStatusPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0277-rest-status/protocol.rs",
+        "line": 46,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn rest_status_result(&self, result: &oteryn_session::GatedCommandResult)`"
+      },
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/protocol.rs",
+        "line": 7,
+        "detail": "Rzeczywisty konsument SessionEvent::ActorCooldowns i ActorVitals"
+      }
+    ],
+    "mechanics_row": [
+      "C08",
+      "C09",
+      "C10"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Rankingi",
+    "otclient_path": [
+      "modules/game_highscore/game_highscore.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0009-highscores/native.rs",
+        "line": 47,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0009-highscores/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(p: &HighscoresPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0009-highscores/protocol.rs",
+        "line": 6,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn highscores_result( &self, response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0009-highscores/protocol.rs",
+        "line": 55,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(p: &mut HighscoresPanel, r: &ServerMechanicResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0009-highscores/protocol.rs",
+        "line": 70,
+        "detail": "Konkretny payload odpowiedzi: `decode_highscores_result`"
+      }
+    ],
+    "mechanics_row": [
+      "S11"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Skróty klawiszowe i akcje przedmiotów",
+    "otclient_path": [
+      "modules/game_hotkeys/hotkeys_manager.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0179-hotkey-equip/native.rs",
+        "line": 74,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0179-hotkey-equip/view.rs",
+        "line": 1,
+        "detail": "Prezentacja stanu: `pub fn panel_text(p: &super::HotkeyEquipPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0179-hotkey-equip/protocol.rs",
+        "line": 11,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn hotkey_equip_result( &self, response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0179-hotkey-equip/protocol.rs",
+        "line": 32,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(p: &mut HotkeyEquipPanel, r: &ServerMechanicResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0179-hotkey-equip/protocol.rs",
+        "line": 41,
+        "detail": "Konkretny payload odpowiedzi: `decode_reply`"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/native.rs",
+        "line": 205,
+        "detail": "Natywne ustawienia lokalne; nie konsumują wiadomości serwera"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings.rs",
+        "line": 55,
+        "detail": "Rzeczywisty zapisany model: audio, skróty, PL/EN, skala i widoczność paneli"
+      }
+    ],
+    "mechanics_row": [
+      "UI-PREFERENCES",
+      "I17a",
+      "I17b",
+      "I17c",
+      "I17d"
+    ],
+    "missing": "Brakuje menedżera dowolnych skrótów tekstowych i użycia przedmiotów na self/target/cursor; istnieją przypisania akcji klienta, czarów i formularz equip."
+  },
+  {
+    "feature": "Przykład renderowania HTML",
+    "otclient_path": [
+      "modules/game_htmlsample/htmlsample.lua"
+    ],
+    "oteryn_status": "N/A",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 118,
+        "detail": "Granica negatywnego dowodu: rzeczywisty mailbox paneli, nie implementacja brakującej funkcji; Demonstrator deweloperski, nie funkcja gry"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 294,
+        "detail": "Dyspozycja push do istniejących reducerów; brak handlera funkcji wskazanej jako MISSING"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Tracker czasu imbuementów wyposażenia",
+    "otclient_path": [
+      "modules/game_imbuementtracker/imbuementtracker.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0068-imbue/native.rs",
+        "line": 46,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0068-imbue/mod.rs",
+        "line": 79,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &ImbuePanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0068-imbue/protocol.rs",
+        "line": 9,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn imbue_result(&self, response: &ImbueResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0068-imbue/mod.rs",
+        "line": 56,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut ImbuePanel, response: &ImbueResponse)`"
+      }
+    ],
+    "mechanics_row": [
+      "P21"
+    ],
+    "missing": "Brakuje stale widocznego trackera wszystkich wyposażonych imbuementów z filtrami czasu; czas jest pokazany tylko dla przedmiotu w oknie imbuingu."
+  },
+  {
+    "feature": "Nakładanie i usuwanie imbuementów",
+    "otclient_path": [
+      "modules/game_imbuing/imbuing.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0068-imbue/native.rs",
+        "line": 46,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; ImbueResponse: koszty, oferty, sloty, clear/apply i remaining_ms"
+      },
+      {
+        "path": "crates/client-ui/src/features/0068-imbue/mod.rs",
+        "line": 79,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &ImbuePanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0068-imbue/protocol.rs",
+        "line": 9,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn imbue_result(&self, response: &ImbueResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0068-imbue/mod.rs",
+        "line": 56,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut ImbuePanel, response: &ImbueResponse)`"
+      }
+    ],
+    "mechanics_row": [
+      "P21"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Inspekcja przedmiotu",
+    "otclient_path": [
+      "modules/game_inspect/inspect.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "crates/client-ui/src/features/0132-inspection/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0132-inspection/protocol.rs",
+        "line": 20,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0132-inspection/protocol.rs",
+        "line": 28,
+        "detail": "Konkretny payload odpowiedzi: `decode_reply`"
+      },
+      {
+        "path": "apps/client/src/features/0098-quick-loot/native.rs",
+        "line": 52,
+        "detail": "Wspólny natywny host panelu inspekcji"
+      }
+    ],
+    "mechanics_row": [
+      "I16"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Układ interfejsu i okna boczne",
+    "otclient_path": [
+      "modules/game_interface/gameinterface.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-reference-preferences/native.rs",
+        "line": 205,
+        "detail": "Natywne ustawienia lokalne; nie konsumują wiadomości serwera"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings.rs",
+        "line": 55,
+        "detail": "Rzeczywisty zapisany model: audio, skróty, PL/EN, skala i widoczność paneli"
+      },
+      {
+        "path": "apps/client/src/features/local-minimap/scene.rs",
+        "line": 13,
+        "detail": "Rzeczywista projekcja świata w natywnym rendererze"
+      }
+    ],
+    "mechanics_row": [
+      "UI-WORLD-VIEW",
+      "UI-PREFERENCES"
+    ],
+    "missing": "Brakuje dokowanych, przeciąganych i zapamiętywanych miniokien w kolumnach interfejsu; istnieją osobne okna Win32 i przełączniki widoczności."
+  },
+  {
+    "feature": "Ekwipunek i przenoszenie przedmiotów",
+    "otclient_path": [
+      "modules/game_inventory/inventory.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0004-item-view-move/native.rs",
+        "line": 36,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "apps/client/src/features/0004-item-view-move/protocol.rs",
+        "line": 83,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn item_move_result( &self, response: Option<oteryn_client_runtime::inventory::MoveResponse>, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0004-item-view-move/mod.rs",
+        "line": 13,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply(&mut self, inventory: Option<CharacterInventory>)`"
+      }
+    ],
+    "mechanics_row": [
+      "ADD-0012",
+      "I01"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Mobilny joystick ruchu",
+    "otclient_path": [
+      "modules/game_joystick/joystick.lua"
+    ],
+    "oteryn_status": "MISSING",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0013-paced-movement/input.rs",
+        "line": 7,
+        "detail": "Istniejąca obsługa wejścia ruchu; brak dotykowego joysticka"
+      }
+    ],
+    "mechanics_row": [
+      "M01"
+    ],
+    "missing": "Brakuje ekranowego joysticka dotykowego do sterowania ruchem."
+  },
+  {
+    "feature": "Kalkulator podziału łupu drużyny",
+    "otclient_path": [
+      "modules/game_lootsplitter/lootsplitter.lua"
+    ],
+    "oteryn_status": "MISSING",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0010-analyser/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Istniejący panel sum nie ma importu sesji ani rozrachunku graczy; funkcja lokalna, bez odpowiedzi serwera"
+      },
+      {
+        "path": "crates/client-ui/src/features/0010-analyser/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0010-analyser/protocol.rs",
+        "line": 11,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn reduce( mailbox: &mut crate::play::mailbox::Mailbox, events: &[oteryn_session::SessionEvent], )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0010-analyser/protocol.rs",
+        "line": 4,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply(panel: &mut Panel, facts: &[AnalyserFact])`"
+      }
+    ],
+    "mechanics_row": [
+      "S12"
+    ],
+    "missing": "Brakuje kalkulatora importującego podsumowanie sesji i wyliczającego przelewy wyrównujące bilans członków drużyny."
+  },
+  {
+    "feature": "Główny panel skrótów funkcji",
+    "otclient_path": [
+      "modules/game_mainpanel/mainpanel.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-reference-preferences/native.rs",
+        "line": 205,
+        "detail": "Natywne ustawienia lokalne; nie konsumują wiadomości serwera"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings.rs",
+        "line": 55,
+        "detail": "Rzeczywisty zapisany model: audio, skróty, PL/EN, skala i widoczność paneli"
+      }
+    ],
+    "mechanics_row": [
+      "UI-PREFERENCES"
+    ],
+    "missing": "Brakuje zwijanego głównego panelu ikon funkcji gry z utrwalonym układem; funkcje są otwierane skrótami."
+  },
+  {
+    "feature": "Rynek: oferty i historia",
+    "otclient_path": [
+      "modules/game_market/t_market.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0063-market/native.rs",
+        "line": 36,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window( mailbox: &SharedMailbox, commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0063-market/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn row_text(row: &market::MarketRow) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0063-market/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn market_result(&self, response: &MarketResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0063-market/protocol.rs",
+        "line": 101,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut MarketPanel, response: &MarketResponse) -> bool`"
+      }
+    ],
+    "mechanics_row": [
+      "E05"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Minimapa i nawigacja",
+    "otclient_path": [
+      "modules/game_minimap/minimap.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-minimap/scene.rs",
+        "line": 13,
+        "detail": "Rzeczywista projekcja świata w natywnym rendererze"
+      },
+      {
+        "path": "apps/client/src/features/local-minimap/input.rs",
+        "line": 6,
+        "detail": "Kliknięcie nakładki uruchamia walk_to; dane z bieżącego świata"
+      },
+      {
+        "path": "crates/client-ui/src/features/local-minimap/view.rs",
+        "line": 4,
+        "detail": "Stała geometria nakładki 31×25, kafel 4 px"
+      }
+    ],
+    "mechanics_row": [
+      "UI-MINIMAP"
+    ],
+    "missing": "Brakuje trwałej mapy odkrytych terenów, edytowanych znaczników, przewijania i zmiany pięter/zoomu minimapy; nakładka pokazuje bieżące okno świata."
+  },
+  {
+    "feature": "Ogólne dialogi modalne serwera",
+    "otclient_path": [
+      "modules/game_modaldialog/modaldialog.lua"
+    ],
+    "oteryn_status": "MISSING",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 118,
+        "detail": "Granica negatywnego dowodu: rzeczywisty mailbox paneli, nie implementacja brakującej funkcji"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 294,
+        "detail": "Dyspozycja push do istniejących reducerów; brak handlera funkcji wskazanej jako MISSING"
+      },
+      {
+        "path": "crates/client-ui/src/features/0011-world-interaction/input.rs",
+        "line": 87,
+        "detail": "Blokada wejścia podczas modala nie implementuje serwerowego dialogu"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": "Brakuje ogólnego handlera dialogu z identyfikatorem, listą wyborów i przyciskami oraz odpowiedzią wyboru do serwera."
+  },
+  {
+    "feature": "Banery i powiadomienia gry",
+    "otclient_path": [
+      "modules/game_notifications/controllers/infobanner.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0031-tutorial-notices/native.rs",
+        "line": 17,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0031-tutorial-notices/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &NoticePanel) -> String`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0031-tutorial-notices/protocol.rs",
+        "line": 4,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply(&mut self, notice: Notice)`"
+      },
+      {
+        "path": "apps/client/src/features/0023-presentation/protocol.rs",
+        "line": 5,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn presentation( pushed: &mut Pushed, delta: AppliedDelta<Vec<PresentationEvent>>, )`"
+      }
+    ],
+    "mechanics_row": [
+      "ADD-0031",
+      "ADD-0023"
+    ],
+    "missing": "Brakuje ogólnego systemu konfigurowalnych banerów/okienek zdarzeń; dostępne są komunikaty samouczka i HUD."
+  },
+  {
+    "feature": "NPC: rozmowa, sklep i usługi",
+    "otclient_path": [
+      "modules/game_npctrade/game_npctrader.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0081-npc-shop/native.rs",
+        "line": 41,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window( shared: &SharedMailbox, commands: &UnboundedSender<PlayCommand>, )`; NpcConversation/NpcTradeWindow i potwierdzenia NpcShopResponse; nie oznacza kompletnej populacji NPC"
+      },
+      {
+        "path": "crates/client-ui/src/features/0081-npc-shop/mod.rs",
+        "line": 57,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &NpcShopPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0081-npc-shop/protocol.rs",
+        "line": 111,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn npc_shop_result( &self, result: &oteryn_client_runtime::npc_shop::NpcShopResponse, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0081-npc-shop/mod.rs",
+        "line": 40,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut NpcShopPanel, response: &NpcShopResponse)`"
+      },
+      {
+        "path": "apps/client/src/features/0081-npc-shop/protocol.rs",
+        "line": 15,
+        "detail": "Konkretny payload odpowiedzi: `decode_container_views_for`"
+      }
+    ],
+    "mechanics_row": [
+      "E01",
+      "S10"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Wybór stroju, dodatków i kolorów",
+    "otclient_path": [
+      "modules/game_outfit/outfit.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0025-appearance/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0025-appearance/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0025-appearance/protocol.rs",
+        "line": 63,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      }
+    ],
+    "mechanics_row": [
+      "S06"
+    ],
+    "missing": "Brakuje wizualnego podglądu stroju i selektorów palety/addonów; obecny formularz wymaga klucza stroju, maski dodatków i czterech indeksów kolorów."
+  },
+  {
+    "feature": "Paperdolls i nakładki wyposażenia OT",
+    "otclient_path": [
+      "modules/game_paperdolls/paperdolls.lua"
+    ],
+    "oteryn_status": "EXCLUDED",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-minimap/scene.rs",
+        "line": 13,
+        "detail": "Rzeczywista projekcja świata w natywnym rendererze; Rozszerzenie kosmetyczne OT wyłączone przez właściciela"
+      }
+    ],
+    "mechanics_row": [
+      "W14e"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Śmierć i odrodzenie",
+    "otclient_path": [
+      "modules/game_playerdeath/playerdeath.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-death-respawn/protocol.rs",
+        "line": 89,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn death_protection_result( &self, result: &oteryn_session::GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/local-death-respawn/view.rs",
+        "line": 4,
+        "detail": "Natywny komunikat śmierci/odrodzenia na podstawie potwierdzonych ActorVitals"
+      },
+      {
+        "path": "apps/client/src/features/local-death-respawn/protocol.rs",
+        "line": 37,
+        "detail": "ActorVitals: zero HP zatrzymuje wejście, odtworzone HP wznawia grę"
+      }
+    ],
+    "mechanics_row": [
+      "C20a",
+      "C20b",
+      "C20c",
+      "C20d"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Wybór wierzchowca",
+    "otclient_path": [
+      "modules/game_playermount/playermount.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0025-appearance/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Katalog serwera i mount_key w Appearance Change; inny układ wyboru opisuje wiersz stroju"
+      },
+      {
+        "path": "crates/client-ui/src/features/0025-appearance/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0025-appearance/protocol.rs",
+        "line": 63,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      }
+    ],
+    "mechanics_row": [
+      "S06"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Handel między graczami",
+    "otclient_path": [
+      "modules/game_playertrade/playertrade.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0060-player-trade/native.rs",
+        "line": 50,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0060-player-trade/view.rs",
+        "line": 4,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &PlayerTradePanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0060-player-trade/protocol.rs",
+        "line": 22,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn player_trade_result(&self, response: &PlayerTradeResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0060-player-trade/mod.rs",
+        "line": 66,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut PlayerTradePanel, response: &PlayerTradeResponse)`"
+      },
+      {
+        "path": "apps/client/src/features/0060-player-trade/protocol.rs",
+        "line": 35,
+        "detail": "Konkretny payload odpowiedzi: `decode_container_view_result`"
+      }
+    ],
+    "mechanics_row": [
+      "E04"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Prey: wybór i premie",
+    "otclient_path": [
+      "modules/game_prey/prey.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0140-prey/native.rs",
+        "line": 50,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; P03 pozostaje w zakresie; wyłączenie właściciela dotyczy Hunting Tasks P23, nie podstawowego Prey"
+      },
+      {
+        "path": "crates/client-ui/src/features/0140-prey/view.rs",
+        "line": 66,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &PreyPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0140-prey/protocol.rs",
+        "line": 9,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn prey_result(&self, response: &PreyResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0140-prey/protocol.rs",
+        "line": 94,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut PreyPanel, response: &PreyResponse) -> bool`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0140-prey/protocol.rs",
+        "line": 105,
+        "detail": "Konkretny payload odpowiedzi: `decode_reply`"
+      }
+    ],
+    "mechanics_row": [
+      "P03"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Biegłość broni i perki",
+    "otclient_path": [
+      "modules/game_proficiency/proficiency.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0195-weapon-proficiency/native.rs",
+        "line": 129,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0195-weapon-proficiency/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(p: &WeaponProficiencyPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0195-weapon-proficiency/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn weapon_proficiency_result(&self, result: &GatedCommandResult)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0195-weapon-proficiency/protocol.rs",
+        "line": 127,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult) -> bool`"
+      }
+    ],
+    "mechanics_row": [
+      "P08"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Dziennik zadań i śledzenie",
+    "otclient_path": [
+      "modules/game_questlog/game_questlog.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0016-quest-log/native.rs",
+        "line": 52,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0016-quest-log/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &QuestPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0016-quest-log/protocol.rs",
+        "line": 5,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn quest_log(pushed: &mut Pushed, delta: AppliedDelta<QuestLog>)`"
+      }
+    ],
+    "mechanics_row": [
+      "W15a"
+    ],
+    "missing": "Brakuje wyszukiwania i sortowania dziennika; istnieją wybór zadania/misji, opis i przełączanie śledzenia."
+  },
+  {
+    "feature": "Quick loot i kategorie",
+    "otclient_path": [
+      "modules/game_quickloot/quickloot.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0098-quick-loot/native.rs",
+        "line": 52,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink, panel: u32)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0098-quick-loot/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0098-quick-loot/protocol.rs",
+        "line": 60,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn discovery_result( &self, capability: u32, response: &ServerMechanicResponse, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0098-quick-loot/protocol.rs",
+        "line": 91,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0098-quick-loot/protocol.rs",
+        "line": 98,
+        "detail": "Konkretny payload odpowiedzi: `decode_quick_loot_result`"
+      }
+    ],
+    "mechanics_row": [
+      "I07"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Codzienne nagrody",
+    "otclient_path": [
+      "modules/game_rewardwall/game_rewardwall.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0182-daily-reward/native.rs",
+        "line": 37,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0182-daily-reward/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &DailyRewardPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0182-daily-reward/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn daily_reward_result(&self, response: &DailyRewardResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0182-daily-reward/protocol.rs",
+        "line": 27,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut DailyRewardPanel, response: &DailyRewardResponse) -> bool`"
+      }
+    ],
+    "mechanics_row": [
+      "P09"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Raport naruszenia zasad",
+    "otclient_path": [
+      "modules/game_ruleviolation/ruleviolation.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0076-player-report/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Intent::Violation i serwerowy numer zgłoszenia lub powód odmowy"
+      },
+      {
+        "path": "crates/client-ui/src/features/0076-player-report/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0076-player-report/protocol.rs",
+        "line": 59,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/0076-player-report/protocol.rs",
+        "line": 72,
+        "detail": "Konkretny payload odpowiedzi: `decode_player_report_reply`"
+      }
+    ],
+    "mechanics_row": [
+      "S12"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Shadery kosmetyczne OT",
+    "otclient_path": [
+      "modules/game_shaders/shaders.lua"
+    ],
+    "oteryn_status": "EXCLUDED",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-minimap/scene.rs",
+        "line": 13,
+        "detail": "Rzeczywista projekcja świata w natywnym rendererze; Wyłączenie właściciela dla shaderów OT"
+      }
+    ],
+    "mechanics_row": [
+      "W14e"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Dodatkowy sklep za extended opcode OT",
+    "otclient_path": [
+      "modules/game_shop/game_shop.lua"
+    ],
+    "oteryn_status": "EXCLUDED",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0154-store/native.rs",
+        "line": 139,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Osobny sklep OT z dołączonym kodem serverSIDE, nie natywny Store; rozszerzenia OT wyłączone"
+      },
+      {
+        "path": "crates/client-ui/src/features/0154-store/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &StorePanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0154-store/protocol.rs",
+        "line": 6,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn store_result( &self, response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0154-store/protocol.rs",
+        "line": 149,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0154-store/protocol.rs",
+        "line": 160,
+        "detail": "Konkretny payload odpowiedzi: `decode_catalogue_page`"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Mobilny pasek skrótów",
+    "otclient_path": [
+      "modules/game_shortcuts/shortcuts.lua",
+      "modules/game_shortcuts/shortcuts.otui"
+    ],
+    "oteryn_status": "MISSING",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-reference-preferences/native.rs",
+        "line": 205,
+        "detail": "Natywne ustawienia lokalne; nie konsumują wiadomości serwera"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings.rs",
+        "line": 55,
+        "detail": "Rzeczywisty zapisany model: audio, skróty, PL/EN, skala i widoczność paneli"
+      }
+    ],
+    "mechanics_row": [
+      "UI-PREFERENCES"
+    ],
+    "missing": "Brakuje ekranowego paska mobilnych skrótów dotykowych wybierających tryb attack/look/follow/use."
+  },
+  {
+    "feature": "Umiejętności, poziom i trening",
+    "otclient_path": [
+      "modules/game_skills/skills.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "crates/client-ui/src/features/0279-skill-progress/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &SkillProgressPanel) -> String`; Snapshot wyszkolonych/lojalnościowych/bieżących skilli, XP i postęp; trening jako osobne okno"
+      },
+      {
+        "path": "apps/client/src/features/0279-skill-progress/protocol.rs",
+        "line": 62,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn skill_progress_result( &self, result: &oteryn_session::GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/0054-training/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0054-training/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0054-training/protocol.rs",
+        "line": 35,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0277-rest-status/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &RestStatusPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0277-rest-status/protocol.rs",
+        "line": 46,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn rest_status_result(&self, result: &oteryn_session::GatedCommandResult)`"
+      },
+      {
+        "path": "apps/client/src/features/0279-skill-progress/protocol.rs",
+        "line": 38,
+        "detail": "Natywny host Skill progress i zapytanie capability 370/279"
+      }
+    ],
+    "mechanics_row": [
+      "C14",
+      "P13",
+      "P14"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Debug dźwięków",
+    "otclient_path": [
+      "modules/game_soundDebug/sounddebug.lua"
+    ],
+    "oteryn_status": "N/A",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 118,
+        "detail": "Granica negatywnego dowodu: rzeczywisty mailbox paneli, nie implementacja brakującej funkcji; Narzędzie deweloperskie, nie funkcja gracza"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 294,
+        "detail": "Dyspozycja push do istniejących reducerów; brak handlera funkcji wskazanej jako MISSING"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Lista czarów i wyszukiwanie",
+    "otclient_path": [
+      "modules/game_spelllist/spelllist.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0287-actor-spell-catalog/view.rs",
+        "line": 4,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/protocol.rs",
+        "line": 29,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn reduce( mailbox: &mut crate::play::mailbox::Mailbox, events: &[SessionEvent], )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0287-actor-spell-catalog/protocol.rs",
+        "line": 4,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply(panel: &mut Panel, catalog: SpellCatalog)`"
+      },
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/protocol.rs",
+        "line": 22,
+        "detail": "Konkretny payload odpowiedzi: `decode_snapshot`"
+      }
+    ],
+    "mechanics_row": [
+      "ADD-0287",
+      "C14"
+    ],
+    "missing": "Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły."
+  },
+  {
+    "feature": "Supply stash",
+    "otclient_path": [
+      "modules/game_stash/game_stash.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0062-stash/native.rs",
+        "line": 42,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window( shared: &Arc<std::sync::Mutex<crate::play::mailbox::Mailbox>>, commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0062-stash/view.rs",
+        "line": 17,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &StashPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0062-stash/protocol.rs",
+        "line": 18,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn stash_result(&self, response: &StashResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0062-stash/protocol.rs",
+        "line": 40,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut StashPanel, response: &StashResponse)`"
+      }
+    ],
+    "mechanics_row": [
+      "E07"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Store: katalog, zakup i historia",
+    "otclient_path": [
+      "modules/game_store/game_store.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0154-store/native.rs",
+        "line": 139,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0154-store/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &StorePanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0154-store/protocol.rs",
+        "line": 6,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn store_result( &self, response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0154-store/protocol.rs",
+        "line": 149,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0154-store/protocol.rs",
+        "line": 160,
+        "detail": "Konkretny payload odpowiedzi: `decode_catalogue_page`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0285-store-purchase-history/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0285-store-purchase-history/protocol.rs",
+        "line": 30,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0285-store-purchase-history/protocol.rs",
+        "line": 38,
+        "detail": "Konkretny payload odpowiedzi: `decode_history_page`"
+      }
+    ],
+    "mechanics_row": [
+      "E10"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Task board: weekly i bounty",
+    "otclient_path": [
+      "modules/game_taskboard/tasks.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0072-task-board/native.rs",
+        "line": 48,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0072-task-board/view.rs",
+        "line": 4,
+        "detail": "Prezentacja stanu: `pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0072-task-board/protocol.rs",
+        "line": 6,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn task_board_result( &self, response: &oteryn_client_runtime::task_board::TaskBoardResponse, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0072-task-board/mod.rs",
+        "line": 81,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut TaskBoardPanel, response: &TaskBoardResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0072-task-board/protocol.rs",
+        "line": 74,
+        "detail": "Konkretny payload odpowiedzi: `decode_reply`"
+      }
+    ],
+    "mechanics_row": [
+      "P04"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Komunikaty tekstowe serwera",
+    "otclient_path": [
+      "modules/game_textmessage/textmessage.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0023-presentation/protocol.rs",
+        "line": 5,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn presentation( pushed: &mut Pushed, delta: AppliedDelta<Vec<PresentationEvent>>, )`"
+      },
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/view.rs",
+        "line": 54,
+        "detail": "Rzeczywisty HUD wyświetla wiadomość serwera"
+      },
+      {
+        "path": "apps/client/src/features/0092-zones-nologout/protocol.rs",
+        "line": 4,
+        "detail": "Konsument AppliedDelta<ServerMessage>"
+      },
+      {
+        "path": "apps/client/src/features/0092-zones-nologout/view.rs",
+        "line": 21,
+        "detail": "StatusText/Warning/Advance do tekstu HUD"
+      }
+    ],
+    "mechanics_row": [
+      "ADD-0023"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Teksty, książki i pisanie",
+    "otclient_path": [
+      "modules/game_textwindow/textwindow.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0115-mail/native.rs",
+        "line": 51,
+        "detail": "Natywne okno: `pub(in crate::play) fn open(link: &PlayLink, form: Form)`; Odczyt przez LOOK oraz zapis przez Writing and mail; nie wymaga zachowania opcode EditText dawcy"
+      },
+      {
+        "path": "crates/client-ui/src/features/0115-mail/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0115-mail/protocol.rs",
+        "line": 199,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn properties_result( &self, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "crates/client-runtime/src/features/0011-world-interaction/protocol.rs",
+        "line": 153,
+        "detail": "Dekodowanie wyniku LOOK, prezentowanego w panelu ekwipunku"
+      }
+    ],
+    "mechanics_row": [
+      "I03",
+      "I04"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Samouczek i wskazówki",
+    "otclient_path": [
+      "modules/game_tutorial/controller/tutorial_controller.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0031-tutorial-notices/native.rs",
+        "line": 17,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Ogólne wskazówki; Dawnport pozostaje wyłączony i nie jest uznany za wdrożony"
+      },
+      {
+        "path": "crates/client-ui/src/features/0031-tutorial-notices/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &NoticePanel) -> String`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0031-tutorial-notices/protocol.rs",
+        "line": 4,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply(&mut self, notice: Notice)`"
+      },
+      {
+        "path": "apps/client/src/features/0031-tutorial-notices/protocol.rs",
+        "line": 21,
+        "detail": "Rzeczywisty konsument AppliedDelta<TutorialNotice>"
+      }
+    ],
+    "mechanics_row": [
+      "ADD-0031"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Unjustified points i limity fragów",
+    "otclient_path": [
+      "modules/game_unjustifiedpoints/unjustifiedpoints.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0134-party-skull/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0134-party-skull/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0134-party-skull/protocol.rs",
+        "line": 14,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/0087-pvp-expert/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0087-pvp-expert/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0087-pvp-expert/protocol.rs",
+        "line": 47,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/0087-pvp-expert/protocol.rs",
+        "line": 59,
+        "detail": "Konkretny payload odpowiedzi: `decode_attack_intent_result`"
+      }
+    ],
+    "mechanics_row": [
+      "S08"
+    ],
+    "missing": "Brakuje liczników dziennych/tygodniowych/miesięcznych fragów, czasu czaszki i otwartych sytuacji PvP; obecny panel pokazuje tylko tarcze i czaszki."
+  },
+  {
+    "feature": "VIP: kontakty, grupy i obecność",
+    "otclient_path": [
+      "modules/game_viplist/viplist.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0043-vip/native.rs",
+        "line": 35,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0043-vip/mod.rs",
+        "line": 106,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &VipPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0043-vip/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn vip_result(&self, response: &oteryn_client_runtime::vip::VipResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0043-vip/mod.rs",
+        "line": 83,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut VipPanel, response: &VipResponse)`"
+      },
+      {
+        "path": "apps/client/src/features/0258-vip-presence/native.rs",
+        "line": 17,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0258-vip-presence/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &VipPresencePanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 346,
+        "detail": "VipPresenceBatch rzeczywiście redukowany do panelu obecności"
+      }
+    ],
+    "mechanics_row": [
+      "S04a"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Ruch, obrót, autowalk i follow",
+    "otclient_path": [
+      "modules/game_walk/walk.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0013-paced-movement/protocol.rs",
+        "line": 18,
+        "detail": "Konsument odpowiedzi/push: `pub fn apply(&mut self, outcome: &StepOutcome) -> Result<(), BatchError>`"
+      },
+      {
+        "path": "apps/client/src/features/0064-target-move/protocol.rs",
+        "line": 9,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn target_move_result( &self, request: &oteryn_client_runtime::server_mechanic::ServerMechanicCommand, response: &ServerMechanicResponse, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0064-target-move/protocol.rs",
+        "line": 3,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply(state: &mut WalkState, response: WalkResponse)`"
+      },
+      {
+        "path": "apps/client/src/features/0013-paced-movement/input.rs",
+        "line": 7,
+        "detail": "Rzeczywista akcja gracza: wejście strzałką"
+      },
+      {
+        "path": "apps/client/src/features/0013-paced-movement/protocol.rs",
+        "line": 18,
+        "detail": "StepOutcome zmienia pozycję i przebudowuje widok świata"
+      }
+    ],
+    "mechanics_row": [
+      "M01"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Wheel of Destiny i atelier",
+    "otclient_path": [
+      "modules/game_wheel/wheel.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0148-wheel-allocation/native.rs",
+        "line": 62,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0148-wheel-allocation/view.rs",
+        "line": 57,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &WheelPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0148-wheel-allocation/protocol.rs",
+        "line": 9,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn wheel_result(&self, response: &WheelResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0148-wheel-allocation/protocol.rs",
+        "line": 175,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0148-wheel-allocation/protocol.rs",
+        "line": 162,
+        "detail": "Konkretny payload odpowiedzi: `decode_wheel_reply`"
+      }
+    ],
+    "mechanics_row": [
+      "P06",
+      "P07"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Ładowanie definicji rzeczy/sprite OT",
+    "otclient_path": [
+      "modules/game_things/things.lua"
+    ],
+    "oteryn_status": "N/A",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-minimap/scene.rs",
+        "line": 13,
+        "detail": "Rzeczywista projekcja świata w natywnym rendererze; Infrastruktura formatów assetów dawcy; nie panel ani samodzielny przepływ gry"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": ""
+  },
+  {
+    "feature": "Zrzuty ekranu i automatyczne wyzwalacze",
+    "otclient_path": [
+      "modules/game_notifications/controllers/screenshot.lua"
+    ],
+    "oteryn_status": "MISSING",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/local-reference-preferences/native.rs",
+        "line": 205,
+        "detail": "Natywne ustawienia lokalne; nie konsumują wiadomości serwera"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings.rs",
+        "line": 55,
+        "detail": "Rzeczywisty zapisany model: audio, skróty, PL/EN, skala i widoczność paneli"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 118,
+        "detail": "Granica negatywnego dowodu: rzeczywisty mailbox paneli, nie implementacja brakującej funkcji"
+      },
+      {
+        "path": "apps/client/src/play/mailbox.rs",
+        "line": 294,
+        "detail": "Dyspozycja push do istniejących reducerów; brak handlera funkcji wskazanej jako MISSING"
+      }
+    ],
+    "mechanics_row": [],
+    "missing": "Brakuje zapisu zrzutu ekranu, wyboru zakresu przechwytywania i automatycznych wyzwalaczy zdarzeń; same nazwy preferencji nie mają implementacji."
+  },
+  {
+    "feature": "Cyklopedia: bestiariusz i charmy",
+    "otclient_path": [
+      "modules/game_cyclopedia/tab/bestiary/bestiary.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Query dekoduje CharmProgressionReply i wypisuje kill_count/thresholds oraz charmy; nie jest przeglądarką potworów"
+      },
+      {
+        "path": "crates/client-ui/src/features/0067-bestiary-charm-progression/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/protocol.rs",
+        "line": 48,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/protocol.rs",
+        "line": 61,
+        "detail": "Konkretny payload odpowiedzi: `decode_charm_progression_reply`"
+      }
+    ],
+    "mechanics_row": [
+      "P01"
+    ],
+    "missing": "Brakuje przeglądarki kategorii i kart potworów ze statystykami, odpornościami i łupem; formularz pokazuje indeksy ras, zabicia i progi."
+  },
+  {
+    "feature": "Cyklopedia: charmy",
+    "otclient_path": [
+      "modules/game_cyclopedia/tab/charms/charms.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0067-bestiary-charm-progression/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/protocol.rs",
+        "line": 48,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/protocol.rs",
+        "line": 61,
+        "detail": "Konkretny payload odpowiedzi: `decode_charm_progression_reply`"
+      }
+    ],
+    "mechanics_row": [
+      "P01"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Cyklopedia: bosstiariusz",
+    "otclient_path": [
+      "modules/game_cyclopedia/tab/bosstiary/bosstiary.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/native.rs",
+        "line": 3,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0117-boss-encounter/view.rs",
+        "line": 4,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &BossEncounterPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/protocol.rs",
+        "line": 12,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn boss_encounter_result(&self, response: &GatedCommandResult)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0117-boss-encounter/protocol.rs",
+        "line": 77,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult) -> bool`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0117-boss-encounter/protocol.rs",
+        "line": 97,
+        "detail": "Konkretny payload odpowiedzi: `decode_boss_activity_reply`"
+      }
+    ],
+    "mechanics_row": [
+      "P02"
+    ],
+    "missing": "Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu."
+  },
+  {
+    "feature": "Cyklopedia: sloty bossów",
+    "otclient_path": [
+      "modules/game_cyclopedia/tab/boss_slots/boss_slots.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/native.rs",
+        "line": 3,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0117-boss-encounter/view.rs",
+        "line": 4,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &BossEncounterPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/protocol.rs",
+        "line": 12,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn boss_encounter_result(&self, response: &GatedCommandResult)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0117-boss-encounter/protocol.rs",
+        "line": 77,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult) -> bool`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0117-boss-encounter/protocol.rs",
+        "line": 97,
+        "detail": "Konkretny payload odpowiedzi: `decode_boss_activity_reply`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0117-boss-encounter/protocol/auxiliary.rs",
+        "line": 60,
+        "detail": "Rzeczywisty decoder slotów, punktów, bonusu, opłaty i czasu"
+      }
+    ],
+    "mechanics_row": [
+      "P02"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Cyklopedia: postać, odznaki, zgony i PvP",
+    "otclient_path": [
+      "modules/game_cyclopedia/tab/character/character.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/native.rs",
+        "line": 126,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn panel_text(p: &CyclopediaCharacterPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn cyclopedia_character_result(&self, result: &GatedCommandResult)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0199-cyclopedia-character/protocol.rs",
+        "line": 69,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool`"
+      },
+      {
+        "path": "apps/client/src/features/0097-character-info/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0097-character-info/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0097-character-info/protocol.rs",
+        "line": 62,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      }
+    ],
+    "mechanics_row": [
+      "P12a",
+      "P12b",
+      "P12c"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Cyklopedia: katalog przedmiotów",
+    "otclient_path": [
+      "modules/game_cyclopedia/tab/items/items.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "crates/client-ui/src/features/0132-inspection/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0132-inspection/protocol.rs",
+        "line": 20,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0132-inspection/protocol.rs",
+        "line": 28,
+        "detail": "Konkretny payload odpowiedzi: `decode_reply`"
+      },
+      {
+        "path": "apps/client/src/features/0063-market/native.rs",
+        "line": 36,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window( mailbox: &SharedMailbox, commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>, )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0063-market/view.rs",
+        "line": 3,
+        "detail": "Prezentacja stanu: `pub fn row_text(row: &market::MarketRow) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0063-market/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn market_result(&self, response: &MarketResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0063-market/protocol.rs",
+        "line": 101,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut MarketPanel, response: &MarketResponse) -> bool`"
+      }
+    ],
+    "mechanics_row": [
+      "I16",
+      "E05"
+    ],
+    "missing": "Brakuje katalogu przedmiotów z kategoriami i wyszukiwaniem oraz powiązanych ofert/dropów; istnieje inspekcja wybranego przedmiotu i osobny rynek."
+  },
+  {
+    "feature": "Cyklopedia: mapa i odkrywanie",
+    "otclient_path": [
+      "modules/game_cyclopedia/tab/map/map.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0057-cyclopedia-map/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Query/Start/Shuffle/Find/Donate dekodują stan eksploracji, bez mapy regionów"
+      },
+      {
+        "path": "crates/client-ui/src/features/0057-cyclopedia-map/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0057-cyclopedia-map/protocol.rs",
+        "line": 31,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      },
+      {
+        "path": "apps/client/src/features/0057-cyclopedia-map/protocol.rs",
+        "line": 45,
+        "detail": "Konkretny payload odpowiedzi: `decode_result`"
+      }
+    ],
+    "mechanics_row": [
+      "W12"
+    ],
+    "missing": "Brakuje graficznej mapy Cyklopedii z warstwami, regionami i filtrami; formularz pokazuje tekstowy stan odkrywania oraz POI/donacji."
+  },
+  {
+    "feature": "Cyklopedia: katalog domów i aukcje",
+    "otclient_path": [
+      "modules/game_cyclopedia/tab/house/house.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0049-house/controller.rs",
+        "line": 16,
+        "detail": "Kontroler buduje Query/Bid, lecz brak modułu play.json i natywnego hosta 0049"
+      },
+      {
+        "path": "crates/client-ui/src/features/0049-house/state.rs",
+        "line": 20,
+        "detail": "Dekoduje House Page/Result, lecz nie jest zamontowany do mailbox/okna apps/client"
+      },
+      {
+        "path": "apps/client/src/features/0099-guildhall/view.rs",
+        "line": 8,
+        "detail": "Istniejące osobne okno gildhalli nie jest katalogiem/aukcjami domów"
+      }
+    ],
+    "mechanics_row": [
+      "S05"
+    ],
+    "missing": "Brakuje podłączenia katalogu i aukcji domów do sesji oraz natywnego okna; kontroler 0049 i model odpowiedzi istnieją, ale nie są zamontowane w aplikacji."
+  },
+  {
+    "feature": "Cyklopedia: Magical Archive",
+    "otclient_path": [
+      "modules/game_cyclopedia/tab/magicalArchives/magicalArchives.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0287-actor-spell-catalog/view.rs",
+        "line": 4,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/protocol.rs",
+        "line": 29,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn reduce( mailbox: &mut crate::play::mailbox::Mailbox, events: &[SessionEvent], )`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0287-actor-spell-catalog/protocol.rs",
+        "line": 4,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply(panel: &mut Panel, catalog: SpellCatalog)`"
+      },
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/protocol.rs",
+        "line": 22,
+        "detail": "Konkretny payload odpowiedzi: `decode_snapshot`"
+      }
+    ],
+    "mechanics_row": [
+      "ADD-0287"
+    ],
+    "missing": "Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci."
+  },
+  {
+    "feature": "Trackery bestiariusza i bosstiariusza",
+    "otclient_path": [
+      "modules/game_cyclopedia/game_cyclopedia.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0197-cyclopedia-tracker/native.rs",
+        "line": 16,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0197-cyclopedia-tracker/view.rs",
+        "line": 4,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &CyclopediaTrackerPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0197-cyclopedia-tracker/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn cyclopedia_tracker_result(&self, result: &GatedCommandResult)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0197-cyclopedia-tracker/protocol.rs",
+        "line": 45,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut CyclopediaTrackerPanel, result: &GatedCommandResult) -> bool`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0197-cyclopedia-tracker/protocol.rs",
+        "line": 57,
+        "detail": "Konkretny payload odpowiedzi: `decode_snapshot`"
+      }
+    ],
+    "mechanics_row": [
+      "P22a",
+      "P22b",
+      "P22c",
+      "P22d"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Drużyna, shared XP i tarcze",
+    "otclient_path": [
+      "modules/game_interface/gameinterface.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0042-party/native.rs",
+        "line": 44,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0042-party/view.rs",
+        "line": 4,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &PartyPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0042-party/protocol.rs",
+        "line": 11,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn party_result(&self, response: &PartyResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0042-party/protocol.rs",
+        "line": 60,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut PartyPanel, response: &PartyResponse) -> bool`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0042-party/protocol.rs",
+        "line": 64,
+        "detail": "Konkretny payload odpowiedzi: `decode_party_result`"
+      },
+      {
+        "path": "apps/client/src/features/0134-party-skull/view.rs",
+        "line": 8,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0134-party-skull/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &Panel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0134-party-skull/protocol.rs",
+        "line": 14,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn apply( panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResult, )`"
+      }
+    ],
+    "mechanics_row": [
+      "S01",
+      "S02"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Edycja list gości, współwłaścicieli i drzwi",
+    "otclient_path": [
+      "modules/game_textwindow/textwindow.lua"
+    ],
+    "oteryn_status": "PARTIAL",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0049-house/controller.rs",
+        "line": 16,
+        "detail": "Guest/Subowners/Door ma kontroler bez podłączenia do natywnego okna"
+      },
+      {
+        "path": "crates/client-ui/src/features/0049-house/state.rs",
+        "line": 20,
+        "detail": "Obsługa HouseResult/rewizji ACL w modelu bez konsumenta w aplikacji"
+      }
+    ],
+    "mechanics_row": [
+      "S05"
+    ],
+    "missing": "Brakuje natywnego edytora list domowych i podłączonej wymiany wyników HouseResult; istnieją jedynie kontroler i model ACL."
+  },
+  {
+    "feature": "Ustawienia Exiva",
+    "otclient_path": [
+      "modules/game_console/exiva_option.lua"
+    ],
+    "oteryn_status": "DONE",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0147-exiva-settings/native.rs",
+        "line": 34,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0147-exiva-settings/view.rs",
+        "line": 2,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &ExivaPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0147-exiva-settings/protocol.rs",
+        "line": 22,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn exiva_result(&self, result: &oteryn_session::GatedCommandResult)`"
+      }
+    ],
+    "mechanics_row": [
+      "P17"
+    ],
+    "missing": ""
+  },
+  {
+    "feature": "Prey Hunting Tasks (granica P23)",
+    "otclient_path": [
+      "modules/game_prey/prey.lua"
+    ],
+    "oteryn_status": "EXCLUDED",
+    "oteryn_evidence": [
+      {
+        "path": "apps/client/src/features/0140-prey/native.rs",
+        "line": 50,
+        "detail": "Natywne okno: `pub(in crate::play) fn open_window(link: &PlayLink)`; Właściciel wyłączył P23a–c; nie utożsamiać z P03 ani task board P04. W tym pinie game_prey deleguje zadania do GameTaskboard zamiast zawierać osobny moduł game_huntingtasks"
+      },
+      {
+        "path": "crates/client-ui/src/features/0140-prey/view.rs",
+        "line": 66,
+        "detail": "Prezentacja stanu: `pub fn panel_text(panel: &PreyPanel) -> String`"
+      },
+      {
+        "path": "apps/client/src/features/0140-prey/protocol.rs",
+        "line": 9,
+        "detail": "Konsument odpowiedzi/push: `pub(in crate::play) fn prey_result(&self, response: &PreyResponse)`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0140-prey/protocol.rs",
+        "line": 94,
+        "detail": "Redukcja odpowiedzi serwera: `pub fn apply_result(panel: &mut PreyPanel, response: &PreyResponse) -> bool`"
+      },
+      {
+        "path": "crates/client-ui/src/features/0140-prey/protocol.rs",
+        "line": 105,
+        "detail": "Konkretny payload odpowiedzi: `decode_reply`"
+      }
+    ],
+    "mechanics_row": [
+      "P23a",
+      "P23b",
+      "P23c"
+    ],
+    "missing": ""
+  }
+]
