@@ -36,6 +36,7 @@ fn pinned_catalogue_service_model_counts() {
     assert_eq!(model.services().len(), 400);
     // NPC-TRADE-3 in #3030 restores source fluid subtypes and full-charge offers
     // through npc_catalogue/subtype_trades.rs and service.rs.
+    // QUESTPC8 restores 157 gated Rashid offers: 150 admitted, seven timed-count holds.
     assert_eq!(model.admitted_offer_count(), 12_565);
     assert_eq!(model.admitted_route_count(), 195);
     assert_eq!(model.generated_reply_npc_count(), 446);
