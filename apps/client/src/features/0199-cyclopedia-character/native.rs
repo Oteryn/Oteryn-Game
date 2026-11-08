@@ -96,6 +96,7 @@ pub(in crate::play) use window::open_window;
 mod window {
     // HWND operations stay on the creating thread, following the daily reward panel.
     #![allow(unsafe_code)]
+    use super::controls::{control, read_text, wide};
     use super::*;
     use crate::combat_input::PlayCommand;
     use crate::play::{PlayLink, mailbox::lock};
@@ -109,6 +110,7 @@ mod window {
             ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx, PBM_SETPOS,
             PBM_SETRANGE32,
         },
+        Input::KeyboardAndMouse::EnableWindow,
         WindowsAndMessaging::*,
     };
     type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
@@ -122,7 +124,7 @@ mod window {
                 let note = (w >> 16) & 0xffff;
                 if !actions.is_null()
                     && (*actions).0.len() < 32
-                    && matches!(id, 101..=116)
+                    && matches!(id, 101..=116 | 140)
                     && note == BN_CLICKED as usize
                 {
                     (*actions).0.push(id);
@@ -131,12 +133,6 @@ mod window {
             }
             DefWindowProcW(hwnd, msg, w, l)
         }
-    }
-    fn wide(text: &str) -> Vec<u16> {
-        text.replace('\0', "\u{fffd}")
-            .encode_utf16()
-            .chain(Some(0))
-            .collect()
     }
     pub(in crate::play) fn open_window(link: &PlayLink) {
         {
@@ -251,6 +247,14 @@ mod window {
             ] {
                 control(hwnd, "BUTTON", label, id, [x, 155, 165, 28], WS_TABSTOP);
             }
+            let achievement_browser = control(
+                hwnd,
+                "BUTTON",
+                "Browse achievements",
+                140,
+                [545, 155, 165, 28],
+                WS_TABSTOP,
+            );
             let heading = control(hwnd, "STATIC", "", 401, [10, 355, 690, 22], 0);
             let history = control(
                 hwnd,
@@ -314,7 +318,12 @@ mod window {
                 if mailbox.cyclopedia_character_shutdown {
                     break;
                 }
+                let mut browse_achievements = false;
                 for action in std::mem::take(&mut actions.0) {
+                    if action == 140 {
+                        browse_achievements = true;
+                        continue;
+                    }
                     let values = edits.map(read_text);
                     if let Some(command) = submit(
                         &mut mailbox.cyclopedia_character,
@@ -344,6 +353,20 @@ mod window {
                     p.feedback = Some("The session has ended");
                 }
                 let panel = &mailbox.cyclopedia_character;
+                EnableWindow(
+                    achievement_browser,
+                    i32::from(panel.selected && !panel.pending),
+                );
+                ShowWindow(
+                    achievement_browser,
+                    if panel.tab
+                        == oteryn_client_runtime::cyclopedia_character::CharacterTab::Achievements
+                    {
+                        SW_SHOW
+                    } else {
+                        SW_HIDE
+                    },
+                );
                 let status = if panel.pending {
                     "Waiting for the server"
                 } else {
@@ -527,6 +550,12 @@ mod window {
                     }
                 }
                 drop(mailbox);
+                if browse_achievements {
+                    crate::play::feature_local_account_achievements::view::open_character(
+                        weak.clone(),
+                        commands.clone(),
+                    );
+                }
                 std::thread::sleep(Duration::from_millis(25));
             }
             DestroyWindow(hwnd);
@@ -534,47 +563,16 @@ mod window {
             drop(actions);
         }
     }
-    fn control(
-        parent: HWND,
-        class: &str,
-        label: &str,
-        id: usize,
-        rect: [i32; 4],
-        style: u32,
-    ) -> HWND {
-        unsafe {
-            CreateWindowExW(
-                0,
-                wide(class).as_ptr(),
-                wide(label).as_ptr(),
-                WS_CHILD | WS_VISIBLE | style,
-                rect[0],
-                rect[1],
-                rect[2],
-                rect[3],
-                parent,
-                id as *mut _,
-                null_mut(),
-                null(),
-            )
-        }
-    }
     fn close(weak: &WeakMailbox) {
         if let Some(shared) = weak.upgrade() {
             lock(&shared).cyclopedia_character.open = false;
         }
     }
-
-    fn read_text(hwnd: HWND) -> String {
-        // SAFETY: hwnd is an edit owned by this thread; the buffer includes its terminator.
-        unsafe {
-            let len = GetWindowTextLengthW(hwnd).max(0);
-            let mut buffer = vec![0; len as usize + 1];
-            let read = GetWindowTextW(hwnd, buffer.as_mut_ptr(), len + 1).max(0);
-            String::from_utf16_lossy(&buffer[..read as usize])
-        }
-    }
 }
+
+#[cfg(windows)]
+#[path = "view/controls.rs"]
+mod controls;
 
 #[cfg(windows)]
 #[path = "view/misc_layout.rs"]
