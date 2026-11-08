@@ -166,11 +166,143 @@ fn m01b_alawar_native_approach_credits_once_without_replacing_portal() -> TestRe
     result
 }
 
+#[test]
+fn m01b_elvenbane_native_entry_credits_once_and_replays() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("m01b-elvenbane-entry", || {
+        super::quest_world_callbacks::scenario(
+            "m01b/elvenbane/s1/entry",
+            Position {
+                x: 32590,
+                y: 31645,
+                floor: -7,
+            },
+            false,
+        )
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED m01b_elvenbane_entry duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn m01b_edron_goblin_native_entry_requires_current_premium() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("m01b-edron-goblin-entry", || {
+        super::quest_world_callbacks::scenario(
+            "m01b/edron-goblin/s1/entry",
+            Position {
+                x: 33108,
+                y: 31850,
+                floor: -7,
+            },
+            false,
+        )
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED m01b_edron_goblin_entry duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("m01b-lions-rock-entry", || {
+        super::quest_world_callbacks::scenario(
+            "m01b/lions-rock/s1/entry",
+            Position {
+                x: 33138,
+                y: 32358,
+                floor: -7,
+            },
+            false,
+        )
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED m01b_lions_rock_entry duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if name == "m01b/edron-goblin/s1/entry" {
+        return native_crop(
+            native,
+            NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z07-x129-y124.b3"
+                )),
+                region: (7, 129, 124),
+                bounds: (33108, 31849, 33110, 31851),
+                start: (33109, 31850),
+                expected: vec![ExpectedTile {
+                    position: (33108, 31850),
+                    ids: vec![355],
+                    counted_entry: None,
+                }],
+            },
+        );
+    }
+    if name == "m01b/lions-rock/s1/entry" {
+        return native_crop(
+            native,
+            NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z07-x129-y126.b3"
+                )),
+                region: (7, 129, 126),
+                bounds: (33138, 32357, 33140, 32359),
+                start: (33139, 32358),
+                expected: vec![ExpectedTile {
+                    position: (33138, 32358),
+                    ids: vec![4399],
+                    counted_entry: None,
+                }],
+            },
+        );
+    }
+    if name == "m01b/elvenbane/s1/entry" {
+        return native_crop(
+            native,
+            NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z07-x127-y123.b3"
+                )),
+                region: (7, 127, 123),
+                bounds: (32589, 31644, 32593, 31647),
+                start: (32591, 31645),
+                expected: vec![ExpectedTile {
+                    position: (32590, 31645),
+                    ids: vec![436],
+                    counted_entry: None,
+                }],
+            },
+        );
+    }
     if name == "m01b/alawar-s-vault/s1/entry" {
         return native_crop(
             native,
@@ -264,10 +396,13 @@ pub(super) async fn exercise(
     if callback.admission.as_ref().is_some_and(|a| a.premium) {
         return exercise_premium(owner, admitted, h, callback).await;
     }
+    let elvenbane = callback.key.ends_with("m01b/elvenbane/s1/entry");
     let alawar = callback.key.ends_with("m01b/alawar-s-vault/s1/entry");
     let geomancer = callback.key.ends_with("m01b/geomancer/s1/entry");
-    assert!(alawar || geomancer || callback.key.ends_with(ENTRY));
-    let counter = if alawar {
+    assert!(elvenbane || alawar || geomancer || callback.key.ends_with(ENTRY));
+    let counter = if elvenbane {
+        "oteryn:quest-progress/authored/elvenbane_quest/s1"
+    } else if alawar {
         "oteryn:quest-progress/chosen-source/alawar_s_vault_quest/s1"
     } else if geomancer {
         "oteryn:quest-progress/chosen-source/geomancer_quest/s1"
@@ -304,12 +439,16 @@ pub(super) async fn exercise(
         StepDirection::East,
         StepDirection::West,
     ];
-    let moves: &[StepDirection] = if alawar || geomancer {
+    let moves: &[StepDirection] = if elvenbane || alawar || geomancer {
         &geomancer_moves
     } else {
         &longsword_moves
     };
-    let first_entry = if alawar || geomancer { 0 } else { 2 };
+    let first_entry = if elvenbane || alawar || geomancer {
+        0
+    } else {
+        2
+    };
     for (index, &direction) in moves.iter().enumerate() {
         owner.clock_origin = owner
             .clock_origin
