@@ -38,6 +38,7 @@ impl PlayView {
         let atlas = atlas.atlas();
         let bars = self.preferences().hud_bars;
         let effects = self.preferences().show_effects;
+        let health_circle = self.preferences().health_circle;
         let creature_bars = self.preferences().creature_bars;
         let harmony = self.preferences().show_harmony;
         let serene = self.preferences().show_serene;
@@ -104,6 +105,44 @@ impl PlayView {
                         PresentationColor::LightGrey
                     },
                 )?;
+            }
+        }
+        if health_circle && let Some(vitals) = &self.vitals {
+            let [x, y] = view.tile_to_screen(self.own);
+            let half = view.tile_px() as f32 / 2.0;
+            let radius = half + 8.0;
+            for (side, value, max, color) in [
+                (
+                    1.0,
+                    vitals.health,
+                    vitals.max_health,
+                    PresentationColor::Red,
+                ),
+                (-1.0, vitals.mana, vitals.max_mana, PresentationColor::Blue),
+            ] {
+                let filled = if max == 0 {
+                    0
+                } else {
+                    (u64::from(value.min(max)) * 16 / u64::from(max)) as u32
+                };
+                for segment in 0..16_u32 {
+                    let angle = (segment as f32 + 0.5) * std::f32::consts::PI / 16.0;
+                    pixel(
+                        batch,
+                        view,
+                        atlas,
+                        [
+                            x + half + side * radius * angle.sin() - 1.5,
+                            y + half - radius * angle.cos() - 1.5,
+                        ],
+                        [3.0, 3.0],
+                        if segment < filled {
+                            color
+                        } else {
+                            PresentationColor::LightGrey
+                        },
+                    )?;
+                }
             }
         }
         if creature_bars {

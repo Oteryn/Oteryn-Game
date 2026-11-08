@@ -1,7 +1,8 @@
 use super::*;
 
 #[test]
-fn configured_rotation_modifier_sends_existing_turn_command() -> Result<(), Box<dyn std::error::Error>> {
+fn configured_rotation_modifier_sends_existing_turn_command()
+-> Result<(), Box<dyn std::error::Error>> {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     let (link, mut commands, outbox) = play_channel();
     outbox.target_move_initialize(true);
@@ -9,10 +10,15 @@ fn configured_rotation_modifier_sends_existing_turn_command() -> Result<(), Box<
     let mut preferences = view.preferences().clone();
     preferences.rotation_modifier = "ALT".into();
     view.set_preferences(preferences)?;
-    assert!(view.target_move_input(&link, &[NormalizedInputEvent::Key {
-        code: KeyCode::ARROW_UP, modifiers: Modifiers::one(Modifier::Alt),
-        state: ButtonState::Pressed, repeat: false,
-    }]));
+    assert!(view.target_move_input(
+        &link,
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::ARROW_UP,
+            modifiers: Modifiers::one(Modifier::Alt),
+            state: ButtonState::Pressed,
+            repeat: false,
+        }]
+    ));
     let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
         return Err("missing turn command".into());
     };
@@ -32,7 +38,13 @@ fn mouse_preset_changes_actual_click_routing() -> Result<(), Box<dyn std::error:
         modifiers: Modifiers::NONE,
     };
     let (events, _) = settings.input(&[press]);
-    assert!(matches!(events.as_slice(), [NormalizedInputEvent::MouseButton { button: MouseButton::PRIMARY, .. }]));
+    assert!(matches!(
+        events.as_slice(),
+        [NormalizedInputEvent::MouseButton {
+            button: MouseButton::PRIMARY,
+            ..
+        }]
+    ));
     settings.preferences.keyboard_delay_ms = 1000;
     let key = NormalizedInputEvent::Key {
         code: oteryn_input_actions::KeyCode::new(82)?,
@@ -42,7 +54,9 @@ fn mouse_preset_changes_actual_click_routing() -> Result<(), Box<dyn std::error:
     };
     assert_eq!(settings.input(std::slice::from_ref(&key)).0.len(), 1);
     let mut repeat = key.clone();
-    if let NormalizedInputEvent::Key { repeat, .. } = &mut repeat { *repeat = true; }
+    if let NormalizedInputEvent::Key { repeat, .. } = &mut repeat {
+        *repeat = true;
+    }
     assert!(settings.input(&[repeat]).0.is_empty());
     settings.input(&[NormalizedInputEvent::FocusChanged { focused: false }]);
     assert_eq!(settings.input(&[key]).0.len(), 1);
@@ -466,14 +480,21 @@ fn o021_live_health_and_party_marks_project_at_entity_position()
 }
 
 #[test]
-fn o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals() -> Result<(), Box<dyn std::error::Error>> {
+fn o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals()
+-> Result<(), Box<dyn std::error::Error>> {
     let mut play = view()?;
     let baseline = play.scene().sprites().len();
     let mut json = serde_json::to_value(play.preferences())?;
     json["health_circle"] = serde_json::json!(true);
     play.set_preferences(serde_json::from_value(json)?)?;
     assert_eq!(play.scene().sprites().len(), baseline);
-    play.vitals = Some(oteryn_session::ActorVitals { health: 50, max_health: 100, mana: 0, max_mana: 0, ..Default::default() });
+    play.vitals = Some(oteryn_session::ActorVitals {
+        health: 50,
+        max_health: 100,
+        mana: 0,
+        max_mana: 0,
+        ..Default::default()
+    });
     play.rebuild()?;
     // 32 circle segments, four HP/MP quads and six monk indicators.
     assert_eq!(play.scene().sprites().len(), baseline + 42);
