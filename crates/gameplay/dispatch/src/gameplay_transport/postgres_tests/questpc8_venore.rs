@@ -90,8 +90,8 @@ pub(super) async fn exercise(
     let chamber = (33005..=33035)
         .flat_map(|x| (32130..=32160).map(move |y| (x, y)))
         .filter(|(x, y)| {
-            owner.movement_cells.index().lookup(
-                owner.movement_cells.scope(),
+            owner.movement_cells().index().lookup(
+                owner.movement_cells().scope(),
                 crate::content::LogicalCell { x: *x, y: *y, z: 8 },
             ) == Ok(crate::content::CollisionClass::Walkable)
         })
@@ -475,7 +475,7 @@ async fn arrive_in_rings(
     rings: std::ops::RangeInclusive<i32>,
 ) -> TestResult {
     use crate::content::{CollisionClass, LogicalCell};
-    let cells = owner.movement_cells;
+    let cells = owner.movement_cells();
     let offsets = rings.flat_map(|radius| {
         (-radius..=radius).flat_map(move |dx| {
             (-radius..=radius)

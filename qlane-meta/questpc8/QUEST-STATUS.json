@@ -1011,7 +1011,7 @@
     "first_unqualified_stage": {
       "key": "s10",
       "kind": "collect",
-      "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
+      "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
       "targets": [
         "Winning Lottery Ticket"
       ]
@@ -1461,10 +1461,10 @@
       "qualification_unchanged": true
     },
     "main_sync": {
-      "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
-      "proof": "main-83ac-validation.json",
-      "state": "FOCUSED_GREEN_6_NATIVE_PG",
-      "qualification_unchanged": true
+      "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+      "state": "COMPILE_AND_FOCUSED_UNITS_GREEN_NATIVE_PG_PENDING",
+      "proof": "main-98d6-validation.json",
+      "native_postgres": "pending fresh test binary; prior6/6 apply only56668c09d"
     }
   },
   {
@@ -1752,10 +1752,10 @@
       "qualification_unchanged": true
     },
     "main_sync": {
-      "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
-      "proof": "main-83ac-validation.json",
-      "state": "FOCUSED_GREEN_6_NATIVE_PG",
-      "qualification_unchanged": true
+      "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+      "state": "COMPILE_AND_FOCUSED_UNITS_GREEN_NATIVE_PG_PENDING",
+      "proof": "main-98d6-validation.json",
+      "native_postgres": "pending fresh test binary; prior6/6 apply only56668c09d"
     }
   },
   {

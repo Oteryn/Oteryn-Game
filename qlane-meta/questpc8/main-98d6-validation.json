@@ -1,0 +1,46 @@
+{
+  "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+  "prior_product_head": "56668c09daefe7c06dcda379d51b75b7e410a0a4",
+  "state": "COMPILE_AND_FOCUSED_UNITS_GREEN_NATIVE_PG_PENDING",
+  "checks": {
+    "fmt-write": {
+      "exit": 0,
+      "seconds": 11.603599163005129
+    },
+    "workspace": {
+      "exit": 0,
+      "seconds": 182.07649571599904
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 182.4613435509964
+    },
+    "units": {
+      "exit": 0,
+      "seconds": 26.714019832987105
+    }
+  },
+  "fmt_check": "PASS /tmp/questpc8b-98d6-fmt-prepush.log",
+  "duplicate_migrations": "PASS /tmp/questpc8b-98d6-dups-prepush.log",
+  "regeneration": {
+    "native_catalogues": "PASS",
+    "central_quest_lists_and_bindings": "PASS",
+    "equipment_custody_and_item_audit": "PASS",
+    "world_pin_refresh_seconds": 118.73981272199308,
+    "world_digest": "cfb5281ca44d51a575c9076ffa611a10b2b444287ebcca4274d8bc88be8cc29d"
+  },
+  "pending": [
+    "six native PostgreSQL cases: fresh test binary still compiling",
+    "remaining dispatch unit tests: CI scope under owner cadence exception"
+  ],
+  "prior_pg_proof": "main-83ac-validation.json: six native PostgreSQL cases passed139.880s on56668c09d; not represented as proof of this Soulpit merge",
+  "conflicts": [
+    "world pin and preprod digest: canonical pin-refresh",
+    "kill_reward: incoming Soulpit guard plus existing quest death loot and Corruptor cache",
+    "classic_quests and soul_war fixtures: active-room movement_cells accessor"
+  ],
+  "review": "Independent final source review: no findings",
+  "own_migrations": "1300-1308; none renumbered; incoming1140-1141 unchanged",
+  "whole_quests_qualified": 21,
+  "whole_quests_total": 23
+}

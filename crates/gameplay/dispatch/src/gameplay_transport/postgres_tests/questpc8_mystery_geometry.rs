@@ -67,7 +67,7 @@ pub(super) async fn arrive(
         y: at.y,
         floor: at.floor,
     });
-    let cells = owner.movement_cells;
+    let cells = owner.movement_cells();
     assert_eq!(
         cells.index().lookup(
             cells.scope(),

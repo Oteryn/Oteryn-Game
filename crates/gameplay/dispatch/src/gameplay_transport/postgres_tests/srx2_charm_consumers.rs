@@ -644,7 +644,7 @@ pub(super) async fn control(
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 session,
                 owner.owner_now(),
@@ -1143,7 +1143,7 @@ pub(super) async fn carnage(
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 session,
                 owner.owner_now(),

@@ -9,6 +9,7 @@ use crate::durability::item_craft::soulpit::burn_entry_core;
 use crate::durability::item_mint::uuid_text;
 
 pub(super) async fn write(
+    root: &DurabilityRoot,
     tx: &mut Type2Transaction<'_>,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -101,8 +102,15 @@ pub(super) async fn write(
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
             y: u16::try_from(participant.try_get::<i32, _>("entry_y")?)
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
-            floor: i8::try_from(participant.try_get::<i16, _>("entry_floor")?)
-                .map_err(|_| SoulpitError::NotOnEntryTile)?,
+            // Runtime/LastPosition floors retain source z; map TilePos uses
+            // -source_z (ADR-0021), as bundle_map_position does at USE ingress.
+            floor: i8::try_from(
+                participant
+                    .try_get::<i16, _>("entry_floor")?
+                    .checked_neg()
+                    .ok_or(SoulpitError::NotOnEntryTile)?,
+            )
+            .map_err(|_| SoulpitError::NotOnEntryTile)?,
         };
         let slot = entry_slot(position).ok_or(SoulpitError::NotOnEntryTile)?;
         let level = u32::try_from(participant.try_get::<i64, _>("level")?)
@@ -110,7 +118,13 @@ pub(super) async fn write(
         entry_facts.push(EntryParticipant {
             slot,
             level,
-            game_master: facts[0].game_master,
+            // Crystal 201189f soulpit_fight.lua:54-61 exempts current GMs. Resolve
+            // the trusted projection in this transaction; a captured hint cannot
+            // grant an exemption or survive roster/activation revocation.
+            game_master: root
+                .staff_group_in_transaction(tx, facts[0].character)
+                .await?
+                >= 4,
         });
         if character == *fence.character_id.as_bytes() {
             if uuid_text(participant.try_get("source_game_session_id")?)?

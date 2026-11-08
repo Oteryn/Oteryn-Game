@@ -13,6 +13,13 @@ NOTE = (
     " Additionally one decision-21 appearance-only Grizzly ground;"
     " total 8614 Terrain records."
 )
+SOULPIT = "terrain-08614-08668.json"
+SOULPIT_SHA = "dfd54e670a7de3eb8b5a444df9c8efc15faf8ddafadab761347338d80141f820"
+SOULPIT_MARKER_SHA = "22cb600cca441ac68526501c8e3576ec9c1dd07f77b276db470c70b996028fec"
+SOULPIT_NOTE = (
+    " Additionally 55 W07 Soulpit static appearance records;"
+    " total 8669 Terrain records."
+)
 
 
 def sha(raw):
@@ -23,6 +30,19 @@ def original_marker(root):
     """Accept only the exact old tree or the qualified W15c ground/marker pair."""
     root = Path(root)
     raw = (root / MARKER).read_bytes()
+    soulpit = root / "content/world/terrain" / SOULPIT
+    if soulpit.exists():
+        # Project only the exact qualified W07 successor back to the already
+        # pinned W15c frame. Frozen source facts and qualification bytes stay intact.
+        if sha(raw) != SOULPIT_MARKER_SHA or sha(soulpit.read_bytes()) != SOULPIT_SHA:
+            raise ValueError(
+                "source digest drift: unrecognized Soulpit World owner inputs"
+            )
+        marker = json.loads(raw)
+        if not marker["notes"].endswith(SOULPIT_NOTE):
+            raise ValueError("source digest drift: Soulpit terrain marker note")
+        marker["notes"] = marker["notes"].removesuffix(SOULPIT_NOTE)
+        raw = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
     ground = root / "content/world/terrain" / GROUND
     if sha(raw) == BASE_SHA and not ground.exists():
         return raw
@@ -59,7 +79,7 @@ def link_world(root, target, detached=()):
         for path in source.iterdir():
             if path.name == "index.json":
                 (destination / path.name).write_bytes(original)
-            elif path.name != GROUND:
+            elif path.name not in {GROUND, SOULPIT}:
                 (destination / path.name).symlink_to(path.resolve())
 
 
@@ -73,6 +93,10 @@ def original_hit_packet(root):
     packet = json.loads((root / HIT_PACKET).read_bytes())
     inputs = packet["sources"]["world_owner_inputs"]
     ground = "content/world/terrain/" + GROUND
+    soulpit = "content/world/terrain/" + SOULPIT
+    if inputs.get(MARKER) == SOULPIT_MARKER_SHA and inputs.get(soulpit) == SOULPIT_SHA:
+        inputs[MARKER] = MARKER_SHA
+        del inputs[soulpit]
     if inputs.get(MARKER) == MARKER_SHA and inputs.get(ground) == GROUND_SHA:
         inputs[MARKER] = BASE_SHA
         del inputs[ground]
