@@ -1,6 +1,6 @@
 # QWORLD M32 — conditional native deaths
 
-The selected Oteryn recipes, rather than donor kill counts, require ten Fury deaths (Fury Gates s3) and ten Werewolf deaths (Grimvale s2). Their canonical records are48 and54 of `content/quests/definitions/quests-00100-00199.json`. The M32 binding input prepared locally (verification pending) is `content/quests/native-death-objectives.json`; the prepared adapter reuses the existing native-death owner and carries the existing world-change predicate into the fenced quest writer.
+The selected Oteryn recipes, rather than donor kill counts, require ten Fury deaths (Fury Gates s3) and ten Werewolf deaths (Grimvale s2). Their canonical records are48 and54 of `content/quests/definitions/quests-00100-00199.json`. The production binding input is `content/quests/native-death-objectives.json`; the existing native-death owner consumes it and carries the existing world-change predicate into the fenced quest writer.
 
 Identity/source references retained by those selected recipes:
 - Fury Gates: https://tibia.fandom.com/index.php?curid=76237&oldid=1099676 and https://tibia.fandom.com/index.php?curid=76236&oldid=887144
@@ -9,4 +9,4 @@ Identity/source references retained by those selected recipes:
 
 M31's personal journal lowering may open the `qworld/fury/hunt` and `qworld/grimvale/hunt` tracks only after the preceding selected stages; both default to0. Native death increments the corresponding `/kills` track, capped at10. This bounded adapter does not declare the exploration, seal/survey or final completion stages qualified.
 
-Status: M32 remains CLAIMED; the complete content/PG batch is not yet pushed. This source-preparation note publishes the selected counts and M31 integration contract without claiming a database pass.
+M32 engine proof: `qworld_native_fury_death_requires_active_world_and_credits_once` executed in150.93681868s and `qworld_native_werewolf_death_requires_full_moon_and_credits_once` in150.9516698s. Both use real reset, native death capture/settlement and the fenced quest writer. Quest unit tests314/314 passed; quest-authoring checks, its105-module unit runner, content-tree validation, fmt and changed-crate clippy passed. This is stage/engine evidence, not whole-journey qualification.
