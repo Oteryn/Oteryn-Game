@@ -348,6 +348,7 @@ pub(super) async fn exercise(
     let admission = crate::durability::reward_claim_mint::QuestRewardAdmission {
         actor_conditions: None,
         carried_use: None,
+                peer_use: None,
 
         native,
         weights: &weights,
@@ -386,6 +387,7 @@ pub(super) async fn exercise(
             Some(crate::durability::reward_claim_mint::QuestRewardAdmission {
                 actor_conditions: None,
                 carried_use: None,
+                peer_use: None,
 
                 native,
                 weights: &NativeItemWeights(native),

@@ -6,18 +6,26 @@ use oteryn_gameplay_quests::quest::reward_callbacks;
 use oteryn_gameplay_quests::quest::world_callbacks::Storage;
 use serde::Deserialize;
 
+#[cfg(test)]
+mod any_topic_tests;
+#[cfg(test)]
+mod fixture_offers;
+mod offer_topic;
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Offers {
     schema: u32,
     offers: Vec<Offer>,
 }
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Offer {
+pub(super) struct Offer {
     npc: String,
     keywords: Vec<String>,
     topic: u16,
+    #[serde(default)]
+    any_topic: bool,
     next_topic: u16,
     storage: Vec<Storage>,
     #[serde(default)]
@@ -64,6 +72,10 @@ pub(super) fn prepare(
         return None;
     }
     offers.offers.extend(authored.offers);
+    #[cfg(test)]
+    if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
+        offers.offers.extend(rows.iter().cloned());
+    }
     if offers.schema != 1
         || offers.offers.len() > 512
         || offers.offers.iter().any(|o| o.requires.len() > 8)
@@ -117,7 +129,7 @@ pub(super) fn prepare(
             }
             if let Some(offer) = offers.offers.iter().find(|c| {
                 c.npc == context.2
-                    && c.topic == topic.number
+                    && c.matches_topic(topic.number)
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
