@@ -11,10 +11,8 @@ use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
 use oteryn_gameplay_domain::domain::timed_item_host::resolve_timed_definition;
 use std::sync::OnceLock;
 
-mod captured_target;
 pub mod enchanting;
 mod quest_recipes;
-pub use captured_target::{TAINTED_SOULS_RECIPE, captured_target_quantity};
 
 #[derive(Debug)]
 pub struct CookingConversion {
