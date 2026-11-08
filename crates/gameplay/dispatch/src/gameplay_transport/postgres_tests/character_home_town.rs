@@ -502,7 +502,7 @@ async fn premium_ended<'a>(
         }
         let mut login = fresh.owner(h, owner.character);
         login.active_generation = owner.active_generation;
-        login.movement_cells = owner.movement_cells;
+        login.movement_cells = owner.movement_cells();
         login.premium_coordinator = Some(coordinator);
         let (outcome, _, decided) = Box::pin(login.initialize_first_entry(
             request,

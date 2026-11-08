@@ -168,9 +168,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 floor: -i8::try_from(floor).ok()?,
             };
             if self
-                .movement_cells
+                .movement_cells()
                 .index()
-                .lookup(self.movement_cells.scope(), cell)
+                .lookup(self.movement_cells().scope(), cell)
                 != Ok(crate::content::CollisionClass::Walkable)
                 || map.facts.doors().blocks(tile)
                 || map.overlay.has_added_item(tile)

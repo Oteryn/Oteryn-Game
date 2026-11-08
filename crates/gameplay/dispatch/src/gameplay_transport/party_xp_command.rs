@@ -67,8 +67,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(result(ChatDisposition::Rejected));
         }
-        let in_protection_zone =
-            super::actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells, actor);
+        let in_protection_zone = super::actor_spell::qualified_protection_zone(
+            &mut runtime,
+            self.movement_cells(),
+            actor,
+        );
         let fight = self.combat_lock_fact(actor, session).await;
         if shared_xp_refused_in_fight(
             fight.pve_in_fight_until.is_some() || fight.pvp == PvpLockSource::LiveBlocked,
