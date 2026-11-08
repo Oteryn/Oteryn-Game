@@ -36,3 +36,46 @@ fn pc01_appearance_shortcut_and_request_gate() -> Result<(), Box<dyn std::error:
     assert!(panel_text(&panel).contains("ended"));
     Ok(())
 }
+
+#[test]
+fn gallery_navigation_uses_catalogue_and_never_changes_confirmed_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::appearance::{Catalogue, Context, OutfitOption};
+    let mut panel = Panel {
+        selected: true,
+        catalogue: Some(Catalogue {
+            context: Context {
+                content_generation: [1; 32],
+                cosmetics_digest: [2; 32],
+            },
+            root_revision: 1,
+            selected: None,
+            palette: vec![[255, 0, 0]],
+            outfits: vec![
+                OutfitOption {
+                    key: "knight".into(),
+                    look_type: 128,
+                    permitted_addons: 3,
+                },
+                OutfitOption {
+                    key: "mage".into(),
+                    look_type: 129,
+                    permitted_addons: 1,
+                },
+            ],
+            mounts: vec![],
+        }),
+        ..Default::default()
+    };
+    panel.fields[0] = "knight".into();
+    panel.fields[1] = "3".into();
+    assert!(panel.cycle_outfit(true));
+    assert_eq!(panel.fields[0], "mage");
+    assert_eq!(panel.fields[1], "1");
+    assert!(panel_text(&panel).contains("Preview: mage"));
+    assert!(panel_text(&panel).contains("look 129"));
+    assert!(panel.confirmed.is_none());
+    panel.pending = true;
+    assert!(!panel.cycle_outfit(false));
+    Ok(())
+}
