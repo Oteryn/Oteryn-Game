@@ -1841,3 +1841,22 @@ PREPUSH-2 cadence exception: publish compiling WIP now, with current quests,
 durability and dispatch unit suites plus2post-merge clock PG cases pending.
 Strict changed-crate clippy is running. Do not emit ENGINE-DONE until the
 current runtime tests pass. PUBLICATION-STATUS.md names44DONE/22NOTDONE.
+After790996f8e push, strict clippy's sole failure was the existing kill-binding
+unit assertion at authored_bindings/kills.rs139 (cloned_ref_to_slice_refs).
+Replaced its one-element cloned expectation with std::slice::from_ref, keeping
+full equality. All327quest-crate units PASS46.308s,0skipped, including the new
+elapsed-clock binding refusal test. Remaining engine qualification: durability/
+dispatch units and current post-merge2clock PG cases. No mechanic code changed
+in this lint-only follow-up; exact authoring/content checks from790 remain valid.
+Full strict-clippy rerun also found one redundant identity error conversion in
+world_callback_clocks.rs89. Removed only .map_err(Into::into), keeping all PG
+assertions. The prior test digest now has an explicit historical source commit
+790996f8e and is not a current witness pin. Fresh post-merge PG remains pending;
+no current hash or ENGINE-DONE qualification is invented. Both lint fixes ship
+together after workspace/fmt/strict-clippy verification.
+Lint follow-up publication: both known lint expressions corrected; workspace
+alltargets6m29sPASS, fmtPASS, regeneration/pinsPASS,327quest unitsPASS. Final
+fetch main107625470/lane790996f8e unchanged. Use owner PREPUSH-2 cadence exception
+rather than hold this compiling fix past30min: strict-clippy rerun is still
+running; durability/dispatch units and fresh clock PG cases remain pending.
+Historical witness data is explicitly anchored to790996f8e; no fresh pin minted.

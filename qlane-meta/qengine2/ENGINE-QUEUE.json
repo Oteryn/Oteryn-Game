@@ -85,12 +85,12 @@
       ],
       "publication_state": "compiling WIP under owner PREPUSH-2 cadence exception; prior actualPG2green, post-merge runtime validation pending",
       "post_merge_pending": [
-        "oteryn-gameplay-quests unit suite",
         "oteryn-gameplay-durability unit suite",
         "oteryn-gameplay-dispatch unit suite",
         "two clock PostgreSQL cases after encounter merge"
       ],
-      "post_merge_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+      "post_merge_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "quests_units": "327PASS46.308s,0skipped"
     },
     {
       "feature": "conditional_world_reward_achievement",

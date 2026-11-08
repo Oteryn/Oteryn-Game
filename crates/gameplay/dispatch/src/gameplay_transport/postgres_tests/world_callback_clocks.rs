@@ -85,9 +85,7 @@ async fn use_(
     let payload =
         oteryn_protocol_oteryn::world_object::encode_use_intent(&target(owner)?).map_err(debug)?;
     let reply = super::quest_world_callbacks::wire(owner, admitted, id, 2, payload).await?;
-    oteryn_protocol_oteryn::world_object::decode_use_result(&reply)
-        .map_err(debug)
-        .map_err(Into::into)
+    oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
 }
 
 async fn step(

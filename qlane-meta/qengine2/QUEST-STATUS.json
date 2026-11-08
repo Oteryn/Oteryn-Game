@@ -3806,11 +3806,11 @@
       71.403533167
     ],
     "validation_pending": [
-      "oteryn-gameplay-quests unit suite",
       "oteryn-gameplay-durability unit suite",
       "oteryn-gameplay-dispatch unit suite",
       "two clock PostgreSQL cases after encounter merge"
     ],
-    "publication": "PREPUSH-2 cadence exception; counts unchanged"
+    "publication": "PREPUSH-2 cadence exception; counts unchanged",
+    "quests_units": "327PASS46.308s,0skipped"
   }
 }

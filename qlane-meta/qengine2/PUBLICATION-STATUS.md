@@ -74,4 +74,4 @@ Branch: `claude/happy-davinci-ijz3wy-qengine2`.
 - Royal Bounacean Advisor Outfits Quest
 - What a Foolish Quest
 
-Shared clock engine: IN_PROGRESS. Two actual PostgreSQL18.6 cases passed before the encounter main merge (66.894592149s and62.911933117s). Post-merge crate unit suites and clock PG reruns remain pending; the prior proof is not relabelled as current. No whole quest was dropped or newly qualified.
+Shared clock engine: IN_PROGRESS. Two actual PostgreSQL18.6 cases passed before the encounter main merge (66.894592149s and62.911933117s). Post-merge quest units:327PASS46.308s. Durability/dispatch unit suites and clock PG reruns remain pending; the prior proof is not relabelled as current. No whole quest was dropped or newly qualified.
