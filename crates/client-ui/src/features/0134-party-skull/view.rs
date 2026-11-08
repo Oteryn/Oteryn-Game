@@ -14,5 +14,8 @@ pub fn panel_text(panel: &Panel) -> String {
     if let Some(timer) = panel.skull_timer {
         text.push_str(&format!("\r\n{}", timer.text()));
     }
+    if let Some(snapshot) = &panel.unjustified {
+        text.push_str(&format!("\r\n{}", snapshot.text()));
+    }
     text
 }

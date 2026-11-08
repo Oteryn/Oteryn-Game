@@ -2,7 +2,7 @@ mod input;
 mod state;
 mod view;
 pub use input::open_key;
-pub use state::{Intent, Panel, SkullTimer};
+pub use state::{FragWindow, Intent, Panel, SkullTimer, UnjustifiedSnapshot};
 pub use view::panel_text;
 mod protocol;
 pub use protocol::request;

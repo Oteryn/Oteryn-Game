@@ -11,6 +11,7 @@ pub struct Panel {
     pub fields: [String; 0],
     pub feedback: String,
     pub summary: String,
+    pub unjustified: Option<UnjustifiedSnapshot>,
     pub skull_timer: Option<SkullTimer>,
     pub icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
 }
@@ -61,5 +62,44 @@ impl SkullTimer {
             Some(seconds) => format!("{name} skull: {seconds}s at observation"),
             None => format!("{name} skull: expiry unavailable"),
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FragWindow {
+    pub points_milli: u64,
+    pub limit_milli: u64,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnjustifiedSnapshot {
+    /// Daily, weekly and monthly values from the same server observation.
+    pub windows: [FragWindow; 3],
+    /// Unknown is distinct from an observed empty list.
+    pub open_situations: Option<Vec<String>>,
+}
+impl UnjustifiedSnapshot {
+    pub fn text(&self) -> String {
+        let mut text = String::from("Unjustified Points\r\n");
+        for (label, window) in ["Daily", "Weekly", "Monthly"].into_iter().zip(self.windows) {
+            text.push_str(&format!(
+                "{label}: {}.{:03} / {}.{:03}\r\n",
+                window.points_milli / 1000,
+                window.points_milli % 1000,
+                window.limit_milli / 1000,
+                window.limit_milli % 1000
+            ));
+        }
+        match &self.open_situations {
+            None => text.push_str("Open PvP situations unavailable"),
+            Some(situations) if situations.is_empty() => text.push_str("No open PvP situations"),
+            Some(situations) => {
+                text.push_str("Open PvP situations:\r\n");
+                for situation in situations {
+                    text.push_str(situation);
+                    text.push_str("\r\n");
+                }
+            }
+        }
+        text
     }
 }
