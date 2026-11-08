@@ -58,7 +58,7 @@ impl DurabilityRoot {
         source: &NpcRuleCatalog,
     ) -> Result<NpcProgramCommit> {
         self.commit_npc_program_source(
-            authority, node, permit, fence, request, catalogue, items, source,
+            authority, node, permit, fence, request, catalogue, items, source, None,
         )
         .await
     }
