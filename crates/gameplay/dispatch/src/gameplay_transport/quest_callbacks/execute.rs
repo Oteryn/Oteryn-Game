@@ -70,6 +70,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
         }
+        if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
+            callback,
+            after.appearance_id,
+        ) {
+            return UseDisposition::NothingToUse;
+        }
         let close = callback.trigger == Trigger::StepOut
             || callback
                 .lever
@@ -557,6 +563,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let durable = callback.has_personal_state() && !(close && callback.opening_only);
+        let mut fresh_effects = !durable;
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
@@ -647,6 +654,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     QuestTransitionOutcome::Committed(ref committed)
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
+                    fresh_effects = fresh;
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                     }
@@ -738,18 +746,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if oteryn_gameplay_quests::quest::children_puzzle::binding(&callback.key)
-            .is_some_and(|(_, solved)| solved)
-        {
-            let _ = map
-                .facts
-                .emit_movement_speech(crate::map::facts::MovementSpeech {
-                    speaker: actor,
-                    position: native(expected.position()).unwrap_or(pos),
-                    talk_type: 36,
-                    text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH,
-                });
-        }
         if let Some(proof) = teleport {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;
@@ -805,6 +801,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // it cannot turn a committed movement into a failed command.
             map.facts
                 .emit_movement_effect(tile(effect.position), effect.effect);
+        }
+        if fresh_effects && let Some(speech) = &callback.effects.player_speech {
+            self.states
+                .chat
+                .publish_quest_speech(runtime, actor, session, speech);
         }
         if let Some(message) = success_message {
             self.states.chat.push_quest_feedback(session, &message);

@@ -294,6 +294,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         &serde_json::json!({"schema":1,"callbacks":[nomads_window::callback()?]}).to_string(),
     )?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/children-grease.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -317,6 +320,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
+    ))?);
+    callbacks.push(super::barbarian_mead::callback()?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
@@ -1722,6 +1729,10 @@ mod qn1_cells_tests {
             .collect();
         assert_eq!(levers.len(), 10);
         for callback in levers {
+            assert!(
+                callback.selector.native.is_none(),
+                "Children lever inherited another quest's alias"
+            );
             super::parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string())?;
             assert_eq!(callback.lever, Some([9125, 9126]));
             assert_eq!(callback.effects.reset_after_ms, Some(5000));
