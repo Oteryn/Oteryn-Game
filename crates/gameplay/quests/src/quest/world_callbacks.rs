@@ -632,18 +632,30 @@ fn extend_callbacks(
             } else {
                 storage.set.max(storage.maximum)
             };
+            let mead = callback.native_rule == Some(NativeRule::BarbarianMead);
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
+                // Sven resets only total sips. A fresh streak retains source absence=-1.
+                if mead && track.key == super::barbarian_mead::TRACKS[2] {
+                    track.initial = -1;
+                    track.min = -1;
+                }
                 if callback.native_rule.is_none() && !storage.preserve {
                     track.max = track.max.max(maximum);
                 }
             } else {
-                if callback.native_rule.is_some() {
+                if callback.native_rule.is_some()
+                    && !(mead && storage.track == super::barbarian_mead::DRAW)
+                {
                     return Err(format!(
                         "native callback {} requires an existing track {}",
                         callback.key, storage.track
                     ));
                 }
-                let initial = imported_explore::initial(callback, storage);
+                let initial = if mead && storage.track == super::barbarian_mead::DRAW {
+                    0
+                } else {
+                    imported_explore::initial(callback, storage)
+                };
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),

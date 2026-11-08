@@ -50,22 +50,26 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    let tracks = mead::TRACKS
+    let tracks = mead::NATIVE_TRACKS
         .into_iter()
         .map(|k| base.track(k).cloned().ok_or("mead track"))
         .collect::<Result<Vec<_>, _>>()?;
     let setup = QuestTransition {
         key: "oteryn:quest-transition/m47-fixture-round".into(),
         quest: mead::QUEST.into(),
-        effects: mead::TRACKS
-            .into_iter()
-            .zip([2, 2, 0, 0])
-            .map(|(track, value)| QuestEffect {
-                track: track.into(),
-                from: QuestComparison::Between(-1, i64::MAX),
-                effect: QuestEffectKind::Set(value),
-            })
-            .collect(),
+        // Sven writes questline, mission and total; the streak is absent on first entry.
+        effects: [
+            (mead::TRACKS[0], 2),
+            (mead::TRACKS[1], 2),
+            (mead::TRACKS[3], 0),
+        ]
+        .into_iter()
+        .map(|(track, value)| QuestEffect {
+            track: track.into(),
+            from: QuestComparison::Between(-1, i64::MAX),
+            effect: QuestEffectKind::Set(value),
+        })
+        .collect(),
         completes: false,
         experience: None,
         world_change: None,
@@ -204,7 +208,23 @@ pub(super) async fn exercise(
     let QuestTransitionOutcome::Committed(receipt) = first else {
         return Err(format!("M47 did not commit: {first:?}").into());
     };
-    assert_eq!(receipt.changes.len(), 4);
+    assert_eq!(receipt.changes.len(), 5);
+    let streak = receipt
+        .changes
+        .iter()
+        .find(|c| c.track == mead::TRACKS[2])
+        .ok_or("streak receipt")?;
+    assert_eq!((streak.before, streak.after), (-1, 0));
+    assert!(
+        (1..=5).contains(
+            &receipt
+                .changes
+                .iter()
+                .find(|c| c.track == mead::DRAW)
+                .ok_or("receipt draw")?
+                .after
+        )
+    );
     assert_eq!(
         receipt
             .changes
@@ -240,8 +260,8 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(count, 1);
-    let stored: Vec<(String,i64)> = sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key=ANY($1::text[]) ORDER BY track_key").bind(mead::TRACKS.as_slice()).fetch_all(&h.pool).await?;
-    assert_eq!(stored.len(), 4);
+    let stored: Vec<(String,i64)> = sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key=ANY($1::text[]) ORDER BY track_key").bind(mead::NATIVE_TRACKS.as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(stored.len(), 5);
     for (track, value) in stored {
         assert_eq!(
             receipt

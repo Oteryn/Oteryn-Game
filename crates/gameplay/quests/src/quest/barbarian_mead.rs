@@ -9,10 +9,13 @@ pub const TRACKS: [&str; 4] = [
     "oteryn:quest-progress/quest/u8_0/barbarian_test/mead_success_sips",
     "oteryn:quest-progress/quest/u8_0/barbarian_test/mead_total_sips",
 ];
+/// Internal receipt evidence, separate from the four source storage counters.
+pub const DRAW: &str = "oteryn:quest-progress/native/barbarian_test/mead_draw";
+pub const NATIVE_TRACKS: [&str; 5] = [TRACKS[0], TRACKS[1], TRACKS[2], TRACKS[3], DRAW];
 pub const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_mead.lua:";
 
 pub fn callback() -> Result<Callback, String> {
-    let storage: Vec<_> = TRACKS.into_iter().zip(RANGES).map(|(track,(minimum,maximum))|
+    let storage: Vec<_> = NATIVE_TRACKS.into_iter().zip(RANGES).map(|(track,(minimum,maximum))|
         serde_json::json!({"track":track,"minimum":minimum,"maximum":maximum,"set":0,"preserve":true})
     ).collect();
     super::world_callbacks::parse(&serde_json::json!({"schema":1,"callbacks":[{
@@ -25,16 +28,22 @@ pub fn callback() -> Result<Callback, String> {
     }]}).to_string())?.pop().ok_or_else(|| "missing mead callback".into())
 }
 
-pub const RANGES: [(i64, i64); 4] = [(-1, 8), (-1, 3), (0, i32::MAX as i64), (0, i32::MAX as i64)];
+pub const RANGES: [(i64, i64); 5] = [
+    (-1, 8),
+    (-1, 3),
+    (-1, i32::MAX as i64),
+    (0, i32::MAX as i64),
+    (0, 5),
+];
 
 pub fn message(changes: &[super::QuestTrackChange]) -> Option<&'static str> {
     let line = changes.iter().find(|c| c.track == TRACKS[0])?;
-    let sips = changes.iter().find(|c| c.track == TRACKS[2])?;
+    let draw = changes.iter().find(|c| c.track == DRAW)?;
     if line.after == 1 {
         Some("Ask Sven for another round.")
     } else if line.after == 3 {
         Some("10 sips in a row. Yeah!")
-    } else if sips.after > sips.before {
+    } else if draw.after > 1 {
         Some("The world seems to spin but you manage to stay on your feet.")
     } else {
         Some("The mead was too strong. You passed out for a moment.")
@@ -72,6 +81,48 @@ pub fn apply(mut state: [i64; 4], roll: u8) -> Result<[i64; 4], QuestRefusal> {
 mod tests {
     use super::*;
     #[test]
+    fn m47_first_sip_preserves_absence_and_committed_draw() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("m47-first")
+            .map_err(|e| format!("{e:?}"))?;
+        let catalogue = lowered.catalogue();
+        assert_eq!(catalogue.track(TRACKS[2]).ok_or("streak")?.initial, -1);
+        let transition = catalogue.transition(KEY).ok_or("transition")?;
+        let stored = TRACKS
+            .into_iter()
+            .zip([2, 2, -1, 0])
+            .map(|(key, value)| (key.to_owned(), value))
+            .collect();
+        for roll in 1..=5 {
+            let changes = catalogue
+                .evaluate_with_roll(transition, &stored, 0, Some(roll))
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                changes
+                    .iter()
+                    .find(|c| c.track == "oteryn:quest-progress/native/barbarian_test/mead_draw")
+                    .map(|c| c.after),
+                Some(i64::from(roll))
+            );
+            assert_eq!(
+                changes
+                    .iter()
+                    .find(|c| c.track == TRACKS[2])
+                    .map(|c| c.after),
+                Some(0)
+            );
+            assert_eq!(
+                message(&changes),
+                Some(if roll == 1 {
+                    "The mead was too strong. You passed out for a moment."
+                } else {
+                    "The world seems to spin but you manage to stay on your feet."
+                })
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn m47_loaded_callback_requires_writer_roll_and_binds_all_tracks() -> Result<(), String> {
         let catalogue =
             super::super::loader::load_embedded_quest_state("m47").map_err(|e| format!("{e:?}"))?;
@@ -102,7 +153,7 @@ mod tests {
             let changes = catalogue
                 .evaluate_with_roll(transition, &stored, 0, Some(roll))
                 .map_err(|e| format!("{e:?}"))?;
-            assert_eq!(changes.len(), 4);
+            assert_eq!(changes.len(), 5);
             assert!(callback.committed_message(&changes).is_some());
             assert_eq!(changes[0].after, if roll == 1 { 2 } else { 3 });
             assert_eq!(changes[3].after, if roll == 1 { 21 } else { 20 });

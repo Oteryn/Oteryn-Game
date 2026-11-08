@@ -28,7 +28,7 @@ impl NativeRule {
 
     pub const fn tracks(self) -> &'static [&'static str] {
         match self {
-            Self::BarbarianMead => &barbarian_mead::TRACKS,
+            Self::BarbarianMead => &barbarian_mead::NATIVE_TRACKS,
             Self::CultsSymbol { .. } => &[
                 cults_of_tibia::MISSION,
                 cults_of_tibia::TEMP,
@@ -92,16 +92,22 @@ impl NativeRule {
         }
         let read = |key: &str| values.get(key).copied().ok_or(QuestRefusal::NotSupported);
         let next = match self {
-            Self::BarbarianMead => barbarian_mead::apply(
-                [
+            Self::BarbarianMead => {
+                let before = [
                     read(barbarian_mead::TRACKS[0])?,
                     read(barbarian_mead::TRACKS[1])?,
                     read(barbarian_mead::TRACKS[2])?,
                     read(barbarian_mead::TRACKS[3])?,
-                ],
-                roll.ok_or(QuestRefusal::NotSupported)?,
-            )?
-            .to_vec(),
+                ];
+                let roll = roll.ok_or(QuestRefusal::NotSupported)?;
+                let mut after = barbarian_mead::apply(before, roll)?.to_vec();
+                after.push(if before[0] == 2 && before[3] <= 20 {
+                    i64::from(roll)
+                } else {
+                    0
+                });
+                after
+            }
             Self::CultsSymbol { symbol } => {
                 let snapshot = cults_of_tibia::apply_symbol(
                     symbol,
