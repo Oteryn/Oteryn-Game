@@ -13,8 +13,11 @@ use crate::content::{
 use oteryn_world_bundle::bundle;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
+
+#[path = "native_reward_claims.rs"]
+mod native_authored;
 
 /// The `unique` attribute of a top-level entry and the appearance id of its palette key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,6 +39,10 @@ pub trait RewardClaimBase {
 pub trait RewardClaimTile {
     fn depths(&self) -> &[u8];
     fn unique(&self, ordinal: u8) -> Option<UniqueEntry>;
+    /// Palette appearance of an exact top-level native entry, including entries without a UID.
+    fn appearance(&self, ordinal: u8) -> Option<u16> {
+        self.unique(ordinal)?.appearance
+    }
 }
 
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
@@ -192,6 +199,7 @@ pub fn bind_reward_claims(
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<BindingReport, ClaimsError> {
     let mut report = BindingReport::default();
+    let mut native_keys = BTreeSet::new();
     for shard in shards {
         let shard: Value =
             serde_json::from_str(shard).map_err(|_| ClaimsError("not a JSON document"))?;
@@ -209,11 +217,51 @@ pub fn bind_reward_claims(
                 .and_then(|identity| identity.get("key"))
                 .and_then(Value::as_str)
                 .ok_or(ClaimsError("record without an identity key"))?;
+            if definition.get("definition_profile").and_then(Value::as_str)
+                == Some("native_authored_v1")
+            {
+                native_keys.insert(key.to_owned());
+            }
             match candidate(definition, admitted)? {
                 Err(left_out) => report.left_out.push((key.to_owned(), left_out)),
                 Ok(candidate) => bind_candidate(base, key, &candidate, &mut report)?,
             }
         }
+    }
+    // A native placement cannot acquire a second value authority under another
+    // claim key (or an existing source claim). Refuse every affected whole claim.
+    if !native_keys.is_empty() {
+        let mut entries = BTreeMap::<u64, Vec<(usize, usize)>>::new();
+        for (claim_index, claim) in report.served.iter().enumerate() {
+            for (placement_index, placement) in claim.placements.iter().enumerate() {
+                entries
+                    .entry(placement.bundle_placement_key)
+                    .or_default()
+                    .push((claim_index, placement_index));
+            }
+        }
+        let mut refused = BTreeSet::new();
+        for bindings in entries.values().filter(|bindings| bindings.len() > 1) {
+            if bindings
+                .iter()
+                .any(|(index, _)| native_keys.contains(report.served[*index].key.as_str()))
+            {
+                for &(index, placement) in bindings {
+                    refused.insert(index);
+                    report.unbound.push(UnboundPlacement {
+                        claim: report.served[index].key.as_str().to_owned(),
+                        index: placement,
+                        reason: UnboundReason::AmbiguousEntry,
+                    });
+                }
+            }
+        }
+        report.served = report
+            .served
+            .into_iter()
+            .enumerate()
+            .filter_map(|(index, claim)| (!refused.contains(&index)).then_some(claim))
+            .collect();
     }
     Ok(report)
 }
@@ -227,6 +275,7 @@ struct CandidatePlacement {
     appearance: u64,
     cell: Option<BoundCell>,
     crystal_unique_id: Option<u64>,
+    native_ordinal: Option<u8>,
     item: TypedDefinitionRef,
     count: u32,
     quest_transition: Option<String>,
@@ -274,6 +323,9 @@ fn candidate(
     definition: &serde_json::Map<String, Value>,
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<Result<Candidate, LeftOut>, ClaimsError> {
+    if definition.get("definition_profile").and_then(Value::as_str) == Some("native_authored_v1") {
+        return native_authored::candidate(definition, admitted);
+    }
     let key_variant = definition.contains_key("definition_profile");
     let native_contents = native_container_placements(definition);
     if key_variant && !waits_only_for_key_lowering(definition) && native_contents.is_none() {
@@ -821,6 +873,7 @@ fn candidate_placement(
         appearance,
         cell: native_cell(position),
         crystal_unique_id,
+        native_ordinal: None,
         item,
         count,
         quest_transition,
@@ -897,14 +950,28 @@ fn bind_placement(
     base: &impl RewardClaimBase,
     placement: &CandidatePlacement,
 ) -> Result<(BoundCell, u64), UnboundReason> {
-    let id = placement
-        .crystal_unique_id
-        .ok_or(UnboundReason::NoCrystalUniqueId)?;
+    if placement.native_ordinal.is_none() && placement.crystal_unique_id.is_none() {
+        return Err(UnboundReason::NoCrystalUniqueId);
+    }
     let cell = placement.cell.ok_or(UnboundReason::CellOutOfBounds)?;
     let tile = base
         .tile(cell.x, cell.y, cell.floor)
         .ok_or(UnboundReason::NoEntry)?;
     let top_level = tile.depths().iter().filter(|depth| **depth == 0).count();
+    if let Some(ordinal) = placement.native_ordinal {
+        if usize::from(ordinal) >= top_level {
+            return Err(UnboundReason::NoEntry);
+        }
+        if tile.appearance(ordinal).map(u64::from) != Some(placement.appearance) {
+            return Err(UnboundReason::AppearanceMismatch);
+        }
+        let key = bundle::placement_key(cell.floor, cell.x, cell.y, ordinal)
+            .ok_or(UnboundReason::NoEntry)?;
+        return Ok((cell, key));
+    }
+    let id = placement
+        .crystal_unique_id
+        .ok_or(UnboundReason::NoCrystalUniqueId)?;
     let mut found = None;
     for ordinal in 0..top_level {
         let ordinal = u8::try_from(ordinal).map_err(|_| UnboundReason::NoEntry)?;
