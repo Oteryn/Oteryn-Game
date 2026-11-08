@@ -11,7 +11,7 @@
   "population_state": "POPULATED",
   "record_count": 240,
   "schema": "OTERYN_FAMILY_INDEX/v1",
-  "seasonal_source_capture_sha256": "ed10d61044ce7f48105fd1a79307313f79e794c2ab5ac298f483e88cfa249c4a",
+  "seasonal_source_capture_sha256": "2ca657c6f475b093923210e092d04e9ec38b8ed60c0d995671aae588403d261c",
   "shards": [
     "content/encounters/raids/catalogue.json"
   ],
