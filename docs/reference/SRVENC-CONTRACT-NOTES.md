@@ -2127,3 +2127,14 @@ RED: m51_restored_victory_keeps_the_original_kick_deadline, E0599 (12.245s).
 GREEN: four focused M51 durability tests, 29.645s including real PG execution
 4.85s. Durability/dispatch clippy -D warnings:34.850s. No SQL/content changes.
 M51 remains PARTIAL pending native pillar/portal projection and reset closure.
+
+## M51: native spectator occupancy before reserving a pit
+
+Entry/advance preflight now checks the positioned player census, not only
+center/summon cells and the local match registry. Other players anywhere in the
+source five-tile rectangle block entry; the entrant and other floors do not.
+Source: Crystal data-global/lib/quests/svargrond_arena.lua:193-205,249-256.
+RED: missing occupied_by_other predicate, E0599 (12.538s). GREEN: four arena
+source tests, 2.829s; quests/dispatch clippy -D warnings, 26.975s. No SQL/content
+changes or new numbers. M51 remains PARTIAL pending pillar/portal/reset wiring.
+Engine-only pin-check passed in 154.617s; the committed bundle digest is unchanged.

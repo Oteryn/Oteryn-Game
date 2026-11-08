@@ -87,6 +87,18 @@ pub struct PitLayout {
 }
 
 impl PitLayout {
+    /// Crystal svargrond_arena.lua:193-205,249-256: every other player in
+    /// the spectator rectangle blocks admission, including unregistered players.
+    pub fn occupied_by_other<T: PartialEq>(
+        self,
+        entrant: &T,
+        occupants: impl IntoIterator<Item = (T, [i32; 3])>,
+    ) -> bool {
+        occupants
+            .into_iter()
+            .any(|(player, at)| &player != entrant && self.contains_occupant(at))
+    }
+
     /// Occupancy uses the source's 5-tile spectator radius, not its smaller reset box.
     pub fn contains_occupant(self, at: [i32; 3]) -> bool {
         at[2] == self.center[2]

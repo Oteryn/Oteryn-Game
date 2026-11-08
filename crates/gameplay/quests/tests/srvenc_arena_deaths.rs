@@ -61,3 +61,13 @@ fn m51_last_pit_preserves_the_source_asymmetric_geometry_and_occupancy_readset()
     assert_eq!(arena::KICK_AFTER_SECONDS, 600);
     Ok(())
 }
+
+#[test]
+fn m51_unregistered_player_on_source_spectator_edge_blocks_entry() -> Result<(), String> {
+    let pit = Pit::new(10).ok_or("last pit")?.layout();
+    assert!(pit.occupied_by_other(&1_u64, [(1, pit.center), (2, [32194, 31062, -7])]));
+    assert!(!pit.occupied_by_other(&1_u64, [(1, pit.center), (2, [32195, 31062, -7])]));
+    assert!(!pit.occupied_by_other(&1_u64, [(1, pit.center), (2, [32194, 31062, -8])]));
+    assert!(!pit.occupied_by_other(&1_u64, [(1, pit.center)]));
+    Ok(())
+}

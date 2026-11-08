@@ -623,6 +623,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(at) = center(pit) else {
             return false;
         };
+        // Crystal svargrond_arena.lua:193-205,249-256: native spectator
+        // occupancy includes players not present in this process's match registry.
+        let layout = match oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(pit) {
+            Some(pit) => pit.layout(),
+            None => return false,
+        };
+        let Ok(occupants) = runtime.positioned_actor_census() else {
+            return false;
+        };
+        if layout.occupied_by_other(
+            &session,
+            occupants.into_iter().filter_map(|(_, at, player)| {
+                let at = at.position();
+                player.map(|player| (player, [at.x, at.y, -i32::from(at.floor)]))
+            }),
+        ) {
+            return false;
+        }
         let mut summon = at;
         summon.y += 2;
         admits(self, runtime, at)
