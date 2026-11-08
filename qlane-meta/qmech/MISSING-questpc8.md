@@ -12,3 +12,9 @@ Source locators: Colours <https://tibia.fandom.com/index.php?curid=50860&oldid=1
 ## Transfer boundary
 
 PR #3042 (`claude/happy-davinci-ijz3wy-wpkg2`, inspected `440e6d5834f3ffc09c4c8313eefd671f0eaa25aa`) already contains this lane's finished quest work, including Father/Winterlight/Venore repairs. It is left unchanged. No duplicate quest payload is transferred here. Unfinished local shipping-filter work is preserved in a local stash and is not submitted as tested work. The unpublished n3 main-integration/generated-file changes are not a new quest/mechanic slice and are not copied over the coordinator-owned package.
+
+## M43 implementation
+
+The new `RewardCallback.peer_requires` hook is implemented in `reward_claim_mint/quest_peer.rs` and resolved by `gameplay_transport/quest_peer_use.rs`. The selected USE ingress retains its target binding and immutable consumption replay. The peer is locked read-only through the actor's reward transaction; busy session/root locks refuse without an opposite-order wait. Peer state must match the current content/quest pin and cannot be newer than its root revision.
+
+The focused real-PG case `questpc8_peer_predicate_postgres_fences_locked_state_and_no_peer_mutation` passed with marker `POSTGRES_PEER_CURRENT_YELLOW_SELF_STALE_INGRESS_BUSY_AND_READ_ONLY_PASS` and duration **3.838504071s**. The schema test was red before adding the hook, then green. Actor-only chosen s3 wiring is in `content/quests/npc-callbacks/m43-colours-peer.json`; it attaches only after the exact separately packaged mark-blue opening is present. No copied PR #3042 payload and no whole-quest completion claim. Source/contract: `docs/reference/content-prep/QMECH-M43-colours-peer.md`.
