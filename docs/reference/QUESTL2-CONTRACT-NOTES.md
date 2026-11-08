@@ -240,3 +240,15 @@ pinned source writes QuestLine=1 only when the player confirms departure
 Do not move that write into the final fish delivery or omit it. QENGINE2 owns the
 reusable travel departure effect; keep the quest IN_PROGRESS until the complete
 ordered-fish and physical-departure PostgreSQL journey passes.
+
+Cake reuse decision: season 7bf97ab17 already implements the 200-substance global
+stage through migrations 1164–1166 and the existing consume/transform owner.
+Do not replace that world goal with the packet's personal 20-substance threshold.
+Reuse the season implementation for the global journey. The packet additionally
+requires a personal 20-substance Cake Backpack completion. Request QENGINE2 to
+join an event-scoped personal threshold and once-per-event native item grant to
+the same NPC donation transaction, rather than burn twenty through a separate
+uncredited reward callback. Pinned biff_the_baker.lua:69–98, SHA256
+a590a49ebec09956779a7ca9776c449dc4e6d849e9821c5ddcd6df9da0b36a9d,
+9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d; 20-substance/Cake Backpack
+personal contract comes directly from the owner's L2 packet.
