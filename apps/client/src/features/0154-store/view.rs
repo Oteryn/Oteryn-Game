@@ -1,4 +1,6 @@
 use crate::play::{PlayLink, mailbox::lock};
+#[path = "coin_shop.rs"]
+mod coin_shop;
 impl PlayLink {
     #[must_use]
     pub fn store_panel(&self) -> oteryn_client_ui::store::StorePanel {
