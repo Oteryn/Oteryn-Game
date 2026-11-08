@@ -6,7 +6,11 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod inventory;
 mod state_ops;
+pub use inventory::InventoryRequirement;
+#[cfg(test)]
+mod inventory_tests;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
 fn is_false(value: &bool) -> bool {
@@ -182,6 +186,9 @@ pub struct RewardCallback {
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
+    /// Inclusive carried-quantity guards, rechecked before a fresh reward write.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inventory: Vec<InventoryRequirement>,
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -192,6 +199,13 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub achievement_progress: Vec<AchievementProgress>,
     pub reply: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub failure_reply: Vec<String>,
+    /// Reuse the quest writer's fenced XP obligation, alongside the hand-in.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience: Option<i64>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeatable: bool,
     pub sources: Vec<String>,
 }
 
@@ -225,7 +239,10 @@ impl RewardCallback {
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
-        (!self.take.is_empty() && self.give.is_some())
+        (self.repeatable
+            && (!self.take.is_empty() || self.fee.is_some())
+            && (self.give.is_some() || self.experience.is_some()))
+            || (!self.take.is_empty() && self.give.is_some())
             || self.cosmetic_targets().any(|target| {
                 (target.addons == 0
                     && target.sex.is_none()
@@ -266,6 +283,7 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
 ];
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
@@ -538,6 +556,28 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || c.keywords.iter().any(|s| {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
             })
+            || c.experience
+                .is_some_and(|amount| !(1..=100_000_000).contains(&amount))
+            || (c.repeatable
+                && ((c.take.is_empty() && c.fee.is_none())
+                    || (c.give.is_none() && c.experience.is_none())
+                    || c.cosmetic_targets().next().is_some()
+                    || c.achievement.is_some()
+                    || !c.achievement_progress.is_empty()))
+            || c.inventory.len() > 8
+            || c.inventory
+                .iter()
+                .map(|rule| &rule.item)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.inventory.len()
+            || c.inventory.iter().any(|rule| {
+                !slug(&rule.item, "oteryn:item.", b"._/:-", 256) || rule.minimum > rule.maximum
+            })
+            || c.failure_reply.len() > 8
+            || c.failure_reply.iter().any(|line| {
+                line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
+            })
             || c.reply.is_empty()
             || c.achievement_progress.len() > 8
             || c.achievement_progress
@@ -571,13 +611,14 @@ fn validate_document(document: Document) -> Result<Document, String> {
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none() {
+    if callback.minimum_level.is_none() && callback.inventory.is_empty() {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
     let mut terms = serde_json::to_value(callback).map_err(|e| e.to_string())?;
     let terms = terms.as_object_mut().ok_or("reward terms")?;
     terms.remove("reply");
+    terms.remove("failure_reply");
     terms.remove("sources");
     let bytes = serde_json::to_vec(terms).map_err(|e| e.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))
@@ -734,7 +775,7 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
             .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
             .collect(),
         completes: callback.completes,
-        experience: None,
+        experience: callback.experience,
     })
 }
 

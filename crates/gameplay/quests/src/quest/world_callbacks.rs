@@ -5,6 +5,8 @@ use super::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
+#[cfg(test)]
+mod m39_sample_tests;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
 // Static quest batches and the code-built source callbacks share this bound.
@@ -112,6 +114,9 @@ pub struct ItemOnTarget {
     pub count: u16,
     pub replacement: Option<String>,
     pub target_replacement: Option<u16>,
+    /// Remove exactly the selected base object after its fenced collection commits.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub target_remove: bool,
     #[serde(default, skip_serializing_if = "is_false")]
     pub reusable: bool,
 }
@@ -241,6 +246,9 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m39-stories.json"
+    ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
     ))?);
@@ -462,6 +470,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     .chain(item.alternatives.iter().map(String::as_str))
                     .collect();
                 item.target_replacement == Some(0)
+                    || (item.target_remove
+                        && (item.target_replacement.is_some()
+                            || callback.effects.transform.is_some()))
                     || (item.replacement.is_some() && item.count != 1)
                     || !callback.has_personal_state()
                     || callback.trigger != Trigger::Use

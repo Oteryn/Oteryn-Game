@@ -2675,6 +2675,30 @@
       ]
     },
     {
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": 35,
+      "failure_reply": [
+        "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."
+      ],
+      "reply": [
+        "Find that pit, dig for a well-preserved human skeleton and conserve a sample in a special container which you receive from me. Are you going to help me?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.myra",
       "keywords": [
         "ape fur"

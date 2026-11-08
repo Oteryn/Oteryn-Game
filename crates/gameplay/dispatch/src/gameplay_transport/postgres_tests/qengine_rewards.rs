@@ -155,6 +155,10 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.ends_with("/l2-bone-start") {
+        return &["mission"];
+    }
+
     match key.rsplit('/').next().unwrap_or(key) {
         "knight-sword" => &["forge"],
         "l1-warmaster-crest" => &["crest"],
@@ -768,6 +772,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-m39-bone") {
+        return super::m39_bone_journey::exercise(owner, admitted, h, authority, name).await;
+    }
     if name == "qengine-rewards-m39-any-topic" {
         return m39_any_topic::exercise(owner, admitted, h).await;
     }
