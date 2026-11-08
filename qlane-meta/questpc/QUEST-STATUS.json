@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b ordered-stage/distinct-visit storage planner tested and ready to push;9Python tests and unchanged-output check pass;PG retry compiling after disk cleanup.",
+  "batch_state": "M01b Current Premium native proof GREEN;3/56active stages proved. Alawar approach resolver tested but not activated;no DONE claim.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -1099,7 +1099,7 @@
       "Geomancer Quest",
       "Asura Palace Quest"
     ],
-    "validation": "WIP Current Premium+Asura:focused4Rust/7Python/fmt PASS;all4PGcases building/running;no Asura PG qualification yet"
+    "validation": "4realPGcases PASS190.89s on PostgreSQL18.6;Asura61.343279739s;4Rust profile tests and11Python authoring tests PASS"
   },
   "publication_validation": {
     "postgres_cases": 17,

@@ -85,3 +85,17 @@ before increment; distinct fragment names cannot reuse the same visited flag.
 A single-Area declaration still refuses a multi-visit stage until a complete
 physical anchor set is supplied. These planner tests activate no additional
 quest or guessed coordinate. Existing callback output remains byte-identical.
+
+## Alawar source-entry approach resolver
+
+The retained source callback oteryn:quest-callback/alawars-vault-entrance at
+32187,31622,floor-8 is bound to the same canonical quest by
+content/quests/world-callbacks.json#/callbacks/0 and its pinned Crystal
+teleport.lua:671-677 citation. The selected adjacent approach is32187,31623,
+floor-8, plain409 in region-z08-x125-y123.b3. It is a chosen approach, not a
+claim that the donor script increments a chosen quest counter there.
+The resolver requires the same quest, one STEP_IN source and exact cardinal
+adjacency. It constructs a progress-only callback and preserves the original
+teleport callback unchanged. Activation still requires the explicit source-map
+marker profile and a native movement case; no new active callback is added by
+this resolver-only slice.

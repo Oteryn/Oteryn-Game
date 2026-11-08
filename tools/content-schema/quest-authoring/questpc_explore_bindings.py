@@ -72,25 +72,31 @@ def callbacks(root):
         requirements = recipe['requirements']
         if requirements['prerequisites']:
             raise ValueError('Explore route requires additional authoritative guards: ' + quest)
-        matches = [(i, r) for i, r in enumerate(areas)
-                   if r['declaration']['identity']['key'] == area]
-        if len(matches) != 1:
-            raise ValueError('Explore anchor needs one canonical Area: ' + area)
-        index, record = matches[0]
-        source = record['declaration']['position']
-        at = dict(x=source['x'], y=source['y'], floor=-source['floor'])
-        # This is the pinned Area's declared entry point, not a guessed room box.
-        x, y, floor, appearance = ANCHORS[area]
-        if (at['x'], at['y'], at['floor']) != (x, y, floor):
-            raise ValueError('Canonical entry point changed: ' + area)
-        source_bindings = [b for b in record['source_bindings']
-                           if b['identity_namespace'] == 'tibiawiki-fandom/page-id'
-                           and b['disposition'] == 'EXACT']
-        if len(source_bindings) != 1:
-            raise ValueError('Explore anchor needs one exact pinned source: ' + area)
-        binding = source_bindings[0]
-        url = ('https://tibia.fandom.com/index.php?curid=' + binding['external_id']
-               + '&oldid=' + binding['source_revision'])
+        if area.startswith('callback:'):
+            import questpc_map_approaches
+            at, appearance, sources = questpc_map_approaches.resolve(root, quest, area)
+        else:
+            matches = [(i, r) for i, r in enumerate(areas)
+                       if r['declaration']['identity']['key'] == area]
+            if len(matches) != 1:
+                raise ValueError('Explore anchor needs one canonical Area: ' + area)
+            index, record = matches[0]
+            source = record['declaration']['position']
+            at = dict(x=source['x'], y=source['y'], floor=-source['floor'])
+            # This is the pinned Area's declared entry point, not a guessed room box.
+            x, y, floor, appearance = ANCHORS[area]
+            if (at['x'], at['y'], at['floor']) != (x, y, floor):
+                raise ValueError('Canonical entry point changed: ' + area)
+            source_bindings = [b for b in record['source_bindings']
+                               if b['identity_namespace'] == 'tibiawiki-fandom/page-id'
+                               and b['disposition'] == 'EXACT']
+            if len(source_bindings) != 1:
+                raise ValueError('Explore anchor needs one exact pinned source: ' + area)
+            binding = source_bindings[0]
+            url = ('https://tibia.fandom.com/index.php?curid=' + binding['external_id']
+                   + '&oldid=' + binding['source_revision'])
+            sources = [AREA + '#/records/' + str(index), url,
+                       'OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only']
         slug = tail.removeprefix('authored.').removesuffix('_quest').replace('_', '-')
         result.append(dict(
             key='oteryn:quest-callback/m01b/' + slug + '/' + stage + '/entry', quest=quest,
@@ -100,9 +106,7 @@ def callbacks(root):
             storage=storage,
             offerings=[], return_on_failure=False, failure_message=None,
             requires_world_admission=True,
-            sources=[AREA + '#/records/' + str(index),
-                url,
-                'OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only']))
+            sources=sources))
         if requirements['premium']:
             result[-1]['admission'] = {'premium': True}
         if requirements['min_level']:

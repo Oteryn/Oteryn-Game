@@ -21,6 +21,28 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_source_portal_approach_keeps_the_original_teleport_separate(self):
+        bindings = (('oteryn:quest.alawar_s_vault_quest', 's1',
+                     'callback:oteryn:quest-callback/alawars-vault-entrance',
+                     'chosen-source/alawar_s_vault_quest'),)
+        before = (ROOT / 'content/quests/world-callbacks.json').read_bytes()
+        with mock.patch.object(explore, 'BINDINGS', bindings):
+            callback, = explore.callbacks(ROOT)
+        self.assertEqual(callback['selector']['native'], {
+            'position': {'x': 32187, 'y': 31623, 'floor': -8},
+            'ordinal': 0, 'appearance': 409})
+        self.assertIsNone(callback['teleport'])
+        self.assertIn('content/quests/world-callbacks.json#/callbacks/0', callback['sources'])
+        self.assertEqual((ROOT / 'content/quests/world-callbacks.json').read_bytes(), before)
+
+    def test_approach_cannot_borrow_another_quests_source_entry(self):
+        bindings = (('oteryn:quest.longsword_quest', 's1',
+                     'callback:oteryn:quest-callback/alawars-vault-entrance',
+                     'chosen-source/longsword_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', bindings):
+            with self.assertRaisesRegex(ValueError, 'same quest entry'):
+                explore.callbacks(ROOT)
+
     def test_later_explore_preserves_each_preceding_chosen_stage(self):
         quest = 'oteryn:quest.dragon_corpse_quest'
         storage = explore.stage_storage(quest, 's3', canonical_recipe(quest),

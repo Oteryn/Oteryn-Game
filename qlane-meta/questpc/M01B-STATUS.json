@@ -15,7 +15,8 @@
     "wired_explore_stages": 3,
     "pg_proven_routes": [
       "Longsword Quest",
-      "Geomancer Quest"
+      "Geomancer Quest",
+      "Asura Palace Quest"
     ]
   },
   "validation": {
@@ -25,20 +26,22 @@
     "authoring_checks": "PASS",
     "content_tree": "PASS",
     "clippy": "quests+durability+dispatch PASS6m13s;authority target interrupted for coordinator-requested merge",
-    "postgres_catalogue": "PASS PostgreSQL18.6,8.222271585s",
-    "postgres_native_step": "PASS Longsword61.045918893s and Geomancer59.238595156s;3cases total128.51s,0failures",
+    "postgres_catalogue": "PASS PostgreSQL18.6,8.262173426s",
+    "postgres_native_step": "PASS Longsword60.462902524s,Geomancer60.816349711s",
     "workspace_all_targets": "PASS7m46s --keep-going after four incoming constructor/test-export repairs",
     "fmt": "pending after coordinator merge",
     "world_pin_verify": "pending after coordinator merge",
     "postgres_scope": "316cc6842 source tree before qmech41edb50ef merge; no lane SQL changes",
-    "post_merge_postgres": "PENDING under PREPUSH-2 cadence exception; rerun all M01b native cases with the next entry batch",
-    "postgres_asura": "PENDING: first link hit disk full;stale lane binaries/examples removed,3.2GiB freed;four-case PG retry is compiling",
+    "post_merge_postgres": "No further merges permitted;all4cases executed on current mechanic Rust/data",
+    "postgres_asura": "PASS61.343279739s:missing provider no credit,Current Premium fresh entry once,old replay cannot retro-credit",
     "focused_authoring_tests": "7passed2.975s",
     "own_files_fmt": "PASS explicit rustfmt check",
-    "merge_policy": "0326dc2e5 merge ABORTED by owner; no further qmech/main merges",
-    "stage_planner": "RED2missing-helper errors -> GREEN9Python tests2.865s; qengine_access --check PASS;active callback JSON unchanged"
+    "merge_policy": "0326 merge ABORTED;no qmech/main merges",
+    "stage_planner": "RED2missing-helper errors -> GREEN9Python tests2.865s; qengine_access --check PASS;active callback JSON unchanged",
+    "postgres_total": "4passed,0failed,190.89s;Rust/data sourceff447b707",
+    "map_approach_resolver": "RED1missing-source-mode -> GREEN11Python tests3.635s;unchanged active JSON checkPASS"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish PG retry,then wire remaining43 routes/53 stages with planner support. No qmech/main merges. No M01b DONE claim."
+  "continuation": "Activate and prove Alawar approach,then continue remaining43routes/53stages. Three active routes PG-proven;whole M01b remains PARTIAL."
 }

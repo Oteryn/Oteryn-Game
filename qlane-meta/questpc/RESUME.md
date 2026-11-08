@@ -76,3 +76,11 @@ errors -> GREEN9Python tests2.865s;qengine_access --check proves active JSON
 unchanged. Complete multi-visit anchor sets still required before activation.
 PG link first hit disk full;stale own binaries/examples removed. Retry all4
 PGcases now running/building. No successful Asura PG claim yet. No merges.
+
+PG retry GREEN:4passed190.89s,PostgreSQL18.6. Asura61.343279739s,
+catalogue8.262173426s,Longsword60.462902524s,Geomancer60.816349711s.
+The Rust/data snapshot isff447b707;subsequent authoring changes preserve JSON.
+Alawar source-entry approach resolver:RED1 -> GREEN11Python tests3.635s;
+source ownership and original TP preservation proved. Still only3active
+EXPLORE stages. Next activate Alawar marker/point and add native move case.
+No qmech/main merges;continue43routes/53stages after these3.
