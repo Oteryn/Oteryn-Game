@@ -738,3 +738,21 @@ objective receipts preserving native decay before adding quest progress; never
 replace normal machete behavior with a permanent transform or charge failures.
 Sources: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/hoggle.lua
 https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/lib/register_actions.lua#L864
+
+## Kingsday finite native binding decision
+Use the existing approved three-stage, on-demand Oteryn recipe unchanged. Entering
+courtyard cell32313,32182,z7 records exploration; King Tibianus at the captured
+Global candidate32311,32172,z6 accepts `hail king`, then `kingsday` records the
+journal and awards canonical `oteryn:achievement/loyal_subject` once. The final
+confirmation makes the recipe's separate journal stage explicit. Calendar,
+raids, exhibition and jail remain outside this chosen recipe. Reuse QENGINE2's
+immutable authored binding attachment; compose only this owned journal in a
+small new file, preserving all earlier catalogues. PG travel setup moves only
+the actor between captured locations; progress must come from literal commands.
+Sources: https://tibia.fandom.com/index.php?curid=76244&oldid=845148
+https://tibia.fandom.com/index.php?curid=76245&oldid=994341
+
+Kingsday callback provenance includes the captured Canary47dfd51f King source
+identity/placement alongside the immutable Wiki recipe references. That source
+witness names native identity and position only; it does not attribute the
+on-demand Oteryn progression to donor Lua or pretend a calendar script exists.

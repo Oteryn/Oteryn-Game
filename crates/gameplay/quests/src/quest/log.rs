@@ -27,6 +27,7 @@
 
 mod journal_source;
 pub mod loader;
+pub mod questpc_authored;
 mod source_texts;
 
 use std::collections::BTreeMap;

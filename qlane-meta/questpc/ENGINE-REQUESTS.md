@@ -25,3 +25,5 @@ Source URLs and immutable hashes are in CONTRACT-NOTES.md and QUEST-STATUS.json.
 Resolved requests: main QNPCFX supplies actual UTC calendar month and delayed
 conversation end. Citizen uses that existing programme planner through a small
 local adapter; both mainland source stories pass on PostgreSQL18.6.
+
+| Fenced read-only STEP_IN prerequisite proof with source-ordered refusals | Bigfoot's Burden Quest | step_quest_trigger currently passes read_only_gate=None; execute rejects read-only callbacks without a proof. Preserve source guard ordering and return movement refusal without progress/receipt/revision writes. |

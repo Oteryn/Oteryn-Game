@@ -1,3 +1,55 @@
+## Validated WIP push — next action
+Workspace all-targets PASS6m42s, strict quests/dispatch/game-server Clippy PASS6m31s,
+dispatch all-features Clippy PASS, fmt PASS, native source3/3 and boot1/1 PASS.
+Quest units318run:317PASS/1unchangedNPC13FAIL138.61s. Live Kingsday PG GREEN and
+full dispatch/game-server units remain pending under the PREPUSH-2 cadence exception.
+Latest main6f61ac15d (#3035 physical-item-lane fix) was attempted:73conflicts,
+ABORTED under owner exception; exact tested Git tree was verified restored.
+No merge in progress. Resume PG GREEN immediately after push, then finish main
+reconciliation (11 source drafts outside tree, not applied). Counts unchanged62.
+
+## Kingsday compiling checkpoint and main exception
+Main83acbdac3 was attempted, produced73 conflicts across existing engine/persistence
+and generated data, and was ABORTED under the owner15-minute exception. No merge
+in progress. Inputs saved in/tmp/questpc-main3029-conflict-inputs; three core
+resolutions drafted under prepared/, NOT applied. Latest qengine7019e60a8 also
+records main-abort and unqualified world port; retain qualified dd355 snapshot.
+Kingsday code/data has PG RED55.871986355s on real18.6 and native3/3 PASS.
+Whole PG GREEN remains pending; counts remain62QUALIFIED. Do not promote yet.
+Callback provenance now explicitly names captured Canary47df King identity/
+placement, not invented donor progression; authored recipe stays unchanged.
+Before push use final push-check/Clippy/fmt logs, boot test, staged dup check;
+PREPUSH-2 cadence exception names full unit suites and Kingsday PG GREEN pending.
+After push immediately run the literal Kingsday PG and finish the deferred main
+merge using saved inputs/reused engine work. No full workspace/PG test suites.
+
+## Mandatory main merge — current checkpoint
+Main advanced to83acbdac3720d7fe2df6c44d82623b7307806402 (QUESTPC4 #3029).
+Pre-merge validation interrupted; merge main before next push. Kingsday data is
+now enabled, captured King placement generated73records, native source3/3 PASS.
+PG RED real18.6 lasted55.871986355s, exact error "Kingsday greeting binding missing".
+PG GREEN still pending; do not qualify. Production boot extends Task Board state
+and journal using QENGINE2's authored API; King's promotion dialogue already
+admits him. Own test uses sealed relocation proof for travel, not initialization.
+World pin-refresh passed0d87e75b463e; redo after merge. Native/tree/evidence/matrix/
+mint/pins/SOURCE receipt generation passed. First workspace run found missing
+map_err in the new boot unit, fixed; retry stopped for mandatory merge, not PASS.
+After merge regenerate once, workspace check, strict three-crate Clippy, fmt,
+boot unit and literal Kingsday PG; push compiling state under cadence exception
+if crate-wide unit tests remain pending. Previous integration PG10/10 is recorded.
+
+## Kingsday continuation — current authoring
+Last pushed93d7a4f45. Integration focused PG has now PASSED10/10 on PostgreSQL18.6
+in497.736s; evidence updated in cloud-qengine-authored-integration-validation.json.
+Kingsday finite registration and whole chosen-recipe test are in progress.
+Bindings file deliberately empty until the real PG missing-binding RED runs.
+Test command log /tmp/questpc-kingsday-red.log (compile retry corrected a missing
+FreshAdmissionAuthority import). Use /tmp/questpc-enable-kingsday.py only after
+RED to publish the explicit3 stages and captured King placement scope, then
+run convert_placements.py and the same PG test GREEN. No qualification claimed.
+Small journal composition is quest/log/questpc_authored.rs; production boot calls
+it after Task Board extension; bare engine loaders remain attachable by fixtures.
+
 ## Integration ready/push — next step
 Combined main b3864f14a and qualified QENGINE2dd35529b6 compile. Final workspace
 PASS7m33s, strict quest/dispatch/durability/social Clippy PASS6m31s, fmt PASS.

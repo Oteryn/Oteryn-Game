@@ -10796,6 +10796,12 @@
       "feature": "Authoritative calendar month and delayed NPC closure1000ms",
       "owner": "qengine2",
       "status": "requested"
+    },
+    {
+      "quest": "Bigfoot's Burden Quest",
+      "feature": "Fenced read-only STEP_IN prerequisite proof with source-ordered refusals",
+      "owner": "qengine2",
+      "status": "requested"
     }
   ],
   "citizen_mainland_batch": {
@@ -11024,7 +11030,8 @@
     "qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
     "qready1": "5f2359204f9fd1b719cc84de7f2b2de3c86d0d50",
     "qready2": "a9f723152f128ce76c0a793dae0f6905bd85ca73",
-    "result": "QREADY2 repeats seven packet titles already qualified here or explicitly qualified elsewhere. No unfinished owned story implementation found; no replacement written."
+    "result": "QREADY2 repeats seven packet titles already qualified here or explicitly qualified elsewhere. No unfinished owned story implementation found; no replacement written.",
+    "qengine_latest_checked": "7019e60a8: own main reconciliation aborted, world-port PG pending; WIP not merged"
   },
   "continuation_validation": {
     "source_head": "adc0ab91f4c679c9060093ced951e12c33ed8042",
@@ -11228,7 +11235,7 @@
     "qualification_change": false
   },
   "qengine_authored_integration": {
-    "state": "Ready to push: main and qualified QENGINE2 reused; final compile/fmt/clippy/regeneration/pins pass; focused PG pending",
+    "state": "Pushed93d7a4f45; focused PostgreSQL18.6 regression10/10 PASS497.736s",
     "main": "b3864f14a",
     "local_main_merge": "73d07e130",
     "qualified_engine_snapshot": "dd35529b6f1c61042e798723f71768109f9573f8",
@@ -11278,6 +11285,38 @@
       "world_pin_refresh": "PASS; unchanged26bf812c23df",
       "quest_units": "316PASS/1unchangedNPC13FAIL105.295s",
       "focused_pg": "compiling; no post-integration PG green claim"
+    },
+    "focused_pg": "PASS10/10 on PostgreSQL18.6; 497.736s; see cloud-qengine-authored-integration-validation.json"
+  },
+  "kingsday_authored_batch": {
+    "state": "IN_PROGRESS; compiling WIP; PG GREEN and main reconciliation pending",
+    "recipe": "unchanged approved on-demand three-stage recipe",
+    "engine_reused": "QENGINE2 dd35529b6 authored_bindings",
+    "production": "small finite state/journal composition at game-server boot; no generic engine rewrite",
+    "test": "PG RED executed PostgreSQL18.6 55.871986355s missing greeting binding; source3/3 GREEN0.680s; full PG GREEN pending",
+    "qualified": false,
+    "latest_main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+    "world_pin": "0d87e75b463e92f54ba9bf5f851e1070135c42fc99f321385a4c909030cf6d44",
+    "workspace_check": "first run found test-only error conversion, fixed; retry interrupted for mandatory latest-main merge; no PASS claim",
+    "main_merge_attempt": {
+      "attempted": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+      "result": "aborted under owner fifteen-minute exception",
+      "conflicted_paths": 73,
+      "next": "resume conflict reconciliation after compiling WIP push",
+      "tested_tree_restored": "990434b193c646b516d021b6d92edce10401cdb0"
+    },
+    "validation": "qlane-meta/questpc/cloud-kingsday-authored-validation.json",
+    "checks": {
+      "workspace_all_targets": "PASS6m42s",
+      "strict_three_crate_clippy": "PASS6m31s",
+      "dispatch_all_features_clippy": "PASS",
+      "fmt_all": "PASS",
+      "duplicate_migrations": "PASS staged tree",
+      "world_pin_refresh": "PASS0d87e75b463e",
+      "boot_unit": "PASS1/1 8.20s",
+      "source_unit": "PASS3/3",
+      "crate_units": "317PASS/1existingNPC13FAIL138.61s",
+      "pg_green": "PENDING; WIP cadence exception"
     }
   }
 }

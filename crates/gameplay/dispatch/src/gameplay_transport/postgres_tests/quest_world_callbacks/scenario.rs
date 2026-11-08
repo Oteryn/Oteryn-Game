@@ -371,6 +371,27 @@ fn scenario_case(
         )?
     } else if departure {
         super::world_ordinal(&callback, trigger, 2772, 1)?
+    } else if name == "qengine-rewards-questpc-kingsday" {
+        super::world_ordinal_cells(
+            &callback,
+            trigger,
+            9575,
+            1,
+            &[
+                Position {
+                    x: 32311,
+                    y: 32171,
+                    floor: -6,
+                },
+                Position {
+                    x: 32311,
+                    y: 32172,
+                    floor: -6,
+                },
+            ],
+            false,
+            &[],
+        )?
     } else {
         world(&callback, trigger)?
     };

@@ -23,10 +23,18 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            Position {
-                x: 33294,
-                y: 31677,
-                floor: -15,
+            if name == "qengine-rewards-questpc-kingsday" {
+                Position {
+                    x: 32313,
+                    y: 32182,
+                    floor: -7,
+                }
+            } else {
+                Position {
+                    x: 33294,
+                    y: 31677,
+                    floor: -15,
+                }
             },
             false,
         )
@@ -751,6 +759,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-questpc-kingsday" {
+        return super::questpc_kingsday::exercise(owner, admitted, h).await;
+    }
     if name == "qengine-rewards-authored-bindings" {
         return super::authored_quest_bindings::exercise(owner, admitted, h).await;
     }

@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.authored.kingsday_mini_world_change",
+  "state": "IN_PROGRESS",
+  "qualified": false,
+  "engine_reused": "dd35529b6f1c61042e798723f71768109f9573f8",
+  "main_merge": {
+    "attempted": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+    "result": "aborted under owner fifteen-minute exception",
+    "conflicted_paths": 73,
+    "next": "resume conflict reconciliation after compiling WIP push",
+    "tested_tree_restored": "990434b193c646b516d021b6d92edce10401cdb0"
+  },
+  "postgres_red": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "duration_seconds": 55.871986355,
+    "error": "Kingsday greeting binding missing"
+  },
+  "native_source_tests": "3/3 PASS; captured public courtyard and King cells, captured placement and unchanged approved recipe digest",
+  "pending_tests": [
+    "questpc_kingsday_visit_greet_journal_once_postgres GREEN",
+    "crate-wide unit suites: dispatch, game-server"
+  ],
+  "boot_unit": "PASS1/1 in8.20s; previous hashes and journals retained",
+  "quest_units": "317PASS/1unchangedNPC13FAIL; 318run138.61s",
+  "known_existing_red": "NPC13 historical definition predecessor hash; not altered or weakened",
+  "logs": {
+    "pg_red": {
+      "sha256": "933762836f37213ac05a64de62fcddb82891dde673cd69c95725ea29561718f6",
+      "bytes": 877,
+      "tail": [
+        "    gameplay_transport::monk_save::postgres_tests::questpc_kingsday::questpc_kingsday_visit_greet_journal_once_postgres",
+        "",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2876 filtered out; finished in 55.87s",
+        "",
+        "error: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`"
+      ]
+    },
+    "native_source": {
+      "sha256": "26a679bf2df9d35e25c78586e6f8f93ffb912d63d1c112fecae31387431849b9",
+      "bytes": 101,
+      "tail": [
+        "...",
+        "----------------------------------------------------------------------",
+        "Ran 3 tests in 0.635s",
+        "",
+        "OK"
+      ]
+    },
+    "world_pin": {
+      "sha256": "5036dadd472f37d8bfc4ab61ac4325dfd3c075892a78dabd1382100361887841",
+      "bytes": 404,
+      "tail": [
+        "      \"previous\": \"26bf812c23dfc7c2a451cf671c762bfe927f8d572252d2b6b53b00d7ec252961\",",
+        "      \"world\": \"oteryn\"",
+        "    }",
+        "  ]",
+        "}"
+      ]
+    },
+    "workspace": {
+      "sha256": "b6b0650292b78ceff4af35e25df6552bd5dfbf56cdcc16f5303fb9ea5bce4a23",
+      "bytes": 2911,
+      "tail": [
+        "    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)",
+        "    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)",
+        "    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)",
+        "    Checking oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6m 42s"
+      ]
+    },
+    "clippy": {
+      "sha256": "335e4b8d66e3b22d123e964270a353469c66f81385872bc779cd40480ec56078",
+      "bytes": 4070,
+      "tail": [
+        "    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)",
+        "    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)",
+        "   Compiling oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)",
+        "    Checking oteryn-gameplay-content-promotion v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/content-promotion)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6m 31s"
+      ]
+    },
+    "fmt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "tail": []
+    },
+    "boot_unit": {
+      "sha256": "1c7f89e8e6330ff8230214a47c0faebbabe09f7596d33ce16469df4465b3c705",
+      "bytes": 552,
+      "tail": [
+        "running 1 test",
+        "test quest::log::questpc_authored::tests::kingsday_boot_composition_retains_previous_catalogues ... ok",
+        "",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 317 filtered out; finished in 8.20s",
+        ""
+      ]
+    },
+    "quest_units": {
+      "sha256": "e7055a2b75ae700bb9c38ee1096cd9aaef3e5c7c1df3fae0d7d2fdd8700e57ba",
+      "bytes": 33432,
+      "tail": [
+        "failures:",
+        "    quest::catalogue_history::tests::source_layers_preserve_the_actual_npc13_tibia_tales_definition",
+        "",
+        "test result: FAILED. 317 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 138.61s",
+        ""
+      ]
+    },
+    "dispatch_all_features_clippy": {
+      "sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e",
+      "bytes": 1504
+    }
+  },
+  "bindings_sha256": "84da23d8a64bb2edbefd9447551a5f109b8a5ef14337601aa28450602f7d622e",
+  "checks": {
+    "workspace_all_targets": "PASS6m42s",
+    "strict_three_crate_clippy": "PASS6m31s",
+    "dispatch_all_features_clippy": "PASS",
+    "fmt_all": "PASS",
+    "duplicate_migrations": "PASS staged tree",
+    "world_pin_refresh": "PASS0d87e75b463e",
+    "boot_unit": "PASS1/1 8.20s",
+    "source_unit": "PASS3/3",
+    "crate_units": "317PASS/1existingNPC13FAIL138.61s",
+    "pg_green": "PENDING; WIP cadence exception"
+  }
+}

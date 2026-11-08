@@ -12,7 +12,7 @@
     "duplicate_migrations": "PASS",
     "world_pin_refresh": "PASS; unchanged26bf812c23df",
     "quest_units": "316PASS/1unchangedNPC13FAIL105.295s",
-    "focused_pg": "compiling; no post-integration PG green claim"
+    "focused_pg": "PASS10/10; 497.736s; real PostgreSQL18.6"
   },
   "migrations_reused_unchanged": [
     1550,
@@ -50,6 +50,28 @@
     "quest_units": {
       "sha256": "4a7b42414c47409bf273ab0c6c9f1d5e8e1b62d952479a81fb3678a708000503",
       "bytes": 173901
+    },
+    "focused_pg": {
+      "sha256": "e5f7ef66e0565ee9d3c44aa1c5dd782295dd5bbffe40fb8818b58f55611811a3",
+      "bytes": 23759
     }
-  }
+  },
+  "focused_pg_markers": [
+    "Summary [ 497.736s] 10 tests run: 10 passed (6 slow), 2866 skipped",
+    "POSTGRES_CASE_COMPLETED W15B_NO_ROOM duration=50.245681996s success=true",
+    "POSTGRES_CASE_COMPLETED W15B_MULTIPLE_ROOTS duration=50.005816665s success=true",
+    "SOURCE_QUEST_DEATH_MULTI POSTGRES_CASE_COMPLETED case=observer duration=50.691711831s",
+    "POSTGRES_CASE_COMPLETED qengine-rewards-authored-bindings duration=90.582298806s success=true",
+    "POSTGRES_CASE_STARTED draconia-elathriel-bank server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 33294, y: 31677, floor: -15 }",
+    "POSTGRES_CASE_COMPLETED draconia-elathriel-bank duration=90.417188122s",
+    "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay duration=93.505200634s",
+    "POSTGRES_CASE_STARTED qengine-rewards-questpc-citizen-male-story server_version=18.6 (Debian 18.6-1.pgdg13+2)",
+    "POSTGRES_CASE_COMPLETED qengine-rewards-questpc-citizen-male-story duration=94.679581064s success=true",
+    "POSTGRES_CASE_STARTED questpc-yalahar-mechanism server_version=18.6 (Debian 18.6-1.pgdg13+2) connection_duration=60.076265ms",
+    "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3091 stage=None allowed=false tracks_unchanged receipts_unchanged revision_unchanged duration=48.331041736s",
+    "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3091 stage=Some(20) allowed=false tracks_unchanged receipts_unchanged revision_unchanged duration=48.012385533s",
+    "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3091 stage=Some(21) allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=49.582934127s",
+    "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3091 stage=Some(72) allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=47.809588465s",
+    "POSTGRES_CASE_COMPLETED viola_mission_yes_book_handin_is_atomic_and_survives_restart 117.973981864s"
+  ]
 }

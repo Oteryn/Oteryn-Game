@@ -30,12 +30,15 @@ pub(crate) fn load_quest_catalogue(
             excluded.reason
         ));
     }
-    let lines =
-        oteryn_gameplay_dispatch::gameplay_transport::quest_log::QuestLogLines::new(loaded.content)
-            .ok_or(BootError::ContentActivation("quest log line bounds"))?;
-    // TASKBOARD-1: the code-built weekly Task Board quest joins the lowered quests.
+    // TASKBOARD-1 and questpc's finite authored recipe share the admitted catalogue.
     let catalogue = oteryn_gameplay_quests::quest::task_board::extend(lowered.catalogue())
         .map_err(|_| BootError::ContentActivation("task board quest"))?;
+    let (catalogue, journal) =
+        oteryn_gameplay_quests::quest::log::questpc_authored::extend(&catalogue, &loaded.content)
+            .map_err(|_| BootError::ContentActivation("questpc authored quest"))?;
+    let lines =
+        oteryn_gameplay_dispatch::gameplay_transport::quest_log::QuestLogLines::new(journal)
+            .ok_or(BootError::ContentActivation("quest log line bounds"))?;
     let counts = lowered.counts();
     let line = format!(
         "event=quest_catalogue state=loaded content_revision={content_revision} quests={} transitions={} not_supported={} not_supported_explicit={} not_supported_inexact={}",
