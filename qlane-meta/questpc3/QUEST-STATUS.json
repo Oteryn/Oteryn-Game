@@ -10999,7 +10999,7 @@
   },
   "current_main_integration": {
     "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
-    "state": "Soulpit merge conflicts resolved, Carlos registry/compatibility fixes348unitGREEN; generation and current compile/PG gates pending",
+    "state": "publication ready: main98d6 integrated; trade repair348unitGREEN; current workspace/Clippy/fmtPASS; full ownPG building",
     "published_parent": "bdb7ce79bb811ead06fd1c0700f5efe5797d4454",
     "migrations": "own 1220-1229 retained; incoming 1250-1258 retained; duplicate check passed",
     "decisions": [
@@ -11008,16 +11008,17 @@
       "Write canonical single-bound native-death receipts and recognize exact historical double-bound replay hashes.",
       "Keep one world item MINT with lane repeatable/provenance guards; reuse main completion, fluids and admission owners."
     ],
-    "checks": "Final workspace all-targets PASS6m29s; final five-crate Clippy-Dwarnings PASS; final fmt-all-check PASS. Quest units346/346 PASS66.40s; profiles19/19 PASS155.444s; reward variants13/13 PASS32.642s; complete central regeneration and official world pin refresh PASSded9bb42; equipment3792 exact cohort union; world base and metadata PASS; duplicate migrations CLEAR; shared0999-1008 match main10/10. Own10PG compiling after gate marker; other changed-crate units pending under explicit PREPUSH-2 step3 cadence exception. No merged-PG or new wholequest qualification claim.",
+    "checks": "Current post-pin workspace-all-targets PASS5m43s; final five-crate Clippy-Dwarnings PASS3m43s; fmt-all-check PASS. Quest units348/348 PASS72.73s; both regressions observed RED before repair. Native/allcentral tooling PASS; world-base and metadata PASS; current compiled repo pin-refresh PASS62543f3e; duplicate migration check CLEAR. Full own10PG building at /tmp/questpc3b-soulpit-own-pg.log; remaining crate units pending under PREPUSH-2 step3 cadence exception. No current repaired PG or new wholequest qualification claim.",
     "latest_main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
     "local_merge_commits": [
       "4933f9bbd",
-      "5b9b2b2f8"
+      "5b9b2b2f8",
+      "47a5fc6f3"
     ],
-    "final_world_pin": "ded9bb422bf6f5373de2a3e64f42d52acce6638da958d2b63fb59d05cd5bd14e",
+    "final_world_pin": "62543f3e8b65186e3edb555417fd492246eaf1379fa0caee0d6148d1714b3ae4",
     "equipment_profile_union": 3792,
     "quest_unit_log": "/tmp/questpc3b-pc4-quests-unit-final.log",
-    "own_pg_log": "/tmp/questpc3b-pc4-own-pg.log",
+    "own_pg_log": "/tmp/questpc3b-soulpit-own-pg.log",
     "lane_migration_files": [
       "1220_questpc3_npc_exchanges.sql",
       "1221_sinatuki_cumulative_fish.sql",
@@ -11055,7 +11056,7 @@
       "unit_green": "/tmp/questpc3b-carlos-trade-registry-units-green.log",
       "unit_count": 348,
       "unit_duration_seconds": 72.73,
-      "pg": "pending after regeneration and compile gates"
+      "pg": "building current10case cohort after successful compile/lint/fmt marker"
     }
   }
 }
