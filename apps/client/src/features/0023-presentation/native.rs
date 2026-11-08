@@ -58,7 +58,14 @@ impl AudioOutput {
             if !cue.ambient && settings.source_gain(cue.source) == 0.0 {
                 continue;
             }
-            if let Err(error) = self.play(cue, if cue.ambient { settings.ambient_gain() } else { settings.source_gain(cue.source) }) {
+            if let Err(error) = self.play(
+                cue,
+                if cue.ambient {
+                    settings.ambient_gain()
+                } else {
+                    settings.source_gain(cue.source)
+                },
+            ) {
                 self.error = Some(error);
             }
         }
@@ -135,10 +142,20 @@ impl NativeAudio {
     /// Drains transient cues and formats native feedback on the shell thread.
     pub fn status(&mut self, view: &mut crate::play::PlayView) -> String {
         self.settings = view.preferences().audio;
+        let ui = view.take_ui_sounds();
         let cues = view.take_sound_cues();
         let (status, ambient) = match &mut self.output {
             Ok(audio) => {
                 audio.update(self.settings, cues);
+                for cue in ui {
+                    let voice = Sink::connect_new(audio.stream.mixer());
+                    voice.set_volume(self.settings.gain() * 0.15);
+                    voice.append(
+                        rodio::source::SineWave::new(cue.frequency())
+                            .take_duration(Duration::from_millis(70)),
+                    );
+                    voice.detach();
+                }
                 (audio.status().unwrap_or("ready"), audio.ambient.is_some())
             }
             Err(error) => (error.as_str(), false),

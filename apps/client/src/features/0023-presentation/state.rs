@@ -12,6 +12,7 @@ pub const MAX_SOUND_BYTES: u64 = 16 * 1024 * 1024;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct AudioSettings {
+    pub ui_sounds: [bool; 4],
     pub master_volume: u8,
     pub ambient_volume: u8,
     pub battle_volumes: [u8; 3],
@@ -22,6 +23,7 @@ impl Default for AudioSettings {
     fn default() -> Self {
         Self {
             master_volume: 100,
+            ui_sounds: [true; 4],
             ambient_volume: 100,
             battle_volumes: [100; 3],
             muted: false,
@@ -171,3 +173,7 @@ pub struct VisualCue {
     pub kind: oteryn_session::PresentationEventKind,
     pub received: std::time::Instant,
 }
+
+#[path = "ui_sound.rs"]
+pub mod ui_sound;
+pub use ui_sound::UiSound;

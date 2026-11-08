@@ -413,9 +413,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound / UI Sounds: interactions/party/VIP/chat channels",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak filtrów dźwięków UI, party, VIP i kanałów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/battle_sound_controls.rs:12 + apps/client/src/features/0023-presentation/ui_sound.rs:1 + apps/client/src/features/0023-presentation/native.rs:143; confirmed_ui_events_reach_filtered_native_audio_queue (apps/client/tests/ui_sound_filters.rs:13). Persisted interaction/party/VIP/chat filters drive native notification tones from confirmed events; queue bounded and VIP refreshes deduplicated. Checked origin/main and own branch before implementation."
  },
  {
   "id": "T067",

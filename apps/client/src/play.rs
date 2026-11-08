@@ -17,6 +17,7 @@ use std::num::NonZeroU32;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    ui_sounds: Vec<UiSound>,
     creature_drag: feature_0082_creature_push::state::CreatureDrag,
     world_context_feedback: Option<String>,
     death: feature_local_death_respawn::protocol::DeathState,
@@ -84,6 +85,7 @@ impl PlayView {
             battle_instinct: None,
             battle_instinct_refresh: None,
             sounds: Vec::new(),
+            ui_sounds: Vec::new(),
             visuals: Vec::new(),
             tutorial_overlay: Default::default(),
             own,

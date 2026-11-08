@@ -3,11 +3,31 @@ use super::*;
 use oteryn_client::play::ReferencePreferences;
 pub(crate) struct BattleSoundControls {
     labels: [HWND; 4],
+    ui_checks: [HWND; 4],
     edits: [HWND; 4],
 }
 impl BattleSoundControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let ui_checks = [
+                "UI interactions",
+                "Party messages",
+                "VIP changes",
+                "Chat channels",
+            ]
+            .map(|label| {
+                control(
+                    hwnd,
+                    "BUTTON",
+                    label,
+                    0,
+                    [0, 330, 170, 26],
+                    BS_AUTOCHECKBOX as u32,
+                )
+            });
+            for (index, handle) in ui_checks.iter().enumerate() {
+                MoveWindow(*handle, 10 + index as i32 * 175, 330, 170, 26, 1);
+            }
             let labels = [
                 "Own battle volume %",
                 "Other players volume %",
@@ -29,13 +49,21 @@ impl BattleSoundControls {
                 MoveWindow(labels[i], 10, 185 + i as i32 * 35, 340, 26, 1);
                 MoveWindow(edits[i], 380, 185 + i as i32 * 35, 100, 26, 1);
             }
-            (!labels.iter().chain(&edits).any(|handle| handle.is_null()))
-                .then_some(Self { labels, edits })
+            (!labels
+                .iter()
+                .chain(&edits)
+                .chain(&ui_checks)
+                .any(|handle| handle.is_null()))
+            .then_some(Self {
+                labels,
+                edits,
+                ui_checks,
+            })
         }
     }
     pub(crate) unsafe fn show(&self, visible: bool) {
         unsafe {
-            for handle in self.labels.iter().chain(&self.edits) {
+            for handle in self.labels.iter().chain(&self.edits).chain(&self.ui_checks) {
                 ShowWindow(*handle, if visible { SW_SHOW } else { SW_HIDE });
             }
         }
@@ -51,10 +79,16 @@ impl BattleSoundControls {
         preferences.audio.ambient_volume = unsafe { text(self.edits[3]) }
             .parse()
             .map_err(|_| "Enter ambient volume from 0 to 100")?;
+        preferences.audio.ui_sounds = self
+            .ui_checks
+            .map(|handle| unsafe { SendMessageW(handle, BM_GETCHECK, 0, 0) == 1 });
         Ok(())
     }
     pub(crate) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
         unsafe {
+            for (handle, enabled) in self.ui_checks.iter().zip(preferences.audio.ui_sounds) {
+                SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
+            }
             for (handle, value) in self.edits.iter().zip([
                 preferences.audio.battle_volumes[0],
                 preferences.audio.battle_volumes[1],
