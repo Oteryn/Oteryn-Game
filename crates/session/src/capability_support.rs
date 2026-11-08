@@ -124,7 +124,6 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
     oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
-    spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
     oteryn_protocol_oteryn::cast::CAPABILITY_CAST_CONTROL_V1,
     oteryn_protocol_oteryn::cast::CAPABILITY_CAST_CHAT_V1,
@@ -138,6 +137,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
     property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+    spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -224,7 +224,6 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     party_effects::CAPABILITY_PARTY_EFFECTS_V1,
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
-    spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
     oteryn_protocol_oteryn::cast::CAPABILITY_CAST_CONTROL_V1,
     oteryn_protocol_oteryn::cast::CAPABILITY_CAST_CHAT_V1,
@@ -236,6 +235,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     potion_durations::CAPABILITY_POTION_DURATIONS_V1,
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
+    spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
