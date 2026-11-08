@@ -679,22 +679,6 @@ fn next(
             at.x -= 1;
             at.y -= 1;
         }
-        D::NorthEast => {
-            at.x += 1;
-            at.y -= 1;
-        }
-        D::SouthEast => {
-            at.x += 1;
-            at.y += 1;
-        }
-        D::SouthWest => {
-            at.x -= 1;
-            at.y += 1;
-        }
-        D::NorthWest => {
-            at.x -= 1;
-            at.y -= 1;
-        }
     }
     at
 }
