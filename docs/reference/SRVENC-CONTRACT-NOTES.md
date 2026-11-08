@@ -1656,3 +1656,39 @@ its substantive diff against main. This repair allocates no new numbers and
 changes no merged migration or CI workflow. The branch remains frozen after the
 single combined repair push; subsequent writes are limited to owner-sent CI fixes
 or requested main merges.
+
+### Requested QREADY main merge (2026-11-08)
+
+Normal merge includes main `c77d436d8be39f348924e66d97928ffd69e61a8c` (#3037 QREADY1+2), preserving both lanes'
+reward profiles and all QREADY chest bindings. The independent equipment cohorts
+now sum to 3,792 admitted profiles, exactly matching the regenerated provider
+union; the incoming-only 3,774-profile intermediate correctly failed the guard
+before the boss/Primal producers replayed. No assertion was relaxed.
+
+NPC and service shards are byte-identical to main: 1,282 NPC definitions and
+2,747 NPC source bindings; 324 trade, 56 travel, 2 bank, 7 promotion and 10 blessing
+services (399 total). There are 12,234 declared trade offer rows: 5,202
+BuyFromPlayer and 7,032 SellToPlayer. Eight trade services have no executable
+offer array; their held source evidence remains untouched. Exact NPC/service
+round-trip validation passes, including complete offer payloads rather than just
+counts.
+
+The five new QREADY fixture cell assignments use the existing borrowed
+`SharedOwner` conversion. Their test assertions and actual Source cells are
+unchanged. World metadata passes all 15 commands (102.570 s), strict Item/Mount
+and NPC/service equivalence passes (146.977 s), and all eleven incoming QREADY
+Python checks pass (4.814 s). Canonical regeneration: 231.987 s; derived tail:
+38.752 s; pin refresh: 25.313 s; pin check: 38.171 s; duplicate migration check:
+0.445 s. No new migration, command, capability or mechanic number is allocated.
+
+Publication follows the owner's PREPUSH-2 cadence exception for step 3: the
+corrected `cargo check --workspace --all-targets` passes (867.960 s including the
+build-lock wait), Clippy passes (856.560 s including its wait), fmt passes
+(15.526 s), and architecture-check passes (130.392 s including its wait).
+Item-authoring's full job passes (585.425 s). At the publication checkpoint the
+focused PG run has passed its first 15/23 cases, including both animate-rune
+regressions, Primal entry/cadence, monk, Tibiadrome and personal boss rewards.
+The remaining focused PG cases and unit suites for `oteryn-gameplay-dispatch`,
+`oteryn-gameplay-content` and `oteryn-client-assets` remain running, not reported
+as green. This is the explicitly allowed pending step-3 validation; tests were
+not weakened, filtered out of those selected unit suites, or stopped.
