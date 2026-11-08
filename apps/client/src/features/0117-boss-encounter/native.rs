@@ -73,3 +73,37 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+
+/// Independent window; closing the main Bosstiary panel leaves this tracker open.
+pub(in crate::play) fn cooldown_window(link: &PlayLink) {
+    use crate::play::feature_0115_mail::view::native::{Form, open};
+    open(
+        link,
+        Form {
+            title: "Boss cooldown tracker",
+            labels: &[],
+            buttons: &["Refresh", "Next page"],
+            snapshot: |mailbox| {
+                let p = &mailbox.boss_encounter;
+                let elapsed = p.cooldown_received_at.map_or(0, |at| {
+                    u64::try_from(at.elapsed().as_millis()).unwrap_or(u64::MAX)
+                });
+                (
+                    p.cooldowns_open,
+                    p.pending,
+                    vec![],
+                    oteryn_client_ui::boss_encounter::cooldown_text(p, elapsed),
+                )
+            },
+            set_open: |mailbox, value| mailbox.boss_encounter.cooldowns_open = value,
+            submit: |mailbox, commands, action, _| {
+                let intent = match action {
+                    0 => Intent::Refresh,
+                    1 => Intent::Next,
+                    _ => return,
+                };
+                super::super::input::enqueue(mailbox, commands, intent);
+            },
+        },
+    );
+}

@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
     let shared_gate = name.starts_with("l6-tomb-gate-");
     let shared_switch = name.starts_with("l6-tomb-switch-");
@@ -39,7 +40,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = small_ruby
+    let native_crop = m01b_explore
+        || small_ruby
         || mead
         || spirit
         || tomb_native
@@ -53,7 +55,12 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if native_upper {
+    let start = if m01b_explore {
+        Position {
+            x: trigger.x + 1,
+            ..trigger
+        }
+    } else if native_upper {
         super::super::l6_paradox_upper::start(name)
     } else if native_story {
         super::super::l6_paradox_story::start()
@@ -113,7 +120,7 @@ fn scenario_case(
     let classic_npc = qengine_reward
         || matches!(
             name,
-            "catalogue-npc"
+            "engnpc-m04" | "catalogue-npc"
                 | "catalogue-npc-end"
                 | "catalogue-npc-calendar"
                 | "catalogue-npc-xp"
@@ -283,7 +290,7 @@ fn scenario_case(
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward || outfit_world {
+        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" {
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
@@ -324,7 +331,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if native_upper {
+        let world = if m01b_explore {
+            super::super::m01b_explore::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native explore policies")?,
+            )?
+        } else if native_upper {
             super::super::l6_paradox_upper::world(
                 generation
                     .native_gameplay()
@@ -621,7 +634,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if mead {
+        if m01b_explore {
+            super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+        } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
                 .await?;
         } else if reward_fluids {
@@ -844,6 +859,14 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if name == "engnpc-m04" {
+            super::super::engnpc_m04_completion::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
         } else if name == "npc-item-exchanges" {
             super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
@@ -867,6 +890,24 @@ fn scenario_case(
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "srv7-reliable-ram" {
+            super::super::srv7_reliable_ram::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if name == "srv7-reliable-ram" {
+            super::super::srv7_reliable_ram::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if outfit_world {
             super::super::qengine_access::exercise(
                 &mut owner,
