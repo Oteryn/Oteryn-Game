@@ -277,6 +277,41 @@ fn qm50_platform_checks_all_destinations_before_projecting_or_moving() -> TestRe
 }
 
 #[test]
+fn engenc_defender_completion_is_exact_participant_fenced_and_idempotent() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let step = player(&mut runtime)?;
+    let defenders = checked(runtime.commit_quest_creature_spawn(&[
+        ("creature:rat", 20, position(111)),
+        ("creature:rat", 20, position(112)),
+        ("creature:rat", 20, position(113)),
+    ]))?;
+    let mut roster = checked(EncounterDefenders::new(&[step.actor], &defenders[..2]))?;
+    assert_eq!(roster.participants(), &[step.actor]);
+    assert!(!roster.complete_for(step.actor));
+    let death = |actor: ExactActorRef| CreatureDeathOccurrenceKey { actor: actor.0 };
+    assert_eq!(roster.record_death(death(defenders[2])), None);
+    assert_eq!(roster.record_death(death(defenders[0])), Some(0));
+    assert_eq!(roster.record_death(death(defenders[0])), None);
+    assert!(!roster.complete_for(step.actor));
+    let mut stale = defenders[1];
+    stale.0.actor_local_generation.0 += 1;
+    assert_eq!(roster.record_death(death(stale)), None);
+    assert_eq!(roster.record_death(death(defenders[1])), Some(1));
+    assert!(roster.complete_for(step.actor));
+    assert!(!roster.complete_for(defenders[2]));
+    assert_eq!(roster.record_death(death(defenders[1])), None);
+    assert!(EncounterDefenders::new(&[step.actor], &[]).is_err());
+    assert!(EncounterDefenders::new(&[step.actor], &[defenders[0], defenders[0]]).is_err());
+    assert!(EncounterDefenders::new(&[step.actor], &[step.actor]).is_err());
+    let mut foreign = defenders[0];
+    foreign
+        .0
+        .set_scope_generation(checked(ScopeOwnershipGeneration::new(2))?);
+    assert!(EncounterDefenders::new(&[step.actor], &[foreign]).is_err());
+    Ok(())
+}
+
+#[test]
 fn m49_arrival_spawn_rolls_back_when_the_world_readset_fence_fails() -> TestResult {
     let mut runtime = runtime(1)?;
     let before = runtime.encounter_fixture_snapshot();

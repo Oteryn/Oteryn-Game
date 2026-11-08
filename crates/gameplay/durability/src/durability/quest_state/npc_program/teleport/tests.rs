@@ -89,6 +89,22 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         );
     }
     assert_eq!(h.root_revision().await?, "1");
+    let seal = h.recovery.seal_current().map_err(f::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(f::debug)?;
+    let recovered = h
+        .root
+        .read_npc_pending_arrival(&authority, &h.node, f::fence(1)?)
+        .await
+        .map_err(f::debug)?
+        .ok_or("legacy source arrival")?;
+    assert_eq!(
+        recovered.destination.floor, 7,
+        "v1 source receipt recovers in movement coordinates"
+    );
     sqlx::query("UPDATE game_character_pending_arrivals SET occurrence_id=occurrence_id")
         .execute(&h.pool)
         .await?;
@@ -222,7 +238,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
         destination: LastPositionCell {
             x: 32859,
             y: 31302,
-            floor: -7,
+            floor: 7,
         },
     };
     let seal = h.recovery.seal_current().map_err(f::debug)?;
@@ -291,6 +307,8 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     assert_eq!(pending, Some(arrival));
+    let runtime_frame: bool = sqlx::query_scalar("SELECT runtime_coordinates FROM game_quest_npc_teleport_receipts WHERE character_id=encode($1,'hex')::uuid AND command_id=9702").bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert!(runtime_frame, "new commands persist movement coordinates");
     let replay = h
         .root
         .commit_character_npc_teleport(
