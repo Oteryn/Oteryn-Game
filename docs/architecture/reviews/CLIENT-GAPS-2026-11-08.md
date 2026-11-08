@@ -101,11 +101,11 @@ Zasady przeciw dublowaniu:
 
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
-| T042 | Action bars | Spell slots i cooldown | PARTIAL | Cztery sloty w formularzu; brak pełnych rzędów i wskaźników cooldown/amount. |
-| T043 | Action bars | Object/text/passive ability assignments | PARTIAL | Brak spójnego przypisywania wszystkich typów akcji w barze. |
-| T044 | Action bars | Bottom/left/right, lock, drag/drop, scroll | PARTIAL | Brak dokowanych wielorzędowych barów, przenoszenia slotów i blokady układu. |
-| O011 | Action bars | Konfigurowalne paski akcji | PARTIAL | Brakuje wielu konfigurowalnych pasków z akcjami przedmiotu/tekstu i układem slotów; natywny pasek obsługuje cztery przypisania czarów. |
-| T015 | Battle list | Wiele list, sort/filter, rename | PARTIAL | Jedna lista; brak zarządzania wieloma listami, filtrowania i ich nazw. |
+| T042 | Action bars | Spell slots i cooldown | DONE | evidence: apps/client/src/features/local-spell-action-bar/slots_native.rs:39 + full_spell_row_dispatches_last_slot_and_projects_server_cooldown |
+| T043 | Action bars | Object/text/passive ability assignments | DONE | evidence: apps/client/src/features/local-spell-action-bar/assignments.rs:101 + mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices |
+| T044 | Action bars | Bottom/left/right, lock, drag/drop, scroll | DONE | evidence: apps/client/src/features/local-spell-action-bar/layout.rs:44 + docked_bars_lock_swaps_scroll_and_persist_all_rows |
+| O011 | Action bars | Konfigurowalne paski akcji | DONE | evidence: apps/client/src/features/local-spell-action-bar/layout.rs:44 + third_bar_last_slot_uses_the_same_real_cast_caller |
+| T015 | Battle list | Wiele list, sort/filter, rename | DONE | evidence: apps/client/src/features/0017-attack/view.rs:25 + named_battle_lists_filter_sort_save_and_attack_live_entities; active_named_battle_list_survives_character_switches |
 | O014 | Battle list | Battle list i wybór celu | PARTIAL | Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora. |
 | T010 | Game window | HUD i sidebar: dock/show/hide/order/layout | PARTIAL | Osobne okna Win32 zamiast pełnego dokowania i zapisu rozmiarów/kolejności paneli. |
 | T011 | Game window | HP/mana, soul/stamina, conditions/rest | PARTIAL | Dane i teksty są; brak pełnej konfigurowalnej prezentacji pasków/łuków/ikon. |
@@ -116,9 +116,9 @@ Zasady przeciw dublowaniu:
 | O025 | Game window | Okręgi HP/MP i status mnicha | PARTIAL | Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD. |
 | O033 | Game window | Układ interfejsu i okna boczne | PARTIAL | Brakuje dokowanych, przeciąganych i zapamiętywanych miniokien w kolumnach interfejsu; istnieją osobne okna Win32 i przełączniki widoczności. |
 | O037 | Game window | Główny panel skrótów funkcji | PARTIAL | Brakuje zwijanego głównego panelu ikon funkcji gry z utrwalonym układem; funkcje są otwierane skrótami. |
-| T040 | Hotkeys | Profile, chat on/off, primary/secondary | PARTIAL | Jedna mapa bindingów; brak nazwanych presetów i dwóch kontekstów czatu. |
-| T041 | Hotkeys | Object equip / smart equip | PARTIAL | Komenda equip jest; brak pełnego selektora obiektów i opcji smart UI. |
-| O028 | Hotkeys | Skróty klawiszowe i akcje przedmiotów | PARTIAL | Brakuje menedżera dowolnych skrótów tekstowych i użycia przedmiotów na self/target/cursor; istnieją przypisania akcji klienta, czarów i formularz equip. |
+| T040 | Hotkeys | Profile, chat on/off, primary/secondary | DONE | evidence: apps/client/src/features/local-reference-preferences/profiles.rs:116; apps/client/src/features/local-reference-preferences/profiles_native.rs:84 + named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate (existing implementation 5807f5d61; current branch validated against origin/main 2033ddc54) |
+| T041 | Hotkeys | Object equip / smart equip | DONE | evidence: apps/client/src/features/0179-hotkey-equip/preferences.rs:21 + item_hotkeys_persist_per_character_and_negotiate_smart_sources |
+| O028 | Hotkeys | Skróty klawiszowe i akcje przedmiotów | DONE | evidence: apps/client/src/features/local-spell-action-bar/hotkeys.rs:109 + custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters; apps/client/src/features/local-spell-action-bar/item_actions.rs:21 + item_hotkeys_resolve_live_handles_for_self_target_and_cursor |
 | T045 | Options | Basic Options | DONE | Zbiorcze strony Gameplay/Interface/Graphics/Sound są dostępne przez natywny selektor. Evidence: apps/client/src/features/local-reference-preferences/dialog.rs:100 + basic_options_dispatch_selects_all_categories_without_editing_preferences; Native selection dispatch reaches Gameplay, Interface, Graphics and Sound without modifying saved preferences. |
 | T046 | Options | Controls / General: mouse preset, movement, rotation, keyboard delay | DONE | Rebinding jest; brak presetów myszy, rotation modifier i keyboard delay. Evidence: apps/client/src/features/local-reference-preferences/dialog.rs:230 + mouse_presets_validate_route_and_survive_restart + configured_rotation_modifier_sends_existing_turn_command + mouse_preset_changes_actual_click_routing; Right/left-handed presets, movement rebinding, rotation modifier and keyboard repeat delay reach the live input paths. |
 | T047 | Options | Controls / General Hotkeys | DONE | Brak równoważnej strony i presetów chat-on/chat-off. Evidence: apps/client/src/features/local-reference-preferences/chat_context.rs:6 + chat_hotkey_presets_follow_the_live_composer_context; General hotkey editing and saved on/off presets follow on, off and temporary composer modes; manual bindings can opt out. |

@@ -69,9 +69,10 @@
   "src": "TIBAUD-1",
   "area": "Battle list",
   "feature": "Wiele list, sort/filter, rename",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Jedna lista; brak zarządzania wieloma listami, filtrowania i ich nazw.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0017-attack/view.rs:25 + named_battle_lists_filter_sort_save_and_attack_live_entities; active_named_battle_list_survives_character_switches"
  },
  {
   "id": "T017",
@@ -179,45 +180,50 @@
   "src": "TIBAUD-1",
   "area": "Hotkeys",
   "feature": "Profile, chat on/off, primary/secondary",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Jedna mapa bindingów; brak nazwanych presetów i dwóch kontekstów czatu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:116; apps/client/src/features/local-reference-preferences/profiles_native.rs:84 + named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate (existing implementation 5807f5d61; current branch validated against origin/main 2033ddc54)"
  },
  {
   "id": "T041",
   "src": "TIBAUD-1",
   "area": "Hotkeys",
   "feature": "Object equip / smart equip",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Komenda equip jest; brak pełnego selektora obiektów i opcji smart UI.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0179-hotkey-equip/preferences.rs:21 + item_hotkeys_persist_per_character_and_negotiate_smart_sources"
  },
  {
   "id": "T042",
   "src": "TIBAUD-1",
   "area": "Action bars",
   "feature": "Spell slots i cooldown",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Cztery sloty w formularzu; brak pełnych rzędów i wskaźników cooldown/amount.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/slots_native.rs:39 + full_spell_row_dispatches_last_slot_and_projects_server_cooldown"
  },
  {
   "id": "T043",
   "src": "TIBAUD-1",
   "area": "Action bars",
   "feature": "Object/text/passive ability assignments",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak spójnego przypisywania wszystkich typów akcji w barze.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/assignments.rs:101 + mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices"
  },
  {
   "id": "T044",
   "src": "TIBAUD-1",
   "area": "Action bars",
   "feature": "Bottom/left/right, lock, drag/drop, scroll",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak dokowanych wielorzędowych barów, przenoszenia slotów i blokady układu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/layout.rs:44 + docked_bars_lock_swaps_scroll_and_persist_all_rows"
  },
  {
   "id": "T045",
@@ -1301,9 +1307,10 @@
   "src": "OTCAUD1108",
   "area": "Action bars",
   "feature": "Konfigurowalne paski akcji",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje wielu konfigurowalnych pasków z akcjami przedmiotu/tekstu i układem slotów; natywny pasek obsługuje cztery przypisania czarów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/layout.rs:44 + third_bar_last_slot_uses_the_same_real_cast_caller"
  },
  {
   "id": "O012",
@@ -1375,9 +1382,10 @@
   "src": "OTCAUD1108",
   "area": "Hotkeys",
   "feature": "Skróty klawiszowe i akcje przedmiotów",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje menedżera dowolnych skrótów tekstowych i użycia przedmiotów na self/target/cursor; istnieją przypisania akcji klienta, czarów i formularz equip.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/hotkeys.rs:109 + custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters; apps/client/src/features/local-spell-action-bar/item_actions.rs:21 + item_hotkeys_resolve_live_handles_for_self_target_and_cursor"
  },
  {
   "id": "O030",
