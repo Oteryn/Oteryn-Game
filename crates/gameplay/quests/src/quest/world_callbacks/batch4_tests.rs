@@ -366,3 +366,106 @@ fn m33_disjoint_readonly_phases_share_one_step_selector_without_ambiguity() -> R
     );
     Ok(())
 }
+
+#[test]
+fn m33_feaster_registered_routes_choose_the_source_destination_by_programme() -> Result<(), String>
+{
+    // questpc7-world-callbacks.json at 2caf66704f735bde02cb68370a5b5e00dd2d87a6:
+    // entry and purification-entry, Feaster chosen recipe s2/s6 (Wiki oldid421868).
+    let callbacks = load()?;
+    let routes: Vec<_> = callbacks
+        .iter()
+        .filter(|c| {
+            matches!(
+                c.key.as_str(),
+                "oteryn:quest-callback/questpc7-feaster-entry"
+                    | "oteryn:quest-callback/questpc7-feaster-purification-entry"
+            )
+        })
+        .collect();
+    assert_eq!(
+        routes.len(),
+        2,
+        "both source routes must reach the production registry"
+    );
+    let book = extend_callbacks(
+        QuestStateCatalogue::new("m33-source", vec![], vec![]).map_err(|e| format!("{e:?}"))?,
+        &routes.iter().map(|c| (*c).clone()).collect::<Vec<_>>(),
+    )?;
+    let programme = "oteryn:quest-progress/questpc7/feaster/programme".to_string();
+    assert!(
+        select_storage_phase(&routes, &BTreeMap::new(), &book)?.is_none(),
+        "unstarted quest cannot enter"
+    );
+    for (phase, destination) in [
+        (
+            0,
+            Position {
+                x: 32407,
+                y: 31788,
+                floor: -7,
+            },
+        ),
+        (
+            5,
+            Position {
+                x: 31917,
+                y: 32354,
+                floor: -8,
+            },
+        ),
+    ] {
+        let route = select_storage_phase(
+            &routes,
+            &BTreeMap::from([(programme.clone(), phase)]),
+            &book,
+        )?
+        .ok_or("source phase")?;
+        assert_eq!(route.teleport, Some(destination));
+        assert_eq!(route.minimum_level, Some(250));
+        assert!(route.admission.as_ref().is_some_and(|a| a.premium));
+        assert_eq!(
+            route.selector.position,
+            Some(Position {
+                x: 32627,
+                y: 32076,
+                floor: -7
+            })
+        );
+        assert_eq!(route.selector.appearance, Some(231));
+        assert!(route.requires_world_admission);
+        for case in 0..4 {
+            let mut bad = route.clone();
+            match case {
+                0 => bad.teleport.as_mut().ok_or("destination")?.x += 1,
+                1 => bad.minimum_level = Some(1),
+                2 => bad.storage[0].preserve = false,
+                _ => bad.sources.clear(),
+            }
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[bad]}).to_string()).is_err(),
+                "altered chosen route {case}"
+            );
+        }
+        assert!(
+            route
+                .storage
+                .iter()
+                .any(|g| g.track == programme && g.preserve)
+        );
+        let consumed = route
+            .storage
+            .iter()
+            .find(|g| !g.preserve)
+            .ok_or("entry receipt")?;
+        let used = BTreeMap::from([
+            (programme.clone(), phase),
+            (consumed.track.clone(), consumed.set),
+        ]);
+        assert!(
+            select_storage_phase(&routes, &used, &book)?.is_none(),
+            "completed entry receipt cannot replay"
+        );
+    }
+    Ok(())
+}

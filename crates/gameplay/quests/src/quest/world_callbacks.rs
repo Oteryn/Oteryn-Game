@@ -32,6 +32,7 @@ mod admission_tests;
 mod clock;
 mod counterparts;
 mod effects;
+mod feaster_routes;
 mod ground_stack;
 mod imported_explore;
 pub use effects::{
@@ -326,6 +327,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
     callbacks.push(super::barbarian_mead::callback()?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
+    ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
@@ -552,6 +556,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && !imported_explore::admitted(callback))
             || callback.sources.is_empty()
             || !(imported_explore::admitted(callback)
+                || feaster_routes::admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                     source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
