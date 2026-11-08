@@ -3,6 +3,8 @@ use super::*;
 #[path = "controls.rs"]
 mod controls;
 use controls::Controls;
+#[path = "transfer.rs"]
+mod transfer;
 
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
@@ -32,6 +34,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            console,
+            layout,
             arcs,
             interface,
             profile_name,
@@ -90,11 +94,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 break;
             }
             let page_index = SendMessageW(pages, CB_GETCURSEL, 0, 0);
-            if let Some(page) = usize::try_from(page_index)
-                .ok()
-                .and_then(|i| SettingsPage::ALL.get(i))
-            {
-                state.page = *page;
+            if let Ok(index) = usize::try_from(page_index) {
+                state.select_page(index);
             }
             if binding_page != state.page {
                 binding_page = state.page;
@@ -124,6 +125,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            console.show(state.page == SettingsPage::Console);
+            layout.show(state.page == SettingsPage::Status);
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
@@ -196,30 +199,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             for action in std::mem::take(&mut actions.0) {
                 if (110..=113).contains(&action) {
                     drop(state);
-                    let confirmed = action == 111
-                        || MessageBoxW(
-                            hwnd,
-                            wide("Replace your current settings? A backup will be saved first.")
-                                .as_ptr(),
-                            wide("Oteryn Settings").as_ptr(),
-                            MB_YESNO | MB_ICONQUESTION,
-                        ) == IDYES;
+                    transfer::apply(action, hwnd, &shared, &text(transfer_path));
                     state = lock(&shared);
-                    if !confirmed || state.shutdown {
-                        continue;
-                    }
-                    let path = std::path::PathBuf::from(text(transfer_path));
-                    let result = match action {
-                        110 => state.import_from(&path),
-                        111 => state.export_to(&path),
-                        112 => state.restore_backup(),
-                        _ => state.reset_defaults(),
-                    };
-                    state.feedback = match result {
-                        Ok(()) if action == 111 => "Export saved. Existing files are never overwritten.".into(),
-                        Ok(()) => "Settings replaced and saved. The previous settings are available through Restore backup.".into(),
-                        Err(error) => format!("Settings transfer failed: {error}"),
-                    };
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
@@ -269,6 +250,14 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    if let Err(error) = console.read(&mut preferences) {
+                        state.feedback = error;
+                        continue;
+                    }
+                    if let Err(error) = layout.read(&mut preferences) {
+                        state.feedback = error;
+                        continue;
+                    }
                     if let Err(error) = arcs.read(&mut preferences) {
                         state.feedback = error;
                         continue;
@@ -303,6 +292,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                console.refresh(&state.preferences);
+                layout.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
                 let selection = selected.max(0) as usize;

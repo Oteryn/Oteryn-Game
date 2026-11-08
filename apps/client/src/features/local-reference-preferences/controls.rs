@@ -6,8 +6,16 @@ use interface_controls::InterfaceControls;
 #[path = "arc_controls.rs"]
 mod arc_controls;
 use arc_controls::ArcControls;
+#[path = "layout_controls.rs"]
+mod layout_controls;
+use layout_controls::LayoutControls;
+#[path = "console_controls.rs"]
+mod console_controls;
+use console_controls::ConsoleControls;
 
 pub(super) struct Controls {
+    pub(super) console: ConsoleControls,
+    pub(super) layout: LayoutControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
     pub(super) profile_name: HWND,
@@ -45,6 +53,8 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let console = ConsoleControls::new(hwnd)?;
+            let layout = LayoutControls::new(hwnd)?;
             let arcs = ArcControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
@@ -307,6 +317,8 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                console,
+                layout,
                 arcs,
                 interface,
                 profile_name,

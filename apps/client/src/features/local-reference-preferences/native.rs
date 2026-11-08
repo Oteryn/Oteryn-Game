@@ -170,6 +170,7 @@ impl Settings {
         }
         let mut state = lock(&self.shared);
         state.sync_battle_lists(link);
+        state.sync_local_preferences(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
         }

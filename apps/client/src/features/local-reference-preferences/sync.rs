@@ -15,6 +15,8 @@ pub enum SettingsPage {
     BarHotkeys,
     CustomHotkeys,
     Arcs,
+    Status,
+    Console,
     Interface,
     Graphics,
     Sound,
@@ -22,12 +24,14 @@ pub enum SettingsPage {
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 11] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
         Self::CustomHotkeys,
         Self::Arcs,
+        Self::Status,
+        Self::Console,
         Self::Interface,
         Self::Graphics,
         Self::Sound,
@@ -39,6 +43,8 @@ impl SettingsPage {
             Self::Gameplay => "Gameplay",
             Self::Hotkeys => "Controls / General Hotkeys",
             Self::BarHotkeys => "Controls / Action Bar Hotkeys",
+            Self::Console => "Interface / Console",
+            Self::Status => "Interface / Status Panel",
             Self::Arcs => "Interface / HUD Arcs",
             Self::CustomHotkeys => "Controls / Custom Hotkey Profiles",
             Self::Interface => "Interface",
@@ -74,6 +80,18 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn select_page(&mut self, index: usize) -> bool {
+        let Some(page) = SettingsPage::ALL.get(index) else { return false; };
+        self.page = *page;
+        true
+    }
+
+    pub fn sync_local_preferences(&self, link: &crate::play::PlayLink) {
+        if self.preferences.validate().is_err() { return; }
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        if mailbox.local_preferences != self.preferences { mailbox.local_preferences.clone_from(&self.preferences); }
+    }
+
     pub fn queue_window(&mut self, id: &str) -> bool {
         let Some((id, _)) = WINDOW_ACTIONS.iter().find(|(key, _)| *key == id) else {
             return false;
