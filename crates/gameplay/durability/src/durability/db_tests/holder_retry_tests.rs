@@ -21,6 +21,67 @@ async fn ready_root(database_url: &str) -> Result<super::DurabilityRoot, Box<dyn
 }
 
 #[test]
+fn foreground_admission_recovers_a_holder_retired_after_a_successful_pass() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = migrated_database("holder_foreground_retired").await?;
+        let root = ready_root(&url).await?;
+        root.try_issue_semantic_pass()?.run(|_holder, _| Box::pin(async { Ok(()) })).await?;
+        root.try_acquire_ready()?.close().await?;
+        assert!(!root.is_ready());
+        assert!(matches!(root.try_issue_semantic_pass(),
+            Err(crate::durability::DurabilityError::RootUnavailable)));
+        let value: i32 = root.issue_ready_semantic_pass().await?.run(|holder, _| {
+            Box::pin(async move { Ok(sqlx::query_scalar("SELECT 1").fetch_one(&mut **holder).await?) })
+        }).await?;
+        assert_eq!(value, 1);
+        database.cleanup().await
+    })
+}
+
+#[test]
+fn foreground_admission_waits_for_the_busy_holder() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = migrated_database("holder_foreground_busy").await?;
+        let root = ready_root(&url).await?;
+        let holder = root.try_acquire_ready()?;
+        let started = std::time::Instant::now();
+        let release = tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            drop(holder);
+        });
+        let pass = root.issue_ready_semantic_pass().await?;
+        assert!(started.elapsed() >= std::time::Duration::from_millis(100));
+        let value: i32 = pass.run(|holder, _| Box::pin(async move {
+            Ok(sqlx::query_scalar("SELECT 1").fetch_one(&mut **holder).await?)
+        })).await?;
+        assert_eq!(value, 1);
+        release.await?;
+        database.cleanup().await
+    })
+}
+
+#[test]
+fn foreground_admission_is_bounded_and_preserves_recovery_demand() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = migrated_database("holder_foreground_budget").await?;
+        let root = ready_root(&url).await?;
+        let holder = root.try_acquire_ready()?;
+        let started = std::time::Instant::now();
+        let result = tokio::time::timeout(
+            super::ROOT_RECOVERY_WINDOW + std::time::Duration::from_secs(1),
+            root.issue_ready_semantic_pass(),
+        ).await?;
+        let error = result.err().ok_or("busy root was admitted past its budget")?;
+        assert!(matches!(error, crate::durability::DurabilityError::RootUnavailable), "{error:?}");
+        assert!(started.elapsed() >= super::ROOT_RECOVERY_WINDOW);
+        assert!(root.has_ready_demand());
+        drop(holder);
+        root.await_ready().await?;
+        database.cleanup().await
+    })
+}
+
+#[test]
 fn a_busy_holder_retry_starts_when_the_holder_is_returned() -> TestResult {
     run_postgres_test(async {
         let (database, database_url) = migrated_database("holder_retry_returned").await?;
