@@ -44,4 +44,6 @@
 | Canonical-key achievement grant participant in fenced source NPC progress/item receipts | engclaim | none planned; retain own range1830–1839 | The Order of the Stag (Eldoran news reward); Kilmaresh (Sculptor Apprentice finale, programme binding also needed) | CLAIMED |
 
 | Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | CLAIMED |
-| Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
+| Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | RELEASED: coordinator assigns this source to ENGOUTFIT/M36; no implementation written |
+
+| M26: qualified Soul War and Rotten Blood boss rooms with source-faithful Bakragore cooldown | srvgap2 | none allocated yet; reserve 2270–2279 only | Soul War Quest; Rotten Blood Quest | CLAIMED |
