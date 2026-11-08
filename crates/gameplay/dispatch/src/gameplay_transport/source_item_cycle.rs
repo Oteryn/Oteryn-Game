@@ -80,6 +80,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .await;
             if stopped {
+                // Cancellation does not prove that player/other autonomous
+                // owners have stopped. Serving performs the terminal source
+                // drain only after that stronger shared quiescence boundary.
                 return;
             }
             // One owner pass is one owner turn: the world-interaction cap starts anew, under
@@ -96,6 +99,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
+            let _ = self.flush_daily_kill_statistics().await;
             self.tick_timed_items().await;
             if !self.ensure_source_map_initialized().await {
                 continue;

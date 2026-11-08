@@ -41,16 +41,10 @@ fn scenario()->TestResult{
  run(async |admin|{
         let h=Harness::create_with_admission_seed(admin,"threatened_fairies",false,false).await?;
         prepare_current_session(&h).await?;
-        // The older admission fixture predates native appearance creation.
-        // Seed creation sex as the existing appearance fixtures do, not quest results.
-        let mut creation = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *creation).await?;
-        sqlx::query("UPDATE game_character_roots SET sex=1 WHERE character_id=encode($1,'hex')::uuid AND sex IS NULL").bind(id(41).as_slice()).execute(&mut *creation).await?;
-        creation.commit().await?;
         let version:String=sqlx::query_scalar("SELECT current_setting('server_version')").fetch_one(&h.pool).await?;
         eprintln!("THREATENED_FAIRIES POSTGRES_CASE_STARTED server_version={version}");
         let seal=h.recovery.seal_current().map_err(debug)?;
-        let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let authority=h.root.open_character_authority(&seal).await.map_err(|error|format!("fairy authority admission: {error:?}"))?;
         let mut deps=Dependencies::new()?;
         let (controller,activated)=super::super::death_ml_loss_composed::production_generation_with_pin(deps.admitted.world_id,"content-1")?;
         let generation=controller.active().ok_or("generation")?;
@@ -78,13 +72,21 @@ fn scenario()->TestResult{
         admitted.first_entry=crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+        super::super::maintain_ready(&h.root).await?;
         let fence=owner.current_quest_fence(admitted.game_session_id).await.map_err(|()|"fence")?.ok_or("fence")?;
         let fresh=super::super::fresh_fixture::fresh::Source::new(0)?.request()?;
-        h.root.initialize_admission_equipment(&authority,&h.node,&fence.item_fence(),generation.identity().server_artifact_digest(),fresh.operation()).await.map_err(debug)?;
+        super::super::maintain_ready(&h.root).await?;
+        h.root.initialize_admission_equipment(&authority,&h.node,&fence.item_fence(),generation.identity().server_artifact_digest(),fresh.operation()).await.map_err(|error|format!("fairy admission equipment: {error:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
         super::super::item_look::seed_main_backpack(&h, &[]).await?;
+        // The older admission fixture predates native appearance creation.
+        // Seed creation sex as the existing appearance fixtures do, not quest results.
+        let mut creation = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *creation).await?;
+        sqlx::query("UPDATE game_character_roots SET sex=1 WHERE character_id=encode($1,'hex')::uuid AND sex IS NULL").bind(id(41).as_slice()).execute(&mut *creation).await?;
+        creation.commit().await?;
         let mut selected=admitted.continuity.selected_capabilities.as_slice().to_vec();selected.extend([3,4,6,11,15,18,25]);selected.sort_unstable();selected.dedup();
         let offered=crate::gameplay_transport::appearance_change::offer::offered(owner.offered_capabilities(),owner.appearance_available());
         admitted.continuity.selected_capabilities=crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered,&selected).ok_or("capabilities")?;
@@ -94,10 +96,10 @@ fn scenario()->TestResult{
             Ok(WorldObjectTarget{placement,expected_revision:world.facts().object_revision(key)})
         };
         let appearance=|at:Position|->TestResult<u16>{let pos=crate::map::overlay::TilePos{x:at.x,y:at.y,floor:at.floor};Ok(world.facts().base_entry(pos,1,1).ok_or("fairy appearance")?.appearance_id)};
-        seed(&owner,&admitted,&prior(2),36000).await?;
+        seed(&owner,&admitted,&prior(2),36000).await.map_err(|error|format!("fairy prerequisite: {error}"))?;
         let appearance_fence = crate::gameplay_transport::character_gameplay_fence::current(&owner, admitted.game_session_id, false).await.ok_or("appearance fence")?;
         let (_, cosmetics) = owner.appearance_context().ok_or("appearance content")?;
-        h.root.read_current_character_appearance_state(&authority, &h.node, appearance_fence, cosmetics.earned_grant_keys()).await.map_err(debug)?;
+        h.root.read_current_character_appearance_state(&authority, &h.node, appearance_fence, cosmetics.earned_grant_keys()).await.map_err(|error|format!("fairy appearance read: {error:?}"))?;
         let command=admitted.continuity.next_command_id;
         use_source(&mut owner,&mut admitted,command,target_for(TARGETS[0])?).await?;
         assert_ne!(progress(&owner,&admitted,&authority,&flag(0)).await?,1,"wrong mission stage cannot release a fairy");

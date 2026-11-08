@@ -54,6 +54,7 @@ impl ChannelSpellStates {
         let death = if after.health == 0 {
             self.deaths.try_reserve(1).map_err(|_| ())?;
             Some(PlayerDeath {
+                public_cause: None,
                 occurrence: (self.mint_death)().ok_or(())?,
                 cell: runtime
                     .read_actor_position(actor)

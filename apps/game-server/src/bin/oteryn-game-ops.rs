@@ -1542,7 +1542,7 @@ async fn projection(
 }
 
 const PUBLIC_PROJECTION_USAGE: &str = "public-projection resync --family \
-all|highscores|character_profile|world_online|world_totals --raise-epoch true|false: re-enqueue the current \
+all|highscores|character_profile|world_online|world_totals|character_deaths|guild|house|character_online_sessions|world_daily_kills --raise-epoch true|false: re-enqueue the current \
 public snapshots of the family for the Platform public read model and print the public projection \
 epoch. `true` (only with `--family all`) raises the epoch above the public epoch fence and then \
 persists the fence; it uses the [public_projection] operator credential of the ops config. After a \
@@ -1569,6 +1569,11 @@ async fn public_projection(
         "character_profile",
         "world_online",
         "world_totals",
+        "character_deaths",
+        "character_online_sessions",
+        "world_daily_kills",
+        "guild",
+        "house",
     ]
     .contains(&family.as_str())
     {
@@ -1854,6 +1859,11 @@ mod tests {
             "character_profile",
             "world_online",
             "world_totals",
+            "character_deaths",
+            "character_online_sessions",
+            "world_daily_kills",
+            "guild",
+            "house",
         ] {
             connected.borrow_mut().clear();
             let resync = words(&[
@@ -1895,7 +1905,7 @@ mod tests {
                 "public-projection",
                 "resync",
                 "--family",
-                "guild",
+                "unknown_family",
                 "--raise-epoch",
                 "false",
             ][..],
