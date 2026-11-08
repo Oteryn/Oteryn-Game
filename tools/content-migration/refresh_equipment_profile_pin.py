@@ -64,6 +64,24 @@ def regenerate(source, base, updates, qengine, npc, starting=None):
         raise ValueError(
             f"declared cohorts={declared}, generated profile union={len(actual)}"
         )
+    # Pin the independent admission packet, never the generated runtime union.
+    # New shared quest inputs must retain the exact-key/raw-speed checks below.
+    engine_pin = r"assert_eq!\(added_keys\.len\(\),\s*[0-9_]+\);"
+    if len(re.findall(engine_pin, source)) > 1:
+        raise ValueError("ambiguous shared engine exact-key pin")
+    source = re.sub(
+        engine_pin, f"assert_eq!(added_keys.len(), {len(engine_keys)});", source
+    )
+    source = re.sub(
+        r'\("qengine-reward-item-profiles\.json",\s*[0-9_]+\)',
+        f'("qengine-reward-item-profiles.json", {len(engine_keys)})',
+        source,
+    )
+    source = re.sub(
+        r"// QENGINE2 captures \d+ shared Items plus \w+ portable QUESTPC4 Items\.",
+        "// QENGINE2 independently captures shared engine and portable quest Items.",
+        source,
+    )
     # The NPC owner is already counted in PROFILE_ADDITIONS. Keep every strict
     # raw-attribute/identity assertion and remove only its duplicate sum term.
     start = source.index("    assert_eq!(\n        profiles.records.len(),")

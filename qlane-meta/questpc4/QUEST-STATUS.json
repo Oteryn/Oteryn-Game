@@ -10970,5 +10970,56 @@
     "workspace_check": "cargo check --workspace --all-targets PASS 4m25s",
     "fmt": "cargo fmt --all --check PASS",
     "pin_and_packet_verification": "pin-check, duplicate migrations, quest binding, completion matrix and reward variant packet checks PASS"
+  },
+  "qmech_merge_b1d": {
+    "status": "QUALIFICATION_IN_PROGRESS",
+    "qmech_head": "b1d907db4",
+    "merge_head": "88896d40d4e08881dbe96d1866f85d3e32510785",
+    "preserved": "World requirements, fenced Ground requirements and current-carrier area-clear all guard the same native operation",
+    "fixed_compiler_errors": [
+      "Callback.admission=None in existing Soul War and underwater fixtures"
+    ],
+    "fixed_pin_root_cause": "Shared QENGINE source packet grew60->63; generator now refreshes both strict cardinality pins from independent source packet, not runtime union",
+    "generator_tests": "16 passed12.262s; red regression observed for both stale-pin sites",
+    "native_equipment_pin_seconds": 69.47,
+    "native_mead_postgres": {
+      "version": "18.6",
+      "nextest_seconds": 63.478,
+      "completed_marker_seconds": 63.423148457
+    },
+    "native_area_clear_seconds": 0.023,
+    "quest_tests": "17 passed0.179s",
+    "author_checks_seconds": 330.553,
+    "author_unit_modules": 112,
+    "author_units_seconds": 549.968,
+    "content_tree_seconds": 205.303,
+    "clippy": "quests+dispatch all-targets/all-features -Dwarnings PASS4m05s",
+    "pins_and_migration_duplicates": "PASS; engine exact-key pins generated63; independent profile union5795"
+  },
+  "qmech_merge_0326": {
+    "merge_head": "45c5dc5e0db9d045544d75ca24c4897bd05c042b",
+    "upstream": "0326dc2e5",
+    "state": "QUALIFIED_MERGE_REPAIR",
+    "authoring_checks_seconds": 391.015,
+    "authoring_unit_modules": 114,
+    "authoring_units_seconds": 548.305,
+    "content_tree_seconds": 221.942,
+    "quest_focused_tests": "24/24 PASS 9.302s",
+    "pin_generator_tests": "16/16 PASS 18.321s",
+    "remaining": "M07 remains PARTIAL: five quest wiring and lifecycle/puzzle stories not qualified",
+    "coordinator_override": "No more qmech/main merges; existing merge was committed before override",
+    "dispatch_tests": {
+      "passed": 3,
+      "seconds": 134.929,
+      "mead_postgres": "18.6; completed marker 66.453404024s success=true",
+      "area_clear_seconds": 0.019,
+      "equipment_pin_seconds": 68.399
+    },
+    "pin_check": "PASS",
+    "duplicate_migrations": "PASS",
+    "merge_duplicate_repairs": "Retained one definition of each M20 test and one identical branch per autowalk direction; no assertions removed",
+    "clippy": "PASS all-targets/all-features -D warnings 4m09s",
+    "workspace_check": "PASS --workspace --all-targets",
+    "fmt": "PASS"
   }
 }
