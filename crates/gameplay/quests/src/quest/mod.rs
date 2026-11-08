@@ -25,8 +25,10 @@ pub mod barbarian_mead;
 #[cfg(test)]
 pub mod batch3_a;
 pub mod carried_step;
+pub mod children_puzzle;
 pub mod classic_dialogue;
 pub mod classic_talk;
+pub mod completion_sets;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod deepling_boss_access;
@@ -341,6 +343,7 @@ pub enum QuestCatalogueError {
 /// The tracks and transitions of one content revision, with each quest's definition hash.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuestStateCatalogue {
+    completion_sets: BTreeMap<String, completion_sets::CompletionSet>,
     content_revision: String,
     tracks: BTreeMap<String, QuestTrack>,
     transitions: BTreeMap<String, QuestTransition>,
@@ -487,6 +490,7 @@ impl QuestStateCatalogue {
             tracks: track_map,
             transitions: transition_map,
             hashes,
+            completion_sets: BTreeMap::new(),
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
             authored_bindings: None,
@@ -517,6 +521,7 @@ impl QuestStateCatalogue {
                 .collect(),
         )?;
         extended.hashes.extend(self.hashes.clone());
+        extended.completion_sets = self.completion_sets.clone();
         extended.npc_legacy = self.npc_legacy.clone();
         extended.predecessors = self.predecessors.clone();
         extended.authored_bindings = self.authored_bindings.clone();

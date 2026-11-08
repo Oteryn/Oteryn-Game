@@ -1,7 +1,9 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
 pub(super) mod completion;
-pub mod ground_stack;
+pub(crate) mod ground_stack;
+#[cfg(any(test, feature = "test-support"))]
+pub use ground_stack::matches as fixture_ground_stack_matches;
 pub mod shared_count;
 pub mod shared_switch;
 use super::{
@@ -195,6 +197,11 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    if !ground_stack::matches_requirements(tx, permit, fence, context, &callback.world_requirements)
+        .await?
+    {
+        return Ok(false);
+    }
     if !ground_stack::require(
         tx,
         permit,
@@ -206,6 +213,29 @@ pub(super) async fn consume(
     .await?
     {
         return Ok(false);
+    }
+    if let Some(admission) = &callback.admission {
+        if admission.promotion
+            && !super::character_promotion::read_durable_promotion(tx, fence.character_id).await?
+        {
+            return Ok(false);
+        }
+        if admission.regular_blessings {
+            let held: Vec<String> = sqlx::query_scalar(
+                "SELECT blessing_key FROM game_character_blessings WHERE character_id=encode($1,'hex')::uuid ORDER BY blessing_key LIMIT 33",
+            ).bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
+            let catalogue =
+                oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+            if !catalogue
+                .blessings
+                .iter()
+                .filter(|blessing| blessing.storage_key != "oteryn:blessing.twist_of_fate")
+                .all(|blessing| held.contains(&blessing.storage_key))
+            {
+                return Ok(false);
+            }
+        }
     }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);

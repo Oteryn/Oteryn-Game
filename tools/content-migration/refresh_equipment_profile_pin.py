@@ -95,6 +95,10 @@ def main():
     # its file or requiring unrelated owner inputs to be admitted first.
     if args.check and source != original:
         raise SystemExit("equipment cohort pin is stale")
+    import qengine_reward_equipment_pin
+    source = qengine_reward_equipment_pin.refresh(
+        source, json.loads((ROOT / paths[2]).read_bytes())
+    )
     from qnpcfx_item_profiles import cohort_receipt, profile_identity_receipt
     packet = json.loads((ROOT / paths[3]).read_bytes())
     source = profile_identity_receipt(cohort_receipt(source, packet), packet)

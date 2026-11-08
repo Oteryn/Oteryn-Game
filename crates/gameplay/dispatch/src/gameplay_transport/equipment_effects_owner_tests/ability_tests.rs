@@ -334,7 +334,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 captures 53 shared Items plus seven portable QUESTPC4 Items.
+    // QENGINE2: generated witness of the producer's explicit IDS set.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -361,7 +361,77 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
-    assert_eq!(added_keys.len(), 60);
+    // QENGINE2 identities: generated begin
+    assert_eq!(added_keys.len(), 63);
+    assert_eq!(
+        added_keys,
+        std::collections::BTreeSet::from([
+            "oteryn:item.tibia.i10198",
+            "oteryn:item.tibia.i10199",
+            "oteryn:item.tibia.i11544",
+            "oteryn:item.tibia.i11700",
+            "oteryn:item.tibia.i11701",
+            "oteryn:item.tibia.i12413",
+            "oteryn:item.tibia.i12517",
+            "oteryn:item.tibia.i12599",
+            "oteryn:item.tibia.i12601",
+            "oteryn:item.tibia.i12803",
+            "oteryn:item.tibia.i133",
+            "oteryn:item.tibia.i139",
+            "oteryn:item.tibia.i15698",
+            "oteryn:item.tibia.i16103",
+            "oteryn:item.tibia.i16128",
+            "oteryn:item.tibia.i16129",
+            "oteryn:item.tibia.i16165",
+            "oteryn:item.tibia.i16167",
+            "oteryn:item.tibia.i16242",
+            "oteryn:item.tibia.i20275",
+            "oteryn:item.tibia.i20276",
+            "oteryn:item.tibia.i21291",
+            "oteryn:item.tibia.i21504",
+            "oteryn:item.tibia.i21505",
+            "oteryn:item.tibia.i22516",
+            "oteryn:item.tibia.i22721",
+            "oteryn:item.tibia.i28792",
+            "oteryn:item.tibia.i28793",
+            "oteryn:item.tibia.i30168",
+            "oteryn:item.tibia.i30169",
+            "oteryn:item.tibia.i3244",
+            "oteryn:item.tibia.i3537",
+            "oteryn:item.tibia.i3543",
+            "oteryn:item.tibia.i3587",
+            "oteryn:item.tibia.i3589",
+            "oteryn:item.tibia.i3590",
+            "oteryn:item.tibia.i3593",
+            "oteryn:item.tibia.i37002",
+            "oteryn:item.tibia.i37003",
+            "oteryn:item.tibia.i3723",
+            "oteryn:item.tibia.i4867",
+            "oteryn:item.tibia.i5886",
+            "oteryn:item.tibia.i5903",
+            "oteryn:item.tibia.i5921",
+            "oteryn:item.tibia.i5924",
+            "oteryn:item.tibia.i5937",
+            "oteryn:item.tibia.i5938",
+            "oteryn:item.tibia.i5939",
+            "oteryn:item.tibia.i5940",
+            "oteryn:item.tibia.i5945",
+            "oteryn:item.tibia.i5947",
+            "oteryn:item.tibia.i6099",
+            "oteryn:item.tibia.i6100",
+            "oteryn:item.tibia.i6101",
+            "oteryn:item.tibia.i6102",
+            "oteryn:item.tibia.i6107",
+            "oteryn:item.tibia.i6126",
+            "oteryn:item.tibia.i7289",
+            "oteryn:item.tibia.i768",
+            "oteryn:item.tibia.i769",
+            "oteryn:item.tibia.i770",
+            "oteryn:item.tibia.i875",
+            "oteryn:item.tibia.i9041",
+        ])
+    );
+    // QENGINE2 identities: generated end
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
