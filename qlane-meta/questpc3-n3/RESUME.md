@@ -1,6 +1,6 @@
 # questpc3 n3 current handoff
 
-Base main: `6ef6b0cad05b8f85219e8215973563dbc6973e34`. Branch: `claude/happy-davinci-ijz3wy-questpc3b-n3`.
+Base main: `e9276ad7e0720974a542221aaf1f12947476c4ab`. Branch: `claude/happy-davinci-ijz3wy-questpc3b-n3`.
 
 This branch starts from current main. Earlier branches are frozen for collector packaging; no earlier feature was recreated or merged independently. The local loop ledger is `.lane/rows.md` and remains uncommitted.
 
@@ -30,3 +30,7 @@ MAINRED1108 delivery3b4696be3: reused migration1553 and both native reset-read c
 SEASON6ef6b0cad arrived during the final main sync and was merged cleanly. Rechecked all6 rows: unchanged four feature-gap source blobs, earlier collector head still unmerged, seasonal NPC adapter fixed to Santa/Brutus/bakers. No quest is newly actionable. Previous reset-lock PG8.450s evidence belongs to3b4696be3; case/migration unchanged, but no current-head PG result is asserted. Refreshing workspace/fmt on the new main. No lane-authored content or serve change was introduced; all seasonal implementation remains main-owned.
 
 SEASON PUBLICATION QUALIFIED: `cargo check --workspace --all-targets` PASS7m52s and fmt PASS on fixed main6ef6b0cad snapshot; duplicate check PASS. Current branch runtime/content/serve tree equals merged main; lane-authored delta is only handoff records. No additional source generation or boot/content-activation modification was authored. Prior selected reset-lock PG on3b4696be3 PASS8.450s remains explicitly ancestor-scoped, not a current-head gameplay qualification. Collector callback/test artefacts for Pilgrimage/Stampede remain absent, verified independently of Git ancestry. All6 retained rows remain4WAITING-ENGINE/2BLOCKED; .lane rows stay uncommitted. Original questpc3/questpc3b branches were not pushed.
+
+Client settings and native login challenge main delivery e9276ad7e merged unchanged. ENGNPC e22dff551 paid-travel ownership fix inspected; date/day guard still absent. All four engine-gap source blobs unchanged; collector callbacks absent. Six terminal dispositions remain valid. Rechecking workspace/fmt; no lane-authored runtime or content change.
+
+CLIENT-MAIN PUBLICATION QUALIFIED: maine9276ad7e integrated unchanged; workspace all-targets PASS7m 05s; fmt and duplicate check PASS. All six retained quest dispositions remain4WAITING-ENGINE/2BLOCKED. Main client settings/login changes and ENGNPC paid-travel confirmation fix do not close a missing quest contract. Only lane-owned handoff records changed relative to main; no runtime/content/schema input authored and no new gameplay qualification or PG result asserted. Current local ledger remains uncommitted.
