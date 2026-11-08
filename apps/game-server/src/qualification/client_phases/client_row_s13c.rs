@@ -201,7 +201,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
 
     let caster_start = tile(caster.world_spatial().actor_position)?;
     let peer_start = tile(peer.world_spatial().actor_position)?;
-    let path = route(&world, caster_start, |at| {
+    let path = route(world, caster_start, |at| {
         at != peer_start
             && at.floor == peer_start.floor
             && at.x.abs_diff(peer_start.x).max(at.y.abs_diff(peer_start.y)) <= 1
@@ -209,7 +209,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     .ok_or("step=walk no route beside the member")?;
     for direction in path {
         let (moved, serviced) = join(
-            walk(&mut caster, &world, &[direction]),
+            walk(&mut caster, world, &[direction]),
             peer.service_liveness(Duration::from_millis(10)),
         )
         .await;

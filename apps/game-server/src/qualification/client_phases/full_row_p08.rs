@@ -166,7 +166,7 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
     // This is a real player fight. With the node-boot starter's empty hands it also proves that
     // an unrelated kill cannot manufacture a weapon track.
     let combat = async {
-        travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         client_hunt::hunt(&mut client).await
     }
     .await;

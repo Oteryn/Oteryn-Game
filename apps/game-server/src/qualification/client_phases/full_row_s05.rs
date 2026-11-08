@@ -252,8 +252,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let at = entrance(&private.house)?;
     let from = tile(client.world_spatial().actor_position)?;
-    if let Some(path) = route(&world, from, |candidate| candidate == at) {
-        match walk(&mut client, &world, &path).await {
+    if let Some(path) = route(world, from, |candidate| candidate == at) {
+        match walk(&mut client, world, &path).await {
             Ok(()) => row.pass("walk-entrance", at),
             Err(error) => row.fail("walk-entrance", error),
         }

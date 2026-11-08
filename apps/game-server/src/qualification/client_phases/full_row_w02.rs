@@ -129,10 +129,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(&world, from, |at| LEVERS.contains(&at)).ok_or_else(|| {
+    let path = route(world, from, |at| LEVERS.contains(&at)).ok_or_else(|| {
         format!("step-2-lever-walk:observed=no-route-from-{from:?};need=walk-to-authored-lever")
     })?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let lever_position = client.world_spatial().actor_position;
     let channel_session = client.join_snapshot().game_session_id;
 

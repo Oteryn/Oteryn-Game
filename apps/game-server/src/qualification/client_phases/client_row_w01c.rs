@@ -30,7 +30,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x0d).await?;
     travel_to_spawn(
         &mut client,
-        &world,
+        world,
         &metadata.spawns,
         "oteryn:creature.poison_spider",
     )

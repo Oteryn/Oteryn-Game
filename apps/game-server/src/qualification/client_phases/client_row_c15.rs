@@ -136,7 +136,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     capture("c15-before.bin", &before_payload);
 
     tokio::time::sleep(Duration::from_secs(2)).await;
-    hunt(&mut client, &world).await?;
+    hunt(&mut client, world).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let (after, after_payload) = loop {
         let current = progress(&mut client).await?;

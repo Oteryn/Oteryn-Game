@@ -169,14 +169,14 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
     attempt.observed(client.join_snapshot().game_session_id);
 
     attempt.at("walk-out-of-pz");
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| !tile.protection_zone())
     })
     .ok_or("needs-reachable-non-pz-tile")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     attempt.observed(client.world_spatial().actor_position);
 
     let here = client.world_spatial().actor_position;

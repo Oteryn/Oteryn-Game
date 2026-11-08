@@ -69,14 +69,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xa2).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (door, path) = plain_doors(&bytes, &world)?
+    let (door, path) = plain_doors(&bytes, world)?
         .into_iter()
         .filter_map(|door| {
-            route(&world, from, |at| distance(at, door.at) == 3).map(|path| (door, path))
+            route(world, from, |at| distance(at, door.at) == 3).map(|path| (door, path))
         })
         .min_by_key(|(_, path)| path.len())
         .ok_or("M02 client capture has no reachable plain door")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     client.take_events();
     let key = crate::map::view::placement_key(door.at, door.ordinal)
         .ok_or("M02 client capture placement")?;

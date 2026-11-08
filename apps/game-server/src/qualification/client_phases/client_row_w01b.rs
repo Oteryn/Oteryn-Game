@@ -177,7 +177,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x0c).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let here = client.world_spatial().actor_position;
     let target = client
         .world_entities()
@@ -265,15 +265,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     // Respawn: leave interest, wait out the authored interval, return, require a new actor.
     let from = tile(client.world_spatial().actor_position)?;
-    let away = route(&world, from, |at| tile_distance(at, spawn) >= 20)
+    let away = route(world, from, |at| tile_distance(at, spawn) >= 20)
         .ok_or("W01b client capture: no route outside spawn interest")?;
-    walk(&mut client, &world, &away).await?;
+    walk(&mut client, world, &away).await?;
     tokio::time::sleep(Duration::from_millis(u64::from(respawn_ms) + 1_000)).await;
-    let back = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
         tile_distance(at, spawn) <= 1
     })
     .ok_or("W01b client capture: no route back to the rat point")?;
-    walk(&mut client, &world, &back).await?;
+    walk(&mut client, world, &back).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
     let replacement = loop {
         if let Some(entity) = creature_at(&client, spawn)

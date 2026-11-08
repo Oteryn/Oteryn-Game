@@ -252,8 +252,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
     let mut client = connect_world(clients, 0x33).await?;
-    let initial = earn_gold(&mut client, &world, &metadata.npcs, refs).await?;
-    let (actor, npc_key) = find_exchange_npc(&mut client, &world, &metadata.npcs).await?;
+    let initial = earn_gold(&mut client, world, &metadata.npcs, refs).await?;
+    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs).await?;
     let before_pairs = pairs(&client);
     let before_payload = encoded(&client)?;
     let reply = exchange(&mut client, actor, &["1", "yes"]).await?;

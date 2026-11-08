@@ -174,7 +174,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut defenses = Vec::new();
     for (name, fight) in [("offensive", FightMode::Offensive), ("balanced", FightMode::Balanced), ("defensive", FightMode::Defensive)] {
         for (suffix, chase) in [("stand", ChaseMode::Stand), ("chase", ChaseMode::Chase)] {
-            travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await
+            travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await
                 .map_err(|error| format!("step={name}-{suffix} observed={error} need=walk-to-live-rat"))?;
             let observed = mode_attack(&mut client, FightModes { fight_mode: fight, chase, secure: true }).await?;
             defenses.push(observed);
@@ -195,7 +195,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let before_loot = inventory_signature(&client)?;
     let mut after_loot = before_loot.clone();
     for _ in 0..4 {
-        travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         client_hunt::hunt(&mut client).await?;
         after_loot = inventory_signature(&client)?;
         if after_loot != before_loot { break; }

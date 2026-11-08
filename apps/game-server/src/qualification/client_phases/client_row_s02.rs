@@ -79,13 +79,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut leader = connect_character(clients, 0x49, 0).await?;
     let mut peer = connect_character(clients, 0x4a, 1).await?;
     let other = tile(peer.world_spatial().actor_position)?;
-    let path = route(&world, tile(leader.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(leader.world_spatial().actor_position)?, |at| {
         at != other
             && at.floor == other.floor
             && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
     })
     .ok_or("peer approach route unavailable")?;
-    walk(&mut leader, &world, &path).await?;
+    walk(&mut leader, world, &path).await?;
     let (leader_ref, peer_ref) = (own(&leader)?, own(&peer)?);
 
     party(&mut leader, Some(PartyIntent::Invite(peer_ref))).await?;

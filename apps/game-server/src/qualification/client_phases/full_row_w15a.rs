@@ -175,11 +175,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let npc = metadata.npcs.npcs.iter().find(|npc| npc.key == NPC)
         .ok_or_else(|| format!("npc-command-not-sent:content:{NPC}"))?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         npc.placements.iter().any(|place| place.floor == at.floor
             && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3)
     }).ok_or_else(|| format!("npc-command-not-sent:no-player-walking-route-to:{NPC}"))?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let actor = client.world_entities().and_then(|entities| entities.iter().find(|entry| {
         entry.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|place| {
             entry.position.x == i32::from(place.x) && entry.position.y == i32::from(place.y)

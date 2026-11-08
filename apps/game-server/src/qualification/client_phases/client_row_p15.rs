@@ -189,13 +189,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         positions.iter().any(|dummy| {
             at.floor == dummy.floor && at.x.abs_diff(dummy.x).max(at.y.abs_diff(dummy.y)) <= 1
         })
     })
     .ok_or("no player-walkable route to an authored exercise dummy")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let dummy = visible_dummy(&mut client)?;
     let (running_bytes, running) =
         exercise(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;

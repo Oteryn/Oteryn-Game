@@ -70,7 +70,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x37, 1).await?;
-    at_market(&mut client, &world).await?;
+    at_market(&mut client, world).await?;
     let (wares, wares_bytes) = command(&mut client, request(1, 0, [0; 16])).await?;
     let ware = wares.rows.first().cloned().ok_or("wares advertised nothing")?;
     if wares.code != 1 || wares.action != 1 || ware.definition == 0 {
@@ -109,7 +109,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("logout refused".into());
     }
     let mut client = connect_character(clients, 0x38, 1).await?;
-    at_market(&mut client, &world).await?;
+    at_market(&mut client, world).await?;
     let (own, own_bytes) = command(&mut client, request(3, 0, [0; 16])).await?;
     let (history, history_bytes) = command(&mut client, request(4, 0, [0; 16])).await?;
     let ended = history

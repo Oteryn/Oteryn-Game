@@ -54,11 +54,11 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
             .tile(at.x, at.y, at.floor)
             .is_some_and(|t| !t.protection_zone())
     };
-    let path = route(&world, tile(attacker.world_spatial().actor_position)?, open)
+    let path = route(world, tile(attacker.world_spatial().actor_position)?, open)
         .ok_or("step=walk no outside-PZ tile for the attacker")?;
     for direction in path {
         let (moved, serviced) = join(
-            walk(&mut attacker, &world, &[direction]),
+            walk(&mut attacker, world, &[direction]),
             victim.service_liveness(Duration::from_millis(10)),
         )
         .await;
@@ -68,7 +68,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
         victim.take_events();
     }
     let spot = tile(attacker.world_spatial().actor_position)?;
-    let path = route(&world, tile(victim.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(victim.world_spatial().actor_position)?, |at| {
         at != spot
             && at.floor == spot.floor
             && at.x.abs_diff(spot.x).max(at.y.abs_diff(spot.y)) <= 1
@@ -77,7 +77,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
     .ok_or("step=walk no outside-PZ tile beside the attacker")?;
     for direction in path {
         let (moved, serviced) = join(
-            walk(&mut victim, &world, &[direction]),
+            walk(&mut victim, world, &[direction]),
             attacker.service_liveness(Duration::from_millis(10)),
         )
         .await;

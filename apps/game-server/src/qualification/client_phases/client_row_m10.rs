@@ -68,10 +68,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0xa0).await?;
     let start = tile(client.world_spatial().actor_position)?;
-    let mut path = route(&world, start, |at| is_underwater(&world, at))
+    let mut path = route(world, start, |at| is_underwater(world, at))
         .ok_or("no reachable underwater tile for M10 client capture")?;
     let enter = path.pop().ok_or("M10 client capture started underwater")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let initial = *client.actor_vitals().ok_or("M10 initial ActorVitals absent")?;
     let moved = client.step_retrying(enter).await?;
     if moved.disposition != StepDisposition::Moved || moved.world_spatial_delta.is_none() {

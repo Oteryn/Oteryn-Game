@@ -79,13 +79,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut chosen = None;
     for row in initial.rows.iter().rev().filter(|row| row.kind == 1) {
         let at = entrance(&row.house)?;
-        if let Some(path) = route(&world, from, |candidate| candidate == at) {
+        if let Some(path) = route(world, from, |candidate| candidate == at) {
             chosen = Some((row.clone(), path));
             break;
         }
     }
     let (private, path) = chosen.ok_or("no reachable private house on the first page")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let maximum = private.price.max(private.rent).max(1);
     let bid = house::mutation(world_bytes, &private.house, private.revision, &house::Action::Bid(maximum))
         .map_err(|error| format!("bid encode {error}"))?;

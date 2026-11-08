@@ -55,11 +55,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         floor: -destination.floor,
     };
     let mut client = connect_world(clients, 0x08).await?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3
     })
     .ok_or("W05c client capture: Rashid unreachable")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let actor = client
         .world_entities()
         .and_then(|entities| {

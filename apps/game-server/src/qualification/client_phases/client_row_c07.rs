@@ -57,16 +57,16 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xc7).await?;
     let reference = provisioning::item_reference(&provisioning::item_index()?, RUNE_ID)?;
     let field = provisioning::item_reference(&provisioning::item_index()?, FIELD_ID)?;
-    let purchase_sequence = acquire(&mut client, &world, &metadata.npcs, reference).await?;
+    let purchase_sequence = acquire(&mut client, world, &metadata.npcs, reference).await?;
     check("acquire", purchase_sequence);
 
-    let pz_path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let pz_path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world.base().tile(at.x, at.y, at.floor).is_some_and(|t| t.protection_zone())
-            && adjacent(&world, at).is_some()
+            && adjacent(world, at).is_some()
     })
     .ok_or("step=protection-zone-refusal observed=no-reachable-pz-corridor need=compiled-pz-route")?;
-    walk(&mut client, &world, &pz_path).await?;
-    let pz_target = adjacent(&world, tile(client.world_spatial().actor_position)?)
+    walk(&mut client, world, &pz_path).await?;
+    let pz_target = adjacent(world, tile(client.world_spatial().actor_position)?)
         .ok_or("step=protection-zone-refusal observed=no-adjacent-tile need=walkable-pz-target")?.1;
     let before_count = quantity(&client, reference)?;
     let before_vitals = *client.actor_vitals().ok_or("step=protection-zone-refusal observed=no-vitals-frame need=actor-vitals")?;
@@ -81,13 +81,13 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     }
     check("pz-refusal", refusal_sequence);
 
-    let site_path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let site_path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world.base().tile(at.x, at.y, at.floor).is_some_and(|t| !t.protection_zone())
-            && adjacent(&world, at).is_some_and(|(_, next)| world.base().tile(next.x, next.y, next.floor).is_some_and(|t| !t.protection_zone()))
+            && adjacent(world, at).is_some_and(|(_, next)| world.base().tile(next.x, next.y, next.floor).is_some_and(|t| !t.protection_zone()))
     }).ok_or("step=field-cast observed=no-reachable-non-pz-corridor need=compiled-field-site")?;
-    walk(&mut client, &world, &site_path).await?;
+    walk(&mut client, world, &site_path).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (direction, target_tile) = adjacent(&world, from).ok_or("step=field-cast observed=no-adjacent-target need=walkable-target")?;
+    let (direction, target_tile) = adjacent(world, from).ok_or("step=field-cast observed=no-adjacent-target need=walkable-target")?;
     let target = actor_position(target_tile);
     let health_before = client.actor_vitals().ok_or("step=field-step observed=no-vitals need=vitals-frame")?.health;
     client.take_events();
@@ -109,10 +109,10 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     check("field-expiry", expired);
     capture_expected(&client, target, field, health_before)?;
 
-    let back = route(&world, target_tile, |at| at == from).ok_or("step=post-expiry-step observed=no-return-route need=adjacent-route")?;
-    walk(&mut client, &world, &back).await?;
+    let back = route(world, target_tile, |at| at == from).ok_or("step=post-expiry-step observed=no-return-route need=adjacent-route")?;
+    walk(&mut client, world, &back).await?;
     let stable = client.actor_vitals().ok_or("step=post-expiry-step observed=no-vitals need=vitals-frame")?.health;
-    walk(&mut client, &world, &[direction]).await?;
+    walk(&mut client, world, &[direction]).await?;
     client.service_liveness(Duration::from_millis(250)).await?;
     if client.actor_vitals().is_none_or(|v| v.health != stable) {
         return Err("step=post-expiry-step observed=health-changed need=expired-field-no-contact-tick".into());

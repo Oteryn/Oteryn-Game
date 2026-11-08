@@ -284,10 +284,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
     let mut client = connect_world(clients, 0xb0).await?;
-    let initial = earn_gold(&mut client, &world, &metadata.npcs, refs).await?;
+    let initial = earn_gold(&mut client, world, &metadata.npcs, refs).await?;
     row.pass("legitimate-gold", initial);
 
-    let (actor, npc_key) = find_exchange_npc(&mut client, &world, &metadata.npcs).await?;
+    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs).await?;
     row.pass("walk-and-greet", npc_key);
 
     let reply = exchange(&mut client, actor, &["1", "yes"]).await?;

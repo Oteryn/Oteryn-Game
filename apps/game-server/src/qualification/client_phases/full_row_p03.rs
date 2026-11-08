@@ -216,10 +216,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("P03 step=refusal observed=active-state-mutated".into());
     }
 
-    travel_to_spawn(&mut client, &world, &metadata.spawns, &selected.selected).await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.selected).await?;
     client_hunt::hunt(&mut client).await?;
     tokio::time::sleep(Duration::from_secs(61)).await;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, &selected.selected).await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.selected).await?;
     client_hunt::hunt(&mut client).await?;
     let checkpoint = query(&mut client, "effect-checkpoint").await?;
     let checkpoint = slot(&checkpoint, number)?.clone();

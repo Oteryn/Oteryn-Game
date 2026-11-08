@@ -75,12 +75,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let (at, ordinal) = furniture.ok_or("no compiled fixed chair 2358")?;
     let mut client = connect_world(clients, 0xc9).await?;
     let path = route(
-        &world,
+        world,
         tile(client.world_spatial().actor_position)?,
         |cell| cell.floor == at.floor && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) <= 1,
     )
     .ok_or("no route to fixed chair 2358")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(
         &crate::map::view::placement_key(at, ordinal)

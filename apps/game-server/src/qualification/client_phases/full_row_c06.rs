@@ -62,11 +62,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let healing = provisioning::item_reference(&index, HEAL_RUNE_ID)?;
     let arrows = provisioning::item_reference(&index, CONJURED_ID)?;
     let mut client = connect_world(clients, 0xc6).await?;
-    acquire(&mut client, &world, &metadata.npcs, damage, DAMAGE_RUNE_ID).await?;
-    acquire(&mut client, &world, &metadata.npcs, healing, HEAL_RUNE_ID).await?;
+    acquire(&mut client, world, &metadata.npcs, damage, DAMAGE_RUNE_ID).await?;
+    acquire(&mut client, world, &metadata.npcs, healing, HEAL_RUNE_ID).await?;
     check(1, client.last_server_sequence());
 
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let target = client
         .world_entities()
         .and_then(|entities| {

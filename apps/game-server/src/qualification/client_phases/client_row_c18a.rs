@@ -26,7 +26,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xca, 1).await?;
     travel_to_spawn(
         &mut client,
-        &world,
+        world,
         &metadata.spawns,
         "oteryn:creature.rat",
     )

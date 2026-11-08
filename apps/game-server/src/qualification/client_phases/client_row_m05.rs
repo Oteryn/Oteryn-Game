@@ -104,7 +104,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let doors = doors(&bytes, &world)?;
+    let doors = doors(&bytes, world)?;
     let mut client = connect_world(clients, 0xc5).await?;
     let mut captured = Vec::new();
     for (appearance, family) in [(1638, "basic"), (1629, "key")] {
@@ -114,13 +114,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .find(|door| door.appearance == appearance)
             .ok_or_else(|| format!("M05 client capture found no {family} door"))?;
         let from = tile(client.world_spatial().actor_position)?;
-        let path = route(&world, from, |at| {
+        let path = route(world, from, |at| {
             at.floor == door.at.floor
                 && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
         })
         .ok_or_else(|| format!("M05 client capture has no route to {family} door"))?;
-        walk(&mut client, &world, &path).await?;
-        let placement = placement(&world, door)?;
+        walk(&mut client, world, &path).await?;
+        let placement = placement(world, door)?;
         let opened = client.use_object(&placement, 0).await?;
         if opened.disposition != UseDisposition::Committed {
             return Err(format!("M05 {family} open observed {:?}", opened.disposition).into());

@@ -32,7 +32,7 @@ pub(super) async fn provision(
         ChannelId::decode(&clients.channel)?,
     )?;
     let movement = connect_world(clients, 0x90).await?;
-    let mut movement = e2ef1::run(movement, clients, &world).await?;
+    let mut movement = e2ef1::run(movement, clients, world).await?;
     e2ef1::logout(&mut movement).await?;
     drop(movement);
     let client = connect_character(clients, 0x91, index).await?;

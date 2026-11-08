@@ -962,7 +962,7 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     cost.finish(&result);
 }
 
-fn qualification_world(clients: &SeamClients<'_>) -> TestResult<BundleWorld> {
+fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     load_world(
@@ -2280,11 +2280,11 @@ async fn continuation_rows(clients: &SeamClients<'_>) {
                     &mut connections,
                     &mut pvp_connections,
                     clients,
-                    &world,
+                    world,
                 )
                 .await
             } else {
-                imbuement_journey(&mut row, &mut connections[0], clients, &world).await
+                imbuement_journey(&mut row, &mut connections[0], clients, world).await
             }
         };
         let mut result = tokio::time::timeout(Duration::from_secs(1_800), result)
@@ -4679,7 +4679,7 @@ async fn forge_row(clients: &SeamClients<'_>) {
             &mut row,
             connection.as_mut().ok_or("forge admission absent")?,
             clients,
-            &world,
+            world,
         )
         .await
     };

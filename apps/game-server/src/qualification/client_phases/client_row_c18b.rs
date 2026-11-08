@@ -39,14 +39,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let book = spell_book()?;
     let mut client = connect_character(clients, 0x18, 1).await?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| !tile.protection_zone())
     })
     .ok_or("C18b.client needs reachable non-PZ tile")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let here = client.world_spatial().actor_position;
     let target = SpellTarget::Position(SpellTargetPosition {
         x: here.x.saturating_add(1),

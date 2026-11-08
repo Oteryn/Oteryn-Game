@@ -420,10 +420,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc2).await?;
-    earn_gold(&mut client, &world, &metadata.spawns, 1430).await?;
+    earn_gold(&mut client, world, &metadata.spawns, 1430).await?;
     let mut purchase_sequences = Vec::new();
     for (id, n) in [(BOW, 1), (ARROW, 10), (WAND, 1), (ROD, 1)] {
-        purchase_sequences.push(buy(&mut client, &world, &metadata.npcs, id, n).await?);
+        purchase_sequences.push(buy(&mut client, world, &metadata.npcs, id, n).await?);
     }
     row.pass(1, purchase_sequences);
     let bow = reference(BOW)?;
@@ -432,14 +432,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let rod = reference(ROD)?;
     equip(&mut client, bow, EquipmentSlot::RightHand).await?;
     equip(&mut client, arrow, EquipmentSlot::Ammo).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let damage = bow_shot(&mut client, arrow).await?;
     stop(&mut client).await?;
     while count(&client, arrow)? > 0 {
-        travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         consume_one_arrow(&mut client, arrow).await?;
     }
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let state = client.inventory().cloned();
     let mana = client.actor_vitals().ok_or("no-ammo-vitals-absent")?.mana;
     client.take_events();
@@ -465,7 +465,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     stop(&mut client).await?;
     row.pass(2, (damage, refusal.disposition));
     equip(&mut client, wand, EquipmentSlot::RightHand).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let wand_count = count(&client, wand)?;
     let wand_hit = attack_damage(&mut client, Some(PresentationColor::Purple)).await?;
     if wand_hit.1.checked_sub(SHOT_MANA) != Some(wand_hit.2) || count(&client, wand)? != wand_count
@@ -475,7 +475,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     stop(&mut client).await?;
     row.pass(3, wand_hit);
     equip(&mut client, rod, EquipmentSlot::RightHand).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let rod_count = count(&client, rod)?;
     let rod_hit = attack_damage(&mut client, Some(PresentationColor::LightGreen)).await?;
     if rod_hit.1.checked_sub(SHOT_MANA) != Some(rod_hit.2) || count(&client, rod)? != rod_count {

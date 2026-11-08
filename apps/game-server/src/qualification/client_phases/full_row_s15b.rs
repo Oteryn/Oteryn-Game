@@ -71,7 +71,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x8b).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let (monster, own) = actors(&client)?;
     require_damage(
         &mut client,
@@ -84,7 +84,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence("S15B_CHECK step=1 baseline-monster-target PASS");
 
     let expected = destination(
-        &world,
+        world,
         tile(client.world_spatial().actor_position)?,
         StepDirection::West,
     )
@@ -134,7 +134,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut fresh = connect_world(clients, 0x8c)
         .await
         .map_err(|error| format!("step=5 fresh admission observed={error}"))?;
-    travel_to_spawn(&mut fresh, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut fresh, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let (monster, own) = actors(&fresh)?;
     fresh.take_events();
     require_quiet(

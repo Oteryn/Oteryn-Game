@@ -97,7 +97,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     });
 }
 
-fn qualification_world(clients: &SeamClients<'_>) -> TestResult<BundleWorld> {
+fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     load_world(
@@ -316,11 +316,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     };
     let mut client = connect_world(clients, 0xe5).await?;
     let first_session = client.join_snapshot().game_session_id;
-    let actor = approach(&mut client, &world, target).await?;
+    let actor = approach(&mut client, world, target).await?;
     row.pass("walk-weekday-destination");
     open_trade(&mut client, actor).await?;
     row.pass("weekday-dialogue-trade");
-    refusal(&mut client, &world, actor, target).await?;
+    refusal(&mut client, world, actor, target).await?;
     row.pass("out-of-range-refusal");
     logout(&mut client).await?;
     drop(client);
@@ -329,7 +329,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == first_session {
         return Err("step=fresh-admission observed=reused-game-session need=new-session".into());
     }
-    let actor = approach(&mut fresh, &world, target).await?;
+    let actor = approach(&mut fresh, world, target).await?;
     open_trade(&mut fresh, actor).await?;
     row.pass("fresh-admission-weekday-trade");
     logout(&mut fresh).await

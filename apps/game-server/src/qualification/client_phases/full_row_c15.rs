@@ -168,7 +168,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     // naturally so this credited kill must exercise (rather than merely arm)
     // the one-minute debit, while remaining well below the two-minute branch.
     tokio::time::sleep(Duration::from_secs(2)).await;
-    hunt(&mut client, &world).await?;
+    hunt(&mut client, world).await?;
     let settlement_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let after = loop {
         let current = progress(&mut client).await?;

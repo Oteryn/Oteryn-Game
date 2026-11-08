@@ -62,8 +62,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let spots = rope_spots(&bytes)?;
     let mut client = connect_character(clients, 0xbb, 1).await?;
     let start = tile(client.world_spatial().actor_position)?;
-    let path = route(&world, start, |at| spots.binary_search(&at).is_ok()).ok_or("no reachable rope spot")?;
-    walk(&mut client, &world, &path).await?;
+    let path = route(world, start, |at| spots.binary_search(&at).is_ok()).ok_or("no reachable rope spot")?;
+    walk(&mut client, world, &path).await?;
     let before_position = *client.world_spatial();
     let before_vitals = client.actor_vitals().cloned().ok_or("missing pre-cast vitals")?;
     let cast = client.chat(&ChatIntent::Say { mode: ChatSpeechMode::Say, text: WORDS.into() }).await?;

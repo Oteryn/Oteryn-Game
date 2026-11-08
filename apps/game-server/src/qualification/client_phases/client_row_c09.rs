@@ -196,8 +196,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc9).await?;
-    let meat = acquire_meat(&mut client, &world).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let meat = acquire_meat(&mut client, world).await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let full = *client.actor_vitals().ok_or("C09 initial vitals absent")?;
     for _ in 0..3 {
         client_hunt::hunt(&mut client)

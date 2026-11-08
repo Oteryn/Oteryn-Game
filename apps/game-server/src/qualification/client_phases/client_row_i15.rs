@@ -34,7 +34,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
         let mut previous = *client.actor_vitals().ok_or("I15 admission vitals absent")?;
         client.take_events();
-        travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
         loop {
             for event in client.take_events() {

@@ -399,9 +399,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut completed = BTreeSet::new();
     let mut pick = None;
     for (name, id, before, after) in CASES {
-        let item = buy(&mut client, &world, &metadata.npcs, id).await?;
-        let object = approach(&mut client, &world, &objects, before).await?;
-        use_tool(&mut client, &world, item, object, after).await?;
+        let item = buy(&mut client, world, &metadata.npcs, id).await?;
+        let object = approach(&mut client, world, &objects, before).await?;
+        use_tool(&mut client, world, item, object, after).await?;
         completed.insert(name);
         if name == "pick" {
             pick = Some(object);
@@ -416,7 +416,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let stale = UseIntent {
         target: UseTarget::Item(pick_item.handle),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Object(target(&world, pick, 0)?)),
+        use_with_map_item: Some(MapUseTarget::Object(target(world, pick, 0)?)),
         use_with_position: None,
     };
     client.take_events();
@@ -464,7 +464,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     drop(client);
     let mut fresh = connect_world(clients, 0xd9).await?;
-    let _ = approach(&mut fresh, &world, &[pick], 7200).await?;
+    let _ = approach(&mut fresh, world, &[pick], 7200).await?;
     let snapshot = fresh
         .session_mut()
         .world_map_snapshot()

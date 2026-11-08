@@ -109,13 +109,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .iter()
         .find(|npc| npc.key == "oteryn:npc.rashid")
         .ok_or("S10 client capture: today's Rashid placement absent")?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         rashid.placements.iter().any(|place| {
             place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
         })
     })
     .ok_or("S10 client capture: Rashid unreachable")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let actor = client
         .world_entities()
         .and_then(|entities| {

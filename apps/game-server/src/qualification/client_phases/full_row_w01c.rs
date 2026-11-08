@@ -93,7 +93,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let first_session = client.join_snapshot().game_session_id;
     travel_to_spawn(
         &mut client,
-        &world,
+        world,
         &metadata.spawns,
         "oteryn:creature.poison_spider",
     )
@@ -121,9 +121,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("in-fight-logout-refused", refusal);
 
-    let home = route(&world, tile(client.world_spatial().actor_position)?, |at| at == TOWN)
+    let home = route(world, tile(client.world_spatial().actor_position)?, |at| at == TOWN)
         .ok_or("step 4: no legitimate walking route away from the encounter")?;
-    walk(&mut client, &world, &home).await?;
+    walk(&mut client, world, &home).await?;
     let saved = wait_for_logout(&mut client).await?;
     let saved_position = client.world_spatial().actor_position;
     row.pass("escaped-and-logout-accepted", (saved_position, saved));

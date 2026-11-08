@@ -30,10 +30,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_character(clients, 0x93, 1).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(&world, from, |at| at.floor != from.floor)
+    let path = route(world, from, |at| at.floor != from.floor)
         .ok_or("M03 client capture has no reachable automatic floor transition")?;
     let (last, prefix) = path.split_last().ok_or("M03 floor route was empty")?;
-    walk(&mut client, &world, prefix).await?;
+    walk(&mut client, world, prefix).await?;
     let before = *client.world_spatial();
     let moved = client.step_retrying(*last).await?;
     let delta = moved

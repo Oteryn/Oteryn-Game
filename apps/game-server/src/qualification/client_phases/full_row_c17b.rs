@@ -189,10 +189,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut caster = connect_character(clients, 0xb1, 1).await?;
     let mut observer = connect_character(clients, 0xb2, 0).await?;
-    travel_to_spawn(&mut caster, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let caster_tile = tile(caster.world_spatial().actor_position)?;
     let path = route(
-        &world,
+        world,
         tile(observer.world_spatial().actor_position)?,
         |at| {
             at.floor == caster_tile.floor
@@ -204,7 +204,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         },
     )
     .ok_or("step=meet observed=no-walk-route need=reachable-rat-spawn")?;
-    walk(&mut observer, &world, &path).await?;
+    walk(&mut observer, world, &path).await?;
     let caster_ref = own(&caster)?;
     let rat = caster
         .world_entities()
@@ -349,18 +349,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=fresh-admission-condition observed=caster-visible need=reloaded-invisibility-condition".into());
     }
     row.pass("fresh-admission-condition", cast.result_server_sequence)?;
-    let back = route(&world, tile(caster.world_spatial().actor_position)?, |at| {
+    let back = route(world, tile(caster.world_spatial().actor_position)?, |at| {
         at == TOWN
     })
     .ok_or("step=cleanup observed=no-caster-route-home")?;
-    walk(&mut caster, &world, &back).await?;
+    walk(&mut caster, world, &back).await?;
     let back = route(
-        &world,
+        world,
         tile(observer.world_spatial().actor_position)?,
         |at| at == TOWN,
     )
     .ok_or("step=cleanup observed=no-observer-route-home")?;
-    walk(&mut observer, &world, &back).await?;
+    walk(&mut observer, world, &back).await?;
     logout(&mut caster).await?;
     logout(&mut observer).await
 }

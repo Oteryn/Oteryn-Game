@@ -375,7 +375,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     // Clean baseline: the same fight with every strippable source out of the equipment.
     let (stripped, clean) = if with.offence_sources() > 0 { strip(&mut client).await? } else { (Vec::new(), true) };
     let (idle_hp, idle_mp) = idle_rate(&mut client, 8).await?;
-    let target = reachable_monster(&mut client, &world, &metadata.spawns).await?;
+    let target = reachable_monster(&mut client, world, &metadata.spawns).await?;
     let base = fight(&mut client, target, FIGHT_SECONDS, 12).await?;
     let base_hits = base.own_hits(me);
     let base_taken = base.seen.iter().filter(|s| s.1 == me).count();
@@ -393,7 +393,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let base_max = base_hits.iter().copied().max().unwrap_or(0);
 
-    let engaged = reachable_monster(&mut client, &world, &metadata.spawns).await?;
+    let engaged = reachable_monster(&mut client, world, &metadata.spawns).await?;
     let hunt = fight(&mut client, engaged, FIGHT_SECONDS * 2, 40).await?;
     let hits = hunt.own_hits(me);
 

@@ -97,7 +97,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xcb).await?;
-    if let Err(error) = choose_monk(&mut client, &world, &bytes).await {
+    if let Err(error) = choose_monk(&mut client, world, &bytes).await {
         row.fail("player-monk-choice", error);
     } else {
         row.pass("player-monk-choice", "Oressa-confirmed");

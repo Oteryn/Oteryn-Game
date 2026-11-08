@@ -359,7 +359,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let meat = provisioning::item_reference(&provisioning::item_index()?, 3577)?;
     let mut client = connect_world(clients, 0xc9).await?;
     let initial = quantity(&client, meat)?;
-    buy_meat(&mut client, &world, meat).await?;
+    buy_meat(&mut client, world, meat).await?;
     if quantity(&client, meat)? != initial + 2 {
         return Err(format!(
             "purchase delta expected=2 observed={}",
@@ -370,7 +370,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("food-purchase", (initial, initial + 2));
     row.pass(
         "damage-and-mana-debit",
-        damage_and_spend_mana(&mut client, &world).await?,
+        damage_and_spend_mana(&mut client, world).await?,
     );
     let handle = client
         .inventory()

@@ -143,12 +143,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if wall(&mut client).await? != initial {
         return Err("step-2 refusal changed daily wall".into());
     }
-    let shrine = shrine_tile(&world, tile(client.world_spatial().actor_position)?)?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let shrine = shrine_tile(world, tile(client.world_spatial().actor_position)?)?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == shrine.floor && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
     })
     .ok_or("step-3 shrine walking route disappeared")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let opened = client
         .session_mut()
         .use_object(b"oteryn:placement/daily-reward-shrine", 0)

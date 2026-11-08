@@ -186,7 +186,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     }
 
     journey.at("1-walk-browse-deposit");
-    to_locker(&mut client, &world).await?;
+    to_locker(&mut client, world).await?;
     let item = client
         .inventory()
         .and_then(|inventory| inventory.entries.first())
@@ -302,7 +302,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == old_session {
         return Err("fresh-admission-reused-session".into());
     }
-    to_locker(&mut fresh, &world).await?;
+    to_locker(&mut fresh, world).await?;
     let after = command(&mut fresh, wire::Request::Search { client_id }).await?;
     journey.saw(&after);
     if after.outcome != wire::Outcome::NotFound

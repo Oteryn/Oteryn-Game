@@ -393,11 +393,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let reference = provisioning::item_reference(&provisioning::item_index()?, id)?;
     let item = match inventory_item(&client, reference) {
         Some(item) => item,
-        None => buy(&mut client, &world, &metadata.npcs, id).await?,
+        None => buy(&mut client, world, &metadata.npcs, id).await?,
     };
-    let object = approach(&mut client, &world, &objects, before).await?;
+    let object = approach(&mut client, world, &objects, before).await?;
     let (snapshot_revision, snapshot, delta) =
-        use_tool(&mut client, &world, item, object, after).await?;
+        use_tool(&mut client, world, item, object, after).await?;
     if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let snapshot_payload =
             oteryn_protocol_oteryn::world_map::encode_world_map_snapshot(&snapshot)

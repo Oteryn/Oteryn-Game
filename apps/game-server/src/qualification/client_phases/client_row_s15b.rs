@@ -29,7 +29,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x64, 1).await?;
-    super::travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    super::travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let here = client.world_spatial().actor_position;
     let target = client
         .world_entities()

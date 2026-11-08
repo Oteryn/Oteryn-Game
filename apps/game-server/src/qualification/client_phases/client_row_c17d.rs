@@ -49,12 +49,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut victim = connect_character(clients, 0xd4, 1).await?;
     let mut caster = connect_character(clients, 0xd5, 0).await?;
-    travel_to_spawn(&mut victim, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut victim, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let victim_at = tile(victim.world_spatial().actor_position)?;
-    let path = route(&world, tile(caster.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(caster.world_spatial().actor_position)?, |at| {
         at.floor == victim_at.floor && at.x.abs_diff(victim_at.x).max(at.y.abs_diff(victim_at.y)) <= 1
     }).ok_or("no route for Challenge caster")?;
-    walk(&mut caster, &world, &path).await?;
+    walk(&mut caster, world, &path).await?;
     let rat = caster.world_entities().and_then(|entities| entities.iter().find(|entry| {
         entry.kind == oteryn_dev_client::EntityKind::Creature
             && entry.position.floor == caster.world_spatial().actor_position.floor

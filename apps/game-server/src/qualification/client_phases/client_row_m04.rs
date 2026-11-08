@@ -68,15 +68,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut pusher = connect_character(clients, 0x94, 0).await?;
     let mut target = connect_character(clients, 0x95, 0).await?;
     let pusher_at = tile(pusher.world_spatial().actor_position)?;
-    let path = route(&world, tile(target.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(target.world_spatial().actor_position)?, |at| {
         distance(at, pusher_at) == 1
             && DIRECTIONS.into_iter().any(|direction| {
-                destination(&world, at, direction)
+                destination(world, at, direction)
                     .is_some_and(|next| next != pusher_at && distance(next, pusher_at) == 1)
             })
     })
     .ok_or("M04 no adjacent player push lane")?;
-    walk(&mut target, &world, &path).await?;
+    walk(&mut target, world, &path).await?;
     let before = tile(target.world_spatial().actor_position)?;
     let reference = own(&target)?.entity;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
@@ -117,7 +117,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let landing = DIRECTIONS
         .into_iter()
-        .filter_map(|direction| destination(&world, before, direction))
+        .filter_map(|direction| destination(world, before, direction))
         .find(|at| *at != pusher_at && distance(*at, pusher_at) == 1)
         .ok_or("M04 no free push landing")?;
     let intent = encode_creature_push_intent(&CreaturePushIntent {

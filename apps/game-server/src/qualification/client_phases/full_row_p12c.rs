@@ -174,7 +174,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     travel_to_spawn(
         &mut client,
-        &world,
+        world,
         &metadata.spawns,
         "oteryn:creature.poison_spider",
     )

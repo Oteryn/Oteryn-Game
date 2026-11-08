@@ -78,14 +78,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         return Err("C13.client observer lacks entity capabilities 6 and 286".into());
     }
     let from = tile(owner.world_spatial().actor_position)?;
-    let path = route(&world, from, |at| {
+    let path = route(world, from, |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|entry| !entry.protection_zone())
     })
     .ok_or("C13.client has no route outside protection zone")?;
-    walk(&mut owner, &world, &path).await?;
+    walk(&mut owner, world, &path).await?;
     let spot = tile(owner.world_spatial().actor_position)?;
     let near = |at: TilePos| {
         at != spot
@@ -93,12 +93,12 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             && at.x.abs_diff(spot.x).max(at.y.abs_diff(spot.y)) <= 2
     };
     let approach = route(
-        &world,
+        world,
         tile(observer.world_spatial().actor_position)?,
         near,
     )
     .ok_or("C13.client observer has no route next to the owner")?;
-    walk(&mut observer, &world, &approach).await?;
+    walk(&mut observer, world, &approach).await?;
     owner.take_events();
     observer.service_liveness(Duration::from_millis(100)).await?;
     observer.take_events();

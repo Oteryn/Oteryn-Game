@@ -124,16 +124,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xd4).await?;
     row.step = "walk-to-guidance-shrine";
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == SHRINE.floor
             && at.x.abs_diff(SHRINE.x).max(at.y.abs_diff(SHRINE.y)) <= 1
             && at != SHRINE
     })
     .ok_or("no legitimate walking route to guidance shrine")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
 
     row.step = "first-use-commit";
-    let target = shrine_target(&world)?;
+    let target = shrine_target(world)?;
     let before = quest_list(&mut client).await?;
     let first = client
         .session_mut()

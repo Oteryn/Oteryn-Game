@@ -79,10 +79,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut caster = connect_character(clients, 0xc1, 1).await?;
     let mut observer = connect_character(clients, 0xc2, 0).await?;
-    travel_to_spawn(&mut caster, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let caster_position = tile(caster.world_spatial().actor_position)?;
     let path = route(
-        &world,
+        world,
         tile(observer.world_spatial().actor_position)?,
         |at| {
             at.floor == caster_position.floor
@@ -90,7 +90,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         },
     )
     .ok_or("C17b.client observer cannot reach caster")?;
-    walk(&mut observer, &world, &path).await?;
+    walk(&mut observer, world, &path).await?;
     let caster_ref = own(&caster)?;
     let entities = observer
         .world_entities()

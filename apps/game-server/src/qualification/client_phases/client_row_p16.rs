@@ -15,7 +15,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x51, 0).await?;
-    let npc = approach_npc(&mut client, &world, &metadata.npcs, "oteryn:npc.eremo").await?;
+    let npc = approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.eremo").await?;
     let (greeting_bytes, greeting) = talk(&mut client, npc, "hi").await?;
     if greeting.is_empty() {
         return Err("hi produced an empty conversation".into());

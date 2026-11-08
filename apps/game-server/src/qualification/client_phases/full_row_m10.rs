@@ -104,10 +104,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0x9a).await?;
     let start = tile(client.world_spatial().actor_position)?;
-    let mut path = route(&world, start, |at| is_underwater(&world, at))
+    let mut path = route(world, start, |at| is_underwater(world, at))
         .ok_or("no reachable authored underwater ground in player movement window")?;
     let enter = path.pop().ok_or("character already starts underwater; entry STEP unavailable")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     row.pass(1, "ordinary STEP route reached underwater approach");
 
     let before = client.actor_vitals().copied().ok_or("entry vitals snapshot absent")?;
@@ -116,7 +116,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("underwater STEP reply={outcome:?}").into());
     }
     let wet = tile(client.world_spatial().actor_position)?;
-    if !is_underwater(&world, wet) {
+    if !is_underwater(world, wet) {
         return Err(format!("STEP moved to non-underwater tile {wet:?}").into());
     }
     let damage = wait_damage(&mut client, before.health).await?;
@@ -132,7 +132,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         StepDirection::West,
     ]
     .into_iter()
-    .find_map(|direction| destination(&world, wet, direction).is_none().then_some((wet, direction)))
+    .find_map(|direction| destination(world, wet, direction).is_none().then_some((wet, direction)))
     .ok_or("underwater tile has no blocked neighbour for refusal STEP")?;
     let health = client.actor_vitals().ok_or("refusal vitals absent")?.health;
     let refused = client.step_retrying(direction).await?;
@@ -150,7 +150,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let exit = [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
         .into_iter()
-        .find(|direction| destination(&world, wet, *direction).is_some_and(|at| !is_underwater(&world, at)))
+        .find(|direction| destination(world, wet, *direction).is_some_and(|at| !is_underwater(world, at)))
         .ok_or("underwater tile has no ordinary dry STEP exit")?;
     let left = client.step_retrying(exit).await?;
     if left.disposition != StepDisposition::Moved || left.world_spatial_delta.is_none() {

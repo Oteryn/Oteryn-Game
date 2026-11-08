@@ -294,7 +294,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .as_str()
         .map_err(|e| format!("own name: {e:?}"))?
         .to_owned();
-    acquire(&mut client, &world, &metadata.npcs, letter, 2).await?;
+    acquire(&mut client, world, &metadata.npcs, letter, 2).await?;
     let first = item(&client, letter)?;
     let address = format!("{own_name}\nThais");
     let (status, written) = mail_command(
@@ -309,16 +309,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("write reply {status:?} {written:?}").into());
     }
     let (mailbox_at, _) = mailbox(
-        &world,
+        world,
         &definitions,
         tile(client.world_spatial().actor_position)?,
     )?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == mailbox_at.floor
             && at.x.abs_diff(mailbox_at.x).max(at.y.abs_diff(mailbox_at.y)) <= 1
     })
     .ok_or("mailbox route disappeared")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let mailbox_handle = visible_mailbox_handle(&mut client, &definitions, mailbox_at)?;
     let before = units(&client, letter);
     let (status, posted) = mail_command(

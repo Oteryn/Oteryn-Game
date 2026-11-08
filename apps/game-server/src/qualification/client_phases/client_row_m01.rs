@@ -35,10 +35,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0x6d).await?;
     let start = tile(client.world_spatial().actor_position)?;
-    let path = route(&world, start, |at| at != start).ok_or("M01 capture movement lane")?;
+    let path = route(world, start, |at| at != start).ok_or("M01 capture movement lane")?;
     let direction = *path.first().ok_or("M01 capture empty route")?;
     let _ = client.step(direction).await?;
-    let next = destination(&world, tile(client.world_spatial().actor_position)?, direction)
+    let next = destination(world, tile(client.world_spatial().actor_position)?, direction)
         .ok_or("M01 capture autowalk destination")?;
     let walk = encode_target_move_intent(TargetMoveIntent::Walk(ActorPosition { x: i32::from(next.x), y: i32::from(next.y), floor: -i16::from(next.floor) }))
         .map_err(|error| format!("M01 walk encode: {error:?}"))?;

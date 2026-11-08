@@ -61,11 +61,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x36, 1).await?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
-        near_locker(&world, at)
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        near_locker(world, at)
     })
     .ok_or("no reachable authored depot locker")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
 
     let (wares, wares_bytes) = command(&mut client, request(1, 0, [0; 16])).await?;
     let ware = wares.rows.first().cloned().ok_or("wares advertised nothing")?;

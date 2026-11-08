@@ -149,7 +149,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     let mut client = connect_world(clients, 0xb1).await?;
     travel_to_spawn(
         &mut client,
-        &world,
+        world,
         &metadata.spawns,
         "oteryn:creature.rat",
     )
@@ -234,16 +234,16 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
 
     progress.step = "leave-interest";
     let from = tile(client.world_spatial().actor_position)?;
-    let away = route(&world, from, |at| distance(at, spawn) >= 20)
+    let away = route(world, from, |at| distance(at, spawn) >= 20)
         .ok_or("no legitimate walking route outside spawn interest")?;
-    walk(&mut client, &world, &away).await?;
+    walk(&mut client, world, &away).await?;
     progress.pass("leave-interest", tile(client.world_spatial().actor_position)?);
     tokio::time::sleep(Duration::from_millis(u64::from(respawn_ms) + 1_000)).await;
-    let back = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
         distance(at, spawn) <= 1
     })
     .ok_or("no legitimate return route to rat spawn")?;
-    walk(&mut client, &world, &back).await?;
+    walk(&mut client, world, &back).await?;
     progress.step = "replacement-delta";
     wait_until(
         &mut client,
@@ -259,11 +259,11 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("logout", "Accepted");
     drop(client);
     let mut fresh = connect_world(clients, 0xb2).await?;
-    let path = route(&world, tile(fresh.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(fresh.world_spatial().actor_position)?, |at| {
         distance(at, spawn) <= 1
     })
     .ok_or("fresh admission cannot route to rat spawn")?;
-    walk(&mut fresh, &world, &path).await?;
+    walk(&mut fresh, world, &path).await?;
     progress.step = "fresh-admission-state";
     wait_until(
         &mut fresh,

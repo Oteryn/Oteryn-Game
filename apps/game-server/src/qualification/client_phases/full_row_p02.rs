@@ -203,7 +203,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut ordinary = None;
     let mut boosted = None;
     for b in spawned {
-        kill(&mut c, &world, &meta.spawns, &b.key).await?;
+        kill(&mut c, world, &meta.spawns, &b.key).await?;
         let after = snapshot(&mut c).await?;
         let d = counts(&after)
             .get(&b.key)

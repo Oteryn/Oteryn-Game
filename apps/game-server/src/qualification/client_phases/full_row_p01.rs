@@ -258,7 +258,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK admission-query PASS accepted-native-views");
 
     row.at("player-earned-kill-count");
-    hunt_once(&mut client, &world, &metadata.spawns).await?;
+    hunt_once(&mut client, world, &metadata.spawns).await?;
     let mut current = query(&mut client).await?;
     let race = current
         .bestiary
@@ -307,7 +307,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("earn-unlock-currency");
     while current.charms.charm_points_available < cost || !race_complete(&current, race) {
-        hunt_once(&mut client, &world, &metadata.spawns).await?;
+        hunt_once(&mut client, world, &metadata.spawns).await?;
         let next = query(&mut client).await?;
         if count(&next, race) <= count(&current, race) {
             return Err(format!(
@@ -358,7 +358,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("assigned-combat-hook");
     let before_hook = count(&assigned, race);
-    hunt_once(&mut client, &world, &metadata.spawns).await?;
+    hunt_once(&mut client, world, &metadata.spawns).await?;
     let after_hook = query(&mut client).await?;
     let after_state = &after_hook.charms.charms[usize::try_from(charm.get() - 1)?];
     if count(&after_hook, race) != before_hook.checked_add(1).ok_or("kill count overflow")?

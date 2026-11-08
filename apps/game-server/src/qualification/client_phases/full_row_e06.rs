@@ -71,7 +71,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0xe6, 1).await?;
-    at_market(&mut client, &world).await?;
+    at_market(&mut client, world).await?;
 
     let mut definitions = Vec::new();
     let mut seen = BTreeSet::new();
@@ -161,7 +161,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
         return Err("E06 step 6: logout refused".into());
     }
     let mut client = connect_character(clients, 0xe7, 1).await?;
-    at_market(&mut client, &world).await?;
+    at_market(&mut client, world).await?;
     let own = command(&mut client, request(3, 0, [0; 16], 0)).await?;
     let history = command(&mut client, request(4, 0, [0; 16], 0)).await?;
     if own.rows.iter().any(|row| row.offer == offer)

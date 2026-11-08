@@ -262,7 +262,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 .iter()
                 .find(|npc| npc.key == key)
                 .filter(|npc| {
-                    route(&world, here, |at| {
+                    route(world, here, |at| {
                         npc.placements.iter().any(|p| {
                             p.floor == at.floor
                                 && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3
@@ -273,7 +273,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 .map(|npc| (key, keyword, display, fare, npc))
         })
         .ok_or("step quote: no authored S10 paid-travel NPC is reachable by legitimate walking from admission; need a compiled route to a travel service")?;
-    let actor = approach(&mut client, &world, npc).await?;
+    let actor = approach(&mut client, world, npc).await?;
     let _ = talk(&mut client, actor, "hi").await?;
     let (quote, _, _) = talk(&mut client, actor, keyword).await?;
     if !quote
@@ -300,7 +300,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step refusal: confirmation unexpectedly had enough money ({before_gold} >= {fare}) and observed reply={refusal:?}; need an ordinary unfunded character for the negative path").into());
     }
     row.step("refusal", &refusal);
-    earn(&mut client, &world, &metadata.spawns, fare).await?;
+    earn(&mut client, world, &metadata.spawns, fare).await?;
     let funded_gold = carried_gold(&client)?;
     let _ = talk(&mut client, actor, "hi").await?;
     let _ = talk(&mut client, actor, keyword).await?;
@@ -329,7 +329,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if observed_rashid.as_slice() != [expected_rashid_position] {
         return Err(format!("step rashid-gate: observed compiled placements={observed_rashid:?}; need UTC {} placement={expected_rashid_position:?}", expected_rashid.city).into());
     }
-    let rashid_actor = approach(&mut client, &world, rashid).await?;
+    let rashid_actor = approach(&mut client, world, rashid).await?;
     let _ = talk(&mut client, rashid_actor, "hi").await?;
     let (trade, _, shop_opened) = talk(&mut client, rashid_actor, "trade").await?;
     if trade.is_empty() || !shop_opened {
@@ -357,7 +357,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());
     }
-    let fresh_rashid = approach(&mut fresh, &world, rashid).await?;
+    let fresh_rashid = approach(&mut fresh, world, rashid).await?;
     let _ = talk(&mut fresh, fresh_rashid, "hi").await?;
     let (fresh_trade, _, fresh_shop) = talk(&mut fresh, fresh_rashid, "trade").await?;
     if fresh_trade.is_empty() || !fresh_shop {

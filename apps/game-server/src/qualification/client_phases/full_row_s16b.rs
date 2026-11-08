@@ -258,7 +258,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if initial.level >= 8 { return Err(format!("step initial prerequisite already level {}", initial.level).into()); }
     row.pass("initial-snapshots", (&initial, &initial_skills));
 
-    let npc = approach(&mut client, &world, &metadata.npcs).await?;
+    let npc = approach(&mut client, world, &metadata.npcs).await?;
     talk(&mut client, npc, "hi", NpcIntentDisposition::Ok, "Welcome. Ask about a vocation when you are ready to choose.").await?;
     talk(&mut client, npc, "knight", NpcIntentDisposition::Ok, "Do you wish to become a knight? Say yes to confirm, or no to reconsider.").await?;
     talk(&mut client, npc, "yes", NpcIntentDisposition::Rejected, "Reach level 8 before making your first vocation choice.").await?;
@@ -270,12 +270,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     // Clear retained refused conversation through an ordinary fresh admission.
     logout(&mut client).await?;
     client = connect_character(clients, 0xb1, 0).await?;
-    let earned = earn_level_eight(&mut client, &world, &metadata.spawns).await?;
+    let earned = earn_level_eight(&mut client, world, &metadata.spawns).await?;
     row.pass("player-earned-level-eight", &earned);
     let before = stats(&mut client).await?;
     let before_skills = trained(&mut client).await?;
     assert_consistent(&before, &before_skills)?;
-    let npc = approach(&mut client, &world, &metadata.npcs).await?;
+    let npc = approach(&mut client, world, &metadata.npcs).await?;
     talk(&mut client, npc, "hi", NpcIntentDisposition::Ok, "Welcome. Ask about a vocation when you are ready to choose.").await?;
     talk(&mut client, npc, "knight", NpcIntentDisposition::Ok, "Do you wish to become a knight? Say yes to confirm, or no to reconsider.").await?;
     talk(&mut client, npc, "yes", NpcIntentDisposition::Ok, "Your vocation is now knight.").await?;

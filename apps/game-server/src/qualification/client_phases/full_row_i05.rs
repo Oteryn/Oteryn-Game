@@ -246,8 +246,8 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         }
         row.passed(1, "timed-rejected+inventory-unchanged");
 
-        earn_gold(&mut client, &world, &metadata.spawns).await?;
-        let carried = buy_energy_ring(&mut client, &world, &metadata.npcs).await?;
+        earn_gold(&mut client, world, &metadata.spawns).await?;
+        let carried = buy_energy_ring(&mut client, world, &metadata.npcs).await?;
         row.passed(2, "combat-loot+npc-talk+trade-ok+inventory-delta");
 
         client.take_events();

@@ -214,7 +214,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )?;
         let mut client = connect_world(clients, 0xd0).await?;
         let result: TestResult = async {
-            let npc = approach_king(&mut client, &world, &metadata.npcs).await?;
+            let npc = approach_king(&mut client, world, &metadata.npcs).await?;
             let greeting = talk(&mut client, npc, "hi").await?;
             if greeting.is_empty() {
                 return Err("step-3 hi produced an empty conversation delta".into());

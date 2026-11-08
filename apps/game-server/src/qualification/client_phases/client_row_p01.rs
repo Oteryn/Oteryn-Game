@@ -84,7 +84,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("locked ASSIGN reply {refused:?}").into());
     }
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     client_hunt::hunt(&mut client).await?;
     let after = send(&mut client, CharmProgressionAction::Query, "p01-after.bin").await?;
     let (hunted, count_before, count_after) = after

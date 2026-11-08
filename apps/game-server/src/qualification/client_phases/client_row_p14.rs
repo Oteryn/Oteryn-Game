@@ -130,11 +130,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("p14-refused.bin", &refused_bytes);
 
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(&world, from, |at| {
+    let path = route(world, from, |at| {
         positions.iter().any(|statue| adjacent(at, *statue))
     })
     .ok_or("no reachable authored statue")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let statue = map_statue_handle(&mut client, &references)?;
     let (selected_bytes, selected) = offline(&mut client, statue).await?;
     if selected.disposition != 3 || selected.revision == 0 || selected.pool_seconds == 0 {

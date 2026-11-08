@@ -145,10 +145,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let (selected, path, direction) = tiles.iter()
         .filter(|entry| entry.unique != SVARGROND_UNIQUE)
-        .filter_map(|entry| approach(&world, from, entry.at).map(|(path, direction)| (*entry, path, direction)))
+        .filter_map(|entry| approach(world, from, entry.at).map(|(path, direction)| (*entry, path, direction)))
         .min_by_key(|(_, path, _)| path.len())
         .ok_or("step=citizenship-route observed=no-walking-route need=reachable-shipped-citizen-tile")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     client.take_events();
     let outcome = step_onto(&mut client, direction).await?;
     let area = world.base().subareas.town(selected.town)
@@ -176,9 +176,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let svargrond = tiles.iter().find(|entry| entry.unique == SVARGROND_UNIQUE)
         .ok_or("step=svargrond-content observed=unique-9066-absent need=shipped-citizen-tile")?;
     let from = tile(fresh.world_spatial().actor_position)?;
-    let (path, direction) = approach(&world, from, svargrond.at)
+    let (path, direction) = approach(world, from, svargrond.at)
         .ok_or("step=svargrond-route observed=no-walking-route need=legitimate-player-route-to-unique-9066")?;
-    walk(&mut fresh, &world, &path).await?;
+    walk(&mut fresh, world, &path).await?;
     let before = fresh.world_spatial().actor_position;
     fresh.take_events();
     let outcome = step_onto(&mut fresh, direction).await?;

@@ -157,7 +157,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x0b).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let here = client.world_spatial().actor_position;
     let target = client
         .world_entities()
@@ -173,12 +173,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     // Chase: retreat with ordinary steps, then record the rat closing the distance.
     let target_tile = tile(target.position)?;
-    let retreat = route(&world, tile(here)?, |at| {
+    let retreat = route(world, tile(here)?, |at| {
         at.floor == target_tile.floor
             && at.x.abs_diff(target_tile.x).max(at.y.abs_diff(target_tile.y)) >= 3
     })
     .ok_or("W01a client capture: no retreat lane")?;
-    walk(&mut client, &world, &retreat).await?;
+    walk(&mut client, world, &retreat).await?;
     let mut chase = Segment::begin(&client, "chase", target.entity)?;
     let player = client.world_spatial().actor_position;
     let start = target_state(&client, target.entity)
@@ -201,12 +201,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     // Damage and flee: attack until the low-health boundary, stop, and record the retreat.
     let chased_tile = tile(chased)?;
-    let approach = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let approach = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == chased_tile.floor
             && at.x.abs_diff(chased_tile.x).max(at.y.abs_diff(chased_tile.y)) <= 1
     })
     .ok_or("W01a client capture: rat unreachable")?;
-    walk(&mut client, &world, &approach).await?;
+    walk(&mut client, world, &approach).await?;
     let modes = FightModes {
         fight_mode: FightMode::Offensive,
         chase: ChaseMode::Chase,

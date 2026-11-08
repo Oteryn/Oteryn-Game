@@ -253,8 +253,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xa9).await?;
-    earn_price(&mut client, &world, &metadata.spawns).await?;
-    let purchase_sequence = acquire(&mut client, &world).await?;
+    earn_price(&mut client, world, &metadata.spawns).await?;
+    let purchase_sequence = acquire(&mut client, world).await?;
     let before_refusal = quantities(&client)?;
     let position = client.world_spatial().actor_position;
     let source = bag_handle(&client)?;

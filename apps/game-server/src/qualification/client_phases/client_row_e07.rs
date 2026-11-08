@@ -60,11 +60,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let definitions = provisioning::item_index()?;
     let mut client = connect_character(clients, 0x39, 1).await?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
-        near_locker(&world, at)
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        near_locker(world, at)
     })
     .ok_or("no reachable authored depot locker")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let mut panel = ui::StashPanel {
         selected: true,
         ..Default::default()

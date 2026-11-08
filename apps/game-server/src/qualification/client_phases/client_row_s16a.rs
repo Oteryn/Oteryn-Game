@@ -141,13 +141,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .iter()
         .find(|npc| npc.key == "oteryn:npc.oressa")
         .ok_or("S16a client capture: Oressa absent")?;
-    let path = route(&world, start, |at| {
+    let path = route(world, start, |at| {
         oressa.placements.iter().any(|place| {
             place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
         })
     })
     .ok_or("S16a client capture: Oressa unreachable")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let actor = client
         .world_entities()
         .and_then(|entities| {
@@ -174,9 +174,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             }
         }
     }
-    if let Some(back) = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    if let Some(back) = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at == start
-    }) && let Err(error) = walk(&mut client, &world, &back).await
+    }) && let Err(error) = walk(&mut client, world, &back).await
     {
         evidence(&format!("S16A_CLIENT_RETURN_WALK_ERROR error={error}"));
     }

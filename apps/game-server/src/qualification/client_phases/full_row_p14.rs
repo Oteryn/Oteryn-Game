@@ -91,11 +91,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence("P14_CHECK step=2 status=PASS observed=accepted-frame,disposition-4,no-pool-delta");
 
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(&world, from, |at| {
+    let path = route(world, from, |at| {
         positions.iter().any(|statue| adjacent(at, *statue))
     })
     .ok_or("step=walk-to-statue observed=no-reachable-authored-statue need=statue-population-near-provisioned-character")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let statue = map_statue_handle(&mut client, &references)?;
     let selected = training(&mut client, statue).await?;
     if selected.disposition != 3 || selected.revision == 0 || selected.pool_seconds == 0 {

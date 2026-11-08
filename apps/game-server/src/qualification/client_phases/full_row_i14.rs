@@ -148,8 +148,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let flask = provisioning::item_reference(&index, 285)?;
     let missing = provisioning::item_reference(&index, 268)?;
     let mut client = connect_world(clients, 0xb4).await?;
-    let purchase_meat = acquire(&mut client, &world, 3577, 2).await?;
-    let purchase_potion = acquire(&mut client, &world, 266, 2).await?;
+    let purchase_meat = acquire(&mut client, world, 3577, 2).await?;
+    let purchase_potion = acquire(&mut client, world, 266, 2).await?;
     row.pass("npc-purchase", format!("meat_sequence={purchase_meat} potion_sequence={purchase_potion}"));
     let (food_reply, _) = use_one(&mut client, meat).await?;
     if food_reply != UseDisposition::Committed { return Err(format!("food USE reply={food_reply:?}").into()); }

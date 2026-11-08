@@ -62,13 +62,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let (spot, ordinal, path) = spots
         .into_iter()
         .find_map(|(spot, ordinal)| {
-            route(&world, from, |at| {
+            route(world, from, |at| {
                 at.floor == spot.floor && at.x.abs_diff(spot.x).max(at.y.abs_diff(spot.y)) <= 1
             })
             .map(|path| (spot, ordinal, path))
         })
         .ok_or("M07 client capture has no reachable rope spot")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let before = client.world_spatial().actor_position;
     let index = provisioning::item_index()?;
     let reference = provisioning::item_reference(&index, 3003)?;

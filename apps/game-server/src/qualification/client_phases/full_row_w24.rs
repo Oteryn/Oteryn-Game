@@ -155,7 +155,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("outside-snapshot");
 
     let from = tile(client.world_spatial().actor_position)?;
-    let into = route(&world, from, |at| zone(&world, at).is_some())
+    let into = route(world, from, |at| zone(world, at).is_some())
         .ok_or("step=city-entry observed=no-compiled-player-route need=reachable-supported-city")?;
     let city_cues = follow(&mut client, &into).await?;
     if !city_cues.iter().any(|cue| *cue != 0) {
@@ -167,12 +167,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("city-entry");
 
     let at = tile(client.world_spatial().actor_position)?;
-    let to_edge = route(&world, at, |candidate| {
-        zone(&world, candidate).is_some() && blocked_edge(&world, candidate).is_some()
+    let to_edge = route(world, at, |candidate| {
+        zone(world, candidate).is_some() && blocked_edge(world, candidate).is_some()
     })
     .ok_or("step=blocked-refusal observed=no-reachable-collision-edge need=city-boundary")?;
     follow(&mut client, &to_edge).await?;
-    let direction = blocked_edge(&world, tile(client.world_spatial().actor_position)?)
+    let direction = blocked_edge(world, tile(client.world_spatial().actor_position)?)
         .ok_or("step=blocked-refusal observed=edge-vanished need=blocked-direction")?;
     client.take_events();
     let before = client.world_spatial().actor_position;
@@ -188,7 +188,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("blocked-refusal");
 
     let at = tile(client.world_spatial().actor_position)?;
-    let out = route(&world, at, |candidate| zone(&world, candidate).is_none())
+    let out = route(world, at, |candidate| zone(world, candidate).is_none())
         .ok_or("step=city-exit observed=no-compiled-player-route need=outside-city")?;
     let exit_cues = follow(&mut client, &out).await?;
     if !exit_cues.contains(&0) {
@@ -199,8 +199,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("city-exit");
 
     let outside = tile(client.world_spatial().actor_position)?;
-    let back = route(&world, outside, |candidate| {
-        zone(&world, candidate).is_some()
+    let back = route(world, outside, |candidate| {
+        zone(world, candidate).is_some()
     })
     .ok_or("step=city-reentry observed=no-compiled-player-route need=supported-city")?;
     let reentry_cues = follow(&mut client, &back).await?;
@@ -235,7 +235,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
-fn qualification_world(clients: &SeamClients<'_>) -> TestResult<BundleWorld> {
+fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     load_world(

@@ -92,14 +92,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| !tile.protection_zone())
     })
     .ok_or("C04 client route out of PZ absent")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let cast = client
         .cast_spell(ordinary, SpellTarget::None, false)
         .await?;

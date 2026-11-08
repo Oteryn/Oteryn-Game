@@ -82,11 +82,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let (oven, ordinal) = oven.ok_or("step-1_observed=no-compiled-world-oven")?;
     let mut client = connect_character(clients, 0xb8, 0).await?;
     let here = tile(client.world_spatial().actor_position)?;
-    let path = route(&world, here, |at| {
+    let path = route(world, here, |at| {
         at.floor == oven.floor && at.x.abs_diff(oven.x).max(at.y.abs_diff(oven.y)) <= 1
     })
     .ok_or("step-1_observed=no-walk-route-to-oven")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
 
     let index = provisioning::item_index()?;
     let dough = provisioning::item_reference(&index, DOUGH)?;

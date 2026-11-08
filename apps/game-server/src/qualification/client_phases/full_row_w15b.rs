@@ -138,8 +138,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let before_quests = query_quest_journal(&mut client, false).await?;
     let before_items = custody(&client)?;
 
-    let (chest, path) = select_route(&world, tile(client.world_spatial().actor_position)?)?;
-    walk(&mut client, &world, &path)
+    let (chest, path) = select_route(world, tile(client.world_spatial().actor_position)?)?;
+    walk(&mut client, world, &path)
         .await
         .map_err(|error| format!("step-2: walking to {} failed: {error}", chest.claim))?;
     let first = use_chest(&mut client, &chest).await?;
@@ -167,11 +167,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if custody(&fresh)? != awarded || query_quest_journal(&mut fresh, false).await? != advanced {
         return Err("step-5: reward custody or quest advance did not survive fresh admission".into());
     }
-    let back = route(&world, tile(fresh.world_spatial().actor_position)?, |at| {
+    let back = route(world, tile(fresh.world_spatial().actor_position)?, |at| {
         adjacent(at, chest.at)
     })
     .ok_or("step-5: no player route back to claimed chest")?;
-    walk(&mut fresh, &world, &back).await?;
+    walk(&mut fresh, world, &back).await?;
     let after_relog = use_chest(&mut fresh, &chest).await?;
     if after_relog != UseDisposition::NothingToUse {
         return Err(format!("step-5: post-relog duplicate USE reply={after_relog:?}").into());

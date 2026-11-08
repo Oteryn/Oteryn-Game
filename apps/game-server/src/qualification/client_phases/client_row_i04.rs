@@ -185,8 +185,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let written = provisioning::item_reference(&definitions, WRITTEN)?;
     let rewrite = provisioning::item_reference(&definitions, REWRITABLE)?;
     let mut client = connect_world(clients, 0x04).await?;
-    acquire(&mut client, &world, &metadata.npcs, once).await?;
-    acquire(&mut client, &world, &metadata.npcs, rewrite).await?;
+    acquire(&mut client, world, &metadata.npcs, once).await?;
+    acquire(&mut client, world, &metadata.npcs, rewrite).await?;
     let once_item = client
         .inventory()
         .and_then(|inventory| {

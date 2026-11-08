@@ -386,7 +386,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )?;
         tokio::time::timeout(
             Duration::from_secs(120),
-            journey(&mut row, clients, &world, &metadata.spawns),
+            journey(&mut row, clients, world, &metadata.spawns),
         )
         .await
         .map_err(|_| "C04 journey deadline after real player commands")?

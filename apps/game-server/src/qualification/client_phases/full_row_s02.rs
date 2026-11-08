@@ -251,7 +251,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut a = connect_character(clients, 0xb0, 0).await?;
     let mut b = connect_character(clients, 0xb1, 1).await?;
-    place_pair(&mut a, &mut b, &world).await?;
+    place_pair(&mut a, &mut b, world).await?;
     let (ar, av) = party(&mut a, None).await?;
     let (br, bv) = party(&mut b, None).await?;
     if ar != PartyDisposition::Ok
@@ -380,7 +380,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step 6 fresh admission reused sessions".into());
     }
-    place_pair(&mut a, &mut b, &world).await?;
+    place_pair(&mut a, &mut b, world).await?;
     let (_, durable) = party(&mut a, None).await?;
     let a_ref = own(&a)?;
     let b_ref = own(&b)?;

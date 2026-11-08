@@ -250,7 +250,32 @@ pub(crate) const TOWN: TilePos = TilePos {
     floor: -7,
 };
 
+/// One production world per test process: every journey shares it, so the
+/// ~110 s bundle boot runs once instead of once per row.
 pub(crate) fn load_world(
+    data: Vec<u8>,
+    pin: &serde_json::Value,
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<&'static BundleWorld> {
+    static LOADED: std::sync::OnceLock<(WorldId, ChannelId, BundleWorld)> =
+        std::sync::OnceLock::new();
+    if LOADED.get().is_none() {
+        let booted = boot_world(data, pin, world, channel)?;
+        let _ = LOADED.set((world, channel, booted));
+    }
+    match LOADED.get() {
+        Some((loaded_world, loaded_channel, booted))
+            if *loaded_world == world && *loaded_channel == channel =>
+        {
+            Ok(booted)
+        }
+        Some(_) => Err("world loader asked for a different world or channel".into()),
+        None => Err("world loader cache empty".into()),
+    }
+}
+
+fn boot_world(
     data: Vec<u8>,
     pin: &serde_json::Value,
     world: WorldId,
@@ -572,19 +597,19 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     client_row_c13::run_packet(clients).await;
     client_row_c14::run_packet(clients).await;
     client_row_c15::run_packet(clients).await;
-    client_row_c16a::run_packet(clients, &world).await;
-    client_row_c16b::run_packet(clients, &world).await;
-    client_row_c16c::run_packet(clients, &world).await;
-    client_row_c16d::run_packet(clients, &world).await;
+    client_row_c16a::run_packet(clients, world).await;
+    client_row_c16b::run_packet(clients, world).await;
+    client_row_c16c::run_packet(clients, world).await;
+    client_row_c16d::run_packet(clients, world).await;
     client_row_c17a::run_packet(clients).await;
     client_row_c17b::run_packet(clients).await;
     client_row_c17d::run_packet(clients).await;
     client_row_c18a::run_packet(clients).await;
     client_row_c18b::run_packet(clients).await;
-    client_row_c20a::run_packet(clients, &world, &metadata.spawns).await;
+    client_row_c20a::run_packet(clients, world, &metadata.spawns).await;
     client_row_c20b::run_packet(clients).await;
     client_row_c20c::run_packet(clients).await;
-    client_row_c20d::run_packet(clients, &world, &metadata.spawns).await;
+    client_row_c20d::run_packet(clients, world, &metadata.spawns).await;
     client_row_e01::run_packet(clients).await;
     client_row_i01::run_packet(clients).await;
     client_row_i03::run_packet(clients).await;
@@ -685,25 +710,25 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     client_row_s16a::run_packet(clients).await;
     client_row_s11::run_packet(clients).await;
     client_row_w15a::run_packet(clients).await;
-    client_row_w15b::run_packet(clients, &world).await;
-    client_row_w15d::run_packet(clients, &world).await;
+    client_row_w15b::run_packet(clients, world).await;
+    client_row_w15d::run_packet(clients, world).await;
     client_row_w16::run_packet(clients).await;
     client_row_w17::run_packet(clients).await;
     client_row_w19a::run_packet(clients).await;
     client_row_w20a::run_packet(clients).await;
     client_row_w20b::run_packet(clients).await;
-    client_row_w22a::run_packet(clients, &world).await;
+    client_row_w22a::run_packet(clients, world).await;
     client_row_w22b::run_packet(clients).await;
-    client_row_w23::run_packet(clients, &world).await;
-    client_row_w24::run_packet(clients, &world).await;
+    client_row_w23::run_packet(clients, world).await;
+    client_row_w24::run_packet(clients, world).await;
     client_row_n07a::run_packet(clients).await;
     client_row_n07b::run_packet(clients).await;
     client_row_n07c::run_packet(clients).await;
     client_row_n07d::run_packet(clients).await;
     include!("full_e2ef6_mount.rs");
-    full_e2ef5::run(clients, &world).await;
+    full_e2ef5::run(clients, world).await;
     include!("full_e2ef4_mount.rs");
-    let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
+    let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
@@ -724,9 +749,9 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
-    client = character_core(client, clients, &world).await?;
+    client = character_core(client, clients, world).await?;
     client = include!("full_e2ef3_registration.rs");
-    client = floor_journey(client, clients, &world).await?;
+    client = floor_journey(client, clients, world).await?;
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
@@ -744,18 +769,18 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     client_hireling::hireling(&mut client).await?;
     client_browse_field::browse_field(&mut client).await?;
     client_daily_boost::daily_boost(&mut client).await?;
-    let path = route(&world, TOWN, |at| near_locker(&world, at))
+    let path = route(world, TOWN, |at| near_locker(world, at))
         .ok_or("town has no reachable authored depot locker")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     client_depot_search::depot_search(&mut client).await?;
     client_stash::stash(&mut client).await?;
     client_market::market(&mut client).await?;
-    shop_journey(&mut client, &world, &metadata.npcs, clients).await?;
+    shop_journey(&mut client, world, &metadata.npcs, clients).await?;
     client_hotkey_equip::hotkey_equip(&mut client).await?;
     client_item_forge::item_forge(&mut client).await?;
     client_store::store(&mut client).await?;
     let after = destination(
-        &world,
+        world,
         tile(client.world_spatial().actor_position)?,
         StepDirection::West,
     )
@@ -765,11 +790,11 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         floor: -i16::from(at.floor),
     });
     client = client_disconnect_resume::recover(client, clients, after).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     client_hunt::hunt(&mut client).await?;
     travel_to_spawn(
         &mut client,
-        &world,
+        world,
         &metadata.spawns,
         "oteryn:creature.poison_spider",
     )
@@ -1030,18 +1055,18 @@ pub(crate) fn smoke() -> TestResult {
         "town temple must be a protection zone"
     );
     assert!(
-        route(&world, TOWN, |at| near_locker(&world, at)).is_some(),
+        route(world, TOWN, |at| near_locker(world, at)).is_some(),
         "town depot must be reachable"
     );
-    let floor_path = route(&world, TOWN, |at| at.floor != TOWN.floor)
+    let floor_path = route(world, TOWN, |at| at.floor != TOWN.floor)
         .ok_or("town floor-change route must be reachable")?;
     let mut landing = TOWN;
     for direction in floor_path {
-        landing = destination(&world, landing, direction).ok_or("floor route landing")?;
+        landing = destination(world, landing, direction).ok_or("floor route landing")?;
     }
     assert_ne!(landing.floor, TOWN.floor);
     assert!(
-        route(&world, landing, |at| at == TOWN).is_some(),
+        route(world, landing, |at| at == TOWN).is_some(),
         "town floor-change route must have a return path"
     );
     let rats: Vec<_> = project
@@ -1053,7 +1078,7 @@ pub(crate) fn smoke() -> TestResult {
         .map(|point| point.cell)
         .collect();
     assert!(
-        route(&world, TOWN, |at| rats.iter().any(|&(x, y, z)| i16::from(
+        route(world, TOWN, |at| rats.iter().any(|&(x, y, z)| i16::from(
             at.floor
         )
             == -i16::from(z)

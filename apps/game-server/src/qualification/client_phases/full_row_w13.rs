@@ -126,7 +126,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     travel_to_spawn(
         &mut client,
-        &world,
+        world,
         &metadata.spawns,
         &selected.creature_key,
     )
@@ -139,7 +139,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     // than manufacturing an actor. The bounded helper reports the missing actor.
     travel_to_spawn(
         &mut client,
-        &world,
+        world,
         &metadata.spawns,
         &selected.creature_key,
     )
@@ -147,7 +147,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .map_err(|error| format!("step-5: boosted creature respawn observed {error}"))?;
     let step_5_observed = required_hunt(&mut client, 5, "respawned selected creature").await?;
 
-    travel_to_spawn(&mut client, &world, &metadata.spawns, &selected.boss_key)
+    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.boss_key)
         .await
         .map_err(|error| format!("step-6: selected boss route/spawn observed {error}"))?;
     let step_6_observed = required_hunt(&mut client, 6, "selected boss").await?;

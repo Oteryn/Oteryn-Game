@@ -445,9 +445,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .as_str()
         .map_err(|e| format!("own name: {e:?}"))?
         .to_owned();
-    acquire(&mut client, &world, &metadata.npcs, letter, 2).await?;
-    acquire(&mut client, &world, &metadata.npcs, parcel, 1).await?;
-    acquire(&mut client, &world, &metadata.npcs, label, 1).await?;
+    acquire(&mut client, world, &metadata.npcs, letter, 2).await?;
+    acquire(&mut client, world, &metadata.npcs, parcel, 1).await?;
+    acquire(&mut client, world, &metadata.npcs, label, 1).await?;
     row.pass(
         "player-bought-mail-items",
         (
@@ -471,16 +471,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("letter-address-written", first.handle);
     let (mailbox_at, _) = mailbox(
-        &world,
+        world,
         &definitions,
         tile(client.world_spatial().actor_position)?,
     )?;
-    let path = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == mailbox_at.floor
             && at.x.abs_diff(mailbox_at.x).max(at.y.abs_diff(mailbox_at.y)) <= 1
     })
     .ok_or("step=walk-mailbox observed=route-disappeared need=reachable-adjacent-tile")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let mailbox_handle = visible_mailbox_handle(&mut client, &definitions, mailbox_at)?;
     let before_letters = units(&client, letter);
     let outcome = post(&mut client, first.handle.get(), mailbox_handle).await?;

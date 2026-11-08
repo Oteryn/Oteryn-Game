@@ -204,7 +204,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xb2).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     row.pass("walk-to-rat", "STEP replies moved to authored rat spawn");
     let mut attempts = 1_u8;
     let mut entries = kill_and_open(&mut client).await?;
@@ -219,7 +219,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             client.take_events();
             if travel_to_spawn(
                 &mut client,
-                &world,
+                world,
                 &metadata.spawns,
                 "oteryn:creature.rat",
             )

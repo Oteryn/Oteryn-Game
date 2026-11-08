@@ -235,7 +235,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             WorldId::decode(&clients.world)?,
             ChannelId::decode(&clients.channel)?,
         )?;
-        journey(clients, &world, &bytes).await
+        journey(clients, world, &bytes).await
     }
     .await;
     if let Err(error) = &result {

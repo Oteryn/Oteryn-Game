@@ -94,7 +94,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if !client.selected_capabilities().contains(&10) {
         return Err("analyser capability 10 not selected".into());
     }
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let facts = fight(&mut client).await?;
     let kills = facts
         .iter()

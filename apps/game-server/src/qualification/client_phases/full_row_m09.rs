@@ -361,8 +361,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let index = provisioning::item_index()?;
     let mut client = connect_world(clients, 0xb9).await?;
-    let rod_ref = buy(&mut client, &world, &index, "oteryn:item.tibia.i3483", 1).await?;
-    let worm_ref = buy(&mut client, &world, &index, "oteryn:item.tibia.i3492", 40).await?;
+    let rod_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3483", 1).await?;
+    let worm_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 40).await?;
     let fish_ref = reference(&index, 3578)?;
     row.pass(
         "player-acquired-rod-and-bait",
@@ -379,7 +379,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             ))
         })
         .filter_map(|object| {
-            route(&world, start, |at| {
+            route(world, start, |at| {
                 at.floor == object.at.floor
                     && at.x.abs_diff(object.at.x).max(at.y.abs_diff(object.at.y)) <= 1
             })
@@ -387,7 +387,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         })
         .min_by_key(|(path, object)| (path.len(), object.at))
         .ok_or("step 2 no reachable authored fishing water")?;
-    walk(&mut client, &world, &water.0).await?;
+    walk(&mut client, world, &water.0).await?;
     let rod = carried(&client, rod_ref).ok_or("step 2 rod not directly carried")?;
     let before_fish = units(&client, fish_ref);
     let mut committed = None;
@@ -397,7 +397,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         let reply = use_on(
             &mut client,
             rod.handle,
-            MapUseTarget::Object(target(&world, water.1)?),
+            MapUseTarget::Object(target(world, water.1)?),
         )
         .await?;
         settle(&mut client).await?;
@@ -423,7 +423,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         let reply = use_on(
             &mut client,
             rod.handle,
-            MapUseTarget::Object(target(&world, water.1)?),
+            MapUseTarget::Object(target(world, water.1)?),
         )
         .await?;
         settle(&mut client).await?;
@@ -435,7 +435,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let refusal = use_on(
         &mut client,
         rod.handle,
-        MapUseTarget::Object(target(&world, water.1)?),
+        MapUseTarget::Object(target(world, water.1)?),
     )
     .await?;
     settle(&mut client).await?;
@@ -450,11 +450,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     // The production row also owns corpse skinning. Acquisition remains a real
     // player BUY; if the served world offers no legitimate knife route, report
     // that observed step rather than manufacturing one.
-    let knife_ref = buy(&mut client, &world, &index, "oteryn:item.tibia.i5908", 1).await
+    let knife_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i5908", 1).await
         .map_err(|error| format!("step 4 skinning prerequisite after completed fishing/refusal: observed={error}; server needs a reachable player acquisition route for oteryn:item.tibia.i5908"))?;
     let knife =
         carried(&client, knife_ref).ok_or("step 4 bought knife missing from native inventory")?;
-    let corpse = hunt_corpse(&mut client, &world, &bytes).await?;
+    let corpse = hunt_corpse(&mut client, world, &bytes).await?;
     let corpse_handle = match corpse.detail {
         oteryn_dev_client::EntityDetail::Object {
             item_handle: Some(handle),

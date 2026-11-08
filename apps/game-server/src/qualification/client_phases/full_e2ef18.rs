@@ -173,7 +173,7 @@ fn rat_spawns() -> TestResult<Vec<TilePos>> {
     Ok(positions)
 }
 
-fn qualification_world(clients: &SeamClients<'_>) -> TestResult<BundleWorld> {
+fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     load_world(
@@ -314,7 +314,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut levelled = None;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(420);
     while levelled.is_none() {
-        let target = approach_rat(&mut client, &world, &positions).await?;
+        let target = approach_rat(&mut client, world, &positions).await?;
         row.pass("walk-to-weak-spawn", format!("target={:?}", target.entity));
         kill(&mut client, target).await?;
         let after = progress(&mut client).await?;

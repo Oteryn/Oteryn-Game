@@ -503,13 +503,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0xc2).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (creature, health) = pick_creature(&world, &metadata.spawns, from, &creature_health()?)?;
-    let hunt = Hunt { world: &world, spawns: &metadata.spawns, creature, health };
+    let (creature, health) = pick_creature(world, &metadata.spawns, from, &creature_health()?)?;
+    let hunt = Hunt { world, spawns: &metadata.spawns, creature, health };
 
     let baseline = samples(&hunt, &mut client, spell).await?;
     row.pass("baseline-cast", (&baseline, mean(&baseline)));
 
-    let acquired = acquire(&mut client, &world, &metadata, definition).await?;
+    let acquired = acquire(&mut client, world, &metadata, definition).await?;
     row.pass("acquire-50271", acquired);
 
     equip_right(&mut client, definition).await?;

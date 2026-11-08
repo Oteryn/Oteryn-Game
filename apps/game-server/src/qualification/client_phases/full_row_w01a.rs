@@ -157,14 +157,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xa1).await?;
 
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let target = adjacent_creature(&client)?;
     row.pass("authored-rat", (target.entity, target.position));
 
     // Create room for the AI to chase using only ordinary cardinal movement.
     let origin = tile(client.world_spatial().actor_position)?;
     let target_tile = tile(target.position)?;
-    let retreat = route(&world, origin, |at| {
+    let retreat = route(world, origin, |at| {
         at.floor == target_tile.floor
             && at
                 .x
@@ -173,13 +173,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 >= 3
     })
     .ok_or("step=target-and-chase observed=no-walkable-retreat need=reachable-rat-lane")?;
-    walk(&mut client, &world, &retreat).await?;
+    walk(&mut client, world, &retreat).await?;
     let chased = wait_for_motion(&mut client, target.entity, target.position, true).await?;
     row.pass("target-and-chase", (target.position, chased));
 
     // Re-approach before ATTACK; this preserves the same real creature generation.
     let chased_tile = tile(chased)?;
-    let approach = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let approach = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == chased_tile.floor
             && at
                 .x
@@ -188,7 +188,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 <= 1
     })
     .ok_or("step=attack-and-damage observed=target-unreachable need=movement-route")?;
-    walk(&mut client, &world, &approach).await?;
+    walk(&mut client, world, &approach).await?;
     let modes = FightModes {
         fight_mode: FightMode::Offensive,
         chase: ChaseMode::Chase,
@@ -262,11 +262,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let fled = wait_for_motion(&mut client, target.entity, last_position, false).await?;
     row.pass("low-health-flee", (low, last_position, fled));
 
-    let home = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let home = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at == TOWN
     })
     .ok_or("step=out-of-range-refusal observed=no-town-route need=walkable-return")?;
-    walk(&mut client, &world, &home).await?;
+    walk(&mut client, world, &home).await?;
     let refused = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -324,15 +324,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=logout-fresh-admission observed=saved={saved:?},fresh={:?} need=durable-player-cell", client.world_spatial().actor_position).into());
     }
     row.pass("logout-fresh-admission", saved);
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let fresh = adjacent_creature(&client)?;
     let fresh_tile = tile(fresh.position)?;
-    let retreat = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+    let retreat = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == fresh_tile.floor
             && at.x.abs_diff(fresh_tile.x).max(at.y.abs_diff(fresh_tile.y)) >= 3
     })
     .ok_or("step=think-reacquires observed=no-retreat-route need=reachable-rat-lane")?;
-    walk(&mut client, &world, &retreat).await?;
+    walk(&mut client, world, &retreat).await?;
     let reacquired = wait_for_motion(&mut client, fresh.entity, fresh.position, true).await?;
     row.pass("think-reacquires", (fresh.position, reacquired));
     let _ = client.session_mut().logout().await?;

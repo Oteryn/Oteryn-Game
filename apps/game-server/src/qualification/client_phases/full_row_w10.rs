@@ -153,7 +153,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         .map_err(|error| failed(3, error, "an authored Primal Menace spawn"))?;
     let from = tile(client.world_spatial().actor_position)
         .map_err(|error| failed(3, error, "a valid actor position"))?;
-    let path = route(&world, from, |at| {
+    let path = route(world, from, |at| {
         positions.iter().any(|position| {
             position.floor == at.floor
                 && position.x.abs_diff(at.x).max(position.y.abs_diff(at.y)) <= 1
@@ -166,7 +166,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             "an ordinary walkable route from admission to the authored Primal Ordeal encounter",
         )
     })?;
-    walk(&mut client, &world, &path)
+    walk(&mut client, world, &path)
         .await
         .map_err(|error| failed(3, error, "accepted STEP replies to the Primal encounter"))?;
     let at = client.world_spatial().actor_position;

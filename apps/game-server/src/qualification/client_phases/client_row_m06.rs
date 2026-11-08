@@ -70,17 +70,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xc6).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (door, path) = key_doors(&bytes, &world)?
+    let (door, path) = key_doors(&bytes, world)?
         .into_iter()
         .find_map(|door| {
-            route(&world, from, |at| {
+            route(world, from, |at| {
                 at.floor == door.at.floor
                     && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
             })
             .map(|path| (door, path))
         })
         .ok_or("M06 client has no reachable authored key door")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let carried = client
         .inventory()
         .and_then(|inventory| inventory.entries.first())
@@ -89,7 +89,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let intent = UseIntent {
         target: UseTarget::Item(carried.handle),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Object(target(&world, door)?)),
+        use_with_map_item: Some(MapUseTarget::Object(target(world, door)?)),
         use_with_position: None,
     };
     let payload = encode_item_use_intent(&intent).map_err(|error| format!("{error:?}"))?;

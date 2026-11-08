@@ -132,7 +132,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
     }
     evidence("P13_CHECK malformed-refusal PASS rejected-empty-and-state-inert");
 
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat")
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
         .await
         .map_err(|error| format!("step=walk-to-training observed={error} need=reachable-rat"))?;
     client_hunt::hunt(&mut client)

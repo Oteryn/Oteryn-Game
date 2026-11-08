@@ -114,9 +114,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let spots = rope_spots(&bytes)?;
     let mut client = connect_character(clients, 0xb1, 1).await?;
     let start = tile(client.world_spatial().actor_position)?;
-    let path = route(&world, start, |at| spots.binary_search(&at).is_ok())
+    let path = route(world, start, |at| spots.binary_search(&at).is_ok())
         .ok_or("step-1:no reachable compiled-world rope spot within player route budget")?;
-    walk(&mut client, &world, &path).await?;
+    walk(&mut client, world, &path).await?;
     let rope = tile(client.world_spatial().actor_position)?;
     if spots.binary_search(&rope).is_err() {
         return Err("step-1:STEP replies did not finish on rope spot".into());
@@ -152,11 +152,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     evidence(&format!("M11B_CHECK step=2 status=PASS landing={landed:?}"));
 
-    let away = route(&world, landed, |at| {
+    let away = route(world, landed, |at| {
         at.floor == landed.floor && !spots.contains(&at) && at != landed
     })
     .ok_or("step-3:no walkable non-rope refusal tile")?;
-    walk(&mut client, &world, &away).await?;
+    walk(&mut client, world, &away).await?;
     settle(&mut client).await?;
     let refused_at = tile(client.world_spatial().actor_position)?;
     let refused_mana = client
