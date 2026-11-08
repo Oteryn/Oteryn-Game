@@ -13,7 +13,7 @@ CREATE TABLE game_quest_callback_consumptions (
  quantity integer, replacement jsonb, before_item jsonb, item_instance_id uuid,
  proof bytea, created_xact_id xid8 DEFAULT pg_current_xact_id()
 );
-\ir ../../migrations/1005_quest_carried_use_proofs.sql
+\ir ../../../migrations/1005_quest_carried_use_proofs.sql
 INSERT INTO game_quest_callback_consumptions
  SELECT '00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002',1,'tool',1,NULL,
  '{"definition_production_key":"oteryn:item.tibia.i17673"}', '00000000-0000-0000-0000-000000000003',
@@ -30,7 +30,7 @@ DO $$ BEGIN
  EXCEPTION WHEN check_violation THEN RAISE NOTICE 'QN6_RED old carried output rejected';
  END;
 END $$;
-\ir ../../migrations/2500_quest_creature_tool_transform.sql
+\ir ../../../migrations/2500_quest_creature_tool_transform.sql
 INSERT INTO game_quest_reward_sources SELECT character_id,cause_id,cause_ordinal,transition_key,
  convert_from(proof,'UTF8')::jsonb->'reward_callback',pg_current_xact_id() FROM game_quest_callback_consumptions;
 SET CONSTRAINTS ALL IMMEDIATE;

@@ -133,6 +133,20 @@ pub enum ActorConditionRequirement {
     Drunk,
 }
 
+/// A personal source-authored destination; it carries no shared world mutation.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct QuestMapMark {
+    pub position: super::world_callbacks::Position,
+    pub icon: QuestMapMarkIcon,
+    pub text: String,
+}
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum QuestMapMarkIcon {
+    Cross,
+}
+
 /// One paid source occurrence advances the existing Character achievement owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -156,6 +170,8 @@ pub struct RewardCallback {
     /// Exact native live creature selected by a carried quest tool.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_target: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub map_mark: Option<QuestMapMark>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -276,6 +292,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -451,6 +468,15 @@ fn validate_document(document: Document) -> Result<Document, String> {
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         let requires: BTreeSet<_> = c.requires.iter().map(|s| &s.track).collect();
         if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || c.map_mark.as_ref().is_some_and(|mark| {
+                !(0..=65535).contains(&mark.position.x)
+                    || !(0..=65535).contains(&mark.position.y)
+                    || !(-15..=0).contains(&mark.position.floor)
+                    || mark.text.is_empty()
+                    || mark.text.len() > 128
+                    || mark.text.chars().any(char::is_control)
+                    || c.storage.iter().all(|state| state.preserve)
+            })
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()
@@ -622,6 +648,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     if callback.minimum_level.is_none()
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
+        && callback.map_mark.is_none()
     {
         return Ok(None);
     }
