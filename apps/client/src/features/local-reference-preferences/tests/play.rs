@@ -1,6 +1,23 @@
 use super::*;
 
 #[test]
+fn general_hotkey_presets_route_movement_and_preserve_other_bindings() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{ReferencePreferences, SettingsState};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut preferences = ReferencePreferences::default();
+    preferences.rebind("0009-highscores-open", "ALT+H")?;
+    preferences.general_hotkey_preset(false)?;
+    let mut state = SettingsState::new(None);
+    state.preferences = preferences;
+    let event = NormalizedInputEvent::Key { code: KeyCode::new(26)?, modifiers: Modifiers::NONE, state: ButtonState::Pressed, repeat: false };
+    assert!(matches!(state.input(&[event]).0.as_slice(), [NormalizedInputEvent::Key {code: KeyCode::ARROW_UP, ..}]));
+    state.preferences.general_hotkey_preset(true)?;
+    assert_eq!(state.preferences.keybindings.get("0009-highscores-open").map(String::as_str), Some("ALT+H"));
+    assert!(!state.preferences.keybindings.contains_key("0013-paced-movement-move-north"));
+    Ok(())
+}
+
+#[test]
 fn configured_rotation_modifier_sends_existing_turn_command() -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     let (link, mut commands, outbox) = play_channel();
@@ -62,7 +79,7 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 5);
+    assert_eq!(SettingsPage::ALL.len(), 6);
 }
 
 #[test]

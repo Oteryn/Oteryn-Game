@@ -188,7 +188,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223)
+                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -294,6 +294,22 @@ fn run(shared: Arc<Mutex<Shared>>) {
             WS_BORDER | ES_AUTOHSCROLL as u32,
         );
         let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
+        let chat_on = control(
+            hwnd,
+            "BUTTON",
+            "Chat-on preset (arrows)",
+            225,
+            [10, 150, 300, 30],
+            0,
+        );
+        let chat_off = control(
+            hwnd,
+            "BUTTON",
+            "Chat-off preset (WASD)",
+            226,
+            [330, 150, 300, 30],
+            0,
+        );
         let mouse_preset = control(
             hwnd,
             "BUTTON",
@@ -444,6 +460,8 @@ fn run(shared: Arc<Mutex<Shared>>) {
         .collect::<Vec<_>>();
         let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
         if [
+            chat_on,
+            chat_off,
             rotation_label,
             rotation,
             mouse_preset,
@@ -503,11 +521,11 @@ fn run(shared: Arc<Mutex<Shared>>) {
             }
             for (handles, page) in [
                 (
+                    &[help, list, chord, rebind, chat_on, chat_off][..],
+                    SettingsPage::Hotkeys,
+                ),
+                (
                     &[
-                        help,
-                        list,
-                        chord,
-                        rebind,
                         mouse_preset,
                         delay_label,
                         delay,
@@ -594,7 +612,15 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if action == 223 {
+                if matches!(action, 225 | 226) {
+                    match preferences.general_hotkey_preset(action == 225) {
+                        Ok(()) => state.apply(preferences),
+                        Err(error) => {
+                            state.feedback =
+                                format!("Preset conflicts with a custom binding: {error}")
+                        }
+                    }
+                } else if action == 223 {
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
                             preferences.rotation_modifier =

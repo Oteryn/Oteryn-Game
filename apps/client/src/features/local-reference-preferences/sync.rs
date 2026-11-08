@@ -11,6 +11,7 @@ use std::{
 pub enum SettingsPage {
     #[default]
     Gameplay,
+    Hotkeys,
     Interface,
     Graphics,
     Sound,
@@ -18,8 +19,9 @@ pub enum SettingsPage {
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
         Self::Gameplay,
+        Self::Hotkeys,
         Self::Interface,
         Self::Graphics,
         Self::Sound,
@@ -29,6 +31,7 @@ impl SettingsPage {
     pub const fn label(self) -> &'static str {
         match self {
             Self::Gameplay => "Gameplay",
+            Self::Hotkeys => "Controls / General Hotkeys",
             Self::Interface => "Interface",
             Self::Graphics => "Graphics",
             Self::Sound => "Sound",

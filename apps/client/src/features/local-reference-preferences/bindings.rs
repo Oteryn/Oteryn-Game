@@ -74,6 +74,23 @@ fn parse(value: &str) -> Result<Chord, PreferenceError> {
 }
 
 impl ReferencePreferences {
+    /// Chat-on keeps letters available for text; chat-off uses WASD movement.
+    /// Apply all four together so a failed preset never leaves a half-edited map.
+    pub fn general_hotkey_preset(&mut self, chat_on: bool) -> Result<(), PreferenceError> {
+        let mut candidate = self.clone();
+        for (direction, chord) in [("north", "W"), ("east", "D"), ("south", "S"), ("west", "A")] {
+            let id = format!("0013-paced-movement-move-{direction}");
+            if chat_on {
+                candidate.keybindings.remove(&id);
+            } else {
+                candidate.keybindings.insert(id, chord.into());
+            }
+        }
+        candidate.validate_bindings()?;
+        *self = candidate;
+        Ok(())
+    }
+
     pub fn binding_chord<'a>(&'a self, binding: &'a PreferenceBinding) -> &'a str {
         self.keybindings
             .get(binding.id)
