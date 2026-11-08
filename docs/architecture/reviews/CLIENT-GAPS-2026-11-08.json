@@ -364,9 +364,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics: foreground/background FPS i FPS/latency indicator",
-  "status": "MISSING",
+  "status": "PARTIAL",
   "gap": "Brak równoważnych kontrolek limitów i wskaźników w Settings.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/frame_controls.rs:1 + frame_limits_select_focus_and_reject_zero; apps/client/src/windows_shell.rs consumes focus limits. Remaining: FPS/latency indicators and native caller test."
  },
  {
   "id": "T062",

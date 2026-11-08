@@ -135,7 +135,7 @@ Zasady przeciw dublowaniu:
 | T058 | Options | Interface / Action Bars: rows/amounts/labels/tooltips/cooldowns/auto-insert spells | PARTIAL | Brak pełnej strony ustawień barów. |
 | T059 | Options | Interface / Shortcuts: available/displayed, add/remove/order | PARTIAL | Rejestr akcji i visible_panels są; brak selektora i ustalania kolejności przycisków. |
 | T060 | Options | Graphics: engine, AA, fullscreen, VSync, integral scaling | MISSING | Brak strony konfiguracji obsługiwanych parametrów renderera/okna. |
-| T061 | Options | Graphics: foreground/background FPS i FPS/latency indicator | MISSING | Brak równoważnych kontrolek limitów i wskaźników w Settings. |
+| T061 | Options | Graphics: foreground/background FPS i FPS/latency indicator | PARTIAL | Brak równoważnych kontrolek limitów i wskaźników w Settings.  evidence: `apps/client/src/features/local-reference-preferences/frame_controls.rs:1` + `frame_limits_select_focus_and_reject_zero`; native render loop consumes focus limits. Remaining: FPS/latency indicators and native caller test. |
 | T062 | Options | Graphics / Effects: ambient/separator/indoor/cloud attenuation | PARTIAL | Światło jest; brak grupy ambient/separator/attenuation. |
 | T063 | Options | Graphics / Effects: own/other/creature/boss-area opacity | MISSING | Brak ustawień opacity według źródła efektu. |
 | T064 | Options | Sound: master/mute/device/music/ambient/items/events/UI | PARTIAL | Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera. |

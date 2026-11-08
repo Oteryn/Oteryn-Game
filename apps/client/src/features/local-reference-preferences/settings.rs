@@ -66,6 +66,9 @@ fn default_hud_bounds() -> [u16; 4] {
     [8, 8, 900, 40]
 }
 
+fn default_foreground_fps() -> u16 { 60 }
+fn default_background_fps() -> u16 { 15 }
+
 fn default_scale() -> u16 {
     100
 }
@@ -85,6 +88,10 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_foreground_fps")]
+    pub foreground_fps: u16,
+    #[serde(default = "default_background_fps")]
+    pub background_fps: u16,
     #[serde(default = "default_arc_distance")]
     pub arc_distance: u16,
     #[serde(default = "default_arc_size")]
@@ -143,6 +150,8 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            foreground_fps: default_foreground_fps(),
+            background_fps: default_background_fps(),
             arc_distance: 8,
             arc_size: 3,
             hud_names: default_hud_names(),
@@ -173,8 +182,14 @@ impl Default for ReferencePreferences {
 }
 
 impl ReferencePreferences {
+    pub fn frame_interval(&self, focused: bool) -> std::time::Duration {
+        let fps = if focused { self.foreground_fps } else { self.background_fps };
+        std::time::Duration::from_nanos(1_000_000_000 / u64::from(fps.clamp(1, 500)))
+    }
+
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        if !(1..=500).contains(&self.foreground_fps) || !(1..=500).contains(&self.background_fps) { return Err(PreferenceError); }
         self.validate_profiles()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {

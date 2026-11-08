@@ -1,3 +1,5 @@
+mod entry;
+pub use entry::run;
 #[path = "features/local-spell-action-bar/native.rs"]
 mod hud;
 mod input;
@@ -5,7 +7,6 @@ mod input;
 mod native_login_shell;
 #[path = "features/local-reference-preferences/native.rs"]
 mod settings;
-
 use oteryn_client::input::{MouseActions, StepDir};
 use oteryn_client::map::{START, World};
 use oteryn_client::native_login::{LoginWindow, error_text};
@@ -25,7 +26,6 @@ use winit::dpi::LogicalSize;
 use winit::event::{DeviceEvent, DeviceId, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShellError {
     EventLoopCreation,
@@ -40,7 +40,6 @@ pub enum ShellError {
     RendererRender,
     RendererClose,
 }
-
 impl Display for ShellError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
@@ -58,9 +57,7 @@ impl Display for ShellError {
         })
     }
 }
-
 impl std::error::Error for ShellError {}
-
 struct Application {
     settings: settings::Settings,
     hud: Option<hud::Hud>,
@@ -82,9 +79,9 @@ struct Application {
     input: InputPlatformAdapter,
     actions: MouseActions,
     hotkeys: SpellHotkeys,
+    next_frame: std::time::Instant,
     fatal_error: Option<ShellError>,
 }
-
 /// The view of an admitted session and the link to its task on the client runtime.
 struct Play {
     view: PlayView,
@@ -92,7 +89,6 @@ struct Play {
     /// The spell bar and combat line last shown in the title.
     status: String,
 }
-
 impl Application {
     fn new(smoke: bool, client: Option<ClientBootstrap>) -> Result<Self, ShellError> {
         let entry = client.map(Reentry::new);
@@ -120,10 +116,10 @@ impl Application {
             input: InputPlatformAdapter::new(),
             actions: MouseActions::new().map_err(|_error| ShellError::InputInitialization)?,
             hotkeys: SpellHotkeys::new().map_err(|_error| ShellError::InputInitialization)?,
+            next_frame: std::time::Instant::now(),
             fatal_error: None,
         })
     }
-
     /// The offline scene around `offline_own`, over the loaded world.
     fn rebuild_offline(&mut self) -> Result<(), oteryn_renderer::BatchError> {
         if let Some(world) = &self.world {
@@ -379,47 +375,21 @@ impl ApplicationHandler for Application {
                     .map(|renderer| renderer.state().phase()),
             )
         {
-            window.request_redraw();
+            let now = std::time::Instant::now();
+            if now >= self.next_frame {
+                let interval = self
+                    .play
+                    .as_ref()
+                    .map_or(std::time::Duration::from_millis(16), |play| {
+                        play.view.preferences().frame_interval(window.has_focus())
+                    });
+                self.next_frame = now + interval;
+                window.request_redraw();
+            }
+            event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(
+                self.next_frame
+                    .min(now + std::time::Duration::from_millis(20)),
+            ));
         }
-    }
-}
-
-pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
-    let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
-    let smoke = std::env::args().any(|argument| argument == "--smoke");
-    let mut application = Application::new(smoke, client)?;
-    let run_result = event_loop
-        .run_app(&mut application)
-        .map_err(|_error| ShellError::EventLoopRun);
-    drop(application.play.take());
-    if let Some(entry) = application.entry.take() {
-        entry.shutdown();
-    }
-    if let Some(error) = application.fatal_error {
-        return Err(error);
-    }
-    run_result
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fatal_retention_keeps_the_first_error() {
-        let mut error = None;
-        retain_first_error(&mut error, ShellError::RendererResize);
-        retain_first_error(&mut error, ShellError::RendererRender);
-        assert_eq!(error, Some(ShellError::RendererResize));
-    }
-
-    #[test]
-    fn redraw_requires_a_configured_renderer() {
-        assert!(redraw_eligible(Some(SurfacePhase::Configured)));
-        assert!(!redraw_eligible(None));
-        assert!(!redraw_eligible(Some(SurfacePhase::Unconfigured)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Suspended)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Lost)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Closing)));
     }
 }
