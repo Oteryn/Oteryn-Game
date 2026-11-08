@@ -130,12 +130,15 @@ impl Controls {
             );
             let mouse_preset = control(
                 hwnd,
-                "BUTTON",
-                "Swap primary / secondary mouse buttons",
+                "COMBOBOX",
+                "",
                 221,
-                [10, 150, 360, 26],
-                BS_AUTOCHECKBOX as u32,
+                [10, 150, 360, 150],
+                CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
             );
+            for label in oteryn_client::play::ReferencePreferences::MOUSE_PRESETS {
+                SendMessageW(mouse_preset, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+            }
             let delay_label = control(
                 hwnd,
                 "STATIC",

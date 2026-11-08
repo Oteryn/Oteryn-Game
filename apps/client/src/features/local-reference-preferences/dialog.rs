@@ -232,8 +232,15 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             preferences.rotation_modifier =
                                 text(rotation).trim().to_ascii_uppercase();
                             preferences.keyboard_delay_ms = value;
-                            preferences.swap_mouse_buttons =
-                                SendMessageW(mouse_preset, BM_GETCHECK, 0, 0) == 1;
+                            let preset = SendMessageW(mouse_preset, CB_GETCURSEL, 0, 0);
+                            if usize::try_from(preset)
+                                .ok()
+                                .and_then(|index| preferences.set_mouse_preset(index).ok())
+                                .is_none()
+                            {
+                                state.feedback = "Select a mouse preset".into();
+                                continue;
+                            }
                             state.apply(preferences);
                         }
                         Err(_) => {
@@ -334,7 +341,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
                 SendMessageW(
                     mouse_preset,
-                    BM_SETCHECK,
+                    CB_SETCURSEL,
                     usize::from(state.preferences.swap_mouse_buttons),
                     0,
                 );

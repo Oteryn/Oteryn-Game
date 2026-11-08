@@ -181,6 +181,14 @@ impl Default for ReferencePreferences {
 }
 
 impl ReferencePreferences {
+    pub const MOUSE_PRESETS: [&'static str; 2] = ["Right-handed", "Left-handed"];
+
+    pub fn set_mouse_preset(&mut self, index: usize) -> Result<(), PreferenceError> {
+        if index >= Self::MOUSE_PRESETS.len() { return Err(PreferenceError); }
+        self.swap_mouse_buttons = index == 1;
+        Ok(())
+    }
+
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         self.validate_profiles()?;

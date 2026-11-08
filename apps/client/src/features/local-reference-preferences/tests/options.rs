@@ -1,6 +1,30 @@
 use super::*;
 
 #[test]
+fn mouse_presets_validate_route_and_survive_restart() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceStore, SettingsState};
+    use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
+    let path = std::env::temp_dir().join(format!("cgopt-mouse-{}.json", std::process::id()));
+    let mut settings = SettingsState::new(Some(path.clone()));
+    let mut preferences = settings.preferences.clone();
+    preferences.set_mouse_preset(1)?;
+    preferences.keyboard_delay_ms = 250;
+    preferences.rotation_modifier = "SHIFT".into();
+    settings.apply(preferences);
+    let mut restored = SettingsState::new(Some(path.clone()));
+    assert_eq!(PreferenceStore::load(path.clone())?.preferences(), &settings.preferences);
+    let press = NormalizedInputEvent::MouseButton { button: MouseButton::SECONDARY, state: ButtonState::Pressed, modifiers: Modifiers::NONE };
+    assert!(matches!(restored.input(std::slice::from_ref(&press)).0.as_slice(), [NormalizedInputEvent::MouseButton { button: MouseButton::PRIMARY, .. }]));
+    restored.preferences.set_mouse_preset(0)?;
+    assert_eq!(restored.input(std::slice::from_ref(&press)).0, vec![press]);
+    let before = restored.preferences.clone();
+    assert!(restored.preferences.set_mouse_preset(2).is_err());
+    assert_eq!(restored.preferences, before);
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
 fn basic_options_dispatch_selects_all_categories_without_editing_preferences() {
     use crate::play::{SettingsPage, SettingsState};
     let mut state = SettingsState::new(None);

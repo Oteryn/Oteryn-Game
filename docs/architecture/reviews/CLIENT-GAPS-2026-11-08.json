@@ -230,10 +230,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / General: mouse preset, movement, rotation, keyboard delay",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Rebinding jest; brak presetów myszy, rotation modifier i keyboard delay.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/sync.rs:160 + mouse_preset_changes_actual_click_routing; Reference classic/smart mouse preset semantics remain; swap, rotation and repeat delay are wired."
+  "evidence": "apps/client/src/features/local-reference-preferences/dialog.rs:230 + mouse_presets_validate_route_and_survive_restart + configured_rotation_modifier_sends_existing_turn_command + mouse_preset_changes_actual_click_routing; Right/left-handed presets, movement rebinding, rotation modifier and keyboard repeat delay reach the live input paths."
  },
  {
   "id": "T047",
