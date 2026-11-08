@@ -1392,3 +1392,25 @@ and the15 PR-changed crate unit targets are queued/running separately.
 The PR body explicitly retains the known production gaps: Primal custom
 callback composition and unsourced Tibiadrome archetypes are not invented or
 claimed complete. The inherited required-Primal PG assertion is retained.
+
+## PR3034 authorized collector-main merge
+
+Owner explicitly authorizes main78294c081 despite the PR freeze. This pass adds
+no feature work. Pre-merge lane diff:327 files,+14147/-1321; the post-merge
+comparison and representative files must remain present before publication.
+Main's reset epoch is kept alongside SRVENC's borrowed movement-cell owner.
+The newer main InputPermit brand is retained, including its Channel check;
+NPC Ground refusal is kept before mutation. No unbranded row helper returns.
+
+Main's new FloorTable teleport_sources also has to survive SRVENC's bounded
+activity-region view. The crop now retains provenance only for retained
+inside-to-inside teleports. The focused transform/hidden-source/orphan/outside
+regression passes, and independent review found no scope widening.
+
+Generated loot is checked semantically, not by taking a side: all12 SRVENC
+changed Item facts and all38 main changed Item facts are retained, including
+main's i6571 surprise bag. All drop tables and creature bindings remain
+unchanged. The repository loot producer and prey simulation regenerate the
+admission-bound hash and reports; no generated hash or expected result is
+hand-edited. Existing lane migrations remain unchanged and no new number is
+allocated; collector migrations are inherited from main.

@@ -18,10 +18,12 @@ mod command;
 mod observation;
 #[path = "player_trade/ports.rs"]
 mod ports;
+#[path = "player_trade/preflight.rs"]
+pub(super) mod preflight;
 
 // A busy durability holder proves neither a stale session nor a trade refusal.
 // Commands still fail closed; observations retain the last projection until a read succeeds.
-enum CheckError {
+pub(super) enum CheckError {
     Refused(ResultCode),
     Unavailable,
 }

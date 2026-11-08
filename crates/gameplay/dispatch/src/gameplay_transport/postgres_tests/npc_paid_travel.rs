@@ -31,7 +31,7 @@ fn npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals(
     Ok(())
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &super::ComposedFreshAdmission<'_, '_, '_>,
     dependencies: &Dependencies,
     npc: EntityRef,

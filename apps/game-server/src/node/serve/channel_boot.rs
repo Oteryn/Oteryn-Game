@@ -65,19 +65,28 @@ pub(super) async fn prepare_channel(
     // MAP-CUTOVER-1b: a bundle World's Channel moves over the bundle from its configured start,
     // carries its map view in the movement cells and has no entry room: no door, chest, spell
     // or field qualification of the fixture room applies to it (§1.2).
-    let unix_ms = crate::world_clock::now_utc_ms()
-        .and_then(|now| i64::try_from(now).ok())
-        .unwrap_or(0);
-    let daily = if reset_epoch == 0 {
-        daily_world_changes::roll(material.world, reset_epoch, unix_ms)
-    } else {
+    // SP02 projects the committed reset day's physical map before any map owner is built.
+    let mut daily = match root
+        .world_changes(material.world, reset_epoch)
+        .await
+        .map_err(|_| BootError::ContentActivation("durable world changes"))?
+    {
+        Some(day) => day,
+        None if reset_epoch == 0 => bootstrap_world_changes(),
+        None => return Err(BootError::Readiness("current world-change epoch")),
+    };
+    if reset_epoch != 0 {
         root.world_change_calendar(material.world, reset_epoch)
             .await
             .map_err(|_| BootError::Readiness("world change calendar"))?;
-        root.world_change_snapshot(material.world, reset_epoch)
+        let occurrence = root
+            .world_change_snapshot(material.world, reset_epoch)
             .await
-            .map_err(|_| BootError::Readiness("world change snapshot"))?
-    };
+            .map_err(|_| BootError::Readiness("world change snapshot"))?;
+        daily.fury_gates = occurrence.fury_gates;
+        daily.grimvale_full_moon = occurrence.grimvale_full_moon;
+        daily.their_masters_voice = occurrence.their_masters_voice;
+    }
     let bundle = bundle
         .map(|checked| {
             let checked = daily_world_changes::bind_layers(checked, &daily)
@@ -274,9 +283,31 @@ pub(super) async fn prepare_channel(
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot)?;
+    if daily.world_counters {
+        let cycles = oteryn_gameplay_world_change::counter::CounterKind::ALL
+            .into_iter()
+            .map(|kind| {
+                (
+                    kind.key().to_owned(),
+                    daily.counter_generations[kind.index()],
+                )
+            })
+            .collect();
+        channel_runtime
+            .install_world_change_cycles(daily.reset_epoch, cycles)
+            .map_err(|_| BootError::Readiness("world change counter projection"))?;
+    }
     // W05b: the server save's daily world changes, rolled once per reset epoch.
     let daily_npcs =
         daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily, bundle.as_ref());
+    if let Some(world) = &bundle {
+        crate::node::raid_scheduler::world_changes::project_map_parts(
+            world.facts(),
+            world.base(),
+            &daily,
+        )
+        .map_err(|_| BootError::Readiness("world change map projection"))?;
+    }
     let daily_items =
         daily_world_changes::apply_items(bundle.as_ref().map(|world| world.facts()), &daily);
     event(&format!(
@@ -313,6 +344,8 @@ pub(super) async fn prepare_channel(
             (realized, u64::from(realized > 0))
         }
     };
+    crate::node::raid_scheduler::world_changes::project(&mut channel_runtime, &daily)
+        .map_err(|_| BootError::Readiness("world change spawn projection"))?;
     event(&format!(
         "event=creature_spawns state=realized spawned_monsters={spawned_monsters} windows={spawn_windows}"
     ));
@@ -342,4 +375,42 @@ pub(super) async fn prepare_channel(
         timed_npcs,
         required_capabilities,
     }))
+}
+
+// Epoch zero has no committed day. Never manufacture a local activation roll here.
+fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldChanges {
+    oteryn_gameplay_world_change::daily::DailyWorldChanges {
+        reset_epoch: 0,
+        fury_gates: None,
+        fury_exit: "fury_gates/abdendriel",
+        nightmare_isles: "nightmare_isle/ankrahmun-north",
+        thawing: false,
+        their_masters_voice: false,
+        oriental_trader: None,
+        grimvale_full_moon: false,
+        flower_month: false,
+        stampede: false,
+        fire_from_the_earth: false,
+        world_counters: false,
+        counter_stages: [0; 8],
+        counter_generations: [0; 8],
+        counter_progress: [[0; 3]; 8],
+        shared_used_sources_mask: 0,
+    }
+}
+#[cfg(test)]
+mod worldchg_bootstrap_tests {
+    #[test]
+    fn worldchg_bootstrap_uninitialized_epoch_has_no_activation() {
+        let day = super::bootstrap_world_changes();
+        for key in [
+            "thawing",
+            "their_masters_voice",
+            "oriental_trader",
+            "grimvale",
+            "stampede",
+        ] {
+            assert!(!oteryn_gameplay_world_change::owner::is_active(&day, key));
+        }
+    }
 }
