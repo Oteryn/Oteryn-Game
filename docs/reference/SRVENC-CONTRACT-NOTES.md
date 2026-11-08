@@ -1424,3 +1424,43 @@ the original fixture's unspecified projectile behavior. No tests are removed.
 Canonical tree validation passes for 34,111 Items and 252 Mounts; the metadata
 check passes separately using its actual world-authoring tool path. A scratch
 wrapper's obsolete metadata path failed after the tree check, not in content.
+
+Collector-main merge final local validation (wall times include build-lock
+waits; PostgreSQL per-case durations below prove real execution):
+- workspace all-target check: PASS 1742.002s wall time.
+- format: PASS 15.765s wall time.
+- changed-crate clippy: PASS 1409.468s wall time.
+- 15 changed-crate unit suites: PENDING; 1663/5424 passed, no failures observed at evidence capture. The owner PREPUSH-2 step-3 cadence exception permits publishing after steps 1, 2 and 4; the run continues and CI remains authoritative.
+  Packages: oteryn-client, oteryn-client-assets, oteryn-client-ui, oteryn-game-server, oteryn-gameplay-combat, oteryn-gameplay-content, oteryn-gameplay-dispatch, oteryn-gameplay-durability, oteryn-gameplay-entities, oteryn-gameplay-native-admission-source, oteryn-gameplay-spell, oteryn-gameplay-world, oteryn-protocol-oteryn, oteryn-world-bundle, oteryn-world-bundle-compiler.
+- own/ENCX PostgreSQL cases: PASS 1227.695s wall time.
+  Summary [ 577.955s] 16 tests run: 16 passed (6 slow), 3432 skipped
+- pin refresh: PASS 48.181s wall time.
+- pin check: PASS 34.792s wall time.
+- duplicate migrations: PASS 1.133s wall time.
+- architecture: PASS 3.785s wall time.
+- world metadata: PASS 1.977s wall time.
+- prey freshness: PASS 83.894s wall time.
+- native spell freshness: PASS 84.274s wall time.
+
+PostgreSQL cases:
+- PASS [  49.949s] ( 1/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::boss_rewards::boss_rewards_postgres_production_boss_lethal_to_personal_item_custody
+- PASS [  90.821s] ( 2/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_production_reward_boss_instance_corpse_and_personal_custody
+- PASS [  90.508s] ( 3/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_general_xp_handin_runs_in_real_dispatch
+- PASS [  91.632s] ( 4/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_source_acceptance_is_atomic_and_replay_bound
+- PASS [  50.056s] ( 5/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::reaudit_arena_lifecycle::srvenc_tibiadrome_postgres_exploding_corpse_hits_current_health_once
+- PASS [  49.054s] ( 6/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::reaudit_arena_lifecycle::srvenc_tibiadrome_postgres_grace_expiry_clears_temporary_status_before_save
+- PASS [  48.059s] ( 7/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::reaudit_arena_lifecycle::srvenc_tibiadrome_postgres_native_kills_before_deadline_survive_delayed_observation
+- PASS [  49.388s] ( 8/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::reaudit_arena_lifecycle::srvenc_tibiadrome_postgres_native_victory_credits_before_reserved_corpse_effects
+- PASS [  47.508s] ( 9/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::reaudit_arena_lifecycle::srvenc_tibiadrome_postgres_raffle_awards_one_fifth_of_large_rotation
+- PASS [  51.040s] (10/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::reaudit_arena_lifecycle::srvenc_tibiadrome_postgres_three_native_waves_command_catchup_counts_each_once
+- PASS [ 102.771s] (11/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::reaudit_arena_lifecycle::srvenc_tibiadrome_postgres_real_source_hall_runs_an_irregular_native_wave
+- PASS [ 164.769s] (12/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::srvenc_source_boss::srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewards_postgres
+- PASS [  13.533s] (13/16) oteryn-gameplay-durability durability::boss_encounter::activity_assignment_tests::native_corpse::native_instance_corpse_migration_preserves_committed_causes_and_replay_postgres
+- PASS [ 227.320s] (14/16) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::srvenc_boss_publication::srvenc_boss_publication_postgres_scopes_replay_conflict_and_current_reader
+- PASS [  15.833s] (15/16) oteryn-gameplay-durability durability::boss_encounter::activity_assignment_tests::native_corpse::native_instance_corpse_migration_preserves_legacy_v1_corpse_and_loot_replay_postgres
+- PASS [  13.505s] (16/16) oteryn-gameplay-durability durability::boss_encounter::activity_assignment_tests::native_corpse::native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fences
+
+Diff preservation before this evidence-only commit: 331 files changed, 14199 insertions(+), 1295 deletions(-).
+Main is an ancestor (behind=0). No new allocation; all ten lane/ENCX SQL files
+remain byte-identical to the pre-merge candidate. After the single push, the
+branch returns to owner-requested freeze; CI remains the full-suite authority.
