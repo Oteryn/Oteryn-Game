@@ -1,4 +1,4 @@
-//! Sealed exact live-creature admission for a carried quest tool.
+//! Sealed exact live creature or self-target admission for a carried quest tool.
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
@@ -10,7 +10,8 @@ pub struct QuestCreatureUseProof {
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     callback: String,
-    key: String,
+    key: Option<String>,
+    self_target: Option<oteryn_gameplay_quests::quest::reward_callbacks::SelfTarget>,
     target: EntityRef,
 }
 impl QuestCreatureUseProof {
@@ -22,7 +23,7 @@ impl QuestCreatureUseProof {
         callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
         intent: &UseIntent,
     ) -> Option<Self> {
-        let key = callback.creature_target.as_ref()?;
+        let key = callback.creature_target.as_ref();
         let target = intent.use_with?;
         let lease = runtime
             .bound_attacker_lease(actor, fence.game_session_id)
@@ -34,6 +35,23 @@ impl QuestCreatureUseProof {
         {
             return None;
         }
+        let own = runtime.read_actor_position(actor).ok()?.position();
+        if let Some(area) = &callback.self_target {
+            let visible = runtime.visible_entities();
+            let player = visible.players.iter().find(|p| p.actor == actor)?;
+            if player.actor.placement_identity() != target.identity
+                || player.generation != target.generation
+                || !area.contains(own.x, own.y, own.floor)
+                || key.is_some()
+            {
+                return None;
+            }
+            return Some(Self {
+                fence, command, callback: callback.key.clone(), key: None,
+                self_target: Some(area.clone()), target,
+            });
+        }
+        let key = key?;
         let creature = runtime
             .visible_entities()
             .creatures
@@ -52,7 +70,8 @@ impl QuestCreatureUseProof {
             fence,
             command,
             callback: callback.key.clone(),
-            key: key.clone(),
+            key: Some(key.clone()),
+            self_target: None,
             target,
         })
     }
@@ -60,13 +79,14 @@ impl QuestCreatureUseProof {
         &self,
         fence: CurrentCharacterGameplayFence,
         request: &QuestTransitionRequest,
-        key: &str,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
         carried: &super::QuestCarriedUse,
     ) -> bool {
         self.fence.item_fence() == fence.item_fence()
             && request.cause == QuestCause::Command(self.command)
             && request.transition_key == self.callback
-            && self.key == key
+            && self.key == callback.creature_target
+            && self.self_target == callback.self_target
             && oteryn_protocol_oteryn::world_object::decode_use_intent_target(
                 &[4, 15],
                 &carried.intent,
