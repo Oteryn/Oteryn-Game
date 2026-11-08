@@ -99,7 +99,60 @@ fn scenario_case(
     };
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
-    let floor_profiles = matches!(name, "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile");
+    let floor_profiles = matches!(
+        name,
+        "l6-floor-profiles"
+            | "l6-ruby-profile"
+            | "l6-stag-item-profile"
+            | "l6-stag-compass-profile"
+            | "l6-stag-certificate-profile"
+            | "l6-stag-iron-profile"
+            | "l6-stag-silver-profile"
+            | "l6-stag-bronze-profile"
+            | "l6-yalahar-item-8758"
+            | "l6-yalahar-item-8759"
+            | "l6-yalahar-item-8760"
+            | "l6-yalahar-item-8761"
+            | "l6-yalahar-item-8762"
+            | "l6-yalahar-item-8763"
+            | "l6-yalahar-item-8818"
+            | "l6-yalahar-item-8819"
+            | "l6-yalahar-item-8820"
+            | "l6-yalahar-item-8822"
+            | "l6-yalahar-item-8827"
+            | "l6-special-item-8862"
+            | "l6-special-item-21389"
+            | "l6-special-item-5552"
+            | "l6-special-item-9171"
+            | "l6-special-item-21572"
+            | "l6-treasure-item-9181"
+            | "l6-treasure-item-9182"
+            | "l6-treasure-item-9183"
+            | "l6-treasure-item-9184"
+            | "l6-treasure-item-9186"
+            | "l6-treasure-item-9177"
+            | "l6-typed-item-5949"
+            | "l6-typed-item-24382"
+            | "l6-typed-item-21506"
+            | "l6-typed-item-7785"
+            | "l6-typed-item-52632"
+            | "l6-recipe-item-21466"
+            | "l6-recipe-item-21554"
+            | "l6-recipe-item-9106"
+            | "l6-recipe-item-36543"
+            | "l6-recipe-item-36544"
+            | "l6-recipe-item-9185"
+            | "l6-recipe-item-9205"
+            | "l6-recipe-item-14682"
+            | "l6-recipe-item-5467"
+            | "l6-recipe-item-21504"
+            | "l6-recipe-item-21507"
+            | "l6-recipe-item-12674"
+            | "l6-recipe-item-3454"
+            | "l6-beregar-item-3398"
+            | "l6-beregar-item-8774"
+            | "l6-beregar-item-8777"
+    );
     let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
     let reusable_tool = name.starts_with("l6-reusable-tool");
@@ -791,7 +844,70 @@ fn scenario_case(
                 return h.cleanup().await;
             }
         } else if name == "l6-stag-item-profile" {
-            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence).await?;
+            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, 52824)
+                .await?;
+        } else if name == "l6-stag-compass-profile" {
+            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, 52759)
+                .await?;
+        } else if let Some(source_id) = super::super::l6_stag_item::material_source_id(name) {
+            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, source_id)
+                .await?;
+        } else if let Some(source_id) = super::super::l6_yalahar_items::source_id(name) {
+            super::super::l6_stag_item::exercise_plain(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
+        } else if let Some(source_id) = super::super::l6_treasure_items::source_id(name) {
+            super::super::l6_stag_item::exercise_plain(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
+        } else if let Some(source_id) = super::super::l6_special_items::source_id(name) {
+            super::super::l6_stag_item::exercise_special(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
+        } else if let Some(source_id) = super::super::l6_typed_items::source_id(name) {
+            super::super::l6_stag_item::exercise_typed(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
+        } else if let Some(source_id) = super::super::l6_recipe_items::source_id(name) {
+            super::super::l6_stag_item::exercise_plain(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
+        } else if name == "l6-beregar-item-3398" {
+            super::super::l6_stag_item::exercise_legs(&mut owner, &mut admitted, &h, fence).await?;
+        } else if let Some(source_id) = super::super::l6_beregar_items::source_id(name) {
+            super::super::l6_stag_item::exercise_plain(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
         } else if name == "l6-ruby-profile" {
             super::super::l6_ruby_profile::exercise(&owner, &h).await?;
         } else if floor_profiles {
@@ -915,7 +1031,8 @@ fn scenario_case(
             )
             .await?;
         } else if name == "catalogue-npc-xp" {
-            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "catalogue-npc-calendar" {
             super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
         } else if name == "catalogue-npc-end" {
@@ -923,7 +1040,6 @@ fn scenario_case(
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if outfit_world {
-
             super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,

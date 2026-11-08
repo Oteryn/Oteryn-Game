@@ -1,6 +1,7 @@
 """Source armour-zero/ammo qualification cannot erase non-neutral or custom rules."""
 
 import copy
+import functools
 import json
 import unittest
 import xml.etree.ElementTree as ET
@@ -12,23 +13,31 @@ import questpc4_stag_item_profiles as qualifier
 ROOT = Path(__file__).resolve().parents[2]
 
 
+@functools.cache
+def definitions():
+    return {
+        row["definition"]["identity"]["key"]: row["definition"]
+        for path in (ROOT / "content/items/definitions").glob("items-*.json")
+        for row in json.loads(path.read_bytes())["records"]
+    }
+
+
 class StagPhysicalItemTests(unittest.TestCase):
-    def fixture(self):
-        document = json.loads(
-            (ROOT / "content/items/definitions/items-28500-28999.json").read_bytes()
-        )
-        definition = next(
-            r["definition"]
-            for r in document["records"]
-            if r["definition"]["identity"]["key"] == "oteryn:item.tibia.i52824"
-        )
+    def fixture(self, item_id=52824):
+        definition = definitions()[f"oteryn:item.tibia.i{item_id}"]
         bindings = source_owner.source.binding_index(
             (ROOT / "imports/crystalserver/bindings/items.json").read_bytes()
         )
+        material = item_id in (52586, 52635, 52743, 52758)
+        weight = 50 if item_id == 52586 else 2000 if material else 3000
+        equipment = (
+            ""
+            if material
+            else '<attribute key="armor" value="0"/><attribute key="script" value="moveevent"><attribute key="slot" value="ammo"/></attribute>'
+        )
         node = ET.fromstring(
-            '<item id="52824" name="fixture"><attribute key="description" value="fixture"/>'
-            '<attribute key="armor" value="0"/><attribute key="weight" value="3000"/>'
-            '<attribute key="script" value="moveevent"><attribute key="slot" value="ammo"/></attribute></item>'
+            f'<item id="{item_id}" name="fixture"><attribute key="description" value="fixture"/>'
+            f'<attribute key="weight" value="{weight}"/>{equipment}</item>'
         )
         physical = {
             "movable": True,
@@ -37,7 +46,46 @@ class StagPhysicalItemTests(unittest.TestCase):
             "block_projectile": False,
             "has_height": False,
         }
-        return [52824, node, {"flags": {}}, physical, bindings, definition]
+        flags = {"flags.cumulative": True} if material and item_id != 52586 else {}
+        return [item_id, node, {"flags": flags}, physical, bindings, definition]
+
+    def test_plain_source_items_keep_weight_stack_and_unknown_protection(self):
+        for item_id in (52586, 52635, 52743, 52758):
+            with self.subTest(item_id=item_id):
+                record = qualifier.qualify(*self.fixture(item_id))
+                semantics = record["semantics"]
+                self.assertEqual(semantics["protection"], {"state": "UNKNOWN"})
+                self.assertEqual(semantics["equipment"], {"state": "NOT_APPLICABLE"})
+                self.assertEqual(
+                    semantics["physical"]["value"]["weight"],
+                    {"state": "KNOWN", "value": 50 if item_id == 52586 else 2000},
+                )
+                self.assertEqual(
+                    semantics["stack"]["value"]["stack_max"],
+                    {"state": "NOT_APPLICABLE"}
+                    if item_id == 52586
+                    else {"state": "KNOWN", "value": 100},
+                )
+
+    def test_plain_item_cannot_borrow_equipment_or_custom_script(self):
+        for attribute in (
+            '<attribute key="armor" value="0"/>',
+            '<attribute key="script" value="moveevent"><attribute key="slot" value="ammo"/></attribute>',
+        ):
+            values = self.fixture(52635)
+            values[1].append(ET.fromstring(attribute))
+            with self.assertRaisesRegex(ValueError, "MATERIAL_SOURCE_ATTRIBUTES"):
+                qualifier.qualify(*values)
+
+    def test_plain_item_weight_and_stack_conflicts_remain_rejected(self):
+        values = self.fixture(52635)
+        values[1].find("attribute[@key='weight']").set("value", "9001")
+        with self.assertRaises(ValueError):
+            qualifier.qualify(*values)
+        values = self.fixture(52635)
+        values[2]["flags"].clear()
+        with self.assertRaises(ValueError):
+            qualifier.qualify(*values)
 
     def test_exact_neutral_source_keeps_armor_and_ammo_semantics(self):
         record = qualifier.qualify(*self.fixture())
@@ -57,6 +105,17 @@ class StagPhysicalItemTests(unittest.TestCase):
         )
         self.assertEqual(
             record["admission"]["legal_destinations"], ["CharacterInventory", "Ground"]
+        )
+
+    def test_compass_keeps_exact_identity_and_neutral_equipment(self):
+        record = qualifier.qualify(*self.fixture(52759))
+        self.assertEqual(
+            record["production_definition"]["production_key"],
+            "oteryn:item.tibia.i52759",
+        )
+        self.assertEqual(
+            record["semantics"]["protection"]["value"]["armor"],
+            {"state": "KNOWN", "value": 0},
         )
 
     def test_nonzero_armor_is_not_dropped(self):

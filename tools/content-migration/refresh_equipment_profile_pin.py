@@ -9,6 +9,14 @@ import re
 import tempfile
 from pathlib import Path
 
+import questpc4_beregar_equipment_pin
+import questpc4_recipe_equipment_pin
+import questpc4_special_equipment_pin
+import questpc4_treasure_equipment_pin
+import questpc4_stag_equipment_pin
+import questpc4_typed_equipment_pin
+import questpc4_yalahar_equipment_pin
+
 ROOT = Path(__file__).resolve().parents[2]
 TEST = (
     ROOT
@@ -89,7 +97,70 @@ def main():
         "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json",
         "content/items/definitions/starting-loadout-profiles.json",
     )
-    source = TEST.read_text()
+    original = TEST.read_text()
+    source = questpc4_stag_equipment_pin.refresh(
+        original,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-stag-item-profiles.json"
+            ).read_text()
+        ),
+    )
+    source = questpc4_yalahar_equipment_pin.refresh(
+        source,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-yalahar-item-profiles.json"
+            ).read_text()
+        ),
+    )
+    source = questpc4_beregar_equipment_pin.refresh(
+        source,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-beregar-item-profiles.json"
+            ).read_text()
+        ),
+    )
+    source = questpc4_recipe_equipment_pin.refresh(
+        source,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-recipe-item-profiles.json"
+            ).read_text()
+        ),
+    )
+    source = questpc4_typed_equipment_pin.refresh(
+        source,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-typed-item-profiles.json"
+            ).read_text()
+        ),
+    )
+    source = questpc4_special_equipment_pin.refresh(
+        source,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-special-item-profiles.json"
+            ).read_text()
+        ),
+    )
+    source = questpc4_treasure_equipment_pin.refresh(
+        source,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-treasure-input-profiles.json"
+            ).read_text()
+        ),
+    )
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths),
         custody=(json.loads((ROOT / "tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json").read_text())
@@ -97,9 +168,9 @@ def main():
         overlap_keys={f"oteryn:item.tibia.i{i}" for i in
             __import__('qengine_reward_item_profiles').PREVIOUSLY_COUNTED_IDS},
     )
-    if args.check and generated != source:
+    if args.check and generated != original:
         raise SystemExit("equipment cohort pin is stale")
-    if not args.check and generated != source:
+    if not args.check and generated != original:
         with tempfile.NamedTemporaryFile("w", dir=TEST.parent, delete=False) as output:
             output.write(generated)
             temporary = output.name
