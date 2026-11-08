@@ -30,6 +30,7 @@ pub enum Trigger {
 mod clock;
 mod counterparts;
 mod effects;
+pub mod ground;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal,
@@ -147,12 +148,35 @@ impl ActorKind {
     }
 }
 
-/// A read-only exact appearance predicate on a native, immovable map entry.
+/// Static map entries and mutable Ground custody are distinct evidence kinds.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct WorldRequirement {
-    pub position: Position,
-    pub appearance: u16,
+#[serde(untagged, deny_unknown_fields)]
+pub enum WorldRequirement {
+    Map {
+        position: Position,
+        appearance: u16,
+    },
+    Ground {
+        position: Position,
+        ground: ground::GroundStackRequirement,
+    },
+}
+impl WorldRequirement {
+    pub fn position(&self) -> Position {
+        match self {
+            Self::Map { position, .. } | Self::Ground { position, .. } => *position,
+        }
+    }
+    pub fn valid(&self) -> bool {
+        (-15..=0).contains(&self.position().floor)
+            && match self {
+                Self::Map { appearance, .. } => *appearance != 0,
+                Self::Ground { ground, .. } => ground.valid(),
+            }
+    }
+    pub fn is_map(&self) -> bool {
+        matches!(self, Self::Map { .. })
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -342,6 +366,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .as_ref()
                 .is_some_and(|n| !valid_pos(n.position) || n.appearance == 0)
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || (callback.world_requirements.iter().any(|r| !r.is_map())
+                && !callback.has_personal_state())
             || !effects::valid(callback)
             || callback
                 .effects
@@ -382,11 +408,11 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
             || callback.world_requirements.len() > MAX_EFFECTS
-            || callback
+            || callback.world_requirements.iter().any(|r| !r.valid())
+            || (callback
                 .world_requirements
                 .iter()
-                .any(|r| !valid_pos(r.position) || r.appearance == 0)
-            || (!callback.world_requirements.is_empty()
+                .any(WorldRequirement::is_map)
                 && (!!callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
@@ -849,7 +875,7 @@ mod tests {
             );
         }
         callback.actor_kind = ActorKind::Player;
-        callback.world_requirements = vec![WorldRequirement {
+        callback.world_requirements = vec![WorldRequirement::Map {
             position: Position {
                 x: 1,
                 y: 1,
