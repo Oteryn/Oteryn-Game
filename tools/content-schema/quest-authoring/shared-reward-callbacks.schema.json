@@ -71,8 +71,33 @@
           "items": {
             "$ref": "#/$defs/giftItem"
           }
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "^[^\\u0000]*$"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "text"
+            ]
+          },
+          "then": {
+            "properties": {
+              "count": {
+                "const": 1
+              },
+              "contents": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
     },
     "outfit": {
       "type": "object",

@@ -35,7 +35,26 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    /// Literal source-authored text initialized by this reward's existing MINT.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
 }
+
+impl ItemReward {
+    pub(super) fn valid_literal_text(&self) -> bool {
+        self.text.as_deref().is_none_or(|text| {
+            self.count == 1
+                && self.contents.is_empty()
+                && !text.is_empty()
+                && text.len() <= 7_996
+                && text.chars().count() <= 4_000
+                && !text.contains('\0')
+        })
+    }
+}
+
+#[cfg(test)]
+mod literal_text_tests;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -489,6 +508,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
             })
             || c.give.as_ref().is_some_and(|r| {
                 !item(&r.item, r.count)
+                    || !r.valid_literal_text()
                     || r.contents.len() > 20
                     || r.contents.iter().any(|s| {
                         !item(&s.item, s.count)

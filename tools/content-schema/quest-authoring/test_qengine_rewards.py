@@ -7,6 +7,28 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_literal_reward_text_is_bounded_and_leaf_only(self):
+        document=copy.deepcopy(self.callbacks)
+        reward={'item':'oteryn:item.tibia.i2814','count':1,'contents':[],
+                'text':'Literal café.\n'}
+        document['callbacks'][0]['give']=reward
+        q.validate_callbacks(document)
+        for body in ['x'*4000,'é'*3998]:
+            reward['text']=body
+            q.validate_callbacks(document)
+        for body in ['', 'bad\0text', 'x'*4001, 'é'*4000]:
+            reward['text']=body
+            with self.subTest(body_length=len(body)), self.assertRaises((ValidationError,ValueError)):
+                q.validate_callbacks(document)
+        reward['text']='Text'
+        reward['count']=2
+        with self.assertRaises(ValidationError):
+            q.validate_callbacks(document)
+        reward['count']=1
+        reward['contents']=[{'item':'oteryn:item.tibia.i3031','count':1}]
+        with self.assertRaises(ValidationError):
+            q.validate_callbacks(document)
+
     def test_atomic_primary_storage_capacity_is_sixteen(self):
         document=copy.deepcopy(self.callbacks)
         document.pop('tracks',None)

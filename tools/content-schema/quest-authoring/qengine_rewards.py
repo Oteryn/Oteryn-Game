@@ -989,6 +989,9 @@ def validate_callbacks(document):
         declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
+        reward=callback.get('give')
+        if reward and reward.get('text') is not None and len(reward['text'].encode('utf-8'))>7996:
+            raise ValueError('literal reward text exceeds UTF-8 byte bound')
         storage=callback['storage']
         if callback.get('carried_item') is not None and (
                 callback['take']!=[{'item':callback['carried_item'],'count':1}]
