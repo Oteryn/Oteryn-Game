@@ -600,6 +600,42 @@
       ]
     },
     {
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "topic": 6,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_trade_storage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Do you still have meat or ham? Ask me for a trade to sell it."
+      ]
+    },
+    {
       "npc": "oteryn:npc.irmana",
       "keywords": [
         "fur"

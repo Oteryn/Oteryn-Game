@@ -1,5 +1,5 @@
 {
-  "branch": "claude/happy-davinci-ijz3wy-questpc3",
+  "branch": "claude/happy-davinci-ijz3wy-questpc3b",
   "cloud_continuation": {
     "active_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -5349,46 +5349,67 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "batch": "first_dragon_quiz_21",
-      "phase": "QUALIFIED_MECHANISM: ordered source quiz, fenced access once and reviewed NPC placement; actual PG18.6 GREEN158101ms",
+      "batch": "collector_source_authority_23",
+      "phase": "COMPILING_WIP: source authority and both Carlos PG cases GREEN; fairy admission Unavailable remains exact red point",
       "entries": [
-        "quiz introduction and first question",
-        "Tahmehe answer",
-        "Ishara answer",
-        "Svir final fenced access once and repeat read-only",
-        "source NPC native placement admission"
+        "retain exact incoming Crystal9f5 source authority",
+        "keep unknown/spoofed revisions closed",
+        "retain outfit-only short alias restriction",
+        "load every registered callback through the full catalogue",
+        "Carlos topic6 repeat confirmation preserves pre-sale state",
+        "Fairy fixture standard backpack plus explicit appearance admission check"
       ],
       "engine_expansion": false,
-      "red": {
-        "postgres": "18.6",
-        "duration_ms": 112482,
-        "log": "/tmp/questpc3-first-dragon-quiz-red.log",
-        "sha256": "f905633d066a62b52975d2d46db4e24d1ef4d313b792325b3901416988f3ef9a",
-        "failure": "source final reply missing before authoring"
+      "red": "10focused post-merge cases:1PASS53191ms raid-spawn;9fail common source-authority lookup. Full168.264s, /tmp/questpc3-collector-own-pg-source-authority-red.log. First3failbeforePGharness, not claimed as PG RED.",
+      "unit_red": "/tmp/questpc3b-source-authority-unit-red.log: pinned server revision returnsNone ratherthanSome",
+      "units_green": "317/317PASS39.846s /tmp/questpc3b-quests-unit-suite-fixed.log; original wardrobe negative test unchanged",
+      "next": "Publish compiling WIP under owner cadence rule; preserve frozen09c26dcee; continue exact fairy admission diagnostic/fix on successor, collect remaining unit results",
+      "post_authority_pg": {
+        "cases": 10,
+        "passed": 7,
+        "failed": 3,
+        "duration_seconds": 528.845,
+        "failure_groups": [
+          "Carlos repeated yes rejected before actual food sale (2 cases)",
+          "Fairy appearance/items admission before first command (1 case)"
+        ],
+        "qualification": "No GREEN claim until identical10case rerun finishes",
+        "second_run": {
+          "cases": 10,
+          "passed": 9,
+          "failed": 1,
+          "duration_seconds": 469.345,
+          "log": "/tmp/questpc3b-repair-pg-nine-green-sex-red.log",
+          "remaining_error": "Fairy explicit appearance read InvalidInput: creation sexNULL in legacy admission fixture",
+          "fix": "Reuse existing appearance fixture creation-sex setup; retain capability25 and every assertion"
+        },
+        "final_run": {
+          "cases": 10,
+          "passed": 9,
+          "failed": 1,
+          "duration_seconds": 698.253,
+          "postgres": "18.6",
+          "failure": "Fairy setup Unavailable(Unavailable),16931ms, equipment/progression rows0, sex1",
+          "log": "/tmp/questpc3b-authority-own-pg.log",
+          "qualification": "Carlos fixes and source-authority cohorts GREEN; no fairy or whole-quest qualification claimed"
+        }
       },
       "checks": {
-        "units": "PASS 2353/2353 across ten crates in1017.488s, log /tmp/questpc3-light-units-boundary-fixed.log; 96 PG-named cases excluded from unit-only suite, ownPG separately. Original hash assertions retained and valid-window assertion added. Dispatch/server units pending.",
-        "green": "PASS actual PostgreSQL18.6 158101ms",
-        "workspace": "PASS final post-pin cargo check --workspace --all-targets 24.62s /tmp/questpc3-quiz-final-workspace-check.log",
-        "generated": "Official native43/Grizzly30/blessing8/all authoring families/bindings/all373 matrix/audit tags refreshed. Initial compound invocation used an incorrect audit-tool path; correct tools/contracts/update_item_audit_tags.py then completed, duplicate checkCLEAR, imbue/craft checksPASS.",
-        "pins": "PASS official release pin-refresh /tmp/questpc3-quiz-pin-refresh.log; World400a50034b94222c6e831487654feb3390fbd328c9b51ceb4f6eacae9875e4d5",
-        "pending": [
-          "oteryn-gameplay-dispatch unit suite",
-          "oteryn-game-server unit suite"
-        ],
-        "fmt": "PASS cargo fmt --all --check plus explicit mounted-test rustfmt --check /tmp/questpc3-quiz-final-fmt.log"
+        "units": "PENDING1913 nonPG cases across changed quests+dispatch; no failures reported at323completed; /tmp/questpc3b-repair-unit-suites.log. Prior source-helper317PASS63.698s retained.",
+        "workspace": "PASS17m48s including Cargo lock wait /tmp/questpc3b-final-repair-workspace-check.log",
+        "clippy": "PASS16m58s including Cargo lock wait; changed quests+dispatch libraries -D warnings with test-support /tmp/questpc3b-final-repair-clippy-lib.log",
+        "pins": "PASS official repository compiler pin-refresh; unchanged World37645a4ee7b0ae79f1e95a47d49d134a29535a4959eeca302318f4be536bc02d /tmp/questpc3b-final-repair-pins.log; canonical package pins regenerated; dupCLEAR",
+        "fmt": "PASS cargo fmt --all --check /tmp/questpc3b-publish-final-fmt.log"
       },
-      "green": {
+      "followup_setup_error": {
+        "command": "compiled dispatch test binary --exact threatened_five_fairies_are_distinct_capped_and_restore_in_idle_channel --nocapture",
         "postgres": "18.6",
-        "duration_ms": 158101,
-        "access": 1,
-        "receipts": 1,
-        "placed": true,
-        "result": "PASS",
-        "log": "/tmp/questpc3-first-dragon-quiz-green.log",
-        "sha256": "21a6120fcacab1a76f052b0928076194d8a6c0f153f1b7631aed4d72e361527e",
-        "proof": "Native NPC hi/wrong-first-Svir/yes/yes/Tahmehe/Ishara/Svir; no earlier access; final1; completed full repeat writes no second receipt; reviewed native placement admitted"
-      }
+        "duration_ms": 30604,
+        "error": "Unavailable(Unavailable)",
+        "evidence": "Separate focused attempt failed before progression state or any quest receipt; full10case rerun pending, do not qualify fairy correction yet",
+        "log": "/tmp/questpc3b-final-fairy-focused-pg.log"
+      },
+      "publication_rule": "PREPUSH-2 cadence exception permits changed-crate units/finalPG pending after main merge, generated/pins, workspace check and fmt pass; record exact pending cases and continue after push"
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -9976,7 +9997,7 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-08T00:33:31.976072+00:00",
+    "updated_at": "2026-11-08T01:03:30.991344+00:00",
     "standing_validation_rule": "PREPUSH-2: fetch+merge main before every push; regenerate generated files/pins/central lists with repo tooling; every changed-crate unit suite plus own real-PG cases; workspace all-targets check and fmt. At30min, may push compiling generated state with step3 tests explicitly pending.",
     "main_merge_validation": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
@@ -10065,7 +10086,12 @@
       "owner": "wpkg",
       "publication": "Push this lane branch; collector pulls green batches; no lane PR; merge main after coordinator announces collector merge"
     },
-    "latest_green_publication": "45aad7300bab0063bce39fde4c3f77115d2fa52f"
+    "latest_green_publication": "45aad7300bab0063bce39fde4c3f77115d2fa52f",
+    "frozen_predecessor": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc3",
+      "head": "09c26dcee6ca67f43b89bee6523e011f4f466c03",
+      "rule": "Do not add new features or push this frozen predecessor; new work belongs to questpc3b"
+    }
   },
   "counts": {
     "scope_total": 22,

@@ -93,15 +93,8 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
-pub(super) fn source_backend(source: &str) -> Option<&'static str> {
-    if source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:") {
-        Some("crystalserver")
-    } else if source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:") {
-        Some("canary")
-    } else {
-        None
-    }
-}
+mod source_authority;
+pub(super) use source_authority::source_backend;
 
 mod native;
 use native::valid_native_callback;

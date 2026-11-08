@@ -12,6 +12,7 @@ use oteryn_gameplay_quests::quest::{QuestComparison,QuestEffect,QuestEffectKind,
 use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition,WorldObjectTarget};
 use std::sync::Arc;
+use oteryn_gameplay_domain::domain::appearance::AppearanceContent;
 const QUEST:&str="oteryn:quest.threatened_dreams_quest";
 const NIGHT:&str="oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders";
 const COUNTER:&str="oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter";
@@ -40,6 +41,12 @@ fn scenario()->TestResult{
  run(async |admin|{
         let h=Harness::create_with_admission_seed(admin,"threatened_fairies",false,false).await?;
         prepare_current_session(&h).await?;
+        // The older admission fixture predates native appearance creation.
+        // Seed creation sex as the existing appearance fixtures do, not quest results.
+        let mut creation = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *creation).await?;
+        sqlx::query("UPDATE game_character_roots SET sex=1 WHERE character_id=encode($1,'hex')::uuid AND sex IS NULL").bind(id(41).as_slice()).execute(&mut *creation).await?;
+        creation.commit().await?;
         let version:String=sqlx::query_scalar("SELECT current_setting('server_version')").fetch_one(&h.pool).await?;
         eprintln!("THREATENED_FAIRIES POSTGRES_CASE_STARTED server_version={version}");
         let seal=h.recovery.seal_current().map_err(debug)?;
@@ -77,6 +84,7 @@ fn scenario()->TestResult{
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
+        super::super::item_look::seed_main_backpack(&h, &[]).await?;
         let mut selected=admitted.continuity.selected_capabilities.as_slice().to_vec();selected.extend([3,4,6,11,15,18,25]);selected.sort_unstable();selected.dedup();
         let offered=crate::gameplay_transport::appearance_change::offer::offered(owner.offered_capabilities(),owner.appearance_available());
         admitted.continuity.selected_capabilities=crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered,&selected).ok_or("capabilities")?;
@@ -87,6 +95,9 @@ fn scenario()->TestResult{
         };
         let appearance=|at:Position|->TestResult<u16>{let pos=crate::map::overlay::TilePos{x:at.x,y:at.y,floor:at.floor};Ok(world.facts().base_entry(pos,1,1).ok_or("fairy appearance")?.appearance_id)};
         seed(&owner,&admitted,&prior(2),36000).await?;
+        let appearance_fence = crate::gameplay_transport::character_gameplay_fence::current(&owner, admitted.game_session_id, false).await.ok_or("appearance fence")?;
+        let (_, cosmetics) = owner.appearance_context().ok_or("appearance content")?;
+        h.root.read_current_character_appearance_state(&authority, &h.node, appearance_fence, cosmetics.earned_grant_keys()).await.map_err(debug)?;
         let command=admitted.continuity.next_command_id;
         use_source(&mut owner,&mut admitted,command,target_for(TARGETS[0])?).await?;
         assert_ne!(progress(&owner,&admitted,&authority,&flag(0)).await?,1,"wrong mission stage cannot release a fairy");

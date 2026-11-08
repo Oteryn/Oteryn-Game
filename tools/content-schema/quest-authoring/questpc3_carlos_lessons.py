@@ -77,6 +77,11 @@ def documents():
                        "topic": 0, "next_topic": topic,
                        "storage": [storage(GREET, stage, stage, stage)],
                        "reply": [reply]})
+    offers.append({"npc": NPC, "keywords": ["yes", "help", "ok"],
+                   "topic": 6, "next_topic": 6,
+                   "storage": [storage(GREET, 6, 6, 6), storage(LOG, 6, 6, 6),
+                               storage(BASE + "carlos_npc_trade_storage", 1, 1, 1)],
+                   "reply": ["Do you still have meat or ham? Ask me for a trade to sell it."]})
     greetings = [{"npc": NPC, "greet": "Welcome, |PLAYERNAME|. Shall I explain how to change your outfit?",
                   "farewell": "Good luck with your hunt, |PLAYERNAME|.",
                   "walkaway": "Goodbye, |PLAYERNAME|."}]
@@ -90,8 +95,16 @@ def documents():
         if field == "offers":
             document[field] = replace_npc_offers(document[field], NPC, own)
         else:
-            document[field] = [row for row in document[field]
-                               if (not row["key"].startswith(PREFIX) if field == "callbacks" else row["npc"] != NPC)] + own
+            replacements = {row["key"] if field == "callbacks" else row["npc"]: row for row in own}
+            retained = []
+            for row in document[field]:
+                key = row["key"] if field == "callbacks" else row["npc"]
+                owned = key.startswith(PREFIX) if field == "callbacks" else key == NPC
+                if not owned:
+                    retained.append(row)
+                elif key in replacements:
+                    retained.append(replacements.pop(key))
+            document[field] = retained + list(replacements.values())
         result[path] = document
     path = "content/quests/shared-trade-callbacks.json"
     target = ROOT / path
