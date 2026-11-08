@@ -25,7 +25,7 @@ Each record has these fields:
 | `npc` | Canonical `oteryn:npc.<name>`, resolved through the current conversation. |
 | `keywords` | One to eight exact, trimmed, lowercase ASCII player messages. |
 | `topic`, `next_topic` | Current/committed conversation topic, unsigned 16-bit integers. |
-| `storage` | One to eight `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as the declared track initial value (new callback tracks default to `-1`). `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
+| `storage` | One to sixteen `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as the declared track initial value (new callback tracks default to `-1`). `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
 | `requires` | Optional, up to eight distinct read-only `{track, minimum, maximum}` prerequisites. Tracks must already be declared and cannot also occur in `storage`. Their original quest retains ownership. The writer locks them in sorted order with written tracks and rechecks their fresh values before any consumption or reward. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
@@ -109,7 +109,7 @@ Selected look, disguise and caller-supplied gender never establish this guard.
 
 `participants` optionally names up to three distinct existing foreign quest
 owners and their exact storage effects. The combined primary and participant
-write set is limited to eight tracks, with no duplicates or overlap with readonly
+write set is limited to sixteen tracks (each foreign participant retains its eight-track bound), with no duplicates or overlap with readonly
 prerequisites. A participant cannot invent or reassign a track. Its validated
 transition contributes to its original owner's definition hash. Participants
 cannot be submitted as independent quest transitions. The Character writer locks
@@ -176,7 +176,7 @@ Each record has these fields:
 | `npc` | Canonical `oteryn:npc.<name>`, resolved through the current conversation. |
 | `keywords` | One to eight exact, trimmed, lowercase ASCII player messages. |
 | `topic`, `next_topic` | Current/committed conversation topic, unsigned 16-bit integers. |
-| `storage` | One to eight `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as the declared track initial value (new callback tracks default to `-1`). `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
+| `storage` | One to sixteen `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as the declared track initial value (new callback tracks default to `-1`). `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
 | `requires` | Optional, up to eight distinct read-only `{track, minimum, maximum}` prerequisites. Tracks must already be declared and cannot also occur in `storage`. Their original quest retains ownership. The writer locks them in sorted order with written tracks and rechecks their fresh values before any consumption or reward. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
@@ -260,7 +260,7 @@ Selected look, disguise and caller-supplied gender never establish this guard.
 
 `participants` optionally names up to three distinct existing foreign quest
 owners and their exact storage effects. The combined primary and participant
-write set is limited to eight tracks, with no duplicates or overlap with readonly
+write set is limited to sixteen tracks (each foreign participant retains its eight-track bound), with no duplicates or overlap with readonly
 prerequisites. A participant cannot invent or reassign a track. Its validated
 transition contributes to its original owner's definition hash. Participants
 cannot be submitted as independent quest transitions. The Character writer locks

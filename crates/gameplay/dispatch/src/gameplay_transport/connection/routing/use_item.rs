@@ -185,7 +185,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         }
     }
     if let Ok(intent) = &decoded
-        && (intent.use_with.is_some() || intent.use_with_map_item.is_some())
+        && (intent.use_with.is_some() || intent.use_with_map_item.is_some()
+            || (intent.use_with_position.is_none() && matches!(intent.target, UseTarget::ItemByDefinition(_))))
     {
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|v| v.resolve(handle)),

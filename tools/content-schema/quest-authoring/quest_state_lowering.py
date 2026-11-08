@@ -50,7 +50,7 @@ CHESTS = 'tools/content-schema/quest-authoring/samples/chests/claims.json'
 TOOL = 'tools/content-schema/quest-authoring/quest_state_lowering.py'
 SCHEMA = 'OTERYN_QUEST_STATE_LOWERING/v1'
 # QUESTSTATE0-RL-02 and -06, as `apps/game-server/src/quest/mod.rs`.
-MAX_EFFECTS = 8
+MAX_EFFECTS = 16
 MAX_KEY_BYTES = 128
 KEY = re.compile(r'^oteryn:[A-Za-z0-9._:/-]+$')
 SOURCE_TRACK = re.compile(r'^(canary|crystalserver):quest-progress/([A-Za-z0-9._:/-]+)$')
@@ -358,6 +358,8 @@ def expected(root):
     import quests_2_emperor_state
     quests_2_emperor_state.append_tracks(quests)
     append_source_herald_grouped_transitions(quests, records)
+    import questpc_chest_completion
+    questpc_chest_completion.append(quests, records)
     quests.sort(key=lambda q: q['quest'])
     chests = chest_transitions(root, quests)
     validate(quests)
@@ -366,7 +368,7 @@ def expected(root):
     payload = {
         'schema': SCHEMA, 'classification': 'OTS_HYPOTHESIS_ONLY', 'family': 'Quest',
         'contract': 'docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md',
-        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, CHESTS, TOOL, 'tools/content-schema/quest-authoring/quests_2_emperor_state.py')],
+        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, CHESTS, TOOL, 'tools/content-schema/quest-authoring/quests_2_emperor_state.py', 'tools/content-schema/quest-authoring/questpc_chest_completion.py')],
         'counts': {
             'quests': len(quests), 'tracks': sum(len(q['tracks']) for q in quests), 'transitions': len(transitions),
             'effects': {kind: effects.count(kind) for kind in sorted(set(effects))},

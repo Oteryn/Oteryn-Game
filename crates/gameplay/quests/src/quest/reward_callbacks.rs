@@ -38,7 +38,26 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    /// Literal source-authored text initialized by this reward's existing MINT.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
 }
+
+impl ItemReward {
+    pub(super) fn valid_literal_text(&self) -> bool {
+        self.text.as_deref().is_none_or(|text| {
+            self.count == 1
+                && self.contents.is_empty()
+                && !text.is_empty()
+                && text.len() <= 7_996
+                && text.chars().count() <= 4_000
+                && !text.contains('\0')
+        })
+    }
+}
+
+#[cfg(test)]
+mod literal_text_tests;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -384,11 +403,13 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || c.requires
                 .iter()
                 .any(|r| participant_keys.contains(&r.track) || op_keys.contains(&r.track))
-            || c.storage.len() + c.state_ops.len() + participant_count > 8
+            || c.storage.len() + c.state_ops.len() + participant_count > super::QUESTSTATE0_RL_02
             || c.participants.iter().any(|p| {
                 p.quest == c.quest
                     || !slug(&p.quest, "oteryn:", b"._/:-", 128)
                     || (p.storage.is_empty() && p.state_ops.is_empty())
+                    // Foreign participant receipts retain their separate eight-track contract.
+                    || p.storage.len() + p.state_ops.len() > 8
                     || p.state_ops.iter().any(|s| !s.valid())
                     || p.storage
                         .iter()
@@ -427,7 +448,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
                 .iter()
                 .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
             || (c.storage.is_empty() && c.state_ops.is_empty() && !c.value_only_guarded())
-            || c.storage.len() > 8
+            || c.storage.len() > super::QUESTSTATE0_RL_02
             || c.minimum_level == Some(0)
             || tracks.len() != c.storage.len()
             || c.requires_actor_conditions.len() > 8
@@ -501,6 +522,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
             })
             || c.give.as_ref().is_some_and(|r| {
                 !item(&r.item, r.count)
+                    || !r.valid_literal_text()
                     || r.contents.len() > 20
                     || r.contents.iter().any(|s| {
                         !item(&s.item, s.count)
@@ -728,6 +750,37 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
+        let mut callback = super::load()?.into_iter().next().ok_or("callback")?;
+        callback.storage = (0..16)
+            .map(|i| super::Storage {
+                track: format!("oteryn:quest-progress/atomic/{i}"),
+                minimum: 0,
+                maximum: 0,
+                set: 1,
+                preserve: false,
+                at_least: false,
+                increment: false,
+            })
+            .collect();
+        let document = |callback: &super::RewardCallback| {
+            serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()
+        };
+        assert!(super::parse(&document(&callback)).is_ok());
+        callback.storage.push(super::Storage {
+            track: "oteryn:quest-progress/atomic/16".into(),
+            minimum: 0,
+            maximum: 0,
+            set: 1,
+            preserve: false,
+            at_least: false,
+            increment: false,
+        });
+        assert!(super::parse(&document(&callback)).is_err());
+        Ok(())
+    }
+
     #[test]
     fn level_and_positive_addon_guards_preserve_one_shot_bases() -> Result<(), String> {
         let original = super::load()?

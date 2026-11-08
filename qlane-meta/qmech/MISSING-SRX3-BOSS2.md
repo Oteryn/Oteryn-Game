@@ -1,0 +1,9 @@
+# SRX3-BOSS2 — checked missing quest mechanics
+
+Status: **PARTIAL**. This report lists only checked production blockers; it does not infer missing mechanics from `WAITING_IMPLEMENTATION` metadata. Checked on local merged boss/qmech tree `098c6d371` with the pending boss repairs.
+
+| quest | missing mechanic (server or client) | evidence (quest file and step, plus missing hook/table/command) | blocks the quest fully or partly |
+|---|---|---|---|
+| Adventures of Galthen Quest | Server: qualified Ahau BossLever entry with its configured exit teleporter | Quest: `content/quests/definitions/quests-00100-00199.json#/records/8/definition/oteryn_recipe/payload/recipe/stages/4`, **s5**, “Defeat Ahau in the City of Gold”. `tools/content-schema/encounters/import_boss_levers.py:142–143` marks the configured `exitTeleporter` unsupported; `crates/gameplay/content/src/content/bosses/activity_template.rs:663–671` rejects that blocker and the unknown callback closure. `apps/game-server/src/node/serve/channel_boot.rs:144–146` publishes only qualified templates; `crates/gameplay/dispatch/src/gameplay_transport/activity_content.rs:265–288` refuses missing templates, propagated by `crates/gameplay/dispatch/src/gameplay_transport/boss_activity.rs:216–219`. The captured Ahau lever record and pinned Lua declare the exit, so this is an unwired hook, not a guessed coordinate. | **Partly:** the BossLever route needed by s5 and its dependent progression. Other steps are not claimed unavailable or qualified. |
+
+The Soul War, Rotten Blood and Primal quest definitions also contain waiting-lowering metadata. Separate production hooks exist, so that metadata is not reported here as proof of a missing mechanic. The earlier suggested “LadyDefence” gap was not established in the checked code and is not asserted. Encounter foundation/Cults work already assigned to engenc/engenc2 must not be duplicated. Part-C claims follow transfer and validation of the pre-existing SRX3 work.
