@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "READY: five standalone completion bindings;17PG730.43s,104 authoring modules/checks/tree, workspace alltargets, strict dispatch Clippy, fmt PASS. Additional dispatch non-PG unit suite pending (rebuild stopped for owner immediate publication cadence).",
+  "batch_state": "READY:17PG730.43s on lane candidate; merged qmech ed38719c6 passes104 authoring modules, checks/tree and workspace alltargets8m47s. Final merged Clippy/World verify running. Additional dispatch non-PG unit suite pending under publication-cadence exception.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [

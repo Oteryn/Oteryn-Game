@@ -22,3 +22,8 @@ acceptance stays atomic. Missing report is qlane-meta/qmech/MISSING-questpc-pc2.
 
 Continue on qmech shared queue; fetch+merge qmech before every push, regenerate
 derived files last, never merge main without explicit coordinator direction.
+
+QMECH merge ed38719c6 preserves all five bindings;104 authoring modules,
+checks/tree and workspace alltargets8m47s PASS on combined tree. Final merged
+Clippy/World verify running. Report-only pushes were verified at781260bd7
+and7d786a11a; quest batch publication follows these merged gates.
