@@ -403,7 +403,8 @@
   "feature": "Sound / Battle Sounds: own/others/creatures, attack/heal/support",
   "status": "PARTIAL",
   "gap": "Playback istnieje; brak suwaków i filtrów walki.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/native.rs:49 + battle_sound_source_gain_multiplies_master_and_mute; native source mixer controls persist own/others/creatures volumes. Remaining: attack/heal/support classification and native caller coverage."
  },
  {
   "id": "T066",

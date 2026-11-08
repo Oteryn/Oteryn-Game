@@ -13,6 +13,7 @@ pub const MAX_SOUND_BYTES: u64 = 16 * 1024 * 1024;
 #[serde(default, deny_unknown_fields)]
 pub struct AudioSettings {
     pub master_volume: u8,
+    pub battle_volumes: [u8; 3],
     pub muted: bool,
 }
 
@@ -20,12 +21,23 @@ impl Default for AudioSettings {
     fn default() -> Self {
         Self {
             master_volume: 100,
+            battle_volumes: [100; 3],
             muted: false,
         }
     }
 }
 
 impl AudioSettings {
+    pub fn source_gain(self, source: PresentationSource) -> f32 {
+        let volume = match source {
+            PresentationSource::Own => self.battle_volumes[0],
+            PresentationSource::Others => self.battle_volumes[1],
+            PresentationSource::Creatures => self.battle_volumes[2],
+            PresentationSource::Global => 100,
+        };
+        self.gain() * f32::from(volume.min(100)) / 100.0
+    }
+
     pub fn gain(self) -> f32 {
         if self.muted {
             0.0

@@ -139,7 +139,7 @@ Zasady przeciw dublowaniu:
 | T062 | Options | Graphics / Effects: ambient/separator/indoor/cloud attenuation | PARTIAL | Światło jest; brak grupy ambient/separator/attenuation. |
 | T063 | Options | Graphics / Effects: own/other/creature/boss-area opacity | MISSING | Brak ustawień opacity według źródła efektu. |
 | T064 | Options | Sound: master/mute/device/music/ambient/items/events/UI | PARTIAL | Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera. |
-| T065 | Options | Sound / Battle Sounds: own/others/creatures, attack/heal/support | PARTIAL | Playback istnieje; brak suwaków i filtrów walki. |
+| T065 | Options | Sound / Battle Sounds: own/others/creatures, attack/heal/support | PARTIAL | Playback istnieje; brak suwaków i filtrów walki.  evidence: `apps/client/src/features/0023-presentation/native.rs:49` + `battle_sound_source_gain_multiplies_master_and_mute`; own/others/creatures controls and playback gain implemented. Remaining: attack/heal/support classification and native caller coverage. |
 | T066 | Options | Sound / UI Sounds: interactions/party/VIP/chat channels | MISSING | Brak filtrów dźwięków UI, party, VIP i kanałów. |
 | T067 | Options | Miscellaneous: confirmations, stay logged in, quick login | PARTIAL | Pojedyncze confirmation istnieją; brak wspólnej strony sesji/potwierdzeń. |
 | T068 | Options | Miscellaneous: optimise connection stability | MISSING | Brak ustawienia optymalizacji połączenia i jego konsumenta w panelu Settings. |

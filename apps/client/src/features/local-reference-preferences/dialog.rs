@@ -3,6 +3,8 @@ use super::*;
 #[path = "controls.rs"]
 mod controls;
 use controls::Controls;
+#[path = "page_help.rs"]
+mod page_help;
 
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
@@ -32,6 +34,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            battle_sounds,
             frames,
             arcs,
             interface,
@@ -125,6 +128,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            battle_sounds.show(state.page == SettingsPage::Sound);
             frames.show(state.page == SettingsPage::Graphics);
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
@@ -277,6 +281,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             continue;
                         }
                     }
+                    if state.page == SettingsPage::Sound {
+                        if let Err(error) = battle_sounds.read(&mut preferences) {
+                            state.feedback = error;
+                            continue;
+                        }
+                    }
                     if let Err(error) = arcs.read(&mut preferences) {
                         state.feedback = error;
                         continue;
@@ -311,6 +321,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                battle_sounds.refresh(&state.preferences);
                 frames.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
@@ -367,21 +378,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            let page_help = match state.page {
-                SettingsPage::CustomHotkeys => {
-                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Object, text and passive action assignment is not available yet."
-                }
-                SettingsPage::BarHotkeys => {
-                    "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
-                }
-                SettingsPage::Graphics => {
-                    "Renderer and window options use the supported native renderer. Additional controls are not available yet."
-                }
-                SettingsPage::Sound => {
-                    "Master volume % (0–100). Changes apply to playback immediately."
-                }
-                _ => "",
-            };
+            let page_help = page_help::page_help(state.page);
             SetWindowTextW(
                 feedback,
                 wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),

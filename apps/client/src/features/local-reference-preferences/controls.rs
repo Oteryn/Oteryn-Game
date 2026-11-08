@@ -9,8 +9,12 @@ use arc_controls::ArcControls;
 #[path = "frame_controls.rs"]
 mod frame_controls;
 use frame_controls::FrameControls;
+#[path = "battle_sound_controls.rs"]
+mod battle_sound_controls;
+use battle_sound_controls::BattleSoundControls;
 
 pub(super) struct Controls {
+    pub(super) battle_sounds: BattleSoundControls,
     pub(super) frames: FrameControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
@@ -49,6 +53,7 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let battle_sounds = BattleSoundControls::new(hwnd)?;
             let frames = FrameControls::new(hwnd)?;
             let arcs = ArcControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
@@ -312,6 +317,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                battle_sounds,
                 frames,
                 arcs,
                 interface,
