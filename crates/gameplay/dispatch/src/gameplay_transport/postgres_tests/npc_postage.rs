@@ -123,6 +123,8 @@ fn scenario(keys: &[&str]) -> TestResult {
                 let mut owner = deps.owner(&h, &authority);
                 owner.active_generation = Some(active);
                 deps.initialize(&owner).await;
+                sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+                    .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
                 sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
                     .bind(id(42).as_slice()).bind(id(43).as_slice())
                     .bind(pin.identity().server_artifact_digest().as_slice())

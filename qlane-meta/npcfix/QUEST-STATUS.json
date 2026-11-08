@@ -9509,5 +9509,234 @@
       }
     ],
     "publication": "Compiling integration checkpoint: all PREPUSH-2 generation/workspace/fmt gates PASS, strict10-library Clippy PASS, quest289 and authoring9 tests PASS. Other changed-crate units and own focused PG reruns explicitly pending under cadence exception. No new entry qualified."
+  },
+  "public_projection_sync": {
+    "main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
+    "merge": "Four Prey-derived conflicts resolved within1minute. Recompute with repository simulation; no NPC/world source edits from Main.",
+    "fixture_fix": "Add exact world42/channel43 operation4 grant to fixture session_user before existing activation owner. Same setup as depot_dispatch.rs466. No SQL guard/constraint changes; all assertions retained.",
+    "pg_snapshot": [
+      {
+        "name": "state-three",
+        "filter": "npcfix_state_postgres_",
+        "exit": 0,
+        "seconds": 279.266,
+        "log": "/tmp/npcfix-evidence/collector-pg-state-three.log",
+        "source_head": "eef5d67b8c01562ba48aa4e7150ec66695116483"
+      },
+      {
+        "name": "five-shops",
+        "filter": "npcfix_postgres_retained_exact_shop_prices_and_replay",
+        "exit": 101,
+        "seconds": 381.454,
+        "log": "/tmp/npcfix-evidence/collector-pg-five-shops.log",
+        "source_head": "eef5d67b8c01562ba48aa4e7150ec66695116483"
+      },
+      {
+        "name": "physical",
+        "filter": "npcfix_fading_and_retained_placements_postgres",
+        "exit": 0,
+        "seconds": 136.072,
+        "log": "/tmp/npcfix-evidence/collector-pg-physical.log",
+        "source_head": "eef5d67b8c01562ba48aa4e7150ec66695116483"
+      },
+      {
+        "name": "guardian",
+        "filter": "npcfix_postgres_guardian_sorted_literal_topics_and_multipart_order",
+        "exit": 101,
+        "seconds": 109.604,
+        "log": "/tmp/npcfix-evidence/collector-pg-guardian.log",
+        "source_head": "eef5d67b8c01562ba48aa4e7150ec66695116483"
+      },
+      {
+        "name": "atomic-eleven",
+        "filter": "npcfix_eleven_track_postgres_atomic_receipt_replay_and_rollback",
+        "exit": 0,
+        "seconds": 83.152,
+        "log": "/tmp/npcfix-evidence/collector-pg-atomic-eleven.log",
+        "source_head": "eef5d67b8c01562ba48aa4e7150ec66695116483"
+      },
+      {
+        "name": "ahmet-fluid",
+        "filter": "npcfix_postgres_ahmet_filled_fluid_mints_exact_matching_and_replay",
+        "exit": 101,
+        "seconds": 140.971,
+        "log": "/tmp/npcfix-evidence/collector-pg-ahmet-fluid.log",
+        "source_head": "eef5d67b8c01562ba48aa4e7150ec66695116483"
+      },
+      {
+        "name": "al-dee-pick",
+        "filter": "npcfix_reward_postgres_al_dee_costed_pick_repeats",
+        "exit": 0,
+        "seconds": 124.272,
+        "log": "/tmp/npcfix-evidence/collector-pg-al-dee-pick.log",
+        "source_head": "eef5d67b8c01562ba48aa4e7150ec66695116483"
+      },
+      {
+        "name": "retained-services",
+        "filter": "npcfix_postgres_dispatch_services_and_replay",
+        "exit": 101,
+        "seconds": 762.604,
+        "log": "/tmp/npcfix-evidence/collector-pg-retained-services.log",
+        "source_head": "eef5d67b8c01562ba48aa4e7150ec66695116483"
+      }
+    ],
+    "failure_group": "Four selected postage-based tests all fail content activation is not granted to this control role; all13 retained NPC contexts collected. State3,physical,atomic11,AlDee PASS with real markers/durations.",
+    "old_units": "Incomplete10-crate unfiltered snapshot; client-assets10 PASS1.08s; game-server574 PASS753.08s,3pre-existing topology ignores; ops7PASS. Content run interrupted because Main requires regenerated Prey hashes. No incomplete run counted green.",
+    "generation": [
+      {
+        "name": "native",
+        "command": [
+          "python3",
+          "tools/content-migration/regenerate_content.py",
+          "--native-only",
+          "--skip-checks"
+        ],
+        "exit": 0,
+        "seconds": 113.542
+      },
+      {
+        "name": "bindings",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+        ],
+        "exit": 0,
+        "seconds": 22.347
+      },
+      {
+        "name": "weapon",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+        ],
+        "exit": 0,
+        "seconds": 0.565
+      },
+      {
+        "name": "crystal",
+        "command": [
+          "python3",
+          "tools/content-census/g4_item_crystal_binding_generator.py"
+        ],
+        "exit": 0,
+        "seconds": 2.55
+      },
+      {
+        "name": "pins",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "--release",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "exit": 0,
+        "seconds": 50.998
+      },
+      {
+        "name": "native-check",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 126.537
+      },
+      {
+        "name": "duplicates",
+        "command": [
+          "bash",
+          ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+        ],
+        "exit": 0,
+        "seconds": 0.555
+      }
+    ],
+    "qualification": "Unchanged256QUALIFIED; no new entry promoted.",
+    "stationary_npc_engine_request": {
+      "state": "READ_ONLY ENGINE REQUEST; no feature authored",
+      "source_head": "eef5d67b8c01562ba48aa4e7150ec66695116483",
+      "engine_branch_checked": "df01fc4e8",
+      "needed_by": [
+        "Eustacio's Spy Rat",
+        "Yselda",
+        "Zarifan",
+        "A Swan"
+      ],
+      "request": "Source-qualified stationary NPC admission on captured blocked/water cells; owner qengine2 decides reusable mechanism. Ordinary enterability policy remains strict.",
+      "evidence": [
+        {
+          "path": "tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json",
+          "line": 1,
+          "sha256": "3aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd",
+          "spy_rat_cell": [
+            33857,
+            31332,
+            9
+          ]
+        },
+        {
+          "path": "imports/canary/items-xml/items.xml",
+          "line": 51510,
+          "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+          "fact": "Ground26995 is in26949-27061, explicitly named stone wall."
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_NPC_PLACE1_NPC_PLACEMENTS_DECISION_2026-10-06.md",
+          "lines": [
+            42,
+            298,
+            398
+          ],
+          "fact": "Current admission requires walkable ground and no wall/block_solid; wiki positions receive no exemption."
+        }
+      ]
+    },
+    "pending": "Final post-generation workspace/fmt/Clippy active; new current-merge unit and PG reruns pending. No new qualification. Existing EEF actual PG4 passes retained; four setup failures fully collected and fixture scope fixed.",
+    "final_checks": [
+      {
+        "name": "check",
+        "command": [
+          "cargo",
+          "check",
+          "--workspace",
+          "--all-targets"
+        ],
+        "exit": 0,
+        "seconds": 351.223
+      },
+      {
+        "name": "fmt",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 25.787
+      },
+      {
+        "name": "clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--lib",
+          "-p",
+          "oteryn-gameplay-dispatch",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit": 0,
+        "seconds": 167.482
+      }
+    ],
+    "publication": "All generation/freshness/migration/workspace/fmt/Clippy gates PASS. Publish Main+scoped fixture correction as compiling checkpoint, with current PG/unit reruns pending under PREPUSH-2. Fresh dispatch build28149, PG runner69064 and all10-crate units18148 queued after current gates. No new qualification."
   }
 }
