@@ -1,6 +1,6 @@
 {
   "lane": "npcfix",
-  "target_branch": "claude/happy-davinci-ijz3wy-qmech",
+  "target_branch": "claude/happy-davinci-ijz3wy-qm-npcfix",
   "assignment": "M38",
   "state": "IN_PROGRESS",
   "new_migration_range": "2140-2149",
@@ -30,5 +30,26 @@
     "saved_head": "9bacece303995f3f70fdc1dd6a1b882f58a0cd76",
     "stash": "npcfix retained legacy handoff and M38 Mistrock PG source before isolated mechanic slice",
     "state": "retained locally; not claimed delivered to qmech"
+  },
+  "swan_slice": {
+    "state": "GREEN_FOCUSED",
+    "npc": "oteryn:npc.a_swan",
+    "source_cell": [
+      33185,
+      31732,
+      7
+    ],
+    "scope": "Published stationary Threatened Dreams contact; ordinary compiler admission already accepts its exact cell. No general collision exception or whole-quest completion is claimed.",
+    "red": "source placement is not published; 0 != 1 in authoring test",
+    "green": {
+      "authoring_tests": 10,
+      "npc_compiler_tests": 8,
+      "clippy": "PASS",
+      "fmt": "PASS",
+      "duplicate_migrations": "PASS",
+      "world_pin_refresh_seconds": 124.967
+    },
+    "broader_authoring_checks": "running; no full-pass claim",
+    "new_migrations": []
   }
 }
