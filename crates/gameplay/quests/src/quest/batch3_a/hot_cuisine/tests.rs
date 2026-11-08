@@ -252,3 +252,65 @@ fn hot_cuisine_rejects_forged_current_year_before_bonus_grant() -> Result<(), Np
     );
     Ok(())
 }
+
+#[test]
+fn m42_menu_completion_requires_every_course_and_does_not_complete_repeats()
+-> Result<(), NpcRuleError> {
+    let hot = HotCuisineProgram::load()?;
+    let catalogue = catalogue()?;
+    let generic = catalogue
+        .program(QUEST)
+        .ok_or_else(|| NpcRuleError::Invalid("test program".into()))?;
+    let recipe = &hot.recipes[14];
+    let carried = ingredients(recipe);
+    let outfits = BTreeMap::new();
+    let mut progress = tracks(generic);
+    progress.insert(hot.quest_start_track.clone(), 1);
+    progress.insert(hot.current_dish_track.clone(), 15);
+    for other in &hot.recipes[..14] {
+        progress.insert(other.cook_count_track.clone(), 1);
+    }
+    let plan = hot
+        .plan(
+            generic,
+            &input(&progress, &carried, &outfits, recipe.topic),
+            &calendar(),
+        )?
+        .ok_or_else(|| NpcRuleError::Invalid("terminal cooking plan".into()))?;
+    assert!(
+        plan.completes,
+        "the final course must complete the canonical quest receipt"
+    );
+    progress.insert(hot.recipes[0].cook_count_track.clone(), 0);
+    let incomplete = hot
+        .plan(
+            generic,
+            &input(&progress, &carried, &outfits, recipe.topic),
+            &calendar(),
+        )?
+        .ok_or_else(|| NpcRuleError::Invalid("incomplete menu plan".into()))?;
+    assert!(
+        !incomplete.completes,
+        "missing earlier course cannot complete the quest"
+    );
+    progress.insert(hot.recipes[0].cook_count_track.clone(), 1);
+    progress.insert(hot.quest_start_track.clone(), 2);
+    let repeat = hot
+        .plan(
+            generic,
+            &input(&progress, &carried, &outfits, recipe.topic),
+            &calendar(),
+        )?
+        .ok_or_else(|| NpcRuleError::Invalid("repeat cooking plan".into()))?;
+    assert!(
+        !repeat.completes,
+        "permitted later cooking must not complete twice"
+    );
+    assert!(
+        repeat
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, NpcRuleEffect::GiveItem { .. }))
+    );
+    Ok(())
+}

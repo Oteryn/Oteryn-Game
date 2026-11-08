@@ -120,7 +120,8 @@ fn scenario_case(
     let classic_npc = qengine_reward
         || matches!(
             name,
-            "engnpc-m04" | "catalogue-npc"
+            "engnpc-m04"
+                | "catalogue-npc"
                 | "catalogue-npc-end"
                 | "catalogue-npc-calendar"
                 | "catalogue-npc-xp"

@@ -482,6 +482,15 @@ pub(super) async fn resumed_catalogue(
                     from: QuestComparison::Between(-1, i64::MAX),
                     effect: QuestEffectKind::Set(value),
                 })
+                .chain(
+                    (1..=14)
+                        .filter(move |_| index == 15)
+                        .map(|previous| QuestEffect {
+                            track: format!("{PREFIX}kv/cookcount-{}", previous + 1),
+                            from: QuestComparison::Any,
+                            effect: QuestEffectKind::Set(1),
+                        }),
+                )
                 .collect(),
             completes: false,
             experience: None,

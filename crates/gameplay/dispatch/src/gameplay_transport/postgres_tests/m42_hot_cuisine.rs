@@ -371,6 +371,15 @@ async fn exercise_recipe(
     if recipe_index == 15 {
         let stage:i64=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start'").fetch_one(&h.pool).await?;
         assert_eq!(stage, 2, "final sauce commits menu completion");
+        let canonical: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key='oteryn:quest.hot_cuisine_quest'")
+            .fetch_one(&h.pool).await?;
+        assert!(
+            canonical,
+            "the same item/progress transaction completes the canonical quest state"
+        );
+        let completions: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.hot_cuisine_quest' AND completes")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(completions, 1);
     }
     for (offset, name) in ["prior", "bonus"].into_iter().enumerate() {
         let fence = owner
@@ -438,6 +447,14 @@ async fn exercise_recipe(
         matches!(second.transition, QuestTransitionOutcome::Committed(_)),
         "{second:?}"
     );
+    if recipe_index == 15 {
+        let completions: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.hot_cuisine_quest' AND completes")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(
+            completions, 1,
+            "later valid cooking must not complete twice"
+        );
+    }
     let awards:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/culinary_master'").fetch_one(&h.pool).await?;
     assert_eq!(
         awards, 1,

@@ -58,7 +58,6 @@ pub mod soul_war_dialogue;
 pub mod source_deaths;
 pub mod source_world_objects;
 pub mod targuna_ram;
-pub mod targuna_ram;
 pub mod task_board;
 pub mod threatened_dreams;
 pub mod timers;

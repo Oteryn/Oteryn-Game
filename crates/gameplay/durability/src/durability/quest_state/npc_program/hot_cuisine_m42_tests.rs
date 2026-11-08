@@ -51,7 +51,10 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
                     &tracks,
                     &catalogue,
                     1_785_542_400,
-                    &eligibility,
+                    NpcEvaluationFacts {
+                        eligibility: &eligibility,
+                        player_name: None
+                    },
                     Some(&inventory)
                 )
                 .map_err(|e| format!("eligibility: {e:?}"))?
@@ -64,10 +67,13 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
             &tracks,
             &catalogue,
             1_785_542_400,
-            &NpcEligibility {
-                level: 35,
-                premium_current: true,
-                vocation: "oteryn:vocation.none".into(),
+            NpcEvaluationFacts {
+                eligibility: &NpcEligibility {
+                    level: 35,
+                    premium_current: true,
+                    vocation: "oteryn:vocation.none".into(),
+                },
+                player_name: None,
             },
             Some(&inventory),
         )
@@ -96,10 +102,13 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
                 &tracks,
                 &catalogue,
                 1_785_542_400,
-                &NpcEligibility {
-                    level: 35,
-                    premium_current: true,
-                    vocation: "oteryn:vocation.none".into()
+                NpcEvaluationFacts {
+                    eligibility: &NpcEligibility {
+                        level: 35,
+                        premium_current: true,
+                        vocation: "oteryn:vocation.none".into()
+                    },
+                    player_name: None
                 },
                 Some(&inventory)
             )

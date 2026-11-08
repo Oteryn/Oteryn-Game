@@ -269,6 +269,7 @@ impl HotCuisineProgram {
         let permitted = can_cook(calendar.current, last_date, bonus_year, bonus_used);
         let mut effects = Vec::new();
         let mut inventory_guards = Vec::new();
+        let mut completes = false;
         if permitted {
             let current_dish = read(&self.current_dish_track)?;
             // The retained source dish-choice branch sets this before its topic.
@@ -304,6 +305,7 @@ impl HotCuisineProgram {
                 .checked_add(1)
                 .ok_or_else(|| NpcRuleError::Arithmetic("Hot Cuisine cook count".into()))?;
             let mut all_twice = true;
+            let mut all_once = true;
             for candidate in &self.recipes {
                 let count = if candidate.index == recipe.index {
                     cooked_after
@@ -311,7 +313,9 @@ impl HotCuisineProgram {
                     read(&candidate.cook_count_track)?
                 };
                 all_twice &= count >= 2;
+                all_once &= count >= 1;
             }
+            completes = first_completion && recipe.completes_menu && all_once;
             effects.push(set(&recipe.last_track, input.now_epoch_seconds));
             effects.push(set(&recipe.cook_count_track, cooked_after));
             if spends_bonus(calendar.current, last_date) {
@@ -354,6 +358,7 @@ impl HotCuisineProgram {
         if permitted {
             selected.guards.extend(inventory_guards);
             selected.effects = effects;
+            selected.completes = completes;
             selected.effects.push(NpcRuleEffect::SetTopic { value: 0 });
             selected.reply = recipe.reply.clone();
             selected.inventory_failure_reply = self.missing_ingredients_reply.clone();
