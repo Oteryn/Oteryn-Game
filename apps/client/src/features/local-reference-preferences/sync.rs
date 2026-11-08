@@ -21,10 +21,11 @@ pub enum SettingsPage {
     Screenshots,
     Help,
     HelpGuide,
+    MinimapTransfer,
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 11] = [
+    pub const ALL: [Self; 12] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
@@ -36,6 +37,7 @@ impl SettingsPage {
         Self::Screenshots,
         Self::Help,
         Self::HelpGuide,
+        Self::MinimapTransfer,
     ];
 
     pub const fn label(self) -> &'static str {
@@ -51,6 +53,7 @@ impl SettingsPage {
             Self::Screenshots => "Screenshots",
             Self::Help => "Help / settings transfer",
             Self::HelpGuide => "Help / guide and support",
+            Self::MinimapTransfer => "Help / minimap transfer",
         }
     }
 }
@@ -67,6 +70,7 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 ];
 
 pub struct SettingsState {
+    pub(super) minimap_transfer: Option<(bool, PathBuf)>,
     pub(super) help_report: Option<super::help::Report>,
     pub(super) screenshot_runtime: super::screenshot::ScreenshotRuntime,
     pub(super) screenshot_requested: bool,
@@ -147,6 +151,7 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            minimap_transfer: None,
             help_report: None,
             screenshot_runtime: Default::default(),
             screenshot_requested: false,

@@ -172,6 +172,11 @@ impl Settings {
         }
         let mut state = lock(&self.shared);
         state.open_help_report(link);
+        match state.apply_minimap_transfer(view) {
+            Ok(true) => state.feedback = "Minimap transfer saved".into(),
+            Err(error) => state.feedback = format!("Minimap transfer failed: {error}"),
+            Ok(false) => {}
+        }
         state.sync_battle_lists(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
@@ -262,7 +267,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 250..=251 | 260..=261)
+                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 250..=251 | 260..=261 | 270..=271)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);

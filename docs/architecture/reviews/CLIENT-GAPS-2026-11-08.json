@@ -486,9 +486,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Help: minimap import/export",
-  "status": "MISSING",
-  "gap": "Brak narzędzia wymiany trwałych map/markerów.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/minimap_transfer.rs:9 + minimap_settings_transfer_is_bound_validated_and_persistent"
  },
  {
   "id": "T076",

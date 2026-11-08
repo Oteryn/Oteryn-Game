@@ -15,8 +15,12 @@ pub(super) use help_controls::{HelpControls, page_hint};
 #[path = "screenshot_controls.rs"]
 mod screenshot_controls;
 use screenshot_controls::ScreenshotControls;
+#[path = "minimap_controls.rs"]
+mod minimap_controls;
+use minimap_controls::MinimapControls;
 
 pub(super) struct Controls {
+    pub(super) minimap: MinimapControls,
     pub(super) guide: HelpControls,
     pub(super) screenshots: ScreenshotControls,
     pub(super) gameplay: GameplayControls,
@@ -61,6 +65,7 @@ impl Controls {
             let gameplay = GameplayControls::new(hwnd)?;
             let screenshots = ScreenshotControls::new(hwnd)?;
             let guide = HelpControls::new(hwnd)?;
+            let minimap = MinimapControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
                 hwnd,
@@ -322,6 +327,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                minimap,
                 guide,
                 screenshots,
                 gameplay,

@@ -14,6 +14,8 @@ mod bindings;
 mod gameplay;
 #[path = "help.rs"]
 pub mod help;
+#[path = "minimap_transfer.rs"]
+mod minimap_transfer;
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "screenshot.rs"]

@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            minimap,
             mut guide,
             screenshots,
             gameplay,
@@ -131,6 +132,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             gameplay.show(state.page == SettingsPage::Gameplay);
             screenshots.show(state.page == SettingsPage::Screenshots);
             guide.update(&state);
+            minimap.show(state.page == SettingsPage::MinimapTransfer);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
@@ -200,6 +202,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if minimap.action(action, &mut state) {
+                    continue;
+                }
                 if guide.action(action, &mut state) {
                     continue;
                 }

@@ -1,9 +1,11 @@
 //! Locally explored cells and user markers; geometry comes only from validated server tiles.
 use oteryn_session::world_map::WorldMapViewSnapshot;
 use serde::{Deserialize, Serialize};
+#[path = "transfer.rs"]
+mod transfer;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    io::{self, Read, Write},
+    io::{self, Read},
     path::PathBuf,
     time::{Duration, Instant},
 };
@@ -269,13 +271,7 @@ impl Minimap {
                 .collect(),
             markers: self.markers.clone(),
         };
-        let temporary = path.with_extension("tmp");
-        let mut file = std::fs::File::create(&temporary)?;
-        serde_json::to_writer(&mut file, &saved).map_err(io::Error::other)?;
-        file.flush()?;
-        file.sync_all()?;
-        drop(file);
-        std::fs::rename(temporary, path)?;
+        saved.write_to(&path)?;
         self.dirty = false;
         self.saved_at = Instant::now();
         Ok(())
@@ -298,27 +294,7 @@ impl Minimap {
             return Err(io::Error::other("Minimap file is too large"));
         }
         let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
-        if saved.version != 1
-            || saved.cells.len() > MAX_CELLS
-            || saved.markers.len() > MAX_MARKERS
-            || saved.cells.iter().any(|[f, x, y, c]| {
-                !(-15..=0).contains(f)
-                    || !(0..=65535).contains(x)
-                    || !(0..=65535).contains(y)
-                    || ![55, 86].contains(c)
-            })
-            || saved.markers.iter().any(|m| {
-                !(0..=65535).contains(&m.x)
-                    || !(0..=65535).contains(&m.y)
-                    || !(-15..=0).contains(&m.floor)
-                    || m.color > 3
-                    || m.label.trim().is_empty()
-                    || m.label.len() > 128
-                    || m.label.chars().any(char::is_control)
-            })
-        {
-            return Err(io::Error::other("Invalid minimap file"));
-        }
+        saved.validate()?;
         // Older caches recorded gray item-only cells. They are not persistent terrain.
         self.dirty |= saved.cells.iter().any(|cell| cell[3] == 86);
         self.cells = saved
@@ -339,3 +315,6 @@ impl Drop for Minimap {
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+#[cfg(test)]
+#[path = "tests/transfer.rs"]
+mod transfer_tests;
