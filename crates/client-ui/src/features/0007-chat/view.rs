@@ -6,6 +6,9 @@ pub fn panel_text(panel: &ChatPanel) -> String {
     let mut text = String::from("Local Chat — Say / Whisper / Yell / Private\n");
     text.push_str(&crate::chat_guild_room::panel_text(panel));
     for line in &panel.lines {
+        if !panel.console.communication.visible(line) {
+            continue;
+        }
         if !panel.console.show_messages {
             continue;
         }

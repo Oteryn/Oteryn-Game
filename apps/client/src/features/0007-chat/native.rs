@@ -21,6 +21,10 @@ const MESSAGE: usize = 102;
 const RECIPIENT: usize = 103;
 const RECIPIENT_LABEL: usize = 104;
 const SEND: usize = 105;
+const IGNORE: usize = 113;
+const ALLOW: usize = 114;
+const BLOCK: usize = 115;
+const CLEAR_LISTS: usize = 116;
 const LOG_PATH: usize = 110;
 const SAVE: usize = 111;
 const APPEND: usize = 112;
@@ -39,8 +43,17 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let id = w & 0xffff;
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
-                && ((matches!(id, SEND | FILTER | CHAT_MODE | SAVE | APPEND)
-                    && note == BN_CLICKED as usize
+                && ((matches!(
+                    id,
+                    SEND | FILTER
+                        | CHAT_MODE
+                        | SAVE
+                        | APPEND
+                        | IGNORE
+                        | ALLOW
+                        | BLOCK
+                        | CLEAR_LISTS
+                ) && note == BN_CLICKED as usize
                     || id == TAB && note == LBN_SELCHANGE as usize)
                     || PrivateControls::accepts(id, note))
             {
@@ -186,6 +199,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [10, 360, 230, 28],
             WS_TABSTOP,
         );
+        for (id, title, y) in [
+            (IGNORE, "Ignore recipient", 400),
+            (ALLOW, "Whitelist recipient", 435),
+            (BLOCK, "Blacklist recipient", 470),
+            (CLEAR_LISTS, "Remove recipient from lists", 505),
+        ] {
+            control(hwnd, "BUTTON", title, id, [10, y, 230, 28], WS_TABSTOP);
+        }
         let log_path = control(
             hwnd,
             "EDIT",
@@ -247,6 +268,37 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 }
                 use oteryn_client_ui::chat::{ComposerMode, ConsoleTab};
                 match action {
+                    IGNORE | ALLOW | BLOCK | CLEAR_LISTS => {
+                        use oteryn_client_ui::chat::CommunicationList;
+                        let name = read_text(recipient);
+                        let list = match action {
+                            ALLOW => CommunicationList::Whitelist,
+                            BLOCK => CommunicationList::Blacklist,
+                            _ => CommunicationList::Ignore,
+                        };
+                        if action == CLEAR_LISTS {
+                            for list in [
+                                CommunicationList::Ignore,
+                                CommunicationList::Whitelist,
+                                CommunicationList::Blacklist,
+                            ] {
+                                mailbox.chat.console.communication.edit(list, &name, false);
+                            }
+                        } else {
+                            mailbox.chat.console.communication.edit(list, &name, true);
+                        }
+                        mailbox.chat_private.communication =
+                            mailbox.chat.console.communication.clone();
+                        mailbox.chat_party_room.communication =
+                            mailbox.chat.console.communication.clone();
+                        mailbox.chat.feedback = Some(format!(
+                            "Ignore: {:?}; whitelist: {:?}; blacklist: {:?}",
+                            mailbox.chat.console.communication.ignored,
+                            mailbox.chat.console.communication.whitelist,
+                            mailbox.chat.console.communication.blacklist
+                        ));
+                        continue;
+                    }
                     SAVE | APPEND => {
                         let path = read_text(log_path);
                         let snapshot = mailbox.chat.clone();
