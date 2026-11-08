@@ -3,7 +3,7 @@ use super::*;
 use std::collections::BTreeSet;
 
 impl NpcRuleCatalog {
-    /// One source NPC may require up to eight plain item types and grant one type
+    /// One source NPC may require up to eight plain item types and grant twenty types
     /// per branch. XP/achievements retain their own durable participants. Money,
     /// outfits, optional removals and other native effects stay closed.
     pub fn item_exchange_keys(&self, npc: &str) -> Option<Vec<String>> {
@@ -19,6 +19,7 @@ impl NpcRuleCatalog {
                 match guard {
                     NpcRuleGuard::Storage { .. }
                     | NpcRuleGuard::CalendarMonth { .. }
+                    | NpcRuleGuard::CalendarWindow { .. }
                     | NpcRuleGuard::Level { .. }
                     | NpcRuleGuard::Vocation { .. }
                     | NpcRuleGuard::Premium { .. } => {}
@@ -62,7 +63,7 @@ impl NpcRuleCatalog {
                     _ => return None,
                 }
             }
-            if grants > 1 || keys.len() > 8 {
+            if grants > 20 || keys.len() > 8 {
                 return None;
             }
         }

@@ -118,6 +118,19 @@ impl<'a> Staged<'a> {
             }
             NpcRuleGuard::Level { op, value } => op.holds(i64::from(input.level), *value, None),
             NpcRuleGuard::CalendarMonth { value } => input.calendar_month == *value,
+            NpcRuleGuard::CalendarWindow {
+                start_month,
+                start_day,
+                end_month,
+                end_day,
+                within,
+            } => {
+                super::calendar::within(
+                    input.now_epoch_seconds,
+                    (*start_month, *start_day),
+                    (*end_month, *end_day),
+                )? == *within
+            }
             NpcRuleGuard::Vocation { value } => input.vocation == value,
             NpcRuleGuard::Premium { value } => input.premium_current == *value,
             NpcRuleGuard::Sex { value } => input.sex == *value,
@@ -291,6 +304,23 @@ pub(super) fn plan(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_with_teleport(catalogue, input, resolutions, storage_only, false)
+}
+
+pub(super) fn plan_teleport(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_with_teleport(catalogue, input, &BTreeMap::new(), true, true)
+}
+
+fn plan_with_teleport(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+    resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
+    storage_only: bool,
+    allow_teleport: bool,
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
     }
@@ -330,6 +360,7 @@ pub(super) fn plan(
                             | NpcRuleGuard::Level { .. }
                             | NpcRuleGuard::Vocation { .. }
                             | NpcRuleGuard::Premium { .. }
+                            | NpcRuleGuard::CalendarWindow { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
@@ -344,6 +375,11 @@ pub(super) fn plan(
             }
             for effect in &rule.effects {
                 if storage_only
+                    && !(allow_teleport
+                        && matches!(
+                            effect,
+                            NpcRuleEffect::Teleport { .. } | NpcRuleEffect::MagicEffect { .. }
+                        ))
                     && !matches!(
                         effect,
                         NpcRuleEffect::Set { .. }

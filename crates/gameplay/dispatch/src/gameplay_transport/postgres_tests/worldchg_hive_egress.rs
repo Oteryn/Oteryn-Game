@@ -20,6 +20,10 @@ fn worldchg_hive_native_gate_closed_stage_and_missing_scent_allow_egress_only() 
     super::kill_reward_e2e::scenario_thread::run("worldchg-hive-egress", scenario)
 }
 fn scenario() -> TestResult {
+    scenario_with_bindings(false)
+}
+
+pub(super) fn scenario_with_bindings(prove_bindings: bool) -> TestResult {
     let callback = oteryn_gameplay_quests::quest::hive_access::callbacks()
         .into_iter()
         .find(|callback| {
@@ -182,6 +186,9 @@ fn scenario() -> TestResult {
                 [crate::durability::world_event::changes::counters::CounterKind::HiveBorn.index()],
             1
         );
+        if prove_bindings {
+            super::engworldchg::assert_binding_lifecycle(&h, world_id, 0).await?;
+        }
         owner.reset_epoch = 0;
         let source_key = crate::map::view::placement_key(
             crate::map::overlay::TilePos {
@@ -254,6 +261,24 @@ fn scenario() -> TestResult {
                 .await?,
             0
         );
+        if prove_bindings {
+            sqlx::query("UPDATE game_world_reset_active SET reset_epoch=1 WHERE world_id=encode($1,'hex')::uuid")
+                .bind(world_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            h.root
+                .world_changes(world_id, 1)
+                .await?
+                .ok_or("activated Hive")?;
+            super::engworldchg::assert_binding_lifecycle(&h, world_id, 1).await?;
+            super::engworldchg::assert_native_quest_transition(
+                &h,
+                &owner,
+                admitted.game_session_id,
+                "hive_born",
+                "oteryn:quest.authored.hive_born_world_change",
+            )
+            .await?;
+            assert!(h.root.world_changes(world_id, 0).await?.is_none());
+        }
         drop(owner);
         drop(authority);
         drop(seal);

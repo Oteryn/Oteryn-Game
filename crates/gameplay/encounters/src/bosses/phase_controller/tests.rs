@@ -215,7 +215,23 @@ fn cults_source_hook_replaces_stops_and_retries_refused_native_spawn() {
         floor: 7,
     };
     let mut encounter =
-        cults::CultsEncounter::bind(&runtime, &party, pillars, stops, essence_at).unwrap();
+        cults::CultsEncounter::bind(&mut runtime, &party, pillars, stops, essence_at).unwrap();
+    let stop_key = format!("{}_stop", keys.roles[5].creature);
+    assert!(
+        runtime
+            .borrow_exact_actor_commit()
+            .commit_damage(
+                stops[0],
+                OwnerDamageCommand {
+                    target: stop_key.as_bytes(),
+                    occurrence: b"protected-stop",
+                    binding: b"protected-stop\0lethal",
+                    damage: 100,
+                }
+            )
+            .is_err()
+    );
+    assert!(runtime.contains_live_creature(stops[0]));
     for i in 0..5 {
         lethal(&mut runtime, pillars[i], keys.roles[i].creature);
         assert!(encounter.projected_death(&mut runtime, pillars[i]).unwrap());
