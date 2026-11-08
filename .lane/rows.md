@@ -34,3 +34,10 @@ and game-server; migration uniqueness/duplicate check; architecture-check; both
 quest-authoring CI runners (103 unit modules), donor/binding/matrix and complete
 content regeneration passed. Final publication also merges the fetched main
 client-only update and regenerates its final outputs before push.
+
+Post-main publication checks on ad493a1ee: three literal-text Rust tests and
+real PG marker38.077736345s passed; focused check/clippy, fmt and architecture
+passed. Final full/donor/binding/matrix regeneration left no generated diff;
+pin-check and content-tree validation passed. The 2026-11-08 rule update now
+forbids autonomous main merges; engine-only pushes use pin/lock verification,
+with one Cargo job at a time. Every subsequent push records ls-remote evidence.
