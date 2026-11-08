@@ -299,7 +299,8 @@ impl DurabilityRoot {
         }
         let native_key = request
             .transition_key
-            .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX);
+            .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX)
+            || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key).is_some();
         if native_key != native.is_some()
             || native.as_ref().is_some_and(|death| !death.valid(&request))
         {
@@ -339,7 +340,8 @@ impl DurabilityRoot {
             )
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         }
-        if reward_callback.is_none() && benevola.is_none()
+        if reward_callback.is_none()
+            && benevola.is_none()
             && catalogue
                 .transition(&request.transition_key)
                 .is_some_and(|t| t.effects.is_empty() && !t.completes)
@@ -764,7 +766,7 @@ impl DurabilityRoot {
                             .then_some(QuestRefusal::StageMismatch)
                     });
                     let refusal=if refusal.is_none() {
-                        if let Some(death)=&native {(!death.admit(&mut tx,character).await?).then_some(QuestRefusal::StageMismatch)} else {None}
+                        if let Some(death)=&native {(!death.admit(&mut tx,fence).await?).then_some(QuestRefusal::StageMismatch)} else {None}
                     } else {refusal};
                     let mut grizzly_plan = None;
                     let refusal = if let (None, Some(action)) = (refusal, &grizzly_action) {
@@ -775,7 +777,7 @@ impl DurabilityRoot {
                         }
                     } else { refusal };
                     let refusal = if refusal.is_none() {
-                        if let Some(source) = grizzly_party.as_ref().or_else(||native.as_ref().map(|death|death.source.as_ref())) {
+                        if let Some(source) = grizzly_party.as_ref().or_else(||native.as_ref().and_then(|death|death.party())) {
                             match super::super::world_party::frozen_kill_membership(&mut tx, &fence, source).await {
                                 Ok(true) => None,
                                 Ok(false) => Some(QuestRefusal::StageMismatch),
@@ -949,8 +951,9 @@ impl DurabilityRoot {
                         let (cause, ordinal) = request.cause.key();
                         let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key))
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
-                        super::super::character_appearance::grant_callback_outfit(
-                            &mut tx, fence.character_id, &occurrence, reward).await?;
+                        super::super::character_appearance::grant_content_outfit(
+                            &mut tx, fence.character_id, &occurrence, reward,
+                            context.as_ref().and_then(|(_, _, native)| *native).ok_or(DurabilityError::InvalidStoredState)?).await?;
                     }
                     if let Some((permit, handover)) = benevola.as_ref()
                         && !super::super::world_event::changes::counters::benevola::consume(
