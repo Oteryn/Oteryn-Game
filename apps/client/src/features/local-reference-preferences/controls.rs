@@ -6,8 +6,12 @@ use interface_controls::InterfaceControls;
 #[path = "arc_controls.rs"]
 mod arc_controls;
 use arc_controls::ArcControls;
+#[path = "gameplay_controls.rs"]
+mod gameplay_controls;
+use gameplay_controls::GameplayControls;
 
 pub(super) struct Controls {
+    pub(super) gameplay: GameplayControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
     pub(super) profile_name: HWND,
@@ -46,6 +50,7 @@ impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
             let arcs = ArcControls::new(hwnd)?;
+            let gameplay = GameplayControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
                 hwnd,
@@ -307,6 +312,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                gameplay,
                 arcs,
                 interface,
                 profile_name,

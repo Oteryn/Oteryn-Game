@@ -18,6 +18,7 @@ fn target(
 }
 pub(in crate::play) fn decorate(
     link: &PlayLink,
+    inspect: bool,
     popup: HMENU,
     menu: Option<&Menu>,
     player: Option<oteryn_session::EntityRef>,
@@ -27,12 +28,12 @@ pub(in crate::play) fn decorate(
         (
             60001,
             "Inspect",
-            state.inspection.selected && target(menu, player).is_some(),
+            inspect && state.inspection.selected && target(menu, player).is_some(),
         ),
         (
             60002,
             "Ask inspection permission",
-            state.inspection.selected && player.is_some(),
+            inspect && state.inspection.selected && player.is_some(),
         ),
         (60003, "Quick loot nearby", state.loot.selected),
     ] {

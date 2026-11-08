@@ -436,9 +436,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Gameplay: inspect/chase cancel/nearby loot scheme",
-  "status": "PARTIAL",
-  "gap": "Inspect/loot/walk są osobno; brak pełnej strony i chase cancel/mouse loot controls.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/gameplay.rs:24 + gameplay_options_cancel_chase_before_manual_step; gameplay_mouse_loot_uses_negotiated_caller_and_saved_choices"
  },
  {
   "id": "T070",

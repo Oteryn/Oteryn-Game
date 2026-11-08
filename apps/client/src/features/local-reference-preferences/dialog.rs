@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            gameplay,
             arcs,
             interface,
             profile_name,
@@ -125,6 +126,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 );
             }
             arcs.show(state.page == SettingsPage::Arcs);
+            gameplay.show(state.page == SettingsPage::Gameplay);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
@@ -246,6 +248,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else if action == 223 {
+                    gameplay.read(&mut preferences);
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
                             preferences.rotation_modifier =
@@ -303,6 +306,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                gameplay.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
                 let selection = selected.max(0) as usize;

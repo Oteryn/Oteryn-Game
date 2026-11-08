@@ -3,6 +3,9 @@ use super::*;
 #[path = "options.rs"]
 mod options;
 
+#[path = "gameplay.rs"]
+mod gameplay;
+
 #[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
 {

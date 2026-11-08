@@ -143,7 +143,7 @@ Zasady przeciw dublowaniu:
 | T066 | Options | Sound / UI Sounds: interactions/party/VIP/chat channels | MISSING | Brak filtrów dźwięków UI, party, VIP i kanałów. |
 | T067 | Options | Miscellaneous: confirmations, stay logged in, quick login | PARTIAL | Pojedyncze confirmation istnieją; brak wspólnej strony sesji/potwierdzeń. |
 | T068 | Options | Miscellaneous: optimise connection stability | MISSING | Brak ustawienia optymalizacji połączenia i jego konsumenta w panelu Settings. |
-| T069 | Options | Miscellaneous / Gameplay: inspect/chase cancel/nearby loot scheme | PARTIAL | Inspect/loot/walk są osobno; brak pełnej strony i chase cancel/mouse loot controls. |
+| T069 | Options | Miscellaneous / Gameplay: inspect/chase cancel/nearby loot scheme | DONE | evidence: apps/client/src/features/local-reference-preferences/gameplay.rs:24 + gameplay_options_cancel_chase_before_manual_step; gameplay_mouse_loot_uses_negotiated_caller_and_saved_choices |
 | T070 | Options | Miscellaneous / Screenshots: folder, game-only i manual capture | MISSING | Brak systemu zrzutów i strony wyboru katalogu/zakresu. |
 | T071 | Options | Miscellaneous / Screenshots: backlog i event triggers | MISSING | Brak bufora wstecznego i automatycznych screenshotów zdarzeń. |
 | T072 | Options | Miscellaneous / Help: FAQ/manual/client help/reports | PARTIAL | Raportowanie jest osobno; brak kompletnej strony pomocy/nawigacji. |

@@ -55,7 +55,9 @@ fn open(
             link.guild_bank_panel().selected,
         ],
     );
-    if entries.is_empty() {
+    if entries.is_empty()
+        && !crate::play::feature_0098_quick_loot::view::available(link, menu, player)
+    {
         return;
     }
     // SAFETY: called from the native shell input phase; all handles remain on this thread.
@@ -68,6 +70,9 @@ fn open(
             let wide: Vec<u16> = label.encode_utf16().chain(Some(0)).collect();
             AppendMenuW(popup, MF_STRING, index + 1, wide.as_ptr());
         }
+        crate::play::feature_0098_quick_loot::view::decorate(
+            link, view.preferences().gameplay.inspect_context_menu, popup, menu, player,
+        );
         let mut point = POINT { x: 0, y: 0 };
         let owner = GetForegroundWindow();
         if !owner.is_null() && GetCursorPos(&mut point) != 0 {
@@ -80,6 +85,7 @@ fn open(
                 owner,
                 null(),
             );
+            crate::play::feature_0098_quick_loot::view::choose(link, menu, player, selected);
             if let Ok(index) = usize::try_from(selected)
                 && let Some((_, action)) = index.checked_sub(1).and_then(|index| entries.get(index))
             {

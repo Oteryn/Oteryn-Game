@@ -10,6 +10,8 @@ use std::sync::Arc;
 
 #[path = "bindings.rs"]
 mod bindings;
+#[path = "gameplay.rs"]
+mod gameplay;
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "store.rs"]
@@ -85,6 +87,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub gameplay: gameplay::GameplayPreferences,
     #[serde(default = "default_arc_distance")]
     pub arc_distance: u16,
     #[serde(default = "default_arc_size")]
@@ -143,6 +147,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            gameplay: gameplay::GameplayPreferences::default(),
             arc_distance: 8,
             arc_size: 3,
             hud_names: default_hud_names(),
