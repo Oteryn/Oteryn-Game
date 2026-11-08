@@ -1084,18 +1084,20 @@
   "src": "TIBAUD-1",
   "area": "Support",
   "feature": "Bug report map/technical/typo/other",
-  "status": "PARTIAL",
-  "gap": "Komenda bug i pozycja są; brak pełnego prowadzenia po kategoriach/diagnostyce.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Istniejący formularz kategorii/preview/zgody na build rozszerzono o wskazówki map/typo/technical/other; używa istniejącej komendy raportu (`a8040346e`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0076-player-report/tests/play/guided.rs:4 + guided_bug_report_requires_review_and_sends_only_opted_in_diagnostics; apps/client/src/features/0076-player-report/tests/play.rs:116 + pc02_player_report_scenario"
  },
  {
   "id": "T152",
   "src": "TIBAUD-1",
   "area": "Support",
   "feature": "Violation name/statement/bot/reasons",
-  "status": "PARTIAL",
-  "gap": "Komenda jest; brak pełnego wyboru powodów/examples/translation/confirmation.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Są wybór name/statement/bot, nazwany selektor 21 powodów ze wskazówkami dowodowymi, opcjonalna oznaczona translacja i confirmation wiązane z dokładnym payloadem (`55eddb04c`, `6433921fb`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0076-player-report/tests/play/guided.rs:99 + violation_review_is_invalidated_by_edits; apps/client/src/features/0076-player-report/tests/play.rs:116 + pc02_player_report_scenario"
  },
  {
   "id": "T153",
