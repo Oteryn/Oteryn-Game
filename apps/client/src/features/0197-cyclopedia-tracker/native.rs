@@ -10,6 +10,9 @@ use windows_sys::Win32::{
     Foundation::*,
     UI::{Controls::BST_CHECKED, WindowsAndMessaging::*},
 };
+#[path = "widget.rs"]
+mod widget;
+
 fn w(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(Some(0)).collect()
 }
@@ -33,13 +36,26 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
-                620,
+                740,
                 430,
                 null_mut(),
                 null_mut(),
                 null_mut(),
                 null(),
             );
+            if h.is_null() {
+                if let Some(s) = weak.upgrade() {
+                    lock(&s).cyclopedia_tracker.open = false;
+                }
+                return;
+            }
+            let mut actions = Box::<widget::Actions>::default();
+            SetWindowLongPtrW(
+                h,
+                GWLP_USERDATA,
+                (&mut *actions as *mut widget::Actions) as isize,
+            );
+            SetWindowLongPtrW(h, GWLP_WNDPROC, widget::proc as *const () as isize);
             let key = ctl(
                 h,
                 "EDIT",
@@ -62,6 +78,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             {
                 ctl(h, "BUTTON", t, *id, [10 + i as i32 * 110, 45, 100, 28], 0);
             }
+            ctl(h, "BUTTON", "Bestiary widget", 107, [340, 45, 160, 28], 0);
+            ctl(h, "BUTTON", "Bosstiary widget", 108, [510, 45, 160, 28], 0);
             let out = ctl(
                 h,
                 "EDIT",
@@ -73,23 +91,6 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             let mut msg: MSG = std::mem::zeroed();
             loop {
                 while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
-                    if msg.message == WM_COMMAND {
-                        let id = msg.wParam & 0xffff;
-                        if matches!(id, 103..=105)
-                            && let Some(s) = weak.upgrade()
-                        {
-                            let mut m = lock(&s);
-                            m.cyclopedia_tracker.creature_key = text(key);
-                            m.cyclopedia_tracker.boss =
-                                SendMessageW(boss, BM_GETCHECK, 0, 0) == BST_CHECKED as isize;
-                            let intent = match id {
-                                103 => Intent::Add,
-                                104 => Intent::Remove,
-                                _ => Intent::Read,
-                            };
-                            super::super::input::enqueue(&mut m, &commands, intent);
-                        }
-                    }
                     TranslateMessage(&msg);
                     DispatchMessageW(&msg);
                 }
@@ -97,6 +98,28 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     break;
                 }
                 let Some(s) = weak.upgrade() else { break };
+                for id in actions.0.drain(..) {
+                    if matches!(id, 107 | 108) {
+                        widget::open(weak.clone(), commands.clone(), id == 108);
+                    }
+                    if matches!(id, 103..=105) {
+                        let key_text = text(key);
+                        let boss_checked =
+                            SendMessageW(boss, BM_GETCHECK, 0, 0) == BST_CHECKED as isize;
+                        let mut m = lock(&s);
+                        if m.cyclopedia_tracker.pending {
+                            continue;
+                        }
+                        m.cyclopedia_tracker.creature_key = key_text;
+                        m.cyclopedia_tracker.boss = boss_checked;
+                        let intent = match id {
+                            103 => Intent::Add,
+                            104 => Intent::Remove,
+                            _ => Intent::Read,
+                        };
+                        super::super::input::enqueue(&mut m, &commands, intent);
+                    }
+                }
                 let m = lock(&s);
                 SetWindowTextW(out, w(&panel_text(&m.cyclopedia_tracker)).as_ptr());
                 drop(m);

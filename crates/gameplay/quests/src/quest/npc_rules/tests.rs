@@ -56,6 +56,7 @@ fn hero_greeting_plans_the_source_access_write() -> Result<(), NpcRuleError> {
         npc: "oteryn:npc.strange_pipe",
         trigger: NpcRuleTrigger::Greet,
         message: "hi",
+        player_name: None,
         topic: 0,
         tracks: &tracks,
         inventory: &inventory,
@@ -96,6 +97,7 @@ impl Facts {
             npc,
             trigger: NpcRuleTrigger::Say,
             message,
+            player_name: None,
             topic,
             tracks: &self.tracks,
             inventory: &self.inventory,
@@ -133,6 +135,36 @@ fn fixture_catalog(document: &serde_json::Value) -> Result<NpcRuleCatalog, NpcRu
     let text =
         serde_json::to_string(document).map_err(|error| NpcRuleError::Json(error.to_string()))?;
     NpcRuleCatalog::from_json_documents(&[&text])
+}
+
+#[test]
+fn m04_explicit_terminal_npc_rule_is_admitted() -> Result<(), NpcRuleError> {
+    let mut terminal = fixture_rule(
+        "terminal",
+        serde_json::json!([
+            {"kind":"set","track":"oteryn:quest-progress/test/value","value":1}
+        ]),
+    );
+    terminal["completes"] = serde_json::json!(true);
+    let catalog = fixture_catalog(&fixture_document(vec![terminal]))?;
+    let facts = Facts::empty();
+    let plan = catalog
+        .plan_storage(&facts.input("oteryn:npc.test", "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("terminal plan".into()))?;
+    assert!(plan.completes);
+    let plain = fixture_catalog(&fixture_document(vec![fixture_rule(
+        "plain",
+        serde_json::json!([
+            {"kind":"set","track":"oteryn:quest-progress/test/value","value":1}
+        ]),
+    )]))?;
+    assert!(
+        !plain
+            .plan_storage(&facts.input("oteryn:npc.test", "mission", 0))?
+            .ok_or_else(|| NpcRuleError::Invalid("plain plan".into()))?
+            .completes
+    );
+    Ok(())
 }
 
 #[test]
@@ -627,6 +659,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.a_father_s_burden_quest",
         "oteryn:quest.a_pirates_tail",
         "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.dangerous_depths_quest",
         "oteryn:quest.draconia_quest",
         "oteryn:quest.elemental_spheres_quest",
         "oteryn:quest.hero_of_rathleton_quest",
@@ -634,9 +667,11 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
         "oteryn:quest.the_first_dragon_quest",
+        "oteryn:quest.the_dream_courts_quest",
         "oteryn:quest.the_hidden_city_of_beregar_quest",
         "oteryn:quest.the_order_of_the_stag_quest",
         "oteryn:quest.tibia_tales",
+        "oteryn:quest.tower_defence_quest",
     ]);
     assert_eq!(
         runtime
@@ -714,8 +749,8 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    // Preserve the incoming baseline plus Tamoril's five source-absent tracks.
-    assert_eq!(defaults, BTreeMap::from([(-1, 198), (0, 52)]));
+    // Dream Courts, Tamoril and Gnomus source defaults remain registered.
+    assert_eq!(defaults, BTreeMap::from([(-1, 203), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()

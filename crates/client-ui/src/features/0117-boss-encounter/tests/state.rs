@@ -230,6 +230,63 @@ fn pc05_reward_chest_paging_uses_only_last_server_death_id() -> Result<(), Strin
 }
 
 #[test]
+fn cooldown_widget_counts_down_confirmed_deadlines_and_keeps_progress_out() {
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(request(&mut panel, Intent::Refresh).is_some());
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: vec![
+                8, 100, 18, 7, 10, 3, b'a', b':', b'b', 16, 120, 34, 7, 10, 3, b'a', b':', b'b',
+                16, 3, 40, 5
+            ],
+        }
+    ));
+    assert!(panel.cooldown_received_at.is_some());
+    assert!(cooldown_text(&panel, 0).contains("a:b: 20 ms remaining"));
+    assert!(cooldown_text(&panel, 15).contains("a:b: 5 ms remaining"));
+    assert!(cooldown_text(&panel, u64::MAX).contains("a:b: Ready"));
+    assert!(!cooldown_text(&panel, 0).contains("3 kills"));
+    assert!(panel.snapshot.as_ref().is_some_and(|s| s.now == 100));
+}
+
+#[test]
+fn cooldown_shortcut_requires_exact_modifiers_and_a_fresh_press()
+-> Result<(), oteryn_input_actions::InputError> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let code = KeyCode::new(13)?;
+    let modifiers = Modifiers::NONE
+        .with(Modifier::Control)
+        .with(Modifier::Alt)
+        .with(Modifier::Shift);
+    let event = |modifiers, repeat| NormalizedInputEvent::Key {
+        code,
+        state: ButtonState::Pressed,
+        modifiers,
+        repeat,
+    };
+    assert!(cooldowns_key(&[event(modifiers, false)]));
+    assert!(!cooldowns_key(&[event(modifiers, true)]));
+    assert!(!cooldowns_key(&[event(
+        modifiers.with(Modifier::Super),
+        false
+    )]));
+    assert!(!cooldowns_key(&[event(
+        Modifiers::NONE
+            .with(Modifier::Control)
+            .with(Modifier::Shift),
+        false
+    )]));
+    Ok(())
+}
+
+#[test]
 fn endgame_chain_selection_covers_both_chains_without_claiming_progress()
 -> Result<(), Box<dyn std::error::Error>> {
     for (chain, expected) in [

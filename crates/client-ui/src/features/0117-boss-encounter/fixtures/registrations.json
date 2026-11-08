@@ -109,6 +109,22 @@
   {
     "mechanic": "0117-boss-encounter",
     "kind": "keybindings",
+    "id": "0117-boss-encounter-cooldowns-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+J",
+    "entry": "input.rs::cooldowns_key"
+  },
+  {
+    "mechanic": "0117-boss-encounter",
+    "kind": "panels",
+    "id": "0117-boss-encounter-cooldowns-panel",
+    "status": "supported",
+    "entry": "view.rs::cooldown_text"
+  },
+  {
+    "mechanic": "0117-boss-encounter",
+    "kind": "keybindings",
     "id": "0117-boss-encounter-open",
     "status": "supported",
     "context": "gameplay",

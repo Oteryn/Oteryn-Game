@@ -81,17 +81,34 @@ pub fn preview(
     eligibility: &NpcEligibility,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
+    preview_with_player_name(request, tracks, catalogue, now, eligibility, None)
+}
+
+/// The name is advisory in preview; the writer rereads the locked Character name.
+pub fn preview_with_player_name(
+    request: &NpcProgramRequest,
+    tracks: &BTreeMap<String, i64>,
+    catalogue: &QuestStateCatalogue,
+    now: i64,
+    eligibility: &NpcEligibility,
+    player_name: Option<&str>,
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
+{
+    let facts = NpcEvaluationFacts {
+        eligibility,
+        player_name,
+    };
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    match evaluate_source(&source, request, tracks, catalogue, now, eligibility, None) {
+    match evaluate_source(&source, request, tracks, catalogue, now, facts, None) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
             &source,
             request,
             tracks,
             catalogue,
             now,
-            eligibility,
+            facts,
             Some(&fathers_burden::optimistic_inventory()),
         ),
         Err(_) if marlin_trophy::owns(request) => evaluate_source(
@@ -100,20 +117,32 @@ pub fn preview(
             tracks,
             catalogue,
             now,
-            eligibility,
+            facts,
             Some(&marlin_trophy::optimistic_inventory()),
         ),
         Err(error) => match source
             .optimistic_item_inventory(&request.npc)
             .or_else(|| source.optimistic_equipped_inventory(&request.npc))
         {
-            Some(inventory) => {
-                evaluate_source(&source, request, tracks, catalogue, now, eligibility, Some(&inventory))
-            }
+            Some(inventory) => evaluate_source(
+                &source,
+                request,
+                tracks,
+                catalogue,
+                now,
+                facts,
+                Some(&inventory),
+            ),
             None => Err(error),
         },
         result => result,
     }
+}
+
+#[derive(Clone, Copy)]
+struct NpcEvaluationFacts<'a> {
+    eligibility: &'a NpcEligibility,
+    player_name: Option<&'a str>,
 }
 
 fn evaluate_source(
@@ -122,7 +151,7 @@ fn evaluate_source(
     tracks: &BTreeMap<String, i64>,
     catalogue: &QuestStateCatalogue,
     now: i64,
-    eligibility: &NpcEligibility,
+    facts: NpcEvaluationFacts<'_>,
     inventory: Option<&NpcInventorySnapshot>,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
@@ -163,14 +192,15 @@ fn evaluate_source(
         npc: &request.npc,
         trigger: request.trigger,
         message: &request.message,
+        player_name: facts.player_name,
         topic: request.topic,
         tracks: &complete,
         inventory: inventory.unwrap_or(&empty),
         now_epoch_seconds: now,
         calendar_month: utc_calendar_month(now)?,
-        premium_current: eligibility.premium_current,
-        level: eligibility.level,
-        vocation: &eligibility.vocation,
+        premium_current: facts.eligibility.premium_current,
+        level: facts.eligibility.level,
+        vocation: &facts.eligibility.vocation,
         sex: 0,
         outfits: &BTreeMap::new(),
     };
@@ -351,14 +381,20 @@ impl DurabilityRoot {
                 vocation: format!("oteryn:vocation.{vocation}"),
                 premium_current: content.wheel_premium_current(account),
             };
-            let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,&eligibility,inventory.as_ref());
-            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !rewards::has_experience(&plan.effects) {
+            let player_name = if source.programs().iter().flat_map(|p| &p.document.rules)
+                .any(|rule| rule.npc == request.npc && rule.match_player_name) {
+                Some(super::super::character_chat_name::read_character_name_for_share_in_transaction(
+                    &mut tx, character.as_bytes()).await?)
+            } else { None };
+            let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref() };
+            let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,facts,inventory.as_ref());
+            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !plan.completes && !rewards::has_experience(&plan.effects) {
                 let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan) };
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));
             }
             let plan=match evaluated {
-                Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && !plan.track_changes.is_empty()=>plan,
+                Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && (!plan.track_changes.is_empty() || plan.completes)=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
             let experience = rewards::experience(&plan.effects)?;
@@ -373,6 +409,9 @@ impl DurabilityRoot {
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
+            if plan.completes && stored_state.as_ref().map(|row| row.try_get::<bool,_>("completed")).transpose()?.unwrap_or(false) {
+                return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+            }
             let (pin,hash)=match &stored_state {
                 Some(row)=>{
                     let stored:[u8;32]=row.try_get::<Vec<u8>,_>("definition_hash")?.try_into().map_err(|_|DurabilityError::InvalidStoredState)?;
@@ -417,19 +456,20 @@ impl DurabilityRoot {
             }
             let before=plan.track_changes.iter().map(|c|c.before).collect::<Vec<_>>();
             let after=plan.track_changes.iter().map(|c|c.after).collect::<Vec<_>>();
-            sqlx::query("INSERT INTO game_character_quest_receipts(character_id,cause_kind,cause_id,cause_ordinal,transition_key,quest_key,request_binding,pinned_content_revision,definition_hash,completes,track_keys,values_before,values_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) SELECT s.character_id,'command',encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,false,$9::text[],$10::bigint[],$11::bigint[],$12::text::numeric,$13::text::numeric,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state s WHERE character_id=encode($1,'hex')::uuid")
-                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(quest).bind(request.binding(character).as_slice()).bind(&pin).bind(hash.as_slice()).bind(&keys).bind(&before).bind(&after).bind(&original).bind(&committed).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_character_quest_receipts(character_id,cause_kind,cause_id,cause_ordinal,transition_key,quest_key,request_binding,pinned_content_revision,definition_hash,completes,track_keys,values_before,values_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) SELECT s.character_id,'command',encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$14,$9::text[],$10::bigint[],$11::bigint[],$12::text::numeric,$13::text::numeric,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state s WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(quest).bind(request.binding(character).as_slice()).bind(&pin).bind(hash.as_slice()).bind(&keys).bind(&before).bind(&after).bind(&original).bind(&committed).bind(plan.completes).execute(&mut **tx).await?;
             for change in &plan.track_changes {
                 sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric) ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision")
                     .bind(id).bind(&change.key).bind(quest).bind(change.after).bind(&committed).execute(&mut **tx).await?;
             }
+            let completion = plan.completes.then_some(committed.as_str());
             if stored_state.is_some() {
-                sqlx::query("UPDATE game_character_quest_states SET committed_character_revision=$3::text::numeric WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id).bind(quest).bind(&committed).execute(&mut **tx).await?;
+                sqlx::query("UPDATE game_character_quest_states SET committed_character_revision=$3::text::numeric,completed_character_revision=coalesce(completed_character_revision,$4::text::numeric) WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id).bind(quest).bind(&committed).bind(completion).execute(&mut **tx).await?;
             } else {
-                sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric)").bind(id).bind(quest).bind(&pin).bind(hash.as_slice()).bind(&committed).execute(&mut **tx).await?;
+                sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision,completed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric,$6::text::numeric)").bind(id).bind(quest).bind(&pin).bind(hash.as_slice()).bind(&committed).bind(completion).execute(&mut **tx).await?;
             }
-            sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer)")
-                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms,completes) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer,$10)")
+                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).bind(plan.completes).execute(&mut **tx).await?;
             achievements::grant(&mut tx, character, &request, &achievement_keys).await?;
             if experience > 0 {
                 insert_xp_obligation(&mut tx, character, &q, experience, &pin).await?;

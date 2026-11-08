@@ -433,3 +433,49 @@ impl<T, E: std::fmt::Debug> Checked<T> for Result<T, E> {
         self.map_err(|error| format!("{error:?}").into())
     }
 }
+
+#[test]
+fn title_selector_receives_self_ownership_and_selected_title_from_the_command_adapter()
+-> Result<(), Error> {
+    use crate::play::feature_0097_character_info::protocol::{apply, command};
+    use oteryn_client_ui::character_info::{Intent, Panel, TitleFilter, title_rows};
+    let mut p = Panel {
+        selected: true,
+        fields: ["0".into(), "1".into(), String::new(), "1".into()],
+        ..Default::default()
+    };
+    let query = command(&p, Intent::Query).map_err(|e| -> Error { e.into() })?;
+    assert!(p.begin(query.kind));
+    let mut payload = vec![0; 72];
+    payload[69] = 1;
+    payload[70] = 1;
+    apply(
+        &mut p,
+        &query,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload,
+        },
+    );
+    p.title_filter = TitleFilter::Earned;
+    assert_eq!(title_rows(&p).len(), 1);
+    let select = command(&p, Intent::Select).map_err(|e| -> Error { e.into() })?;
+    assert_eq!(select.payload, [3, 1]);
+    assert!(p.begin(select.kind));
+    let mut payload = vec![3];
+    payload.extend_from_slice(&2u64.to_le_bytes());
+    apply(
+        &mut p,
+        &select,
+        &GatedCommandResult {
+            command_id: 2,
+            server_sequence: 2,
+            status: CommandStatus::Accepted,
+            payload,
+        },
+    );
+    assert!(title_rows(&p)[0].selected);
+    Ok(())
+}
