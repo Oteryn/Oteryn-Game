@@ -879,3 +879,8 @@ loot becomes a grant and no test count or refusal assertion is relaxed.
   NX6 dialogue/rollback/fence/replay and chosen report test now uses these real
   source cells and obtains the NPC position from the generated placement index.
   No provisional tile is made passable and no source binding is fabricated.
+
+
+### Wrath chosen s8: four imperial influences
+The selected packet explicitly resolves Snake Sceptre to item11371. The pinned Crystal mission10 script instead uses replica11362; this slice follows the selected recipe and does not claim donor-equivalent boss progression. Native B3 retains appearance11427 at four imperial-room corners but no donor UIDs3193–3196. Bind literal positions NW33049,31089; NE33095,31091; SE33096,31114; SW33049,31115 (all z15, ordinals1,1,2,1), clockwise, with a per-character counter0–4. World USE requires an exactly matching carried11371 and preserves its instance; this does not claim the separate inventory UseWithMapItem protocol. No global crystal transformation, boss summon, boss kill, reward or quest completion is inferred. The fourth influence advances only chosen stage7→8. RED: native PostgreSQL fixture executed4.003721107s and failed at WRATH_CRYSTALS_RED before these callbacks were added.
+Source: https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor ; accepted identity in chosen-source-events-rewards/packet.json, Wrath s8. Existing live-player predicate and item-look disguise requests remain with qengine2; neither whole quest is newly qualified.

@@ -31,6 +31,8 @@ def frozen_union():
     from refresh_quest_custody_equipment import composition
     own, _ = composition("534ea6b23de451ae1086e0be585d1f75887aa17a")
     main, _ = composition("c77d436d8be39f348924e66d97928ffd69e61a8c")
+    from questpc8_wrath_profile_expectation import declared_keys
+    own = own | declared_keys(ROOT)
     return own | main, len(own - main)
 
 
@@ -54,6 +56,12 @@ def regenerate(source, base, updates, qengine, npc, starting=None, frozen=None):
                 later = later.replace('"QUESTPC8-MERGED"', f'"QUESTPC8-MERGED" | "{name}"')
         later = re.sub(r"Frozen own-only cohort\d+ plus\d+ post-baseline main registrations\.",
                        "Frozen published union partitions the same205 post-baseline registrations.", later)
+        if frozen is not None:
+            cohort_names = {"WORLDCHG", "SRV9-MARRIAGE", "QNPCFX", "QUESTPC4-STAG-ITEMS", "QUESTPC8-MERGED", "QREADY1", "QREADY2"}
+            table = source.split("const PROFILE_ADDITIONS:", 1)[1].split("];", 1)[0]
+            later_count = sum(int(n.replace("_", "")) for name, n in re.findall(r'\("([^\"]+)",\s*([\d_]+)\)', table) if name in cohort_names)
+            later = re.sub(r"assert_eq!\(later_main_profiles, [\d_]+\);", f"assert_eq!(later_main_profiles, {later_count});", later)
+            later = re.sub(r"// Frozen published union partitions.*", "// Published owner cohorts plus independently declared recipe tools.", later)
         source = source[:start] + later + source[end:]
 
     original = int(

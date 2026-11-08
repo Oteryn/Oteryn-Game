@@ -1,3 +1,18 @@
+# Current checkpoint: Wrath four-crystal slice compile-ready; native PG pending
+
+Prior source-world dream and imperial hunt evidence is pushed at897bae76.
+New native PG regression ran4.003721107s and failed at WRATH_CRYSTALS_RED.
+Four authored world-USE callbacks and chosen counter are now added; green
+validation is pending. Quest units355/355 PASS37.99s; workspace all-targets
+check206.428s, fmt12.493s, duplicate migrations and repository regeneration PASS.
+Clippy and focused native PG are running; push uses the owner cadence exception.
+Exact carried sceptre11371 follows accepted s8 rather
+than donor replica11362. Clockwise four native corners are an explicit chosen
+approximation; no global transforms, boss summons/kills, reward or whole quest
+completion is claimed. Profile expectation is independently derived from the
+accepted recipe; generated pins are being rebuilt with repository tooling.
+Whole quest count remains21/23. See CONTRACT-NOTES for exact cells/ordinals.
+
 # Latest checkpoint: Wrath source Sleeping Dragon NATIVE_POSTGRES_GREEN
 
 Source NPC33242,31213,z10 is now scoped by existing placement overrides with

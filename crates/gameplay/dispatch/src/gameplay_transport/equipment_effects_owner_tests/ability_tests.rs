@@ -158,7 +158,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
-    ("QUESTPC8-MERGED", 150),
+    ("QUESTPC8-MERGED", 151),
     ("QUICKLOOT-1", 9),
     // Skull 3114 (tools/content-migration/quest_callback_profiles.py), from Canary
     // 47dfd51f items.xml and exact Crystal ff7ede59 bindings. speed_bonus=0.
@@ -401,8 +401,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    // Frozen published union partitions the same205 post-baseline registrations.
-    assert_eq!(later_main_profiles, 205);
+    // Published owner cohorts plus independently declared recipe tools.
+    assert_eq!(later_main_profiles, 206);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + additions.len()

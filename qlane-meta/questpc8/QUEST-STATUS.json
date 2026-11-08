@@ -1717,11 +1717,7 @@
       ],
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
-      "last_upstream_check": {
-        "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
-        "qengine2": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
-        "result": "Both requested capabilities stillQUEUED; quest-specific work continues without duplicate engine."
-      }
+      "last_upstream_check": "qengine2 0aa80f984: both requested capabilities remain QUEUED"
     },
     "active_validation": {
       "scope": "Opening hand-in native qualification in progress; no whole-quest qualification",
@@ -1778,6 +1774,12 @@
         31213,
         10
       ]
+    },
+    "crystal_slice": {
+      "state": "COMPILE_READY_NATIVE_POSTGRES_PENDING",
+      "proof": "wrath-crystals-validation.json",
+      "scope": "Chosen s8 four literal native11427 corners, exact retained carried11371, clockwise per-character counter; no donor boss graph or whole completion",
+      "red_postgres_seconds": 4.003721107
     }
   },
   {

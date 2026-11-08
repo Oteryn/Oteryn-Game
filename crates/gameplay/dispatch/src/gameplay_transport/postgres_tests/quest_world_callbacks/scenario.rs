@@ -126,6 +126,7 @@ fn scenario_case(
                 | "authored-winterlight"
                 | "authored-wrath-opening"
                 | "authored-wrath-hunt"
+                | "authored-wrath-crystals"
                 | "authored-colours-opening"
                 | "catalogue-npc-father"
                 | "fathers-burden-handins"
@@ -175,6 +176,7 @@ fn scenario_case(
         }
         if name == "authored-wrath-hunt" { super::super::questpc8_wrath_hunt::require_bindings()?; }
         if name == "nx6-wayfarer" { super::super::questpc8_wrath_source_dragon::require_bindings()?; }
+        if name == "authored-wrath-crystals" { super::super::questpc8_wrath_crystals::require_bindings()?; }
         let mut callback = if native_signs || diprath_room {
             callback("ancient-tombs-diprath-sign-1")?
         } else if native_flames {
@@ -333,7 +335,9 @@ fn scenario_case(
         if name == "qengine-rewards-questpc4-puzzle-ladder" {
             callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
         }
-        let world = if name == "nx6-wayfarer" {
+        let world = if name == "authored-wrath-crystals" {
+            super::super::questpc8_wrath_crystals::world()?
+        } else if name == "nx6-wayfarer" {
             super::super::questpc8_wrath_source_dragon::world()?
         } else if name == "authored-wrath-hunt" {
             super::super::questpc8_wrath_hunt::world()?
@@ -1053,6 +1057,8 @@ fn scenario_case(
                 origin,
             )
             .await?;
+        } else if name == "authored-wrath-crystals" {
+            super::super::questpc8_wrath_crystals::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "authored-wrath-hunt" {
             super::super::questpc8_wrath_hunt::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "nx6-wayfarer" {
