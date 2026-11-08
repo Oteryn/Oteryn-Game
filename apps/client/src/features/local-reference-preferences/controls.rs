@@ -1,169 +1,349 @@
-//! Mouse and movement preferences translate into existing authoritative gameplay inputs.
-use oteryn_input_actions::{
-    ButtonState, KeyCode, Modifier, Modifiers, MouseButton, NormalizedInputEvent,
-};
-use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, time::Duration};
+//! Construction and validation of the settings dialog controls.
+use super::*;
+#[path = "interface_controls.rs"]
+mod interface_controls;
+use interface_controls::InterfaceControls;
+#[path = "arc_controls.rs"]
+mod arc_controls;
+use arc_controls::ArcControls;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub enum MousePreset {
-    #[default]
-    Standard,
-    LeftHanded,
+pub(super) struct Controls {
+    pub(super) extra: Vec<HWND>,
+    pub(super) arcs: ArcControls,
+    pub(super) interface: InterfaceControls,
+    pub(super) profile_name: HWND,
+    pub(super) profile_save: HWND,
+    pub(super) profile_load: HWND,
+    pub(super) profile_delete: HWND,
+    pub(super) pages: HWND,
+    pub(super) help: HWND,
+    pub(super) list: HWND,
+    pub(super) chord: HWND,
+    pub(super) rebind: HWND,
+    pub(super) chat_on: HWND,
+    pub(super) chat_off: HWND,
+    pub(super) mouse_preset: HWND,
+    pub(super) delay_label: HWND,
+    pub(super) delay: HWND,
+    pub(super) controls_apply: HWND,
+    pub(super) rotation_label: HWND,
+    pub(super) rotation: HWND,
+    pub(super) label: HWND,
+    pub(super) scale: HWND,
+    pub(super) volume: HWND,
+    pub(super) mute: HWND,
+    pub(super) apply: HWND,
+    pub(super) transfer_label: HWND,
+    pub(super) transfer_path: HWND,
+    pub(super) import: HWND,
+    pub(super) export: HWND,
+    pub(super) backup: HWND,
+    pub(super) defaults: HWND,
+    pub(super) hud_checks: Vec<HWND>,
+    pub(super) feedback: HWND,
 }
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub enum MovementKeys {
-    #[default]
-    Arrows,
-    ArrowsAndWasd,
-}
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub enum RotationModifier {
-    #[default]
-    Control,
-    Shift,
-    Alt,
-}
-impl RotationModifier {
-    fn modifier(self) -> Modifier {
-        match self {
-            Self::Control => Modifier::Control,
-            Self::Shift => Modifier::Shift,
-            Self::Alt => Modifier::Alt,
-        }
-    }
-}
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, deny_unknown_fields)]
-pub struct ControlPreferences {
-    pub mouse: MousePreset,
-    pub movement: MovementKeys,
-    pub rotation: RotationModifier,
-    /// Minimum interval between operating-system repeat presses. Initial presses stay immediate.
-    pub keyboard_delay_ms: u16,
-}
-impl ControlPreferences {
-    pub fn drag_button(&self, world_surface: bool) -> MouseButton {
-        if world_surface && self.mouse == MousePreset::LeftHanded {
-            MouseButton::SECONDARY
-        } else {
-            MouseButton::PRIMARY
-        }
-    }
 
-    pub(super) fn valid(&self) -> bool {
-        self.keyboard_delay_ms <= 1000
-    }
-}
-#[derive(Default)]
-pub(super) struct ControlInput {
-    held: BTreeMap<KeyCode, (KeyCode, Modifiers, Duration)>,
-    mouse: BTreeMap<MouseButton, MouseButton>,
-}
-impl ControlInput {
-    pub(super) fn route(
-        &mut self,
-        prefs: &ControlPreferences,
-        events: &[NormalizedInputEvent],
-        chat: bool,
-        now: Duration,
-    ) -> Vec<NormalizedInputEvent> {
-        let mut routed = Vec::with_capacity(events.len());
-        for event in events {
-            match event {
-                NormalizedInputEvent::Key {
-                    code,
-                    modifiers,
-                    state,
-                    repeat,
-                } => {
-                    let (mapped, mods, last) = self.held.get(code).copied().unwrap_or_else(|| {
-                        let rotation = Modifiers::one(prefs.rotation.modifier());
-                        let movement_modifiers =
-                            *modifiers == Modifiers::NONE || *modifiers == rotation;
-                        let mapped = if !chat
-                            && prefs.movement == MovementKeys::ArrowsAndWasd
-                            && movement_modifiers
-                        {
-                            match code.get() {
-                                26 => KeyCode::ARROW_UP,
-                                4 => KeyCode::ARROW_LEFT,
-                                22 => KeyCode::ARROW_DOWN,
-                                7 => KeyCode::ARROW_RIGHT,
-                                _ => *code,
-                            }
-                        } else {
-                            *code
-                        };
-                        let arrow = [
-                            KeyCode::ARROW_UP,
-                            KeyCode::ARROW_RIGHT,
-                            KeyCode::ARROW_DOWN,
-                            KeyCode::ARROW_LEFT,
-                        ]
-                        .contains(&mapped);
-                        let mods = if arrow && *modifiers == rotation {
-                            Modifiers::one(Modifier::Control)
-                        } else if arrow
-                            && prefs.rotation != RotationModifier::Control
-                            && *modifiers == Modifiers::one(Modifier::Control)
-                        {
-                            Modifiers::NONE
-                        } else {
-                            *modifiers
-                        };
-                        (mapped, mods, now)
-                    });
-                    if *state == ButtonState::Released {
-                        self.held.remove(code);
-                    } else {
-                        if *repeat
-                            && now.saturating_sub(last)
-                                < Duration::from_millis(u64::from(prefs.keyboard_delay_ms))
-                        {
-                            continue;
-                        }
-                        self.held.insert(*code, (mapped, mods, now));
-                    }
-                    routed.push(NormalizedInputEvent::Key {
-                        code: mapped,
-                        modifiers: mods,
-                        state: *state,
-                        repeat: *repeat,
-                    });
-                }
-                NormalizedInputEvent::MouseButton { button, state, .. } => {
-                    let mapped = self.mouse.get(button).copied().unwrap_or_else(|| {
-                        if prefs.mouse == MousePreset::LeftHanded {
-                            match *button {
-                                MouseButton::PRIMARY => MouseButton::SECONDARY,
-                                MouseButton::SECONDARY => MouseButton::PRIMARY,
-                                _ => *button,
-                            }
-                        } else {
-                            *button
-                        }
-                    });
-                    if *state == ButtonState::Released {
-                        self.mouse.remove(button);
-                    } else {
-                        self.mouse.insert(*button, mapped);
-                    }
-                    let mut event = event.clone();
-                    if let NormalizedInputEvent::MouseButton { button, .. } = &mut event {
-                        *button = mapped;
-                    }
-                    routed.push(event);
-                }
-                NormalizedInputEvent::FocusChanged { focused: false }
-                | NormalizedInputEvent::DeviceLost => {
-                    self.held.clear();
-                    self.mouse.clear();
-                    routed.push(event.clone());
-                }
-                _ => routed.push(event.clone()),
+impl Controls {
+    pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
+        unsafe {
+            let arcs = ArcControls::new(hwnd)?;
+            let interface = InterfaceControls::new(hwnd)?;
+            let profile_name = control(
+                hwnd,
+                "EDIT",
+                "default",
+                230,
+                [10, 185, 300, 26],
+                WS_BORDER | ES_AUTOHSCROLL as u32,
+            );
+            let profile_save = control(hwnd, "BUTTON", "Save profile", 231, [330, 185, 120, 26], 0);
+            let profile_load = control(hwnd, "BUTTON", "Load profile", 232, [460, 185, 120, 26], 0);
+            let profile_delete = control(
+                hwnd,
+                "BUTTON",
+                "Delete profile",
+                233,
+                [590, 185, 120, 26],
+                0,
+            );
+            let pages = control(
+                hwnd,
+                "COMBOBOX",
+                "",
+                220,
+                [10, 10, 720, 240],
+                CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
+            );
+            for page in SettingsPage::ALL {
+                SendMessageW(pages, CB_ADDSTRING, 0, wide(page.label()).as_ptr() as isize);
             }
+            SendMessageW(pages, CB_SETCURSEL, 0, 0);
+            let help = control(
+                hwnd,
+                "STATIC",
+                "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse buttons follow the selected preset. Conflicts include all registered actions.",
+                0,
+                [10, 50, 720, 45],
+                0,
+            );
+            let list = control(
+                hwnd,
+                "COMBOBOX",
+                "",
+                101,
+                [10, 100, 440, 280],
+                CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
+            );
+            let chord = control(
+                hwnd,
+                "EDIT",
+                "",
+                102,
+                [460, 100, 140, 26],
+                WS_BORDER | ES_AUTOHSCROLL as u32,
+            );
+            let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
+            let chat_on = control(
+                hwnd,
+                "BUTTON",
+                "Chat-on preset (arrows)",
+                225,
+                [10, 150, 300, 30],
+                0,
+            );
+            let chat_off = control(
+                hwnd,
+                "BUTTON",
+                "Chat-off preset (WASD)",
+                226,
+                [330, 150, 300, 30],
+                0,
+            );
+            let mouse_preset = control(
+                hwnd,
+                "BUTTON",
+                "Swap primary / secondary mouse buttons",
+                221,
+                [10, 150, 360, 26],
+                BS_AUTOCHECKBOX as u32,
+            );
+            let delay_label = control(
+                hwnd,
+                "STATIC",
+                "Keyboard repeat delay ms (0–1000)",
+                0,
+                [10, 185, 360, 26],
+                0,
+            );
+            let delay = control(
+                hwnd,
+                "EDIT",
+                "",
+                222,
+                [380, 185, 100, 26],
+                WS_BORDER | ES_NUMBER as u32,
+            );
+            let controls_apply = control(
+                hwnd,
+                "BUTTON",
+                "Apply controls",
+                223,
+                [500, 185, 180, 26],
+                0,
+            );
+            let rotation_label = control(
+                hwnd,
+                "STATIC",
+                "Turn modifier (CTRL / ALT / SHIFT)",
+                0,
+                [10, 225, 360, 26],
+                0,
+            );
+            let rotation = control(
+                hwnd,
+                "EDIT",
+                "",
+                224,
+                [380, 225, 100, 26],
+                WS_BORDER | ES_AUTOHSCROLL as u32,
+            );
+            let label = control(
+                hwnd,
+                "STATIC",
+                "World zoom % (80–180, fitted to window)",
+                0,
+                [10, 110, 700, 25],
+                0,
+            );
+            let scale = control(
+                hwnd,
+                "EDIT",
+                "",
+                104,
+                [10, 145, 100, 26],
+                WS_BORDER | ES_NUMBER as u32,
+            );
+            let volume = control(
+                hwnd,
+                "EDIT",
+                "",
+                105,
+                [130, 145, 100, 26],
+                WS_BORDER | ES_NUMBER as u32,
+            );
+            let mute = control(
+                hwnd,
+                "BUTTON",
+                "Mute",
+                107,
+                [250, 145, 100, 26],
+                BS_AUTOCHECKBOX as u32,
+            );
+            let apply = control(hwnd, "BUTTON", "Apply", 106, [380, 145, 110, 26], 0);
+            let transfer_label = control(
+                hwnd,
+                "STATIC",
+                "Settings transfer file (JSON). Import/defaults save a recoverable backup.",
+                0,
+                [10, 195, 720, 25],
+                0,
+            );
+            let transfer_path = control(
+                hwnd,
+                "EDIT",
+                "",
+                114,
+                [10, 225, 710, 26],
+                WS_BORDER | ES_AUTOHSCROLL as u32,
+            );
+            SendMessageW(transfer_path, EM_SETLIMITTEXT, 240, 0);
+            let import = control(hwnd, "BUTTON", "Import...", 110, [10, 265, 150, 30], 0);
+            let export = control(
+                hwnd,
+                "BUTTON",
+                "Export new file",
+                111,
+                [175, 265, 160, 30],
+                0,
+            );
+            let backup = control(
+                hwnd,
+                "BUTTON",
+                "Restore backup...",
+                112,
+                [350, 265, 170, 30],
+                0,
+            );
+            let defaults = control(
+                hwnd,
+                "BUTTON",
+                "Restore defaults...",
+                113,
+                [535, 265, 185, 30],
+                0,
+            );
+            let hud_checks = [
+                "HP / MP bars",
+                "Harmony",
+                "Serene",
+                "Light effects",
+                "Combat effects",
+                "Creature health / icons",
+                "HP / MP circle",
+            ]
+            .into_iter()
+            .enumerate()
+            .map(|(index, label)| {
+                control(
+                    hwnd,
+                    "BUTTON",
+                    label,
+                    120 + index,
+                    [
+                        10 + (index % 4) as i32 * 175,
+                        310 + (index / 4) as i32 * 30,
+                        170,
+                        26,
+                    ],
+                    BS_AUTOCHECKBOX as u32,
+                )
+            })
+            .collect::<Vec<_>>();
+            let extra = super::super::subpages::create(hwnd);
+            let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
+            if [
+                profile_name,
+                profile_save,
+                profile_load,
+                profile_delete,
+                chat_on,
+                chat_off,
+                rotation_label,
+                rotation,
+                mouse_preset,
+                delay_label,
+                delay,
+                controls_apply,
+                pages,
+                help,
+                list,
+                chord,
+                rebind,
+                label,
+                scale,
+                volume,
+                mute,
+                apply,
+                feedback,
+                transfer_label,
+                transfer_path,
+                import,
+                export,
+                backup,
+                defaults,
+            ]
+            .iter()
+            .chain(hud_checks.iter())
+            .chain(extra.iter())
+            .any(|h| h.is_null())
+            {
+                return None;
+            }
+            Some(Self {
+                extra,
+                arcs,
+                interface,
+                profile_name,
+                profile_save,
+                profile_load,
+                profile_delete,
+                pages,
+                help,
+                list,
+                chord,
+                rebind,
+                chat_on,
+                chat_off,
+                mouse_preset,
+                delay_label,
+                delay,
+                controls_apply,
+                rotation_label,
+                rotation,
+                label,
+                scale,
+                volume,
+                mute,
+                apply,
+                transfer_label,
+                transfer_path,
+                import,
+                export,
+                backup,
+                defaults,
+                hud_checks,
+                feedback,
+            })
         }
-        routed
     }
 }

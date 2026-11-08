@@ -236,6 +236,30 @@ fn persistent_minimap_pan_zoom_and_floor_selection_share_the_click_projection()
 }
 
 #[test]
+fn minimap_world_switch_reanchors_camera_without_losing_same_world_pan() -> Result<(), BatchError> {
+    let mut play = minimap_view()?;
+    play.bind_minimap_world("11111111-1111-4111-8111-111111111111");
+    play.set_live_map(&snapshot(100))?;
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        map.pan(50, 50);
+        map.zoom = 4;
+    }
+    play.bind_minimap_world("22222222-2222-4222-8222-222222222222");
+    play.apply(&moved_to(110, 202, -7))?;
+    play.rebuild()?;
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        assert_eq!((map.x, map.y, map.floor, map.zoom), (110, 202, -7, 1));
+        assert!(map.tracking);
+        map.pan(2, 0);
+    }
+    play.bind_minimap_world("22222222-2222-4222-8222-222222222222");
+    assert!(!crate::play::feature_local_minimap::state::lock(&play.minimap).tracking);
+    Ok(())
+}
+
+#[test]
 fn minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{MinimapMark, MinimapMemory, PreferenceStore, SettingsState};

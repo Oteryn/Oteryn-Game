@@ -91,6 +91,7 @@ impl PlayView {
             &entities,
         )?;
         self.apply_preference_scale()?;
+        self.scene.set_name_visibility(self.preferences().hud_names);
         self.scene
             .set_presentations(&self.appearances, self.floor)?;
         self.scene.retain_target(target)?;

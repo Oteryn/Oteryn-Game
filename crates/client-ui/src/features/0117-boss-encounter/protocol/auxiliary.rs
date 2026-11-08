@@ -75,7 +75,7 @@ pub(super) fn summary(panel: &mut BossEncounterPanel, bytes: &[u8]) -> Option<St
                 4 => "Insufficient money",
                 _ => "Change cannot fit",
             };
-            Some(format!(
+            let text = format!(
                 "Boss slots: {status}\r\n1: {} | 2: {}\r\nUnlocked mask: {} | Bonus: {} | Points: {}\r\nRemoval fee: {} | Ready at: {}",
                 reply.bosses[0],
                 reply.bosses[1],
@@ -84,7 +84,9 @@ pub(super) fn summary(panel: &mut BossEncounterPanel, bytes: &[u8]) -> Option<St
                 reply.points,
                 reply.remove_fee,
                 reply.ready_at_ms
-            ))
+            );
+            panel.slots = Some(reply);
+            Some(text)
         }
         wire::COMMAND_TYPE_BOSS_REWARD_OPEN => {
             use std::fmt::Write;

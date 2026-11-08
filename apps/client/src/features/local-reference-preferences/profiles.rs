@@ -47,7 +47,7 @@ fn valid_name(name: &str) -> bool {
 
 impl HotkeyProfiles {
     pub(super) fn valid_shape(&self) -> bool {
-        (1..=8).contains(&self.presets.len())
+        (1..=16).contains(&self.presets.len())
             && self.presets.contains_key(&self.selected)
             && self.presets.keys().enumerate().all(|(i, name)| {
                 valid_name(name)
@@ -135,7 +135,7 @@ impl ReferencePreferences {
 
     pub fn add_hotkey_profile(&mut self, name: &str) -> Result<(), PreferenceError> {
         if !valid_name(name)
-            || self.hotkey_profiles.presets.len() >= 8
+            || self.hotkey_profiles.presets.len() >= 16
             || self
                 .hotkey_profiles
                 .presets
@@ -215,5 +215,41 @@ impl ReferencePreferences {
         candidate.validate_bindings()?;
         *self = candidate;
         Ok(())
+    }
+}
+
+impl ReferencePreferences {
+    pub(super) fn validate_profiles(&self) -> Result<(), PreferenceError> {
+        if self.hotkey_profiles.valid_shape() {
+            Ok(())
+        } else {
+            Err(PreferenceError)
+        }
+    }
+    pub fn save_hotkey_profile(&mut self, name: &str) -> Result<(), PreferenceError> {
+        if !valid_name(name)
+            || (self.hotkey_profiles.presets.len() >= 16
+                && !self.hotkey_profiles.presets.contains_key(name))
+        {
+            return Err(PreferenceError);
+        }
+        let mut candidate = self.clone();
+        candidate.capture_hotkeys()?;
+        let current = candidate
+            .hotkey_profiles
+            .presets
+            .get(&candidate.hotkey_profiles.selected)
+            .ok_or(PreferenceError)?
+            .clone();
+        candidate
+            .hotkey_profiles
+            .presets
+            .insert(name.into(), current);
+        candidate.validate_bindings()?;
+        *self = candidate;
+        Ok(())
+    }
+    pub fn load_hotkey_profile(&mut self, name: &str) -> Result<(), PreferenceError> {
+        self.select_hotkey_profile(name)
     }
 }

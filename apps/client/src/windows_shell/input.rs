@@ -35,6 +35,13 @@ impl Application {
 
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
+            if let Some(window) = &self.window {
+                window.set_cursor(if play.view.preferences().cursor_crosshair {
+                    winit::window::CursorIcon::Crosshair
+                } else {
+                    winit::window::CursorIcon::Default
+                });
+            }
             if play.view.audio_input(events) {
                 self.settings.capture(&mut play.view);
                 return;

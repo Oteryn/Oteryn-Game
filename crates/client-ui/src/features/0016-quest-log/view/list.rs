@@ -1,4 +1,4 @@
-use super::{QuestListEntry, QuestLogQuery, QuestPanel};
+use super::{QuestListEntry, QuestLogQuery, QuestLogView, QuestPanel};
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum QuestSort {
     #[default]
@@ -33,7 +33,25 @@ impl QuestSort {
 }
 /// Search and sort only confirmed list facts; the server cursor and tracker are unchanged.
 pub fn quest_rows(panel: &QuestPanel) -> Vec<&QuestListEntry> {
-    let search = panel.list_search.trim().to_ascii_lowercase();
+    let search = panel.list_search.trim().to_lowercase();
+    let visible = match &panel.state.log.view {
+        Some(QuestLogView::Line(line)) => Some(line),
+        _ => None,
+    };
+    let known: Vec<_> = panel
+        .state
+        .log
+        .tracked
+        .iter()
+        .chain(visible)
+        .filter(|line| {
+            line.missions.iter().any(|mission| {
+                mission.name.to_lowercase().contains(&search)
+                    || mission.text.to_lowercase().contains(&search)
+            })
+        })
+        .map(|line| line.quest_index)
+        .collect();
     let mut rows: Vec<_> = panel
         .state
         .list
@@ -45,6 +63,7 @@ pub fn quest_rows(panel: &QuestPanel) -> Vec<&QuestListEntry> {
                 if q.completed { "completed" } else { "active" }
             )
             .contains(&search)
+                || known.contains(&q.quest_index)
         })
         .collect();
     rows.sort_by(|a, b| match panel.list_sort {

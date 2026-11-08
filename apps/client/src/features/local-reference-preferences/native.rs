@@ -35,13 +35,10 @@ mod help_window;
 mod minimap_window;
 #[path = "profiles_native.rs"]
 mod profile_window;
-#[path = "settings_window.rs"]
-mod settings_window;
 #[path = "shortcuts_native.rs"]
 mod shortcuts_window;
 #[path = "subpages.rs"]
 mod subpages;
-use settings_window::run;
 fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
     shared
         .lock()
@@ -283,7 +280,7 @@ fn spawn_window(shared: Arc<Mutex<Shared>>) {
     let fallback = Arc::clone(&shared);
     if std::thread::Builder::new()
         .name("local-settings".into())
-        .spawn(move || run(shared))
+        .spawn(move || dialog::run(shared))
         .is_err()
     {
         let mut state = lock(&fallback);
@@ -300,7 +297,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 120..=126 | 223)
+                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 26000..=26006)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -342,3 +339,5 @@ unsafe fn text(hwnd: HWND) -> String {
         String::from_utf16_lossy(&buffer[..length.max(0) as usize])
     }
 }
+#[path = "dialog.rs"]
+mod dialog;

@@ -199,3 +199,7 @@ mod coin_shop_tests;
 #[cfg(test)]
 #[path = "features/local-premium/entry_tests.rs"]
 mod premium_tests;
+
+#[cfg(test)]
+#[path = "native_entry/training_tests.rs"]
+mod training_tests;

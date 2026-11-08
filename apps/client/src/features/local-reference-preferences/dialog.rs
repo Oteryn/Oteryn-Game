@@ -1,5 +1,8 @@
-//! Settings controls on their owning native window thread.
+//! Settings message pump and preference application on its owning thread.
 use super::*;
+#[path = "controls.rs"]
+mod controls;
+use controls::Controls;
 
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
@@ -28,291 +31,48 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
-        let pages = control(
-            hwnd,
-            "COMBOBOX",
-            "",
-            220,
-            [10, 10, 720, 240],
-            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
-        );
-        for page in SettingsPage::ALL {
-            SendMessageW(pages, CB_ADDSTRING, 0, wide(page.label()).as_ptr() as isize);
-        }
-        SendMessageW(pages, CB_SETCURSEL, 0, 0);
-        let help = control(
-            hwnd,
-            "STATIC",
-            "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse buttons follow the selected preset. Conflicts include all registered actions.",
-            0,
-            [10, 50, 720, 45],
-            0,
-        );
-        let list = control(
-            hwnd,
-            "COMBOBOX",
-            "",
-            101,
-            [10, 100, 440, 280],
-            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
-        );
-        let chord = control(
-            hwnd,
-            "EDIT",
-            "",
-            102,
-            [460, 100, 140, 26],
-            WS_BORDER | ES_AUTOHSCROLL as u32,
-        );
-        let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
-        let mouse_preset = control(
-            hwnd,
-            "BUTTON",
-            "Swap primary / secondary mouse buttons",
-            221,
-            [10, 150, 360, 26],
-            BS_AUTOCHECKBOX as u32,
-        );
-        let delay_label = control(
-            hwnd,
-            "STATIC",
-            "Keyboard repeat delay ms (0–1000)",
-            0,
-            [10, 185, 360, 26],
-            0,
-        );
-        let delay = control(
-            hwnd,
-            "EDIT",
-            "",
-            222,
-            [380, 185, 100, 26],
-            WS_BORDER | ES_NUMBER as u32,
-        );
-        let controls_apply = control(
-            hwnd,
-            "BUTTON",
-            "Apply controls",
-            223,
-            [500, 185, 180, 26],
-            0,
-        );
-        let rotation_label = control(
-            hwnd,
-            "STATIC",
-            "Turn modifier (CTRL / ALT / SHIFT)",
-            0,
-            [10, 225, 360, 26],
-            0,
-        );
-        let rotation = control(
-            hwnd,
-            "EDIT",
-            "",
-            224,
-            [380, 225, 100, 26],
-            WS_BORDER | ES_AUTOHSCROLL as u32,
-        );
-        let label = control(
-            hwnd,
-            "STATIC",
-            "World zoom % (80–180, fitted to window)",
-            0,
-            [10, 110, 700, 25],
-            0,
-        );
-        let scale = control(
-            hwnd,
-            "EDIT",
-            "",
-            104,
-            [10, 145, 100, 26],
-            WS_BORDER | ES_NUMBER as u32,
-        );
-        let volume = control(
-            hwnd,
-            "EDIT",
-            "",
-            105,
-            [130, 145, 100, 26],
-            WS_BORDER | ES_NUMBER as u32,
-        );
-        let mute = control(
-            hwnd,
-            "BUTTON",
-            "Mute",
-            107,
-            [250, 145, 100, 26],
-            BS_AUTOCHECKBOX as u32,
-        );
-        let apply = control(hwnd, "BUTTON", "Apply", 106, [380, 145, 110, 26], 0);
-        let profiles = control(
-            hwnd,
-            "BUTTON",
-            "Hotkey profiles...",
-            120,
-            [510, 145, 210, 26],
-            0,
-        );
-        let transfer_label = control(
-            hwnd,
-            "STATIC",
-            "Settings transfer file (JSON). Import/defaults save a recoverable backup.",
-            0,
-            [10, 195, 720, 25],
-            0,
-        );
-        let transfer_path = control(
-            hwnd,
-            "EDIT",
-            "",
-            114,
-            [10, 225, 710, 26],
-            WS_BORDER | ES_AUTOHSCROLL as u32,
-        );
-        SendMessageW(transfer_path, EM_SETLIMITTEXT, 240, 0);
-        let import = control(hwnd, "BUTTON", "Import...", 110, [10, 265, 150, 30], 0);
-        let export = control(
-            hwnd,
-            "BUTTON",
-            "Export new file",
-            111,
-            [175, 265, 160, 30],
-            0,
-        );
-        let backup = control(
-            hwnd,
-            "BUTTON",
-            "Restore backup...",
-            112,
-            [350, 265, 170, 30],
-            0,
-        );
-        let defaults = control(
-            hwnd,
-            "BUTTON",
-            "Restore defaults...",
-            113,
-            [535, 265, 185, 30],
-            0,
-        );
-        let help_page = control(
-            hwnd,
-            "BUTTON",
-            "Help and reports...",
-            121,
-            [10, 310, 210, 30],
-            0,
-        );
-        let controls_page = control(
-            hwnd,
-            "BUTTON",
-            "Mouse and movement...",
-            122,
-            [250, 310, 240, 30],
-            0,
-        );
-        let shortcuts_page = control(
-            hwnd,
-            "BUTTON",
-            "Shortcut buttons...",
-            123,
-            [510, 310, 210, 30],
-            0,
-        );
-        let minimap_page = control(
-            hwnd,
-            "BUTTON",
-            "Minimap transfer...",
-            124,
-            [10, 350, 210, 30],
-            0,
-        );
-        let frames_page = control(
-            hwnd,
-            "BUTTON",
-            "Frame rate and indicators...",
-            125,
-            [250, 350, 280, 30],
-            0,
-        );
-        let basic_page = control(
-            hwnd,
-            "BUTTON",
-            "Basic options...",
-            126,
-            [550, 350, 170, 30],
-            0,
-        );
-        let hud_checks = [
-            "HP / MP bars",
-            "Harmony",
-            "Serene",
-            "Light effects",
-            "Combat effects",
-            "Creature health / icons",
-            "HP / MP circle",
-        ]
-        .into_iter()
-        .enumerate()
-        .map(|(index, label)| {
-            control(
-                hwnd,
-                "BUTTON",
-                label,
-                130 + index,
-                [
-                    10 + (index % 4) as i32 * 175,
-                    400 + (index / 4) as i32 * 30,
-                    170,
-                    26,
-                ],
-                BS_AUTOCHECKBOX as u32,
-            )
-        })
-        .collect::<Vec<_>>();
-        let feedback = control(hwnd, "STATIC", "", 0, [10, 470, 710, 90], 0);
-        if [
-            rotation_label,
-            rotation,
-            mouse_preset,
-            delay_label,
-            delay,
-            controls_apply,
+        let Some(Controls {
+            extra: _extra,
+            arcs,
+            interface,
+            profile_name,
+            profile_save,
+            profile_load,
+            profile_delete,
             pages,
             help,
             list,
             chord,
             rebind,
+            chat_on,
+            chat_off,
+            mouse_preset,
+            delay_label,
+            delay,
+            controls_apply,
+            rotation_label,
+            rotation,
             label,
             scale,
             volume,
             mute,
             apply,
-            profiles,
-            help_page,
-            controls_page,
-            shortcuts_page,
-            minimap_page,
-            frames_page,
-            basic_page,
-            feedback,
             transfer_label,
             transfer_path,
             import,
             export,
             backup,
             defaults,
-        ]
-        .iter()
-        .chain(hud_checks.iter())
-        .any(|h| h.is_null())
-        {
+            hud_checks,
+            feedback,
+        }) = Controls::new(hwnd)
+        else {
             DestroyWindow(hwnd);
             lock(&shared).open = false;
             return;
-        }
-        let bindings = preference_bindings().unwrap_or_default();
+        };
+        let mut bindings = preference_bindings().unwrap_or_default();
+        let mut binding_page = SettingsPage::Hotkeys;
         let mut held = None;
         let mut selected = -1;
         let mut message: MSG = std::mem::zeroed();
@@ -337,13 +97,44 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             {
                 state.page = *page;
             }
+            if binding_page != state.page {
+                binding_page = state.page;
+                bindings = preference_bindings()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter(|binding| {
+                        state.page != SettingsPage::BarHotkeys
+                            || binding.id.starts_with("local-spell-action-bar-spell-")
+                    })
+                    .collect();
+                held = None;
+                selected = -1;
+            }
+            for handle in [help, list, chord, rebind] {
+                ShowWindow(
+                    handle,
+                    if matches!(
+                        state.page,
+                        SettingsPage::Hotkeys
+                            | SettingsPage::BarHotkeys
+                            | SettingsPage::CustomHotkeys
+                    ) {
+                        SW_SHOW
+                    } else {
+                        SW_HIDE
+                    },
+                );
+            }
+            arcs.show(state.page == SettingsPage::Arcs);
+            interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
+                    &[profile_name, profile_save, profile_load, profile_delete][..],
+                    SettingsPage::CustomHotkeys,
+                ),
+                (&[chat_on, chat_off][..], SettingsPage::Hotkeys),
+                (
                     &[
-                        help,
-                        list,
-                        chord,
-                        rebind,
                         mouse_preset,
                         delay_label,
                         delay,
@@ -383,7 +174,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 apply,
                 if matches!(
                     state.page,
-                    SettingsPage::Interface | SettingsPage::Sound | SettingsPage::Graphics
+                    SettingsPage::Interface
+                        | SettingsPage::Sound
+                        | SettingsPage::Graphics
+                        | SettingsPage::Arcs
                 ) {
                     SW_SHOW
                 } else {
@@ -401,7 +195,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
-                if (120..=126).contains(&action) {
+                if (26000..=26006).contains(&action) {
                     drop(state);
                     subpages::open(action, Arc::clone(&shared), hwnd);
                     state = lock(&shared);
@@ -437,7 +231,26 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if action == 223 {
+                if (231..=233).contains(&action) {
+                    let name = text(profile_name);
+                    let result = match action {
+                        231 => preferences.save_hotkey_profile(&name),
+                        232 => preferences.load_hotkey_profile(&name),
+                        _ => preferences.remove_hotkey_profile(&name),
+                    };
+                    match result {
+                        Ok(()) => state.apply(preferences),
+                        Err(error) => state.feedback = error.to_string(),
+                    }
+                } else if matches!(action, 225 | 226) {
+                    match preferences.general_hotkey_preset(action == 225) {
+                        Ok(()) => state.apply(preferences),
+                        Err(error) => {
+                            state.feedback =
+                                format!("Preset conflicts with a custom binding: {error}")
+                        }
+                    }
+                } else if action == 223 {
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
                             preferences.rotation_modifier =
@@ -461,6 +274,14 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    if let Err(error) = arcs.read(&mut preferences) {
+                        state.feedback = error;
+                        continue;
+                    }
+                    if let Err(error) = interface.read(&mut preferences) {
+                        state.feedback = error;
+                        continue;
+                    }
                     match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
                         (Ok(scale), Ok(volume)) => {
                             preferences.ui_scale = scale;
@@ -487,7 +308,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
-                SetWindowTextW(help, wide(&format!("Profile: {} / chat {} editor.\r\nProfiles configures both key slots and saved presets.", state.preferences.hotkey_profiles.selected, if state.preferences.hotkey_profiles.chat_on { "on" } else { "off" })).as_ptr());
+                arcs.refresh(&state.preferences);
+                interface.refresh(&state.preferences);
                 let selection = selected.max(0) as usize;
                 SendMessageW(list, CB_RESETCONTENT, 0, 0);
                 for binding in &bindings {
@@ -542,6 +364,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 held = Some(state.preferences.clone());
             }
             let page_help = match state.page {
+                SettingsPage::CustomHotkeys => {
+                    "Profiles save chat contexts and both key slots. Assign object, text and passive actions in Action bars (Ctrl+Shift+I)."
+                }
+                SettingsPage::BarHotkeys => {
+                    "Thirty-six slots across three rows. Configure digit shortcuts above; assign actions and layouts in Action bars."
+                }
                 SettingsPage::Graphics => {
                     "Renderer and window options use the supported native renderer. Additional controls are not available yet."
                 }

@@ -16,15 +16,15 @@ mod basic;
 pub use basic::{BASIC_GROUPS, BasicOptions};
 #[path = "bindings.rs"]
 mod bindings;
-#[path = "controls.rs"]
+#[path = "control_preferences.rs"]
 mod controls;
 #[path = "frames.rs"]
 mod frames;
+#[path = "profiles.rs"]
+mod profiles;
 pub use frames::{FramePacer, FramePreferences};
 #[path = "help.rs"]
 mod help;
-#[path = "profiles.rs"]
-mod profiles;
 #[path = "shortcuts.rs"]
 mod shortcuts;
 #[path = "store.rs"]
@@ -63,6 +63,17 @@ fn enabled() -> bool {
     true
 }
 
+fn default_arc_distance() -> u16 {
+    8
+}
+fn default_arc_size() -> u16 {
+    3
+}
+
+fn default_hud_names() -> [bool; 3] {
+    [true; 3]
+}
+
 fn default_shortcuts() -> Vec<String> {
     WINDOW_ACTIONS
         .iter()
@@ -93,6 +104,16 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_arc_distance")]
+    pub arc_distance: u16,
+    #[serde(default = "default_arc_size")]
+    pub arc_size: u16,
+    #[serde(default = "default_hud_names")]
+    pub hud_names: [bool; 3],
+    #[serde(default = "default_scale")]
+    pub interface_scale: u16,
+    #[serde(default)]
+    pub cursor_crosshair: bool,
     #[serde(default = "default_rotation_modifier")]
     pub rotation_modifier: String,
     #[serde(default)]
@@ -164,6 +185,11 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            arc_distance: 8,
+            arc_size: 3,
+            hud_names: default_hud_names(),
+            interface_scale: 100,
+            cursor_crosshair: false,
             rotation_modifier: default_rotation_modifier(),
             swap_mouse_buttons: false,
             keyboard_delay_ms: 0,
@@ -203,6 +229,7 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        self.validate_profiles()?;
         if !self.bar_actions.valid() || !self.bar_layout.valid() {
             return Err(PreferenceError);
         }
@@ -215,6 +242,9 @@ impl ReferencePreferences {
             return Err(PreferenceError);
         }
         if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+            || self.arc_distance > 80
+            || !(1..=8).contains(&self.arc_size)
+            || !(80..=200).contains(&self.interface_scale)
             || !self.spellbook_filter.valid()
             || !self.archive_bindings.valid()
             || !self.frames.valid()
@@ -244,6 +274,11 @@ impl ReferencePreferences {
     #[must_use]
     pub fn panel_visible(&self, id: &str) -> bool {
         self.visible_panels.iter().any(|visible| visible == id)
+    }
+
+    pub fn scaled_hud_bounds(&self) -> [u16; 4] {
+        self.hud_bounds
+            .map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
     }
 }
 

@@ -115,7 +115,7 @@ impl super::Application {
                 play.link.movement_feedback().unwrap_or("")
             );
             if let Some(hud) = &self.hud {
-                hud.update(Some(&status), play.view.preferences().hud_bounds);
+                hud.update(Some(&status), play.view.preferences().scaled_hud_bounds());
             }
             if let Some(hud) = &mut self.hud {
                 hud.arcs.update(play.view.hud_arc_layout());

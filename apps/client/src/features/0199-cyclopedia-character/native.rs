@@ -108,7 +108,7 @@ fn parse_target(text: &str) -> Option<[u8; 16]> {
 #[cfg(windows)]
 pub(in crate::play) use window::open_window;
 #[cfg(windows)]
-#[path = "native_window.rs"]
+#[path = "view/character_window.rs"]
 mod window;
 
 #[cfg(windows)]

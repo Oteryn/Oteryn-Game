@@ -10,7 +10,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Boss key",
                 "Slot (1-2)",
                 "Hazard level (1-12)",
-                "Search boss records",
+                "Boss search",
             ],
             buttons: &[
                 "Refresh",
@@ -30,18 +30,17 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Previous boss",
                 "Next boss",
                 "Boss category",
+                "Soul War boss",
+                "Rotten Blood boss",
+                "Apply search",
+                "Next unlocked slot",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.boss_encounter;
                 (
                     panel.open,
                     panel.pending,
-                    panel
-                        .fields
-                        .iter()
-                        .cloned()
-                        .chain(Some(panel.browser_search.clone()))
-                        .collect(),
+                    [panel.fields.to_vec(), vec![panel.browser_search.clone()]].concat(),
                     oteryn_client_ui::boss_encounter::panel_text(panel)
                         .replace("\r\n", "\n")
                         .replace('\n', "\r\n"),
@@ -52,23 +51,32 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 if mailbox.boss_encounter.pending {
                     return;
                 }
-                for (index, value) in values.into_iter().enumerate() {
-                    if index == 3 {
-                        mailbox.boss_encounter.browser_search = value;
-                    } else {
-                        super::super::input::edit(&mut mailbox.boss_encounter, index, value);
-                    }
+                if let Some(search) = values.get(3) {
+                    mailbox.boss_encounter.boss_search = search.clone();
+                    mailbox.boss_encounter.browser_search = search.clone();
                 }
-                if matches!(action, 14 | 15) {
-                    oteryn_client_ui::boss_encounter::select_boss(
+                for (index, value) in values.into_iter().take(3).enumerate() {
+                    super::super::input::edit(&mut mailbox.boss_encounter, index, value);
+                }
+                if let Some(chain) = match action {
+                    17 => Some(oteryn_client_ui::boss_encounter::EndgameChain::SoulWar),
+                    18 => Some(oteryn_client_ui::boss_encounter::EndgameChain::RottenBlood),
+                    _ => None,
+                } {
+                    oteryn_client_ui::boss_encounter::select_next_boss(
                         &mut mailbox.boss_encounter,
-                        action == 15,
+                        chain,
                     );
                     return;
                 }
-                if action == 16 {
-                    mailbox.boss_encounter.browser_category =
-                        mailbox.boss_encounter.browser_category.next();
+                if action >= 14 {
+                    if action <= 15 {
+                        mailbox.boss_encounter.select_boss(action == 14);
+                    }
+                    if action == 16 { mailbox.boss_encounter.browser_category = mailbox.boss_encounter.browser_category.next(); }
+                    if action == 20 {
+                        mailbox.boss_encounter.select_slot();
+                    }
                     return;
                 }
                 let intent = match action {

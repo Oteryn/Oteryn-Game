@@ -175,3 +175,32 @@ fn tracker_read_only_reply_preserves_the_current_quest_and_revision() -> Result<
     );
     Ok(())
 }
+
+#[cfg(not(windows))]
+#[test]
+fn standalone_tracker_chord_keeps_quest_log_closed_and_uses_session_query() -> Result<(), String> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    mailbox::lock(&outbox.0).quest.state.selected = true;
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(20).map_err(|e| format!("{e:?}"))?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE
+            .with(Modifier::Control)
+            .with(Modifier::Alt)
+            .with(Modifier::Shift),
+        repeat: false,
+    };
+    assert!(link.quest_input(&[event]));
+    let p = link.quest_panel();
+    assert!(p.tracker_open);
+    assert!(!p.open);
+    let Ok(PlayCommand::QuestLog(payload)) = commands.try_recv() else {
+        return Err("missing quest query".into());
+    };
+    assert_eq!(
+        oteryn_client_runtime::quest_log::decode_quest_log_query(&payload),
+        Ok(oteryn_client_runtime::quest_log::QuestLogQuery::ListOnly)
+    );
+    Ok(())
+}

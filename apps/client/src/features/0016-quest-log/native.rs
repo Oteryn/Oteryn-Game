@@ -120,7 +120,7 @@ fn run(
         control(
             hwnd,
             "STATIC",
-            "Find quest number or status",
+            "Find number, status or known mission",
             112,
             10,
             10,
@@ -297,6 +297,7 @@ fn run(
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL | WS_BORDER,
         );
         let mut held = None;
+        let mut last_search = None;
         let mut shown_quests = Vec::new();
         let mut options_initialized = false;
         let mut message: MSG = std::mem::zeroed();
@@ -382,8 +383,14 @@ fn run(
                 QuestSort::from_selection(SendMessageW(list_sort, CB_GETCURSEL, 0, 0));
             let mut search_text = [0u16; 129];
             let len = GetWindowTextW(search, search_text.as_mut_ptr(), 129);
-            mailbox.quest.tracker.search =
-                String::from_utf16_lossy(&search_text[..len.max(0) as usize]);
+            let typed = String::from_utf16_lossy(&search_text[..len.max(0) as usize]);
+            if let Some(value) = oteryn_client_ui::quest_log::sync_tracker_search(
+                &mut mailbox.quest,
+                &mut last_search,
+                typed,
+            ) {
+                SetWindowTextW(search, wide(&value).as_ptr());
+            }
             if !mailbox.quest_pending
                 && let Some(query) = oteryn_client_ui::quest_log::tracker_query(
                     &mut mailbox.quest,

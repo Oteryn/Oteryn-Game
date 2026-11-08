@@ -68,3 +68,41 @@ pub fn panel_text(panel: &QuestPanel) -> String {
     }
     lines.join("\r\n")
 }
+
+/// Independent tracker view, using confirmed lines and local visibility filters only.
+pub fn tracker_text(panel: &QuestPanel) -> String {
+    let rows = tracker_lines(panel);
+    let mut text = format!(
+        "Quest tracker — {} / {} tracked quests\r\n",
+        rows.len(),
+        panel.state.log.tracked.len()
+    );
+    if !panel.state.selected {
+        text.push_str("Quest tracking unavailable in this session\r\n");
+    }
+    for line in &rows {
+        text.push_str(&format!(
+            "\r\nQuest {}{}\r\n",
+            line.quest_index,
+            if line.completed { " (completed)" } else { "" }
+        ));
+        for mission in &line.missions {
+            text.push_str(&format!(
+                "{}{}: {}\r\n",
+                mission.name,
+                if mission.done { " (completed)" } else { "" },
+                mission.text
+            ));
+        }
+    }
+    if rows.is_empty() {
+        text.push_str("No tracked quests match these filters\r\n");
+    }
+    if panel.pending_query.is_some() {
+        text.push_str("Waiting for server confirmation\r\n");
+    }
+    if panel.state.refusal.is_some() {
+        text.push_str("Quest request refused; refresh the quest log to reconcile\r\n");
+    }
+    text
+}
