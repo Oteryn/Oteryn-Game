@@ -3727,6 +3727,18 @@
       "Equipment runtime source-audit regression",
       "Complete unit runs of content and dispatch"
     ],
-    "cadence_exception": "Publish compiling checkpoint under PREPUSH-2 after the unit/PG verification budget; no new quest qualification until full player journeys pass."
+    "cadence_exception": "Publish compiling checkpoint under PREPUSH-2 after the unit/PG verification budget; no new quest qualification until full player journeys pass.",
+    "source_checkpoint": "2c2abe2a5253dd5167294d6b1562523a4d7ea093",
+    "main_merge": {
+      "main": "b3864f14a",
+      "conflicts": "Four generated Prey files; resolved by official regeneration",
+      "prey_simulation": {
+        "cases": 15,
+        "creatures": 776,
+        "seconds": 425.4788260350033,
+        "state": "PASS"
+      },
+      "checks_after_merge": "IN_PROGRESS"
+    }
   }
 }

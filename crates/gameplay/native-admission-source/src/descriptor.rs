@@ -59,6 +59,12 @@ pub enum Operation {
     /// World online snapshot (same contract, §4.6).
     PublishWorldOnlineV1,
     PublishWorldTotalsV1,
+    PublishCharacterDeathsV2,
+    PublishGuildV2,
+    PublishHouseV2,
+    PublishCharacterOnlineSessionV2,
+    PublishWorldDailyKillsV2,
+    PublishPublicProjectionWatermarkV2,
     /// Public projection liveness watermark (same contract, §5.1).
     PublishPublicProjectionWatermarkV1,
     PublishGameRestoreNoticeV1,
@@ -115,6 +121,14 @@ impl Operation {
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_PATH,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_PATH,
             Self::PublishWorldTotalsV1 => super::public_projections::world_totals::PATH,
+            Self::PublishCharacterDeathsV2 => "/internal/v2/game-public/character-deaths",
+            Self::PublishGuildV2 => "/internal/v2/game-public/guild",
+            Self::PublishHouseV2 => "/internal/v2/game-public/house",
+            Self::PublishWorldDailyKillsV2 => "/internal/v2/game-public/world-daily-kills",
+            Self::PublishCharacterOnlineSessionV2 => {
+                "/internal/v2/game-public/character-online-session"
+            }
+            Self::PublishPublicProjectionWatermarkV2 => "/internal/v2/game-public/watermark",
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_PATH,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::PATH,
             Self::ListPendingBazaarCommandsV1 => "/internal/v1/bazaar/commands/pending",
@@ -171,6 +185,12 @@ impl Operation {
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_BYTES,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_BYTES,
             Self::PublishWorldTotalsV1 => super::public_projections::world_totals::REQUEST_BYTES,
+            Self::PublishCharacterDeathsV2 => 32_768,
+            Self::PublishGuildV2 => 393_216,
+            Self::PublishHouseV2 => 2_048,
+            Self::PublishWorldDailyKillsV2 => 2_048,
+            Self::PublishCharacterOnlineSessionV2 => 2_048,
+            Self::PublishPublicProjectionWatermarkV2 => 512,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::NOTICE_BYTES,
             Self::PublishWorldEventOutcomeV1 => super::world_event_outcomes::EVENT_BYTES,
