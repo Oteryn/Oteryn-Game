@@ -434,3 +434,15 @@ fn guided_bug_report_requires_review_and_sends_only_opted_in_diagnostics()
     assert!(!request.comment.contains("100,200,7"));
     Ok(())
 }
+
+#[test]
+fn bug_categories_show_specific_reproduction_guidance() {
+    use crate::play::feature_0076_player_report::view::bug::activate;
+    let (link, _receiver, _) = play_channel();
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    mailbox.properties.player_report.selected = true;
+    for (category, expected) in [(0, "Coordinates"), (1, "original text"), (2, "operating system"), (3, "expected result")] {
+        activate(&mut mailbox, &link.commands, category);
+        assert!(mailbox.properties.player_report.bug.preview.contains(expected));
+    }
+}
