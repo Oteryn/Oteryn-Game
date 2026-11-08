@@ -5,6 +5,10 @@
 //! 04b83b51 + Crystal 9f5a72c6). The separate key-4601 claim opens access;
 //! it is not a fourth treasure chest. This source slice does not certify the
 //! chosen recipe's full travel or switch sequence.
+//!
+//! Behemoth's four required treasure claims use kv/behemothquest1..4 from
+//! the same pinned capture, at (33294..33298,31658,13). The first is a
+//! container reward; its existing native contents and grant owner are retained.
 use super::*;
 use serde::{Deserialize, Serialize};
 
