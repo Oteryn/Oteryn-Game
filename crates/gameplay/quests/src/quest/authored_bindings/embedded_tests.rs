@@ -30,7 +30,9 @@ fn imported_chosen_recipe_admission_preserves_original_source_holds() -> Result<
     let quest = "oteryn:quest.in_service_of_yalahar_quest";
     bindings.quests[0].quest = quest.into();
     for stage in &mut bindings.quests[0].stages {
-        let super::super::Trigger::NpcDialogue { callback } = &mut stage.trigger;
+        let super::super::Trigger::NpcDialogue { callback } = &mut stage.trigger else {
+            return Err("expected NPC dialogue fixture".into());
+        };
         callback.quest = quest.into();
     }
     let definition = &mut shard["records"][0]["definition"];

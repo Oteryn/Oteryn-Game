@@ -286,6 +286,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             transition: rule.transition.clone(),
             creature: rule.creature.clone(),
             observed_revision: fence.expected_character_revision.get(),
+            definition_hash: None,
             source: NativeDeathSource::Source(SourceDeathContext {
                 scope: fence.runtime_scope,
                 scope_generation: fence.scope_ownership_generation.get() + 1,
