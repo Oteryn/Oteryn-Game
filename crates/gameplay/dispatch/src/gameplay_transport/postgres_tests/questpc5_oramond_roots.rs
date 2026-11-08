@@ -47,7 +47,7 @@ pub(super) async fn exercise(
     exercise_item(owner, admitted, h, 21291, 5, "oramond_root_custody").await
 }
 
-async fn exercise_item(
+pub(super) async fn exercise_item(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
@@ -121,11 +121,30 @@ pub(super) fn cook_contact_world() -> TestResult<crate::map::boot::BundleWorld> 
 fn questpc5_cook_trashcan_survives_actual_bundle_compilation() -> TestResult {
     use crate::map::view::MapFacts;
     let world = cook_contact_world()?;
-    let pos = crate::map::overlay::TilePos { x: 32974, y: 32110, floor: -7 };
-    let tile = world.base().tile(pos.x, pos.y, pos.floor).ok_or("trashcan tile")?;
-    let (id, _) = tile.ids().iter().zip(tile.depths())
-        .filter(|(_, depth)| **depth == 0).nth(1).ok_or("live trashcan ordinal")?;
-    assert_eq!(world.facts().base_entry(pos, 1, *id).ok_or("trashcan facts")?.appearance_id, 44563);
+    let pos = crate::map::overlay::TilePos {
+        x: 32974,
+        y: 32110,
+        floor: -7,
+    };
+    let tile = world
+        .base()
+        .tile(pos.x, pos.y, pos.floor)
+        .ok_or("trashcan tile")?;
+    let (id, _) = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(1)
+        .ok_or("live trashcan ordinal")?;
+    assert_eq!(
+        world
+            .facts()
+            .base_entry(pos, 1, *id)
+            .ok_or("trashcan facts")?
+            .appearance_id,
+        44563
+    );
     Ok(())
 }
 

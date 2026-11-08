@@ -1,0 +1,91 @@
+{
+  "quest": "oteryn:quest.opticording_sphere_quest",
+  "state": "THREE_PHYSICAL_PROFILES_REGISTERED_PG_GREEN_PENDING",
+  "physical_selection": {
+    "19063": "initial opticording sphere,200centioz",
+    "23573": "broken opticording sphere,180centioz",
+    "23572": "complete opticording sphere,200centioz"
+  },
+  "not_selected": {
+    "19064": "same-name complete-description alternative; do not join by name",
+    "19392": "aligned intermediate not required by selected finite stages"
+  },
+  "sources": [
+    {
+      "path": "imports/canary/items-xml/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "lines": "38865-38874;46813-46822;38914-38922"
+    },
+    {
+      "path": "content/world/placements/region-z08-x127-y123.b3",
+      "sha256": "34d7229b0638876931954aced076b0dd62e600bf073ec0bd0f02ed47f9f5549a",
+      "source_cells": [
+        {
+          "x": 32672,
+          "y": 31602,
+          "floor": 8,
+          "ordinal": 4,
+          "appearance": 19080
+        },
+        {
+          "x": 32679,
+          "y": 31609,
+          "floor": 8,
+          "ordinal": 2,
+          "appearance": 19080
+        }
+      ]
+    }
+  ],
+  "prerequisite": {
+    "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank",
+    "minimum": 2,
+    "initial": 0,
+    "rule": "Read existing foreign owned track; never author Bigfoot quest or seed its rank as a successful quest route."
+  },
+  "heavy_crate": {
+    "item": 19079,
+    "source": "imports/canary/items-xml/items.xml:38914-38919",
+    "weight": 8000,
+    "capacity": 15,
+    "map_palette_present": false,
+    "rule": "Do not relabel ordinary crate2471 as Heavy Crate19079. Author an exact selected object projection if required."
+  },
+  "reuse": "Existing qengine Item source importer, grizzly canonical Known-fact reconciliation and exact binding validator; no new engine feature.",
+  "tests": {
+    "source_cases": 3,
+    "green_seconds": 9.58,
+    "proof": "/tmp/questpc5-opticording-materials-green2.log",
+    "native_profiles_registered": true,
+    "postgres": {
+      "state": "RED3of3 on PostgreSQL18.6 before registration",
+      "error": "DefinitionNotFound",
+      "duration_seconds": {
+        "23573": 43.630261574,
+        "23572": 43.797579239,
+        "19063": 43.196269559
+      },
+      "markers": "POSTGRES_CASE_STARTED opticording_material_custody item=<id> server_version=18.6",
+      "log": "/tmp/questpc5-greeting-and-opticording-red-pg2.log",
+      "registration_hook_authored": true,
+      "generated_native_profiles": "not regenerated while other PG cases remain running"
+    },
+    "generated_native_files": 49,
+    "unchanged_existing_profiles": 3841,
+    "source_green_seconds": 9.549,
+    "whole_quest_qualified": false
+  },
+  "source_limits": "Both pinned public quest-directory lookups lack dedicated Opticording implementation; retained mysterious_ornate egg callback is explicitly unavailable placeholder. BR raw URL403 does not block finite selected implementation.",
+  "generated_checks": {
+    "equipment_union": 3879,
+    "lane_raw_delta": 119,
+    "lane_new_union": 115,
+    "immutable_equipment_baseline": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+    "item_mount_equivalence": "34114Items/252MountsPASS",
+    "world_metadata": "0of4changed",
+    "world_digest": "8bd9bf232a781a5eb3fb589677cf18e4df4f17507ed14c885e288f7d3054f452",
+    "world_inputs_digest": "bcdb83e410cf07240894e5f3d1bcd2ae71be626fbe6f1760ee513ac473a1161b",
+    "pin_refresh_check": "PASS",
+    "duplicate_migrations": "PASS stagedtree"
+  }
+}

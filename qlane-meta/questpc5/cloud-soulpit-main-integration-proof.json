@@ -1,6 +1,6 @@
 {
   "main": "98d6ae8ce",
-  "state": "GREETING_REPAIR_UNIT_GREEN_POSTGRES_RERUN_PENDING",
+  "state": "ALL_EXISTING_FOCUSED_REGRESSIONS_GREEN",
   "reuse": [
     "Main Soulpit lifecycle, physical map facts and migrations1140-1141 consumed as-is",
     "Both exact Cook44563 and bounded55Soulpit static profiles retained, no widened source admission",
@@ -82,12 +82,16 @@
     "greeting_binding_exact_pointers": 6628,
     "greeting_pin_refresh_check": "PASS unchanged8bd9bf232a781a5eb3fb589677cf18e4df4f17507ed14c885e288f7d3054f452",
     "greeting_duplicate_migrations": "PASS",
-    "greeting_fmt": "PASS"
+    "greeting_fmt": "PASS",
+    "post_greeting_focused_cases": 8,
+    "post_greeting_cook_pg_seconds": 155.31074432,
+    "post_greeting_noodles_whole_pg_seconds": 85.048474966,
+    "post_greeting_thais_nextest_seconds": 64.778,
+    "post_greeting_serpentine_pg_seconds": 122.40747951
   },
   "pending": [
-    "Cook/Noodles and previous focused PostgreSQL rerun after greeting repair",
     "Remaining changed-crate unit tests",
-    "Opticording3physical PG RED before any native profile registration; uncommitted tests/hooks kept out of this independent repair checkpoint"
+    "Opticording3physical native registration and PostgreSQL GREEN after provenRED"
   ],
   "qualification": "No additional whole quest qualified; ledger remains13/23. No foreign migration introduced.",
   "latest_main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",

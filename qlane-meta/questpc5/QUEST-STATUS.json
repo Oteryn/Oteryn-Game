@@ -113,7 +113,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -144,7 +144,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     },
     "engine_request_2026_11_08": {
       "feature": "Claimant-fenced progress from actual looting of an Item issued by an exact Creature death",
@@ -212,7 +212,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -270,7 +270,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -332,7 +332,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -373,7 +373,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -425,7 +425,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -474,7 +474,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -495,7 +495,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     },
     "physical_material_work": {
       "identities": [
@@ -504,9 +504,10 @@
         23573
       ],
       "source_unit_tests": "3PASS9.580s",
-      "producer_registered": false,
-      "postgres": "3tests authored; RED not run yet",
-      "proof": "cloud-opticording-source-resolution.json"
+      "producer_registered": true,
+      "postgres": "3realPG RED before native registration; profiles now registered; GREEN build queued behind workspace/Clippy",
+      "proof": "cloud-opticording-source-resolution.json",
+      "generated_checks": "49nativefiles,3exactnewprofiles,3841existingunchanged,equipment3879,equivalence/pins/duplicatesPASS"
     }
   },
   {
@@ -542,7 +543,12 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+    },
+    "engine_request_refinement": {
+      "reused_clock": "reward_callbacks/state_ops.rs:StateCondition::ElapsedAtLeast + StateMutation::SetNow, authoritative transaction clock already implemented",
+      "missing": "World USE ItemReward needs cycle-scoped repeatable MINT; give_world passes false at reward_claim_mint/quest.rs:469",
+      "rule": "No synthetic payment or reused old roots to bypass five new plant rewards."
     }
   },
   {
@@ -588,7 +594,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -625,7 +631,16 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+    },
+    "engine_request_refinement": {
+      "reused": [
+        "World/movement/monster_map/special_movement.rs:57-73 already removes exact starving_wolf and creates captured wolf12369 at trap12368",
+        "Benevola handover owns existing World contribution",
+        "StateOperation elapsed-time checks and SetNow already support daily clocks"
+      ],
+      "missing": "Claimant-attributed personal quest progress from capture/pickup event; retain daily run admission",
+      "rule": "Do not rebuild traps, global World counter or Benevola source handover."
     }
   },
   {
@@ -660,7 +675,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -692,7 +707,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -730,7 +745,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -759,7 +774,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -817,7 +832,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -890,7 +905,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -973,7 +988,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -1024,7 +1039,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -1055,7 +1070,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -1137,7 +1152,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   },
   {
@@ -1197,7 +1212,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
     }
   }
 ]

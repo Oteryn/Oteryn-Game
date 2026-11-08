@@ -842,6 +842,12 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-questpc4-spirit" {
         return super::l6_spirit::exercise(owner, admitted, h, authority).await;
     }
+    if name.starts_with("qengine-rewards-opticording-material-") {
+        return Box::pin(super::questpc5_opticording_materials::exercise(
+            owner, admitted, h, name,
+        ))
+        .await;
+    }
     if name.starts_with("qengine-rewards-cook-") {
         return Box::pin(super::questpc5_oramond_roots::exercise_cook(
             owner, admitted, h, name,

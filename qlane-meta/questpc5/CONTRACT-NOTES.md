@@ -322,3 +322,6 @@ Opticording source decision2026-11-08: select exact initial19063/broken23573/com
 
 
 2026-11-08 merged Cook greeting repair: retain KingTibianus's existing Crystal literal greeting when the selected Noodles programme extends shared greetings. Never append a second NPC identity and never relax the strict native book uniqueness check. Actual CookPG18.6RED152.488s was NoConversation because the one duplicate disabled all reward greetings; all other6focused cases passed. Source regression2GREEN0.141s and both new native greeting tests pass; wholeNPC38unitrun and actualCookPG rerun pending. No Noodles reward, keyword, completion, source receipt or canonical NPC fact changed.
+
+
+Daily-mechanic refinement: transactional ElapsedAtLeast/SetNow already exists in reward_callbacks/state_ops.rs; no new clock engine needed. Oramond requires repeatable cycle-scoped World item MINT (give_world currently passes false), not a fabricated fee or reused roots. Overhunting reuses exact existing starving-wolf/trap capture in world/movement/monster_map/special_movement.rs:57–73 and Benevola World handover; missing only claimant-attributed personal capture/pickup progress for daily runs. Request forwarded in ENGINE-REQUEST commentary; do not author another World counter.
