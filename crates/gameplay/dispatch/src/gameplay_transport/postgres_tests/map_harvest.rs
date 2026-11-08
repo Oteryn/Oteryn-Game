@@ -128,10 +128,12 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
             .iter()
             .map(|key| Ok((key.as_str(), reference(key).ok_or("plant state")?.get() - 1)))
             .collect::<Result<Vec<_>, &str>>()?;
+        // Ordinary flowers retain the base placement; only projected flowers omit it.
+        let projected_flower = before == 13842 && !matches!(source, Some(ThawingSource::Ordinary));
         let (bytes, pins) = crate::map::boot::tests::bundle_with_item_states(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (water, reference(water).ok_or("water")?.get() - 1),
-            if before == 13842 { &[] } else { &states },
+            if projected_flower { &[] } else { &states },
         );
         let (bytes, pins) = if source.is_some() {
             thawing_fixture(
@@ -152,7 +154,7 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
             y: actor_cell.1 as u16,
             floor: -(actor_cell.2 as i8),
         };
-        let (bytes, pins) = if before == 13842 {
+        let (bytes, pins) = if projected_flower {
             // The reset projection supplies the live flower, not the static fixture.
             let mut bundle = oteryn_world_bundle::bundle::read(&bytes)?;
             let flower = u32::try_from(
@@ -218,12 +220,12 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
         let boot = || {
             let checked =
                 crate::map::boot::check(bytes.clone(), boot_pins.clone()).map_err(debug)?;
-            let checked = if before == 13842 {
+            let checked = if projected_flower {
                 checked.with_daily_map(crate::map::daily::DailyMap {
                     seed: [0; 32],
                     fungus: false,
                     grimvale_full_moon: false,
-                    items: vec![(13842, (7, 0, 7))],
+                    items: vec![(13842, (target_pos.x, target_pos.y, -target_pos.floor))],
                     trader: None,
                 })
             } else {
@@ -609,14 +611,13 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
                     ..target.clone()
                 });
                 let command = next.continuity.next_command_id;
-                let (current, result, wire) = exchange(
-                    &restored,
-                    next,
-                    command,
-                    &encode_item_use_intent(&intent).map_err(debug)?,
-                    None,
-                )
-                .await?;
+                let payload = encode_item_use_intent(&intent).map_err(debug)?;
+                let (current, result, wire) = if matches!(source, Some(ThawingSource::Daily { .. }))
+                {
+                    exchange_daily_flower(&restored, next, command, &payload).await?
+                } else {
+                    exchange(&restored, next, command, &payload, None).await?
+                };
                 assert_eq!(result, UseDisposition::Committed, "harvest {attempt}");
                 seeds += i64::from(expected.yield_item.is_some());
                 assert_eq!(sqlx::query_scalar::<_, i64>(

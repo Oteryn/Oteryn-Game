@@ -4062,7 +4062,7 @@
       },
       "shared_world_switch_personal_expiry": {
         "status": "QUALIFIED",
-        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0→1, Diprath<=1→2, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
+        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0\u21921, Diprath<=1\u21922, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
         "migration": "1258_quest_source_expiry.sql",
         "postgres": {
           "status": "GREEN",
@@ -9667,7 +9667,7 @@
         "requires_world_admission_unknown_field": 51.489982592,
         "renamed_stripped_binding_committed_protected_story": 89.599955017
       },
-      "shadow_actual": "Ok(Committed), story-1→1 and character revision1→2 through weaker generic API; this is the concrete gap, not a hypothetical"
+      "shadow_actual": "Ok(Committed), story-1\u21921 and character revision1\u21922 through weaker generic API; this is the concrete gap, not a hypothetical"
     },
     "implemented": [
       "opening_only durable work only on opening, restricted value-free close",
@@ -10729,7 +10729,7 @@
       "focused_inventories": "5/5 PASS62.703s: equipment3763,Type2mint,Sourcewitnesses,module registration.",
       "clippy": "12changed crates/alltargets -Dwarnings PASS4m40s",
       "authoring_units": "1099tests across98modules PASS; former receipt/tree/binding-index failures repaired together.",
-      "authoring_checks": "All remaining freshness checks PASS; donor replay PASS0 missing captures. Matched compiler/receipt, frozen SOURCE cores verified unchanged.",
+      "authoring_checks": "Freshness checks passed. Earlier donor PASS claim was incorrect: full log ended with stale npc.json.gz; see ci_471_donor_capture correction.",
       "generated": "Full materializer/tree/catalogues, equipment3763, quest tree/bindings/v2/bundle/rollout/state/candidates regenerated with repository tooling. Final world pin37f50ed7b12dd2ac1ca93ae46c1f76d4604145da34cea18bc2fe73c4a2605063 unchanged on final refresh.",
       "quest_state": "96quests,1335tracks,3263transitions unchanged; only authoring_sources metadata refreshed.",
       "duplicate_migrations": 0,
@@ -10751,5 +10751,44 @@
       "samples": "23 overlapping sample files audited. Main live admissions retained for non-owned reward records; regenerated metadata keeps union identities."
     },
     "remote_ancestry": "Fetched main and PR branch immediately before publication; behindmain0, own remote is ancestor."
+  },
+  "ci_471_donor_capture": {
+    "head": "471eaa2c1e1f4c59a352938d8807993e4faa7189",
+    "failure": "ValueError: stale donor Source capture: npc.json.gz",
+    "write_command": "python3 tools/content-schema/quest-authoring/quest_donor_source_authoring.py",
+    "check_command": "python3 tools/content-schema/quest-authoring/quest_donor_source_authoring.py --check",
+    "state": "Write mode exit0 and independent --check exit0, explicit DONOR_CHECK_EXIT=0. Seven generated capture outputs; NPC source bodies unchanged.",
+    "correction": "Previous donor PASS report incorrectly treated successful subchecks as full success; the complete prior local log contained the CI error.",
+    "scope": "Regenerate tracked captures with their own tool; preserve archived Source, holds and zero-native-admission semantics. Compass work remains isolated on questpc4b.",
+    "changed_outputs": 7,
+    "unit_tests": "test_quest_donor_attachment: 11/11 PASS99.328s"
+  },
+  "ci_471_thawing": {
+    "failure": "Load(Bundle(Format(\"daily world map: invalid Thawing source placement\")))",
+    "root_cause": "Merged map_harvest fixture shifts the bundle to floor5 coordinate32255,31079 but its DailyMap still hardcodes7,0,7. Production bounds validation is correct.",
+    "world_diff": "Only region-z14-x129-y123.b3 plus indexes/pin differs from main; not the floor5 Thawing fixture.",
+    "proposed_data_patch": "Applied actual target_pos coordinates and retained ordinary flowers as base placements. No test function or assertion changed.",
+    "constraint": "Owner subsequently directed both described fixes to be completed and pushed. Apply fixture-data-only correction, preserve every assertion and production placement validator.",
+    "required_cases": "all map_harvest::worldchg_thawing_* cases",
+    "local_red": "All four cases reproduce the same placement error against the unchanged binary: active70.308s, inactive100.66s, stale81.71s, ordinary79.19s.",
+    "publication": "Owner explicit push instruction received; one push after complete fix and PREPUSH-2.",
+    "build_retry": "Focused binary rebuilt with CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 after stopping older memory-heavy broad unit run; then all four cases executed serially. No test guard or assertion altered.",
+    "secondary_fixture_issue": "After fixing placement validation, active daily case reaches its existing regrowth loop and fails NothingToUse: loop used the base-object wire helper for an Added daily object. Reuse the existing exchange_daily_flower helper, preserving all assertions.",
+    "intermediate_pg": "Inactive42.085s, stale41.839s, ordinary46.763s PASS; active reached regrowth-loop RED. All four rerunning after fixture routing repair.",
+    "green_postgres": {
+      "command": "Fresh cargo-built dispatch libtest binary, map_harvest::worldchg_thawing_ --nocapture --test-threads=1; OTERYN_REQUIRE_PG=1",
+      "passed": 4,
+      "failed": 0,
+      "total_seconds": 167.76,
+      "active_seconds": 45.988065357,
+      "inactive_seconds": 39.324044175,
+      "ordinary_seconds": 43.758736461,
+      "stale_seconds": 38.683811757,
+      "proof": "WORLDCHG-Q PG EXECUTED and POSTGRES_CASE_COMPLETED markers; THAWING_PG_EXIT=0; /tmp/questpc4-471-thawing-pg-green.log"
+    }
+  },
+  "ci_471_broad_unit_followup": {
+    "result": "7122 passed; service-count and key33 proof assertions failed; NPC case SIGKILL and final compiler case SIGTERM during memory recovery. Not a green full run.",
+    "scope": "These are outside the five owner-reported CI leaves; preserve the failures for follow-up, do not weaken tests."
   }
 }
