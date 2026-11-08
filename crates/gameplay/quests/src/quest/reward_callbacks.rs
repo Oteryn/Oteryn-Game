@@ -40,29 +40,30 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
-    /// Literal source-authored text initialized by this reward's existing MINT.
+    /// Literal initial text on the root or its ordered container children.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>,
+    pub text: Option<RewardText>,
     /// Independent top-level items committed in the same quest receipt.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub additional: Vec<ItemAmount>,
 }
 
 impl ItemReward {
-    pub(super) fn valid_literal_text(&self) -> bool {
-        self.text.as_deref().is_none_or(|text| {
-            self.count == 1
-                && self.contents.is_empty()
-                && !text.is_empty()
-                && text.len() <= 7_996
-                && text.chars().count() <= 4_000
-                && !text.contains('\0')
-        })
+    /// Validate all initial text before constructing a durable MINT plan.
+    pub fn valid_literal_text(&self) -> bool {
+        self.text
+            .as_ref()
+            .is_none_or(|text| text.valid_for(self.count, &self.contents))
     }
 }
 
+mod reward_text;
+pub use reward_text::{RewardContentText, RewardText};
+
 #[cfg(test)]
 mod literal_text_tests;
+#[cfg(test)]
+mod reward_contents_text_tests;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]

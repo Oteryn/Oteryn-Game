@@ -112,8 +112,15 @@ pub(crate) async fn apply(
     let super::super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
-    if callback.carried_target.is_some() != admission.carried_use.and_then(|u| u.recipe_target).is_some()
-        || admission.carried_use.is_some_and(|u| u.recipe_target.is_some_and(|target| target == u.source || target == [0;16]))
+    if callback.carried_target.is_some()
+        != admission
+            .carried_use
+            .and_then(|u| u.recipe_target)
+            .is_some()
+        || admission.carried_use.is_some_and(|u| {
+            u.recipe_target
+                .is_some_and(|target| target == u.source || target == [0; 16])
+        })
         || callback.carried_item.is_some() != admission.carried_use.is_some()
         || admission.carried_use.is_some_and(|use_| {
             use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
@@ -121,7 +128,11 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
-    match (&callback.creature_target, admission.creature_use, admission.carried_use) {
+    match (
+        &callback.creature_target,
+        admission.creature_use,
+        admission.carried_use,
+    ) {
         (None, None, _) => {}
         (Some(key), Some(proof), Some(carried)) if proof.permits(fence, request, key, carried) => {}
         _ => return Ok(false),
@@ -129,10 +140,24 @@ pub(crate) async fn apply(
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
-    match (&callback.peer_requires, admission.peer_use, admission.carried_use) {
+    match (
+        &callback.peer_requires,
+        admission.peer_use,
+        admission.carried_use,
+    ) {
         (None, None, _) => {}
         (Some(requirement), Some(peer), Some(carried)) => {
-            if !super::quest_peer::holds_in_transaction(tx, node, fence, peer, requirement, catalogue, carried).await? {
+            if !super::quest_peer::holds_in_transaction(
+                tx,
+                node,
+                fence,
+                peer,
+                requirement,
+                catalogue,
+                carried,
+            )
+            .await?
+            {
                 return Ok(false);
             }
         }
@@ -353,7 +378,11 @@ pub(crate) async fn apply(
             fence,
             command,
             &callback.key,
-            if callback.is_paid_exchange() { QuestMintClaim::PaidExchange } else { QuestMintClaim::Once },
+            if callback.is_paid_exchange() {
+                QuestMintClaim::PaidExchange
+            } else {
+                QuestMintClaim::Once
+            },
             reward,
             admission,
         )
@@ -414,6 +443,9 @@ pub(crate) async fn mint(
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
+    if !reward.valid_literal_text() {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     if reward.premium {
         let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
             .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
@@ -489,7 +521,8 @@ pub(crate) async fn mint(
         contents: reward
             .contents
             .iter()
-            .map(|i| {
+            .enumerate()
+            .map(|(index, i)| {
                 if i.fluid_subtype.is_some() {
                     use oteryn_gameplay_content::content::{
                         ReferenceItemField, ReferenceItemFluid,
@@ -512,11 +545,19 @@ pub(crate) async fn mint(
                     item: resolve(&i.item)?,
                     quantity: u32::from(i.count),
                     key_number: None,
-                    text: None,
+                    text: reward
+                        .text
+                        .as_ref()
+                        .and_then(|text| text.content(index))
+                        .map(str::to_owned),
                 })
             })
             .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
-        root_text: reward.text.clone(),
+        root_text: reward
+            .text
+            .as_ref()
+            .and_then(|text| text.root())
+            .map(str::to_owned),
         backpack: resolve(&backpack)?,
         content_revision,
         ruleset_revision,
