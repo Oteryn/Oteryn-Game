@@ -5,6 +5,23 @@ import qengine_reward_item_profiles as q
 
 
 class NativeFactJoin(unittest.TestCase):
+    def test_slug_corpse_retains_source_ground_custody_and_complete_decay_chain(self):
+        records = {r['production_binding']['external_id']: r for r in q.capture()['records']}
+        chain = (12526, 12533, 12534, 12535)
+        for stage, (item, duration) in enumerate(zip(chain, (10000, 300000, 300000, 60000))):
+            with self.subTest(item=item):
+                self.assertIn(str(item), set(records), 'real Slug death needs its native corpse chain')
+                record = records[str(item)]
+                self.assertEqual(record['admission'], dict(materializable=True, stack_class='NonStackable', legal_destinations=['Ground']))
+                temporal = record['semantics']['temporal']['value']
+                self.assertEqual(temporal['duration']['value'], duration)
+                self.assertEqual(temporal['stop_duration']['value'], False)
+                target = temporal['decay_target']
+                if stage < 3:
+                    self.assertEqual(target['value'], dict(key=f'oteryn:item.tibia.i{chain[stage+1]}', revision='definition-r1'))
+                else:
+                    self.assertEqual(target, dict(state='NOT_APPLICABLE'))
+
     def record(self):
         return dict(production_definition={'production_key': 'item'},
                     production_binding={'exact': True}, admission={'materializable': True},

@@ -8,20 +8,27 @@ use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 use std::sync::Arc;
 #[path = "engitem_tools/capture.rs"]
 mod capture;
+#[path = "engitem_tools/corpse.rs"]
+mod corpse;
 #[path = "engitem_tools/live.rs"]
 mod live;
 
 #[test]
 fn engitem_goblin_tools_mint_atomically_with_exact_replay() -> f::TestResult {
-    run(false)
+    run(0)
 }
 
 #[test]
 fn engitem_goblin_capture_is_atomic_single_target_and_replayed() -> f::TestResult {
-    run(true)
+    run(1)
 }
 
-fn run(capture: bool) -> f::TestResult {
+#[test]
+fn engitem_goblin_corpse_sampling_is_source_bound_fresh_and_replayed() -> f::TestResult {
+    run(2)
+}
+
+fn run(mode: u8) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
     };
@@ -33,13 +40,13 @@ fn run(capture: bool) -> f::TestResult {
                 .block_on(async {
                     let started = std::time::Instant::now();
                     let h = f::Harness::create(admin, "engitem_tool_custody", true).await?;
-                    let result = exercise(&h, capture).await;
+                    let result = exercise(&h, mode).await;
                     h.cleanup().await?;
                     result?;
                     assert!(started.elapsed().as_secs_f64() > 0.01);
                     eprintln!(
-                        "ENGITEM_PG_EXECUTED goblin_tool_custody capture={} duration={:?}",
-                        capture,
+                        "ENGITEM_PG_EXECUTED goblin_tool_custody mode={} duration={:?}",
+                        mode,
                         started.elapsed()
                     );
                     Ok::<(), Box<dyn std::error::Error>>(())
@@ -51,12 +58,12 @@ fn run(capture: bool) -> f::TestResult {
         .map_err(Into::into)
 }
 
-async fn exercise(h: &f::Harness, capture: bool) -> f::TestResult {
+async fn exercise(h: &f::Harness, mode: u8) -> f::TestResult {
     let callback: RewardCallback = serde_json::from_value(serde_json::json!({
         "key":"oteryn:quest-reward/engitem-tool-custody", "quest":"oteryn:quest.engitem_tool_custody",
         "npc":"oteryn:npc.fixture", "keywords":["yes"], "topic":0,"next_topic":0,
         "storage":[{"track":"oteryn:quest-progress/engitem-tool-custody","minimum":0,"maximum":0,"set":1}],
-        "take":[],"give":{"item":"oteryn:item.tibia.i17673","count":1,"contents":[],"additional":[{"item":"oteryn:item.tibia.i17674","count":1},{"item":"oteryn:item.tibia.i17669","count":1}]},
+        "take":[],"give":{"item":"oteryn:item.tibia.i17673","count":1,"contents":[],"additional":[{"item":"oteryn:item.tibia.i17670","count":1},{"item":"oteryn:item.tibia.i17674","count":1},{"item":"oteryn:item.tibia.i17669","count":1}]},
         "outfit":null,"achievement":null,"reply":["Granted."],"sources":["engine fixture"]
     }))?;
     let catalogue = Arc::new(
@@ -155,8 +162,10 @@ async fn exercise(h: &f::Harness, capture: bool) -> f::TestResult {
         expected,
         "exact replay never remints either tool"
     );
-    if capture {
+    if mode == 1 {
         capture::capture(h, &authority, &pin, native).await?;
+    } else if mode == 2 {
+        corpse::sample(h, &authority, &pin, native).await?;
     } else {
         live::sample(h, &authority, &pin, native).await?;
     }

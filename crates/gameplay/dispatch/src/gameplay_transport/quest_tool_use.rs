@@ -32,6 +32,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
+        corpse: Option<[u8; 16]>,
     ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
@@ -102,11 +103,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
             // Selected two-input recipes retain their own M20 admission owner.
             .filter(|c| c.carried_target.is_none())
+            .filter(|c| c.corpse_target.is_some() == corpse.is_some())
             .collect::<Vec<_>>();
         if bound.is_empty() {
             return Ok(None);
         }
-        if intent.use_with_map_item.is_some()
+        if (corpse.is_none() && intent.use_with_map_item.is_some())
+            || (corpse.is_some()
+                && (!matches!(
+                    intent.use_with_map_item,
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
+                ) || intent.use_with.is_some()))
             || intent.use_with_position.is_some()
             || !self
                 .states
@@ -144,9 +151,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                 };
             let mut selected = bound.into_iter().filter(|c| {
-                ((c.peer_requires.is_some() || c.creature_target.is_some())
-                    == intent.use_with.is_some())
-                    && eligible(&c.storage)
+                (if c.corpse_target.is_some() {
+                    corpse.is_some()
+                } else {
+                    (c.peer_requires.is_some() || c.creature_target.is_some())
+                        == intent.use_with.is_some()
+                }) && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops
                         .iter()
@@ -218,8 +228,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let creature = if callback.creature_target.is_some() {
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
-            let proof = crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
-                runtime, actor, fence, command_ref, &callback, intent);
+            let proof = if let Some(corpse) = corpse {
+                crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current_corpse(
+                    runtime, actor, fence, command_ref, &callback, intent, corpse)
+            } else {
+                crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
+                    runtime, actor, fence, command_ref, &callback, intent)
+            };
             let Some(proof) = proof else {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             };
@@ -240,7 +255,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let capture_target = creature
             .as_ref()
             .filter(|_| callback.capture_creature)
-            .map(|proof| proof.target_actor());
+            .and_then(|proof| proof.target_actor());
         let capture_key = callback.creature_target.clone();
         if callback.capture_creature
             && let Some(turn) = &creature_runtime

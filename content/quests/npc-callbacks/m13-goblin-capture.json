@@ -294,6 +294,56 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/wiki/Goblin_Merchant_Quest#Guardian_Angel_-_Kind_Of: three successful Adventurers; Guardcatcher disappears on the third success"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-slug-sample",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "perfume gatherer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i17670",
+      "creature_target": "oteryn:creature.slug",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17670",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i17672",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the smell of a freshly slain slug."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Goblin_Merchant_Quest#The_Perfume_Gatherer",
+        "https://www.tibiawiki.com.br/wiki/Perfume_Gatherer"
+      ],
+      "corpse_target": {
+        "appearance": 12526,
+        "maximum_age_ms": 10000
+      }
     }
   ]
 }

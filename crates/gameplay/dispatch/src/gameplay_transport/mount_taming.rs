@@ -50,6 +50,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        if matches!(
+            intent.use_with_map_item,
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
+        ) {
+            let corpse = match item_target {
+                Some(ItemKey::Instance(id)) => Some(id),
+                _ => None,
+            };
+            if let Some(result) = self
+                .use_carried_quest_item(actor, command, &intent, source, corpse)
+                .await?
+            {
+                return Ok(Some(result));
+            }
+        }
         if let Some(result) = self
             .tame_quest_object(actor, command, &intent, source)
             .await?
