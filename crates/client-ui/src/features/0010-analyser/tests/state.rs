@@ -95,3 +95,97 @@ fn xp_rates_goal_eta_and_minute_chart_follow_confirmed_experience() {
     assert!(!super::set_xp_goal(&mut panel, "invalid"));
     assert_eq!(panel.goal_xp, Some(1200));
 }
+
+#[test]
+fn loot_items_reprice_confirmed_counts_rates_and_history() -> Result<(), &'static str> {
+    use std::num::{NonZeroU16, NonZeroU32};
+    let mut panel = Panel {
+        selected: true,
+        tool: Tool::Loot,
+        ..Default::default()
+    };
+    let item = oteryn_client_runtime::analyser::AnalyserItemCount {
+        item_type: NonZeroU32::new(100).ok_or("item")?,
+        count: NonZeroU16::new(2).ok_or("count")?,
+    };
+    apply_at(
+        &mut panel,
+        &[AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![item],
+            gold: 10,
+        }],
+        0,
+    );
+    assert!(super::view::loot_text(&panel, 60).contains("Unpriced items: 2"));
+    panel.item_info.insert(
+        100,
+        oteryn_client_runtime::analyser::ItemInfo {
+            item_type: 100,
+            name: "Loot item".into(),
+            coin_worth: 0,
+        },
+    );
+    assert!(super::set_item_price(&mut panel, "100", "25"));
+    assert_eq!(panel.loot_value(), 60);
+    assert_eq!(panel.loot_values(60), vec![60, 0]);
+    let text = super::view::loot_text(&panel, 60);
+    assert!(text.contains("Loot value/h: 3600"));
+    assert!(text.contains("Item 100: 2 | 120/h | unit 25 | value 50"));
+    assert!(super::set_item_price(&mut panel, "100", "50"));
+    assert_eq!(panel.loot_value(), 110);
+    assert_eq!(panel.loot_values(60), vec![110, 0]);
+    assert!(!super::set_item_price(&mut panel, "0", "10"));
+    reset(&mut panel);
+    assert_eq!(panel.loot_value(), 0);
+    assert_eq!(panel.loot_prices.get(&100), Some(&50));
+    Ok(())
+}
+
+#[test]
+fn analyser_metadata_reply_is_matched_and_coin_prices_cannot_duplicate_gold()
+-> Result<(), &'static str> {
+    use oteryn_client_runtime::{
+        CommandStatus,
+        analyser::{ItemInfo, encode_reply},
+    };
+    let mut panel = Panel {
+        selected: true,
+        gold: 100,
+        ..Default::default()
+    };
+    super::state::items::record_item(&mut panel.loot, 3, 1, 0);
+    super::state::items::record_item(&mut panel.loot, 9, 2, 0);
+    assert!(super::set_item_price(&mut panel, "3", "100"));
+    assert!(super::set_item_price(&mut panel, "9", "25"));
+    assert_eq!(panel.loot_value(), 100); // Unknown identities never count as non-currency.
+    let command = catalogue_request(&mut panel).ok_or("query")?;
+    assert_eq!((command.capability, command.kind), (10, 731));
+    assert!(catalogue_request(&mut panel).is_none());
+    let rows = vec![
+        ItemInfo {
+            item_type: 3,
+            name: "Coin".into(),
+            coin_worth: 100,
+        },
+        ItemInfo {
+            item_type: 9,
+            name: "Loot item".into(),
+            coin_worth: 0,
+        },
+    ];
+    let mut result = oteryn_client_runtime::raw_feature::GatedCommandResult {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: encode_reply(&rows)?,
+    };
+    assert!(catalogue_result(&mut panel, &result));
+    assert_eq!(panel.loot_value(), 150);
+    panel.item_info.clear();
+    catalogue_request(&mut panel).ok_or("query")?;
+    result.payload = encode_reply(&rows[..1])?;
+    assert!(!catalogue_result(&mut panel, &result));
+    assert!(panel.item_info.is_empty());
+    Ok(())
+}

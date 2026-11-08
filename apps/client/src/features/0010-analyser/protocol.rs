@@ -1,5 +1,12 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
+    pub(in crate::play) fn analyser_catalogue_result(
+        &self,
+        result: &oteryn_session::GatedCommandResult,
+    ) {
+        oteryn_client_ui::analyser::protocol::catalogue_result(&mut lock(&self.0).analyser, result);
+    }
+
     pub(in crate::play) fn analyser_initialize(&self, selected: bool) {
         lock(&self.0).analyser = oteryn_client_ui::analyser::Panel {
             selected,

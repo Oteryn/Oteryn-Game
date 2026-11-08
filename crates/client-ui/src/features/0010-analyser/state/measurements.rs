@@ -35,27 +35,29 @@ impl Series {
     }
     pub fn values(&self, seconds: u64) -> Vec<u64> {
         let end = seconds / 60;
-        (end.saturating_sub(59)..=end)
-            .map(|minute| {
-                self.0
-                    .iter()
-                    .find(|(key, _)| *key == minute)
-                    .map_or(0, |(_, value)| *value)
-            })
-            .collect()
+        let start = end.saturating_sub(59);
+        let mut values = vec![0; (end - start + 1) as usize];
+        for (minute, value) in &self.0 {
+            if (start..=end).contains(minute) {
+                values[(*minute - start) as usize] = *value;
+            }
+        }
+        values
     }
     pub fn chart(&self, seconds: u64) -> String {
-        let values = self.values(seconds);
-        let max = values.iter().copied().max().unwrap_or(0);
-        let bars: String = values
-            .iter()
-            .map(|value| {
-                let index = (u128::from(*value) * 7 / u128::from(max.max(1))) as usize;
-                ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'][index]
-            })
-            .collect();
-        format!("{bars}\r\nPer minute · oldest → newest · peak {max} · up to 60 minutes")
+        chart_values(&self.values(seconds))
     }
+}
+pub fn chart_values(values: &[u64]) -> String {
+    let max = values.iter().copied().max().unwrap_or(0);
+    let bars: String = values
+        .iter()
+        .map(|value| {
+            let index = (u128::from(*value) * 7 / u128::from(max.max(1))) as usize;
+            ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'][index]
+        })
+        .collect();
+    format!("{bars}\r\nPer minute · oldest → newest · peak {max} · up to 60 minutes")
 }
 
 pub fn per_hour(value: u64, seconds: u64) -> u64 {

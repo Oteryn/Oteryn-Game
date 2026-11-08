@@ -11,7 +11,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         link,
         Form {
             title: "Analysers",
-            labels: &["XP still needed for your level goal (blank disables)"],
+            labels: &[
+                "XP still needed for your level goal (blank disables)",
+                "Item number from loot or supply list",
+                "Unit item value (gold)",
+            ],
             buttons: &[
                 "Overview",
                 "XP",
@@ -25,19 +29,25 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Kill tracker",
                 "Reset session",
                 "Apply level goal",
+                "Apply item price",
+                "Resolve item info",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.analyser;
                 (
                     panel.open,
                     false,
-                    vec![panel.goal_input.clone()],
+                    vec![
+                        panel.goal_input.clone(),
+                        panel.price_input[0].clone(),
+                        panel.price_input[1].clone(),
+                    ],
                     oteryn_client_ui::analyser::panel_text(panel),
                 )
             },
             set_open: |mailbox, value| mailbox.analyser.open = value,
 
-            submit: |mailbox, _, action, values| {
+            submit: |mailbox, commands, action, values| {
                 if let Some(tool) = oteryn_client_ui::analyser::Tool::ALL.get(action) {
                     oteryn_client_ui::analyser::select_tool(&mut mailbox.analyser, tool.key());
                 } else if action == 10 {
@@ -46,6 +56,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     && let Some(value) = values.first()
                 {
                     oteryn_client_ui::analyser::set_xp_goal(&mut mailbox.analyser, value);
+                } else if action == 12
+                    && let [_, item, price] = values.as_slice()
+                {
+                    oteryn_client_ui::analyser::set_item_price(&mut mailbox.analyser, item, price);
+                } else if action == 13 {
+                    super::input::resolve_items(mailbox, commands);
                 }
             },
         },

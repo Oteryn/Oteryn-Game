@@ -22,7 +22,18 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 corpse_items, gold, ..
             } => {
                 panel.gold = panel.gold.saturating_add(*gold);
+                panel.gold_chart.add(seconds, *gold);
                 for item in corpse_items {
+                    if !super::state::items::record_item(
+                        &mut panel.loot,
+                        item.item_type.get(),
+                        u64::from(item.count.get()),
+                        seconds,
+                    ) {
+                        panel.omitted_items = panel
+                            .omitted_items
+                            .saturating_add(u64::from(item.count.get()));
+                    }
                     panel.loot_items = panel.loot_items.saturating_add(u64::from(item.count.get()));
                 }
             }
@@ -50,10 +61,72 @@ pub fn reset(panel: &mut Panel) {
         .map(|goal| goal.saturating_sub(panel.gained_xp));
     *panel = Panel {
         tool: panel.tool,
+        loot_prices: std::mem::take(&mut panel.loot_prices),
+        item_info: std::mem::take(&mut panel.item_info),
+        price_input: std::mem::take(&mut panel.price_input),
         goal_xp: remaining,
         goal_input: remaining.map_or_else(String::new, |value| value.to_string()),
         selected: panel.selected,
         open: panel.open,
         ..Panel::default()
     };
+}
+
+/// Fetch bounded identity pages only for items the confirmed session has observed.
+pub fn catalogue_request(
+    panel: &mut Panel,
+) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    use oteryn_client_runtime::analyser::{
+        COMMAND_TYPE_ANALYSER_ITEM_QUERY, MAX_ITEMS, encode_request,
+    };
+    if !panel.selected || !panel.catalogue_pending.is_empty() {
+        return None;
+    }
+    let remaining = super::state::items::MAX_ITEM_DETAILS.saturating_sub(panel.item_info.len());
+    if remaining == 0 {
+        panel.feedback = Some("Item identity cache is full; unresolved values remain excluded");
+        return None;
+    }
+    let ids: Vec<_> = panel
+        .loot
+        .keys()
+        .filter(|id| !panel.item_info.contains_key(id))
+        .take(MAX_ITEMS.min(remaining))
+        .copied()
+        .collect();
+    if ids.is_empty() {
+        panel.feedback = Some("Item identities are current");
+        return None;
+    }
+    let payload = encode_request(&ids).ok()?;
+    panel.catalogue_pending = ids;
+    Some(oteryn_client_runtime::raw_feature::FeatureCommand {
+        capability: 10,
+        kind: COMMAND_TYPE_ANALYSER_ITEM_QUERY,
+        payload,
+    })
+}
+pub fn catalogue_result(
+    panel: &mut Panel,
+    result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+) -> bool {
+    use oteryn_client_runtime::{CommandStatus, analyser::decode_reply};
+    let requested = std::mem::take(&mut panel.catalogue_pending);
+    if requested.is_empty() {
+        return false;
+    }
+    if matches!(
+        result.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) && let Ok(rows) = decode_reply(&result.payload)
+        && rows.iter().map(|row| row.item_type).eq(requested)
+    {
+        for row in rows {
+            panel.item_info.insert(row.item_type, row);
+        }
+        panel.feedback = Some("Item identities received; resolve again if more items remain");
+        return true;
+    }
+    panel.feedback = Some("Item identities unavailable; unresolved values remain excluded");
+    false
 }

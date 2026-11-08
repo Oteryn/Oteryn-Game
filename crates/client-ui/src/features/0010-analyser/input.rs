@@ -38,3 +38,27 @@ pub fn set_xp_goal(panel: &mut super::Panel, value: &str) -> bool {
     panel.feedback = None;
     true
 }
+
+/// Custom item valuations affect all confirmed counts and chart buckets immediately.
+pub fn set_item_price(panel: &mut super::Panel, item: &str, price: &str) -> bool {
+    let parsed = item
+        .trim()
+        .parse::<u32>()
+        .ok()
+        .filter(|item| *item != 0)
+        .zip(price.trim().parse::<u64>().ok());
+    let Some((item, price)) = parsed else {
+        panel.feedback = Some("Enter an item number from the analyser and its unit value");
+        return false;
+    };
+    if !panel.loot_prices.contains_key(&item)
+        && panel.loot_prices.len() >= super::state::items::MAX_ITEM_DETAILS
+    {
+        panel.feedback = Some("The item price list is full");
+        return false;
+    }
+    panel.loot_prices.insert(item, price);
+    panel.price_input = [item.to_string(), price.to_string()];
+    panel.feedback = None;
+    true
+}

@@ -7,10 +7,7 @@ pub fn panel_text(panel: &Panel) -> String {
     match panel.tool {
         super::Tool::Overview => overview(panel),
         super::Tool::Xp => xp_text(panel, panel.clock.seconds()),
-        super::Tool::Loot => format!(
-            "Loot Analyser\r\nLoot: {} items / {} gold",
-            panel.loot_items, panel.gold
-        ),
+        super::Tool::Loot => loot_text(panel, panel.clock.seconds()),
         super::Tool::Supply => format!("Supply Analyser\r\nSupplies used: {}", panel.supplies),
         super::Tool::Impact => format!(
             "Impact Analyser\r\nDamage: {} | Healing: {}",
@@ -63,4 +60,59 @@ pub(super) fn xp_text(panel: &Panel, seconds: u64) -> String {
         panel.raw_xp_chart.chart(seconds),
         panel.feedback.unwrap_or("")
     )
+}
+
+pub(super) fn loot_text(panel: &Panel, seconds: u64) -> String {
+    use super::state::{chart_values, per_hour};
+    use std::fmt::Write;
+    let unpriced = panel
+        .loot
+        .iter()
+        .filter(|(item, _)| {
+            panel
+                .item_info
+                .get(item)
+                .is_none_or(|info| info.coin_worth == 0 && !panel.loot_prices.contains_key(item))
+        })
+        .fold(0u64, |total, (_, row)| total.saturating_add(row.count));
+    let mut text = format!(
+        "Loot Analyser\r\nGold: {} | Looted items: {}\r\nValued loot: {} (gold + priced items)\r\nLoot value/h: {}\r\nUnpriced items: {unpriced} | Unlisted items: {}\r\n{}\r\n",
+        panel.gold,
+        panel.loot_items,
+        panel.loot_value(),
+        per_hour(panel.loot_value(), seconds),
+        panel.omitted_items,
+        chart_values(&panel.loot_values(seconds))
+    );
+    for (item, row) in &panel.loot {
+        let price = panel.item_info.get(item).map_or_else(
+            || "identity unresolved; resolve item info".into(),
+            |info| {
+                if info.coin_worth != 0 {
+                    "currency (already included in gold)".into()
+                } else {
+                    panel.loot_prices.get(item).map_or_else(
+                        || "unpriced".into(),
+                        |price| {
+                            format!("unit {price} | value {}", row.count.saturating_mul(*price))
+                        },
+                    )
+                }
+            },
+        );
+        let _ = writeln!(
+            text,
+            "Item {item}: {} | {}/h | {price} | {}\r",
+            row.count,
+            per_hour(row.count, seconds),
+            panel
+                .item_info
+                .get(item)
+                .map_or("", |info| info.name.as_str())
+        );
+    }
+    if let Some(feedback) = panel.feedback {
+        text.push_str(feedback);
+    }
+    text
 }

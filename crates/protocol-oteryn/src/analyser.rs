@@ -20,7 +20,7 @@ use crate::charm_wire::{
 };
 use crate::damage_element::DamageElement;
 
-/// Registered capability `ANALYSER_V1`: state domain 15, no command type.
+/// Registered capability `ANALYSER_V1`: state domain 15 and optional item metadata query.
 pub const CAPABILITY_ANALYSER_V1: u32 = 10;
 /// Registered state domain `ACTOR_ANALYSER` (capability 10).
 pub const STATE_DOMAIN_ACTOR_ANALYSER: u32 = 15;

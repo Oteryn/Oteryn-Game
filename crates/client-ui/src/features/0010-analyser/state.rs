@@ -1,6 +1,9 @@
+#[path = "state/items.rs"]
+pub(super) mod items;
 #[path = "state/measurements.rs"]
 mod measurements;
-pub use measurements::{Clock, Series, eta_seconds, per_hour};
+pub use items::ItemStats;
+pub use measurements::{Clock, Series, chart_values, eta_seconds, per_hour};
 // Measurements continue while the window is closed; charts retain at most 60 minute buckets.
 #[derive(Debug, Clone, Default)]
 pub struct Panel {
@@ -8,6 +11,13 @@ pub struct Panel {
     pub clock: Clock,
     pub xp_chart: Series,
     pub raw_xp_chart: Series,
+    pub gold_chart: Series,
+    pub loot: std::collections::BTreeMap<u32, ItemStats>,
+    pub item_info: std::collections::BTreeMap<u32, oteryn_client_runtime::analyser::ItemInfo>,
+    pub catalogue_pending: Vec<u32>,
+    pub loot_prices: std::collections::BTreeMap<u32, u64>,
+    pub price_input: [String; 2],
+    pub omitted_items: u64,
     pub goal_xp: Option<u64>,
     pub goal_input: String,
     pub feedback: Option<&'static str>,
