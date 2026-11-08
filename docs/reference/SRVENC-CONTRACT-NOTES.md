@@ -1692,3 +1692,39 @@ The remaining focused PG cases and unit suites for `oteryn-gameplay-dispatch`,
 `oteryn-gameplay-content` and `oteryn-client-assets` remain running, not reported
 as green. This is the explicitly allowed pending step-3 validation; tests were
 not weakened, filtered out of those selected unit suites, or stopped.
+
+### PR #3034: final explore packet / S1 hunt CI batch
+
+The requested main merge is already present: `53b082bea` includes main
+`c77d436d8` through normal merge `278631a7a`; no rebase or force update is used.
+`test_quest_explore_area_candidates::test_committed_packet_matches_generator`
+reproduced locally (8 tests, one failure, 0.230 s), then all eight tests passed
+(0.235 s) after `quest_explore_area_candidates.py` regenerated the packet. The
+only semantic JSON delta is `/inputs/5/sha256`, the islands-index receipt; all
+247 stages, 970 canonical Areas, 20 exact candidates and zero runtime spatial
+bindings remain unchanged. No generator or test assertion is loosened.
+
+The S1 hunt failure precedes loot, Prey payout and relogin: the peer must first
+land real nonlethal qualifying damage. Its runtime combat facts were Knight
+level 1, unarmed, Balanced, starting fist skill 10. The checked-in fist formula
+allows raw 1–6 damage, while the actual qualified Rat can block defense 2–5,
+then armor 1 and mitigation 3/25 percent. Thus 32 sampled swings do not guarantee
+a positive hit. Attack code, the Rat policy and this scenario are unchanged
+between the failing head and main; this is an underpowered stochastic fixture,
+not a loot or Prey rule regression. A pre-fix local PG execution happened to
+pass in 34.656 s, consistent with an intermittent failure.
+
+The leader already explicitly uses runtime combat level 50 to keep its minimum
+fist damage above Rat defenses (`full_world_support.rs:499`). The peer now uses
+the same fixture level. Its durable progression state, party levels, payout
+rules, target health, 32-attempt limit and all existing assertions are unchanged.
+An additional precondition computes the minimum from the live peer facts and
+production `player_fist_formula`, subtracts the actual qualified target's maximum
+defense/armor, and applies production `creature_physical_response`; it requires
+strictly positive worst-case damage before the existing real-hit loop.
+
+Donor evidence: TibiaTools `fe745abf` `damage-calc/damage.ts:13-26`, as admitted in
+`combat-rules/src/attack/formulas.rs`; Canary `99902524` `creature.cpp:958-1007`
+for defense/armor/mitigation, and `creature.cpp:911-914` for response order. The
+repair changes no production combat, encounter, loot, Prey or persistence rule,
+allocates no IDs/migrations, and weakens no test. Final execution receipts follow.
