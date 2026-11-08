@@ -6,5 +6,5 @@ pub mod protocol;
 mod state;
 mod view;
 pub use input::open_key;
-pub use state::Panel;
+pub use state::{Panel, set_filter};
 pub use view::panel_text;

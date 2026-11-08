@@ -217,8 +217,13 @@ fn specs(
                 "Next page in current tab",
                 "Catalogue",
                 "Purchase history",
+                "Apply purchase history filters",
             ],
-            &[],
+            &[
+                ("Offer text (this page)", ""),
+                ("From Unix milliseconds", ""),
+                ("Through Unix milliseconds", ""),
+            ],
         ),
     }
 }
@@ -348,6 +353,10 @@ unsafe fn window(
                     };
                     if let Some(command) = command {
                         link.discovery_send(command);
+                    }
+                } else if panel == 285 && action == 5 {
+                    if let [offer, from, until] = values.as_slice() {
+                        link.purchase_history_filter(offer, from, until);
                     }
                 } else if panel == 285 && action == 4 {
                     lock(&link.mailbox).store.page = oteryn_client_ui::store::StorePage::History;
