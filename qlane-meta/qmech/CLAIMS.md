@@ -24,3 +24,4 @@
 | mechanic | lane | migrations | quests it unblocks | state |
 |---|---|---|---|---|
 | Native authored RewardClaim placement/allocation admission through shared binder | engclaim | none; 1830–1839 reserved if required | Kormarak, Magic Sword, Mastermind Potion, Mystery of the Valley (engine prerequisite; exact native bindings remain) | IN PROGRESS |
+| Quest-cycle-scoped repeatable World Item MINT using a preserved, fenced local epoch (no command-created cycles or fabricated price) | engitem | none; existing range1640–1659 retained | Oramond Quest (repeatable item reward boundary; random/reset owners remain separate) | CLAIMED; assigned ENGITEM work already has an isolated real PG green40.331345675s, focused package validation next |
