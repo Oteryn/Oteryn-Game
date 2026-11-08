@@ -300,8 +300,8 @@ fn pending_queue_splits_worst_case_batches_by_bytes_and_never_drops_them() {
 }
 
 #[test]
-fn registries_bind_the_analyser_ids_and_limits() {
-    let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
+fn registries_bind_the_analyser_ids_and_limits() -> Result<(), Box<dyn std::error::Error>> {
+    let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY)?;
     let only = |section: &str, id: u32| {
         let matches: Vec<&Value> = protocol[section]
             .as_array()
@@ -318,7 +318,28 @@ fn registries_bind_the_analyser_ids_and_limits() {
         capability["offered"], true,
         "offered with the committed-outcome producer"
     );
-    assert_eq!(capability["command_types"], serde_json::json!([]));
+    assert_eq!(
+        capability["command_types"],
+        serde_json::json!([
+            crate::analyser_catalogue::COMMAND_TYPE_ANALYSER_ITEM_QUERY,
+            crate::analyser_party::COMMAND_TYPE_ANALYSER_PARTY_QUERY,
+        ])
+    );
+    // Both collecting lanes must retain independent negotiated routes.
+    for (kind, owner) in [
+        (734, CAPABILITY_ANALYSER_V1),
+        (735, CAPABILITY_ANALYSER_V1),
+        (
+            crate::imbuement_details::COMMAND_TYPE_IMBUEMENT_DETAILS,
+            447,
+        ),
+        (
+            crate::weapon_proficiency_state::COMMAND_TYPE_WEAPON_PROFICIENCY_STATE,
+            448,
+        ),
+    ] {
+        assert_eq!(only("command_types", kind)["capability"], owner);
+    }
     assert_eq!(
         capability["state_domains"],
         serde_json::json!([STATE_DOMAIN_ACTOR_ANALYSER])
@@ -387,6 +408,7 @@ fn registries_bind_the_analyser_ids_and_limits() {
         limit("ANALYSERS0-RL-04"),
         Some(MAX_ANALYSER_PENDING_FACTS as u64)
     );
+    Ok(())
 }
 
 // TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
