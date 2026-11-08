@@ -38,10 +38,10 @@ mod e2e_c17b;
 mod e2e_c17c;
 #[path = "tests/e2e_c17d.rs"]
 mod e2e_c17d;
-#[path = "tests/e2e_c19a.rs"]
-mod e2e_c19a;
 #[path = "tests/e2e_c18b.rs"]
 mod e2e_c18b;
+#[path = "tests/e2e_c19a.rs"]
+mod e2e_c19a;
 #[path = "tests/e2e_c20b.rs"]
 mod e2e_c20b;
 #[path = "tests/e2e_c20d.rs"]
