@@ -10,6 +10,7 @@
 
 mod audit_collector;
 mod channel_boot;
+mod public_house_catalogue;
 mod qualification_fixture;
 mod supervision;
 mod t94;
@@ -450,8 +451,14 @@ struct Material {
     /// Public-projection publisher: its identity, source authority and epoch
     /// fence `F_pub`; `None` (absent or not enabled) disables it. Taken once
     /// by the serving loop.
-    public_projections:
-        std::sync::Mutex<Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>>,
+    public_projections: std::sync::Mutex<
+        Option<(
+            PublicProjectionDescriptor,
+            String,
+            std::path::PathBuf,
+            public_projections::v2::Activation,
+        )>,
+    >,
     world_event_outcomes: std::sync::Mutex<Option<t94::Material>>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
@@ -706,7 +713,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                     &commands.client_certificate_file,
                 )?);
             }
-            if let Some(public) = &platform.public_projections {
+            if let Some(public) = platform.public_projections.as_ref().filter(|p| p.enabled) {
                 others.push(chain(
                     "platform.public_projections.client_certificate_file",
                     &public.client_certificate_file,
@@ -784,6 +791,10 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 descriptor,
                 public.source_authority.clone(),
                 public.epoch_fence_file.clone(),
+                public_projections::v2::Activation {
+                    character_online_sessions: public.character_online_sessions_enabled,
+                    world_daily_kills: public.world_daily_kills_enabled,
+                },
             ))
         }
         _ => None,
@@ -1142,13 +1153,44 @@ pub async fn public_store_readable(root: &DurabilityRoot) -> Option<bool> {
 /// Character authority. Disabled unless configured and enabled; refused (and
 /// logged) when the node's role lacks the privileges, so Platform keeps the
 /// families stale and unserved.
+// Insert in node/serve.rs; run beside audit_expiry_loop unconditionally from
+// supervision (no Platform material or publication flag gate).
+async fn online_statistics_retention_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    stop: &CancellationToken,
+) {
+    loop {
+        match root.maintain_public_online_statistics(authority).await {
+            Ok(changed) if changed > 0 => event(&format!(
+                "event=statistics_retention family=character_online_sessions result=ok rows={changed}"
+            )),
+            Ok(_) => {}
+            Err(_) => event(
+                "event=statistics_retention family=character_online_sessions result=unavailable",
+            ),
+        }
+        if first(tokio::time::sleep(Duration::from_secs(1)), stop.cancelled())
+            .await
+            .is_none()
+        {
+            return;
+        }
+    }
+}
+
 async fn public_projections_loop(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
-    public: Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>,
+    public: Option<(
+        PublicProjectionDescriptor,
+        String,
+        std::path::PathBuf,
+        public_projections::v2::Activation,
+    )>,
     stop: &CancellationToken,
 ) {
-    let Some((descriptor, source_authority, fence)) = public else {
+    let Some((descriptor, source_authority, fence, activation)) = public else {
         return;
     };
     match first(
@@ -1165,7 +1207,7 @@ async fn public_projections_loop(
         Some(true) => {}
     }
     event("event=public_projections state=started");
-    let publisher = public_projections::Publisher::new(
+    let mut publisher = public_projections::Publisher::new(
         SystemClock::default(),
         crate::durability::public_projections::PublicProjectionsStore { root, authority },
         MtlsPublicSink::new(descriptor),
@@ -1173,6 +1215,7 @@ async fn public_projections_loop(
         source_authority,
         crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
     );
+    publisher.v2_activation = activation;
     first(publisher.run(), stop.cancelled()).await;
 }
 
@@ -3141,6 +3184,16 @@ async fn boot_and_serve(
         timed_npcs,
         required_capabilities,
     } = channel;
+    public_house_catalogue::capture(
+        root,
+        &authority,
+        &proof,
+        material,
+        &assignment,
+        reset_epoch,
+        bundle.as_ref(),
+    )
+    .await;
     if signalled.is_cancelled() {
         stopped_before_ready();
         return Ok(());

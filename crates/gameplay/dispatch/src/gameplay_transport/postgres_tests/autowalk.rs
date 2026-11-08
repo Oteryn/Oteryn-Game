@@ -958,6 +958,7 @@ async fn client_scenario(
         actor,
         admitted.game_session_id,
         crate::gameplay_transport::actor_spell::PlayerDeath {
+            public_cause: None,
             occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
                 99,
             ))

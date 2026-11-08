@@ -1,3 +1,36 @@
+# READY TO PUBLISH main b386 compile checkpoint
+
+ClippyPASS9m55s; workspacePASS6m03s; fmtPASS; generation/pinsPASS.
+Explicit PREPUSH-2cadenceexception: seven focused cases stillbuilding,
+full unit suites pendingCI. Do not claim newmain runtimeGREEN.
+After push, finish exact focusedcases from built testbinary immediately.
+See BATCH-main-b386-compile-checkpoint-2026-11-08.json for evidence and pending names.
+
+# CURRENT: main b386 merge compile checkpoint; focused runtime pending
+
+Branch questpc2b, HEADd4289248a, merge origin/mainb3864f14a in progress.
+All conflict markers resolved. Repository Prey tool regenerated the union:
+15real Rust simulation cases,776creatures. Native45outputs exact142.349s,
+central lists and pinsPASS, worlddigest unchanged6b4be39d9f386b9f86327de020750bb5077ab5f8fd1ec82e874840fa9216617a.
+Workspacealltargets nonincrementalPASS6m03s. Clippytenchangedcrates running,
+log/tmp/questpc2b-main-b386-clippy-nonincremental.log. FmtPASS.
+Two observed unit repairs grouped: capability371gate description now names
+BUNDLE_WORLD_OFFERED_CAPABILITIES; add exact62existing source-profile keys
+and check each speed0, preserve all original raw-attribute assertions.
+Main inserted statistics queue atslot2; own objective cache isnow3. Fixed
+all3accesses, retaining both queues. Three initial compiler errors shared this
+cause. Subsequent ENOSPCchecks invalid; inactive lane caches retired, retry
+withCARGO_INCREMENTAL=0. Do not count failed checks as validation.
+Publish compiling checkpoint onceclippy/dup/fetch pass, under explicit owner
+PREPUSH-2step3cadenceexception. Seven focused cases PENDING:2observed unit
+failures and5PG (Hero,Fatheratomic11,XP,RottennativeDeath,Annihilatorparty).
+Buildonly log/tmp/questpc2b-main-b386-focused-build.log, then run7afterbuild
+and final generated inputs. Do not claim newmain PG success before observing.
+Broad old-tree unit run was partial723/2758,2035pending; ALL newmainchanged
+crate fullsuites pendingCI. No tests weakened/skipped/deleted in source.
+Parentquestpc2 remainsfrozen0a6d6e208. Own migrations1240-1244 unchanged.
+Counts3qualified,3inprogress,23notstarted,6excluded. Continue original scope.
+
 # PUBLISH compiling Hero pipe repair; then collect all unit failures
 
 Own3PG cases GREEN171.891s onPostgreSQL180006; Hero67.778s, Father104.107s,

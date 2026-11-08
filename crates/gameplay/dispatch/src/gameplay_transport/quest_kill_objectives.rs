@@ -39,7 +39,7 @@ pub(super) fn capture(
     queue: &KillSettlementQueue,
     entry: &mut PendingKillSettlement,
 ) {
-    let Ok(mut cache) = queue.2.lock() else {
+    let Ok(mut cache) = queue.3.lock() else {
         return;
     };
     cache
@@ -147,7 +147,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         });
         let attack = self.states.attack.lock().await;
-        let Ok(mut cache) = attack.kills().2.lock() else {
+        let Ok(mut cache) = attack.kills().3.lock() else {
             return;
         };
         if snapshot.as_ref().is_some_and(|new| {
@@ -236,7 +236,7 @@ pub(super) fn publish(
     queue: &KillSettlementQueue,
     committed: &[crate::durability::quest_state::CommittedQuestTransition],
 ) {
-    let Ok(mut cache) = queue.2.lock() else {
+    let Ok(mut cache) = queue.3.lock() else {
         return;
     };
     for receipt in committed {

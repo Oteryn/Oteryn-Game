@@ -401,6 +401,7 @@ pub enum TakeOutcome {
 pub struct KillSettlementQueue(
     Arc<Mutex<KillQueueState>>,
     pub(super) Arc<Mutex<super::grizzly_kills::GrizzlyCaptureCache>>,
+    Arc<super::public_kill_statistics::CaptureQueue>,
     pub(super) Arc<Mutex<super::quest_kill_objectives::ObjectiveCaptureCache>>,
 );
 
@@ -421,6 +422,10 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    pub(super) fn statistics(&self) -> &super::public_kill_statistics::CaptureQueue {
+        &self.2
+    }
+
     pub(super) fn analyser_receipts(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -1268,6 +1273,42 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    // Physical statistics precede every reward/principal/Bestiary admission.
+    // The owner-issued lethal receipt proves death even for a no-corpse arena
+    // or Instance; projections and rewards retain their existing independent rules.
+    if let Ok(snapshot) = runtime.companion_snapshot_including_dead(target) {
+        if snapshot.state.master.is_none()
+            && !snapshot.state.policy.is_familiar
+            && !runtime
+                .soulpit_variant(target)
+                .is_some_and(|tag| tag.is_summon)
+        {
+            let creature = snapshot.state.policy.definition_key.clone();
+            let boss = snapshot.state.policy.reward_boss == Some(true)
+                || sink.rewards.boss(&creature).is_some()
+                || runtime
+                    .soulpit_variant(target)
+                    .is_some_and(|tag| tag.boss.is_some());
+            if let Ok(receipt) = runtime
+                .borrow_combat_death()
+                .committed_lethal_receipt(target)
+                && let Ok(death) = receipt.statistics_death_key()
+            {
+                sink.queue.statistics().capture(
+                    runtime,
+                    target,
+                    death,
+                    &creature,
+                    boss,
+                    super::npc_trade_command::unix_ms_now(),
+                );
+            }
+        }
+    } else {
+        sink.queue
+            .statistics()
+            .source_gap(super::npc_trade_command::unix_ms_now());
+    }
     if runtime.is_tibiadrome(target) {
         let _ = crate::combat::project_fixed_one_creature_death(
             &mut runtime.borrow_combat_death(),

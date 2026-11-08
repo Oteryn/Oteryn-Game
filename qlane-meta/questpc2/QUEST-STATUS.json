@@ -1758,9 +1758,9 @@
     }
   },
   "current_batch": {
-    "name": "Hero pipe no-op receipt repair",
-    "state": "FOCUSED_GREEN_COMPILING_CHECKPOINT_UNIT_FAILURE_COLLECTION_PENDING",
-    "proof": "qlane-meta/questpc2/BATCH-hero-pipe-noop-2026-11-08.json"
+    "name": "Merge main b386 compile checkpoint",
+    "state": "COMPILE_GREEN_FOCUSED_TESTS_PENDING",
+    "proof": "qlane-meta/questpc2/BATCH-main-b386-compile-checkpoint-2026-11-08.json"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1789,7 +1789,8 @@
     "BATCH-soul-loot-authoring-checkpoint-2026-11-07.json",
     "BATCH-soul-loot-admissions-2026-11-07.json",
     "BATCH-main-qworld-2026-11-07.json",
-    "BATCH-hero-pipe-noop-2026-11-08.json"
+    "BATCH-hero-pipe-noop-2026-11-08.json",
+    "BATCH-main-b386-compile-checkpoint-2026-11-08.json"
   ],
   "next_batch": {
     "state": "AUTHORING_ON_CONTINUATION",
@@ -2431,7 +2432,7 @@
       "Hero of Rathleton Quest"
     ]
   },
-  "last_pushed_sha": "b0e21cbeaadddcd2996a8ef08d2e08e3121b14fa",
+  "last_pushed_sha": "d4289248a3ff66f6ddc75553c808e3c4895de882",
   "prepush_pending_tests": {
     "focused_16": "13runtimePG+3pure, recompiling embedded ledger after fixed1333composition; log/tmp/questpc2-collector3030-focused-schema-fixed.log",
     "full_changed_crate_units": [
@@ -2463,7 +2464,28 @@
       "known_failure": "capabilities::tests::selection_tests::the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6",
       "exact_failure": "capability_selection_tests.rs:371: assert!(gate.contains(\"BUNDLE_WORLD_OFFERED_CAPABILITIES\"), \"{id}\"); id=371",
       "publication_decision": "Owner PREPUSH-2 cadence exception: publish source with passing own PG and compile checks; collect all unit failures and fix together next. No full unit success claimed."
-    }
+    },
+    "current_main_changed_crates": [
+      "oteryn-game-server",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-entities",
+      "oteryn-gameplay-foundation",
+      "oteryn-gameplay-monster-ai",
+      "oteryn-gameplay-native-admission-source",
+      "oteryn-gameplay-spell",
+      "oteryn-gameplay-world"
+    ],
+    "current_focused_seven": [
+      "the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6",
+      "equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+      "questpc2_hero_four_pipe_greetings_grant_only_their_own_access_once",
+      "catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
+      "catalogue_npc_general_xp_handin_runs_in_real_dispatch",
+      "l3_instance_endgame_rotten_blood_native_death_progresses_once",
+      "annihilator_source_route_genuine_party_entry"
+    ]
   },
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",

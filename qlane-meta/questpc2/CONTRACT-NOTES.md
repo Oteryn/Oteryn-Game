@@ -852,3 +852,21 @@ remain from that merge; publish the final receipt with the next green slice.
   No inventory/reward semantics or source rule changes. Re-run Hero plus the
   existing realPG Father acceptance and XP hand-in checks; retain the RED
   assertion unchanged. This is a real caller fix, not merely baseline receipt.
+
+- Mainb3864f14a public projections merged into continuation only. Preserve
+  public statistics queue2 and own objective cache3; fix three stale positional
+  accesses together. Main migrations1350/1351/1352/1354/1355/1356 unchanged;
+  lane1240-1244 unchanged, no renumbering or duplicate needed.
+- The broad unit baseline observed exactly two real assertion failures before
+  cadence interruption: cap371offer_gate metadata and profile count3706versus
+  actual3768. Exact62added keys, no removed main keys; enumerate existing
+  source cohorts in new24-line helper, assert presence/zero-speed for each,
+  retain raw-source speed and exact unknown-speed checks. This admits no Item.
+- Broad collection remains partial:723old-tree results,2035notexecuted. The
+  verified name partition covers2758planned cases but is NOT completed proof.
+  Two worker interruptions are not additional assertion failures. Full newmain
+  suites go toCI; explicitly use PREPUSH-2step3exception for compile checkpoint.
+  Main merge must not wait for broad suites. Seven focused regressions remain
+  mandatory follow-up evidence; never claim PG or full unit success prematurely.
+- ENOSPC retries retire inactive own target caches only. Disable incremental
+  caches for this validation; compiler checks and test scope are unchanged.
