@@ -352,13 +352,13 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        let menu_events = self.settings.take_window_events();
+        let menu_events = self.settings.take_window_events(self.play.is_some());
         if !menu_events.is_empty() && self.play.is_some() {
             self.handle_input(event_loop, &menu_events);
         }
         self.poll_entry();
         if let Some(play) = &mut self.play {
-            self.settings.restore(&mut play.view);
+            self.settings.restore(&mut play.view, &play.link);
         }
         if let Some(play) = &mut self.play
             && let Err(end) = play.view.tick(&play.link)

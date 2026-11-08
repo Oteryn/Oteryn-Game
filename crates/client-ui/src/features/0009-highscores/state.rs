@@ -27,6 +27,7 @@ impl Default for HighscoresPanel {
 #[derive(Debug, Clone, Copy)]
 pub enum Action {
     Refresh,
+    ShowMe,
     Next,
     Previous,
     Filter { category: u32, vocation: u32 },
