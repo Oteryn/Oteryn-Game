@@ -38,7 +38,7 @@ impl CrashReport {
         save(&self.preview(), path, consent)
     }
 }
-fn save(preview: &str, path: &Path, consent: bool) -> io::Result<bool> {
+pub(crate) fn save(preview: &str, path: &Path, consent: bool) -> io::Result<bool> {
     if !consent {
         return Ok(false);
     }
