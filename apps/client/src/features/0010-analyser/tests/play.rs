@@ -348,3 +348,6 @@ fn auxiliary_analyser_launch_preserves_session_owner_and_existing_measurements()
     outbox.logged_out();
     assert!(!link.analyser_panel().open);
 }
+
+#[path = "activity.rs"]
+mod activity;

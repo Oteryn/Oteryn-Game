@@ -6,12 +6,25 @@ pub fn panel_text(panel: &Panel) -> String {
     }
     let mut text = match panel.tool {
         super::Tool::Overview => format!("Overview\r\n{}", overview(panel)),
-        super::Tool::Hunting => format!("Hunting analyser\r\nKills: {}", panel.kills),
-        super::Tool::Damage => format!(
-            "Damage analyser\r\nDamage dealt: {} | Damage received: {}",
-            panel.damage, panel.received
+        super::Tool::Hunting => format!(
+            "Hunting analyser\r\nKills: {}\r\nKills/h: {}\r\n{}",
+            panel.kills,
+            super::state::per_hour(panel.kills, panel.clock.seconds()),
+            panel.kill_chart.chart(panel.clock.seconds())
         ),
-        super::Tool::Healing => format!("Healing analyser\r\nHealing: {}", panel.healing),
+        super::Tool::Damage => format!(
+            "Damage analyser\r\nDamage dealt: {} | Damage received: {}\r\nDPS: {}\r\n{}",
+            panel.damage,
+            panel.received,
+            rate(panel.damage, panel.clock.seconds()),
+            panel.damage_chart.chart(panel.clock.seconds())
+        ),
+        super::Tool::Healing => format!(
+            "Healing analyser\r\nHealing: {}\r\nHPS: {}\r\n{}",
+            panel.healing,
+            rate(panel.healing, panel.clock.seconds()),
+            panel.healing_chart.chart(panel.clock.seconds())
+        ),
         super::Tool::Xp => xp_text(panel, panel.clock.seconds()),
         super::Tool::Loot => loot_text(panel, panel.clock.seconds()),
         super::Tool::Supply => supply_text(panel, panel.clock.seconds()),

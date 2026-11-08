@@ -1267,9 +1267,10 @@
   "src": "OTCAUD1108",
   "area": "Analytics",
   "feature": "Analizery polowania, XP, łupu, zapasów, obrażeń i drużyny",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje osobnych analizatorów z wykresami/stawkami w czasie, party hunt i boss cooldown/drop tracker; istnieje jeden panel sum kill/XP/loot/supply/damage/heal.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/view.rs:3 + analyser_dedicated_activity_views_chart_confirmed_wire_facts + boss_tracker_controls_use_existing_protocol_owners_and_feed_observed_history"
  },
  {
   "id": "O014",
