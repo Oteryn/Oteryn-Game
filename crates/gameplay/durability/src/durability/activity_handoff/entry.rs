@@ -149,7 +149,9 @@ fn binding(
     hash.finalize().into()
 }
 
-pub(super) async fn enter_in_transaction<G: super::super::quest_state::grizzly::GrizzlyPremiumGate>(
+pub(super) async fn enter_in_transaction<
+    G: super::super::quest_state::grizzly::GrizzlyPremiumGate,
+>(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
@@ -356,7 +358,6 @@ pub(super) async fn enter_in_transaction<G: super::super::quest_state::grizzly::
                 origin: Some(*channel_id.as_bytes()),
                 transport: p.destination_transport,
             },
-            now,
         )
         .await?;
     }
@@ -429,8 +430,11 @@ pub(super) async fn issue_successor(
     tx: &mut Transaction<'_, Postgres>,
     root: &DurabilityRoot,
     successor: SuccessorSession,
-    now: i64,
 ) -> Result<()> {
+    // Session protection and authority publications use transaction wall time.
+    // Encounter test clocks can advance deadlines without backdating or
+    // future-dating the existing admission owner's claims.
+    let now = now_ms(tx).await?;
     let SuccessorSession {
         source,
         destination,
