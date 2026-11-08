@@ -21,6 +21,16 @@ const MESSAGE: usize = 102;
 const RECIPIENT: usize = 103;
 const RECIPIENT_LABEL: usize = 104;
 const SEND: usize = 105;
+const IGNORE: usize = 113;
+const ALLOW: usize = 114;
+const BLOCK: usize = 115;
+const CLEAR_LISTS: usize = 116;
+const LOG_PATH: usize = 110;
+const SAVE: usize = 111;
+const APPEND: usize = 112;
+const TAB: usize = 107;
+const FILTER: usize = 108;
+const CHAT_MODE: usize = 109;
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 
 #[derive(Default)]
@@ -33,7 +43,18 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let id = w & 0xffff;
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
-                && ((id == SEND && note == BN_CLICKED as usize)
+                && ((matches!(
+                    id,
+                    SEND | FILTER
+                        | CHAT_MODE
+                        | SAVE
+                        | APPEND
+                        | IGNORE
+                        | ALLOW
+                        | BLOCK
+                        | CLEAR_LISTS
+                ) && note == BN_CLICKED as usize
+                    || id == TAB && note == LBN_SELCHANGE as usize)
                     || PrivateControls::accepts(id, note))
             {
                 (*actions).0.push(id);
@@ -150,6 +171,66 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [250, 86, 430, 380],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
+        let tabs = control(
+            hwnd,
+            "LISTBOX",
+            "",
+            TAB,
+            [10, 245, 230, 75],
+            LBS_NOTIFY as u32 | WS_BORDER,
+        );
+        for tab in ["All", "Local", "Private", "Guild"] {
+            SendMessageW(tabs, LB_ADDSTRING, 0, wide(tab).as_ptr() as isize);
+        }
+        SendMessageW(tabs, LB_SETCURSEL, 0, 0);
+        control(
+            hwnd,
+            "BUTTON",
+            "Toggle messages",
+            FILTER,
+            [10, 325, 230, 28],
+            WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Chat on/off/temporary",
+            CHAT_MODE,
+            [10, 360, 230, 28],
+            WS_TABSTOP,
+        );
+        for (id, title, y) in [
+            (IGNORE, "Ignore recipient", 400),
+            (ALLOW, "Whitelist recipient", 435),
+            (BLOCK, "Blacklist recipient", 470),
+            (CLEAR_LISTS, "Remove recipient from lists", 505),
+        ] {
+            control(hwnd, "BUTTON", title, id, [10, y, 230, 28], WS_TABSTOP);
+        }
+        let log_path = control(
+            hwnd,
+            "EDIT",
+            "chat.log",
+            LOG_PATH,
+            [250, 480, 300, 28],
+            WS_BORDER | WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Save log",
+            SAVE,
+            [250, 515, 140, 28],
+            WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Append log",
+            APPEND,
+            [400, 515, 140, 28],
+            WS_TABSTOP,
+        );
         let mut private = PrivateControls::new(hwnd);
         let mut held = String::new();
         let mut msg: MSG = std::mem::zeroed();
@@ -184,6 +265,85 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             for action in std::mem::take(&mut actions.0) {
                 if private.action(action, &mut mailbox, &commands) {
                     continue;
+                }
+                use oteryn_client_ui::chat::{ComposerMode, ConsoleTab};
+                match action {
+                    IGNORE | ALLOW | BLOCK | CLEAR_LISTS => {
+                        use oteryn_client_ui::chat::CommunicationList;
+                        let name = read_text(recipient);
+                        let list = match action {
+                            ALLOW => CommunicationList::Whitelist,
+                            BLOCK => CommunicationList::Blacklist,
+                            _ => CommunicationList::Ignore,
+                        };
+                        if action == CLEAR_LISTS {
+                            for list in [
+                                CommunicationList::Ignore,
+                                CommunicationList::Whitelist,
+                                CommunicationList::Blacklist,
+                            ] {
+                                mailbox.chat.console.communication.edit(list, &name, false);
+                            }
+                        } else {
+                            mailbox.chat.console.communication.edit(list, &name, true);
+                        }
+                        mailbox.chat_private.communication =
+                            mailbox.chat.console.communication.clone();
+                        mailbox.chat_party_room.communication =
+                            mailbox.chat.console.communication.clone();
+                        mailbox.chat.feedback = Some(format!(
+                            "Ignore: {:?}; whitelist: {:?}; blacklist: {:?}",
+                            mailbox.chat.console.communication.ignored,
+                            mailbox.chat.console.communication.whitelist,
+                            mailbox.chat.console.communication.blacklist
+                        ));
+                        continue;
+                    }
+                    SAVE | APPEND => {
+                        let path = read_text(log_path);
+                        let snapshot = mailbox.chat.clone();
+                        drop(mailbox);
+                        let result = std::fs::OpenOptions::new()
+                            .create(true)
+                            .write(true)
+                            .append(action == APPEND)
+                            .truncate(action == SAVE)
+                            .open(path)
+                            .and_then(|mut file| {
+                                oteryn_client_ui::chat::write_log(&snapshot, &mut file)
+                            });
+                        mailbox = lock(&shared);
+                        mailbox.chat.feedback = Some(match result {
+                            Ok(()) => "Channel log written".into(),
+                            Err(error) => format!("Could not write channel log: {error}"),
+                        });
+                        continue;
+                    }
+                    TAB => {
+                        mailbox
+                            .chat
+                            .console
+                            .select(match SendMessageW(tabs, LB_GETCURSEL, 0, 0) {
+                                1 => ConsoleTab::Local,
+                                2 => ConsoleTab::Private,
+                                3 => ConsoleTab::Guild,
+                                _ => ConsoleTab::All,
+                            });
+                        continue;
+                    }
+                    FILTER => {
+                        mailbox.chat.console.show_messages = !mailbox.chat.console.show_messages;
+                        continue;
+                    }
+                    CHAT_MODE => {
+                        mailbox.chat.console.mode = match mailbox.chat.console.mode {
+                            ComposerMode::On => ComposerMode::Off,
+                            ComposerMode::Off => ComposerMode::Temporary,
+                            ComposerMode::Temporary => ComposerMode::On,
+                        };
+                        continue;
+                    }
+                    _ => {}
                 }
                 if action != SEND {
                     continue;
