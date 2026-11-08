@@ -25,6 +25,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Remove slot",
                 "Rewards",
                 "Next rewards",
+                "Lower hazard",
+                "Raise hazard",
                 "Previous boss",
                 "Next boss",
                 "Apply search",
@@ -74,6 +76,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     9 => Intent::SlotRemove,
                     10 => Intent::Rewards,
                     11 => Intent::RewardsNext,
+                    12 => Intent::HazardLower,
+                    13 => Intent::HazardRaise,
                     _ => return,
                 };
                 super::super::input::enqueue(mailbox, commands, intent);

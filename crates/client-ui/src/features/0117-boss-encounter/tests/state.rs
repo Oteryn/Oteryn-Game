@@ -310,6 +310,31 @@ fn cooldown_widget_lists_the_next_available_boss_first() {
 }
 
 #[test]
+fn hazard_panel_shows_unlocked_levels_and_blocks_locked_selection() {
+    let mut p = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(request(&mut p, Intent::HazardQuery).is_some());
+    assert!(apply_result(
+        &mut p,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: vec![5, 2]
+        }
+    ));
+    let text = panel_text(&p);
+    assert!(text.contains("Selected level 2 of 5 unlocked"));
+    assert!(text.contains("Enter"));
+    p.fields[2] = "6".into();
+    assert!(request(&mut p, Intent::HazardSelect).is_none());
+    p.fields[2] = "5".into();
+    assert!(request(&mut p, Intent::HazardSelect).is_some());
+}
+
+#[test]
 fn bosstiary_browser_filters_and_selects_confirmed_bosses() {
     let mut panel = BossEncounterPanel {
         snapshot: Some(oteryn_client_runtime::boss_encounter::Snapshot {

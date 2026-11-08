@@ -6,4 +6,24 @@ pub struct Panel {
     pub catalog: CatalogState,
     pub filter: String,
     pub page: usize,
+    pub max_level: Option<u32>,
+    pub group: Option<u32>,
+    pub learned_only: bool,
+    pub filter_error: bool,
+}
+
+impl Panel {
+    pub(super) fn matches(
+        &self,
+        entry: &oteryn_client_runtime::spell_catalog::SpellCatalogEntry,
+    ) -> bool {
+        let search = self.filter.to_lowercase();
+        (entry.name.to_lowercase().contains(&search)
+            || entry.words.to_lowercase().contains(&search))
+            && self.max_level.is_none_or(|level| entry.level <= level)
+            && self
+                .group
+                .is_none_or(|group| entry.cooldown_groups.contains(&group))
+            && (!self.learned_only || entry.learned)
+    }
 }
