@@ -136,7 +136,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             for action in std::mem::take(&mut actions.0) {
                 if action == PRESETS {
                     drop(mailbox);
-                    PlayLink { mailbox: Arc::clone(&shared), commands: commands.clone() }.wheel_presets_open();
+                    super::presets::open_shared(&shared, &commands);
                     mailbox = lock(&shared);
                     continue;
                 }

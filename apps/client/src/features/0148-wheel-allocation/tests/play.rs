@@ -321,3 +321,24 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
         .join()
         .map_err(|_| "Wheel UI test thread panicked")?
 }
+
+#[test]
+fn wheel_presets_window_handoff_preserves_the_session_owner() {
+    use crate::play::feature_0148_wheel_allocation::view::presets::{open_shared, window_open};
+    let (link, _receiver, _outbox) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.properties.house.model.selected = true;
+    }
+    open_shared(&link.mailbox, &link.commands);
+    {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert!(window_open(&mailbox));
+        assert!(!mailbox.wheel_shutdown);
+        assert!(!mailbox.depot_shutdown);
+        assert!(mailbox.properties.house.model.selected);
+    }
+    let shared = Arc::clone(&link.mailbox);
+    drop(link);
+    assert!(!window_open(&crate::play::mailbox::lock(&shared)));
+}

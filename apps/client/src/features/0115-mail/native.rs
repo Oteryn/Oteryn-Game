@@ -102,7 +102,7 @@ unsafe fn text(hwnd: HWND) -> String {
         String::from_utf16_lossy(&buffer[..length])
     }
 }
-fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, form: Form) {
+pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, form: Form) {
     unsafe {
         let hwnd = CreateWindowExW(
             0,
