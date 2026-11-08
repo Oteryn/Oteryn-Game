@@ -29,7 +29,10 @@
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
 mod house;
+mod source_scene;
+pub use source_scene::{SceneEvacuation, SourceSceneRelocation, prepare_source_scene};
 mod quest_callback;
+mod quest_callback_scene;
 mod rope;
 use super::overlay::TilePos;
 use super::palette_appearance;
@@ -41,6 +44,7 @@ use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
 pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
+pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
 use std::collections::{BTreeMap, BTreeSet};
 use {
@@ -698,6 +702,12 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
             CardinalStep::West => MovementFacing::West,
         };
         (self.actor, self.expected, self.destination, facing)
+    }
+}
+
+impl CellBlocker for crate::map::door::DoorBook {
+    fn blocks(&self, cell: LogicalCell) -> bool {
+        BundleDoors(self).blocks(cell)
     }
 }
 

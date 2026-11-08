@@ -367,10 +367,11 @@ fn scenario() -> TestResult {
         use crate::gameplay_transport::connection::FirstEntryOutcome;
         let trigger = Position { x: 33620, y: 31400, floor: -10 };
         let world = super::quest_world_callbacks::world(&Callback {
+use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],
 world_change: None,
             actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
-            trigger: Trigger::Use, selector: Selector { native: None, position: Some(trigger), unique: None, action: None, appearance: None },
+            trigger: Trigger::Use, selector: Selector {ordinal:None, native: None, position: Some(trigger), unique: None, action: None, appearance: None },
             lever: None, reversible: false, passages: vec![], teleport: None, facing: None, effects: Default::default(), world_requirements: vec![], storage: vec![],
             minimum_level: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,
@@ -637,10 +638,13 @@ async fn reward_delivery(
     };
     let backpack = generation_item_facts(native, &bag_definition).map_err(debug)?;
     let mut request = RewardClaimMintRequest {
+            backpack_outputs: false,
         command: CommandRef::new(session, CommandId::new(601).map_err(debug)?),
         claim: TypedDefinitionRef { family: "RewardClaim".into(), production_key: SOUL_WAR_REWARD_CLAIM.into(), revision_ref: SOUL_WAR_REWARD_REVISION.into() },
         source_placement: SOUL_WAR_REWARD_PLACEMENT.into(), item, quantity: 1, backpack,
         contents: Vec::new(), root_text: None,
+        root_fluid_subtype: None,
+        root_charges_remaining: None,
         content_revision: format!("sha256:{}", native.source_digest().iter().map(|byte| format!("{byte:02x}")).collect::<String>()),
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),

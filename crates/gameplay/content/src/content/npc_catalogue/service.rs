@@ -364,7 +364,8 @@ pub fn build(
         )
         .collect();
     let records = records.as_slice();
-    let grizzly = super::grizzly_shop::declarations(records);
+    let mut grizzly = super::grizzly_shop::declarations(records);
+    grizzly.extend(super::quest_access::declarations(records));
     let records: Vec<_> = records
         .iter()
         .copied()

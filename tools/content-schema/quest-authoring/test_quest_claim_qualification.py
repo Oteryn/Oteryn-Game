@@ -29,22 +29,33 @@ class QualificationTests(unittest.TestCase):
     def test_checked_in_ledger_is_valid(self):
         errors, counts = qualification.validate()
         self.assertEqual(errors, [])
-        # Three Demon Helmet selectors now have real USE/PostgreSQL receipt
-        # coverage. The exact remaining denominator still rejects drift.
-        # ITEMHOLD-Q expands the inventory, without qualifying these World routes.
-        self.assertEqual(sum(counts.values()) - len(qualification.ITEMHOLD_ADMISSIONS), 297)
-        ledger = qualification.read_json(qualification.LEDGER)
-        for key in qualification.ITEMHOLD_ADMISSIONS:
-            record = ledger["claims"][key]
-            self.assertEqual(record["disposition"], "blocked")
-            self.assertEqual(record["dependency"], "QUEST-QUAL-1")
+        # 172 source claims have focused dispatch PG proof; only the
+        # two Dawnport claims are excluded. Keep exact denominator detection.
+        self.assertEqual(sum(counts.values()), 162)
 
     def test_missing_row_is_rejected(self):
-        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+        # Every still-pending row must remain in the ledger. The collected
+        # ITEMHOLD claims now have real dispatch proof and leave this inventory.
+        for key in self.ledger["claims"]:
             with self.subTest(claim=key):
                 ledger = copy.deepcopy(self.ledger)
                 del ledger["claims"][key]
                 self.assertIn(f"missing claim: {key}", self.check(ledger))
+
+    def test_itemhold_admissions_retain_their_qualified_source_witnesses(self):
+        coverage = json.loads(qualification.COVERAGE.read_text())
+        claims = {chest['claim']: chest for quest in coverage['quests']
+                  for chest in quest['chests']}
+        for key in qualification.ITEMHOLD_ADMISSIONS:
+            with self.subTest(claim=key):
+                self.assertNotIn(key, self.ledger['claims'])
+                self.assertEqual(claims[key]['status'], 'dispatch_pg_qualified')
+                self.assertEqual(claims[key]['reason'], {
+                    'oteryn:reward-claim.kv.ornamentedshield':
+                        'quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.powerring2':
+                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
+                }[key])
 
     def test_invented_test_is_rejected(self):
         record = next(iter(self.ledger["claims"].values()))

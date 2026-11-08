@@ -70,6 +70,7 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
 fn input_at(xp_amount: i64, revision: u64) -> TestResult<CreatureDeathRewardInput<2>> {
     let context = context();
     Ok(CreatureDeathRewardInput {
+        tutorial_corruptor: None,
         corpse_item: definition("ItemType", "fixture:bestiary.item.rat_corpse"),
         loot_table_ref: definition("LootTable", "fixture:bestiary.loot.rat"),
         loot_table: LootTableDefinition {

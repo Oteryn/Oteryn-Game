@@ -26,7 +26,7 @@ fn monk_shrine_selectors_match_the_real_world_source_tiles() -> TestResult {
     let palette = index["palette"].as_array().ok_or("palette")?;
     for callback in world_callbacks::load()?
         .iter()
-        .filter(|c| c.quest == monk_shrines::QUEST)
+        .filter(|c| c.quest == monk_shrines::QUEST && c.monk_reward.is_some())
     {
         let p = callback.selector.position.ok_or("position")?;
         let name = format!(

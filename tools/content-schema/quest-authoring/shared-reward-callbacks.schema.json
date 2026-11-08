@@ -71,6 +71,13 @@
           "items": {
             "$ref": "#/$defs/giftItem"
           }
+        },
+        "backpack_outputs": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "$ref": "#/$defs/item"
+          }
         }
       }
     },
@@ -482,9 +489,45 @@
             }
           }
         },
+        "experience": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
         "completes": {
           "type": "boolean",
           "default": false
+        },
+        "required_receipts": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "transition",
+              "track",
+              "value"
+            ],
+            "properties": {
+              "transition": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^oteryn:[A-Za-z0-9._:/-]+$"
+              },
+              "track": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^oteryn:[A-Za-z0-9._:/-]+$"
+              },
+              "value": {
+                "type": "integer"
+              }
+            }
+          }
         }
       }
     },
@@ -664,6 +707,24 @@
                 "seconds": {
                   "type": "integer",
                   "minimum": 0,
+                  "maximum": 31622400
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "seconds"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "elapsed_less_than"
+                },
+                "seconds": {
+                  "type": "integer",
+                  "minimum": 1,
                   "maximum": 31622400
                 }
               }

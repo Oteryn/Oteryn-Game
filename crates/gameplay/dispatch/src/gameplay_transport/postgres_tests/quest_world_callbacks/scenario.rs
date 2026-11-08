@@ -106,15 +106,27 @@ fn scenario_case(
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
-    let classic_npc = qengine_reward
-        || matches!(
-            name,
-            "catalogue-npc" | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp" | "nx6-wayfarer"
-                | "classic-quests-npc"
-                | "classic-rottin-disrepair"
-                | "threatened-dreams-npc"
-                | "conditional-quest-greetings"
-        );
+    let classic_npc = qengine_reward || matches!(
+        name,
+        "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp" | "nx6-wayfarer" | "catalogue-npc"
+            | "authored-mystery-intro"
+            | "authored-mystery-assembly"
+            | "authored-mystery-geometry"
+            | "authored-static-constructors"
+            | "authored-venore"
+            | "authored-venore-supplies"
+            | "authored-winterlight"
+            | "authored-wrath-opening"
+            | "catalogue-npc-father"
+            | "fathers-burden-handins"
+            | "catalogue-npc-hero"
+            | "catalogue-npc-legacy"
+            | "catalogue-npc-scoped"
+            | "classic-quests-npc"
+            | "classic-rottin-disrepair"
+            | "threatened-dreams-npc"
+            | "conditional-quest-greetings"
+    );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = if native_signs || diprath_room {
@@ -134,6 +146,10 @@ fn scenario_case(
             "rotten-blood/sacrifice"
         } else if monk {
             "monk-guidance"
+        } else if name == "giant-smithhammer-asymmetric" {
+            "giant-smithhammer"
+        } else if name == "authored-trader" {
+            "authored-trader-package"
         } else if target_swap
             || reusable_tool
             || floor_profiles
@@ -270,19 +286,73 @@ fn scenario_case(
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
-    let world = world(&callback, trigger)?;
+        let world = if name == "authored-wrath-opening" {
+            super::super::questpc8_wrath_opening::world()?
+        } else if name == "authored-winterlight" {
+            super::super::questpc8_winterlight::world()?
+        } else if name == "authored-venore" {
+            super::super::questpc8_venore::world()?
+        } else if matches!(
+            name,
+            "authored-mystery-geometry" | "authored-mystery-assembly"
+        ) {
+            super::super::questpc8_mystery_geometry::world()?
+        } else if name == "authored-secret-library" {
+            super::super::questpc8_secret_library::world()?
+        } else if name == "authored-treasure-island" {
+            super::super::questpc8_treasure_island::world()?
+        } else if name == "authored-trader" {
+            super::super::questpc8_trader::world()?
+        } else if name == "authored-anniversary" {
+            super::super::questpc8_anniversary::world()?
+        } else if name == "authored-magic-sword" {
+            super::super::questpc8_magic_sword::world()?
+        } else if name == "authored-torch" {
+            super::super::questpc8_bridge_routes::torch_world()?
+        } else if name == "authored-life-ring-entry" {
+            super::super::questpc8_life_ring::world()?
+        } else if name == "authored-life-ring-bridge" {
+            super::super::questpc8_life_ring_bridge::world()?
+        } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
+            super::super::questpc8_retrieval_routes::world(route)?
+        } else if name == "authored-braindeath" {
+            super::super::quest_callbacks::source_world((32546, 31522, -11), 0, 1983, 0)?
+        } else if name == "authored-kormarak" {
+            super::super::quest_callbacks::source_world_rectangle_with_prefix(
+                (32342, 32125, -10),
+                &[(32342, 0)],
+                4240,
+                2,
+                4,
+                &[1854],
+            )?
+        } else if name == "authored-smith-cache" {
+            super::super::quest_callbacks::source_world_rectangle(
+                (32776, 32253, -8),
+                &[(32776, 0)],
+                2472,
+                2,
+            )?
+        } else if name == "authored-tinder-box" {
+            super::super::quest_callbacks::source_world((32085, 31025, -1), 0, 4285, 0)?
+        } else if name == "mintwallin-cyclops-scene" {
+            super::super::questpc8_native_scenes::world()?
+        } else {
+            world(&callback, trigger)?
+        };
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
-            Harness::create_quest_reward(
-                admin,
-                "quest_rewards",
-                !name.ends_with("pirate") && !name.contains("-male-"),
-            )
-            .await
+            Harness::create_quest_reward(admin, "quest_rewards",
+                !name.ends_with("pirate") && !name.contains("-male-")).await
         } else {
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
+        }.map_err(|e| format!("callback harness: {e}"))?;
+        if name == "mintwallin-cyclops-scene" {
+            eprintln!(
+                "POSTGRES_CASE_STARTED mintwallin-cyclops-scene after PostgreSQL fixture initialization"
+            );
         }
-        .map_err(|e| format!("callback harness: {e}"))?;
+        if name.starts_with("authored-") { eprintln!("POSTGRES_CASE_STARTED {name} after PostgreSQL fixture initialization"); }
         if small_ruby || carried_step || native_tower || name == "triangle-tower-wall" {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
                 .fetch_one(&h.pool)
@@ -444,10 +514,26 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
+            // These two cases keep five source NPCs and one player alive.
             if name.starts_with("qengine-rewards-l12-") {
                 128
-            } else if native_story || (native_upper && name.ends_with("-complete")) {
+            } else if native_story
+                || (native_upper && name.ends_with("-complete"))
+                || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
+            {
                 6
+            } else if name == "authored-magic-sword" {
+                9
+            } else if name == "authored-trader" {
+                7
+            } else if name == "authored-treasure-island" {
+                3
+            } else if name == "authored-secret-library" {
+                5
+            } else if matches!(name, "authored-anniversary" | "authored-venore") {
+                12
+            } else if name == "authored-torch" {
+                3
             } else if classic_npc {
                 5
             } else if monk {
@@ -469,7 +555,7 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.contains("l6-beggar-")
+        let premium = if name.starts_with("authored-") || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
@@ -850,19 +936,58 @@ fn scenario_case(
                 name,
             )
             .await?;
-        } else if callback.effects != Default::default()
-            || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
-        {
-            super::super::qengine_access::exercise(
+        } else if name == "authored-magic-sword" {
+            super::super::questpc8_magic_sword::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-trader" {
+            super::super::questpc8_trader::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-treasure-island" {
+            super::super::questpc8_treasure_island::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-secret-library" {
+            super::super::questpc8_secret_library::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-anniversary" {
+            super::super::questpc8_anniversary::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-torch" {
+            super::super::questpc8_bridge_routes::exercise_torch(&mut owner, &mut admitted, &h)
+                .await?;
+        } else if name == "authored-life-ring-entry" {
+            super::super::questpc8_life_ring::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-life-ring-bridge" {
+            super::super::questpc8_life_ring_bridge::exercise(&mut owner, &mut admitted).await?;
+        } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
+            super::super::questpc8_retrieval_routes::exercise(route, &mut owner, &mut admitted, &h)
+                .await?;
+        } else if name == "authored-braindeath" {
+            super::super::questpc8_authored_programmes::exercise_braindeath(
+                &mut owner, &mut admitted, &h,
+            ).await?;
+        } else if name == "authored-kormarak" {
+            super::super::questpc8_kormarak::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-smith-cache" {
+            super::super::questpc8_smith_cache::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-tinder-box" {
+            super::super::questpc8_authored_programmes::exercise_tinder_box(
                 &mut owner,
                 &mut admitted,
                 &h,
-                deps.actor,
-                fence,
-                &callback,
-                trigger,
             )
             .await?;
+        } else if name == "mintwallin-cyclops-scene" {
+            super::super::questpc8_native_scenes::exercise(&mut owner, &mut admitted, &world)
+                .await?;
+        } else if name == "giant-smithhammer-asymmetric" {
+            super::super::quest_l7_asymmetric::exercise(
+                &mut owner,
+                &mut admitted,
+                &callback,
+                trigger,
+                &world,
+            )
+            .await?;
+        } else if callback.effects != Default::default()
+            || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
+        {
+            super::super::qengine_access::exercise(&mut owner, &mut admitted,
+                &h, deps.actor, fence, &callback, trigger).await?;
         } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,
@@ -895,6 +1020,68 @@ fn scenario_case(
             .await?;
         } else if name == "nx6-wayfarer" {
             super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if matches!(
+            name,
+            "catalogue-npc-father" | "catalogue-npc-legacy" | "fathers-burden-handins"
+        ) {
+            super::super::questpc8_npc_program_regressions::exercise_father(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name == "catalogue-npc-legacy",
+                name == "fathers-burden-handins",
+            )
+            .await?;
+        } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+            super::super::questpc8_npc_program_regressions::exercise_scoped(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name == "catalogue-npc-hero",
+            )
+            .await?;
+        } else if name == "authored-mystery-assembly" {
+            super::super::questpc8_mystery_assembly::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name == "authored-mystery-geometry" {
+            super::super::questpc8_mystery_geometry::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name == "authored-wrath-opening" {
+            super::super::questpc8_wrath_opening::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-winterlight" {
+            super::super::questpc8_winterlight::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-venore" {
+            super::super::questpc8_venore::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-venore-supplies" {
+            super::super::questpc8_venore_supplies::exercise_supplies(
+                &mut owner,
+                &mut admitted,
+                &h,
+            )
+            .await?;
+        } else if name == "authored-static-constructors" {
+            super::super::questpc8_static_constructors::exercise(&mut owner, &mut admitted, &h)
+                .await?;
+        } else if name == "authored-mystery-intro" {
+            super::super::questpc8_mystery::exercise_intro(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
         } else if name == "conditional-quest-greetings" {
             super::super::conditional_quest_greetings::exercise(
                 &mut owner,

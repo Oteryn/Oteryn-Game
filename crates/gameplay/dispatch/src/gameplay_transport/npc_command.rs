@@ -61,6 +61,7 @@ mod reward_callbacks;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
+mod viola;
 mod wrath_sleeping_dragon;
 #[path = "yeo.rs"]
 mod yeo;
@@ -90,6 +91,7 @@ struct SessionNpc {
     premium: Option<premium_purchase::PendingPurchase>,
     marriage: Option<marriage::Pending>,
     monk: Option<monk::Pending>,
+    viola: Option<viola::Pending>,
     quest_dialogue: quest_dialogue::State,
     catalogue: Option<catalogue::Pending>,
     delayed_end: Option<catalogue::DelayedEnd>,
@@ -825,6 +827,16 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return catalogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = viola::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return viola::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
     {

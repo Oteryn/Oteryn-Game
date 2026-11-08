@@ -22,6 +22,7 @@ pub fn render(programs: &[PathBuf]) -> Result<String, String> {
             .ok_or("NPC filename is not UTF-8")?;
         let Some(stem) = name
             .strip_prefix("quest-batch3-")
+            .or_else(|| name.strip_prefix("quest-authored-"))
             .and_then(|name| name.strip_suffix(".json"))
         else {
             return Err(format!("unreviewed NPC program filename: {name}"));
@@ -44,6 +45,7 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error
     let directory = root.join("../../../content/dialogues/quest-rules");
     println!("cargo:rerun-if-changed={}", directory.display());
     let mut programs = Vec::new();
+    let mut authored = Vec::new();
     if directory.exists() {
         for entry in std::fs::read_dir(&directory)? {
             let entry = entry?;
@@ -55,14 +57,28 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error
                 && path
                     .file_name()
                     .and_then(|name| name.to_str())
-                    .is_some_and(|name| name.starts_with("quest-batch3-"))
+                    .is_some_and(|name| {
+                        name.starts_with("quest-batch3-") || name.starts_with("quest-authored-")
+                    })
             {
                 println!("cargo:rerun-if-changed={}", path.display());
-                programs.push(path);
+                if path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name.starts_with("quest-authored-"))
+                {
+                    authored.push(path);
+                } else {
+                    programs.push(path);
+                }
             }
         }
     }
     std::fs::write(out.join("npc_rule_programs.rs"), render(&programs)?)?;
+    std::fs::write(
+        out.join("authored_npc_rule_programs.rs"),
+        render(&authored)?.replace("NPC_RULE_PROGRAMS", "AUTHORED_NPC_RULE_PROGRAMS"),
+    )?;
     Ok(())
 }
 

@@ -22,6 +22,9 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         return Ok(Err(RewardClaimMintError::InvalidInput));
     };
     let request = RewardClaimMintRequest {
+        backpack_outputs: false,
+        root_charges_remaining: None,
+        root_fluid_subtype: None,
         contents: Vec::new(), root_text: None, backpack,
         command, claim:TypedDefinitionRef { family:"RewardClaim".into(), production_key:"oteryn:reward-claim.npc.tereban.old_cape".into(), revision_ref:"fathers-burden-r1".into() },
         source_placement:"oteryn:npc.tereban/mission-complete".into(), item, quantity:1,

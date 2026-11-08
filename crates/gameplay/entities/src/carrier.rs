@@ -149,6 +149,8 @@ pub mod runtime_actor_source_reservation;
 
 #[path = "carrier/runtime_actor_source_step.rs"]
 pub mod runtime_actor_source_step;
+#[path = "carrier/source_scene.rs"]
+pub mod source_scene;
 
 #[path = "carrier/runtime_actor_spell.rs"]
 pub mod runtime_actor_spell;

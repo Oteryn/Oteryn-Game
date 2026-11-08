@@ -25,7 +25,7 @@ def keys(document):
     return set(rows)
 
 
-def regenerate(source, base, updates, qengine, npc, starting=None):
+def regenerate(source, base, updates, qengine, npc, starting=None, custody=None):
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(
             "_", ""
@@ -39,15 +39,18 @@ def regenerate(source, base, updates, qengine, npc, starting=None):
     counts = {name: int(count.replace("_", "")) for name, count in cohorts}
     if counts.get("QNPCFX") != len(npc["records"]):
         raise ValueError("NPC source proof differs from the declared cohort")
-    extra = re.search(r"cohorts add (\d+) \+ (\d+) keys", source)
-    if extra is None:
-        raise ValueError("missing independently declared floor/callback cohorts")
-    declared = (
-        original
-        + sum(counts.values())
-        + len(qengine["records"])
-        + sum(map(int, extra.groups()))
-    )
+    if custody is not None:
+        if custody.get('schema') != 1 or custody.get('base') != '1ae39c7fb9bef09c3cd50d16410374f4134b1676' or custody.get('base_count') != 3663:
+            raise ValueError('invalid pinned custody baseline')
+        additions = custody['added_keys']
+        if len(additions) != len(set(additions)):
+            raise ValueError('duplicate custody addition')
+        declared = custody['base_count'] + len(additions)
+    else:
+        extra = re.search(r"cohorts add (\d+) \+ (\d+) keys", source)
+        if extra is None:
+            raise ValueError("missing independently declared floor/callback cohorts")
+        declared = original + sum(counts.values()) + len(qengine["records"]) + sum(map(int, extra.groups()))
     actual = keys(base) | keys(updates) | keys(starting or {"records": []})
     engine_keys, npc_keys = keys(qengine), keys(npc)
     if engine_keys & npc_keys or not (engine_keys | npc_keys) <= actual:
@@ -56,6 +59,10 @@ def regenerate(source, base, updates, qengine, npc, starting=None):
         raise ValueError(
             f"declared cohorts={declared}, generated profile union={len(actual)}"
         )
+    if custody is not None:
+        if not set(custody['added_keys']) <= actual:
+            raise ValueError('custody source identity absent')
+        return source, declared
     # The NPC owner is already counted in PROFILE_ADDITIONS. Keep every strict
     # raw-attribute/identity assertion and remove only its duplicate sum term.
     start = source.index("    assert_eq!(\n        profiles.records.len(),")
@@ -80,7 +87,9 @@ def main():
     )
     source = TEST.read_text()
     generated, count = regenerate(
-        source, *(json.loads((ROOT / p).read_text()) for p in paths)
+        source, *(json.loads((ROOT / p).read_text()) for p in paths),
+        custody=(json.loads((ROOT / "tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json").read_text())
+                 if "questpc8-equipment-custody-census.json" in source else None),
     )
     if args.check and generated != source:
         raise SystemExit("equipment cohort pin is stale")

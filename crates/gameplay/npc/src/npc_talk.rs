@@ -7,6 +7,7 @@
 
 use std::collections::HashMap;
 
+mod caller_scope;
 mod dark_trails;
 mod isle_of_evil;
 
@@ -23,10 +24,12 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
+    include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
 ];
 const REWARD_GREETINGS: &[&str] = &[
+    include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
 ];
@@ -299,13 +302,16 @@ impl NpcTalkBook {
         Self::from_model_with_native_quests(model, &[])
     }
 
-    /// Admit source greetings for NPCs whose stateful rules have a native executor.
+    /// Admit only the caller's native quest NPCs' existing literal greetings.
+    /// Stateful keywords and durable writes remain with the native dispatcher.
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
                 "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
-                crate::content::npc_catalogue::grizzly_shop::book_digest(
-                    model.source_tree_digest()
+                crate::content::npc_catalogue::quest_access::book_digest(
+                    &crate::content::npc_catalogue::grizzly_shop::book_digest(
+                        model.source_tree_digest()
+                    )
                 ),
                 format_args!(
                     "{}\0{}\0{}\0{}\0{}",
@@ -335,6 +341,19 @@ impl NpcTalkBook {
             let dark_messages = dark_trails::messages(&reference.key);
             let isle_messages = isle_of_evil::messages(&reference.key);
             let reward_messages = reward_messages(&reference.key);
+            let stag = matches!(
+                reference.key.as_str(),
+                "oteryn:npc.captain_marie_denise_banner"
+                    | "oteryn:npc.eldoran_the_ambitious"
+                    | "oteryn:npc.guard_captain_hartford"
+                    | "oteryn:npc.kesar_the_younger_day"
+                    | "oteryn:npc.lieutenant_harlan"
+                    | "oteryn:npc.second_in_command_demeron"
+            );
+            let native_quest = stag || native_npcs.contains(&reference.key.as_str());
+            if !caller_scope::allows(&reference.key, native_quest) {
+                continue;
+            }
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,
@@ -349,9 +368,24 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
-            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if reference.key
-                == "oteryn:npc.grizzly_adams"
-            {
+            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
+                && matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.strange_pipe"
+                        | "oteryn:npc.strange_pipe_1"
+                        | "oteryn:npc.strange_pipe_2"
+                        | "oteryn:npc.strange_pipe_3"
+                ) {
+                // Crystal201189f: each pipe's unconditional storage callback
+                // inherits these NpcHandler messages; it declares no override.
+                // The native dispatcher still commits the access write first.
+                (
+                    "Greetings, |PLAYERNAME|.".into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.grizzly_adams" {
                 // W15c: the existing NPC owner opens the conversation; confirmed task
                 // choices and their stateful replies belong to native Grizzly dispatch.
                 (
@@ -553,6 +587,25 @@ impl NpcTalkBook {
                     .cloned()
                     .unwrap_or_else(|| "Farewell.".into());
                 (greeting, farewell, None, Vec::new())
+            } else if native_quest && npc.dialogue.is_some() {
+                // The closed native caller supplies conditional replies and writes
+                // after this existing conversation owner admits the speaker.
+                let Some(dialogue) = &npc.bank_dialogue else {
+                    continue;
+                };
+                let Some(greeting) = dialogue.greet.first() else {
+                    continue;
+                };
+                (
+                    greeting.clone(),
+                    dialogue
+                        .farewell
+                        .first()
+                        .cloned()
+                        .unwrap_or_else(|| "Farewell.".into()),
+                    None,
+                    Vec::new(),
+                )
             } else {
                 continue;
             };
@@ -579,8 +632,8 @@ impl NpcTalkBook {
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
                         || dark_messages.is_some()
                         || isle_messages.is_some()
-                        || reward_callback_npc(&reference.key)
-                        || native_npcs.contains(&reference.key.as_str()),
+                        || native_quest
+                        || reward_callback_npc(&reference.key),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {
@@ -1620,3 +1673,7 @@ mod s10_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "npc_talk/questpc8_source_tests.rs"]
+mod questpc8_source_tests;

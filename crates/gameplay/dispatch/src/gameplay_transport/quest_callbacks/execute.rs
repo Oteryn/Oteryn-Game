@@ -20,6 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         slot: Option<&mut RevisionSlot>,
         observed_world: Option<&ObservedWorldCallback>,
         optional_pvp: Option<bool>,
+        read_only_gate: Option<&ReadOnlyGate>,
     ) -> UseDisposition {
         if !runtime
             .player_control_facts(actor, session)
@@ -85,7 +86,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
             Ok(projection) => projection,
-            Err(result) => return result,
+            Err(result) => {
+                #[cfg(test)]
+                if callback.effects.scene.is_some() {
+                    eprintln!("QUEST_SCENE_REFUSED projection close={close} result={result:?}");
+                }
+                return result;
+            }
         };
         if let Some(appearance) = callback
             .item_on_target
@@ -195,6 +202,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     UseDisposition::Exhausted
                 };
             }
+            // Crystal giant_smithhammer/lever.lua:7-12 changes BOTH objects
+            // only for open+rock-present or closed+rock-absent. A mismatched
+            // pair is a handled no-op, including the lever's revision.
+            if callback.key == "oteryn:quest-callback/giant-smithhammer"
+                && map.facts.base_hidden(*passage) != close
+            {
+                return UseDisposition::Committed;
+            }
             if let Some(appearance) = passage_definition.replacement {
                 let Some(facts) = map.facts.quest_callback_replacement(
                     *passage,
@@ -216,6 +231,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
+        let scene_moves =
+            match self.prepare_quest_scene_moves(runtime, states, map, callback, close) {
+                Ok(proof) => proof,
+                Err(disposition) => {
+                    #[cfg(test)]
+                    eprintln!("QUEST_SCENE_REFUSED prepare close={close} result={disposition:?}");
+                    return disposition;
+                }
+            };
+        let scene_observations = scene_moves
+            .as_ref()
+            .map(|proof| proof.observations())
+            .unwrap_or_default();
         use crate::foundation::MovementFacing;
         let facing = match callback.facing {
             None => None,
@@ -535,7 +563,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
-        let durable = !callback.storage.is_empty() && !(close && callback.opening_only);
+        if callback.is_read_only()
+            && !read_only_gate.is_some_and(|gate| {
+                gate.actor == actor
+                    && gate.session == session
+                    && gate.callback == callback.key
+                    && runtime.read_actor_position(actor) == Ok(gate.expected)
+            })
+        {
+            return UseDisposition::Rejected;
+        }
+        let durable = !callback.storage.is_empty()
+            && !callback.is_read_only()
+            && !(close && callback.opening_only);
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
@@ -575,49 +615,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 return UseDisposition::Rejected;
             };
-            let reward_weights = self
-                .active_generation
-                .and_then(|g| g.native_gameplay())
-                .map(|native| {
-                    crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
-                        .with_wheel(self.premium_coordinator)
-                });
-            let reward_admission = if callback.effects.item_reward.is_some() {
-                self.active_generation
-                    .and_then(|g| g.native_gameplay())
-                    .zip(reward_weights.as_ref())
-                    .map(|(native, weights)| {
-                        crate::durability::reward_claim_mint::QuestRewardAdmission {
-                            actor_conditions: None,
-                            carried_use: None,
-
-                            native,
-                            weights,
-                            fee_payment: None,
-                        }
-                    })
-            } else {
-                None
+            let request = QuestTransitionRequest {
+                transition_key: callback.key.clone(),
+                cause,
             };
-            let outcome = slot
-                .commit_world_callback_with_items(
+            let outcome = if callback.effects.item_reward.is_some() || callback.premium_required {
+                let Some(native) = self
+                    .active_generation
+                    .and_then(|generation| generation.native_gameplay())
+                else {
+                    return UseDisposition::Rejected;
+                };
+                let weights = super::super::item_ref_admission::NativeItemWeights(native)
+                    .with_wheel(self.premium_coordinator);
+                let premium =
+                    super::super::spell_premium_coordinator::QuestPremium(self.premium_coordinator);
+                slot.commit_world_reward(
                     self.root,
                     self.character,
                     self.holder,
                     fence,
-                    QuestTransitionRequest {
-                        transition_key: callback.key.clone(),
-                        cause,
+                    request,
+                    std::sync::Arc::clone(catalogue),
+                    permit,
+                    context,
+                    crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        native,
+                        weights: &weights,
+                        fee_payment: None,
+                        actor_conditions: None,
+                        carried_use: None,
                     },
+                    &premium,
+                )
+                .await
+            } else {
+                slot.commit_world_callback(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
                     std::sync::Arc::clone(catalogue),
                     permit,
                     context,
                     self.active_generation
                         .and_then(|generation| generation.native_gameplay()),
-                    reward_admission,
                 )
-                .await;
+                .await
+            };
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
+            if callback.effects.item_reward.is_some()
+                && matches!(
+                    &outcome,
+                    Ok(QuestTransitionOutcome::Committed(_)
+                        | QuestTransitionOutcome::AlreadyCommitted(_))
+                )
+            {
+                self.states.loop_ground.invalidate();
+            }
+
             match outcome {
                 Ok(
                     QuestTransitionOutcome::Committed(ref committed)
@@ -651,6 +708,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Rejected;
                 }
                 Ok(_) | Err(_) => {
+                    if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
+                        objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
+                    {
+                        self.schedule_quest_refresh(session);
+                    }
                     if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                         pending.remove(&session);
                     }
@@ -678,15 +740,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        if !map.facts.apply_quest_callback(
-            key,
-            expected_revision,
-            after,
-            &passages,
-            &replacements,
-            close,
-            projection.as_ref(),
-        ) {
+        let apply_scene = || {
+            map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &passages,
+                &replacements,
+                close,
+                projection.as_ref(),
+            )
+        };
+        if let Some(proof) = scene_moves {
+            let committed = match runtime.commit_source_scene_relocations(proof, apply_scene) {
+                Ok(committed) => committed,
+                Err(error) => {
+                    #[cfg(test)]
+                    eprintln!("QUEST_SCENE_REFUSED commit close={close} error={error:?}");
+                    let _ = error;
+                    return UseDisposition::Rejected;
+                }
+            };
+            let now = self.owner_now().get();
+            for ((moved_actor, moved_session, before), after) in
+                scene_observations.into_iter().zip(committed)
+            {
+                if let Some(moved_session) = moved_session {
+                    states.stage_special_movement_step(
+                        runtime,
+                        map,
+                        moved_actor,
+                        moved_session,
+                        now,
+                        Some(before.position()),
+                        after.position(),
+                        optional_pvp,
+                    );
+                    states.stage_underwater_step(
+                        runtime,
+                        moved_actor,
+                        moved_session,
+                        now,
+                        underwater(map, before.position()),
+                        underwater(map, after.position()),
+                    );
+                }
+            }
+        } else if !apply_scene() {
             return UseDisposition::Rejected;
         }
         if matches!(

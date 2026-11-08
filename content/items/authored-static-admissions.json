@@ -1,0 +1,65 @@
+{
+  "schema": "OTERYN_AUTHORED_STATIC_ITEM_ADMISSIONS/v1",
+  "records": [
+    {
+      "binding": {
+        "source_key": "oteryn:source.oteryn_authored",
+        "source_revision": "729c89f8143bffbbda795f54f89c866d78eefb57cf7473e9f5a6fa6bfe1f93a9",
+        "identity_namespace": "oteryn/static_item_constructor",
+        "external_id": "50335",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i50335",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      },
+      "profile_sha256": "7c215c72302ac15df5fc3ccaf4adcdbd0652f1098bf3816fcd5aa6dc218a2166"
+    },
+    {
+      "binding": {
+        "source_key": "oteryn:source.oteryn_authored",
+        "source_revision": "729c89f8143bffbbda795f54f89c866d78eefb57cf7473e9f5a6fa6bfe1f93a9",
+        "identity_namespace": "oteryn/static_item_constructor",
+        "external_id": "50336",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i50336",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      },
+      "profile_sha256": "354f7b3994752f444da0b72e8c271527cbebba21d74b2261c343f658c1732247"
+    },
+    {
+      "binding": {
+        "source_key": "oteryn:source.oteryn_authored",
+        "source_revision": "729c89f8143bffbbda795f54f89c866d78eefb57cf7473e9f5a6fa6bfe1f93a9",
+        "identity_namespace": "oteryn/static_item_constructor",
+        "external_id": "50337",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i50337",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      },
+      "profile_sha256": "0457cbcd133990a618fd9b7bd96b69ec7a38e6bb63f88ee8ad947a4e96953779"
+    },
+    {
+      "binding": {
+        "source_key": "oteryn:source.oteryn_authored",
+        "source_revision": "729c89f8143bffbbda795f54f89c866d78eefb57cf7473e9f5a6fa6bfe1f93a9",
+        "identity_namespace": "oteryn/static_item_constructor",
+        "external_id": "50338",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i50338",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      },
+      "profile_sha256": "9a440476f8c1e1d912321292aa5ffe0373df14576f852497cd46b1520974ee4e"
+    }
+  ]
+}

@@ -81,12 +81,21 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
             "path": Path(os.path.relpath(path, "content")).as_posix(),
             "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
         }
-    cosmetics = "content/cosmetics/outfits/native-cosmetics.json"
-    if (root / cosmetics).is_file():
+    source = root / "content/cosmetics/outfits/authoring.json"
+    output = "content/cosmetics/outfits/native-cosmetics.json"
+    if source.exists() or (root / output).exists() or "cosmetics" in manifest:
+        tool = root / "tools/content-schema/cosmetics-authoring/cosmetics_authoring.py"
+        spec = importlib.util.spec_from_file_location("canonical_cosmetics_registration", tool)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        qualified = module.materialized_outputs(root)
+        if output not in qualified:
+            raise ValueError("COSMETICS_PIN_REQUIRES_CANONICAL_AUTHORING")
+        generated.update(qualified)
         manifest["schema"] = "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6"
         manifest["cosmetics"] = {
-            "path": "cosmetics/outfits/native-cosmetics.json",
-            "sha256": hashlib.sha256((root / cosmetics).read_bytes()).hexdigest(),
+            "path": Path(os.path.relpath(output, "content")).as_posix(),
+            "sha256": hashlib.sha256(qualified[output]).hexdigest(),
         }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
@@ -328,6 +337,10 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     grizzly_debris_profiles.admit(
         root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
         NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import authored_static_item_constructors
+    authored_static_item_constructors.admit(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import loop_training_profiles
     loop_training_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import timed_item_profiles
@@ -374,6 +387,10 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     marriage_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import monk_reward_profiles
     monk_reward_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import qengine_reward_item_profiles
+    qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import quest_finish_newhaven_items
+    quest_finish_newhaven_items.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import podium_item_profiles
     podium_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quick_loot_item_profiles
@@ -422,6 +439,12 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     qnpcfx_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import qready1_reward_profiles
     qready1_reward_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import quest_corpse_profiles
+    quest_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import authored_npc_item_profiles
+    authored_npc_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import quest_loot_profiles
+    quest_loot_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import build_questpc4_stag_item_profiles
     build_questpc4_stag_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import itemhold_q

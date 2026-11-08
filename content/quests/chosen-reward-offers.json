@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 71,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Bring me a rare deer trophy. May I take it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "scarab cheese"
+      ],
+      "topic": 0,
+      "next_topic": 72,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you like to buy scarab cheese for 100 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.briasol",
+      "keywords": [
+        "fine vase"
+      ],
+      "topic": 0,
+      "next_topic": 73,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you buy this fine vase for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "crimson sword"
+      ],
+      "topic": 0,
+      "next_topic": 75,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 9,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I can make the crimson sword for three iron ores and 250 gold. Agreed?"
+      ]
+    }
+  ]
+}

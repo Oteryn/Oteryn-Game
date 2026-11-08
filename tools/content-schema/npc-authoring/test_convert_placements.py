@@ -56,6 +56,13 @@ class ConvertPlacementsTest(unittest.TestCase):
             self.assertEqual(actual[key]['cell'], cell)
             self.assertTrue(any(p['origin'] == 'crystal' for p in actual[key]['provenance']))
 
+    def test_viola_uses_the_newhaven_magic_shop_source_cell(self):
+        viola = next(r['declaration'] for r in self.records
+                     if r['declaration']['npc'] == 'oteryn:npc.viola')
+        self.assertEqual(viola['cell'], {'x': 32571, 'y': 32507, 'floor': 7})
+        self.assertEqual(viola['direction'], 'south')
+        self.assertTrue(any(row['origin'] == 'crystal' for row in viola['provenance']))
+
     def test_records_sorted_unique_and_keyed_by_cell(self):
         keys = [r["declaration"]["identity"]["key"] for r in self.records]
         self.assertEqual(keys, sorted(set(keys)))

@@ -33,16 +33,15 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertEqual(len(looks['item_appearances']),6)
     def test_registration_replays_all_current_outputs(self):
         actual=registration.outputs(ROOT)
-        # PREY-DIFF registers the generated tier and slot-value tables below;
-        # C1 registers the Newhaven starting-loadout item profiles; SRX-1
-        # registers the pinned item-profile supplement. QENGINE2 adds its
-        # source-qualified reward Item proof alongside those 42 outputs.
-        # WORLDCHG adds the three admitted source-loot closures as one output.
-        self.assertEqual(len(actual),44)
-        self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual.keys())
+        # Preserve canonical cosmetics and the first-party constructor packet
+        # alongside main's independently pinned World loot closure output.
+        self.assertEqual(len(actual),46)
+        self.assertIn('content/items/authored-static-admissions.json',actual)
+        self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual)
         self.assertIn('tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
+        self.assertIn('content/cosmetics/outfits/native-cosmetics.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)
         self.assertIn('content/creatures/prey-slot-values.json',actual)
         self.assertIn('content/items/readable-profiles.json',actual)
