@@ -103,6 +103,30 @@ mod e2e_s15b;
 #[cfg(test)]
 #[path = "tests/e2e_s16a.rs"]
 mod e2e_s16a;
+#[cfg(test)]
+#[path = "tests/e2e_w15b.rs"]
+mod e2e_w15b;
+#[cfg(test)]
+#[path = "tests/e2e_w16.rs"]
+mod e2e_w16;
+#[cfg(test)]
+#[path = "tests/e2e_w19a.rs"]
+mod e2e_w19a;
+#[cfg(test)]
+#[path = "tests/e2e_w20a.rs"]
+mod e2e_w20a;
+#[cfg(test)]
+#[path = "tests/e2e_w20b.rs"]
+mod e2e_w20b;
+#[cfg(test)]
+#[path = "tests/e2e_w22a.rs"]
+mod e2e_w22a;
+#[cfg(test)]
+#[path = "tests/e2e_w23.rs"]
+mod e2e_w23;
+#[cfg(test)]
+#[path = "tests/e2e_w24.rs"]
+mod e2e_w24;
 #[path = "tests/e2e_w01a.rs"]
 mod e2e_w01a;
 #[path = "tests/e2e_w01b.rs"]
