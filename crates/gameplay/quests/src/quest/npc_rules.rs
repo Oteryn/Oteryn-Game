@@ -3,6 +3,7 @@
 
 mod admission;
 mod bounds;
+mod calendar;
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
@@ -146,6 +147,14 @@ pub enum NpcRuleGuard {
     },
     CalendarMonth {
         value: u8,
+    },
+    /// Inclusive, annually repeating UTC dates; the durable owner supplies epoch time.
+    CalendarWindow {
+        start_month: u8,
+        start_day: u8,
+        end_month: u8,
+        end_day: u8,
+        within: bool,
     },
     Vocation {
         value: String,
@@ -445,6 +454,8 @@ impl NpcRuleCatalog {
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
                         || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.first-dragon-calendar")
+                        || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
                         || matches!(
                             p.document.quest.as_str(),
@@ -683,6 +694,9 @@ pub fn legacy_defaults<'a>(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod calendar_window_tests;
 
 #[cfg(test)]
 mod draconia_source_tests {
