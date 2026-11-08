@@ -474,7 +474,8 @@
   "feature": "Help: settings import/export/backup/reset/defaults",
   "status": "PARTIAL",
   "gap": "Jest zapis i walidacja preferencji; brak UI import/export, backup i pełnego reset/defaults.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/store.rs:64 + active_settings_use_transfer_size_limit; existing settings_transfer_backup_and_defaults_survive_restart covers transfer/defaults. Remaining: workspace architecture validation blocked by unowned 0199-cyclopedia-character/native.rs (648 lines)."
  },
  {
   "id": "T074",
