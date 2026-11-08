@@ -24,4 +24,15 @@ class GnomusRules(unittest.TestCase):
         self.assertEqual({e['kind'] for r in doc['rules'] for e in r['effects']},
                          {'set', 'set_topic'})
         self.assertFalse(any(r.get('continue_matching', False) for r in doc['rules']))
-        self.assertTrue(all(set(source.UNOWNED) <= set(r['exclude_keywords']) for r in doc['rules']))
+        source_rules = [r for r in doc['rules'] if '/unsupported-task-' not in r['key']]
+        self.assertEqual(len(source_rules), 7)
+        self.assertTrue(all(set(source.UNOWNED) <= set(r['exclude_keywords']) for r in source_rules))
+
+    def test_unowned_task_clears_confirmation_without_progress_or_reward(self):
+        doc = json.loads(source.outputs(ROOT)[source.OUTPUT])
+        boundaries = [r for r in doc['rules'] if '/unsupported-task-' in r['key']]
+        self.assertEqual({r['keywords'][0] for r in boundaries}, set(source.UNOWNED))
+        for rule in boundaries:
+            self.assertEqual(rule['effects'], [dict(kind='set_topic', value=0)])
+            self.assertEqual(rule['reply'], [])
+            self.assertEqual(rule['exclude_keywords'], [])

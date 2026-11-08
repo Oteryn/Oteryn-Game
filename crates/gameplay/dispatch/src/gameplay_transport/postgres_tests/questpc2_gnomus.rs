@@ -48,17 +48,31 @@ pub(super) async fn exercise(
         .await?,
         0
     );
-    talk(owner, admitted, npc, 34003, "bye").await?;
-    talk(owner, admitted, npc, 34004, "hi").await?;
-    super::questpc2_oldrak::unoffered_yes(owner, admitted, npc, 34005).await?;
+    // An unimplemented task must never leave the previous ordnance offer usable.
+    talk(owner, admitted, npc, 34003, "measurements").await?;
+    talk(owner, admitted, npc, 34004, "yes").await?;
+    assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            &format!("{PREFIX}gnomes/ordnance")
+        )
+        .await?,
+        0,
+        "unsupported measurements must invalidate the old ordnance confirmation"
+    );
+    talk(owner, admitted, npc, 34005, "bye").await?;
+    talk(owner, admitted, npc, 34006, "hi").await?;
+    super::questpc2_oldrak::unoffered_yes(owner, admitted, npc, 34007).await?;
     assert_eq!(
         progress(owner, admitted, authority, &format!("{PREFIX}questline")).await?,
         0
     );
-    let offer = talk(owner, admitted, npc, 34006, "ordnance").await?;
+    let offer = talk(owner, admitted, npc, 34008, "ordnance").await?;
     assert_eq!(offer.len(), 5);
     assert!(offer[2].contains("reinforcements arrive at the crystal teleporter"));
-    let accepted = talk(owner, admitted, npc, 34007, "yes").await?;
+    let accepted = talk(owner, admitted, npc, 34009, "yes").await?;
     assert_eq!(accepted.len(), 2);
     assert!(accepted[0].starts_with("Excellent, just follow the path"));
     assert_eq!(
@@ -87,14 +101,14 @@ pub(super) async fn exercise(
             "an admission is not an earned escort or reward"
         );
     }
-    super::questpc2_oldrak::unoffered_yes(owner, admitted, npc, 34008).await?;
-    let pending = talk(owner, admitted, npc, 34009, "ordnance").await?;
+    super::questpc2_oldrak::unoffered_yes(owner, admitted, npc, 34010).await?;
+    let pending = talk(owner, admitted, npc, 34011, "ordnance").await?;
     assert!(
         pending
             .iter()
             .any(|s| s == "Come back when you have finished your job.")
     );
-    super::questpc2_oldrak::unoffered_yes(owner, admitted, npc, 34010).await?;
+    super::questpc2_oldrak::unoffered_yes(owner, admitted, npc, 34012).await?;
     let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
         .fetch_one(&h.pool)
         .await?;

@@ -60,6 +60,12 @@ def outputs(root):
         # The preceding ordnance if must consume a compound "ordnance yes".
         entry['exclude_keywords'].append('ordnance')
         rules.append(entry)
+    # Lane admission policy, not a claimed donor quest effect: another task's
+    # unsupported interaction cannot retain authority to confirm ordnance later.
+    for index, word in enumerate(UNOWNED):
+        boundary = rule(f'unsupported-task-{index}', word, [], [topic(0)], [], '63-307')
+        boundary['exclude_keywords'] = []
+        rules.append(boundary)
     state = json.loads((root / 'content/quests/missions/quest-state.json').read_bytes())
     wanted = {PREFIX + key for key in ('questline', mission, cooldown,
               'gnomes/gnomes_count', 'gnomes/crawlers_count')}

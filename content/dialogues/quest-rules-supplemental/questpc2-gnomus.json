@@ -391,6 +391,153 @@
       "topics": [
         22
       ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-0",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-1",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "charting"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-2",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "suspicious device"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-3",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "status"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-4",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "gnomes"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-5",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "dwarves"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-6",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "scouts"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
     }
   ],
   "source_files": [

@@ -121,6 +121,8 @@ fn scenario_case(
                 | "questpc2-albinius-four-tomes"
                 | "questpc2-albinius-five-tomes"
                 | "questpc2-albinius-combined"
+                | "questpc2-albinius-portals-exact"
+                | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
@@ -954,6 +956,8 @@ fn scenario_case(
             .await?;
         } else if name == "questpc2-hero-pipes" {
             super::super::questpc2_hero_rathleton::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name.starts_with("questpc2-albinius-portals-") {
+            super::super::questpc2_albinius_portals::exercise(&mut owner, &mut admitted, &h, &authority, name).await?;
         } else if name.starts_with("questpc2-albinius-") {
             super::super::questpc2_albinius::exercise(&mut owner, &mut admitted, &h, &authority, name).await?;
         } else if name == "questpc2-gnomus-ordnance" {

@@ -1760,7 +1760,7 @@
       "zero_test_results_accepted": false
     }
   },
-  "current_batch": "gnomus-ordnance-admission-green",
+  "current_batch": "albinius-four-portals-and-gnomus-confirmation-boundary",
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
@@ -1794,7 +1794,8 @@
     "BATCH-oldrak-npc-green-2026-11-08.json",
     "BATCH-main-6f-integration-checkpoint-2026-11-08.json",
     "BATCH-main-6f-postgres-green-2026-11-08.json",
-    "BATCH-henricus-green-2026-11-08.json"
+    "BATCH-henricus-green-2026-11-08.json",
+    "BATCH-albinius-portals-gnomus-boundary-2026-11-08.json"
   ],
   "next_batch": "Continue owned scope using existing tested owners; do not build new shared engine features. Requests remain recorded; no whole-quest qualification beyond the prior three.",
   "remote_publications_reused": {
@@ -2210,13 +2211,33 @@
     "unit_and_pg": "pending current merge build; prior pushed receipts remain valid for prior source only"
   },
   "current_validation": {
-    "source_head": "working tree after3886f31ac",
-    "latest_main": "3209d3d61 included",
-    "own_pg": "1/1PASS on180006;60.63736262s; RED48.837227127s",
-    "units": "quest324/324PASS32.51s; authorer2/2PASS0.928s",
-    "workspace_all_targets": "PASS5m55s",
-    "clippy": "quests+dispatch alltargets/allfeatures -Dwarnings PASS2m31s",
-    "fmt_generation_pins_duplicates": "PASS: final fmt, duplicate migration check, authoring lists/equipment/audit/qualification and world pins; world digest unchanged2f5895585a"
+    "source_base": "5dd600a26f00530797109358ea7bbbdcfdcca333",
+    "latest_main": "3209d3d61 included; fetch again before push",
+    "postgres_version_num": 180006,
+    "own_pg": {
+      "questpc2-albinius-five-tomes": 56.813418026,
+      "questpc2-albinius-combined": 58.389316982,
+      "questpc2-albinius-four-tomes": 50.097247512,
+      "questpc2-albinius-portals-combined": 50.313772801,
+      "questpc2-albinius-portals-exact": 52.269847124,
+      "questpc2-gnomus-ordnance": 50.80569068
+    },
+    "quest_units": {
+      "passed": 324,
+      "seconds": 24.86
+    },
+    "authorer_units": {
+      "albinius": 3,
+      "gnomus": 3
+    },
+    "workspace_all_targets": "PASS2m26s",
+    "clippy": "quests+dispatch alltargets/allfeatures -Dwarnings PASS2m30s",
+    "fmt_generation_pins_duplicates": "PASS; refreshed main CI-only merge follows",
+    "previous_dispatch_units": {
+      "passed": 1613,
+      "seconds": 995.337,
+      "context": "Published initial Gnomus content before portal/confirmation extension; production content frozen during run."
+    }
   },
   "engine_requests": [
     {
@@ -2348,6 +2369,26 @@
       "where": "crates/gameplay/quests/src/quest/npc_rules.rs; crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs",
       "proof": "Stricken Soul Crystal9f5a72c data-global/npc/stricken_soul.lua:63-94 SHA256 506efb1fc93172d5a9fef91360686e1cb080d6830897d44e5cb8dfd86ea8b39c. Source requires player name after two yes confirmations before earning HauntedHouse questline1. Native rule input has no character-name field or dynamic keyword.",
       "status": "REQUESTED_FROM_QENGINE2"
+    },
+    {
+      "feature": "atomic source NPC mission admission writing nine or ten distinct quest tracks",
+      "quests": [
+        "Dangerous Depths Quest"
+      ],
+      "where": "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:62-77",
+      "proof": "Gnomus9f5a72c SHA04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1: measurements105-116 writes9 including questline; charting224-236 writes10. State::set_track inserts every written key into changed even when value unchanged; MAX_NPC_TRACK_CHANGES=8. Father11-track exception must remain atomic and unchanged.",
+      "status": "REQUESTED_FROM_QENGINE2",
+      "checked_qengine2": "64b3597c1"
+    },
+    {
+      "feature": "atomic source NPC plain-item rewards with timestamp-relative cooldown writes",
+      "quests": [
+        "Dangerous Depths Quest"
+      ],
+      "where": "crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs:35-65",
+      "proof": "Gnomus same pinned source: reports146-162,87-97,204-216 combine GiveItem, AddPoints and SetNowPlus(72000). item_exchange_keys rejects SetNowPlus although the storage owner supports it; do not split reward/cooldown transactions.",
+      "status": "REQUESTED_FROM_QENGINE2",
+      "checked_qengine2": "64b3597c1"
     }
   ],
   "active_owned_work": {
@@ -2381,9 +2422,9 @@
       "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "3886f31acd21f3a2ee5ca26530109bbcc5911f81",
+  "last_pushed_sha": "5dd600a26f00530797109358ea7bbbdcfdcca333",
   "prepush_pending_tests": [
-    "Dispatch non-PostgreSQL unit selection running with --no-fail-fast; no result claimed."
+    "Fresh dispatch non-PG unit selection for portal/confirmation content is queued/running with --no-fail-fast; not claimed passed."
   ],
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",
@@ -2436,7 +2477,25 @@
       48.162816023,
       46.231552174
     ],
-    "post_main_proof": "BATCH-albinius-main3209-green-2026-11-08.json"
+    "post_main_proof": "BATCH-albinius-main3209-green-2026-11-08.json",
+    "follow_on": {
+      "state": "QUALIFIED_FOUR_OFFERING_SLICE; whole quest IN_PROGRESS",
+      "scope": "Holy/energy/earth/death fifty-item offerings only; no ice/rune/boss or wholequest qualification",
+      "source": "data-global/npc/albinius.lua:194-280",
+      "red_pg_version": 180006,
+      "red_seconds": [
+        113.939089504,
+        117.430764882
+      ],
+      "red_error": "missing source prerequisite refusal:[]",
+      "runtime_owner": "Existing plain-item and quest transaction; no new shared feature",
+      "green_pg_version": 180006,
+      "green_seconds": {
+        "questpc2-albinius-portals-combined": 50.313772801,
+        "questpc2-albinius-portals-exact": 52.269847124
+      },
+      "qualification_boundary": "Four exact-item payments/access flags only; physical portal traversal, ice prerequisite, rune, bosses and whole quest remain unqualified."
+    }
   },
   "active_gnomus": {
     "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
@@ -2454,6 +2513,9 @@
       "seconds": 32.51
     },
     "proof": "BATCH-gnomus-ordnance-2026-11-08.json",
-    "checked_qengine2": "64b3597c1; validation/main integration only, no newly required NPC capability"
+    "checked_qengine2": "64b3597c1; validation/main integration only, no newly required NPC capability",
+    "pending_regression": "FIXED: explicit partial-program confirmation boundary clears unimplemented task keywords; no donor setTopic0 claim.",
+    "confirmation_regression_red_seconds": 67.749949589,
+    "confirmation_regression_green_seconds": 50.80569068
   }
 }

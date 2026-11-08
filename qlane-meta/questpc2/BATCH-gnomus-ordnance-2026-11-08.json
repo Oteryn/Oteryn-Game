@@ -34,7 +34,11 @@
       "passed": 2,
       "seconds": 0.928
     },
-    "dispatch": "RUNNING; not claimed"
+    "dispatch": {
+      "passed": 1613,
+      "seconds": 995.337,
+      "context": "Initial published Gnomus content, before four-portal and confirmation-boundary extension."
+    }
   },
   "workspace_check": "PASS5m55s",
   "logs": {
@@ -45,5 +49,6 @@
     "/tmp/questpc2b-gnomus-workspace-check.log": "70ffa6c5080b490e9a42fd65d24514e0cde6dceb8087867a456a3c89b4698a9d"
   },
   "clippy": "quests+dispatch alltargets/allfeatures -Dwarnings PASS2m31s",
-  "fmt_generation_pins_duplicates": "PASS; world digest unchanged2f5895585ad48276acbad63bd32c2f65f020448dea7df51e76b47cd76d9ae21d"
+  "fmt_generation_pins_duplicates": "PASS; world digest unchanged2f5895585ad48276acbad63bd32c2f65f020448dea7df51e76b47cd76d9ae21d",
+  "workspace_final_repeat": "PASS6m24s including build queue"
 }

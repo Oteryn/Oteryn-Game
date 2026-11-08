@@ -1109,3 +1109,37 @@ seed. Initial counter defaults are0, so that case does not prove resetting an
 earned nonzero escort count; the data test independently requires both source
 reset effects. No escort events, points, rewards, or warzone completion are
 qualified. No new generic engine or transaction limit was introduced.
+
+## Follow-on source checks (2026-11-08)
+
+Gnomus measurements needs nine written tracks, charting ten (including conditional
+questline). Existing set_track counts even unchanged writes against eight; do not
+split acceptance or extend the Father-specific exception. Requested QENGINE2.
+Task reports also combine item reward, added points and now+72000 cooldown; the
+plain-item planner excludes SetNowPlus. Requested atomic support, no split writes.
+QENGINE2 refreshed64b3597c1 contains validation/main integration, not these APIs.
+
+Mr Brandon retained crystal9f5a72c data-global/npc/mr_brandon.lua:1-62
+SHA0ff104958d5027d2f0299e903ada4e3de9385105e45c5cac7ba6802d9a6b3259
+is configuration only with no ring quest dialogue. Do not invent donor testimony
+for Twenty Miles Beneath the Sea from this file. No quest work started there.
+
+Next supported work: Albinius holy/energy/earth/death offerings at retained
+data-global/npc/albinius.lua:194-280 (same pinned SHA as initial contribution).
+All four fifty-count offering types already materialize as stack-capable Items.
+Ice remains excluded because its Formorgar prerequisite belongs to another quest.
+Source portal no retains the topic; combined keyword+yes and multiple portal
+keywords execute independent if blocks. Preserve these rather than invent cancel
+semantics. RED PostgreSQL cases added before runtime program extension.
+
+Partial-program confirmation policy: unimplemented Gnomus task keywords clear
+its local confirmation topic without replies, progress, inventory or reward.
+This is an explicit Oteryn admission boundary, not a claimed literal donor
+setTopic(0). Otherwise measurements after an ordnance offer could leave topic22
+and allow the next yes to start the wrong task. Native PG regression is authored
+before applying this runtime change. Ordinary unrelated words are unchanged.
+
+Albinius combined four-portal confirmation immediately after tome donation must
+also retain the donor's earlier already-donated reply (topic1 survives success):
+nine replies total, not eight. The source independent if ordering explains this;
+no test expectation is derived from an invented cancel/reset transition.

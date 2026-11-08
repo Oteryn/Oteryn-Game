@@ -1,4 +1,4 @@
-"""Source-pinned Albinius temple contribution; portal and rune rites are separate."""
+"""Pinned Albinius contribution and four portal offerings; no ice or rune rite."""
 import hashlib
 import json
 from pathlib import Path
@@ -13,8 +13,13 @@ PROGRAM = 'oteryn:quest-npc-program.questpc2-albinius-tomes'
 TRACK = 'oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes'
 ITEM = 'oteryn:item.tibia.i23986'
 OUTPUT = 'content/dialogues/quest-rules-supplemental/questpc2-albinius.json'
-UNOWNED = ('buy', 'astral shaper rune', 'ice portal', 'holy portal', 'energy portal',
-           'earth portal', 'death portal')
+UNOWNED = ('buy', 'astral shaper rune', 'ice portal')
+PORTALS = (
+    ('holy', 'access_golden', 18929, 3, 197),
+    ('energy', 'access_violet', 17462, 4, 219),
+    ('earth', 'access_earth', 10296, 5, 241),
+    ('death', 'access_death', 11481, 6, 263),
+)
 
 
 def outputs(root):
@@ -53,11 +58,38 @@ def outputs(root):
         rule('tomes', 'tomes', [135], [topic(7)], [guard('lt', 1)], '134-137'),
     ]
     rules[5]['exclude_keywords'].append('yes')
+    for name, suffix, raw_item, number, line in PORTALS:
+        track = TRACK.rsplit('/', 1)[0] + '/' + suffix
+        item = f'oteryn:item.tibia.i{raw_item}'
+        storage = lambda op: dict(kind='storage', track=track, op=op, value=1)
+        payment = lambda op: dict(kind='item', item=item, count=50, op=op)
+        span = f'{line - 3}-{line + 17}'
+        rules.extend([
+            rule(name + '-offer', name + ' portal', [line], [topic(number)],
+                 [guard('eq', 1)], span),
+            rule(name + '-prerequisite', name + ' portal', [line + 3], [],
+                 [guard('ne', 1)], span),
+            # Failure alternatives precede success so the committed access write
+            # cannot make an else branch match later in this same source if.
+            rule(name + '-already', 'yes', [line + 13], [],
+                 [storage('ge')], span, [number]),
+            rule(name + '-missing', 'yes', [line + 13], [],
+                 [storage('lt'), payment('lt')], span, [number]),
+            rule(name + '-accept', 'yes', [line + 10],
+                 [dict(kind='take_item', item=item, count=50, optional=False),
+                  dict(kind='set', track=track, value=1)],
+                 [storage('lt'), payment('ge')], span, [number]),
+            rule(name + '-decline', 'no', [line + 16], [], [], span, [number]),
+        ])
+        # Source elseif yes takes priority; no does not reset the portal topic.
+        rules[-1]['exclude_keywords'].append('yes')
+    wanted = {TRACK} | {TRACK.rsplit('/', 1)[0] + '/' + row[1] for row in PORTALS}
+    track_spans = {TRACK: '116-124', **{TRACK.rsplit('/', 1)[0] + '/' + row[1]: f'{row[4] - 3}-{row[4] + 17}' for row in PORTALS}}
     state = json.loads((root / 'content/quests/missions/quest-state.json').read_bytes())
     tracks = [{**{k: t[k] for k in ('key', 'quest', 'initial', 'min', 'max')},
-               'sources': [cite('116-124')]} for q in state['quests'] if q['quest'] == QUEST
-              for t in q['tracks'] if t['key'] == TRACK]
-    if len(tracks) != 1:
+               'sources': [cite(track_spans[t['key']])]} for q in state['quests'] if q['quest'] == QUEST
+              for t in q['tracks'] if t['key'] in wanted]
+    if len(tracks) != len(wanted):
         raise ValueError('ALBINIUS_TRACK_SET')
     document = dict(schema=1, program_key=PROGRAM, quest=QUEST, tracks=tracks, rules=rules,
                     source_files=[dict(path=SOURCE, sha256=SHA, revision=REV)])
