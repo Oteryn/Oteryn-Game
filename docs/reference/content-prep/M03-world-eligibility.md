@@ -18,6 +18,8 @@ closed for these callbacks. Historical receipts replay before current eligibilit
 is checked; a fresh use after Premium expires must be admitted again.
 
 The shared QM03 writer is reused; redundant questpc2 wrappers and checks are removed.
-The first production slice adds the fenced capability and PG refusal/acceptance/
-replay coverage. Quest entry bindings are a separate following slice; this file
-does not qualify either whole quest as playable.
+The QM03 entrance bindings in `qm03_world_admission.py` are reused for
+25 Years of Tibia and Pits of Inferno. Their tests verify both retained native
+map anchors and the chosen live entrance requirements. The PG cases exercise
+refusal, acceptance and historical replay. This qualifies the admission
+capability; it does not qualify either whole quest as playable.

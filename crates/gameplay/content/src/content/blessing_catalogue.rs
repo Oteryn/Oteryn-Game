@@ -89,7 +89,7 @@ impl BlessingCatalogue {
     pub fn regular_blessings(&self) -> impl Iterator<Item = &Blessing> {
         self.blessings
             .iter()
-            .filter(|blessing| blessing.price_family != PriceFamily::Twist)
+            .filter(|blessing| blessing.storage_key != "oteryn:blessing.twist_of_fate")
     }
 
     /// Price the five regular Pilgrimage blessings with Henricus' 10% surcharge.
