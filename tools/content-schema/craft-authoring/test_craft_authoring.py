@@ -14,7 +14,8 @@ class CraftAuthoringTests(unittest.TestCase):
         first = craft.outputs()
         self.assertEqual(craft.canonical_bytes(first), craft.canonical_bytes(craft.outputs()))
         self.assertEqual(craft.content_command(check=True), 0)
-        self.assertEqual(len(first[craft.CATALOGUE]["records"]), 129)
+        # The 129 existing recipes plus the source-qualified Tainted Souls transform.
+        self.assertEqual(len(first[craft.CATALOGUE]["records"]), 129 + 1)
 
     def test_source_snapshot_substitution_is_rejected(self):
         with mock.patch.object(craft, "SNAPSHOT_SHA256", "0" * 64):

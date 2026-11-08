@@ -195,8 +195,55 @@
                     "ALWAYS",
                     "SUCCESS"
                   ]
+                },
+                "capture_target_stack": {
+                  "type": "boolean"
                 }
-              }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "required": [
+                      "capture_target_stack"
+                    ],
+                    "properties": {
+                      "capture_target_stack": {
+                        "const": true
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "role": {
+                        "const": "TARGET"
+                      },
+                      "count": {
+                        "const": 1
+                      },
+                      "effect": {
+                        "enum": [
+                          "CONSUME",
+                          "TRANSFORM_TO"
+                        ]
+                      }
+                    },
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "sub_type"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "output_sub_type"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
             }
           },
           "outputs": {

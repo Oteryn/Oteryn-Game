@@ -1,6 +1,8 @@
 """Source and count-policy regressions for the M22 carried transformation."""
 import hashlib
 import json
+import copy
+import jsonschema
 from pathlib import Path
 import tempfile
 import unittest
@@ -11,6 +13,24 @@ import tainted_souls as source
 
 
 class TaintedSouls(unittest.TestCase):
+    def test_recipe_is_registered_once_in_the_production_craft_catalogue(self):
+        rows = [row for row in craft.build() if row['identity']['key'] == source.KEY]
+        self.assertEqual(len(rows), 1, 'the qualified transform must be playable, not only a source packet')
+        self.assertEqual(rows[0], source.row(craft.item, craft.operand, craft.fixed, craft.MESSAGES))
+
+    def test_schema_accepts_only_explicit_target_capture(self):
+        schema = json.loads(Path(craft.__file__).with_name('schema.json').read_bytes())
+        validator = jsonschema.Draft202012Validator(schema)
+        row = source.row(craft.item, craft.operand, craft.fixed, craft.MESSAGES)
+        validator.validate([row])
+        for field, value in [('role', 'USED'), ('role', 'INGREDIENT'), ('count', 2),
+                             ('effect', 'KEEP'), ('sub_type', 9), ('output_sub_type', 0),
+                             ('capture_target_stack', 'true')]:
+            with self.subTest(field=field, value=value):
+                invalid = copy.deepcopy(row)
+                invalid['recipe']['operands'][1][field] = value
+                self.assertFalse(validator.is_valid([invalid]))
+
     def test_source_script_and_nonstackable_output_are_independently_qualified(self):
         packet = json.loads((source.ROOT / source.PACKET).read_bytes())
         script = source.ROOT / 'docs/reference/content-prep/qmech-m22/actions_star_herb.lua'
