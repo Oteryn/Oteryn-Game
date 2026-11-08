@@ -201,12 +201,12 @@ impl ChannelRuntimeV1 {
         self.remove_native_masterless_subject(actor, expected_key, expected_content)
     }
 
-    pub(super) fn remove_native_masterless_subject(
-        &mut self,
+    pub(super) fn preflight_native_masterless_removal(
+        &self,
         actor: ExactActorRef,
         expected_key: &str,
         expected_content: [u8; 32],
-    ) -> Result<(), CarrierError> {
+    ) -> Result<usize, CarrierError> {
         if self.content_pin().server_artifact_digest() != expected_content
             || !self.matches_live_creature_identity(actor, expected_key.as_bytes())
         {
@@ -232,6 +232,16 @@ impl ChannelRuntimeV1 {
                 return Err(CarrierError::CreatureTargetMismatch);
             }
         }
+        Ok(index)
+    }
+
+    pub(super) fn remove_native_masterless_subject(
+        &mut self,
+        actor: ExactActorRef,
+        expected_key: &str,
+        expected_content: [u8; 32],
+    ) -> Result<(), CarrierError> {
+        self.preflight_native_masterless_removal(actor, expected_key, expected_content)?;
         self.carrier.remove(&self.continuity, actor.0).map(|_| ())
     }
 }
