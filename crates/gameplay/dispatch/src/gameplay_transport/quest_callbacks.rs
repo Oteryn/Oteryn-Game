@@ -423,6 +423,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(content) = self.states.quest_callbacks.fixture.get() {
             return content;
         }
+        if let Some(callbacks) = self
+            .quest_catalogue
+            .as_deref()
+            .and_then(|c| c.authored_world_callbacks())
+        {
+            return callbacks;
+        }
         callbacks()
     }
 

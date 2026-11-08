@@ -778,6 +778,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-authored-imported-talk" {
         return super::qengine_m01a_imported_talk::exercise(owner, admitted, h).await;
     }
+    if name == "qengine-rewards-m01c-collection" {
+        return super::m01c_collection::exercise(owner, admitted, h).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
     }
