@@ -19,6 +19,8 @@ const NEXT: usize = 105;
 const REFRESH: usize = 106;
 const ITEM: usize = 108;
 const STOW: usize = 109;
+const SEARCH: usize = 111;
+const SORT: usize = 112;
 #[derive(Default)]
 struct Actions(Vec<usize>);
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
@@ -139,6 +141,30 @@ fn run(
             [230, 358, 100, 28],
             WS_TABSTOP,
         );
+        let search = control(
+            hwnd,
+            "EDIT",
+            "",
+            113,
+            [340, 320, 170, 28],
+            ES_AUTOHSCROLL as u32 | WS_BORDER | WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Search",
+            SEARCH,
+            [520, 320, 70, 28],
+            WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Sort name / stock",
+            SORT,
+            [340, 358, 250, 28],
+            WS_TABSTOP,
+        );
         let item = control(
             hwnd,
             "LISTBOX",
@@ -209,6 +235,20 @@ fn run(
             }
             for id in std::mem::take(&mut actions.0) {
                 let intent = match id {
+                    SEARCH if !mailbox.stash.pending => {
+                        let mut text = [0u16; 257];
+                        let n = GetWindowTextW(search, text.as_mut_ptr(), 257);
+                        mailbox.stash.query = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                        None
+                    }
+                    SORT if !mailbox.stash.pending => {
+                        use oteryn_client_ui::stash::Sort;
+                        mailbox.stash.sort = match mailbox.stash.sort {
+                            Sort::Name => Sort::Stock,
+                            Sort::Stock => Sort::Name,
+                        };
+                        None
+                    }
                     PREVIOUS => Some(Intent::Previous),
                     NEXT => Some(Intent::Next),
                     REFRESH => Some(Intent::Refresh),
@@ -235,8 +275,9 @@ fn run(
                         let mut b = [0u16; 11];
                         let n = GetWindowTextW(amount, b.as_mut_ptr(), 11);
                         let amount = String::from_utf16_lossy(&b[..n as usize]).parse().ok();
-                        row.zip(amount)
-                            .map(|(row, amount)| Intent::Withdraw { row, amount })
+                        row.zip(amount).and_then(|(row, amount)| {
+                            oteryn_client_ui::stash::visible_withdraw(&mailbox.stash, row, amount)
+                        })
                     }
                     _ => None,
                 };
@@ -258,7 +299,8 @@ fn run(
                     SendMessageW(item, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                 }
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
-                for row in &mailbox.stash.rows {
+                for index in oteryn_client_ui::stash::visible_rows(&mailbox.stash) {
+                    let row = &mailbox.stash.rows[index];
                     SendMessageW(
                         list,
                         LB_ADDSTRING,
