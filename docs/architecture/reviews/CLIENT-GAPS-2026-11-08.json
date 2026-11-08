@@ -1064,9 +1064,10 @@
   "src": "TIBAUD-1",
   "area": "Achievements",
   "feature": "Account list/points/notices",
-  "status": "PARTIAL",
-  "gap": "Odczyt/notices są; brak pełnego filter/sort regular/secret i wizualnej listy.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/local-account-achievements/state/catalog.rs:40 + achievement_browser_filters_regular_secret_and_sorts_server_rows; apps/client/src/features/local-account-achievements/tests/browser.rs:5"
  },
  {
   "id": "T149",
