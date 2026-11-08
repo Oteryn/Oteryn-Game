@@ -43,6 +43,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     from_bank: bool,
 ) -> TestResult {
+    if from_bank {
+        // BANK-FEE-0 admits Account bank debits only after the production Type2 V2 activation.
+        sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
+            .execute(&h.pool)
+            .await?;
+    }
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load().map_err(debug)?;
     let start = callbacks
         .iter()
