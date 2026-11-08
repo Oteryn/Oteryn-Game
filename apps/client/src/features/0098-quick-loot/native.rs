@@ -96,7 +96,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             850,
-            860,
+            if panel == 232 { 950 } else { 860 },
             null_mut(),
             null_mut(),
             null_mut(),
@@ -197,6 +197,8 @@ fn specs(
                 "Deny selected",
                 "Publish advertisement",
                 "Remove advertisement",
+                "Apply team filters",
+                "Clear team filters",
             ],
             &[
                 ("Minimum level", "1"),
@@ -209,6 +211,11 @@ fn specs(
                 ("Boss / hunt kind / quest", "0"),
                 ("Hunt area", "0"),
                 ("Start time (Unix seconds; 0 now)", "0"),
+                ("Filter leader name", ""),
+                ("Filter level (0 any)", "0"),
+                ("Filter vocations mask (0 any)", "0"),
+                ("Filter target: 0 any/1 boss/2 hunt/3 quest", "0"),
+                ("Filter only open: 0 no/1 yes", "0"),
             ],
         ),
         _ => (
@@ -278,7 +285,13 @@ unsafe fn window(
                 i + 1,
                 (
                     10 + (i % 3) as i32 * 270,
-                    (if fields.len() > 9 { 620 } else { 550 }) + (i / 3) as i32 * 42,
+                    (if fields.len() > 12 {
+                        680
+                    } else if fields.len() > 9 {
+                        620
+                    } else {
+                        550
+                    }) + (i / 3) as i32 * 42,
                     260,
                     36,
                 ),
@@ -393,16 +406,7 @@ unsafe fn window(
                     state.inspection.selected && !state.inspection.pending,
                 ),
                 232 => {
-                    use oteryn_client_ui::team_finder::TeamFinderResult;
-                    let names = match &state.teams.result {
-                        Some(TeamFinderResult::Browse { listings, .. }) => {
-                            listings.iter().map(|r| r.name.clone()).collect()
-                        }
-                        Some(TeamFinderResult::Applicants { members, .. }) => {
-                            members.iter().map(|r| r.name.clone()).collect()
-                        }
-                        None => Vec::new(),
-                    };
+                    let names = state.teams.visible_names();
                     (
                         format!(
                             "{}\r\n{}",
