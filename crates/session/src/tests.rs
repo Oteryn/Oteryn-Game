@@ -20,6 +20,8 @@ mod e2e_c01;
 mod e2e_c02;
 #[path = "tests/e2e_c07.rs"]
 mod e2e_c07;
+#[path = "tests/e2e_c08.rs"]
+mod e2e_c08;
 #[path = "tests/e2e_c09.rs"]
 mod e2e_c09;
 #[path = "tests/e2e_c12.rs"]
@@ -32,14 +34,22 @@ mod e2e_c16a;
 mod e2e_c16c;
 #[path = "tests/e2e_c17b.rs"]
 mod e2e_c17b;
+#[path = "tests/e2e_c17c.rs"]
+mod e2e_c17c;
 #[path = "tests/e2e_c17d.rs"]
 mod e2e_c17d;
+#[path = "tests/e2e_c19a.rs"]
+mod e2e_c19a;
 #[path = "tests/e2e_c18b.rs"]
 mod e2e_c18b;
 #[path = "tests/e2e_c20b.rs"]
 mod e2e_c20b;
 #[path = "tests/e2e_c20d.rs"]
 mod e2e_c20d;
+#[path = "tests/e2e_e02.rs"]
+mod e2e_e02;
+#[path = "tests/e2e_e03.rs"]
+mod e2e_e03;
 #[path = "tests/e2e_i06.rs"]
 mod e2e_i06;
 #[path = "tests/e2e_i08.rs"]

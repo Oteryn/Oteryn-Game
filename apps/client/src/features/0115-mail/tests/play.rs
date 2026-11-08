@@ -290,3 +290,77 @@ fn srx1_native_writing_selected_item_utf8_save_and_write_once_refusal() -> Resul
         Ok(())
     }).checked()?.join().map_err(|_| "writing scenario thread failed").checked()?
 }
+
+fn e2e_e09_capture() -> Result<([Vec<u8>; 3], String), Error> {
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        let root = std::path::Path::new(&root);
+        return Ok((
+            ["e09-write.bin", "e09-post.bin", "e09-unknown.bin"]
+                .map(|name| std::fs::read(root.join(name)))
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>()?
+                .try_into()
+                .map_err(|_| "capture count")?,
+            std::fs::read_to_string(root.join("e09-expected.txt"))?,
+        ));
+    }
+    Ok((
+        [
+            vec![wire::MailOutcome::TextWritten as u8],
+            vec![wire::MailOutcome::Posted as u8],
+            vec![wire::MailOutcome::UnknownRecipient as u8],
+        ],
+        "write_payload=2\npost_payload=1\nunknown_payload=4\nwrite=Item text saved\npost=Mail posted\nunknown=Unknown recipient\n".into(),
+    ))
+}
+
+fn e2e_e09_value<'a>(expected: &'a str, key: &str) -> Result<&'a str, Error> {
+    expected
+        .lines()
+        .find_map(|line| line.strip_prefix(key)?.strip_prefix('='))
+        .ok_or_else(|| format!("expected.txt lacks {key}").into())
+}
+
+/// E09 replay: the Mail panel `apply` in `protocol.rs` consumes the raw MAIL outcome payloads the
+/// server sent for write, post and unknown-recipient refusal.
+#[test]
+fn e2e_e09_real_mail_outcomes_replay_into_mail_panel() -> Result<(), Error> {
+    let ([written, posted, unknown], expected) = e2e_e09_capture()?;
+    assert_eq!(
+        [written[0], posted[0], unknown[0]],
+        [
+            e2e_e09_value(&expected, "write_payload")?.parse::<u8>()?,
+            e2e_e09_value(&expected, "post_payload")?.parse::<u8>()?,
+            e2e_e09_value(&expected, "unknown_payload")?.parse::<u8>()?
+        ]
+    );
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), Error> {
+        oteryn_client_runtime::ClientRuntime::new().checked()?.block_on(async {
+            let exchanges = Arc::new(Script { entries: Mutex::new(VecDeque::new()), release: tokio::sync::Semaphore::new(0) });
+            let (link, incoming, outbox) = play_channel();
+            let task = tokio::spawn(run_session(Peer { exchanges: Arc::clone(&exchanges), inventory: None }, incoming, outbox));
+            ready(&link).await?;
+            let address = "Alice\nThais".to_string();
+            link.mail_edit(0, "7".into());
+            link.mail_edit(1, "9".into());
+            link.mail_edit(2, address.clone());
+            let write = wire::encode_intent(&wire::MailIntent::WriteText { item_handle: 7, text: address.clone() }).checked()?;
+            let post = wire::encode_intent(&wire::MailIntent::Post { item_handle: 7, mailbox_handle: 9 }).checked()?;
+            send(&link, &exchanges, Intent::Write, 124, write.clone(), CommandStatus::Accepted, written.clone()).await?;
+            assert_eq!(link.mail_panel().feedback, e2e_e09_value(&expected, "write")?);
+            send(&link, &exchanges, Intent::Post, 124, post.clone(), CommandStatus::Accepted, posted.clone()).await?;
+            assert_eq!(link.mail_panel().feedback, e2e_e09_value(&expected, "post")?);
+            send(&link, &exchanges, Intent::Post, 124, post.clone(), CommandStatus::Accepted, unknown).await?;
+            assert_eq!(link.mail_panel().feedback, e2e_e09_value(&expected, "unknown")?);
+            assert!(oteryn_client_ui::mail::panel_text(&link.mail_panel()).ends_with("Unknown recipient"));
+            // A post outcome answering a write command is invalid and keeps the form unchanged.
+            let fields = link.mail_panel().fields;
+            send(&link, &exchanges, Intent::Write, 124, write, CommandStatus::Accepted, posted).await?;
+            assert_eq!(link.mail_panel().feedback, "The server returned an invalid mail reply");
+            assert_eq!(link.mail_panel().fields, fields);
+            assert_eq!(fields, ["7".to_string(), "9".to_string(), address]);
+            drop(link); task.await?; Ok::<(), Error>(())
+        }).checked()??;
+        Ok(())
+    }).checked()?.join().map_err(|_| "e09 scenario thread failed").checked()?
+}
