@@ -1,14 +1,19 @@
 //! M02: physical Ground predicates participate in the existing fenced quest TX.
 //! Nomads Land chosen recipe s4 (Wiki spoiler revision 1002600) needs actual
 //! crates/amphorae. Static ItemPresence projections cannot establish this fact.
+#[cfg(any(test, feature = "test-support"))]
+use crate::durability::spell_item_transaction::SpellItemScopeAuthority;
 use crate::durability::spell_item_transaction::{
-    SpellItemError, SpellItemScopeAuthority, assert_spell_item_scope_with_recovery,
-    check_scope_transaction,
+    SpellItemError, assert_spell_item_scope_with_recovery, check_scope_transaction,
 };
+#[cfg(any(test, feature = "test-support"))]
 use crate::durability::spell_items_abi::SpellGroundTarget;
+#[cfg(any(test, feature = "test-support"))]
 use oteryn_gameplay_quests::quest::ground_stack::GroundStackEntry as NativeGroundStackFact;
+use oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement;
+#[cfg(any(test, feature = "test-support"))]
 use oteryn_gameplay_quests::quest::world_callbacks::{
-    GroundStackEntry, Position, WorldRequirement, ground_stack_matches_at,
+    GroundStackEntry, Position, ground_stack_matches_at,
 };
 
 fn owner_error(error: SpellItemError) -> DurabilityError {
@@ -47,6 +52,12 @@ pub(super) async fn require(
     if !requirements.iter().any(|r| r.ground_stack.is_some()) {
         return Ok(true);
     }
+    // Lock the readset's Item identities before the existing Ground owner.
+    // The scope authority below also takes key 33, so issuing it first would
+    // reverse the move owner's Item -> Ground order and permit a deadlock.
+    if !matches_requirements(tx, permit, fence, context, requirements).await? {
+        return Ok(false);
+    }
     let authority = assert_spell_item_scope_with_recovery(
         tx,
         permit,
@@ -60,7 +71,7 @@ pub(super) async fn require(
     check_scope_transaction(tx, &authority)
         .await
         .map_err(owner_error)?;
-    matches_requirements(tx, permit, fence, context, requirements).await
+    Ok(true)
 }
 
 /// The authority is issued for this same physical transaction. Keep both the

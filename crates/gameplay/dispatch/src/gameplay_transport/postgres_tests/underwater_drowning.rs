@@ -454,7 +454,7 @@ fn scenario_in_world(
                     vec![]
                 },
                 offerings: vec![],
-                minimum_level: None, admission: None,
+                minimum_level: None,
                 experience: None,
                 monk_reward: None,
                 item_on_target: None,
