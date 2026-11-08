@@ -3543,5 +3543,108 @@
       "prepush_workspace": "PASS cargo check --workspace --all-targets, 188s, /tmp/l2-djinn-workspace-final.log",
       "main_merge_commit": "02ebc5ffa"
     }
+  },
+  "collector_round1": {
+    "main_commit": "78294c081",
+    "merge_commit": "5685412120bc9c7eb026b248b04847ac7593a32f",
+    "next_work_branch": "claude/happy-davinci-ijz3wy-questl2b",
+    "freeze_after_handoff_push": true,
+    "migration_files": [
+      "apps/game-server/migrations/1210_quest_atomic_track_capacity.sql",
+      "apps/game-server/migrations/1211_quest_costed_repeat_occurrences.sql",
+      "apps/game-server/migrations/1212_quest_reward_item_deadlines.sql",
+      "apps/game-server/migrations/1213_quest_reward_backpack_outputs.sql",
+      "apps/game-server/migrations/1214_quest_reward_bulk_draws.sql",
+      "apps/game-server/migrations/1215_quest_world_reward_participants.sql",
+      "apps/game-server/migrations/1216_quest_reward_state_extensions.sql",
+      "apps/game-server/migrations/1217_quest_reward_fluid_bindings.sql",
+      "apps/game-server/migrations/1218_quest_reward_experience_repeats.sql",
+      "apps/game-server/migrations/1219_quest_lane_preserved_value_owners.sql"
+    ],
+    "duplicate_migrations": "PASS staged merge tree; no renumbering required",
+    "changed_crates": [
+      "oteryn-architecture-check",
+      "oteryn-client",
+      "oteryn-client-assets",
+      "oteryn-client-runtime",
+      "oteryn-client-ui",
+      "oteryn-game-server",
+      "oteryn-gameplay-combat",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-entities",
+      "oteryn-gameplay-items",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-social",
+      "oteryn-gameplay-world",
+      "oteryn-gameplay-world-change",
+      "oteryn-protocol-oteryn",
+      "oteryn-session",
+      "oteryn-world-bundle-compiler"
+    ],
+    "reused_main": [
+      "Separately branded NPC input authority; retained carried-only guard",
+      "NPC-TRADE-3 exact full-charge purchases, migration 1347",
+      "World callback observations and shared-object source checks"
+    ],
+    "preserved_l2": [
+      "Read-only Character quest gates and exact clicked object resolution",
+      "Stale STEP departure reconciliation",
+      "Quest shop revision binding and all authored quest data"
+    ],
+    "checks": {
+      "pin_refresh": {
+        "state": "PASS",
+        "seconds": 34.862864055998216,
+        "command": "oteryn-world-bundle-compiler pin-refresh ."
+      },
+      "source_generation": "PASS materialization, native registration (46 outputs), exact 337-claim inventory, central authoring checks; additional repository integration test pending",
+      "python_units": "PASS 2 Djinn charge-source tests, 2 claim-inventory tests, 2 native-fragment tests, 13 variant-authoring tests",
+      "own_content_units": {
+        "state": "PASS",
+        "passed": 2,
+        "seconds": 76.81920289700065
+      },
+      "postgres_before_fixture_fix": {
+        "passed": 4,
+        "failed": 3,
+        "seconds": 385.54754486599995,
+        "server_version": "18.6",
+        "passed_cases": [
+          "Father atomic acceptance (112.90s)",
+          "Father eight hand-ins (116.44s)",
+          "Troll full journey (148.82s)",
+          "Sam full journey (114.28s)"
+        ],
+        "failed_cases": [
+          "Generic eleven-track transition: Unavailable(Database(Database(None))); main 1349 restores the eight-track cap outside exact Father acceptance",
+          "Efreet journey: SharedCell; twelve distinct actor cells now authored, rerun pending",
+          "Marid journey: SharedCell; same fixture correction, rerun pending"
+        ]
+      },
+      "changed_crate_units": {
+        "state": "RUNNING",
+        "completed_binaries": 14,
+        "passed_in_completed_binaries": 1132,
+        "failures_seen": 0,
+        "note": "Remaining binaries pending under PREPUSH-2 cadence exception; no complete-green claim."
+      },
+      "workspace_after_fixture_fix": {
+        "state": "PASS",
+        "seconds": 434.57619687999977,
+        "command": "cargo check --workspace --all-targets"
+      },
+      "clippy_after_fixture_fix": {
+        "state": "PASS",
+        "seconds": 300.38201479599957,
+        "command": "bash /tmp/l2-collector-clippy-command.sh"
+      },
+      "fmt": "PASS",
+      "prepush2_cadence_exception": "Push compiling checkpoint once fetch/main composition, regeneration, final workspace check and fmt pass; outstanding test results remain explicit.",
+      "djinn_after_fixture_fix": "RUNNING focused nextest rebuild and both PostgreSQL journeys; not QUALIFIED until green"
+    },
+    "engine_request": "Compose generic L2 eleven-track receipts with main migration 1349 without changing the exact Father eleven-track exception; requires the shared engine owner and a migration after 1349."
   }
 }

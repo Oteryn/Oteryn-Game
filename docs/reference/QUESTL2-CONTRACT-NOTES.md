@@ -83,11 +83,13 @@ them to one. Its unit test was red before the adapter and green after. Neither
 Djinn quest is qualified until its complete native PostgreSQL journey is green;
 this binding slice does not substitute data-presence checks for the journey.
 
-Existing NPC trade rejects charged offers before commit; preserving count in the
-quest catalogue does not implement charged minting. Requested the generic trade
-feature from qengine2. The journey's access purchase uses an ordinary source
-offer (Yaman dwarven ring 3097 / Haroun axe ring 3092), keeping the unsupported
-charged rows faithful rather than relabelling them as ordinary items.
+Collector main 78294c081 supplies NPC-TRADE-3 full-charge commits (1347).
+L2 now reuses that owner: each source Lua `count` must equal the exact KNOWN
+native charge count, and is projected as one item with that charge subtype.
+The positive Efreet access purchase is Yaman's 200-charge necklace; Marid uses
+Haroun's axe ring. The source mismatch regression refuses 199 in place of 200.
+Main's separately branded NPC input authority also supersedes the earlier L2
+carried-debit helper; the carried-only location guard remains in its caller.
 
 ### Koshei source decision and shared seams (2026-11-07)
 
@@ -127,3 +129,26 @@ profiles already admit corpses 5973/5995/6006, while this branch's loot table
 still marked them unmaterializable. Regenerate with
 `build_full_spell_artifact.py --refresh-loot-tables` before registering native
 providers. Keep all five pre-existing shared-body admission expectations intact.
+
+
+Collector round 1 handoff (main 78294c081, merge 568541212): preserve main's
+NPC input authority, world-observation guards and NPC-TRADE-3 full-charge owner
+alongside L2's read-only gates, exact clicked objects and quest-shop bindings.
+The lane migrations remain 1210-1219, with no duplicate numbers or QBASE copies.
+Canonical regeneration retains 336 pilot claims plus Sam's single armor claim;
+registration emits 46 outputs including both L2 source-loot artifacts.
+
+The merged PostgreSQL run executed seven cases in 385.55 seconds: both real
+Father journeys, Sam and Troll passed. The synthetic generic eleven-track
+transition remains red against main 1349's eight-track cap; its exact error is
+`Unavailable(Database(Database(None)))`. The shared engine owner must compose
+that capacity after migration 1349, preserving the authentic Father exception.
+Neither the published world-change migration nor this regression was weakened.
+Both Djinn journeys independently exposed `SharedCell`: the fixture placed all
+twelve actors on one cell. They now occupy twelve distinct reachable cells,
+leaving UID/AID cells clear. Their fresh PostgreSQL verification is pending;
+neither Djinn quest is marked QUALIFIED. The additional repository integration
+build was stopped to prioritize mandatory pre-push checks and remains pending.
+PREPUSH-2 permits a compiling checkpoint when the changed-crate unit run exceeds
+the cadence budget; the status JSON records the outstanding checks explicitly.
+After the handoff push this branch is frozen; follow-up work belongs on questl2b.

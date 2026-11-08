@@ -1,5 +1,7 @@
 """Djinn faction mission data; reuse the existing exchange and world-reward owners."""
 import hashlib
+import json
+from pathlib import Path
 import re
 
 NPCS = ('baa_leal', 'partos', 'alesar', 'yaman', 'bo_ques', 'rata_mari',
@@ -152,6 +154,14 @@ def world_callbacks(inputs, pin):
 
 
 def shops(inputs, pin):
+    profiles = json.loads((Path(__file__).resolve().parents[3] /
+                          'content/items/definitions/spell-native-profiles.json').read_bytes())
+    charges = {r['production_definition']['production_key']:
+               r['semantics'].get('charges', {}).get('value', {}).get('count', {}).get('value')
+               for r in profiles['records']
+               if r['semantics'].get('charges', {}).get('state') == 'KNOWN'
+               and r['semantics']['charges']['value'].get('count', {}).get('state') == 'KNOWN'
+               and type(r['semantics']['charges']['value']['count'].get('value')) is int}
     result = []
     for faction, npcs in [('efreet', ('alesar', 'yaman')), ('marid', ('haroun', 'nah_bob'))]:
         for npc in npcs:
@@ -166,6 +176,10 @@ def shops(inputs, pin):
                 for field in ('count', 'subType'):
                     if re.search(r'\b' + field + r'\s*=', row) and field not in fields:
                         raise ValueError('Unresolved Djinn source scalar: ' + npc + ':' + field)
+                if 'count' in fields:
+                    expected = charges.get(f"oteryn:item.tibia.i{fields['clientId']}")
+                    if expected != fields['count'] or fields.get('subType', expected) != expected:
+                        raise ValueError('Djinn full-charge source mismatch: ' + npc + ':' + row)
                 for verb, direction in [('buy', 'SellToPlayer'), ('sell', 'BuyFromPlayer')]:
                     if verb not in fields:
                         continue
@@ -173,7 +187,7 @@ def shops(inputs, pin):
                         'item': {'family': 'Item', 'key': f"oteryn:item.tibia.i{fields['clientId']}",
                                  'revision': 'definition-r1'},
                         'direction': direction, 'unit_price': fields[verb],
-                        'count': fields.get('count', 1), 'sub_type': fields.get('subType'),
+                        'count': 1, 'sub_type': fields.get('subType', fields.get('count')),
                         'requirements': [{
                             'quest': 'oteryn:quest.the_djinn_war_' + faction + '_faction',
                             'track': ROOT + faction + '_faction/mission03',

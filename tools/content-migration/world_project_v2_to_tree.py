@@ -697,6 +697,9 @@ def main() -> int:
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(data)
     subprocess.run([sys.executable, str(ROOT / "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py"), "content"], cwd=ROOT, check=True)
+    # Project the registered native custody before modelling loot availability.
+    subprocess.run([sys.executable, str(ROOT / "tools/content-schema/native-gameplay/build_full_spell_artifact.py"),
+                    "--refresh-loot-tables"], cwd=ROOT, check=True)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
     import prey_difficulty

@@ -999,6 +999,11 @@ def build():
     gameplay_manifest['item_profiles']['sha256']=sha(raw)
     gameplay_manifest['loot_tables']['sha256']=sha(loot)
     generated['content/spells.manifest.json']=native.spell_import.canonical_bytes(gameplay_manifest)
+    # Retain main's admitted World-input facts and its canonical loot bytes.
+    # The Prey model hashes those exact bytes; alternating encoders is not stable.
+    import world_change_loot_inputs
+    world_change_loot_inputs.apply(ROOT, generated, reward_items.PROFILE,
+                                   'content/spells.manifest.json', native.spell_import.canonical_bytes)
     return generated
 
 

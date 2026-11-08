@@ -5,9 +5,6 @@ pub(super) fn valid(offer: &Offer) -> bool {
     offer
         .count
         .is_none_or(|count| (1..=u32::from(u16::MAX)).contains(&count))
-        && offer
-            .sub_type
-            .is_none_or(|subtype| subtype <= u16::from(u8::MAX))
 }
 
 pub(super) fn project(offer: &Offer) -> ProjectV2ServiceOffer {

@@ -76,7 +76,7 @@
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
-      "records": 336
+      "records": 337
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
@@ -397,7 +397,7 @@
       "path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
     },
     {
-      "path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
+      "path": "content/interactions/reward_claims/reward-claims-00200-00231.json"
     },
     {
       "path": "content/items/definitions/items-00000-00499.json"
@@ -605,6 +605,9 @@
     },
     {
       "path": "content/items/definitions/items-34000-34110.json"
+    },
+    {
+      "path": "content/items/definitions/quest-loot-custody.json"
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"
@@ -854,6 +857,9 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/quest-creature-item-profiles.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1010,7 +1016,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3668,
+          "record_count": 3853,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1018,7 +1024,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "ddfd54a05eb97aeaa220b24549f5c8440602c0408e1e6fcdb8f7c56e8e83199f"
+          "sha256": "483f6d9a50f4a044f9334c3f87af9bf19ad75cc461c3445af30979fe970daf15"
         },
         {
           "creates_canonical_identities": false,

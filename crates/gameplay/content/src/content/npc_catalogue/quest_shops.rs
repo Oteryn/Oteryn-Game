@@ -266,12 +266,12 @@ mod tests {
     #[test]
     fn quest_shops_native_fields_preserve_charge_count_and_exact_offer_match()
     -> Result<(), &'static str> {
-        let source = r#"{"schema":1,"shops":[{"npc":"oteryn:npc.yaman","service":"oteryn:service.quest_shop.yaman","sources":["fixture:source"],"offers":[{"item":{"family":"Item","key":"oteryn:item.tibia.i3085","revision":"definition-r1"},"direction":"SellToPlayer","unit_price":1000,"count":200,"sub_type":null,"requirements":[{"quest":"oteryn:quest.the_djinn_war_efreet_faction","track":"oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03","initial":0,"minimum":3,"maximum":3}]}]}]}"#;
+        let source = r#"{"schema":1,"shops":[{"npc":"oteryn:npc.yaman","service":"oteryn:service.quest_shop.yaman","sources":["fixture:source"],"offers":[{"item":{"family":"Item","key":"oteryn:item.tibia.i3085","revision":"definition-r1"},"direction":"SellToPlayer","unit_price":1000,"count":1,"sub_type":200,"requirements":[{"quest":"oteryn:quest.the_djinn_war_efreet_faction","track":"oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03","initial":0,"minimum":3,"maximum":3}]}]}]}"#;
         let catalogue = parse(source)?;
         let offer = &catalogue[0].offers[0];
         let projected = offer.project();
-        assert_eq!(projected.count, Some(200));
-        assert_eq!(projected.sub_type, None);
+        assert_eq!(projected.count, Some(1));
+        assert_eq!(projected.sub_type, Some(200));
         assert!(
             required(
                 &catalogue,
@@ -279,7 +279,7 @@ mod tests {
                 &offer.item,
                 offer.direction,
                 1000,
-                200
+                1
             )?
             .is_some()
         );
@@ -290,19 +290,24 @@ mod tests {
                 &offer.item,
                 offer.direction,
                 1000,
-                1
+                200
             )
             .is_err()
         );
         assert!(!eligible(offer, |_| Some(2)));
         assert!(eligible(offer, |_| Some(3)));
-        let fluid = source.replace(
-            "\"count\":200,\"sub_type\":null",
-            "\"count\":1,\"sub_type\":6",
-        );
+        let fluid = source.replace("\"count\":1,\"sub_type\":200", "\"count\":1,\"sub_type\":6");
         assert_eq!(parse(&fluid)?[0].offers[0].project().sub_type, Some(6));
-        assert!(parse(&source.replace("\"count\":200", "\"count\":0")).is_err());
-        assert!(parse(&source.replace("\"sub_type\":null", "\"sub_type\":256")).is_err());
+        assert!(parse(&source.replace("\"count\":1", "\"count\":0")).is_err());
+        // Main NPC-TRADE-3 admits u16 charge subtypes; the live trade owner
+        // separately checks fluid ranges and exact native full-charge counts.
+        assert_eq!(
+            parse(&source.replace("\"sub_type\":200", "\"sub_type\":256"))?[0].offers[0]
+                .project()
+                .sub_type,
+            Some(256)
+        );
+        assert!(parse(&source.replace("\"sub_type\":200", "\"sub_type\":65536")).is_err());
         Ok(())
     }
 }

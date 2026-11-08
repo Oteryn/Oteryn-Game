@@ -31,12 +31,20 @@ class CanonicalVariantTests(unittest.TestCase):
                         self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
                         self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
 
-    def test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
+    def test_plain_231_plus_sam_definitions_remain_exact_and_readiness_229_3(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
-        self.assertEqual(index['plain_record_count'], 231)
-        self.assertEqual(index['record_count'], 336)
-        self.assertEqual(index['readiness']['ready'], 228)
+        self.assertEqual(index['plain_record_count'], 232)
+        self.assertEqual(index['record_count'], 337)
+        self.assertEqual(index['readiness']['ready'], 229)
         self.assertEqual(index['readiness']['waiting_item_semantics'], 3)
+        # Preserve the 336 pilot records and prove the sole native addition.
+        records = [row for path in index['shards']
+                   for row in json.loads(outputs[path])['records']]
+        sam = [row['definition'] for row in records
+               if row['definition']['identity']['key'] ==
+               'oteryn:reward-claim.quest.u7_5.sams_old_backpack.armor']
+        self.assertEqual(len(sam), 1)
+        self.assertEqual(sam[0]['readiness'], 'ready')
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')

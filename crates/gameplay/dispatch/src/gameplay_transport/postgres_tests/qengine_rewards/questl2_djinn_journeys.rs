@@ -49,11 +49,13 @@ pub(super) async fn exercise(
         owner,
         admitted,
         refs.each_ref().map(String::as_str),
-        [Position {
-            x: 33293,
-            y: 31676,
-            floor: -15,
-        }; 12],
+        // Every actor owns a distinct, reachable cell; leave callback cells clear.
+        [
+            (33291, 31675), (33292, 31675), (33293, 31675),
+            (33294, 31675), (33295, 31675), (33291, 31676),
+            (33292, 31676), (33293, 31676), (33294, 31676),
+            (33295, 31676), (33291, 31677), (33295, 31677),
+        ].map(|(x, y)| Position { x, y, floor: -15 }),
     )
     .await?;
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
@@ -88,7 +90,7 @@ pub(super) async fn exercise(
     } else {
         "oteryn:npc.haroun"
     };
-    let merchandise = if efreet { 3097 } else { 3092 };
+    let merchandise = if efreet { 3085 } else { 3092 };
     let seller = if efreet { npcs[2] } else { npcs[11] };
     let seller_key = if efreet {
         "oteryn:npc.alesar"
@@ -226,6 +228,12 @@ pub(super) async fn exercise(
         1,
         "real entitled shop purchase"
     );
+    if efreet {
+        let charged: (Option<i32>, i64) = sqlx::query_as(
+            "SELECT full_charges,item_units::bigint FROM game_npc_trades WHERE full_charges IS NOT NULL")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(charged, (Some(200), 1), "one full-charge source necklace");
+    }
     shop(
         owner,
         admitted,

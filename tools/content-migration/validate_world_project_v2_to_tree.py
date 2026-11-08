@@ -39,8 +39,9 @@ CHARM_COUNT = 25
 PROFICIENCY_COUNT = 443
 PROFICIENCY_BINDING_COUNT = 665  # ITEM-ADD-1 plus the admitted appearance-only Snowball
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
-REWARD_CLAIM_COUNT = len(json.loads(
-    (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
+from questl2_claim_inventory import expected_keys
+REWARD_CLAIM_KEYS = expected_keys(ROOT)
+REWARD_CLAIM_COUNT = len(REWARD_CLAIM_KEYS)
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10}
@@ -874,6 +875,7 @@ def main() -> int:
         require(shard["family"] == "RewardClaim" and shard["shard"]["count"] == len(shard["records"]), "REWARD_CLAIM_SHARD")
         reward_claim_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
     require(len(reward_claim_keys) == REWARD_CLAIM_COUNT, "REWARD_CLAIM_IDENTITY_UNIQUENESS")
+    require(reward_claim_keys == REWARD_CLAIM_KEYS, "REWARD_CLAIM_SOURCE_INVENTORY")
     starter_kit_index = load(ROOT / "content" / "starter" / "index.json")
     require(starter_kit_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and starter_kit_index["family"] == "StarterKit",
             "STARTER_KIT_INDEX")

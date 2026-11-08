@@ -43,10 +43,10 @@ pub fn callbacks() -> Vec<Callback> {
     SOURCES.iter().enumerate().map(|(index,(key,pos,appearance,input,consume))|Callback{
         key:(*key).into(),quest:QUEST.into(),trigger:Trigger::Use,
         selector:Selector{position:Some(Position{x:pos.0,y:pos.1,floor:pos.2}),unique:None,action:None,appearance:Some(*appearance)},
-        lever:None,reversible:false,passages:vec![],teleport:None,
-        storage:vec![Storage{track:TRACKS[index].into(),minimum:0,maximum:0,set:1,preserve:false}],
+        lever:None,reversible:false,passages:vec![],teleport:None,failure_teleport:None,remote_teleport:None,
+        storage:vec![Storage{track:TRACKS[index].into(),minimum:0,maximum:0,set:1,preserve:false,read_only:false,set_if:None}],
         minimum_level:None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
-        item_on_target:Some(ItemOnTarget{item:format!("oteryn:item.tibia.i{input}"),count:1,replacement:(!consume).then(||format!("oteryn:item.tibia.i{input}")),target_replacement:None}),
+        item_on_target:Some(ItemOnTarget{item:format!("oteryn:item.tibia.i{input}"),count:1,replacement:(!consume).then(||format!("oteryn:item.tibia.i{input}")),target_replacement:None,target_remove:false}),
         return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),
         sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/guardian_of_the_deep_seas.lua:explicit-native-world-quest-adaptation;wiki69583@1149608:145,153,158,160,162;NOT_DONOR_GEOMETRY".into()],
     }).collect()
