@@ -8,8 +8,14 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        let controls = self
+            .settings
+            .control_events(events, self.play.as_ref().map(|play| &play.link));
+        let events = controls.as_slice();
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
-        let routed = self.settings.input(events);
+        let routed = self
+            .settings
+            .input(events, self.play.as_ref().map(|play| &play.link));
         let events = routed.as_slice();
         let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
@@ -26,6 +32,7 @@ impl Application {
                 return;
             }
         }
+
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
             if let Some(window) = &self.window {
@@ -35,6 +42,7 @@ impl Application {
                     winit::window::CursorIcon::Default
                 });
             }
+
             if play.view.audio_input(events) {
                 self.settings.capture(&mut play.view);
                 return;

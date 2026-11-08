@@ -1,3 +1,5 @@
+#[path = "features/local-reference-preferences/frame_native.rs"]
+mod frame_native;
 #[path = "features/local-spell-action-bar/native.rs"]
 mod hud;
 mod input;
@@ -62,6 +64,7 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
+    frame_timing: frame_native::FrameTiming,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -102,6 +105,7 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            frame_timing: frame_native::FrameTiming::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -344,6 +348,8 @@ impl ApplicationHandler for Application {
                         .is_err()
                     {
                         self.fail(event_loop, ShellError::RendererRender);
+                    } else {
+                        self.frame_timing.presented();
                     }
                 }
             }
@@ -372,15 +378,7 @@ impl ApplicationHandler for Application {
             play.link.item_drag_tick(&play.view, window);
         }
         self.update_hud();
-        if let Some(window) = &self.window
-            && redraw_eligible(
-                self.renderer
-                    .as_ref()
-                    .map(|renderer| renderer.state().phase()),
-            )
-        {
-            window.request_redraw();
-        }
+        self.schedule_frames(event_loop);
     }
 }
 

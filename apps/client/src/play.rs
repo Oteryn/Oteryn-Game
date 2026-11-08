@@ -131,11 +131,14 @@ include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 #[cfg(windows)]
 pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 pub use feature_local_reference_preferences::settings::{
-    PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences, SettingsPage,
-    SettingsState, WINDOW_ACTIONS, preference_bindings,
+    ArcLayout, ArcPreferences, BASIC_GROUPS, BasicOptions, ControlPreferences, FramePacer,
+    FramePreferences, HelpTopic, MousePreset, MovementKeys, PreferenceBinding, PreferenceInput,
+    PreferenceStore, ReferencePreferences, RotationModifier, SHORTCUTS, SettingsPage,
+    SettingsState, WINDOW_ACTIONS, help_text, preference_bindings,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;
+pub use feature_local_minimap::view::{MinimapBinding, MinimapMark, MinimapMemory};
 
 pub use feature_0023_presentation::state::*;
 

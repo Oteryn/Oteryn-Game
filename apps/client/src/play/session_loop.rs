@@ -49,6 +49,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
+    outbox.spellbook_details_initialize(session.feature_selected(449));
     outbox.mechanics_status_initialize(session.feature_selected(384));
     outbox.condition_status_initialize(session.feature_selected(276));
     outbox.rest_status_initialize(session.feature_selected(277));
@@ -110,6 +111,7 @@ pub async fn run_session<T: Stepper>(
     outbox.target_move_initialize(session.feature_selected(64));
     outbox.creature_push_initialize(session.feature_selected(82));
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
+    outbox.hotkey_equip_smart_mode(session.server_mechanic_selected(180));
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
     outbox.store_initialize(session.server_mechanic_selected(154));
@@ -152,6 +154,7 @@ pub async fn run_session<T: Stepper>(
                         280 => outbox.party_effects_result(&result),
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
+                        449 => outbox.spellbook_details_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);

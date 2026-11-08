@@ -14,7 +14,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             760,
-            540,
+            650,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -70,6 +70,33 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             lock(&shared).open = false;
             return;
         };
+        let navigation: Vec<_> = [
+            "Hotkey profiles...",
+            "Help and reports...",
+            "Mouse and movement...",
+            "Shortcut buttons...",
+            "Minimap...",
+            "Frames...",
+            "General options...",
+        ]
+        .iter()
+        .enumerate()
+        .map(|(i, label)| {
+            control(
+                hwnd,
+                "BUTTON",
+                label,
+                120 + i,
+                [
+                    10 + (i % 3) as i32 * 240,
+                    440 + (i / 3) as i32 * 35,
+                    230,
+                    28,
+                ],
+                0,
+            )
+        })
+        .collect();
         let mut bindings = preference_bindings().unwrap_or_default();
         let mut binding_page = SettingsPage::Hotkeys;
         let mut held = None;
@@ -123,6 +150,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         SW_HIDE
                     },
                 );
+            }
+            for handle in &navigation {
+                ShowWindow(*handle, SW_SHOW);
             }
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
@@ -194,6 +224,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if (120..=126).contains(&action) {
+                    drop(state);
+                    subpages::open(action, Arc::clone(&shared), hwnd);
+                    state = lock(&shared);
+                    continue;
+                }
                 if (110..=113).contains(&action) {
                     drop(state);
                     let confirmed = action == 111

@@ -31,7 +31,9 @@ const _: () = assert!(
 pub struct Scene {
     minimap: bool,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
-    minimap_floor: i16,
+    pub(crate) minimap_memory: crate::play::MinimapMemory,
+    pub(crate) minimap_floor: i16,
+    pub(crate) minimap_origin: Option<oteryn_session::ActorPosition>,
     world: Arc<World>,
     lit_atlas: Option<AtlasImage>,
     /// `None` draws no map: the session is on a floor the loaded map does not cover.
@@ -102,6 +104,8 @@ impl Scene {
             minimap: false,
             minimap_state: None,
             minimap_floor: -7,
+            minimap_memory: Default::default(),
+            minimap_origin: None,
             world,
             lit_atlas: None,
             anchor,
@@ -330,6 +334,8 @@ mod tests;
 mod live_entities;
 #[path = "features/local-minimap/scene.rs"]
 mod minimap;
+#[path = "features/local-reference-preferences/scene_hud.rs"]
+mod reference_hud;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;

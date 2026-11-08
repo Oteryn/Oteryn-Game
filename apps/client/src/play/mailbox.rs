@@ -120,6 +120,7 @@ pub(super) struct Mailbox {
     pub(super) arena: oteryn_client_ui::arena::ArenaPanel,
     pub(super) cast_chat: oteryn_client_ui::cast_chat::Panel,
     pub(super) cast_control: oteryn_client_ui::cast_control::Panel,
+    pub(super) spellbook_details: super::feature_0287_actor_spell_catalog::view::SpellbookState,
     pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
     pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,
     pub(super) served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
@@ -181,6 +182,7 @@ pub(super) struct Mailbox {
     pub(super) skill_progress: oteryn_client_ui::skill_progress::SkillProgressPanel,
     pub(super) party_effects: oteryn_client_ui::party_effects::PartyEffectsPanel,
     pub(super) loyalty_skills: oteryn_client_ui::loyalty_skills::LoyaltySkillsPanel,
+    pub(super) skills_layout: super::feature_0274_loyalty_skills::view::SkillsLayoutState,
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
     pub(super) quest_shutdown: bool,
@@ -388,6 +390,7 @@ impl Outbox {
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
+        mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();
@@ -435,6 +438,7 @@ impl Outbox {
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
+        mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();
@@ -554,6 +558,7 @@ impl Drop for PlayLink {
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
+        mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();

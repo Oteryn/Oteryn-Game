@@ -23,6 +23,24 @@ use winit::{
 };
 
 type Shared = SettingsState;
+#[path = "basic_native.rs"]
+mod basic_window;
+#[path = "controls_native.rs"]
+mod controls_window;
+#[path = "frames_native.rs"]
+mod frames_window;
+#[path = "help_native.rs"]
+mod help_window;
+#[path = "minimap_native.rs"]
+mod minimap_window;
+#[path = "profiles_native.rs"]
+mod profile_window;
+
+#[path = "shortcuts_native.rs"]
+mod shortcuts_window;
+#[path = "subpages.rs"]
+mod subpages;
+use dialog::run;
 fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
     shared
         .lock()
@@ -150,11 +168,26 @@ impl Settings {
         }
         state.take_window_events()
     }
+    pub(super) fn control_events(
+        &self,
+        events: &[oteryn_input_actions::NormalizedInputEvent],
+        link: Option<&oteryn_client::play::PlayLink>,
+    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        lock(&self.shared)
+            .control_events(events, link.is_some_and(|link| link.preference_chat_open()))
+    }
     pub(super) fn input(
         &mut self,
         events: &[oteryn_input_actions::NormalizedInputEvent],
+        link: Option<&oteryn_client::play::PlayLink>,
     ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
-        let (events, requested) = lock(&self.shared).input(events);
+        let mut state = lock(&self.shared);
+        state.open_help_report(link);
+        let (events, requested) = match link {
+            Some(link) => state.input_from_play(events, link),
+            None => state.input_in_context(events, false),
+        };
+        drop(state);
         if requested {
             spawn_window(Arc::clone(&self.shared));
         }
@@ -169,6 +202,13 @@ impl Settings {
             }
         }
         let mut state = lock(&self.shared);
+        state.select_character(view.preference_character());
+        state.open_help_report(Some(link));
+        state.sync_battle_lists(link);
+        state.sync_skills_layout(link);
+        state.sync_item_hotkeys(link);
+        state.sync_spellbook_filter(link);
+        state.sync_archive_bindings(link);
         state.sync_battle_lists(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
@@ -259,7 +299,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233)
+                && matches!(id, 103 | 106 | 110..=113 | 120..=126 | 223 | 225..=226 | 231..=233)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);

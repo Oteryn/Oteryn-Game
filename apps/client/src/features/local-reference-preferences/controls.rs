@@ -1,4 +1,3 @@
-//! Construction and validation of the settings dialog controls.
 use super::*;
 #[path = "interface_controls.rs"]
 mod interface_controls;

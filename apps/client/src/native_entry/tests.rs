@@ -75,6 +75,7 @@ fn same_client_enters_again_after_server_drops_the_session() -> TestResult {
                         std::thread::yield_now();
                     };
                     assert_eq!(link.party_panel().own_character_name, "Ari");
+                    assert_eq!(view.preference_character(), parse_uuid_v7(&stack.config().character_id), "preference scope comes from the admitted selected character, even without a spatial entity capability");
                     loop {
                         if let Err(end) = view.tick(&link) {
                             assert_eq!(

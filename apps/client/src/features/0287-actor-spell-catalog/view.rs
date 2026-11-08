@@ -1,3 +1,18 @@
+#[path = "archive.rs"]
+mod archive;
+pub use archive::ArchiveBindings;
+pub(in crate::play) use archive::assign_cast_index;
+pub(in crate::play) use archive::{
+    manual as manual_archive_bindings, resolve as resolve_archive_bindings,
+};
+#[path = "book.rs"]
+mod book;
+#[path = "preferences.rs"]
+mod preferences;
+pub use book::{SpellbookFilter, SpellbookState};
+#[cfg(windows)]
+#[path = "book_native.rs"]
+mod book_native;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn spell_catalog_panel(&self) -> oteryn_client_ui::spell_catalog::Panel {
@@ -62,3 +77,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+
+#[cfg(test)]
+#[path = "archive_tests.rs"]
+mod archive_tests;
