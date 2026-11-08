@@ -1119,9 +1119,10 @@
   "src": "TIBAUD-1",
   "area": "Support",
   "feature": "About/version i survey invitation",
-  "status": "PARTIAL",
-  "gap": "Jest wersja; brak pełnego About i własnego workflow ankiety/zgody.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "About identyfikuje wydanie, build, platformę i licencję. Ankieta wymaga zaproszenia, przeglądu odpowiedzi i osobnej zgody na lokalny zapis.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/about.rs:35 + survey_invitation_reviews_answer_before_local_export"
  },
  {
   "id": "T155",
