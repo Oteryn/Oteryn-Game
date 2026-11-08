@@ -989,6 +989,9 @@ def validate_callbacks(document):
         declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
+        reward=callback.get('give')
+        if reward and reward.get('text') is not None and len(reward['text'].encode('utf-8'))>7996:
+            raise ValueError('literal reward text exceeds UTF-8 byte bound')
         storage=callback['storage']
         if callback.get('carried_item') is not None and (
                 callback['take']!=[{'item':callback['carried_item'],'count':1}]
@@ -1008,7 +1011,8 @@ def validate_callbacks(document):
         participant_ops=[s for p in participants for s in p.get('state_ops',[])]
         operations=callback.get('state_ops',[])
         all_keys=[s['track'] for s in storage+operations+participant_storage+participant_ops]
-        if (len(all_keys)>8 or len(all_keys)!=len(set(all_keys))
+        if (len(all_keys)>16 or len(all_keys)!=len(set(all_keys))
+            or any(len(p['storage'])+len(p.get('state_ops',[]))>8 for p in participants)
             or len({p['quest'] for p in participants})!=len(participants)
             or any(p['quest']==callback['quest'] for p in participants)
             or any(s['minimum']>s['maximum'] for s in participant_storage)
