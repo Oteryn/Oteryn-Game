@@ -340,6 +340,25 @@ impl LoopGroundCache {
         }
     }
 
+    /// Read only a non-invalidated projection of this exact live Channel pin.
+    pub(super) fn current_for(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        base: &Arc<WorldBase>,
+    ) -> Option<Arc<LoopGroundOverlay>> {
+        let pin = runtime.content_pin();
+        self.cached().1.filter(|current| {
+            current.field_pin
+                == (
+                    pin.server_artifact_digest(),
+                    pin.frame_binding_digest(),
+                    runtime.binding().scope_generation().get(),
+                )
+                && current.overlay.runtime_scope() == runtime.binding().runtime_scope()
+                && current.overlay.base().digest() == base.digest()
+        })
+    }
+
     fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>) {
         self.state
             .lock()

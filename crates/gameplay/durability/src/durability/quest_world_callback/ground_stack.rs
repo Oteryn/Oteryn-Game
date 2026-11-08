@@ -7,7 +7,9 @@ use crate::durability::spell_item_transaction::{
     check_scope_transaction,
 };
 use crate::durability::spell_items_abi::SpellGroundTarget;
-use oteryn_gameplay_quests::quest::world_callbacks::{GroundStackItem, WorldRequirement};
+use oteryn_gameplay_quests::quest::world_callbacks::{
+    GroundStackEntry, GroundStackFact, WorldRequirement, ground_stack_matches,
+};
 
 fn owner_error(error: SpellItemError) -> DurabilityError {
     match error {
@@ -19,6 +21,7 @@ fn owner_error(error: SpellItemError) -> DurabilityError {
 
 #[derive(sqlx::FromRow)]
 struct GroundRoot {
+    item_instance_id: sqlx::types::Uuid,
     definition_family: String,
     definition_production_key: String,
     definition_revision_ref: String,
@@ -83,7 +86,7 @@ pub(crate) async fn matches(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     authority: &SpellItemScopeAuthority,
     target: &SpellGroundTarget,
-    expected: &[GroundStackItem],
+    expected: &[GroundStackEntry],
 ) -> Result<bool, DurabilityError> {
     check_scope_transaction(tx, authority)
         .await
@@ -91,7 +94,7 @@ pub(crate) async fn matches(
     let Some(channel) = authority.channel_bytes() else {
         return Ok(false);
     };
-    if expected.is_empty() || expected.len() > 8 || expected.iter().any(|i| i.quantity == 0) {
+    if expected.is_empty() || expected.len() > 8 || expected.iter().any(|i| i.count == 0) {
         return Ok(false);
     }
     let world = authority.world_bytes();
@@ -104,24 +107,29 @@ pub(crate) async fn matches(
     .bind(channel.as_slice())
     .execute(&mut **tx)
     .await?;
-    let mut rows = sqlx::query_as::<_, GroundRoot>("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,g.stack_ordinal,g.map_revision,g.content_revision,g.native_room_placement_context FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.scope_kind=1 AND g.instance_id IS NULL AND g.spatial_position=$3 AND i.lifecycle=1 ORDER BY i.item_instance_id LIMIT 65 FOR UPDATE OF i,g")
+    let mut rows = sqlx::query_as::<_, GroundRoot>("SELECT i.item_instance_id,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,g.stack_ordinal,g.map_revision,g.content_revision,g.native_room_placement_context FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.scope_kind=1 AND g.instance_id IS NULL AND g.spatial_position=$3 AND i.lifecycle=1 ORDER BY i.item_instance_id LIMIT 65 FOR UPDATE OF i,g")
         .bind(world.as_slice()).bind(channel.as_slice()).bind(&target.spatial_position)
         .fetch_all(&mut **tx).await?;
     if rows.len() != expected.len() {
         return Ok(false);
     }
     rows.sort_by_key(|r| r.stack_ordinal);
-    for (row, expected) in rows.iter().zip(expected) {
-        if row.definition_family != "Item"
-            || row.definition_production_key != expected.item
-            || row.definition_revision_ref != "definition-r1"
-            || row.quantity != i64::from(expected.quantity)
-            || row.map_revision != target.map_revision
-            || row.content_revision != target.content_revision
-            || row.native_room_placement_context != target.placement_context
-        {
-            return Ok(false);
-        }
-    }
-    Ok(true)
+    Ok(ground_stack_matches(
+        expected,
+        rows.iter().map(|row| {
+            if row.definition_family != "Item"
+                || row.definition_revision_ref != "definition-r1"
+                || row.map_revision != target.map_revision
+                || row.content_revision != target.content_revision
+                || row.native_room_placement_context != target.placement_context
+            {
+                return None;
+            }
+            Some(GroundStackFact {
+                instance: *row.item_instance_id.as_bytes(),
+                item: &row.definition_production_key,
+                count: u32::try_from(row.quantity).ok()?,
+            })
+        }),
+    ))
 }

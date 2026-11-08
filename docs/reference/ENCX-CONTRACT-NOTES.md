@@ -1188,3 +1188,23 @@ remain the next piece. M02 is not claimed DONE by this checkpoint.
 
 Next queue row: M03 was OPEN/none on the pre-push qmech head; ENCX selects it
 for live blessing/promotion/Premium world admission after this engine hand-off.
+
+### M02 coordinator reconciliation against qmech 891284f07
+
+The earlier ENCX `GroundStackItem/quantity` proposal is superseded and removed.
+The sole world-callback wire contract is SRV7's `GroundStackEntry { item, count }`;
+SQL observations are fed into the same `ground_stack_matches` comparator via
+`GroundStackFact` with real UUID identities. Native/static anchor and cache
+admission remain exactly SRV7's implementation. The only additional production
+participant is the locked PostgreSQL re-check inside the existing personal
+quest transaction, retaining scope/node/recovery and current content proofs.
+The PostgreSQL fixture now mints canonical gold roots through the existing
+MINT writer; no fixture-only key circumvents the shared comparator's validation.
+
+Reconciled validation: all359 quests tests passed in43.46s, including both
+upstream Ground models, SRV7 schema tests and preserved M07 tests. The final
+PG case passed in5.46s (255.811ms measured participant scenario), now also
+rejecting use of a prior physical transaction's sealed scope token. Clippy
+for quests/durability/dispatch passed with warnings denied in2m17s; fmt passed.
+No upstream M02-specific PostgreSQL cases were found under authority_cases;
+the added PG case is the actual durable readset/locking coverage.

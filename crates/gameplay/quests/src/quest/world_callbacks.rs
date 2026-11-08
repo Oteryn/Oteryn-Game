@@ -30,11 +30,13 @@ pub enum Trigger {
 mod clock;
 mod counterparts;
 mod effects;
+mod ground_stack;
 mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
 };
+pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -147,23 +149,15 @@ impl ActorKind {
     }
 }
 
-/// One physical Ground root; the containing list is ordered bottom to top.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct GroundStackItem {
-    pub item: String,
-    pub quantity: u16,
-}
-
-/// An immutable map appearance or an exact read-only physical Ground stack.
+/// A static native anchor, optionally guarded by an ordered durable Ground stack.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
     pub position: Position,
     pub appearance: u16,
-    /// Bottom to top, one entry per physical root; never an appearance overlay.
+    /// Exact durable Ground roots, bottom first, in addition to the static anchor.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ground_stack: Option<Vec<GroundStackItem>>,
+    pub ground_stack: Option<Vec<GroundStackEntry>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -285,6 +279,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.push(super::targuna_ram::callback()?);
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
+    callbacks.push(super::source_world_objects::uneasy_crystal());
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());
@@ -397,27 +392,10 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 !valid_pos(r.position)
                     || r.appearance == 0
                     || r.ground_stack.as_ref().is_some_and(|stack| {
-                        stack.is_empty()
-                            || stack.len() > MAX_EFFECTS
-                            || stack.iter().any(|item| {
-                                item.quantity == 0
-                                    || !item.item.starts_with("oteryn:item.")
-                                    || item.item.len() > 512
-                            })
+                        callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
                     })
             })
-            || (callback
-                .world_requirements
-                .iter()
-                .any(|r| r.ground_stack.is_some())
-                && (callback.actor_kind != ActorKind::Player
-                    || !callback.has_personal_state()
-                    || callback.reversible
-                    || callback.trigger == Trigger::StepOut))
-            || (callback
-                .world_requirements
-                .iter()
-                .any(|r| r.ground_stack.is_none())
+            || (!callback.world_requirements.is_empty()
                 && ((callback.has_personal_state() && !callback.requires_world_admission)
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
@@ -1617,3 +1595,79 @@ mod srv7_mount_reward_tests {
 
 #[cfg(test)]
 mod m07_trials_tests;
+
+#[cfg(test)]
+mod qn1_lifecycle_tests {
+    #[test]
+    fn uneasy_alliance_crystal_has_fenced_ten_second_reset() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let callback = callbacks
+            .iter()
+            .find(|c| c.key.ends_with("uneasy-alliance-crystal"))
+            .ok_or("missing native crystal callback")?;
+        assert_eq!(callback.selector.action, Some(40030));
+        assert_eq!(callback.effects.transform, Some(10187));
+        let value = serde_json::to_value(&callback.effects).map_err(|e| e.to_string())?;
+        assert_eq!(value["reset_after_ms"], 10000);
+        assert_eq!(callback.storage[0].minimum, 3);
+        assert_eq!(callback.storage[0].maximum, 3);
+        assert_eq!(callback.storage[0].set, 4);
+        let lowered =
+            crate::quest::loader::load_embedded_quest_state("qn1").map_err(|e| format!("{e:?}"))?;
+        let catalogue = lowered.catalogue();
+        super::parse(&serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string())?;
+        let transition = catalogue.transition(&callback.key).ok_or("transition")?;
+        let track = callback.storage[0].track.clone();
+        let stored = std::collections::BTreeMap::from([(track.clone(), 3)]);
+        let changes = catalogue
+            .evaluate(transition, &stored, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!((changes[0].before, changes[0].after), (3, 4));
+        for wrong_stage in [0, 2, 4, 5] {
+            assert!(
+                catalogue
+                    .evaluate(
+                        transition,
+                        &std::collections::BTreeMap::from([(track.clone(), wrong_stage)]),
+                        0
+                    )
+                    .is_err()
+            );
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod srv7_mount_reward_additional_tests {
+    #[test]
+    fn srv7_world_mount_reward_requires_once_only_progress() -> Result<(), String> {
+        let mut value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-outfit-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        let callback = &mut value["callbacks"][0];
+        callback["effects"]
+            .as_object_mut()
+            .ok_or("effects")?
+            .remove("outfit_reward");
+        callback["requires_world_admission"] = true.into();
+        callback["effects"]["mount_reward"] =
+            serde_json::json!({"mount":"oteryn:content.mount.reliable_ram"});
+        callback["sources"] = serde_json::json!([
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/actions_reliable_ram.lua:20-50"
+        ]);
+        super::parse(&value.to_string())?;
+        for storage in value["callbacks"][0]["storage"]
+            .as_array_mut()
+            .ok_or("storage")?
+        {
+            storage["set"] = storage["minimum"].clone();
+        }
+        assert!(
+            super::parse(&value.to_string()).is_err(),
+            "repeatable mount grants must fail closed"
+        );
+        Ok(())
+    }
+}
