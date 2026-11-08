@@ -175,7 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let digest = runtime.content_pin().server_artifact_digest();
         pinned_index(runtime, self.active_generation).ok_or(ResultCode::Rejected)?;
-        let room = self.effective_rooms()
+        let room = self.rooms()
             .gate_attack_target()
             .ok_or(ResultCode::Rejected)?;
         let objects = self.door.lock().await;

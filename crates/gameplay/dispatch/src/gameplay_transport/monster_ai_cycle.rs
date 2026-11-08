@@ -75,7 +75,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         super::tibiadrome::tick(self, &mut runtime);
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
-        let Some(room) = self.effective_rooms().gate_monster_ai() else {
+        let Some(room) = self.rooms().gate_monster_ai() else {
             return;
         };
         let Some(content) = self

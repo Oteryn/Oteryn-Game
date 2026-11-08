@@ -341,7 +341,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return step_in_channel(
                 runtime,
                 states,
-                self.effective_movement_cells(),
+                self.movement_cells(),
                 actor,
                 session,
                 now_us,
@@ -350,7 +350,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 equipment_delta,
             );
         };
-        let Some(_room) = self.effective_rooms().gate_field_step_ingress() else {
+        let Some(_room) = self.rooms().gate_field_step_ingress() else {
             return fail();
         };
         let Ok(origin) = runtime.read_actor_position(actor) else {
@@ -358,10 +358,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Preserve original accepted entry movement without inventing an empty
         // field owner. Field casts cannot qualify against its absent metadata.
-        if !crate::movement::source_floor_change::is_source_profile(self.effective_movement_cells())
+        if !crate::movement::source_floor_change::is_source_profile(self.movement_cells())
             && matches!(
-                self.effective_movement_cells().spell_tiles().lookup(
-                    self.effective_movement_cells().scope(),
+                self.movement_cells().spell_tiles().lookup(
+                    self.movement_cells().scope(),
                     crate::content::LogicalCell {
                         x: origin.position().x,
                         y: origin.position().y,
@@ -374,7 +374,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return step_in_channel(
                 runtime,
                 states,
-                self.effective_movement_cells(),
+                self.movement_cells(),
                 actor,
                 session,
                 now_us,
@@ -407,12 +407,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 game_session_id:session,connection_generation:current.current_connection_generation(),character_lease_generation:current.current_character_lease().generation(),runtime_scope:current.current_runtime_scope(),scope_ownership_generation:current.current_scope_generation(),
             };
             let source=owner.active_generation.and_then(|active|active.native_gameplay()).ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let room=owner.effective_rooms().gate_field_step_ingress().ok_or(crate::durability::DurabilityError::Unavailable)?;
+            let room=owner.rooms().gate_field_step_ingress().ok_or(crate::durability::DurabilityError::Unavailable)?;
             let objects=owner.door.lock().await;
-            let prepared=if crate::movement::source_floor_change::is_source_profile(owner.effective_movement_cells()) {
+            let prepared=if crate::movement::source_floor_change::is_source_profile(owner.movement_cells()) {
                 Some(crate::movement::source_floor_change::collect_current_source_step(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)
             } else {None};
-            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.effective_movement_cells(),actor,session,origin,direction,*blocking).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
+            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.movement_cells(),actor,session,origin,direction,*blocking).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
             let target=SpellGroundTarget::for_native_tile_read(room,runtime,destination).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let read=crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let player_fields_current = if read.items().iter().any(|item| item.field_origin.is_some() && source.item_policy(&item.definition.production_key, &item.definition.revision_ref).is_none_or(|policy| {
@@ -465,7 +465,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::field_removal::remove_field_in_transaction(&mut tx,owner.root,&read,item,None,None,None).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                     }
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
-                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.effective_movement_cells(),actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
+                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells(),actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
                     if let Some(mut pending)=player.take() && outcome.as_ref().is_some_and(Result::is_ok) {
                         pending.retain_step_cooldowns(runtime,states);
                         let mut window=permit.open_commit_window(pending,super::player_field::park);

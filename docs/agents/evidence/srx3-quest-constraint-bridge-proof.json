@@ -186,5 +186,11 @@
       }
     ]
   },
-  "limit": "Fresh complete migration-order probe and native caller replay remain separate qualifications."
+  "limit": "Fresh complete migration-order probe and native caller replay remain separate qualifications.",
+  "recorded_before_soulpit_merge": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+  "subsequent_integration": {
+    "main": "98d6ae8ce",
+    "change": "Main1141 owns the strict runtime floor +8; the duplicate obsolete dual-floor rewrite was removed from unmerged1423. Earlier CHECK proof records retain their historical bytes.",
+    "current_1423_sha256": "590d38e8c1fe9b09825c2d8d85a95cc756acc23610e231f38cba99de114371fc"
+  }
 }

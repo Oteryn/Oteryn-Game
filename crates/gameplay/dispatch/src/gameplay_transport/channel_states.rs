@@ -12,7 +12,6 @@ use tokio::sync::Mutex;
 #[derive(Default)]
 pub struct ChannelSessionStates {
     /// Independent mutable Map facts for one source-qualified Instance.
-    pub(super) activity_room: Option<std::sync::Arc<crate::content::QualifiedNativeEntryRoom>>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     /// APP-3: the appearance-change command state of each session, forgotten with the session.
     pub appearance_commands: appearance_change::AppearanceCommands,

@@ -156,6 +156,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             reason,
             ActivityReturnReason::Timeout
                 | ActivityReturnReason::Defeated
+                | ActivityReturnReason::SoulpitTerminal
                 | ActivityReturnReason::Death { .. }
                 | ActivityReturnReason::Logout
                 | ActivityReturnReason::IdleLogout
@@ -269,6 +270,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     ActivityReturnReason::CapabilityMismatch { .. } => 9,
                     ActivityReturnReason::StaffKick { .. } => 10,
                     ActivityReturnReason::StaffKickLost { .. } => 11,
+                    ActivityReturnReason::SoulpitTerminal => 52,
                     _ => return refuse(ActivityRefusal::InvalidInput),
                 }
             },
@@ -566,8 +568,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             floor: exit.cell.floor,
         };
         if !super::respawn_cell_admissible(
-            destination_view.movement_cells.index(),
-            destination_view.movement_cells.scope(),
+            destination_view.movement_cells().index(),
+            destination_view.movement_cells().scope(),
             destination.scope.world_id(),
             exit.server_artifact_digest,
             doors.blocking_cells(),

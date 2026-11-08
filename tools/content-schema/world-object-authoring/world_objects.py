@@ -504,11 +504,34 @@ def validate_record(record):
     if errors:
         return errors
     import activity_static
-    if record["provenance"]["source_item_id"] in activity_static.IDENTIFIERS:
-        expected = next((row for row in json.loads(activity_static.outputs()[activity_static.SHARDS[family]])["records"]
-            if row["provenance"]["source_item_id"] == record["provenance"]["source_item_id"]), None)
+    if record["provenance"]["source"].get("profile") == 'OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1':
+        registry = json.loads(activity_static.outputs()[activity_static.REGISTRY])["records"]
+        expected = next((row['catalogue_record'] for row in registry
+                         if row['identity'] == record['identity']), None)
         return [] if record == expected else ["static activity geometry differs from its qualified source"]
     if "item_pointer" not in record["provenance"]:
+        import soulpit_static
+
+        if (
+            record["provenance"]["source"].get("profile") == soulpit_static.PROFILE
+            or record["provenance"]["source_item_id"] in soulpit_static.IDS
+        ):
+            expected = next(
+                (
+                    row
+                    for row in soulpit_static.records()
+                    if row["provenance"]["source_item_id"]
+                    == record["provenance"]["source_item_id"]
+                ),
+                None,
+            )
+            return (
+                []
+                if record == expected
+                else [
+                    "Soulpit static Terrain differs from its qualified official source"
+                ]
+            )
         import grizzly_ground
         import summer_ground
 

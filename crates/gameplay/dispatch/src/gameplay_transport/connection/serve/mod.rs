@@ -62,6 +62,7 @@ struct ServeState {
     cadence: tokio::time::Interval,
     liveness: Liveness,
     frames: FrameReader,
+    activity_ack: Option<oteryn_protocol_oteryn::activity_scope::ActivityScopeAck>,
     reconcile_original_bank: bool,
     commands: crate::gameplay_transport::session_ingress::SessionCommandStream,
     sequence: u64,
@@ -184,6 +185,7 @@ where
     // recipient if a handoff write is cancelled before destination setup.
     let mut server_messages = None;
     let mut scoped_authority: Option<A> = None;
+    let mut activity_input = None;
     let mut require_session_binding = false;
     let mut handoff_effect_start = None;
     loop {
@@ -255,6 +257,15 @@ where
             Ok(session) => session,
             Err(end) => return end.finish(admitted),
         };
+        if let Some((frames, expected)) = activity_input.take() {
+            session.frames = frames;
+            if let Some(expected) = expected
+                && let Err(end) =
+                    activity_transfer::acknowledge(stream, authority, &mut session, expected).await
+            {
+                return end.finish(session.admitted);
+            }
+        }
         if let Some(cursor) = handoff_effect_start.take() {
             session.movement_effect_revision = cursor;
         }
@@ -277,6 +288,10 @@ where
                 Ok(Some((next, cursor))) => {
                     require_session_binding = true;
                     handoff_effect_start = cursor;
+                    activity_input = Some((
+                        std::mem::take(&mut session.frames),
+                        session.activity_ack.take(),
+                    ));
                     admitted = next;
                     integrity = std::mem::take(&mut session.integrity);
                     break;
@@ -304,6 +319,10 @@ where
                 Ok(Some((next, cursor))) => {
                     require_session_binding = true;
                     handoff_effect_start = cursor;
+                    activity_input = Some((
+                        std::mem::take(&mut session.frames),
+                        session.activity_ack.take(),
+                    ));
                     admitted = next;
                     integrity = std::mem::take(&mut session.integrity);
                     break;
@@ -327,6 +346,10 @@ where
             };
             if let Err(end) = command::execute(stream, authority, &mut session, input).await {
                 if let ServeEnd::Transferred(next) = end {
+                    activity_input = Some((
+                        std::mem::take(&mut session.frames),
+                        session.activity_ack.take(),
+                    ));
                     admitted = *next;
                     integrity = std::mem::take(&mut session.integrity);
                     break;

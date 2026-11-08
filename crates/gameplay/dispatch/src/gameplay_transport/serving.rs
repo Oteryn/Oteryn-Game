@@ -72,6 +72,7 @@ pub async fn serve_gameplay(
         })
         .collect();
     let authority = ComposedFreshAdmission {
+        activity_room: None,
         server_motd: &config.server_motd,
         reset_epoch: drain.epoch(),
         emit: owners.emit,
@@ -148,6 +149,12 @@ pub async fn serve_gameplay(
         authority
             .activity_runtimes
             .register_template(template)
+            .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    }
+    if let Some(template) = owners.soulpit_template {
+        authority
+            .activity_runtimes
+            .register_soulpit_template(template)
             .map_err(|_| GameplayServeError::OwnerUnavailable)?;
     }
     for (source, room) in &activity_source_rooms {

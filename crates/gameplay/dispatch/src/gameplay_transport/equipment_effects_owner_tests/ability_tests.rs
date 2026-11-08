@@ -375,11 +375,20 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
 
+    // Generated from closed source packets minus pinned pre-SRX3 identities.
+    const SRX3_SOURCE_COHORTS: &[(&str, usize)] = &[
+        ("SRX3-PRIMAL-POD", 1),
+        ("SRX3-SOUL-WAR-ITEMS", 7),
+        ("SRX3-BOSS-MOVEMENT", 13),
+        ("SRX3-BOSS-CORPSES", 189),
+        ("SRX3-BOSS-YIELDS", 32),
+    ];
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
             + additions.len()
+            + SRX3_SOURCE_COHORTS.iter().map(|(_, n)| n).sum::<usize>()
             // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
             + 26 + 23
     );

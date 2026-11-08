@@ -61,7 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(());
         }
-        let room = self.effective_rooms().gate_monster_ai().ok_or(())?;
+        let room = self.rooms().gate_monster_ai().ok_or(())?;
         let native = self
             .active_generation
             .and_then(|generation| generation.native_gameplay())

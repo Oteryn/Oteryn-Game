@@ -73,6 +73,19 @@ impl<S: SessionStream> Session<S> {
             });
         }
         let begin = decode_snapshot_begin(envelope.payload())?;
+        self.finish_activity_scope(scope, source_sequence, begin)
+            .await
+    }
+
+    /// Complete the same validated legacy route when the shared reader already
+    /// consumed its fresh SnapshotBegin; never read or fabricate that frame twice.
+    pub(super) async fn finish_activity_scope(
+        &mut self,
+        scope: ActivityScopeSnapshot,
+        source_sequence: u64,
+        begin: oteryn_protocol_oteryn::SnapshotBeginFields,
+    ) -> Result<(), SessionError> {
+        let malformed = || SessionError::SessionUnusable;
         // A proven fresh namespace uses the same initial baseline as native
         // cold admission (current producer0; legacy complete fixtures1). This
         // never relaxes sequence checks within an unchanged GameSession.

@@ -20,30 +20,124 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sqlx::{Postgres, Row, Transaction};
 
-mod departure;
 mod entry;
 mod progress;
 mod scope_read;
 mod terminal_read;
-pub(super) use departure::{lock_shared_return, record_shared_return};
 pub use scope_read::{SoulpitScopeBinding, SoulpitScopeMember};
 pub use terminal_read::SoulpitTerminalCleanup;
 
+/// Shared returns take the same encounter lock before session/root locks, matching
+/// progress and its survivor writes. No return can race a final survival credit.
+pub(super) async fn lock_shared_return(
+    tx: &mut Transaction<'_, Postgres>,
+    handoff: &[u8; 16],
+) -> Result<bool, DurabilityError> {
+    let source: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_activity_handoff_groups g JOIN game_soulpit_encounters f USING(handoff_id) WHERE g.handoff_id=encode($1,'hex')::uuid AND g.activity_key=$2)")
+        .bind(handoff.as_slice()).bind(SOULPIT_ACTIVITY_KEY).fetch_one(&mut **tx).await?;
+    if source {
+        lock_handoff(tx, handoff).await?;
+    }
+    Ok(source)
+}
+
+/// The shared owner has already independently proven the current participant's
+/// return or loss of its old owner. Close membership in that same transaction.
+/// Crystal 201189f soulpit.lua:132-140: process loss never resumes a fight.
+pub(super) async fn shared_returning(
+    tx: &mut Transaction<'_, Postgres>,
+    request: &super::activity_handoff::ActivityReturnRequest,
+    recovering: bool,
+) -> Result<(), DurabilityError> {
+    let RuntimeScopeRefV1::Instance { instance_id, .. } = request.source.runtime_scope else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    let row = sqlx::query("SELECT f.revision,f.checkpoint,f.terminal,s.staging_slot FROM game_soulpit_encounters f JOIN game_activity_handoff_groups g USING(handoff_id) JOIN game_soulpit_participants s USING(handoff_id) JOIN game_activity_runtime_returns r ON r.handoff_id=s.handoff_id AND r.character_id=s.character_id WHERE r.return_id=encode($1,'hex')::uuid AND r.handoff_id=encode($2,'hex')::uuid AND r.character_id=encode($3,'hex')::uuid AND r.source_game_session_id=encode($4,'hex')::uuid AND g.world_id=encode($5,'hex')::uuid AND g.instance_id=encode($6,'hex')::uuid AND g.activity_key=$7 AND g.state=2 AND g.ownership_generation=$8::text::numeric AND r.reason=$9 FOR UPDATE OF f")
+        .bind(request.return_id.as_slice()).bind(request.handoff_id.as_slice())
+        .bind(request.source.character_id.as_bytes().as_slice()).bind(request.source.game_session_id.as_bytes().as_slice())
+        .bind(request.source.runtime_scope.world_id().as_bytes().as_slice()).bind(instance_id.as_slice())
+        .bind(SOULPIT_ACTIVITY_KEY).bind(request.source.scope_ownership_generation.get().to_string())
+        .bind(request.reason.stored()).fetch_optional(&mut **tx).await?;
+    let row = row.ok_or(DurabilityError::InvalidStoredState)?;
+    if row.try_get::<bool, _>("terminal")? {
+        return Ok(());
+    }
+    let slot = u8::try_from(row.try_get::<i16, _>("staging_slot")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let revision = row.try_get::<i64, _>("revision")?;
+    let next = revision
+        .checked_add(1)
+        .filter(|value| *value > 0)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let mut encounter = decode_checkpoint(row.try_get("checkpoint")?)?;
+    let snapshot = encounter.snapshot();
+    let mut now = snapshot.last_observed_at_micros;
+    let action = if recovering
+        || request.reason == super::activity_handoff::ActivityReturnReason::OwnerLost
+    {
+        SoulpitAction::Interrupt
+    } else {
+        if request.reason == super::activity_handoff::ActivityReturnReason::Timeout {
+            // The authenticated shared Timeout receipt proves this wall-clock
+            // deadline. Translate that fact to the retained encounter's clock;
+            // never compare process monotonic origins across ownership recovery.
+            now = now.max(
+                snapshot
+                    .started_at_micros
+                    .checked_add(crate::domain::soulpit::TIME_LIMIT_MICROS)
+                    .ok_or(DurabilityError::InvalidStoredState)?,
+            );
+        } else if !snapshot.surviving_slots.contains(&slot) {
+            return Ok(());
+        }
+        SoulpitAction::Leave { slot }
+    };
+    let effect = progress::apply(&mut encounter, &action, now)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let state = checkpoint(&encounter)?;
+    let terminal = encounter.snapshot().phase.is_terminal();
+    let intent = json!({"version":1,"cause":"shared-runtime-return","return":hex(&request.return_id),"source_session":hex(request.source.game_session_id.as_bytes()),"reason":request.reason.stored(),"expected_revision":revision,"now":now,"action":action});
+    sqlx::query("INSERT INTO game_soulpit_events(handoff_id,occurrence_id,revision,intent,checkpoint,effect,terminal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,$7)")
+        .bind(request.handoff_id.as_slice()).bind(request.return_id.as_slice()).bind(next).bind(intent).bind(&state)
+        .bind(serde_json::to_value(effect).map_err(|_|DurabilityError::InvalidStoredState)?).bind(terminal).execute(&mut **tx).await?;
+    let changed=sqlx::query("UPDATE game_soulpit_encounters SET revision=$2,checkpoint=$3,terminal=$4,last_occurrence=encode($5,'hex')::uuid WHERE handoff_id=encode($1,'hex')::uuid AND revision=$6")
+        .bind(request.handoff_id.as_slice()).bind(next).bind(state).bind(terminal).bind(request.return_id.as_slice()).bind(revision).execute(&mut **tx).await?.rows_affected();
+    if changed != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
+}
+
+pub(super) async fn write_shared_entry(
+    root: &DurabilityRoot,
+    tx: &mut Type2Transaction<'_>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    request: &SoulpitEntryRequest,
+    native: &NativeGameplayState,
+) -> Result<SoulpitEntryWritten, SoulpitWriteError> {
+    assert_recovery_fence(tx, recovery).await?;
+    entry::write(root, tx, recovery, node, fence, request, native).await
+}
+
 pub const SOULPIT_ACTIVITY_KEY: &str = "oteryn:activity.soulpit";
 
-/// The shared admission owner authenticates GM exemption; level and position are read from
-/// its locked participant provenance and existing progression state, never from this struct.
-#[derive(Debug, Clone, Copy)]
+/// Level, position and current trusted staff group are independently read inside the shared
+/// transaction. The compatibility hint is not authority for a level exemption.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SoulpitParticipantFact {
     pub character: CharacterId,
+    /// Non-authoritative compatibility hint; the entry writer always resolves current staff.
     pub game_master: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SoulpitEntryRequest {
     pub handoff_id: [u8; 16],
     pub command: CommandRef,
     pub source: [u8; 16],
+    pub source_definition: crate::durability::item_mint::TypedDefinitionRef,
     pub intent: Vec<u8>,
     pub started_at_micros: u64,
     pub participants: Vec<SoulpitParticipantFact>,
@@ -187,7 +281,7 @@ impl DurabilityRoot {
     ) -> Result<SoulpitEntryWritten, SoulpitWriteError> {
         assert_recovery_fence(tx, recovery).await?;
         permit.check_scope(fence.runtime_scope)?;
-        entry::write(tx, recovery, node, fence, request, native).await
+        entry::write(self, tx, recovery, node, fence, request, native).await
     }
 
     /// A retry returns its exact retained transition before live actor/fence checks. A new

@@ -51,6 +51,7 @@ pub(super) struct NativeActivityAttempt<'a> {
     destination: RegisteredRuntime<'a>,
     request: ActivityEnterRequest,
     boss_room: bool,
+    soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
     boss_pad_wire: Option<[u8; 32]>,
     pub(super) boss_pad_prefix:
         Option<crate::durability::activity_handoff::boss_room::QualifiedBossPadPrefix>,
@@ -229,6 +230,18 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 },
             };
             let payload = encode_activity_scope(&ActivityScopeSnapshot {
+                requires_ack: [source, destination]
+                    .iter()
+                    .filter_map(|session| session.item_fence)
+                    .filter_map(|fence| {
+                        self.activity_runtimes
+                            .get(fence.runtime_scope, fence.scope_ownership_generation.get())
+                    })
+                    .any(|owner| {
+                        owner.template.as_ref().is_some_and(|template| {
+                            template.key == crate::content::soulpit_activity::SOULPIT_TEMPLATE_KEY
+                        })
+                    }),
                 handoff: commit.handoff_id,
                 source_session: *source.game_session_id.as_bytes(),
                 session: *destination.game_session_id.as_bytes(),
@@ -357,6 +370,32 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .await
     }
 
+    pub(super) async fn enter_native_activity(
+        &self,
+        request: ActivityEnterRequest,
+        boss_room: bool,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.enter_native_activity_inner(request, boss_room, None, None)
+            .await
+    }
+    pub(super) async fn enter_native_soulpit(
+        &self,
+        request: ActivityEnterRequest,
+        entry: crate::durability::soulpit::SoulpitEntryRequest,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.enter_native_activity_inner(request, false, Some(entry), None)
+            .await
+    }
+    pub(super) async fn retry_native_soulpit(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        intent: &[u8],
+    ) -> Result<Option<NativeActivityOutcome>, ()> {
+        self.retry_native_soulpit_activity(admitted, command, intent)
+            .await
+    }
+
     async fn enter_native_activity_inner(
         &self,
         mut request: ActivityEnterRequest,
@@ -414,6 +453,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let attempt = pending.lock().await;
             if attempt.request.activity_key != request.activity_key
                 || attempt.boss_room != boss_room
+                || attempt.soulpit != soulpit
                 || attempt.boss_pad_wire != boss_pad_wire
                 || attempt
                     .soulpit
@@ -674,8 +714,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 floor: participant.destination_cell.floor,
             };
             if !super::respawn_cell_admissible(
-                destination_view.movement_cells.index(),
-                destination_view.movement_cells.scope(),
+                destination_view.movement_cells().index(),
+                destination_view.movement_cells().scope(),
                 destination.scope.world_id(),
                 actual_pin.server_artifact_digest,
                 doors.blocking_cells(),
@@ -777,6 +817,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 destination: destination.clone(),
                 request,
                 boss_room,
+                soulpit,
                 boss_pad_wire,
                 boss_pad_prefix,
                 soulpit,
@@ -883,12 +924,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 eprintln!("SRX3_SOULPIT HANDOFF_STAGE evidence_held_durable_enter");
             }
             let owner = ActivityHandoffOwner::new(self.root.clone());
-            let result = if let Some(core) = &attempt.soulpit {
+            let result = if let Some(entry) = &attempt.soulpit {
                 let native = self
                     .active_generation
                     .and_then(crate::content::ActiveGeneration::native_gameplay)
                     .ok_or(())?;
-                let permit = if source_first {
+                let source_permit = if source_first {
                     &_first_lane
                 } else {
                     &_second_lane
@@ -897,9 +938,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     .enter_soulpit(
                         self.character,
                         self.holder,
+                        source_permit,
                         attempt.request.clone(),
-                        permit,
-                        core.clone(),
+                        entry,
                         native,
                     )
                     .await
@@ -1079,7 +1120,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .await?;
             connections.push((old, next));
         }
-        if attempt.soulpit.is_some() {
+        if attempt.soulpit.is_some() && destination_view.activity_room.as_ref().is_some_and(|room|
+            room.pinned_activity_source_room() == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Soulpit)) {
             destination_view.activate_soulpit_obelisk().await?;
             if attempt.entry_effect_starts.is_none() {
                 attempt.entry_effect_starts = Some(

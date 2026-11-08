@@ -160,7 +160,7 @@ async fn mailbox_in_reach(
     }
     let Some(at) = super::bundle_map_position::bundle_map_position(
         &mut runtime,
-        owner.effective_movement_cells(),
+        owner.movement_cells(),
         actor,
     ) else {
         return false;

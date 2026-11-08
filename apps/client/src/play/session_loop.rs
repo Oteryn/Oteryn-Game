@@ -366,6 +366,12 @@ pub async fn run_session<T: Stepper>(
                 Err(error) => error,
             },
         };
+        if matches!(ended, oteryn_session::SessionError::ActivityScopeChanged) {
+            // A shared activity moves every participant, including one awaiting a source
+            // command. Never replay queued source actions against the fresh destination.
+            publish(&mut session, &outbox, &mut held);
+            continue;
+        }
         if matches!(ended, oteryn_session::SessionError::ScopeChanged) {
             publish(&mut session, &outbox, &mut held);
             continue;

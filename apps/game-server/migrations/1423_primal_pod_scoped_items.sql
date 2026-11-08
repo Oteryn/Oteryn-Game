@@ -294,18 +294,9 @@ ALTER TABLE game_tibiadrome_receipts
     ADD CONSTRAINT game_tibiadrome_receipts_reply_check
         CHECK (octet_length(reply) BETWEEN 1 AND 8192);
 
--- Soulpit's exact source staging cells have two existing server representations:
--- Source-world native floor -z and Bundle physical custody floor +z (ADR-0021).
--- This changes only the fixed donor floor comparison; shared handoff membership,
--- exact staging coordinates, transaction provenance and all core guards remain.
-DO $migration$
-DECLARE body TEXT; amended TEXT;
-BEGIN
- body:=pg_get_functiondef('game_soulpit_participant_admit()'::regprocedure);
- amended:=replace(body,'p.entry_floor=-8','p.entry_floor IN (-8,8)');
- IF amended=body THEN RAISE EXCEPTION 'missing exact Soulpit source floor comparison'; END IF;
- EXECUTE amended;
-END $migration$;
+-- Soulpit staging is owned by merged main1141: runtime/LastPosition floor
+-- stays exactly +8; only native TilePos projection negates it (ADR-0021).
+-- The older duplicate dual-floor rewrite is superseded by that shared owner.
 
 -- Source fixed recipes: Crystal201189f lib/quests/soul_war.lua:296-477; BossLever defaults20min/60s.
 CREATE FUNCTION game_soul_war_boss_catalogue_activate(

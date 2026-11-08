@@ -126,7 +126,8 @@ pub enum TerrainKind {
 pub const MAX_GROUND_SPEED: u16 = 1000;
 
 /// The terrain semantics of a Terrain-routed palette entry (format v2): `walkable` and
-/// `ground_speed` are set for `ground` and `null` for every other kind. A walkable ground has a
+/// `ground_speed` are set for `ground`; other layers may retain a known walkable flag, with
+/// `ground_speed=null`. Existing `walkable=null` retains its prior kind semantics. A walkable ground has a
 /// speed of at least 1; a non-walkable ground may have any speed in `0..=1000`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -146,7 +147,7 @@ impl Terrain {
                 speed <= MAX_GROUND_SPEED && !(walkable && speed == 0)
             }
             (TerrainKind::Ground, ..) => false,
-            (_, walkable, speed) => walkable.is_none() && speed.is_none(),
+            (_, _, speed) => speed.is_none(),
         }
     }
 }

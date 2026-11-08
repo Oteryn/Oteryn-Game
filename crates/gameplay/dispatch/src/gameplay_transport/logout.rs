@@ -73,10 +73,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .map(|zones| zones.no_logout);
         }
-        match self.effective_movement_cells().index() {
+        match self.movement_cells().index() {
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_) => {
-                let at =
-                    super::bundle_map_position(runtime, self.effective_movement_cells(), actor)?;
+                let at = super::bundle_map_position(runtime, self.movement_cells(), actor)?;
                 let tile = at.map.overlay.base().tile(
                     u16::try_from(at.at.x).ok()?,
                     u16::try_from(at.at.y).ok()?,
@@ -163,14 +162,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // This format has no OTBM zones; retain its existing logout behavior, including
         // engineering runtimes whose synthetic content pin does not bind a map projection.
         if matches!(
-            self.effective_movement_cells().index(),
+            self.movement_cells().index(),
             NativeMovementCollisionIndex::Entry(_)
         ) {
             return Some(LogoutZones {
                 no_logout: false,
                 protection_zone: super::actor_spell::qualified_protection_zone(
                     &mut runtime,
-                    self.effective_movement_cells(),
+                    self.movement_cells(),
                     actor,
                 ),
             });
@@ -202,13 +201,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cell: crate::content::LogicalCell,
     ) -> Option<LogoutZones> {
         use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
-        let scope = self.effective_movement_cells().scope();
+        let scope = self.movement_cells().scope();
         if scope.world_id != runtime.binding().world_id()
             || scope.world_id != runtime.content_pin().world_id()
         {
             return None;
         }
-        match self.effective_movement_cells().index() {
+        match self.movement_cells().index() {
             NativeMovementCollisionIndex::Bundle(index) => {
                 use crate::map::boot::BundleCollisionIndexExt;
                 use sha2::{Digest, Sha256};

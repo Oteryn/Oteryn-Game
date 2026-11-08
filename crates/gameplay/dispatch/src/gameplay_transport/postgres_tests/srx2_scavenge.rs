@@ -789,11 +789,10 @@ async fn entity_target(
         floor: 7,
     };
     assert_eq!(
-        owner
-            .movement_cells
+        owner.movement_cells()
             .index()
             .lookup(
-                owner.movement_cells.scope(),
+                owner.movement_cells().scope(),
                 crate::content::LogicalCell { x: 7, y: 0, z: 7 }
             )
             .map_err(debug)?,

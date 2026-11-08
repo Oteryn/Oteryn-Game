@@ -23,6 +23,7 @@
     "Document": 1609,
     "Effect": 5797,
     "Encounter": 108,
+    "Encounter.Raid": 239,
     "Formula": 6126,
     "Item": 34117,
     "Loot": 1290,
@@ -37,7 +38,8 @@
     "Service.Promotion": 7,
     "Service.Trade": 324,
     "Service.Travel": 56,
-    "StarterKit": 1
+    "StarterKit": 1,
+    "item_conversion": 129
   },
   "item_authoring_counts": {
     "authoring": 700,
@@ -52,6 +54,39 @@
     "sources": "71e382c6864316e918f77fda32002224b0be1806"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
+  "ruleset_counts": {
+    "Imbuements": {
+      "bound_equipment_profiles": 628,
+      "families": 24,
+      "held_equipment_observations": 35,
+      "tiers": 72,
+      "unregistered_equipment_items": 1
+    }
+  },
+  "ruleset_files": {
+    "Imbuements": [
+      {
+        "path": "rulesets/items/imbuements/access.json",
+        "sha256": "cc8be9bc187bc6a58cd8919277fea4ef9cbffad3eee3a13c74c278571ec8cba5"
+      },
+      {
+        "path": "rulesets/items/imbuements/catalogue.json",
+        "sha256": "ff249b7e5866a06ebdfcdf05b24c45446c991646f66726cf59566831fddc3e58"
+      },
+      {
+        "path": "rulesets/items/imbuements/equipment.json",
+        "sha256": "a9a9f7ea4be54f5bfaccb72799322fb509f6dc8ac03c2caafa2f7c4d927d8d96"
+      },
+      {
+        "path": "rulesets/items/imbuements/index.json",
+        "sha256": "0719ce5030c6fe0fae69b329b3304a8c282824be9e475e01cbfccba77c96bb53"
+      },
+      {
+        "path": "rulesets/items/imbuements/owner-policy.json",
+        "sha256": "b2c481493bb2305d52867469b4cde6314ffd1a4fa461c4a105e73782c7754c7d"
+      }
+    ]
+  },
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
     "Creature": 1863,

@@ -116,8 +116,6 @@ const INVENTORY: &[Entry] = &[
         // Activity registration validates its combat room against the active content pin.
         calls: &[
             ("gameplay_transport/activity_runtime.rs", 1),
-            // SRX-3: source-owned maps retain combat only; exact construction is checked below.
-            ("gameplay_transport/effective_rooms.rs", 2),
             (
                 "gameplay_transport/postgres_tests/srx3_soulpit_native.rs",
                 1,
@@ -796,8 +794,10 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 const CONSTRUCTIONS: &[(&str, usize)] = &[
     // Qualified activity content inherits the origin gate, checked below.
     ("gameplay_transport/activity_content.rs", 3),
-    // ActivityRuntimeAssets borrows the selected pair without constructing a qualified room.
-    ("gameplay_transport/activity_runtime.rs", 1),
+    // Scoped activity assets explicitly withhold qualification, checked below.
+    ("gameplay_transport/activity_runtime.rs", 3),
+    // Compatibility return type only; exact delegation is checked below.
+    ("gameplay_transport/effective_rooms.rs", 1),
     ("gameplay_transport/composed_test_owner.rs", 2),
     ("gameplay_transport/item_use/item_use_postgres_tests.rs", 1),
     (
@@ -809,7 +809,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         1,
     ),
     ("gameplay_transport/kill_reward_postgres_e2e_tests.rs", 1),
-    ("gameplay_transport/mod.rs", 3),
+    ("gameplay_transport/mod.rs", 5),
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
@@ -863,6 +863,12 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/s10_wandering.rs", 1),
     // I14 special-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/special_potions.rs", 1),
+    // Soulpit's production owner and PG fixture both withhold qualification.
+    ("gameplay_transport/soulpit/content.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/soulpit_shared_entry/native.rs",
+        2,
+    ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
     ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),
@@ -905,18 +911,29 @@ fn inherits_origin_qualification(expr: &syn::Expr) -> bool {
     let syn::Expr::MethodCall(gate) = &*map.receiver else {
         return false;
     };
-    let syn::Expr::MethodCall(rooms) = &*gate.receiver else {
-        return false;
+    let origin_rooms = match &*gate.receiver {
+        syn::Expr::Field(rooms) => {
+            rooms.attrs.is_empty()
+                && matches!(&rooms.member, syn::Member::Named(name) if name == "rooms")
+                && matches!(&*rooms.base, syn::Expr::Path(path) if path.path.is_ident("self"))
+        }
+        // Soulpit supplies private Instance assets through the scoped accessor.
+        // Its new constructions are separately required to keep qualification None.
+        syn::Expr::MethodCall(rooms) => {
+            rooms.attrs.is_empty()
+                && rooms.method == "rooms"
+                && rooms.args.is_empty()
+                && rooms.turbofish.is_none()
+                && matches!(&*rooms.receiver, syn::Expr::Path(path) if path.path.is_ident("self"))
+        }
+        _ => false,
     };
     map.method == "map"
         && map.attrs.is_empty()
         && gate.method == "gate_source_world"
         && gate.args.is_empty()
         && gate.attrs.is_empty()
-        && rooms.attrs.is_empty()
-        && rooms.method == "effective_rooms"
-        && rooms.args.is_empty()
-        && matches!(&*rooms.receiver, syn::Expr::Path(path) if path.path.is_ident("self"))
+        && origin_rooms
         && matches!(
             map.args.iter().collect::<Vec<_>>().as_slice(),
             [syn::Expr::Closure(select)]
@@ -946,17 +963,60 @@ fn an_activity_instance_preserves_the_origin_room_gate() {
     );
 }
 
+#[test]
+fn private_activity_room_constructions_withhold_qualification() {
+    // These new production constructions may supply combat geometry, never a
+    // qualified source room. Keep an exact construction count at each site.
+    for file in [
+        "src/gameplay_transport/mod.rs",
+        "src/gameplay_transport/activity_runtime.rs",
+        "src/gameplay_transport/soulpit/content.rs",
+    ] {
+        let source = parse_source(file);
+        let mut constructions = Constructions::default();
+        constructions.visit_file(&source);
+        assert!(
+            matches!(constructions.0.as_slice(), [call]
+                if matches!(call.args.first(), Some(syn::Expr::Path(path))
+                    if path.path.is_ident("None"))),
+            "{file}: a private activity must not qualify source-room mechanics"
+        );
+    }
+}
+
+#[test]
+fn inherited_qualification_recognizer_rejects_widened_room_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    for expression in [
+        "self.rooms.gate_source_world().map(|_| room)",
+        "self.rooms().gate_source_world().map(|_| room)",
+    ] {
+        assert!(inherits_origin_qualification(&syn::parse_str(expression)?));
+    }
+    for expression in [
+        "Some(room)",
+        "other.rooms().gate_source_world().map(|_| room)",
+        "self.rooms(other).gate_source_world().map(|_| room)",
+        "self.rooms().gate_attack_target().map(|_| room)",
+        "self.rooms().gate_source_world().map(|_| other)",
+        "self.rooms().gate_source_world().or(Some(room))",
+    ] {
+        assert!(!inherits_origin_qualification(&syn::parse_str(expression)?));
+    }
+    Ok(())
+}
+
 /// An independently owned source Bundle has no qualified entry-world room.
 /// Its shared map owner may supply combat, never generic casting or House gates.
 #[test]
 fn a_source_instance_effective_room_constructs_only_none_some_combat() {
-    let source = parse_source("src/gameplay_transport/effective_rooms.rs");
+    let source = parse_source("src/gameplay_transport/mod.rs");
     let mut constructions = Constructions::default();
     constructions.visit_file(&source);
     assert_eq!(
         constructions.0.len(),
         1,
-        "effective source rooms must have exactly one explicit construction"
+        "canonical source rooms must have exactly one explicit construction"
     );
     let call = &constructions.0[0];
     assert_eq!(call.args.len(), 2);
@@ -966,6 +1026,44 @@ fn a_source_instance_effective_room_constructs_only_none_some_combat() {
         matches!(call.args.iter().nth(1), Some(syn::Expr::Call(some))
         if matches!(&*some.func, syn::Expr::Path(path) if path_name(&path.path) == "Some")
             && some.args.len() == 1
-            && matches!(some.args.first(), Some(syn::Expr::Path(path)) if path_name(&path.path) == "room"))
+            && matches!(some.args.first(), Some(syn::Expr::MethodCall(as_ref))
+                if as_ref.method == "as_ref"
+                    && as_ref.args.is_empty()
+                    && as_ref.attrs.is_empty()
+                    && as_ref.turbofish.is_none()
+                    && matches!(&*as_ref.receiver, syn::Expr::Path(path)
+                        if path_name(&path.path) == "room")))
     );
+}
+
+/// Compatibility names must not introduce a second room or movement owner.
+#[test]
+fn source_room_compatibility_accessors_delegate_to_canonical_owner()
+-> Result<(), Box<dyn std::error::Error>> {
+    let source = parse_source("src/gameplay_transport/effective_rooms.rs");
+    let [syn::Item::Impl(block)] = source.items.as_slice() else {
+        return Err("source room aliases must contain only their owner impl".into());
+    };
+    assert!(block.trait_.is_none() && block.unsafety.is_none());
+    assert!(matches!(&*block.self_ty, syn::Type::Path(path)
+        if path_name(&path.path) == "super::ComposedFreshAdmission"));
+    assert_eq!(block.items.len(), 2);
+    for (item, (alias, canonical)) in block.items.iter().zip([
+        ("effective_movement_cells", "movement_cells"),
+        ("effective_rooms", "rooms"),
+    ]) {
+        let syn::ImplItem::Fn(function) = item else {
+            return Err("source room aliases may only declare delegate functions".into());
+        };
+        assert_eq!(function.sig.ident, alias);
+        let [syn::Stmt::Expr(syn::Expr::MethodCall(call), None)] = function.block.stmts.as_slice()
+        else {
+            return Err("source room aliases must directly return the canonical owner".into());
+        };
+        assert_eq!(call.method, canonical);
+        assert!(call.args.is_empty() && call.attrs.is_empty() && call.turbofish.is_none());
+        assert!(matches!(&*call.receiver, syn::Expr::Path(path)
+            if path.path.is_ident("self")));
+    }
+    Ok(())
 }

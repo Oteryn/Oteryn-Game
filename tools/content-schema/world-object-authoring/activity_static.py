@@ -1,6 +1,7 @@
 """Publish bounded pinned activity-map static geometry without inventory Item aliases."""
 from __future__ import annotations
 import argparse
+import copy
 import hashlib
 import json
 import re
@@ -12,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[3]
 IDENTIFIERS = frozenset([20661,33067,33068,34009,39095,23467,23468,33017,42852,42941,42944,42947,42949,42950,42952,42958,42961,42973,42974,42975,42976,42977,42978,42979,42981,42987,42991,42995,42997,42370,42371,42374,42376,42377,42380,42382,42385,42654,42655,42656,42658,42659,42660,42665,42666,42667,42753,42856,42858,42859,42865,43358,43359,43360,43361,43362,43363,43364,43365,43366,33066,33069,10649,10650,10653,10654,10728,10730,10735,10736,10737,10740,10747,33070,25181,42940,42982,42983,43308,43309,43311,43312,43313,43314,43315,43316,43317,32898,42379,42651,42653,43310,42662,42663,42664,42680,42681,42863,42864,43089,43092,11075,11077,11079,11102,11103,11104,11105,34943,34946,34951,34953,42880,42887,42892,42893,42894,42895,42896,42897,42898,42899,42900,42901,42902,42910,42923,42933,43516,46629,46630,46631,46632,46633,46634,46635,46636,46637,46638,46639,46640,46641,46643,46644,46645,46646,48236,32906,43497,43498,43507,43508,43983,43984,43985,43986,43987,43988,43989,42671,23049,33276])
 OFFICIAL_SHA = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
 PIN = '201189f871d23597b82caf88fd611454a2ddefb8'
-SHARDS = {'Terrain': 'content/world/terrain/terrain-08614-08650.json',
+SHARDS = {'Terrain': 'content/world/terrain/terrain-08669-08697.json',
           'WorldObject': 'content/world/objects/objects-12932-13055.json'}
 REGISTRY = 'content/encounters/source-static-definitions.json'
 NOTE = ' Additionally SRX-3 pinned activity static geometry: 38 Terrain and 124 WorldObject records; no Item aliases.'
@@ -20,8 +21,51 @@ NOTE = ' Additionally SRX-3 pinned activity static geometry: 38 Terrain and 124 
 def encode(value):
     return (json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)+'\n').encode()
 
+
+def compose_placement_palette(placement, activity_registry, soulpit_rows):
+    """Qualify existing indices once; retain already accepted Activity identities."""
+    soulpit = {row['provenance']['source_item_id']: row for row in soulpit_rows}
+    family_aliases = 0
+    for entry in activity_registry:
+        incoming = soulpit.get(entry['source_item_id'])
+        if incoming is None or incoming['identity'] == entry['identity']:
+            continue
+        policy = entry['policy']
+        record = entry['catalogue_record']
+        if (entry['identity']['family'] != 'WorldObject'
+                or incoming['identity']['family'] != 'Terrain'
+                or policy['ground'] is not False
+                or incoming['walkable'] != {'state': 'KNOWN', 'value': not policy['block_solid']}
+                or incoming['kind'] not in ({'state': 'KNOWN', 'value': 'common'}, {'state': 'KNOWN', 'value': 'border'})
+                or record['collision']['blocks_movement'] != {'state': 'KNOWN', 'value': policy['block_solid']}
+                or incoming['client_projection'] != record['client_projection']):
+            raise ValueError('joint static palette family physics conflict:' + str(entry['source_item_id']))
+        family_aliases += 1
+    if family_aliases != 39:
+        raise ValueError('joint static palette family set changed')
+    by_id = {row['provenance']['source_item_id']: row['identity'] for row in soulpit_rows}
+    expected_soulpit = set(by_id)
+    # Existing Activity records are independently source-qualified. Soulpit adds
+    # its remaining IDs, rather than replacing those valid family identities.
+    by_id.update({row['source_item_id']: row['identity'] for row in activity_registry})
+    selected = [row['source_item_id'] for row in placement['palette']
+                if row['source_item_id'] in expected_soulpit]
+    if len(selected) != len(expected_soulpit) or set(selected) != expected_soulpit:
+        raise ValueError('SOULPIT_STATIC_PALETTE_SET')
+    for row in placement['palette']:
+        identity = by_id.get(row['source_item_id'])
+        if identity is not None:
+            row.update(key=identity['key'], provisional=False)
+
+
+def compose_terrain_notes(notes):
+    """Both source publishers use the same two exact, idempotent suffixes."""
+    import soulpit_static
+    return notes.replace(NOTE, '').replace(soulpit_static.NOTE, '') + NOTE + soulpit_static.NOTE
+
 @lru_cache(maxsize=4)
-def outputs(root=ROOT):
+def source_records(root=ROOT):
+    """Pure source qualification, independent of joint catalogue publication."""
     policies = {}
     captures = []
     for path in sorted((root/'content/encounters').glob('*/source-room.json')):
@@ -91,6 +135,12 @@ def outputs(root=ROOT):
             record['collision']['blocks_projectile'] = known(policy['block_projectile'])
         records[family].append(record)
         registry.append({'source_item_id':identifier, 'identity':record['identity'], 'policy':policy, 'catalogue_record':record})
+    return records, registry, captures
+
+
+@lru_cache(maxsize=4)
+def outputs(root=ROOT):
+    records, registry, captures = copy.deepcopy(source_records(root))
     # This restore-only key already has a canonical Terrain ordinal. Replace
     # exactly that row via this publisher instead of introducing a duplicate.
     restore=next(row for row in records['Terrain'] if row['identity']['key']=='oteryn:terrain.tibia.i23049')
@@ -103,7 +153,12 @@ def outputs(root=ROOT):
     if previous['provenance']['source']['profile'] not in ('crystal_ff7ede5_item_definition_v1','OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1') or previous['provenance']['source_item_id']!=23049:
         raise ValueError('unreviewed Anomaly canonical source body')
     existing['records'][matches[0]]=restore
-    appended={family:[row for row in rows if row is not restore] for family,rows in records.items()}
+    import soulpit_static
+    appended={family:[row for row in rows if row is not restore
+                     and not (family == 'Terrain' and row['provenance']['source_item_id'] in soulpit_static.IDS)]
+              for family,rows in records.items()}
+    if len(appended['Terrain']) != 29:
+        raise ValueError('activity/Soulpit canonical terrain union changed')
     files={SHARDS[family]:encode({'family':family,'records':rows}) for family,rows in appended.items()}
     files[existing_path]=encode(existing)
     terrain_keys=set()
@@ -111,24 +166,41 @@ def outputs(root=ROOT):
         terrain_keys.update(row['identity']['key'] for row in json.loads(path.read_bytes()).get('records', []))
     terrain_keys.update(row['identity']['key'] for row in records['Terrain'])
     terrain_keys.update(row['identity']['key'] for row in records['WorldObject'])
+    # The shared IDs retain incoming canonical Soulpit records/ordinals. The
+    # registry must bind that exact joint body while keeping its original
+    # source policies and qualification closure unchanged.
+    soulpit_rows = soulpit_static.records(root)
+    canonical = {row['identity']['key']: row for row in soulpit_rows}
+    shared = 0
+    for entry in registry:
+        row = canonical.get(entry['identity']['key'])
+        if entry['identity']['family'] != 'Terrain' or row is None:
+            continue
+        if row['identity'] != entry['identity']:
+            raise ValueError('joint static source identity changed')
+        entry['catalogue_record'] = row
+        shared += 1
+    if shared != 8:
+        raise ValueError('joint static registry shared set changed')
     files[REGISTRY]=encode({'schema':'OTERYN_ACTIVITY_STATIC_DEFINITIONS/v1', 'technical_terrain_keys':sorted(terrain_keys), 'source_revision':PIN,
         'official_appearances_sha256':OFFICIAL_SHA, 'source_closure':captures[0]['source_closure'], 'records':registry})
     placement_path='content/world/placements/index.json'; placement=json.loads((root/placement_path).read_bytes())
-    by_id={row['source_item_id']:row for row in registry}
-    for row in placement['palette']:
-        if row['source_item_id'] in by_id:
-            row.update(key=by_id[row['source_item_id']]['identity']['key'], provisional=False)
+    compose_placement_palette(placement, registry, soulpit_rows)
     files[placement_path]=encode(placement)
     for family,directory in [('Terrain','terrain'),('WorldObject','objects')]:
         name=f'content/world/{directory}/index.json'; marker=json.loads((root/name).read_bytes())
         marker['notes']=re.sub(r' Additionally SRX-3 pinned activity static geometry: [0-9]+ Terrain and [0-9]+ WorldObject records; no Item aliases\.', '', marker['notes'])+NOTE
+        if family == 'Terrain':
+            marker['notes'] = compose_terrain_notes(marker['notes'])
         files[name]=(json.dumps(marker,indent=2,ensure_ascii=False)+'\n').encode()
     return files
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__); parser.add_argument('--check',action='store_true'); args=parser.parse_args()
     if not args.check:
-        previous_terrain=ROOT/'content/world/terrain/terrain-08614-08651.json'
+        previous_terrain=ROOT/'content/world/terrain/terrain-08614-08650.json'
+        if not previous_terrain.exists():
+            previous_terrain=ROOT/'content/world/terrain/terrain-08614-08651.json'
         if previous_terrain.exists():
             old=json.loads(previous_terrain.read_bytes())
             if any(row['provenance']['source']['profile'] != 'OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1' for row in old['records']):

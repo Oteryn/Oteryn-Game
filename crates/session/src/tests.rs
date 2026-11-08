@@ -1,5 +1,7 @@
 #[path = "tests/account_achievements.rs"]
 mod account_achievements_tests;
+#[path = "tests/activity_handoff.rs"]
+mod activity_handoff_tests;
 #[path = "tests/activity_scope.rs"]
 mod activity_scope_tests;
 #[path = "tests/analyser.rs"]

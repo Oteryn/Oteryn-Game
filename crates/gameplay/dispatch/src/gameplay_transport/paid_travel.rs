@@ -330,8 +330,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             floor: destination.floor,
         };
         if !super::super::respawn_cell_admissible(
-            self.effective_movement_cells().index(),
-            self.effective_movement_cells().scope(),
+            self.movement_cells().index(),
+            self.movement_cells().scope(),
             self.world_id,
             runtime.content_pin().server_artifact_digest(),
             &std::collections::BTreeSet::new(),

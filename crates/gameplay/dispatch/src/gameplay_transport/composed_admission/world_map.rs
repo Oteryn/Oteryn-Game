@@ -6,7 +6,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// MAP-CUTOVER-1b: the map view of a bundle World, which its movement cells carry; `None`
     /// on a fixture World.
     pub(in crate::gameplay_transport) fn bundle_map(&self) -> Option<&crate::map::boot::BundleMap> {
-        match self.effective_movement_cells().index() {
+        match self.movement_cells().index() {
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
                 Some(index.map())
             }

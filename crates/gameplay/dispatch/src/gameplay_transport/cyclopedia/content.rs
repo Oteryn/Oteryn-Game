@@ -59,7 +59,7 @@ pub(super) fn admit_at(
         {
             return false;
         }
-        let cells = owner.effective_movement_cells();
+        let cells = owner.movement_cells();
         cells.index().lookup(
             cells.scope(),
             LogicalCell {

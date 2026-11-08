@@ -145,11 +145,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Global's narrower resting-area subset. This preserves the existing tile gate.
         {
             let mut runtime = self.runtime.lock().await;
-            let inside = actor_spell::qualified_protection_zone(
-                &mut runtime,
-                self.effective_movement_cells(),
-                actor,
-            ) == Some(true);
+            let inside =
+                actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells(), actor)
+                    == Some(true);
             let streak = if inside {
                 self.states
                     .resting_areas
@@ -180,7 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut states = self.states.spell_states.lock().await;
             states.tick_in_environment(
                 &mut runtime,
-                self.effective_movement_cells(),
+                self.movement_cells(),
                 actor,
                 game_session_id,
                 now,
@@ -190,11 +188,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let resting = {
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
-            let inside = actor_spell::qualified_protection_zone(
-                &mut runtime,
-                self.effective_movement_cells(),
-                actor,
-            ) == Some(true);
+            let inside =
+                actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells(), actor)
+                    == Some(true);
             let stamina = states.live_stamina(actor, game_session_id).unwrap_or(2520);
             let premium = states
                 .get(&runtime, actor, game_session_id)

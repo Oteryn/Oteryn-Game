@@ -24,6 +24,7 @@ fn switch(source: u8, destination: u8, generation: u64, channel: bool) -> Activi
         connection_generation: generation,
         lease_generation: if channel { 4 } else { 3 },
         selection: vec![117],
+        requires_ack: false,
     }
 }
 

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import copy
+import importlib
 import json
 import os
 import re
@@ -16,6 +18,46 @@ TEST = (
 )
 
 
+# Intersections with the independently committed pre-SRX3 source provider,
+# origin/main 98d6ae8ce5e12d60916532c72353126f534fa20a. These are identities,
+# not counts sampled from the generated final provider.
+SRX3_SOURCES = (
+    ("SRX3-PRIMAL-POD", "primal_pod_profiles", ()),
+    ("SRX3-SOUL-WAR-ITEMS", "soul_war_source_profiles", ()),
+    ("SRX3-BOSS-MOVEMENT", "boss_movement_item_profiles", ()),
+    ("SRX3-BOSS-CORPSES", "boss_corpse_profiles",
+     (4026, 4098, 4240, 4241, 4242, 4246, 4247, 4248, 5973, 5995)),
+    ("SRX3-BOSS-YIELDS", "boss_reward_yield_profiles",
+     (239, 3028, 3081, 3097, 3384, 3583, 3723, 7428, 7642, 7643, 23373, 23374, 23375, 23535)),
+)
+
+
+def source_cohorts(root):
+    """Re-use each closed source authority before counting its independent keys."""
+    taxonomy = {
+        row["target"]["key"]: row["source_taxonomy"]
+        for row in json.loads((root / "content/items/taxonomy/items.json").read_bytes())["records"]
+    }
+    result = []
+    for name, module_name, previous_ids in SRX3_SOURCES:
+        generated = {"profiles": b'{"records":[]}', "manifest": b'{"item_profiles":{}}'}
+        owner = importlib.import_module(module_name)
+        owner.admit(root, generated, "profiles", "manifest",
+                    lambda row: row["production_definition"]["production_key"],
+                    lambda value: json.dumps(value, sort_keys=True).encode())
+        document = json.loads(generated["profiles"])
+        for row in document["records"]:
+            key = row["production_definition"]["production_key"]
+            # Registration's Hireling stage attaches canonical taxonomy to
+            # earlier profiles. Yield admission runs after that stage. Never
+            # copy a later generated profile's authoring to manufacture parity.
+            if module_name != "boss_reward_yield_profiles" and key in taxonomy and "taxonomy" not in row["authoring"]:
+                row["authoring"]["taxonomy"] = copy.deepcopy(taxonomy[key])
+        previous = {f"oteryn:item.tibia.i{item}" for item in previous_ids}
+        result.append((name, document, previous))
+    return result
+
+
 def keys(document):
     rows = [
         row["production_definition"]["production_key"] for row in document["records"]
@@ -25,7 +67,7 @@ def keys(document):
     return set(rows)
 
 
-def regenerate(source, base, updates, qengine, npc, starting=None):
+def regenerate(source, base, updates, qengine, npc, starting=None, srx3=()):
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(
             "_", ""
@@ -52,10 +94,52 @@ def regenerate(source, base, updates, qengine, npc, starting=None):
     engine_keys, npc_keys = keys(qengine), keys(npc)
     if engine_keys & npc_keys or not (engine_keys | npc_keys) <= actual:
         raise ValueError("source proof keys are overlapping or absent")
+    actual_rows = {
+        row["production_definition"]["production_key"]: row
+        for document in (base, updates, starting or {"records": []})
+        for row in document["records"]
+    }
+    additions = []
+    added_keys = set()
+    cohort_names = set()
+    for name, document, previous in srx3:
+        if name in cohort_names or name in counts:
+            raise ValueError("duplicate SRX3 profile cohort")
+        cohort_names.add(name)
+        proven = keys(document)
+        if not previous <= proven or not previous <= actual:
+            raise ValueError("SRX3 source-base intersection differs")
+        new = proven - previous
+        if added_keys & new:
+            raise ValueError("SRX3 source cohorts overlap")
+        added_keys.update(new)
+        for row in document["records"]:
+            key = row["production_definition"]["production_key"]
+            if key in new and actual_rows.get(key) != row:
+                raise ValueError(f"SRX3 source profile differs: {name}/{key}")
+        additions.append((name, len(new)))
+    declared += sum(count for _, count in additions)
     if declared != len(actual):
         raise ValueError(
             f"declared cohorts={declared}, generated profile union={len(actual)}"
         )
+    if additions:
+        cohort_block = "    // Generated from closed source packets minus pinned pre-SRX3 identities.\n"
+        cohort_block += "    const SRX3_SOURCE_COHORTS: &[(&str, usize)] = &[\n"
+        cohort_block += "".join(f'        ("{name}", {count}),\n' for name, count in additions)
+        cohort_block += "    ];\n"
+        pattern = r"    // Generated from closed source packets minus pinned pre-SRX3 identities\.\n    const SRX3_SOURCE_COHORTS:.*?    ];\n"
+        if "const SRX3_SOURCE_COHORTS:" in source:
+            source, replaced = re.subn(pattern, lambda _: cohort_block, source, flags=re.S)
+            if replaced != 1:
+                raise ValueError("ambiguous generated SRX3 cohort block")
+        else:
+            position = source.index("    assert_eq!(\n        profiles.records.len(),")
+            source = source[:position] + cohort_block + source[position:]
+        term = "            + SRX3_SOURCE_COHORTS.iter().map(|(_, n)| n).sum::<usize>()\n"
+        if term not in source:
+            position = source.index("            + additions.len()\n") + len("            + additions.len()\n")
+            source = source[:position] + term + source[position:]
     # The NPC owner is already counted in PROFILE_ADDITIONS. Keep every strict
     # raw-attribute/identity assertion and remove only its duplicate sum term.
     start = source.index("    assert_eq!(\n        profiles.records.len(),")
@@ -80,7 +164,7 @@ def main():
     )
     source = TEST.read_text()
     generated, count = regenerate(
-        source, *(json.loads((ROOT / p).read_text()) for p in paths)
+        source, *(json.loads((ROOT / p).read_text()) for p in paths), srx3=source_cohorts(ROOT)
     )
     if args.check and generated != source:
         raise SystemExit("equipment cohort pin is stale")

@@ -85,10 +85,25 @@ pub struct ActivityTemplateKey {
 
 /// These are borrowed from the real activation owner for the exact template.
 /// Their lifetime is the containing active generation, like the Channel assets.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct ActivityRuntimeAssets<'a> {
+    pub activity_room: Option<Arc<crate::content::QualifiedNativeEntryRoom>>,
     pub movement_cells: &'a NativeEntryMovementCells,
     pub rooms: super::SeamRooms<'a>,
+}
+
+impl ActivityRuntimeAssets<'_> {
+    pub(super) fn movement_cells(&self) -> &NativeEntryMovementCells {
+        self.activity_room
+            .as_ref()
+            .map_or(self.movement_cells, |room| room.movement_cells())
+    }
+
+    pub(super) fn rooms(&self) -> super::SeamRooms<'_> {
+        self.activity_room.as_ref().map_or(self.rooms, |room| {
+            super::SeamRooms::new(None, Some(room.as_ref()))
+        })
+    }
 }
 
 /// The proposed runtime could not be registered under the current allocation,
@@ -131,6 +146,9 @@ pub struct ActivityConnectionSwitch {
 
 #[derive(Default)]
 pub struct ActivityRuntimeRegistry<'a> {
+    pub(super) soulpit_transitions: tokio::sync::Mutex<()>,
+    soulpit_template:
+        Mutex<Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>>,
     /// One source-script cache across this generation's derived room copies.
     /// Values are detached helper DATA, never Player payloads or canonical KV/icons.
     rotten_area_caches: Mutex<
@@ -220,6 +238,23 @@ impl ActivityRefusalPrune {
 }
 
 impl<'a> ActivityRuntimeRegistry<'a> {
+    pub(super) fn register_soulpit_template(
+        &self,
+        template: &'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate,
+    ) -> Result<(), ()> {
+        let mut current = self.soulpit_template.lock().map_err(|_| ())?;
+        if current.is_some_and(|existing| !std::ptr::eq(existing, template)) {
+            return Err(());
+        }
+        *current = Some(template);
+        Ok(())
+    }
+
+    pub(super) fn soulpit_template(
+        &self,
+    ) -> Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate> {
+        *self.soulpit_template.lock().ok()?
+    }
     pub(super) fn gc_rotten_area_caches(&self, world: [u8; 16], now_us: u64) {
         let Ok(mut caches) = self.rotten_area_caches.lock() else {
             return;
@@ -904,6 +939,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             lane: self.spell_lane.clone(),
             required_capabilities: Arc::clone(&self.required_capabilities),
             assets: ActivityRuntimeAssets {
+                activity_room: self.activity_room.clone(),
                 movement_cells: self.movement_cells,
                 rooms: self.rooms,
             },
@@ -1035,7 +1071,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .active_generation
             .ok_or(ActivityRuntimeRegistrationError)?;
         let room = assets
-            .rooms
+            .rooms()
             .gate_native_combat_cast()
             .ok_or(ActivityRuntimeRegistrationError)?;
         if binding.runtime_scope() != assignment.scope
@@ -1048,7 +1084,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             || pin.server_artifact_digest() != active.identity().server_artifact_digest()
             || pin.client_artifact_digest() != active.identity().client_artifact_digest()
             || room.compiled().server_digest() != pin.server_artifact_digest()
-            || assets.movement_cells.scope().world_id != self.world_id
+            || assets.movement_cells().scope().world_id != self.world_id
             || runtime.owner_fence().is_err()
         {
             return Err(ActivityRuntimeRegistrationError);
@@ -1067,8 +1103,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 &world_policy_revision,
             )
             .map_err(|_| ActivityRuntimeRegistrationError)?;
+        let mut assets = assets;
+        if let Some(room) = source_room {
+            assets.activity_room = Some(room);
+        }
         let mut states = self.states.for_activity();
-        states.activity_room = source_room;
         if let Some(callbacks) = source_callbacks {
             states.spell_states.get_mut().soul_war_callbacks = callbacks;
         }
@@ -1090,6 +1129,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
 
     pub(super) fn runtime_view(&self, owner: &RegisteredRuntime<'a>) -> Self {
         let mut view = self.clone();
+        view.activity_room = owner.assets.activity_room.clone();
         view.runtime = owner.runtime.clone();
         view.door = owner.door.clone();
         view.states = Arc::clone(&owner.states);

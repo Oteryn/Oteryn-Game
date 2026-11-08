@@ -136,7 +136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        let Some(position) = super::bundle_map_position(&mut runtime, self.effective_movement_cells(), actor)
+        let Some(position) = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
         else {
             return GuildReply::Rejected;
         };
@@ -250,7 +250,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || !runtime
                     .player_control_facts(actor, admitted.game_session_id)
                     .is_ok_and(|facts| facts.control_loss.is_none())
-                || super::bundle_map_position(&mut runtime, self.movement_cells, actor).is_none_or(
+                || super::bundle_map_position(&mut runtime, self.movement_cells(), actor).is_none_or(
                     |position| {
                         position.at.x != at.x
                             || position.at.y != at.y

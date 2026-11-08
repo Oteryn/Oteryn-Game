@@ -23,3 +23,23 @@ impl crate::play::mailbox::Mailbox {
         self.boss_encounter_shutdown = true;
     }
 }
+
+/// Decode this feature's committed scope receipt before the shared mailbox invalidates
+/// origin controls and applies the fresh destination's native world presentation.
+pub(in crate::play) fn activity_scope_receipt(
+    events: &[oteryn_session::SessionEvent],
+) -> Option<oteryn_session::activity_scope::ActivityScopeSnapshot> {
+    use oteryn_session::SessionEvent;
+    use oteryn_session::activity_scope::{STATE_DOMAIN_ACTIVITY_SCOPE, decode_activity_scope};
+    events
+        .iter()
+        .filter_map(|event| match event {
+            SessionEvent::GatedSnapshotReplaced(delta)
+                if delta.value.domain_id == STATE_DOMAIN_ACTIVITY_SCOPE =>
+            {
+                decode_activity_scope(&delta.value.payload).ok()
+            }
+            _ => None,
+        })
+        .next_back()
+}

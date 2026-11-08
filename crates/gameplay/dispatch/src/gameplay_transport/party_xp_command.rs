@@ -69,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let in_protection_zone = super::actor_spell::qualified_protection_zone(
             &mut runtime,
-            self.effective_movement_cells(),
+            self.movement_cells(),
             actor,
         );
         let fight = self.combat_lock_fact(actor, session).await;

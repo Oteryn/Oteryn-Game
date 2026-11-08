@@ -880,6 +880,30 @@ impl ChannelRuntimeV1 {
     }
 }
 
+/// A scoped borrow from the existing assigned owner; no carrier or continuity can be
+/// cloned out to manufacture a second Instance owner.
+pub struct SoulpitOwnerKernel<'a> {
+    pub carrier: &'a mut ChannelActorCarrier,
+    pub continuity: &'a NamespaceContinuityGuard,
+    pub content: &'a ChannelContentPin,
+}
+
+impl ScopeRuntimeV1 {
+    pub fn actor_capacity(&self) -> usize {
+        self.carrier.slots.len()
+    }
+
+    pub fn borrow_soulpit_kernel(&mut self) -> Result<SoulpitOwnerKernel<'_>, CarrierError> {
+        self.owner_fence()?;
+        self.carrier.require_soulpit_instance(&self.continuity)?;
+        Ok(SoulpitOwnerKernel {
+            carrier: &mut self.carrier,
+            continuity: &self.continuity,
+            content: &self.content,
+        })
+    }
+}
+
 impl super::ChannelRuntimeV1 {
     /// Borrow the existing scoped carrier under its current owner and namespace fence.
     /// The caller retains the runtime lock and releases this borrow before durable work.

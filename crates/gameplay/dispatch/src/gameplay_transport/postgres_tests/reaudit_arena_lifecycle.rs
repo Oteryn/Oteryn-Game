@@ -741,7 +741,7 @@ fn physical_context(
                 generation,
             };
             let mut attack = owner.states.attack.lock().await;
-            let room = owner.rooms.gate_monster_ai();
+            let room = owner.rooms().gate_monster_ai();
             assert_ne!(
                 attack.set_target(
                     &runtime,

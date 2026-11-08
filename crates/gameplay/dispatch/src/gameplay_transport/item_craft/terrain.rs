@@ -145,11 +145,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
-            let Some(at) = super::super::bundle_map_position(
-                &mut runtime,
-                self.effective_movement_cells(),
-                actor,
-            ) else {
+            let Some(at) =
+                super::super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
+            else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
             let facts = at.map.facts.pinned();

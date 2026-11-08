@@ -93,3 +93,13 @@ main predicate was refused in 0.024800 seconds. A separate fresh database
 applied all 364 current migration bodies in 4.716 seconds; the actual
 highscore-role SELECT executed in 0.281 ms. These SQL probes do not substitute
 for the separate native production-scenario replay.
+
+## Main Soulpit owner supersedes the older floor rewrite
+
+The requested `98d6ae8ce` merge includes main 1140/1141. The shared owner in
+1141 requires runtime/LastPosition floor exactly +8; native TilePos alone
+negates the map projection (ADR-0021; Crystal Soulpit staging script lines
+37–77). The older dual-floor rewrite in our unmerged 1423 is now duplicate
+work and was removed, retaining the stricter merged predicate. No merged
+migration was edited. Earlier byte-identical 1423 observations above describe
+the preceding 6f61 snapshot; the final combined schema is checked separately.

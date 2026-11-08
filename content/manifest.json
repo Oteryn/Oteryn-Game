@@ -38,6 +38,10 @@
       "index": "content/encounters/definitions/index.json",
       "records": 108
     },
+    "Encounter.Raid": {
+      "index": "content/encounters/raids/index.json",
+      "records": 239
+    },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
       "records": 6126
@@ -97,6 +101,10 @@
     "StarterKit": {
       "index": "content/starter/index.json",
       "records": 1
+    },
+    "item_conversion": {
+      "index": "content/craft/index.json",
+      "records": 129
     }
   },
   "managed_files": [
@@ -290,6 +298,18 @@
       "path": "content/cosmetics/outfits/native-cosmetics.json"
     },
     {
+      "path": "content/craft/index.json"
+    },
+    {
+      "path": "content/craft/map-facts.json"
+    },
+    {
+      "path": "content/craft/recipes.json"
+    },
+    {
+      "path": "content/craft/sources.json"
+    },
+    {
       "path": "content/creatures/definitions/creature-races.json"
     },
     {
@@ -351,6 +371,15 @@
     },
     {
       "path": "content/encounters/definitions/index.json"
+    },
+    {
+      "path": "content/encounters/raids/catalogue.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json"
+    },
+    {
+      "path": "content/encounters/raids/index.json"
     },
     {
       "path": "content/interactions/reward_claims/index.json"
@@ -800,6 +829,21 @@
       "path": "imports/tibiawiki/sources.json"
     },
     {
+      "path": "rulesets/items/imbuements/access.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/catalogue.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/equipment.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/index.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/owner-policy.json"
+    },
+    {
       "path": "rulesets/progression/wheel-of-destiny/index.json"
     },
     {
@@ -813,6 +857,19 @@
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
+  "rulesets": {
+    "Imbuements": {
+      "counts": {
+        "bound_equipment_profiles": 628,
+        "families": 24,
+        "held_equipment_observations": 35,
+        "tiers": 72,
+        "unregistered_equipment_items": 1
+      },
+      "index": "rulesets/items/imbuements/index.json",
+      "runtime_admission": "BLOCKED"
+    }
+  },
   "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
   "spell_import": {
     "collections": {

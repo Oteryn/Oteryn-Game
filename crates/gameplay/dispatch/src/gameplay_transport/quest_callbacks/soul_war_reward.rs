@@ -132,11 +132,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let item = {
                 let runtime = self.runtime.lock().await;
                 let states = self.states.spell_states.lock().await;
-                if super::super::hazard::qualified_source_frame(
-                    &runtime,
-                    self.effective_movement_cells(),
-                )
-                .is_none()
+                if super::super::hazard::qualified_source_frame(&runtime, self.movement_cells())
+                    .is_none()
                     || !runtime
                         .player_control_facts(actor, command.game_session_id)
                         .is_ok_and(|facts| facts.control_loss.is_none())

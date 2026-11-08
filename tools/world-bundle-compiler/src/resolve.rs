@@ -381,7 +381,9 @@ impl Registry {
         } else {
             Terrain {
                 kind,
-                walkable: None,
+                // Crystal 201189f src/items/items.cpp:233 loads unpass independently
+                // of the appearance's layer. Do not erase a static obstacle's fact.
+                walkable: fields.walkable.as_ref().and_then(Value::as_bool),
                 ground_speed: None,
             }
         };

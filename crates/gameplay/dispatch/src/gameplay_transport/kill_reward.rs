@@ -97,6 +97,8 @@ pub struct PendingKillSettlement {
     pub facts: ProjectedCreatureDeathFacts,
     pub creature: String,
     pub row: Option<Arc<CreatureRewardRow>>,
+    /// Crystal player.cpp:6584-6607: Soulpit stack-40 XP has no ordinary loot binding.
+    pub(super) soulpit_experience: Option<oteryn_simulation_determinism::ExactI64>,
     /// A queued source onDeath must freeze its actual drop type before this
     /// entry can reserve loot capacity or start any durable settlement.
     source_death_pending: bool,
@@ -105,8 +107,6 @@ pub struct PendingKillSettlement {
     source_completion: Option<
         oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathCompletion,
     >,
-    /// Source stack-40 XP is frozen without admitting an ordinary corpse/reward row.
-    pub(super) soulpit_experience: Option<oteryn_simulation_determinism::ExactI64>,
     pub bosstiary_only: Option<crate::domain::bosstiary::BosstiaryBoss>,
     pub(super) boss_slot_bonuses: Arc<OnceLock<BossSlotBonuses>>,
     pub ground: DeathGroundContext,
@@ -166,6 +166,10 @@ pub(super) struct CapturedActivityDeath {
 }
 
 impl PendingKillSettlement {
+    pub(super) fn experience(&self) -> Option<oteryn_simulation_determinism::ExactI64> {
+        self.soulpit_experience
+            .or_else(|| self.row.as_ref().map(|row| row.xp_amount))
+    }
     pub(super) fn base_experience(&self) -> Option<oteryn_simulation_determinism::ExactI64> {
         self.soulpit_experience
             .or_else(|| self.row.as_ref().map(|row| row.xp_amount))
@@ -1415,123 +1419,6 @@ fn refuse(reason: &str, creature: &str) {
 
 /// The real lethal callback freezes the same contributors, equipment and party
 /// dependencies as ordinary XP. Only the source stack-40 non-summon is admitted.
-fn record_soulpit_boss_kill(
-    runtime: &mut ChannelRuntimeV1,
-    sink: KillSink<'_>,
-    target: ExactActorRef,
-    tag: oteryn_gameplay_entities::carrier::soulpit::SoulpitCreatureTag,
-    lethal: CapturedRewardPrincipal,
-    now_ms: u64,
-    observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
-) {
-    if tag.stack != crate::domain::soulpit::SoulpitStack::Boss || tag.is_summon {
-        return;
-    }
-    let Ok(snapshot) = runtime.companion_snapshot_including_dead(target) else {
-        return;
-    };
-    let creature = snapshot.state.policy.definition_key.clone();
-    let Some(base) = sink
-        .rewards
-        .encounter_facts(&creature)
-        .and_then(|f| f.experience)
-    else {
-        return;
-    };
-    let Ok(mut amount) = tag.experience(base) else {
-        return;
-    };
-    if let Some(choice) = runtime.daily_boost() {
-        let Ok(boosted) = crate::content::daily_boost::apply_daily_boost(
-            amount,
-            &creature,
-            &choice.creature,
-            (2, 1),
-        ) else {
-            return;
-        };
-        amount = boosted;
-    }
-    let Ok(amount) = i64::try_from(amount) else {
-        return;
-    };
-    if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
-        .is_err()
-    {
-        return;
-    }
-    let (mut facts, shares, gone, principal) = {
-        let mut death = runtime.borrow_combat_death();
-        let Ok(top) = death.top_damage_contributor(target) else {
-            return;
-        };
-        let (principal, last) = top.present().map_or((lethal, None), |winner| {
-            (
-                CapturedRewardPrincipal {
-                    character: winner.character,
-                    lease_generation: winner.lease_generation,
-                    session: winner.session,
-                    actor: winner.actor,
-                },
-                winner.last_damage_at_ms,
-            )
-        });
-        let Ok(mut facts) =
-            capture_projected_death_facts(&mut death, target, principal, last, now_ms)
-        else {
-            return;
-        };
-        if top.present().is_none() {
-            facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
-        }
-        let Ok(shares) = death.reward_damage_shares(target) else {
-            return;
-        };
-        (facts, shares, top.is_gone(), principal)
-    };
-    facts.died_at_unix_ms = u64::try_from(super::npc_trade_command::unix_ms_now()).unwrap_or(0);
-    let Ok(activity) = super::party_xp::capture_activity_at_death(
-        runtime,
-        principal.character,
-        &shares,
-        sink.activity,
-    ) else {
-        return;
-    };
-    sink.queue
-        .freeze_proficiency(runtime, target, facts.occurrence, &shares, gone);
-    let pin = runtime.content_pin();
-    let hex = |bytes: [u8; 32]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
-    let ground = DeathGroundContext {
-        boss_spawn: None,
-        map_revision: format!("sha256:{}", hex(pin.map_revision_digest())),
-        content_revision: format!("sha256:{}", hex(pin.server_artifact_digest())),
-        ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
-        sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
-        native_room_placement_context: pin.frame_binding_digest().to_vec(),
-    };
-    let mut entry = PendingKillSettlement::without_materialization(
-        facts,
-        creature,
-        None,
-        ground,
-        target,
-        observed_at,
-    );
-    entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(amount));
-    entry.prey_checkpoint = sink.prey.and_then(|states| {
-        states.prey_kill_checkpoint(
-            runtime,
-            principal.actor,
-            principal.session,
-            &entry.creature,
-            observed_at.map_or(now_ms.saturating_mul(1000), |at| at.get()),
-        )
-    });
-    entry.damage_shares = shares;
-    entry.activity_at_death = activity;
-    accept_kill(runtime, sink.queue, entry);
-}
 
 /// Project `target`'s committed death and append its settle (§1.1–§1.3). `lethal` is the
 /// attacker whose committed hit was lethal; it is the principal only when no contributor was
@@ -1592,10 +1479,11 @@ pub fn record_creature_kill(
         );
         return;
     }
-    // Source variants use the existing lethal queue only for stack40 XP and
-    // weapon points. A corpse/reward row and ordinary kill progression stay absent.
-    if let Some(tag) = runtime.soulpit_variant(target) {
-        record_soulpit_boss_kill(runtime, sink, target, tag, lethal, now_ms, observed_at);
+    // Instance Soulpit deaths belong to its lifecycle/XP adapter. They never enter the
+    // ordinary corpse, Bestiary, Task Board, proficiency, Forge or Echo reward pipeline.
+    if runtime.soulpit_variant(target).is_some() {
+        record_soulpit_kill(runtime, sink, target, lethal, now_ms, observed_at);
+
         return;
     }
     let snapshot = runtime.companion_snapshot_including_dead(target);
@@ -2188,6 +2076,92 @@ pub fn record_creature_kill(
     accept_kill(runtime, sink.queue, entry);
 }
 
+/// Crystal 201189f player.cpp:6584-6607,12932-12936: only the non-summon stack-40
+/// death grants XP and weapon points. No ordinary corpse Item or progression callback.
+fn record_soulpit_kill(
+    runtime: &mut ChannelRuntimeV1,
+    sink: KillSink<'_>,
+    target: ExactActorRef,
+    lethal: CapturedRewardPrincipal,
+    now_ms: u64,
+    observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+) {
+    let Some(tag) = runtime.soulpit_variant(target) else {
+        return;
+    };
+    if tag.stack != crate::domain::soulpit::SoulpitStack::Boss || tag.is_summon {
+        return;
+    }
+    let Ok(snapshot) = runtime.companion_snapshot_including_dead(target) else {
+        return;
+    };
+    let creature = snapshot.state.policy.definition_key.clone();
+    let Some(amount) = sink
+        .rewards
+        .encounter_facts(&creature)
+        .and_then(|facts| facts.experience)
+        .and_then(|base| tag.experience(base).ok())
+        .and_then(|amount| i64::try_from(amount).ok())
+    else {
+        return;
+    };
+    let pin = runtime.content_pin();
+    let hex = |bytes: [u8; 32]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+    let ground = DeathGroundContext {
+        boss_spawn: None,
+        map_revision: format!("sha256:{}", hex(pin.map_revision_digest())),
+        content_revision: format!("sha256:{}", hex(pin.server_artifact_digest())),
+        ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
+        sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
+        native_room_placement_context: pin.frame_binding_digest().to_vec(),
+    };
+    let mut death = runtime.borrow_combat_death();
+    let Ok(top) = death.top_damage_contributor(target) else {
+        return;
+    };
+    let (principal, last_damage) = top.present().map_or((lethal, Some(now_ms)), |winner| {
+        (
+            CapturedRewardPrincipal {
+                character: winner.character,
+                lease_generation: winner.lease_generation,
+                session: winner.session,
+                actor: winner.actor,
+            },
+            winner.last_damage_at_ms,
+        )
+    });
+    if crate::combat::project_fixed_one_creature_death(&mut death, target).is_err() {
+        return;
+    }
+    let Ok(mut facts) =
+        capture_projected_death_facts(&mut death, target, principal, last_damage, now_ms)
+    else {
+        return;
+    };
+    facts.died_at_unix_ms = u64::try_from(super::npc_trade_command::unix_ms_now()).unwrap_or(0);
+    let Ok(shares) = death.reward_damage_shares(target) else {
+        return;
+    };
+    sink.queue
+        .freeze_proficiency(runtime, target, facts.occurrence, &shares, top.is_gone());
+    let mut entry = PendingKillSettlement::without_materialization(
+        facts,
+        creature,
+        None,
+        ground,
+        target,
+        Some(observed_at.unwrap_or_else(|| {
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                now_ms.saturating_mul(1000),
+            )
+        })),
+    );
+    entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(amount));
+    entry.activity_at_death = Some(sink.activity.to_vec());
+    entry.damage_shares = shares;
+    accept_kill(runtime, sink.queue, entry);
+}
+
 /// Append `entry` to `queue`. Once the queue accepts it (queued or parked), pin its killed
 /// actor's corpse projection, so no later death evicts it before the settle binds the committed
 /// corpse (Codex 4248192466). A duplicate keeps the pin its first append took; a kill the full
@@ -2211,6 +2185,7 @@ fn accept_kill(
     if entry.soulpit_experience.is_none() {
         super::grizzly_kills::capture(runtime, queue, &mut entry);
     }
+
     let target = entry.target;
     let creature = entry.creature.clone();
     let outcome = queue.append(entry);
@@ -2785,13 +2760,7 @@ struct DurableKillSettle<'s, 'a, 'f, 'g> {
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
         if entry.soulpit_experience.is_some() {
-            let report = self.settle_soulpit_xp(entry).await;
-            release_settled_corpse(
-                &mut *self.admission.runtime.lock().await,
-                entry,
-                report.verdict,
-            );
-            return report;
+            return self.settle_soulpit(entry).await;
         }
         if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
             return SettleReport {
@@ -2818,7 +2787,7 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     }
 }
 impl DurableKillSettle<'_, '_, '_, '_> {
-    async fn settle_soulpit_xp(&self, entry: &PendingKillSettlement) -> SettleReport {
+    async fn settle_soulpit(&self, entry: &PendingKillSettlement) -> SettleReport {
         let admission = self.admission;
         let Some(permit) = admission.spell_lane_permit().await else {
             return SettleReport {
@@ -2826,7 +2795,8 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         };
-        let proficiency_only = admission
+        let mut no_progression = false;
+        let principal_gone = admission
             .states
             .attack
             .lock()
@@ -2836,14 +2806,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .proficiency_deaths
             .iter()
             .any(|death| death.occurrence == entry.facts.occurrence && death.reward_principal_gone);
-        let no_progression = admission
-            .progression_binding(self.fence.game_session_id)
-            .is_none();
-        let mut entry = entry.clone();
-        if let Some(amount) = entry.soulpit_experience
-            && !no_progression
-            && !proficiency_only
+        if !principal_gone
+            && admission
+                .progression_binding(entry.facts.principal.session)
+                .is_some()
         {
+            let mut entry = entry.clone();
             let masteries = match admission
                 .root
                 .read_animus_masteries(admission.character, self.fence.character_id)
@@ -2857,68 +2825,62 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     };
                 }
             };
+            let base = entry
+                .experience()
+                .and_then(|xp| u64::try_from(xp.get()).ok())
+                .unwrap_or(0);
             let mastered = masteries.iter().any(|key| key == &entry.creature);
-            let animus = animus_mastery_experience(
-                u64::try_from(amount.get()).unwrap_or(0),
-                masteries.len(),
-                mastered,
-            );
-            let scaled = oteryn_gameplay_foundation::scheduled_events::scale_gain(
-                animus,
+            let amount = crate::combat::animus_mastery_experience(base, masteries.len(), mastered);
+            let amount = oteryn_gameplay_foundation::scheduled_events::scale_gain(
+                amount,
                 self.event_rates.experience,
             );
-            let Ok(scaled) = i64::try_from(scaled) else {
+            let Ok(amount) = i64::try_from(amount) else {
                 return SettleReport {
-                    verdict: SettleVerdict::Final,
+                    verdict: SettleVerdict::Retry,
                     no_progression: false,
                 };
             };
-            entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(scaled));
-        }
-        let mut retry = false;
-        if !no_progression && !proficiency_only {
+            entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(amount));
             match admission.settle_party_experience(&permit, &entry).await {
-                Ok(settled) => {
-                    retry = matches!(
-                        settled.xp,
-                        Err(CombatDeathRewardXpError::Progression(
-                            CharacterProgressionError::Unavailable(_)
-                        ))
-                    );
+                Ok(party) => {
+                    if matches!(party.xp, Err(CombatDeathRewardXpError::Progression(_))) {
+                        return SettleReport {
+                            verdict: SettleVerdict::Retry,
+                            no_progression: false,
+                        };
+                    }
                     admission
                         .states
                         .level_refresh
-                        .mark(settled.leveled.iter().copied());
-                    admission.states.title_refresh.mark(settled.leveled);
-                    if let Ok(xp) = &settled.xp {
+                        .mark(party.leveled.iter().copied());
+                    admission.states.title_refresh.mark(party.leveled);
+                    if let Ok(xp) = &party.xp {
                         admission
                             .states
                             .soul_kills
                             .mark(super::soul_kill_live::soul_hook(xp));
                     }
-                    drop(settled.slots);
                 }
-                Err(CharacterProgressionError::Unavailable(_)) => retry = true,
-                Err(_) => {}
+                Err(_) => {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                }
             }
-        }
-        if !retry && !proficiency_only && entry.prey_checkpoint.is_some() {
-            let mut slot = admission
-                .revision_sequencer
-                .acquire(self.fence.character_id)
-                .await;
-            retry = !admission
-                .credit_prey_kill(&entry, None, &mut slot, self.fence)
-                .await;
+        } else if !principal_gone {
+            no_progression = true;
         }
         drop(permit);
-        if retry {
-            return SettleReport {
-                verdict: SettleVerdict::Retry,
-                no_progression,
-            };
-        }
-        admission.credit_weapon_proficiency_kill(&entry).await;
+        admission
+            .credit_weapon_proficiency_points(entry, Some(1500))
+            .await;
+        release_settled_corpse(
+            &mut *admission.runtime.lock().await,
+            entry,
+            SettleVerdict::Final,
+        );
         SettleReport {
             verdict: SettleVerdict::Final,
             no_progression,
@@ -3024,6 +2986,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 },
                 Err(_) => return SettleReport { verdict: SettleVerdict::Retry, no_progression: false },
             }
+        }
+        if entry.soulpit_experience.is_some() {
+            return self.settle_soulpit(entry).await;
         }
         if !admission.credit_echo_warden_death(entry).await {
             return SettleReport {
@@ -3631,6 +3596,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn credit_weapon_proficiency_kill(&self, entry: &PendingKillSettlement) {
+        self.credit_weapon_proficiency_points(entry, proficiency_points(self, entry))
+            .await;
+    }
+
+    async fn credit_weapon_proficiency_points(
+        &self,
+        entry: &PendingKillSettlement,
+        points: Option<u32>,
+    ) {
         let contributors = self
             .states
             .attack
@@ -3643,7 +3617,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|death| death.occurrence == entry.facts.occurrence)
             .map(|death| death.contributors.clone())
             .unwrap_or_default();
-        let points = proficiency_points(self, entry);
         let mut checkpoints = Vec::new();
         {
             let runtime = self.runtime.lock().await;

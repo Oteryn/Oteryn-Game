@@ -71,9 +71,28 @@ pub(super) fn valid_request(r: &ActivityEnterRequest, boss_room: bool) -> bool {
     has_initiator
 }
 
-fn binding(r: &ActivityEnterRequest, soulpit: Option<&SoulpitAdmission<'_>>) -> [u8; 32] {
+fn binding(
+    r: &ActivityEnterRequest,
+    soulpit: Option<&super::soulpit::SoulpitEntryContext<'_>>,
+) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash_field(&mut hash, b"native-activity-enter-v1");
+    if let Some(context) = soulpit {
+        hash_field(&mut hash, &context.request.source);
+        hash_field(
+            &mut hash,
+            context.request.source_definition.family.as_bytes(),
+        );
+        hash_field(
+            &mut hash,
+            context.request.source_definition.production_key.as_bytes(),
+        );
+        hash_field(
+            &mut hash,
+            context.request.source_definition.revision_ref.as_bytes(),
+        );
+        hash_field(&mut hash, &context.request.intent);
+    }
     for text in [&r.activity_key, &r.template_revision, &r.content_revision] {
         hash_field(&mut hash, text.as_bytes());
     }
@@ -155,15 +174,44 @@ pub(super) async fn enter_in_transaction(
     node: &NodeIncarnationProof,
     r: &ActivityEnterRequest,
     boss_room: bool,
-    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
-    soulpit: Option<&SoulpitAdmission<'_>>,
+    soulpit: Option<super::soulpit::SoulpitEntryContext<'_>>,
 ) -> Result<ActivityEnterOutcome> {
+    if (r.activity_key == super::super::soulpit::SOULPIT_ACTIVITY_KEY) != soulpit.is_some()
+        || soulpit.as_ref().is_some_and(|context| {
+            boss_room
+                || r.time_limit_ms != 600_000
+                || context.request.handoff_id != r.handoff_id
+                || context.request.command.command_id().get() != r.command_id
+                || r.participants
+                    .iter()
+                    .find(|participant| {
+                        participant.source.character_id.as_bytes()
+                            == r.initiating_character_id.as_bytes()
+                    })
+                    .is_none_or(|participant| {
+                        participant.source.game_session_id
+                            != context.request.command.game_session_id()
+                    })
+                || context.request.participants.len() != r.participants.len()
+                || r.participants.iter().any(|participant| {
+                    context
+                        .request
+                        .participants
+                        .iter()
+                        .filter(|fact| fact.character == participant.source.character_id)
+                        .count()
+                        != 1
+                })
+        })
+    {
+        return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
+    }
     let initiator = r
         .participants
         .iter()
         .find(|p| p.source.character_id.as_bytes() == r.initiating_character_id.as_bytes())
         .ok_or(DurabilityError::InvalidStoredState)?;
-    let request_binding = binding(r, soulpit);
+    let request_binding = binding(r, soulpit.as_ref());
     // Lock all source sessions before roots, both in Character order. This also
     // serializes command receipt absence without reversing a progression writer's
     // session-then-root order or locking the initiator ahead of other members.
@@ -309,30 +357,31 @@ pub(super) async fn enter_in_transaction(
     for p in &r.participants {
         insert_participant(tx, r, p).await?;
     }
-    super::super::quest_state::rotten_flame::record_entry_origin(tx, r).await?;
-    if let Some(admission) = soulpit
-        && let Err(error) = root
-            .write_soulpit_entry_with_recovery_in_transaction(
-                tx,
-                admission.permit,
-                recovery,
-                node,
-                initiator.source,
-                &admission.request,
-                admission.native,
-            )
-            .await
-    {
-        use super::super::soulpit::SoulpitWriteError;
-        let refusal = match error {
-            SoulpitWriteError::Unavailable(error) => return Err(error),
-            SoulpitWriteError::AuthorityRejected => ActivityRefusal::AuthorityRejected,
-            SoulpitWriteError::ConflictingOccurrence => ActivityRefusal::ReplayConflict,
-            SoulpitWriteError::StaleState => ActivityRefusal::ContentChanged,
-            SoulpitWriteError::Rule(_) => ActivityRefusal::InvalidInput,
-        };
-        return Ok(ActivityEnterOutcome::Refused(refusal));
+    // Crystal 201189f data-global/scripts/quests/soulpit/soulpit_fight.lua:37-106:
+    // validate the whole staging group and burn one core before entry. Keep the
+    // debit in this transaction, before any source session becomes terminal.
+    if let Some(context) = soulpit {
+        match super::super::soulpit::write_shared_entry(
+            root,
+            tx,
+            context.recovery,
+            node,
+            initiator.source,
+            context.request,
+            context.native,
+        )
+        .await
+        {
+            Ok(_) => {}
+            Err(super::super::soulpit::SoulpitWriteError::Unavailable(error)) => return Err(error),
+            Err(_) => {
+                return Ok(ActivityEnterOutcome::Refused(
+                    ActivityRefusal::AuthorityRejected,
+                ));
+            }
+        }
     }
+    super::super::quest_state::rotten_flame::record_entry_origin(tx, r).await?;
     // 0265 source-ended trigger would abort PREPARED. Decide before terminalizing
     // any source; its deferred proof checks all fresh destinations at COMMIT.
     sqlx::query("UPDATE game_activity_handoff_groups SET state=2,decided_at=$2 WHERE handoff_id=encode($1,'hex')::uuid AND state=1")

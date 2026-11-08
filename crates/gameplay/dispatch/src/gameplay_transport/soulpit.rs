@@ -16,15 +16,18 @@ use oteryn_protocol_oteryn::world_object::{
 };
 
 mod cadence;
+mod content;
 mod entry;
 mod handoff;
-mod native_driver;
+mod handoff_owner;
+pub(super) use handoff_owner::NativeSoulpitHandoff as SharedSoulpitOwner;
+mod owner_runtime;
 mod passages;
-mod scene;
-mod shared_entry;
-mod shared_owner;
-pub(super) use shared_owner::SharedSoulpitOwner;
+mod rewards;
 pub mod runtime;
+mod scene;
+#[cfg(test)]
+mod source_owner_compat;
 pub use handoff::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
 };
@@ -231,8 +234,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<String>()
             );
             let native_room_placement_context = pin.frame_binding_digest().to_vec();
-            let Some(at) =
-                super::bundle_map_position(&mut runtime, self.effective_movement_cells(), actor)
+            let Some(at) = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };

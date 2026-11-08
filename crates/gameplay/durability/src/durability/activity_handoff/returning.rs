@@ -233,6 +233,8 @@ pub(super) async fn return_in_transaction(
         },
         ActivityReturnReason::Defeated => sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid AND state=2 AND exit_deadline <= $2) OR EXISTS(SELECT 1 FROM game_soulpit_encounters f JOIN game_activity_handoff_groups g USING(handoff_id) WHERE f.handoff_id=encode($1,'hex')::uuid AND g.activity_key=$3 AND f.terminal)")
             .bind(r.handoff_id.as_slice()).bind(now).bind(super::super::soulpit::SOULPIT_ACTIVITY_KEY).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::SoulpitTerminal => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_soulpit_encounters WHERE handoff_id=encode($1,'hex')::uuid AND terminal)")
+            .bind(r.handoff_id.as_slice()).fetch_one(&mut **tx).await?,
     };
     if !due {
         return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::NotDue));
@@ -349,7 +351,7 @@ pub(super) async fn return_in_transaction(
         .bind(match r.reason { ActivityReturnReason::CapabilityMismatch { epoch } | ActivityReturnReason::StaffKickLost { epoch } => Some(epoch.get().to_string()), _ => None })
         .execute(&mut **tx).await?;
     if soulpit {
-        super::super::soulpit::record_shared_return(tx, r).await?;
+        super::super::soulpit::shared_returning(tx, r, recovering).await?;
     }
     sqlx::query("UPDATE game_boss_room_participants SET returned_at=$3 WHERE admission=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND returned_at IS NULL")
         .bind(r.handoff_id.as_slice()).bind(r.source.character_id.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;

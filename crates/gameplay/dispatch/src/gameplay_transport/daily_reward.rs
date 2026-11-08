@@ -105,7 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(at) = super::bundle_map_position::bundle_map_position(
             &mut runtime,
-            self.effective_movement_cells(),
+            self.movement_cells(),
             actor,
         ) {
             let Some(index) =
@@ -154,7 +154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return false;
         }
-        if self.effective_movement_cells().scope().coordinate_frame.as_str()
+        if self.movement_cells().scope().coordinate_frame.as_str()
             != content.entry_shrine.coordinate_frame
         {
             return false;
@@ -164,9 +164,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: content.entry_shrine.y,
             z: i32::from(content.entry_shrine.floor),
         };
-        if self.effective_movement_cells()
+        if self.movement_cells()
             .index()
-            .lookup(self.effective_movement_cells().scope(), shrine_cell)
+            .lookup(self.movement_cells().scope(), shrine_cell)
             != Ok(crate::content::CollisionClass::Walkable)
         {
             return false;

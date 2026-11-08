@@ -1169,7 +1169,8 @@ mod tests {
     }
 
     #[test]
-    fn worldchg_embedded_ff_inputs_have_real_loot_rows_and_bounded_seeded_plans() {
+    fn worldchg_embedded_ff_inputs_have_real_loot_rows_and_bounded_seeded_plans()
+    -> std::result::Result<(), String> {
         use oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables;
         let mut identity = [1u8; 16];
         identity[6] = 0x71;
@@ -1193,16 +1194,21 @@ mod tests {
                 .reward_table()
                 .row(&creature)
                 .expect("source corpse and entire native loot closure must settle");
+            let corpse_item = row
+                .corpse_item
+                .as_ref()
+                .ok_or_else(|| format!("{creature}: actual source corpse required"))?;
+            let loot_table_ref = row
+                .loot_table_ref
+                .as_ref()
+                .ok_or_else(|| format!("{creature}: actual source loot table required"))?;
             assert_eq!(
-                row.corpse_item.production_key,
+                corpse_item.production_key,
                 format!("oteryn:item.tibia.i{corpse}")
             );
             assert!(
                 native
-                    .item_policy(
-                        &row.corpse_item.production_key,
-                        &row.corpse_item.revision_ref
-                    )
+                    .item_policy(&corpse_item.production_key, &corpse_item.revision_ref)
                     .expect("native corpse")
                     .record()
                     .admission
@@ -1245,7 +1251,7 @@ mod tests {
             let mut observed = false;
             for seed in 0..8192u32 {
                 let key = LootPlanDeathKey::new([1; 16], [2; 16], 1, seed, 1);
-                let plan = plan_creature_loot(key, &row.loot_table_ref, &row.loot_table)
+                let plan = plan_creature_loot(key, loot_table_ref, &row.loot_table)
                     .expect("unchanged native loot planner");
                 let top_level = plan
                     .entries
@@ -1288,6 +1294,7 @@ mod tests {
             .expect("source corpse facts");
         assert_eq!(seacrest.container_capacity, Some(36));
         assert!(check_corpse_container_capacity(31).is_err());
+        Ok(())
     }
 
     #[test]
