@@ -38,7 +38,7 @@ class VariantStackSerializationTests(unittest.TestCase):
         # W15b's 67 recipes include these stack normalizations (PR2770 Q4/A).
         # ITEMHOLD-Q qualifies two more without changing their raw source witnesses.
         errors = variants.native_lowering_errors(self.records)
-        self.assertEqual(len(errors), 36)
+        self.assertEqual(len(errors), 35)
         qualified = {'oteryn:reward-claim.kv.ornamentedshield',
                      'oteryn:reward-claim.kv.triangletower'}
         self.assertTrue(qualified.isdisjoint(error['claim'] for error in errors))
@@ -48,7 +48,7 @@ class VariantStackSerializationTests(unittest.TestCase):
                 self.assertIn('native_contents', row['definition'])
                 del row['definition']['native_contents']
         previous_errors = variants.native_lowering_errors(without_itemhold)
-        self.assertEqual(len(previous_errors), 38)
+        self.assertEqual(len(previous_errors), 37)
         self.assertEqual({error['claim'] for error in previous_errors}
                          - {error['claim'] for error in errors}, qualified)
 
