@@ -152,6 +152,7 @@ fn scenario(equipped: bool, tiny: bool) -> TestResult {
             expected_epoch: 1,
         };
         let content = NativeItemWeights(native).with_wheel(owner.premium_coordinator);
+        let donation_started = std::time::Instant::now();
         let first = h
             .root
             .consume_cake_substances(
@@ -166,6 +167,7 @@ fn scenario(equipped: bool, tiny: bool) -> TestResult {
             )
             .await?
             .ok_or("typed Cake outcome")?;
+        let donation_elapsed_ms = donation_started.elapsed().as_millis();
         assert_eq!(first.disposition, UseDisposition::Committed);
         assert!(first.fresh);
         assert_eq!(first.effects["accepted"], 200);
@@ -325,7 +327,7 @@ fn scenario(equipped: bool, tiny: bool) -> TestResult {
             assert_eq!(revision, "2");
         }
         eprintln!(
-            "W05D_CAKE_BAKER_PG_EXECUTED equipment_source={equipped} tiny200={tiny} elapsed_ms={}",
+            "W05D_CAKE_BAKER_PG_EXECUTED equipment_source={equipped} tiny200={tiny} donation_elapsed_ms={donation_elapsed_ms} elapsed_ms={}",
             started.elapsed().as_millis()
         );
         drop(permit);
