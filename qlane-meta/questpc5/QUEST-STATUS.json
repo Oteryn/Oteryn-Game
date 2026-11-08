@@ -928,13 +928,21 @@
     },
     "n2_batch": {
       "scope": "Sterling first contact only; exact retained NPC names/positions for four existing NPCs, only Sterling placement activated",
-      "state": "WIP compiling checkpoint under PREPUSH-2 cadence exception; no qualification claimed",
+      "state": "QUALIFIED Sterling first-contact slice only; whole nine-stage quest UNFINISHED",
       "first_red_pg_seconds": 43.216368381,
-      "last_red_pg_seconds": 127.427800978,
-      "last_red_point": "Test asserted native floor -7 for runtime legacy-z7. Exact assertion corrected per npc_actor::cell; rerun pending.",
+      "last_red_pg_seconds": 106.820341344,
+      "last_red_point": "Separate short-lived wire connections correctly dropped NPC focus; fixed by existing wire_reward conversation helper, then GREEN.",
       "authoring": "PASS exact CI checks+104modules1121tests, own source/placement units, content tree/equivalence, all generated native outputs/equipment/worldmetadata",
-      "remaining_tests": "focused PG rerun and dispatch/content crate units pending; never treat the whole nine-stage quest as qualified",
-      "proof": "TARGUNA-CONTACT-PROOF.json"
+      "remaining_tests": "Broader dispatch/content unit run1039/1954passed,zero failures so far; remainder pending under PREPUSH-2 cadence exception. OwnPG and all shipping checks PASS.",
+      "proof": "TARGUNA-CONTACT-PROOF.json",
+      "green_pg": {
+        "case": "questpc5_targuna_sterling_first_contact_commits_once_without_reward_or_completion",
+        "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "duration_seconds": 122.354090168,
+        "success": true,
+        "marker": "TARGUNA_FIRST_CONTACT_PROVEN stage=0 receipts=1 rewards=0 completes=false",
+        "log": "/tmp/questpc5-n2-contact-green-pg-conversation.log"
+      }
     }
   },
   {

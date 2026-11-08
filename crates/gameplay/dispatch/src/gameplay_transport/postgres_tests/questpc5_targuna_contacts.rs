@@ -129,15 +129,39 @@ pub(super) async fn exercise(
         .position;
     // NPC placements use native -z; runtime LocalPosition uses legacy z (npc_actor::cell).
     assert_eq!((position.x, position.y, position.floor), (31928, 31903, 7));
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.push(oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("NPC service capability must be offered before selecting it")?;
+    assert!(admitted.continuity.selected_capabilities.contains(3));
     let items: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE lifecycle=1")
             .fetch_one(&harness.pool)
             .await?;
     assert_eq!(progress(owner, admitted, authority).await?, -1);
-    wire_talk(owner, admitted, npc, 1, "hi").await?;
-    wire_talk(owner, admitted, npc, 2, "mission").await?;
+    let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+        .into_iter()
+        .find(|row| row.key == "oteryn:quest-reward/questpc5-targuna-sterling-accept")
+        .ok_or("Targuna callback")?;
+    // Keep greeting and acceptance in one connection; disconnect correctly clears focus.
+    let (accepted, _, command) =
+        super::qengine_rewards::wire_reward(owner, admitted, npc, &callback, false).await?;
+    assert_eq!(accepted, NpcIntentDisposition::Ok);
     assert_eq!(progress(owner, admitted, authority).await?, 0);
-    wire_talk(owner, admitted, npc, 2, "mission").await?;
+    wire_talk(owner, admitted, npc, command, "mission").await?;
+    // Refuse a new claim in a live conversation, rather than merely without NPC focus.
+    super::classic_quests::talk(owner, admitted, npc, command + 1, "hi").await?;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -152,7 +176,7 @@ pub(super) async fn exercise(
             admitted.runtime_actor.ok_or("actor")?,
             UseCommand {
                 game_session_id: admitted.game_session_id,
-                command_id: 3,
+                command_id: command + 2,
                 item_fence: Some(fence.item_fence()),
             },
             NpcTalkIntent {
