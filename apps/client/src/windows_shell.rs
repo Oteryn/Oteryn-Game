@@ -352,6 +352,11 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if self.settings.take_magical_archive_request()
+            && let Some(play) = &self.play
+        {
+            play.link.magical_archive_open();
+        }
         let menu_events = self.settings.take_window_events(self.play.is_some());
         if !menu_events.is_empty() && self.play.is_some() {
             self.handle_input(event_loop, &menu_events);

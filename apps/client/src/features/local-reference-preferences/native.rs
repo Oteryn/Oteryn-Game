@@ -74,6 +74,12 @@ impl Settings {
                         AppendMenuW(windows, MF_STRING, 25100 + index, wide(label).as_ptr());
                     }
                     AppendMenuW(
+                        windows,
+                        MF_STRING,
+                        25300,
+                        wide("Cyclopedia: Magical Archive").as_ptr(),
+                    );
+                    AppendMenuW(
                         menu,
                         MF_POPUP,
                         windows as usize,
@@ -107,6 +113,9 @@ impl Settings {
                 (&*self.shared as *const Arc<Mutex<Shared>>) as usize,
             );
         }
+    }
+    pub(super) fn take_magical_archive_request(&self) -> bool {
+        lock(&self.shared).take_magical_archive_request()
     }
     pub(super) fn take_window_events(
         &self,
@@ -211,6 +220,11 @@ unsafe extern "system" fn menu_proc(
         if msg == WM_COMMAND && w & 0xffff == 25001 {
             let shared = &*(data as *const Arc<Mutex<Shared>>);
             open(Arc::clone(shared));
+            return 0;
+        }
+        if msg == WM_COMMAND && w & 0xffff == 25300 {
+            let shared = &*(data as *const Arc<Mutex<Shared>>);
+            lock(shared).request_magical_archive();
             return 0;
         }
         if msg == WM_COMMAND && w & 0xffff == 25200 {

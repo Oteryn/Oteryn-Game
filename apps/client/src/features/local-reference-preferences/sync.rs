@@ -50,6 +50,7 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 
 pub struct SettingsState {
     window_action: Option<&'static str>,
+    magical_archive_requested: bool,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
     pub preferences: ReferencePreferences,
@@ -61,6 +62,13 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn request_magical_archive(&mut self) {
+        self.magical_archive_requested = true;
+    }
+    pub fn take_magical_archive_request(&mut self) -> bool {
+        std::mem::take(&mut self.magical_archive_requested)
+    }
+
     pub fn queue_window(&mut self, id: &str) -> bool {
         let Some((id, _)) = WINDOW_ACTIONS.iter().find(|(key, _)| *key == id) else {
             return false;
@@ -125,6 +133,7 @@ impl SettingsState {
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
             window_action: None,
+            magical_archive_requested: false,
             store,
             preferences,
             feedback,

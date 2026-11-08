@@ -3,6 +3,7 @@ use oteryn_client_runtime::spell_catalog::CatalogState;
 pub struct Panel {
     pub selected: bool,
     pub open: bool,
+    pub archive_open: bool,
     pub catalog: CatalogState,
     pub filter: String,
     pub page: usize,

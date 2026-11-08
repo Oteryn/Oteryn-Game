@@ -11,6 +11,16 @@ impl PlayLink {
     pub fn spell_catalog_assign(&self, slot: usize) -> bool {
         assign(&mut crate::play::mailbox::lock(&self.mailbox), slot)
     }
+    pub fn magical_archive_open(&self) {
+        #[cfg(windows)]
+        super::view::open_archive(self);
+        #[cfg(not(windows))]
+        {
+            crate::play::mailbox::lock(&self.mailbox)
+                .spell_catalog
+                .archive_open = true;
+        }
+    }
     pub fn spell_catalog_open(&self) {
         #[cfg(windows)]
         super::view::open_window(self);

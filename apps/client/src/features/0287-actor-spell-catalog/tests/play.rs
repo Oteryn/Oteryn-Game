@@ -121,7 +121,8 @@ fn o059_detail_card_consumes_server_cooldown_observation() -> Result<(), Box<dyn
 }
 
 #[test]
-fn o080_archive_has_its_own_window_lifetime_and_menu_request() -> Result<(), Box<dyn std::error::Error>> {
+fn o080_archive_has_its_own_window_lifetime_and_menu_request()
+-> Result<(), Box<dyn std::error::Error>> {
     let (link, _, outbox) = play_channel();
     outbox.spell_catalog_initialize(true, Some(Vec::new()))?;
     let mut settings = crate::play::SettingsState::new(None);
