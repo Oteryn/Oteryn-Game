@@ -1796,3 +1796,57 @@ package) and the complete quest unit runner are executing, with no failures
 reported so far. The queued nextest build was replaced before execution by
 `cargo test --no-fail-fast` to share in-process fixtures; no assertions or
 tests are omitted. These ongoing runs are not claimed as green at push time.
+
+## PR 3034 head 370423fbc: isolated PG comparison (2026-11-08)
+
+Fetched and merged `origin/main` first at `3209d3d61`, already an ancestor.
+After the detached comparison, fetched/merged its successor `f5b584ef1` before
+this evidence update. That successor changes only four repository policy/CI
+files, with no Rust or content changes. No production, fixture, timeout, pool, security gate, content or test
+source is changed for this report. The three reported failures all passed
+serially on the SRVENC branch, with a configured real PostgreSQL connection:
+
+- `quest_container_chests_leaf_text_is_frozen_and_replayed`: 29.73 s;
+  `W15B_LEAF_TEXT POSTGRES_CASE_COMPLETED`.
+- `qengine_l2_battle_mage_whole_outfit_story`: 63.52 s; retained marker reports
+  `duration=63.515349151s success=true`.
+- `activity_player_death_postgres_partial_loss_recovers_through_empty_origin_lifecycle`:
+  6.03 s; `ACTIVITY_PLAYER_DEATH_DEPARTED_PROCESS POSTGRES_CASE_COMPLETED`.
+
+The activity death case was also built and executed from detached main
+`3209d3d61`, rather than treating the branch result as a main result: PASS
+6.15 s (613.124 s including the separate main build). Returned to the SRVENC
+branch and fetched/merged main again before this evidence update. No main
+branch ref was modified. The death test, departed-process recovery fixture and
+`foundation/fnd04_verifier.rs` are byte-identical between branch and main.
+
+The stale-security failure was not reproduced in either isolated run. The
+unchanged verifier (`fnd04_verifier.rs:2284-2317`) rejects observations older
+than five seconds; the common `house_transfer::prepare_owned_session` fixture
+records its time before publication/commit database operations. This makes
+slowness a plausible explanation, not a proven reproduction of CI contention.
+The pool/readiness and early-EOF failures likewise did not reproduce alone.
+Per owner direction, no pool, serve, node-boot, freshness or gameplay rule is
+changed for those passing cases.
+
+The first local attempt stopped before useful execution because old lane
+validation databases exhausted disk space. Removed 31 inactive SRVENC/QREADY
+databases and obsolete completed lane build variants, then obtained the above
+real PG results. No test, assertion or security freshness bound was weakened.
+
+The formerly pending full unit runs on head 370423fbc completed successfully:
+client-assets 10 (0.53 s), content 332 (337.50 s), dispatch 2934 (1083.58 s),
+durability 737 (52.53 s), and game-server 578 (1866.43 s). All 4591 selected
+Rust tests passed; only existing ignored tests remain ignored. The complete
+quest checks and 1118-test unit runner also passed on these unchanged content
+bytes in 308.579 / 627.564 s, and materialized content validation passed.
+This candidate changes only this evidence note, so no crate or pinned test
+source requires a new unit or proof import. Final prepush receipts are retained
+in the local CI3 validation logs and reported with the push.
+
+An additional optional check of the incoming main-only policy simulator
+(`python tools/repository/test_validate_merge_group_pg_sim.py`) passed repository
+policy/routing checks but could not execute its native PowerShell canaries:
+`AssertionError: pwsh is required for WP1 native failure-propagation qualification`.
+This environment lacks that executable; this optional script is not claimed
+as passed, and its source/assertions were not changed or bypassed.
