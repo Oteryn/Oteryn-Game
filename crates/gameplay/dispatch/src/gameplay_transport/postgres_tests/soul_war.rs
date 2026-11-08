@@ -699,12 +699,18 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
         let world = super::quest_world_callbacks::world(
             &Callback {
                 catalogue_layer: 0,
+                actor_kind: Default::default(),
+                opening_only: false,
+                requires_world_admission: false,
+                facing: None,
+                world_requirements: Vec::new(),
                 world_change: None,
                 key: "oteryn:quest-callback/soul-war-final-reward".into(),
                 quest: "oteryn:quest/soul-war".into(),
                 trigger: Trigger::Use,
                 selector: Selector {
                     positions: Vec::new(),
+                    native: None,
                     position: Some(trigger),
                     unique: None,
                     action: None,
@@ -1546,7 +1552,7 @@ async fn reward_delivery(
         assert!(
             crate::gameplay_transport::hazard::qualified_source_frame(
                 &runtime,
-                owner.movement_cells
+                owner.movement_cells()
             )
             .is_some(),
             "source USE frame"

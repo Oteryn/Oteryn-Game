@@ -20,7 +20,6 @@ EXPECTED_DENOMINATOR = 162
 ITEMHOLD_ADMISSIONS = frozenset({
     "oteryn:reward-claim.kv.ornamentedshield",
     "oteryn:reward-claim.kv.powerring2",
-    "oteryn:reward-claim.kv.triangletower",
 })
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",

@@ -29,6 +29,14 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                     y: 32182,
                     floor: -7,
                 }
+            } else if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
+                super::l6_paradox_upper::start(name)
+            } else if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
+                super::l6_paradox_story::start()
+            } else if name.starts_with("qengine-rewards-questpc4-native-tower-") {
+                super::l6_paradox_native::trigger(name)
+            } else if name.starts_with("qengine-rewards-questpc4-admission-") {
+                super::l6_world_admission::trigger(name)
             } else {
                 Position {
                     x: 33294,
@@ -279,7 +287,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
     }
 }
 
-async fn acknowledge_probe(
+pub(super) async fn acknowledge_probe(
     client: &mut tokio::io::DuplexStream,
     generation: u64,
     payload: &[u8],
@@ -759,6 +767,27 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
+        return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
+        return super::l6_paradox_story::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-native-tower-") {
+        return super::l6_paradox_native::exercise(owner, admitted, h, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-admission-") {
+        return super::l6_world_admission::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-puzzle-") {
+        return super::l6_world_puzzles::exercise(owner, admitted, h, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-paradox") {
+        return super::l6_paradox::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name == "qengine-rewards-questpc4-spirit" {
+        return super::l6_spirit::exercise(owner, admitted, h, authority).await;
+    }
     if name == "qengine-rewards-questpc-kingsday" {
         return super::questpc_kingsday::exercise(owner, admitted, h).await;
     }
@@ -835,6 +864,8 @@ pub(super) async fn exercise(
         setup
             .storage
             .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+                at_least: false,
+                increment: false,
                 source_track: None,
                 set_if: None,
                 read_only: false,

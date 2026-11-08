@@ -21,7 +21,12 @@ pub(super) async fn exercise(
     callback: &Callback,
     expected_destination: Position,
 ) -> TestResult {
-    assert_eq!(callback.teleport, Some(expected_destination));
+    assert_eq!(
+        callback
+            .teleport
+            .unwrap_or(callback.selector.position.ok_or("position")?),
+        expected_destination
+    );
     assert!(callback.storage.is_empty());
     assert!(callback.offerings.is_empty());
     assert!(callback.passages.is_empty());
@@ -83,7 +88,13 @@ pub(super) async fn exercise(
         Trigger::StepOut => return Err("destination scenario requires entry or USE".into()),
         Trigger::StepIn => (
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-            encode_step_intent(StepDirection::East),
+            encode_step_intent(
+                if callback.key == "oteryn:quest-callback/l6-native-step-fixture" {
+                    StepDirection::South
+                } else {
+                    StepDirection::East
+                },
+            ),
         ),
         Trigger::Use => {
             // The shared fixture starts one tile west of its one clicked root.
@@ -144,6 +155,77 @@ pub(super) async fn exercise(
         "authored stateless callback destination for {}",
         callback.key
     );
+    // Crystal201189f movements_waterfall.lua:16-29. Expectations are literal
+    // donor values, independent of the authored callback's effect fields.
+    let snapshot = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
+    let expected_facing = match callback.key.as_str() {
+        "oteryn:quest-callback/waterfall-cave-entry" => {
+            Some(crate::foundation::MovementFacing::South)
+        }
+        "oteryn:quest-callback/waterfall-cave-exit" => {
+            Some(crate::foundation::MovementFacing::East)
+        }
+        _ => None,
+    };
+    if let Some(facing) = expected_facing {
+        assert_eq!(snapshot.facing(), Some(facing), "source facing");
+    }
+    let expected_effect = match callback.key.as_str() {
+        "oteryn:quest-callback/waterfall-cliff" => Some((32968, 32626, -5)),
+        "oteryn:quest-callback/waterfall-splash" => Some((32968, 32630, -7)),
+        _ => None,
+    };
+    if let Some((x, y, floor)) = expected_effect {
+        let map = owner.bundle_map().ok_or("map")?;
+        let effects = map.facts.movement_effects_since(0);
+        assert_eq!(effects.len(), 1, "source watersplash occurrence");
+        assert_eq!(
+            (effects[0].1, effects[0].2),
+            (crate::map::overlay::TilePos { x, y, floor }, 54)
+        );
+    }
+    if callback.key.starts_with("oteryn:quest-callback/waterfall-") {
+        let map = owner.bundle_map().ok_or("map")?;
+        let effects = map.facts.movement_effects_since(0);
+        let replay = wire(
+            owner,
+            admitted,
+            1,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            encode_step_intent(
+                if callback.key == "oteryn:quest-callback/l6-native-step-fixture" {
+                    StepDirection::South
+                } else {
+                    StepDirection::East
+                },
+            ),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&replay).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?,
+            snapshot,
+            "replayed STEP moved or turned twice"
+        );
+        assert_eq!(
+            map.facts.movement_effects_since(0),
+            effects,
+            "replayed STEP repeated effects"
+        );
+    }
     let after = owner
         .root
         .read_character_quest_state(owner.character, fence.character_id)

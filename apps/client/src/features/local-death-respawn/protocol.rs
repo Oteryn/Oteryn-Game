@@ -107,6 +107,13 @@ impl Outbox {
         commands: &mut UnboundedReceiver<PlayCommand>,
     ) -> Result<PlayCommand, TryRecvError> {
         let mut mailbox = lock(&self.0);
+        if mailbox.activity_reset_commands {
+            while commands.try_recv().is_ok() {}
+            mailbox.cancel_activity_requests();
+            mailbox.death.pending = false;
+            mailbox.death.refresh = mailbox.death.selected;
+            mailbox.activity_reset_commands = false;
+        }
         let blocked = mailbox.world_input_blocked();
         if mailbox.death.selected
             && mailbox.death.refresh

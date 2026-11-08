@@ -4,6 +4,8 @@ import argparse
 import json
 from pathlib import Path
 import re
+import subprocess
+import questpc_profile_baseline
 
 ROOT = Path(__file__).resolve().parents[2]
 INPUT = ROOT / 'tools/content-schema/native-gameplay/questpc-equipment-profile-cohorts.json'
@@ -15,8 +17,21 @@ END = '    // END generated questpc native profile cohorts.\n'
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--baseline-main', help='record immutable prior profile ownership')
     args = parser.parse_args()
     manifest = json.loads(INPUT.read_text())
+    if args.baseline_main:
+        if args.check:
+            raise SystemExit('baseline update cannot be combined with --check')
+        revision = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse',
+                                            args.baseline_main + '^{commit}'], text=True).strip()
+        _, manifest['merged_profile_baseline'] = questpc_profile_baseline.load(ROOT, revision)
+    baseline = set()
+    if manifest.get('merged_profile_baseline'):
+        descriptor = manifest['merged_profile_baseline']
+        baseline, observed = questpc_profile_baseline.load(ROOT, descriptor['revision'])
+        if descriptor != observed:
+            raise SystemExit('published profile baseline descriptor drift')
     cohorts = manifest['cohorts']
     native = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_text())
     profiles = {r['production_definition']['production_key']: r for r in native['records']}
@@ -33,8 +48,8 @@ def main():
             if row is None or not row['admission']['materializable'] or row['attributes']['speed_bonus'] != 0:
                 raise SystemExit(f'unqualified questpc source profile: {key}')
         seen.update(keys)
-        added = cohort.get('new_profiles', len(keys))
-        if added != len(keys) and (added != 0 or keys != ['oteryn:item.tibia.i31268']):
+        added = len(set(keys) - baseline) if baseline else cohort.get('new_profiles', len(keys))
+        if not baseline and added != len(keys) and (added != 0 or keys != ['oteryn:item.tibia.i31268']):
             raise SystemExit('unreviewed existing-profile refinement')
         rows.append(f'    ("{cohort["cohort"]}", {added}),\n')
     text = TARGET.read_text()
@@ -59,6 +74,8 @@ def main():
         raise SystemExit('missing jade unknown-speed pin anchor')
     if args.check and updated != text:
         raise SystemExit('questpc equipment count pins are stale')
+    if args.baseline_main:
+        INPUT.write_text(json.dumps(manifest, indent=2) + '\n')
     if not args.check and updated != text:
         TARGET.write_text(updated)
     print(f'PASS questpc equipment pins: {len(cohorts)} source cohorts, {len(seen)} unique zero-speed profiles')

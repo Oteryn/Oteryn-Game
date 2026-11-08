@@ -71,6 +71,14 @@ pub(super) fn validate_items(items: &[RewardClaimMintContent]) -> Result<()> {
         }) {
             return Err(RewardClaimMintError::InvalidInput);
         }
+        if child.fluid_subtype.is_some_and(|fluid| {
+            fluid == 0 || child.quantity != 1
+                || child.item.stack != ItemStackClass::NonStackable
+                || child.item.container_capacity.is_some()
+                || child.key_number.is_some() || child.text.is_some()
+        }) {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
         if child.text.as_deref().is_some_and(|text| {
             !super::super::item_text::valid_authored_reward_text(text)
                 || child.quantity != 1
@@ -143,7 +151,7 @@ pub(super) fn plan_items(
             .enumerate()
             .map(|(index, child)| {
                 let ordinal = index + 1;
-                json!({
+                let mut entry = json!({
                     "ordinal": ordinal,
                     "transaction_id": uuid(&derive(transaction, ordinal, 1)),
                     "event_id": uuid(&derive(transaction, ordinal, 2)),
@@ -154,7 +162,11 @@ pub(super) fn plan_items(
                     "quantity": child.quantity,
                     "key_number": child.key_number.unwrap_or(0),
                     "text": child.text,
-                })
+                });
+                if let Some(fluid) = child.fluid_subtype {
+                    entry["fluid_subtype"] = json!(fluid);
+                }
+                entry
             })
             .collect(),
     )
@@ -371,6 +383,9 @@ pub(super) async fn apply_plan(
             .bind(transaction.as_slice())
             .execute(&mut **tx)
             .await?;
+        }
+        if let Some(fluid) = child.fluid_subtype {
+            super::fluid::initialize(tx, reservation, item, transaction, fluid).await?;
         }
         if let Some(text) = &child.text {
             super::super::item_text::initialize_authored_reward_text(

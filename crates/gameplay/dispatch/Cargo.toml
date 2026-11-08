@@ -58,6 +58,7 @@ tokio.workspace = true
 tokio-rustls.workspace = true
 
 [dev-dependencies]
+prost.workspace = true
 oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests", features = ["test-support"] }
 oteryn-gameplay-encounters = { version = "=0.1.0", path = "../encounters", features = ["test-support"] }
 ed25519-dalek.workspace = true

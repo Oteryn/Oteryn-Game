@@ -18,6 +18,7 @@ fn explicit_carried_exchange_keeps_exact_selection_and_bounded_costs() -> Result
     exchange.outfits.clear();
     exchange.give = Some(ItemReward {
         key_number: None,
+        premium: false,
         item: "oteryn:item.tibia.i3031".into(),
         count: 5,
         contents: vec![],
@@ -25,6 +26,7 @@ fn explicit_carried_exchange_keeps_exact_selection_and_bounded_costs() -> Result
     exchange.take.push(ItemAmount {
         item: "oteryn:item.tibia.i5901".into(),
         count: 1,
+        fluid_subtype: None,
     });
     validate_callbacks(std::slice::from_ref(&exchange))?;
     for mutation in 0..6 {

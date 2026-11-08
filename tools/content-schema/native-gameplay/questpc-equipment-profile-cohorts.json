@@ -209,5 +209,22 @@
   ],
   "source_qualified_previously_unknown_speed": [
     31268
-  ]
+  ],
+  "merged_profile_baseline": {
+    "revision": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+    "files": [
+      {
+        "path": "content/items/definitions/spell-native-profiles.json",
+        "sha256": "c560e4cb46653bbc614b1be3177c212f5aadaced2aa50cd895e240b581339518"
+      },
+      {
+        "path": "content/items/definitions/srx1-item-updates.json",
+        "sha256": "67052b942642b5c1a6c0b6bcea14d912a4ca6b30606bf4047743adb99d078b28"
+      },
+      {
+        "path": "content/items/definitions/starting-loadout-profiles.json",
+        "sha256": "08c7126b73447929016e33fac7140a7027e7f16152fcfb2d8b28e326329e714c"
+      }
+    ]
+  }
 }

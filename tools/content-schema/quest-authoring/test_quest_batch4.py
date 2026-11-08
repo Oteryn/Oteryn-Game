@@ -127,6 +127,22 @@ class QuestBatch4Tests(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 tool.validate_callback(invalid, 'thais_lighthouse')
 
+    def test_callback_source_presentation_is_bounded_and_validated(self):
+        row = callback('waterfall', 'waterfall-presentation')
+        row['facing'] = 2
+        row['effects'] = [{'position': {'x': 32968, 'y': 32626, 'floor': -5}, 'effect': 54}]
+        tool.validate_callback(row, 'waterfall')
+        for field, invalid in (
+                ('facing', 4), ('facing', True), ('teleport', None),
+                ('effects', [{'position': {'x': 1, 'y': 2, 'floor': 1}, 'effect': 54}]),
+                ('effects', [{'position': {'x': 1, 'y': 2, 'floor': -1}, 'effect': 0}]),
+                ('effects', row['effects'] * 9)):
+            with self.subTest(field=field, invalid=invalid):
+                changed = copy.deepcopy(row)
+                changed[field] = invalid
+                with self.assertRaises(ValueError):
+                    tool.validate_callback(changed, 'waterfall')
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -351,7 +367,7 @@ class QuestBatch4Tests(unittest.TestCase):
         self.assertEqual(generated.returncode, 0, generated.stderr)
         checked = subprocess.run([*command, '--check'], capture_output=True, text=True, check=False)
         self.assertEqual(checked.returncode, 0, checked.stderr)
-        self.assertEqual(len(list((self.root / tool.NPC_OUTPUT_DIRECTORY).glob('*.json'))), 23)
+        self.assertEqual(len(list((self.root / tool.NPC_OUTPUT_DIRECTORY).glob('*.json'))), 25)
 
     def test_selected_subset_preserves_other_callbacks_packets_and_source_outputs(self):
         name = 'lions_rock'
@@ -388,7 +404,7 @@ class QuestBatch4Tests(unittest.TestCase):
             (self.root / tool.INPUT_DIRECTORY / (name + '.json')).read_bytes(), original_packet,
         )
         self.assertEqual(tool.generate(self.root, check=True, selected=[name]), [])
-        with self.assertRaisesRegex(ValueError, 'exactly 23'):
+        with self.assertRaisesRegex(ValueError, 'exactly 25'):
             tool.generate(self.root)
 
         # A separately authored but unselected packet is neither read nor rewritten.
@@ -428,7 +444,7 @@ class QuestBatch4Tests(unittest.TestCase):
             self.assertEqual(checked.returncode, 0, checked.stderr)
         strict = subprocess.run([*command, '--check'], capture_output=True, text=True, check=False)
         self.assertNotEqual(strict.returncode, 0)
-        self.assertIn('exactly 23', strict.stderr)
+        self.assertIn('exactly 25', strict.stderr)
         conflicting = subprocess.run(
             [*command, '--available', '--quests', name], capture_output=True, text=True, check=False,
         )
@@ -459,6 +475,17 @@ class QuestBatch4Tests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     tool.generate(self.root, **options)
                 self.assertEqual(before, {path: path.read_bytes() for path in self.root.rglob('*.json')})
+
+
+class TriangleTowerSourceTests(unittest.TestCase):
+    def test_triangle_wall_source_preserves_asymmetric_ids(self):
+        root = Path(__file__).resolve().parents[3]
+        packet = tool.load_packets(root, selected=['triangle_tower_quest'])[0]
+        wall, = packet['callbacks']
+        self.assertEqual(wall['selector'], {'position': {'x':32573,'y':32121,'floor':-7},
+            'unique':30034,'action':None,'appearance':2772})
+        self.assertEqual(wall['passages'], [{'position':{'x':32566,'y':32119,'floor':-7},
+            'appearance':1270,'replacement':None,'create_on_close':1025}])
 
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ pub const ENTER: &str = "oteryn:quest-callback/srv6-schrodinger-island";
 
 pub(crate) fn callback() -> Callback {
     Callback {
-        catalogue_layer: 0,
+        catalogue_layer: 0, actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         world_change: None,
         eject_occupants: None,
         object_conditions: Vec::new(),
@@ -21,12 +21,13 @@ pub(crate) fn callback() -> Callback {
         key: ENTER.into(),
         quest: QUEST.into(),
         trigger: Trigger::StepIn,
-        selector: Selector { positions: Vec::new(), position:None, unique:None, action:Some(15998), appearance:None },
+        selector: Selector { native: None, positions: Vec::new(), position:None, unique:None, action:Some(15998), appearance:None },
         lever:None,
         reversible:false,
         passages:Vec::new(),
         teleport:Some(Position { x:32832, y:32435, floor:-7 }),
-        storage:vec![Storage { source_track: None, set_if: None, read_only: false, track:VISITED.into(), minimum:-1, maximum:1, set:1, preserve:false }],
+        facing: None, world_requirements: Vec::new(),
+        storage:vec![Storage { increment: false, at_least: false, source_track: None, set_if: None, read_only: false, track:VISITED.into(), minimum:-1, maximum:1, set:1, preserve:false }],
         minimum_level:Some(999),
         experience:None,
         monk_reward:None,

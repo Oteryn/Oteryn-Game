@@ -23,10 +23,14 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 /// Words that ask what the NPC offers.
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
-const REWARD_CALLBACKS: &str =
-    include_str!("../../../../content/quests/shared-reward-callbacks.json");
-const REWARD_GREETINGS: &str =
-    include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json");
+const REWARD_CALLBACKS: &[&str] = &[
+    include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
+];
+const REWARD_GREETINGS: &[&str] = &[
+    include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
+];
 
 #[derive(serde::Deserialize)]
 struct RewardMessages {
@@ -45,16 +49,23 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
     static DATA: std::sync::OnceLock<Option<Vec<RewardMessages>>> = std::sync::OnceLock::new();
     let rows = DATA.get_or_init(|| {
         let mut rows = Vec::new();
-        for text in
-            std::iter::once(REWARD_GREETINGS).chain(questpc_sources::GREETINGS.iter().copied())
+        let mut keys = std::collections::BTreeSet::new();
+        for source in REWARD_GREETINGS
+            .iter()
+            .chain(questpc_sources::GREETINGS.iter())
         {
-            let document = serde_json::from_str::<Document>(text).ok()?;
-            if document.schema != 1 || rows.len() + document.npcs.len() > 256 {
+            let document = serde_json::from_str::<Document>(source).ok()?;
+            if document.schema != 1 {
                 return None;
             }
-            rows.extend(document.npcs);
+            for row in document.npcs {
+                if !keys.insert(row.npc.clone()) {
+                    return None;
+                }
+                rows.push(row);
+            }
         }
-        Some(rows)
+        (rows.len() <= 256).then_some(rows)
     });
     reward_callback_npc(key).then_some(())?;
     rows.as_ref()?.iter().find(|r| r.npc == key)
@@ -75,12 +86,26 @@ fn reward_callback_npc(key: &str) -> bool {
     static NPCS: std::sync::OnceLock<std::collections::BTreeSet<String>> =
         std::sync::OnceLock::new();
     NPCS.get_or_init(|| {
-        std::iter::once(REWARD_CALLBACKS)
-            .chain(questpc_sources::CALLBACKS.iter().copied())
-            .filter_map(|text| serde_json::from_str::<Document>(text).ok())
-            .filter(|document| document.schema == 1 && document.callbacks.len() <= 256)
-            .flat_map(|document| document.callbacks.into_iter().map(|c| c.npc))
-            .collect()
+        let parse = || -> Option<std::collections::BTreeSet<String>> {
+            let mut count = 0_usize;
+            let mut keys = std::collections::BTreeSet::new();
+            for source in REWARD_CALLBACKS
+                .iter()
+                .chain(questpc_sources::CALLBACKS.iter())
+            {
+                let document = serde_json::from_str::<Document>(source).ok()?;
+                if document.schema != 1 {
+                    return None;
+                }
+                count = count.checked_add(document.callbacks.len())?;
+                if count > 256 {
+                    return None;
+                }
+                keys.extend(document.callbacks.into_iter().map(|c| c.npc));
+            }
+            Some(keys)
+        };
+        parse().unwrap_or_default()
     })
     .contains(key)
 }
@@ -300,8 +325,8 @@ impl NpcTalkBook {
                 ),
                 isle_of_evil::revision_material(),
                 crate::quest_greetings::revision_material(),
-                REWARD_CALLBACKS,
-                REWARD_GREETINGS,
+                REWARD_CALLBACKS.join("\0"),
+                REWARD_GREETINGS.join("\0"),
                 crate::content::npc_catalogue::healing::DATA,
                 crate::content::npc_catalogue::travel::revision_material(),
                 YASIR_SOURCE,
@@ -808,7 +833,15 @@ mod tests {
             .service_model_for_project()
             .map_err(|e| format!("{e:?}"))?;
         let book = NpcTalkBook::from_model(&model);
-        for name in ["morgan", "navigator", "costello", "budrik", "sam"] {
+        for name in [
+            "morgan",
+            "navigator",
+            "costello",
+            "budrik",
+            "sam",
+            "oldrak",
+            "zoltan",
+        ] {
             let key = format!("oteryn:npc.{name}");
             let entry = book
                 .get(&key)
@@ -819,6 +852,12 @@ mod tests {
                 "no scripted reward branch opens through talk rules"
             );
         }
+        assert!(
+            book.get("oteryn:npc.zoltan")
+                .ok_or("Zoltan")?
+                .greeting_reply
+                .contains("student of the arcane arts")
+        );
         assert!(!reward_callback_npc("oteryn:npc.unqualified"));
         Ok(())
     }

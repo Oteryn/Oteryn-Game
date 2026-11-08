@@ -767,9 +767,9 @@ pub fn destination(key: &str, actor: Position) -> Option<Position> {
     Some(target)
 }
 pub fn callbacks() -> Vec<Callback> {
-    GATES.iter().enumerate().map(|(index,gate)|Callback { catalogue_layer: 0, eject_occupants: None, object_conditions: Vec::new(), objects: None, required_claims: Vec::new(), failure_teleport: None,
+    GATES.iter().enumerate().map(|(index,gate)|Callback { catalogue_layer: 0, actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, world_requirements: Vec::new(),  eject_occupants: None, object_conditions: Vec::new(), objects: None, required_claims: Vec::new(), failure_teleport: None,
         key:gate_key(index),quest:super::shared_world_progress::HIVE_QUEST.into(),trigger:Trigger::Use,
-        selector:Selector { positions: Vec::new(),position:Some(gate.position),unique:None,action:None,appearance:Some(gate.appearance)},
+        selector:Selector { native: None, positions: Vec::new(),position:Some(gate.position),unique:None,action:None,appearance:Some(gate.appearance)},
         lever:None,reversible:false,passages:vec![],teleport:Some(gate.position),storage:vec![],minimum_level:None,
         experience: None, world_change: None,monk_reward:None,offerings:vec![],item_on_target:None,return_on_failure:false,
         failure_message:Some("The Hive rejects your scent.".into()),success_message:None,native_rule:None,effects:Default::default(),

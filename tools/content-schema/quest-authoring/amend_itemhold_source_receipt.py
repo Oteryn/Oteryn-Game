@@ -10,6 +10,8 @@ import source_fix_guard as guard
 
 COMPILER = 'tools/content-schema/quest-authoring/quest_tree_authoring.py'
 PREVIOUS = frozenset({
+    # Published questpc compiler, verified against e3566291a before this merge.
+    'd438262bf2e24e4aedb31dc166edd49dc2f21f35ac1104414de47588ce5aaacd',
     'f8ed16d80fe61c295989d796a41d86a9e520944bb39651fd60cc79c55005c2ac',
     # Published main and questpc compilers; verify_source_view still requires
     # every frozen SOURCE core to remain identical before refreshing the pin.

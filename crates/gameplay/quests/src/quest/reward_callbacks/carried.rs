@@ -20,6 +20,7 @@ impl RewardCallback {
                         == [ItemAmount {
                             item: item.clone(),
                             count: 1,
+                            fluid_subtype: None,
                         }]
             }
     }

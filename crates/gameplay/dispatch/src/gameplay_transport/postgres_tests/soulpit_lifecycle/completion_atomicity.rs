@@ -1,45 +1,24 @@
-//! Real completion/Animus PostgreSQL cases awaiting the shared #2769 admission fixture.
-//! ANSWER 6543794006 requires their complete assertions now, but forbids fabricated
-//! COMMITTED groups, disabled guards, or counting a model as database qualification.
+//! Completion and Animus use a real shared Soulpit admission. No fabricated
+//! COMMITTED group or disabled admission guard can satisfy these assertions.
 
-use super::super::{Dependencies, TestResult, prepare_current_session};
+use super::super::{Dependencies, TestResult};
 use super::{Harness, debug, id, run};
 use crate::domain::soulpit::{EncounterEffect, EncounterPhase};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
-use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::soulpit::{SoulpitAction, SoulpitStepOutcome, SoulpitStepRequest};
 use crate::foundation::RuntimeScopeRefV1;
 use sqlx::Row;
-use std::{future::Future, pin::Pin};
 
-/// The #2769 fixture must use its real shared entry owner to commit a one-player fight
-/// from staging slot zero, with a fresh species, before returning the current destination
-/// gameplay fence. It must install native content, source inventory and the source actor
-/// using the existing fixtures, and bind a legitimate destination Instance session.
-/// A PREPARED group, allocated Instance or synthetic fence does not meet this contract.
-struct AdmittedSoulpit {
-    handoff_id: [u8; 16],
-    destination: CurrentCharacterGameplayFence,
-}
-
-type AdmissionFuture<'a> = Pin<Box<dyn Future<Output = TestResult<AdmittedSoulpit>> + Send + 'a>>;
-type SharedAdmissionFixture = for<'a> fn(&'a Harness, &'a Dependencies) -> AdmissionFuture<'a>;
-
-// Packaging #2769 links its accepted fixture here, then runs these cases with --ignored.
-// This is deliberately a compile-visible test prerequisite, not an environment switch or
-// an alternate session/admission writer. The current qualified base supplies no adapter.
-const SHARED_OWNER_ADMISSION: Option<SharedAdmissionFixture> = None;
+use super::super::soulpit_shared_entry::{AdmittedSoulpit, admit, prepare_source};
 
 const INJECTED_FAILURE: &str = "soulpit atomicity injected failure after Animus insert";
 
 #[test]
-#[ignore = "requires #2769 legitimate destination Instance admission; PostgreSQL atomicity is NOT_RUN on this base"]
 fn soulpit_survivor_completion_and_animus_commit_together_postgres() -> TestResult {
     super::super::kill_reward_e2e::scenario_thread::run("soulpit-animus-commit", || run_case(false))
 }
 
 #[test]
-#[ignore = "requires #2769 legitimate destination Instance admission; PostgreSQL atomicity is NOT_RUN on this base"]
 fn soulpit_failure_after_animus_insert_rolls_back_completion_postgres() -> TestResult {
     super::super::kill_reward_e2e::scenario_thread::run("soulpit-animus-rollback", || {
         run_case(true)
@@ -56,19 +35,13 @@ fn run_case(inject_failure: bool) -> TestResult {
         eprintln!("{marker} POSTGRES_CASE_NOT_RUN: no configured PostgreSQL route");
         return Ok(());
     }
-    let Some(admit) = SHARED_OWNER_ADMISSION else {
-        eprintln!(
-            "{marker} POSTGRES_CASE_NOT_RUN: #2769 legitimate destination admission is not linked"
-        );
-        return Err("#2769 must supply its accepted destination Instance fixture before this ignored case can run".into());
-    };
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "soulpit_animus_atomicity", true, false)
             .await?;
         super::super::reset();
-        prepare_current_session(&h).await?;
+        let evidence = prepare_source(&h).await?;
         let deps = Dependencies::new()?;
-        let admitted = admit(&h, &deps).await?;
+        let admitted = admit(&h, &deps, &evidence).await?;
         assert!(matches!(
             admitted.destination.runtime_scope,
             RuntimeScopeRefV1::Instance { .. }
@@ -134,9 +107,19 @@ fn run_case(inject_failure: bool) -> TestResult {
                 .await
                 .expect_err("survivor receipt accepted the injected failure");
             assert!(
-                format!("{error:?}").contains(INJECTED_FAILURE),
-                "failure did not occur after the new Animus insertion: {error:?}"
+                matches!(
+                    &error,
+                    crate::durability::soulpit::SoulpitWriteError::Unavailable(_)
+                ),
+                "injected database failure was not propagated: {error:?}"
             );
+            // Durability deliberately strips SQL messages. A sequence is not rolled
+            // back and proves the exact rejecting branch observed the new Animus row.
+            let reached_animus: (i64, bool) =
+                sqlx::query_as("SELECT last_value,is_called FROM soulpit_test_after_animus")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(reached_animus, (1, true), "{INJECTED_FAILURE}: {error:?}");
             assert_eq!(
                 lifecycle.database_snapshot().await?,
                 before,
@@ -153,6 +136,9 @@ fn run_case(inject_failure: bool) -> TestResult {
             .execute(&h.pool)
             .await?;
             sqlx::query("DROP FUNCTION soulpit_test_reject_survivor()")
+                .execute(&h.pool)
+                .await?;
+            sqlx::query("DROP SEQUENCE soulpit_test_after_animus")
                 .execute(&h.pool)
                 .await?;
         } else {
@@ -366,6 +352,12 @@ impl Lifecycle<'_, '_, '_> {
 async fn install_failure_after_animus(h: &Harness) -> TestResult {
     // A new rejecting test trigger adds a failure; every production guard remains enabled.
     // xmin's low 32 bits identify the insert's XID even if the database has crossed an epoch.
+    sqlx::query("CREATE SEQUENCE soulpit_test_after_animus")
+        .execute(&h.pool)
+        .await?;
+    sqlx::query("GRANT USAGE,SELECT ON SEQUENCE soulpit_test_after_animus TO oteryn_game_runtime")
+        .execute(&h.pool)
+        .await?;
     sqlx::query(
         "CREATE FUNCTION soulpit_test_reject_survivor() RETURNS trigger LANGUAGE plpgsql AS $$ \
         BEGIN \
@@ -374,7 +366,8 @@ async fn install_failure_after_animus(h: &Harness) -> TestResult {
                 AND m.xmin::text=mod(pg_current_xact_id()::text::numeric,4294967296)::text) THEN \
             RAISE EXCEPTION 'soulpit atomicity probe did not observe the new Animus insert'; \
           END IF; \
-          RAISE EXCEPTION 'soulpit atomicity injected failure after Animus insert'; \
+          PERFORM nextval('soulpit_test_after_animus'); \
+          RAISE EXCEPTION 'soulpit atomicity injected failure after Animus insert' USING ERRCODE='23514'; \
         END $$",
     )
     .execute(&h.pool)

@@ -688,7 +688,7 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemTransferError::AuthorityRejected)?;
-        self.try_issue_semantic_pass()?
+        self.issue_ready_semantic_pass().await?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;

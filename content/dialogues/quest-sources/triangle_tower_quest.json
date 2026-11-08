@@ -1,0 +1,9 @@
+{
+  "quest": "triangle_tower_quest",
+  "runtime_admission": false,
+  "entries": [],
+  "sources": [
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:1-19",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1022-1025"
+  ]
+}

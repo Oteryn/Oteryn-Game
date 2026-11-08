@@ -801,3 +801,15 @@ subsequently reports server liveness loss instead of the earlier client error.
 Refresh handles only for MapUseTarget::Item; preserve Object targets exactly.
 Ready-work maintenance alone was tried and failed, then removed. No runtime
 policy, liveness deadline, door assertion or saved-definition hash is relaxed.
+
+## Main c77 reconciliation decisions
+Main already owns 35 keys in the lane's source profile cohorts. Count net-new
+profiles against immutable main c77 input documents, independently of generated
+output; keep every one of the 166 source profile assertions. The repo updater
+records and verifies that baseline instead of accepting an observed count.
+Canonical main fluid child MINT markers initialize child state once; the lane
+ordinal-zero fluid plan initializes only root state. Preserve both guards.
+Source pattern UNKNOWN values may refine recursively only when ordered pattern
+identities match; known facts and differing pattern IDs remain conflicts.
+One-way non-lever passages may restore on departure only when both explicit
+replacement IDs exist. Existing durable-departure refusals remain unchanged.

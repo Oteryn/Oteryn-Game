@@ -151,6 +151,8 @@ pub(super) async fn exercise(
                         // The shared outfit helper deliberately mints one surplus
                         // for multi-item recipes; arrange the exact source amount.
                         count: if count > 2 { count - 1 } else { count },
+
+                        fluid_subtype: None,
                     },
                     &mut bags,
                     &mut occurrence,
@@ -174,6 +176,8 @@ pub(super) async fn exercise(
                 &ItemAmount {
                     item: "oteryn:item.tibia.i5902".into(),
                     count: 1,
+
+                    fluid_subtype: None,
                 },
                 &mut bags,
                 &mut occurrence,
@@ -197,6 +201,8 @@ pub(super) async fn exercise(
                     item: "oteryn:item.tibia.i5878".into(),
                     // Shared helper adds one surplus to multi-item requests.
                     count: 99,
+
+                    fluid_subtype: None,
                 },
                 &mut bags,
                 &mut occurrence,

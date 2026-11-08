@@ -59,6 +59,8 @@ pub(super) fn fixture(mut callback: Callback, name: &str) -> TestResult<Callback
             position,
             appearance: 1270,
             replacement: None,
+
+            create_on_close: None,
         })
         .collect();
     callback.teleport = destination;

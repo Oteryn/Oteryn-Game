@@ -8019,7 +8019,7 @@
       "first_unqualified_stage": {
         "key": "s10",
         "kind": "collect",
-        "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
+        "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
         "targets": [
           "Winning Lottery Ticket"
         ]
@@ -8639,7 +8639,7 @@
       "first_unqualified_stage": {
         "key": "s2",
         "kind": "collect",
-        "objective": "Odszukaj \u015bwi\u0105tyni\u0119 Inukayi i odbierz pierwszy fragment statuy.",
+        "objective": "Odszukaj świątynię Inukayi i odbierz pierwszy fragment statuy.",
         "targets": [
           "Fragment of a Statue (1st)",
           "Inukaya Shrine"
@@ -10902,7 +10902,7 @@
       "1295_quest_stateless_paid_receipts.sql",
       "1296_quest_paid_sale_mint_occurrences.sql"
     ],
-    "canonical_npc_migrations": "1310\u20131315 unchanged from main; duplicate lane NPC bootstrap, Marlin, item-source and Father proof removed",
+    "canonical_npc_migrations": "1310–1315 unchanged from main; duplicate lane NPC bootstrap, Marlin, item-source and Father proof removed",
     "atomic_father": "exact eleven-track acceptance retained in1290; value/XP proof consumed from main1315",
     "unit_run2": {
       "total": 346,
@@ -11371,5 +11371,28 @@
     },
     "live_pg_followup": "Object targets preserved; all four real PG cases pass with unchanged8cad8ca2 active definition",
     "carried_target_checkpoint": "Runtime PUSHED47b3bb0f0; PG4/4 and1600dispatchunits GREEN"
+  },
+  "main_integration": {
+    "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+    "state": "resolved; integrated checks running",
+    "conflicts_resolved": 74,
+    "scope": "Reuse published main mechanics and preserve lane mechanics; no new quest qualification",
+    "repairs": [
+      "preserve root and canonical child fluid MINT initialization without duplicate inserts",
+      "retain exact NPC13 predecessor maps through timer composition",
+      "allow explicit stateless one-way passage restoration",
+      "reconcile source profile UNKNOWN refinements only for identical pattern IDs",
+      "derive overlapping profile ownership from immutable published main inputs"
+    ],
+    "unit_evidence": {
+      "preparation_quests": "345/345 passed in 112.77s before final c77 overlay",
+      "integrated_profile_regressions": "9/9 passed in 4.233s"
+    },
+    "pending": [
+      "integrated workspace check",
+      "integrated changed-crate units and focused PG",
+      "strict clippy",
+      "final pin regeneration and fmt"
+    ]
   }
 }

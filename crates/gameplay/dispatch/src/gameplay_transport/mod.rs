@@ -111,6 +111,7 @@ mod loop_move;
 mod loop_training;
 pub mod mail;
 mod map_door;
+mod map_ladder;
 mod mining;
 mod monk_save;
 mod monster_ai_cycle;
@@ -154,6 +155,7 @@ mod quest_admission;
 mod quest_callbacks;
 mod quest_kills;
 mod quest_log_source;
+mod quest_timer_cycle;
 mod raid_live;
 mod raid_live_world;
 mod raid_notices;
@@ -364,6 +366,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// Sealed bounded templates issued by the same existing Content activation owner.
     pub activity_templates:
         &'a [crate::content::bosses::activity_template::QualifiedActivityRoomTemplate],
+    pub soulpit_template:
+        Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>,
     pub gameplay_idle_policy: connection::GameplayIdlePolicy,
     pub store_purchases: StorePurchaseMode,
     pub store: Option<crate::native_admission_source::store::StoreClient>,
@@ -553,6 +557,9 @@ impl ConnectionIdentifiers for SecureIdentifiers {
 /// revalidates all of them.
 #[derive(Clone)]
 pub struct ComposedFreshAdmission<'a, 'f, 's> {
+    /// A private activity retains its own map/fact owners for the full runtime
+    /// lifetime; ordinary Channels use the existing borrowed assets below.
+    pub activity_room: Option<std::sync::Arc<crate::content::QualifiedNativeEntryRoom>>,
     pub server_motd: &'a str,
     /// The diagnostic writer supplied with the composed gameplay owners.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
@@ -613,6 +620,20 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// STORE_V1: the node's Platform Store client; `None` refuses every purchase as disabled.
     pub store: Option<store::StorePlatform>,
     pub store_purchases: StorePurchaseMode,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn movement_cells(&self) -> &NativeEntryMovementCells {
+        self.activity_room
+            .as_ref()
+            .map_or(self.movement_cells, |room| room.movement_cells())
+    }
+
+    pub(super) fn rooms(&self) -> SeamRooms<'_> {
+        self.activity_room
+            .as_ref()
+            .map_or(self.rooms, |room| SeamRooms::new(None, Some(room.as_ref())))
+    }
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the

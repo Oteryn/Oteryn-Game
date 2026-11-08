@@ -101,6 +101,20 @@ impl PlayView {
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
+        if pushed.scope_changed {
+            self.inputs.clear();
+            self.cursor_spell = None;
+            self.in_flight = false;
+            self.scene.clear_target()?;
+            self.ground_items.clear();
+            self.entities.clear();
+            self.appearances.clear();
+            self.markers.clear();
+            self.visuals.clear();
+            self.sounds.clear();
+            self.combat_line = None;
+            self.target_walk_feedback = None;
+        }
         if let Some(channel) = pushed.served_channel {
             oteryn_client_ui::channel_list::protocol::apply(&mut self.served_channel, channel);
         }

@@ -266,6 +266,7 @@ pub fn load_embedded_quest_state_at_layer(
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
         "kv:rotten-blood-quest:access".into(),
@@ -289,6 +290,12 @@ pub fn load_embedded_quest_state_at_layer(
     }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
+    // This tool-owned auxiliary flag is outside the captured NPC track inventory.
+    lowered.source_tracks.insert(
+        "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03".into(),
+        "storage:Quest.U8_4.InServiceOfYalahar.SewerPipe03".into(),
+    );
     lowered.catalogue = super::questpc_npc13_prefix::retain(lowered.catalogue, layer)
         .map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend_layers(lowered.catalogue, layer)
@@ -519,6 +526,13 @@ mod tests {
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
             include_str!("../../../../../content/quests/source-world-callbacks.json"),
             include_str!("../../../../../content/quests/hidden-threats-callbacks.json"),
+            include_str!(
+                "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
+            ),
+            include_str!("../../../../../content/quests/world-callbacks/l6-item-rewards.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tools.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-world-puzzles.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tomb-rooms.json"),
         ] {
             let source: serde_json::Value =
                 serde_json::from_str(text).map_err(|error| error.to_string())?;
@@ -528,6 +542,22 @@ mod tests {
                 }
             }
         }
+        let before_tombs = expected.len();
+        for unique in 3950..=3956 {
+            expected.insert(format!("oteryn:quest-callback/ancient-tombs-key-{unique}"));
+        }
+        for suffix in [
+            "thalas-switch",
+            "diprath-switch",
+            "ashmunrah-switch",
+            "thalas-switch-gate",
+            "diprath-switch-gate",
+            "ashmunrah-switch-gate",
+            "diprath-room",
+        ] {
+            expected.insert(format!("oteryn:quest-callback/ancient-tombs-{suffix}"));
+        }
+        assert_eq!(expected.len(), before_tombs + 14);
         // Main78294 adds these finite native-source cohorts. Keep an independent
         // key inventory rather than deriving the expectation from load().
         let before_native = expected.len();

@@ -135,6 +135,7 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
     selected = {c['source_identity']['key']: c for c in stack_normalization_proof()['cases']}
     for row in packet['records']:
         source = row['source_claim']; bindings = {}
+        claim_items = container_native.claim_items(source['identity']['key'], items)
         for binding in row['item_bindings']:
             location = (binding['placement_index'], binding['reward_field'], binding['reward_index'])
             if location in bindings:
@@ -159,7 +160,7 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                 binding = bindings[(pi, field, qi)]; ref = binding['canonical_item']
                 if ref is None:
                     raise ValueError('canonical variant Item identity unavailable')
-                item = items.get(ref['key'])
+                item = claim_items.get(ref['key'])
                 if item is None or item['identity'] != ref:
                     raise ValueError('canonical variant Item identity/revision changed')
                 count = 1
@@ -186,7 +187,7 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                     raise ValueError('selected source/Item stack normalization inputs changed')
                 serialized_item_stacks(reward, items, stack_problem)
             for qi, quantity in enumerate(reward.get('items', [])):
-                problem = stack_problem(items[quantity['item']['key']], quantity['count'])
+                problem = stack_problem(claim_items[quantity['item']['key']], quantity['count'])
                 if problem:
                     holds.append({'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
                         'placement_index': pi, 'reward_field': 'items', 'reward_index': qi,
@@ -214,8 +215,8 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
             'source_variant': copy.deepcopy(row)}
         if source.get('quest'):
             definition['quest'] = copy.deepcopy(source['quest'])
-        native_contents = (charge_native.derive(definition, items, stack_problem)
-                           or container_native.derive(definition, items, stack_problem))
+        native_contents = (charge_native.derive(definition, claim_items, stack_problem)
+                           or container_native.derive(definition, claim_items, stack_problem))
         if native_contents is not None:
             definition['native_contents'] = native_contents
         key = definition['identity']['key']

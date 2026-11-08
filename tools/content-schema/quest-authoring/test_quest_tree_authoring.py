@@ -66,7 +66,14 @@ class QuestTreeTests(unittest.TestCase):
                 leaves = live[key]['native_contents']['placements'][0]['contents']
                 garlic, = [leaf for leaf in leaves if leaf['item']['key'] == 'oteryn:item.tibia.i3083']
                 self.assertEqual((garlic['count'], garlic['charges_remaining']), (1, 1))
-            self.assertEqual(source[key]['data_holds'], live[key]['data_holds'])
+            if key.endswith('.triangletower'):
+                self.assertEqual(source[key]['data_holds'], [{
+                    'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+                    'item': 'oteryn:item.tibia.i3083', 'placement_index': 0,
+                    'reason': 'waiting', 'reward_field': 'items', 'reward_index': 0,
+                }])
+            else:
+                self.assertEqual(source[key]['data_holds'], live[key]['data_holds'])
             self.assertEqual(source[key].get('native_contents'), live[key].get('native_contents'))
             self.assertEqual(source[key]['_source_hold_categories'], categories)
             self.assertNotIn('_source_hold_categories', live[key])

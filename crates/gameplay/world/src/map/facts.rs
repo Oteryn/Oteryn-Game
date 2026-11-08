@@ -135,6 +135,65 @@ pub struct BundleFacts {
 const AMBIGUOUS: u32 = u32::MAX;
 
 impl BundleFacts {
+    /// Share immutable palette identities, copying only this bounded activity's
+    /// placement provenance. Scope-ephemeral facts always start empty.
+    pub(super) fn activity_copy(&self, bounds: [i32; 6]) -> Self {
+        let inside = |pos: TilePos| {
+            let z = -i32::from(pos.floor);
+            bounds[0] <= i32::from(pos.x)
+                && i32::from(pos.x) <= bounds[2]
+                && bounds[1] <= i32::from(pos.y)
+                && i32::from(pos.y) <= bounds[3]
+                && bounds[4] <= z
+                && z <= bounds[5]
+        };
+        let mut placements = Vec::new();
+        for z in bounds[4]..=bounds[5] {
+            for y in bounds[1]..=bounds[3] {
+                for x in bounds[0]..=bounds[2] {
+                    let (Ok(x), Ok(y), Ok(floor)) =
+                        (u16::try_from(x), u16::try_from(y), i8::try_from(-z))
+                    else {
+                        continue;
+                    };
+                    let pos = TilePos { x, y, floor };
+                    let (Some(low), Some(high)) = (
+                        view::placement_key(pos, 0),
+                        view::placement_key(pos, MAX_BASE_ORDINAL),
+                    ) else {
+                        continue;
+                    };
+                    let start = self.placements.partition_point(|(key, _)| *key < low);
+                    let end = self.placements.partition_point(|(key, _)| *key <= high);
+                    placements.extend_from_slice(&self.placements[start..end]);
+                }
+            }
+        }
+        placements.sort_unstable_by_key(|(key, _)| *key);
+        Self {
+            palette: self.palette.clone(),
+            movement_definitions: self.movement_definitions.clone(),
+            ids: self.ids.clone(),
+            placements,
+            houses: self
+                .houses
+                .iter()
+                .filter(|(pos, _)| inside(*pos))
+                .copied()
+                .collect(),
+            house_doors: self
+                .house_doors
+                .iter()
+                .filter(|(pos, _, _)| inside(*pos))
+                .copied()
+                .collect(),
+            doors: self.doors.activity_copy(inside),
+            rotations: Mutex::new(Arc::new(BTreeMap::new())),
+            callbacks: Mutex::new(Arc::new(CallbackStates::default())),
+            monster_steps: Mutex::new(VecDeque::new()),
+        }
+    }
+
     /// The facts of `manifest`'s palette. `item` serves the definition of an Item key.
     pub fn palette(
         manifest: &Manifest,
@@ -196,13 +255,36 @@ impl BundleFacts {
         })
     }
 
-    /// Whether palette entry `index` blocks a tile: a `wall` Terrain or a solid Item. An index
+    /// Whether palette entry `index` blocks a tile: a `wall`, explicitly unwalkable
+    /// Terrain layer or a solid Item. An index
     /// outside the palette blocks.
     pub fn blocks(&self, index: u32) -> bool {
-        self.palette.get(index as usize).is_none_or(|entry| {
-            entry.facts.terrain_kind == Some(TerrainKind::Wall)
-                || (entry.family == Family::Item && entry.solid)
-        })
+        self.palette
+            .get(index as usize)
+            .is_none_or(|entry| entry.facts.terrain_kind == Some(TerrainKind::Wall) || entry.solid)
+    }
+
+    /// Collision of a transformed entry whose exact definition and appearance
+    /// already have qualified palette facts. Unknown/ambiguous targets cannot
+    /// clear a blocker from the immutable base map.
+    fn override_blocks(&self, after: EntryFacts) -> Option<bool> {
+        let reference = match after.definition {
+            MapDefinition::Item(reference) | MapDefinition::Terrain(reference) => reference,
+        };
+        if let Some(index) = self.unique_index(reference.get() - 1)
+            && self.palette.get(index as usize).is_some_and(|entry| {
+                entry.facts.definition == after.definition
+                    && entry.facts.appearance_id == after.appearance_id
+            })
+        {
+            return Some(self.blocks(index));
+        }
+        let mut entries = self.palette.iter().enumerate().filter(|(_, entry)| {
+            entry.facts.definition == after.definition
+                && entry.facts.appearance_id == after.appearance_id
+        });
+        let (index, _) = entries.next()?;
+        entries.next().is_none().then(|| self.blocks(index as u32))
     }
 
     /// Records the placements, house tiles and doors of one sector of `manifest`, and adds to
@@ -399,6 +481,11 @@ impl BundleFacts {
     /// Source house identities in the checked active map, for public catalogue qualification.
     pub fn house_ids(&self) -> impl Iterator<Item = u32> + '_ {
         self.houses.iter().map(|(_, id)| *id)
+    }
+
+    /// Complete immutable House-marker presence after the boot scan finished.
+    pub(crate) fn has_house_tiles(&self) -> bool {
+        !self.houses.is_empty()
     }
 
     /// Exact source membership of an authored House tile. A boolean House marker
@@ -857,7 +944,12 @@ fn palette_facts(
         count: 1,
         sub_type: 0,
     };
-    let mut solid = false;
+    // Crystal 201189f src/items/items.cpp:233 applies unpass to every layer,
+    // including Soulpit's non-wall static decorations and blocked ground.
+    let mut solid = entry
+        .terrain
+        .as_ref()
+        .is_some_and(|terrain| terrain.walkable == Some(false));
     let mut door = PaletteDoor::No;
     if entry.family == Family::Item {
         let definition = item(&entry.key)
@@ -1096,6 +1188,8 @@ impl MapFacts for PinnedFacts<'_> {
 mod house_base_tests;
 #[cfg(test)]
 mod pickup_tests;
+#[cfg(test)]
+mod terrain_collision_tests;
 
 #[cfg(test)]
 mod tests {

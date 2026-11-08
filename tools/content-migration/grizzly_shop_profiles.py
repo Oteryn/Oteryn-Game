@@ -54,6 +54,11 @@ def known_conflict(accepted, observed):
         return any(key not in observed or known_conflict(value, observed[key])
                    for key, value in accepted.items())
     if isinstance(accepted, list):
+        if (isinstance(observed, list) and len(accepted) == len(observed)
+                and all(isinstance(a, dict) and isinstance(b, dict)
+                        and 'pattern_id' in a and a['pattern_id'] == b.get('pattern_id')
+                        for a, b in zip(accepted, observed))):
+            return any(known_conflict(a, b) for a, b in zip(accepted, observed))
         return accepted != observed
     return accepted != observed
 
