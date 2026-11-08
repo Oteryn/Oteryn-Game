@@ -29,11 +29,11 @@ Zasady przeciw dublowaniu:
 
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
-| T102 | Analytics | XP Analyser | PARTIAL | Brak XP/h, estymacji do level, wykresów i celu; są raw/gained XP. |
-| T103 | Analytics | Loot Analyser | PARTIAL | Brak rozbicia per item, wyceny, rate/h i graph; są sumy loot/gold. |
-| T104 | Analytics | Supply Analyser | PARTIAL | Brak listy zużytych itemów, cen, rate/h i graph; jest supplies total. |
-| T105 | Analytics | Impact Analyser | PARTIAL | Brak źródeł, DPS/HPS i gauge/graph; są damage/healing totals. |
-| T106 | Analytics | Input Analyser | PARTIAL | Brak typów/źródeł obrażeń, tempa i wykresów; jest received total. |
+| T102 | Analytics | XP Analyser | DONE | evidence: crates/client-ui/src/features/0010-analyser/view.rs:48 + analyser_selector_projects_session_facts_without_resetting_other_tools (apps/client/src/features/0010-analyser/tests/play.rs); xp_rates_goal_eta_and_minute_chart_follow_confirmed_experience |
+| T103 | Analytics | Loot Analyser | DONE | evidence: apps/client/src/features/0010-analyser/protocol.rs:27 + analyser_item_query_and_reply_use_the_production_command_mailbox (apps/client/src/features/0010-analyser/tests/play.rs); loot_items_reprice_confirmed_counts_rates_and_history |
+| T104 | Analytics | Supply Analyser | DONE | evidence: crates/client-ui/src/features/0010-analyser/view.rs:129 + merged_analyser_controls_keep_selectors_prices_resolve_and_reset_distinct (apps/client/src/features/0010-analyser/tests/play.rs); supply_counts_costs_rates_and_charts_revalue_real_consumption |
+| T105 | Analytics | Impact Analyser | DONE | evidence: crates/client-ui/src/features/0010-analyser/view.rs:195 + outgoing_and_incoming_metrics_reach_real_selectors_through_wire_facts_and_mailbox (apps/client/src/features/0010-analyser/tests/outgoing.rs); impact_uses_wire_damage_types_healing_rates_gauges_and_charts |
+| T106 | Analytics | Input Analyser | DONE | evidence: crates/client-ui/src/features/0010-analyser/view.rs:265 + outgoing_and_incoming_metrics_reach_real_selectors_through_wire_facts_and_mailbox (apps/client/src/features/0010-analyser/tests/outgoing.rs); input_preserves_wire_sources_elements_rates_and_reset |
 | T107 | Analytics | Hunting Session Analyser | DONE | Brak zegara, XP/h, profit/balance, kills/loot breakdown i save/export sesji. evidence: `crates/client-ui/src/features/0010-analyser/view.rs:259 + analyser_session_export_writes_confirmed_report_through_native_action` |
 | T108 | Analytics | Party Hunt Analyser | PARTIAL | Brak tabeli członków i rozliczenia loot/supplies/cost split. |
 | T109 | Analytics | Loot Tracker | PARTIAL | Brak listy śledzonych itemów i historii dropów/config. |

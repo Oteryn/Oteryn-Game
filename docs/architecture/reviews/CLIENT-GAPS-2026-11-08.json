@@ -744,45 +744,50 @@
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "XP Analyser",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak XP/h, estymacji do level, wykresów i celu; są raw/gained XP.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/view.rs:48 + analyser_selector_projects_session_facts_without_resetting_other_tools (apps/client/src/features/0010-analyser/tests/play.rs); xp_rates_goal_eta_and_minute_chart_follow_confirmed_experience"
  },
  {
   "id": "T103",
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Loot Analyser",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak rozbicia per item, wyceny, rate/h i graph; są sumy loot/gold.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "apps/client/src/features/0010-analyser/protocol.rs:27 + analyser_item_query_and_reply_use_the_production_command_mailbox (apps/client/src/features/0010-analyser/tests/play.rs); loot_items_reprice_confirmed_counts_rates_and_history"
  },
  {
   "id": "T104",
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Supply Analyser",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak listy zużytych itemów, cen, rate/h i graph; jest supplies total.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/view.rs:129 + merged_analyser_controls_keep_selectors_prices_resolve_and_reset_distinct (apps/client/src/features/0010-analyser/tests/play.rs); supply_counts_costs_rates_and_charts_revalue_real_consumption"
  },
  {
   "id": "T105",
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Impact Analyser",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak źródeł, DPS/HPS i gauge/graph; są damage/healing totals.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/view.rs:195 + outgoing_and_incoming_metrics_reach_real_selectors_through_wire_facts_and_mailbox (apps/client/src/features/0010-analyser/tests/outgoing.rs); impact_uses_wire_damage_types_healing_rates_gauges_and_charts"
  },
  {
   "id": "T106",
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Input Analyser",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak typów/źródeł obrażeń, tempa i wykresów; jest received total.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/view.rs:265 + outgoing_and_incoming_metrics_reach_real_selectors_through_wire_facts_and_mailbox (apps/client/src/features/0010-analyser/tests/outgoing.rs); input_preserves_wire_sources_elements_rates_and_reset"
  },
  {
   "id": "T107",

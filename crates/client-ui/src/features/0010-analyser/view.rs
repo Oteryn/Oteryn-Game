@@ -7,11 +7,9 @@ pub fn panel_text(panel: &Panel) -> String {
     let mut text = match panel.tool {
         super::Tool::Overview => format!("Overview\r\n{}", overview(panel)),
         super::Tool::Hunting => format!("Hunting analyser\r\nKills: {}", panel.kills),
-        super::Tool::Damage => format!(
-            "Damage analyser\r\nDamage dealt: {} | Damage received: {}",
-            panel.damage, panel.received
-        ),
-        super::Tool::Healing => format!("Healing analyser\r\nHealing: {}", panel.healing),
+        tool @ (super::Tool::Damage | super::Tool::Healing) => {
+            outgoing_text(panel, panel.clock.seconds(), tool)
+        }
         super::Tool::Xp => xp_text(panel, panel.clock.seconds()),
         super::Tool::Loot => loot_text(panel, panel.clock.seconds()),
         super::Tool::Supply => supply_text(panel, panel.clock.seconds()),
@@ -193,6 +191,48 @@ fn gauge(value: u64, total: u128) -> String {
     let share = u128::from(value) * 10000 / total.max(1);
     let bars = "█".repeat((share / 500) as usize);
     format!("{bars} {}.{:02}%", share / 100, share % 100)
+}
+pub(super) fn outgoing_text(panel: &Panel, seconds: u64, tool: super::Tool) -> String {
+    use std::fmt::Write;
+    let (mut text, value, label, chart) = if tool == super::Tool::Healing {
+        (
+            format!("Healing analyser\r\nHealing: {}", panel.healing),
+            panel.healing,
+            "HPS",
+            &panel.healing_chart,
+        )
+    } else {
+        (
+            format!(
+                "Damage analyser\r\nDamage dealt: {} | Damage received: {}",
+                panel.damage, panel.received
+            ),
+            panel.damage,
+            "DPS",
+            &panel.damage_chart,
+        )
+    };
+    let _ = write!(
+        text,
+        "\r\nElapsed: {seconds} seconds\r\n{label}: {}\r\n{} per minute\r\n{}",
+        rate(value, seconds),
+        tool.title(),
+        chart.chart(seconds)
+    );
+    if value == 0 {
+        text.push_str("\r\nNo confirmed measurements yet");
+    }
+    if tool == super::Tool::Damage {
+        for (element, amount) in &panel.impact_types {
+            let _ = write!(
+                text,
+                "\r\n{}: {amount} {}",
+                element_name(*element),
+                gauge(*amount, u128::from(value))
+            );
+        }
+    }
+    text
 }
 pub(super) fn impact_text(panel: &Panel, seconds: u64) -> String {
     use std::fmt::Write;
