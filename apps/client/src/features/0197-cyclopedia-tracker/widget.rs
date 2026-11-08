@@ -7,7 +7,10 @@ use oteryn_client_ui::cyclopedia_tracker::{Intent, TrackerSort, tracker_rows};
 use std::ptr::{null, null_mut};
 use std::sync::{Mutex, Weak};
 use tokio::sync::mpsc::UnboundedSender;
-use windows_sys::Win32::{Foundation::*, UI::WindowsAndMessaging::*};
+use windows_sys::Win32::{
+    Foundation::*,
+    UI::{Controls::EM_SETLIMITTEXT, WindowsAndMessaging::*},
+};
 
 type WeakMailbox = Weak<Mutex<Mailbox>>;
 #[derive(Default)]
