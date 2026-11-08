@@ -154,8 +154,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
     // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
     ("QNPCFX", 1),
-    // QUESTPC4: source-neutral compass52759 and sword52824; questpc4-stag-item-profiles.json.
-    ("QUESTPC4-STAG-ITEMS", 2),
+    // QUESTPC4: four plain materials plus neutral compass52759/sword52824; questpc4-stag-item-profiles.json.
+    ("QUESTPC4-STAG-ITEMS", 6),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),

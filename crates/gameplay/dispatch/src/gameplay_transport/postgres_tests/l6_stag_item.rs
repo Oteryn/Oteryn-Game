@@ -45,6 +45,56 @@ fn l6_stag_source_compass_has_native_custody_and_exact_replay() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn l6_stag_material_certificate_native_custody_and_replay() -> TestResult {
+    run_material_case("l6-stag-certificate-profile")
+}
+
+#[test]
+fn l6_stag_material_iron_native_custody_and_replay() -> TestResult {
+    run_material_case("l6-stag-iron-profile")
+}
+
+#[test]
+fn l6_stag_material_silver_native_custody_and_replay() -> TestResult {
+    run_material_case("l6-stag-silver-profile")
+}
+
+#[test]
+fn l6_stag_material_bronze_native_custody_and_replay() -> TestResult {
+    run_material_case("l6-stag-bronze-profile")
+}
+
+fn run_material_case(name: &'static str) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        assert!(
+            std::env::var_os("OTERYN_REQUIRE_PG").is_none(),
+            "Stag material case requires PostgreSQL"
+        );
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    eprintln!("POSTGRES_CASE_STARTED {name}");
+    super::kill_reward_e2e::scenario_thread::run(name, move || {
+        super::quest_world_callbacks::scenario(name, TILE, false)
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED {name} duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+pub(super) fn material_source_id(name: &str) -> Option<u32> {
+    match name {
+        "l6-stag-certificate-profile" => Some(52586),
+        "l6-stag-iron-profile" => Some(52635),
+        "l6-stag-silver-profile" => Some(52743),
+        "l6-stag-bronze-profile" => Some(52758),
+        _ => None,
+    }
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -65,14 +115,20 @@ pub(super) async fn exercise(
         .item_policy_for_source_id(source_id)
         .ok_or("Stag source item native policy missing")?;
     let semantics = serde_json::to_value(&policy.record().semantics)?;
-    assert_eq!(
-        semantics["protection"]["value"]["armor"],
-        serde_json::json!({"state":"KNOWN","value":0})
-    );
-    assert_eq!(
-        semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"],
-        "EXTRA"
-    );
+    if matches!(source_id, 52759 | 52824) {
+        assert_eq!(
+            semantics["protection"]["value"]["armor"],
+            serde_json::json!({"state":"KNOWN","value":0})
+        );
+        assert_eq!(
+            semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"],
+            "EXTRA"
+        );
+    } else {
+        assert!(matches!(source_id, 52586 | 52635 | 52743 | 52758));
+        assert_eq!(semantics["protection"]["state"], "UNKNOWN");
+        assert_eq!(semantics["equipment"]["state"], "NOT_APPLICABLE");
+    }
     let qualified =
         crate::durability::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy)?;
     assert_eq!(qualified.definition.production_key, key.as_str());
@@ -82,7 +138,12 @@ pub(super) async fn exercise(
             && qualified.inventory_destination
             && qualified.ground_destination
     );
-    assert_eq!(qualified.stack_maximum, 1);
+    let expected_stack_maximum = if matches!(source_id, 52635 | 52743 | 52758) {
+        100
+    } else {
+        1
+    };
+    assert_eq!(qualified.stack_maximum, expected_stack_maximum);
     assert!(qualified.decay.is_none() && qualified.container_capacity.is_none());
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(

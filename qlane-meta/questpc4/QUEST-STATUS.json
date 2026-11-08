@@ -10854,6 +10854,50 @@
         "unit_crates": "content and dispatch nextest --all-features compiling at publication; explicitly pending under PREPUSH-2 step3 cadence allowance"
       },
       "state": "Physical custody slice qualified; whole Stag remains IN_PROGRESS. Publish only continuation branch."
+    },
+    "material_slice": {
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "source_xml_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+      "source_items": {
+        "52586": 88016,
+        "52635": 88035,
+        "52743": 88303,
+        "52758": 88345
+      },
+      "decision": "Reuse grizzly source qualifier for description/weight-only items; preserve unknown protection and not-applicable equipment. Certificate is nonstackable; three parts use pinned cumulative flag and stack cap100. No custom use or new engine feature.",
+      "validation": "15 qualification/pin controls PASS10.938s after stack-flag rejection control went RED; actual source capture generated, prior compass/sword records unchanged. Four PostgreSQL RED cases compiling before native admission.",
+      "native_baseline": "3726 profiles; four material keys absent. No generation/admission yet.",
+      "state": "IN_PROGRESS physical custody slice; whole quest remains IN_PROGRESS.",
+      "red_postgres": {
+        "bronze": 51.586,
+        "certificate": 51.819,
+        "silver": 49.083,
+        "iron": 50.554,
+        "total": 102.146,
+        "failure": "All four missing native policy after actual PostgreSQL18.6 marker; nextest exit100."
+      },
+      "green_postgres": {
+        "bronze": 68.627969431,
+        "certificate": 68.639950669,
+        "iron": 60.885244931,
+        "silver": 61.008573116,
+        "compass_regression": 47.969801417,
+        "sword_regression": 47.882074326,
+        "passed": 6,
+        "failed": 0,
+        "proof": "All six isolated processes exit0 with PG18.6/version/completion markers; /tmp/questpc4b-material-pg-green.log"
+      },
+      "native_delta": "3726->3730; only52586,52635,52743,52758 added. Every prior record unchanged; assembled equipment3768.",
+      "freshness": "Native, source capture, equipment pin, completion matrix and reward variant packet checks all exit0; generated with repo tooling.",
+      "workspace_check": "PASS4m37s; clippy/fmt final run in progress.",
+      "prior_unit_snapshot": {
+        "passed": 662,
+        "content_passed": 322,
+        "failures_before_interruption": 0,
+        "reason": "Stop prior native-input unit snapshot before generating four material admissions; rerun new snapshot after gates."
+      },
+      "main_squash_reconciliation": "origin/main83acbdac3 has exact same tree af011f1bec32640504d2cd02b3baa29b2ac8a419 as existing ancestor8edc2d297. History-only ours-strategy merge retains every main byte plus both continuation slices; no main code is omitted."
     }
   }
 }

@@ -1,4 +1,4 @@
-"""Capture the pinned Stag sword and compass profiles; admission never enables custom use logic."""
+"""Capture finite Stag custody profiles; admission never enables custom use logic."""
 
 from __future__ import annotations
 
@@ -15,8 +15,8 @@ import questpc4_stag_item_profiles as scoped
 
 ROOT = Path(__file__).resolve().parents[2]
 PROOF = "tools/content-schema/native-gameplay/questpc4-stag-item-profiles.json"
-SCHEMA = "OTERYN_QUESTPC4_STAG_ITEM_PROFILES/v2"
-ITEMS = (52759, 52824)
+SCHEMA = "OTERYN_QUESTPC4_STAG_ITEM_PROFILES/v3"
+ITEMS = scoped.MATERIALS + scoped.NEUTRAL_EQUIPMENT
 KEYS = {i: f"oteryn:item.tibia.i{i}" for i in ITEMS}
 
 
@@ -124,8 +124,15 @@ def admit(root, generated, profile_path, manifest_path, order, canonical_bytes):
         if (
             packet["record_sha256"][key] != digest(record)
             or packet["sources"][0]["revision"] != batch.REVISION
-            or record["semantics"]["protection"]["value"]["armor"]
-            != source_owner.source.K(0)
+            or (
+                key in {KEYS[i] for i in scoped.NEUTRAL_EQUIPMENT}
+                and record["semantics"]["protection"]["value"]["armor"]
+                != source_owner.source.K(0)
+            )
+            or (
+                key in {KEYS[i] for i in scoped.MATERIALS}
+                and record["semantics"]["equipment"] != source_owner.source.NA
+            )
             or record["admission"]["legal_destinations"]
             != ["CharacterInventory", "Ground"]
             or not record["admission"]["materializable"]

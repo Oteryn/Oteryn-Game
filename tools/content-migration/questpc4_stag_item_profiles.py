@@ -1,18 +1,29 @@
-"""Scoped source qualification for Stag's inert armour-zero sword and compass."""
+"""Finite Stag custody profiles; retain source equipment and plain-item distinctions."""
 
 import grizzly_shop_profiles as owner
+
+MATERIALS = (52586, 52635, 52743, 52758)
+NEUTRAL_EQUIPMENT = (52759, 52824)
 
 
 def qualify(item_id, node, appearance, physical, bindings, definition):
     source = owner.source
     key = f"oteryn:item.tibia.i{item_id}"
     if (
-        item_id not in (52759, 52824)
+        item_id not in MATERIALS + NEUTRAL_EQUIPMENT
         or node.get("id") != str(item_id)
         or definition["identity"]["key"] != key
     ):
         raise ValueError("STAG_ITEM_IDENTITY")
     attributes = source.attrs(node)
+    if item_id in MATERIALS:
+        if bool(appearance["flags"].get("flags.cumulative", False)) != (item_id != 52586):
+            raise ValueError("STAG_MATERIAL_STACK_FLAG")
+        if set(attributes) != {"description", "weight"} or node.findall(
+            "attribute[@key='script']"
+        ):
+            raise ValueError("STAG_MATERIAL_SOURCE_ATTRIBUTES")
+        return owner.qualify(item_id, node, appearance, physical, bindings, definition)
     if (
         set(attributes) != {"armor", "description", "weight"}
         or attributes["armor"] != "0"

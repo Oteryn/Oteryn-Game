@@ -105,6 +105,10 @@ fn scenario_case(
             | "l6-ruby-profile"
             | "l6-stag-item-profile"
             | "l6-stag-compass-profile"
+            | "l6-stag-certificate-profile"
+            | "l6-stag-iron-profile"
+            | "l6-stag-silver-profile"
+            | "l6-stag-bronze-profile"
     );
     let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
@@ -713,6 +717,15 @@ fn scenario_case(
         } else if name == "l6-stag-compass-profile" {
             super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, 52759)
                 .await?;
+        } else if let Some(source_id) = super::super::l6_stag_item::material_source_id(name) {
+            super::super::l6_stag_item::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
         } else if name == "l6-ruby-profile" {
             super::super::l6_ruby_profile::exercise(&owner, &h).await?;
         } else if floor_profiles {
