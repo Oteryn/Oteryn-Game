@@ -21,6 +21,8 @@ use winit::{
 };
 
 type Shared = SettingsState;
+#[path = "basic_native.rs"]
+mod basic_window;
 #[path = "controls_native.rs"]
 mod controls_window;
 #[path = "frames_native.rs"]
@@ -196,7 +198,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 120..=125)
+                && matches!(id, 103 | 106 | 110..=113 | 120..=126)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -413,6 +415,14 @@ fn run(shared: Arc<Mutex<Shared>>) {
             [250, 350, 280, 30],
             0,
         );
+        let basic_page = control(
+            hwnd,
+            "BUTTON",
+            "Basic options...",
+            126,
+            [550, 350, 170, 30],
+            0,
+        );
         let feedback = control(hwnd, "STATIC", "", 0, [10, 390, 710, 120], 0);
         if [
             help,
@@ -430,6 +440,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             shortcuts_page,
             minimap_page,
             frames_page,
+            basic_page,
             feedback,
             transfer_label,
             transfer_path,
@@ -474,7 +485,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
-                if (120..=125).contains(&action) {
+                if (120..=126).contains(&action) {
                     drop(state);
                     subpages::open(action, Arc::clone(&shared), hwnd);
                     state = lock(&shared);

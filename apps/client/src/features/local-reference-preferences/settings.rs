@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 
+#[path = "basic.rs"]
+mod basic;
+pub use basic::{BASIC_GROUPS, BasicOptions};
 #[path = "bindings.rs"]
 mod bindings;
 #[path = "controls.rs"]
