@@ -1452,3 +1452,7 @@ mod worldchg_grimvale_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "world_callbacks/readable_text_tests.rs"]
+mod readable_text_tests;

@@ -15,7 +15,7 @@
 |---|---|---|---|---|
 | cults_boss_phase_closures: wire shared native phase owner into production admission/deaths and durable settlement | ENGENC2 | none; reserved range 1800–1819 | Cults of Tibia | CLAIMED |
 | Fugue native combat profile source missing from checked native catalogue | ENGENC2 | none | The Order of the Lion | OWNER: need an authoritative creature profile; do not invent combat data |
-| Literal readable text on NPC/World quest Item rewards through the existing MINT owner | questpc5 | none planned; own range 1270–1279 retained | Nomads Land Quest (book reward step only; window puzzle remains) | CLAIMED |
+| M15 — Literal readable text on NPC/World quest Item rewards through the existing MINT owner | questpc5 | none; reuse ENGITEM migration 1641 already on qmech | Nomads Land Quest (readable reward boundary only; other route gaps remain) | DONE 68d538460; fresh PG 51.497609265s; see M15-questpc5.md |
 | Literal readable text on quest-reward root Items through the existing fenced mint owner (NPC/world bridge) | qready1 | none | Nomads Land Quest | RELEASED: questpc5 claimed first during push race; no code written |
 | M10: NPC carried/bank payment + item hand-in + magic effect (reuse existing value owners) | qnpcfx | none planned; reserved 2120-2129 only | Koshei the Deathless Quest; The Demon Oak Quest; The Inquisition Quest | CLAIMED |
 | Source NPC quest teleport composed with fenced dialogue progress, admitted destination and command replay | PGSPEED | 2220 reserved; own QMECH range 2220–2229 | The Paradox Tower Quest (Riddler); In Service of Yalahar Quest (NPC teleport steps only; other blockers remain) | CLAIMED |
@@ -78,3 +78,5 @@
 | M01a — imported-route native TALK stage bindings through preflight and server consumer | qengine2 | none planned; assigned QMECH range 2040–2049 | 44 TALK quests listed in MISSING-questpc-pc2.md; ASSIGN.md M01a | CLAIMED |
 
 | M04 — canonical quest completion in final native NPC hand-in receipt | engnpc | 2230 reserved if required; own QMECH range 2230–2239 | A Father's Burden; Marlin Trophy; Djinn War Efreet; Djinn War Marid; White Raven Monastery | CLAIMED |
+
+| M16 — Personal NPC dialogue map marker, durable server receipt and native client projection | questpc5 | 2070 reserved; owner-assigned range 2070–2079 only | Targuna Quest (Sterling return/treasure marker) | CLAIMED |

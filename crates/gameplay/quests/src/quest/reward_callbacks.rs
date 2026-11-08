@@ -1235,3 +1235,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "reward_callbacks/readable_text_tests.rs"]
+mod readable_text_tests;
