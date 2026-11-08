@@ -421,6 +421,16 @@
     "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf",
     "main_unchanged": true,
     "other_engine_heads_unchanged": true,
-    "result": "ENGNPC adds atomic sixteen-track reward guards; no personal map-marker delivery or quest-guarded taming. All ten waiting rows retain their missing contract."
+    "result": "ENGNPC adds atomic sixteen-track reward guards; no personal map-marker delivery or quest-guarded taming. All ten waiting rows retain their missing contract.",
+    "post_merge_validation": {
+      "main": "6ef6b0cad",
+      "workspace_all_targets": "PASS 4m00s",
+      "fmt": "PASS",
+      "generation": "PASS no changes",
+      "pin_tool": "rebuilt from merged source",
+      "pin_refresh_and_check": "PASS",
+      "duplicate_migrations": "PASS",
+      "unit_and_pg": "No authored crate, content or PG changes; no new gameplay qualification"
+    }
   }
 }
