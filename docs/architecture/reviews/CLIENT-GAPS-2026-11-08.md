@@ -43,7 +43,7 @@ Zasady przeciw dublowaniu:
 | T022 | Chat | Tabbed console, chat on/off i filtry | PARTIAL | Transport jest; brak pełnej konsoli z niezależnymi filtrami i kontekstami chat-on/off. |
 | T023 | Chat | Save / append channel log | MISSING | Brak zapisu i dopisywania treści kanału do pliku. |
 | T024 | Chat | Ignore / whitelist / blacklist | MISSING | Brak dedykowanych list komunikacji i wyjątków. |
-| T038 | Containers | Managed containers i loot destinations | PARTIAL | Listy/destination/nearby loot są; brak pełnego menu managed containers i przenoszenia całej zawartości. |
+| T038 | Containers | Managed containers i loot destinations | DONE | Listy/destination/nearby loot są; brak pełnego menu managed containers i przenoszenia całej zawartości. evidence: apps/client/src/features/0014-container-tree/input/bulk.rs:13 + move_all_moves_every_displayed_stack_when_the_server_accepts + move_all_uses_live_container_handles_and_stops_at_first_server_refusal; apps/client/src/features/0098-quick-loot/input.rs:33 + managed_container_reset_uses_the_selected_category_and_existing_wire |
 | T139 | NPC | Buy/sell/amount/backpack/capacity/filters | PARTIAL | Sklep istnieje; brak pełnej listy opcji ignore capacity/equipped/backpack i prezentacji. |
 | T029 | Party | Team Finder assemble/join | PARTIAL | Ogłoszenia i operacje członka są; brak pełnej kompozycji Social, filtrów i listy zespołów. |
 | T026 | Social | Friends, main character, zaproszenia | PARTIAL | Są zgody/status VIP; brak pełnego kontowego Friends i main character. |
