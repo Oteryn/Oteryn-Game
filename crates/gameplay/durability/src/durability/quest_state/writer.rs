@@ -880,17 +880,6 @@ impl DurabilityRoot {
                         tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
-                    if let Some(world) = &callback
-                        && world.effects.mount_reward.is_some()
-                    {
-                        let Some(native) = context.as_ref().and_then(|(_, _, native)| *native) else {
-                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
-                        };
-                        if !super::super::quest_mount_rewards::earn(&mut tx, fence, &request, world, native, mount_achievement.as_ref()).await? {
-                            tx.rollback().await?;
-                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
-                        }
-                    }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
@@ -1141,6 +1130,18 @@ impl DurabilityRoot {
                             &context.content_revision, achievement.as_ref()).await?;
                         super::super::quest_unnatural_selection::earn(&mut tx, fence, &request, callback,
                             &changes, dance_achievement.as_ref()).await?;
+                    }
+                    // Item custody participants finish before the account appearance lock.
+                    if let Some(world) = &callback
+                        && world.effects.mount_reward.is_some()
+                    {
+                        let Some(native) = context.as_ref().and_then(|(_, _, native)| *native) else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        if !super::super::quest_mount_rewards::earn(&mut tx, fence, &request, world, native, mount_achievement.as_ref()).await? {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     super::hero_of_bounac::earn(&mut tx, fence, &request, &changes, lionheart.as_ref()).await?;
                     super::planegazer_finale::earn(&mut tx, fence, &request, &changes).await?;

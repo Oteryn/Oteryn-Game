@@ -22,10 +22,11 @@ pub fn callback() -> Result<Callback, String> {
             {"track":RAM,"minimum":0,"maximum":0,"set":1}
         ],
         "offerings":[],"item_on_target":{"item":"oteryn:item.tibia.i53073","count":1,"replacement":null,"target_replacement":null},
-        "effects":{"mount_reward":{"mount":"oteryn:content.mount.reliable_ram","achievement":"oteryn:achievement/a_reliable_friend"}},
+        "effects":{"magic":{"position":{"x":31926,"y":31896,"floor":-7},"effect":36},"mount_reward":{"mount":"oteryn:content.mount.reliable_ram","achievement":"oteryn:achievement/a_reliable_friend"}},
         "return_on_failure":false,"failure_message":null,
         "success_message":"The hungry ram enjoyed your gift and is willing to join and assist you on your journey. Take good care of it!",
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/actions_reliable_ram.lua:20-50",
+        "sources":["canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:src/utils/utils_definitions.hpp:96",
+                   "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/actions_reliable_ram.lua:20-50",
                    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emiliana.lua:169-182"]
     }]});
     super::world_callbacks::parse(&value.to_string())?
@@ -40,6 +41,7 @@ mod tests {
     fn srv7_ram_binds_source_earned_turnips_and_map_target() -> Result<(), String> {
         let callback = callback()?;
         assert_eq!(callback.selector.appearance, Some(53439));
+        assert_eq!(callback.effects.magic.as_ref().map(|effect| effect.effect), Some(36));
         assert_eq!(callback.storage[0].track, TURNIPS);
         assert!(callback.storage[0].preserve);
         assert_eq!(

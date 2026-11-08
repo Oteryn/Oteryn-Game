@@ -253,7 +253,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 })
         })
         || effects.mount_reward.as_ref().is_some_and(|r| {
-            !callback.requires_world_admission || callback.trigger != Trigger::Use
+            !callback.requires_world_admission
+                || callback.trigger != Trigger::Use
                 || callback.storage.is_empty()
                 || callback
                     .storage

@@ -18,3 +18,7 @@ Pending qualification: real framed PG case and its duration; final changed-crate
 - https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml
 
 No donor code or asset file is redistributed here. These are extracted rule and identity facts. Wiki cross-check: wiki-pending; the current implementation does not infer odds or invent a look.
+
+The carried input also needed native physical admission: canonical i53073 exists but is not materializable, and Canary's older XML has no such item. Crystal201189f `data/items/items.xml:88677` supplies the plain portable turnip; the existing Grizzly physical qualifier and shared native profile merger capture it without changing canonical Item admission or enabling generic item scripts. Source: https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml .
+
+Success feedback retains the source hearts effect and message. `CONST_ME_HEARTS=36`: https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/utils/utils_definitions.hpp#L96 .

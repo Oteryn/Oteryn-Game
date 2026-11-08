@@ -37,7 +37,9 @@ pub(super) fn prepare(
 
 use super::character_progression::CurrentCharacterGameplayFence;
 use super::quest_state::{QuestCause, QuestTransitionRequest};
-use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, EarnedCosmetics, UnlockFact};
+use crate::domain::appearance::{
+    AccountUnlocks, AppearanceContent, EarnedCosmetic, EarnedCosmetics, UnlockFact,
+};
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_quests::quest::{reward_callbacks::PROVENANCE, world_callbacks::Callback};
 use sha2::{Digest, Sha256};
@@ -82,11 +84,30 @@ pub(super) async fn earn(
     }
     let account_id = crate::domain::AccountId::from_bytes(*account.as_bytes())
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let facts = super::character_appearance::read_account_appearance_unlocks(tx, account_id, &cosmetics.earned_grant_keys()).await
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let facts: Vec<_> = facts.into_iter().filter(|fact| matches!(fact.source_kind.as_str(), "quest" | "npc" | "mount_taming" | "item_action" | "task_board"))
-        .map(|fact| (fact.unlock_key, fact.content_revision)).collect();
-    if (EarnedCosmetics { content: &cosmetics, facts: &facts }).mount(&reward.mount) == UnlockFact::Compatible {
+    let facts = super::character_appearance::read_account_appearance_unlocks(
+        tx,
+        account_id,
+        &cosmetics.earned_grant_keys(),
+    )
+    .await
+    .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let facts: Vec<_> = facts
+        .into_iter()
+        .filter(|fact| {
+            matches!(
+                fact.source_kind.as_str(),
+                "quest" | "npc" | "mount_taming" | "item_action" | "task_board"
+            )
+        })
+        .map(|fact| (fact.unlock_key, fact.content_revision))
+        .collect();
+    if (EarnedCosmetics {
+        content: cosmetics,
+        facts: &facts,
+    })
+    .mount(&reward.mount)
+        == UnlockFact::Compatible
+    {
         return Ok(false);
     }
     let (cause, ordinal) = request.cause.key();
@@ -98,7 +119,10 @@ pub(super) async fn earn(
         &key,
     ))
     .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let digest = Sha256::new().chain_update(b"oteryn:quest-mount:v1\0").chain_update(&event).finalize();
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:quest-mount:v1\0")
+        .chain_update(&event)
+        .finalize();
     let mut id = [0; 16];
     id.copy_from_slice(&digest[..16]);
     id[6] = (id[6] & 15) | 0x80;
