@@ -144,6 +144,11 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/monster_ai_cycle.rs", 1),
             // S10: source NPC wandering uses the same live-world movement gate.
             ("gameplay_transport/npc_actor/current_map.rs", 1),
+            // Primal cadence uses the actual activated Source combat seam.
+            (
+                "gameplay_transport/postgres_tests/primal_menace_native.rs",
+                1,
+            ),
             // RAIDS-1 (pkg4): a raid's live world steps its spawned monsters through the same gate.
             ("gameplay_transport/raid_live_world.rs", 1),
             // W17: the physical Drome regression proves participant-only targeting.

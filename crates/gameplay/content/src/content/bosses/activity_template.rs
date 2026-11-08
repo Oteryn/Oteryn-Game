@@ -443,15 +443,22 @@ impl ContentActivationController {
                 return Err(R::UnknownPlacement);
             }
         }
-        if !candidate.blockers.is_empty()
-            || !candidate.callbacks_known
-            || unavailable_source_hooks(candidate).next().is_some()
-        {
-            return Err(R::SourceHookUnavailable);
-        }
         let native = active
             .native_gameplay()
             .ok_or(R::CreatureClosureUnavailable)?;
+        let primal = (creature == super::primal_closure::PRIMAL_MENACE_KEY)
+            .then(|| super::primal_closure::qualify(native))
+            .flatten();
+        if !candidate.blockers.is_empty()
+            || !candidate.callbacks_known
+            || unavailable_source_hooks(candidate).any(|hook| {
+                primal
+                    .as_ref()
+                    .is_none_or(|closure| !closure.implements(hook))
+            })
+        {
+            return Err(R::SourceHookUnavailable);
+        }
         let record = native
             .creature_profiles()
             .records
@@ -475,39 +482,7 @@ impl ContentActivationController {
             .row(creature)
             .map_err(|_| R::CreatureClosureUnavailable)?;
         qualify_instance_death_descendant(&record.profile.data, &rewards)?;
-        let Some(crate::content::project::ProjectV2AuthoringProfile {
-            data: ProjectV2AuthoringProfileData::Behavior(behavior),
-            ..
-        }) = &record.behavior
-        else {
-            return Err(R::CreatureClosureUnavailable);
-        };
-        if behavior.summons.is_some()
-            || !behavior.event_bindings.is_empty()
-            || behavior
-                .attacks
-                .iter()
-                .chain(behavior.defenses.iter())
-                .any(|attack| {
-                    !record
-                        .monster_melee
-                        .as_ref()
-                        .is_some_and(|melee| melee.ability == attack.ability)
-                        && !record
-                            .source_item_abilities
-                            .iter()
-                            .any(|profile| profile.target == attack.ability)
-                        && !record
-                            .attack_definitions
-                            .as_ref()
-                            .is_some_and(|definitions| {
-                                definitions
-                                    .profiles
-                                    .iter()
-                                    .any(|profile| profile.target == attack.ability)
-                            })
-                })
-        {
+        if !super::primal_closure::abilities_closed(record) {
             return Err(R::CreatureClosureUnavailable);
         }
         let first = entries[0];

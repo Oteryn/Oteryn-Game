@@ -142,6 +142,8 @@ mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
 mod player_death_items;
+mod primal_menace;
+mod primal_pods;
 mod private_channel_world;
 mod proficiency_checkpoint;
 mod promotion_death;
@@ -176,6 +178,7 @@ pub use soulpit::{
 };
 mod source_item_cycle;
 mod source_pvp_expiry;
+mod source_volatile_items;
 pub mod spectate_session;
 mod spell_access_facts;
 mod spell_catalog;

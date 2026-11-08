@@ -154,6 +154,16 @@ impl CreatureDeathKey {
         self.runtime_scope.instance_id().map(|id| id.to_vec())
     }
 
+    fn scope_kind(self) -> i16 {
+        // 1152_instance_creature_death_mints.sql:9-13: the persisted typed
+        // discriminator and assignment-scope key must both be explicit. This
+        // also keeps exact writers valid when fixture triggers are disabled.
+        match self.runtime_scope {
+            RuntimeScopeRefV1::Channel { .. } => 1,
+            RuntimeScopeRefV1::Instance { .. } => 2,
+        }
+    }
+
     /// Historical Channel intent bindings retain their exact original bytes.
     fn append_scope_id(self, bytes: &mut Vec<u8>) {
         match self.runtime_scope {
@@ -1895,14 +1905,14 @@ async fn insert_reservation(
                transaction_id, event_id, item_instance_id, occurred_at, envelope, \
                fence_scope_ownership_generation, fence_holder_node_id, \
                fence_holder_registration_revision, work_units_used, reserved_at, \
-               type2_schema_revision, death_instance_id) \
+               type2_schema_revision, death_instance_id, death_scope_kind, death_scope_key) \
              VALUES (encode($1,'hex')::uuid, CASE WHEN get_byte($2,0)=1 THEN encode(substring($2 from 2),'hex')::uuid END, $3::text::numeric(20,0), \
                $4, $5::text::numeric(20,0), $6, $7, $8, $9, $10, $11, \
                encode($12,'hex')::uuid, encode($13,'hex')::uuid, encode($14,'hex')::uuid, \
                $15, $16, $3::text::numeric(20,0), encode($17,'hex')::uuid, \
                $18::text::numeric(20,0), 0, \
                floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $19, \
-               CASE WHEN get_byte($2,0)=2 THEN encode(substring($2 from 2),'hex')::uuid END)",
+               CASE WHEN get_byte($2,0)=2 THEN encode(substring($2 from 2),'hex')::uuid END, $20, $21)",
         ),
         &request.cause
     )
@@ -1915,6 +1925,8 @@ async fn insert_reservation(
     .bind(reservation.fence_node_id.as_slice())
     .bind(reservation.fence_registration_revision.to_string())
     .bind(i16::try_from(tuple.schema_revision()).map_err(|_| DurabilityError::InvalidStoredState)?)
+    .bind(request.cause.death.scope_kind())
+    .bind(assignment_scope_key(request.cause.death.runtime_scope).as_slice())
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -2194,12 +2206,13 @@ async fn insert_receipt(
            loot_table_revision_ref, loot_purpose_key, draw_ordinal, intent_binding, \
            transaction_id, event_id, item_instance_id, occurred_at, envelope_sha256, \
            committed_at, corpse_top_damage_character_id, \
-           destination_parent_item_instance_id, destination_ordinal, death_instance_id) \
+           destination_parent_item_instance_id, destination_ordinal, death_instance_id, \
+           death_scope_kind, death_scope_key) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3::text::numeric(20,0), $4, \
            $5::text::numeric(20,0), $6, $7, $8, $9, $10, $11, encode($12,'hex')::uuid, \
            encode($13,'hex')::uuid, encode($14,'hex')::uuid, $15, $16, \
            floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
-           encode($17,'hex')::uuid, encode($18,'hex')::uuid, $19::text::numeric(20,0), encode($20,'hex')::uuid)",
+           encode($17,'hex')::uuid, encode($18,'hex')::uuid, $19::text::numeric(20,0), encode($20,'hex')::uuid, $21, $22)",
     )
     .bind(death.world_id.as_bytes().as_slice())
     .bind(death.channel_bytes())
@@ -2221,6 +2234,8 @@ async fn insert_receipt(
     .bind(corpse_entry.map(|entry| entry.corpse_item_instance_id.to_vec()))
     .bind(corpse_entry.map(|entry| entry.placement_ordinal.to_string()))
     .bind(death.instance_bytes())
+    .bind(death.scope_kind())
+    .bind(assignment_scope_key(death.runtime_scope).as_slice())
     .execute(&mut **tx)
     .await?;
     if let Some(race) = &request.cause.corpse_race {

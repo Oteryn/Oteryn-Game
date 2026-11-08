@@ -1458,7 +1458,7 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
 const GOLDEN: (usize, usize, &str) = (
     324,
     5_431_963,
-    "c114d516f4bd770c7d270c29447490a1368e98c921a6a2c4b6937b977cfb543a",
+    "212408a7b0779ef39613a505339751452e860ead8f1d1252d277c6584515e4db",
 );
 
 // v7 changes only bundle identity in these layerless fixtures. The recorder separately

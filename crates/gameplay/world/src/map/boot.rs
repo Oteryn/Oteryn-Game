@@ -803,6 +803,12 @@ impl BundleCollisionData {
             return Err(StaticCellEngineError::ScopeMismatch);
         }
         let pos = tile_pos(cell).ok_or(StaticCellEngineError::Absent)?;
+        if self
+            .activity_bounds
+            .is_some_and(|bounds| !super::activity_contains(bounds, pos))
+        {
+            return Err(StaticCellEngineError::Absent);
+        }
         self.base
             .tile(pos.x, pos.y, pos.floor)
             .ok_or(StaticCellEngineError::Absent)?;
@@ -955,6 +961,14 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
                 .is_none_or(|span| span > 255)
             || bounds[4] < 0
             || bounds[5] > 15
+            || source.activity_bounds.is_some_and(|[a, b, c, d, e, f]| {
+                bounds[0] < a
+                    || bounds[1] < b
+                    || bounds[2] > c
+                    || bounds[3] > d
+                    || bounds[4] < e
+                    || bounds[5] > f
+            })
         {
             return None;
         }
@@ -970,6 +984,7 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
             base: Arc::clone(&source.base),
             blocked: Arc::clone(&source.blocked),
             map,
+            activity_bounds: Some(bounds),
         })))
     }
 
@@ -2213,6 +2228,7 @@ pub mod tests {
                 kind: oteryn_world_bundle::bundle::TerrainKind::Common,
                 walkable,
                 ground_speed: None,
+                blocks_projectile: None,
             });
             let bytes = oteryn_world_bundle::writer::write(&manifest, &read.sectors, &read.spawns)?;
             load.digest = bundle::read(&bytes)?.digest;

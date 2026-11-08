@@ -529,14 +529,14 @@ async fn open_tuple(runtime: PgPool) -> Result<Type2EventTuple, sqlx::Error> {
 fn reservation(seed: u8, revision: &str, forged: bool) -> String {
     format!(
         "INSERT INTO game_item_mint_reservations \
-           (death_world_id, death_channel_id, death_scope_ownership_generation, \
+           (death_scope_kind,death_scope_key,death_world_id, death_channel_id, death_scope_ownership_generation, \
             death_actor_local_id, death_actor_local_generation, loot_table_family, \
             loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
             draw_ordinal, intent_binding, transaction_id, event_id, item_instance_id, \
             occurred_at, envelope, fence_scope_ownership_generation, fence_holder_node_id, \
             fence_holder_registration_revision, work_units_used, reserved_at, \
             type2_schema_revision, type2_pre_activation) \
-         VALUES ({world}, {channel}, 1, {seed}, 1, 'LootTable', 'fixture:loot.forged', 'loot-r1', \
+         VALUES (1,game_item_death_scope_key({world},1::smallint,{channel},NULL),{world}, {channel}, 1, {seed}, 1, 'LootTable', 'fixture:loot.forged', 'loot-r1', \
             'fixture:purpose.drop', 1, decode(repeat('cd',33),'hex'), {tx}, {ev}, {item}, 1000, \
             decode(repeat('ab',16),'hex'), 1, {node}, 0, 0, 900, {revision}, {forged})",
         world = uuid(WORLD),

@@ -59,7 +59,6 @@ struct Door {
     /// Upper bits count transitions; low bits: 0 unlocked closed, 1 open, 2 locked.
     /// One atomic word pins the visible pose and wire revision together.
     state: AtomicU64,
-    initial_state: u64,
 }
 
 impl Door {
@@ -173,7 +172,6 @@ impl DoorBook {
             open,
             initial_state: if locked { 2 } else { 0 },
             state: AtomicU64::new(if locked { 2 } else { 0 }),
-            initial_state: if locked { 2 } else { 0 },
         });
     }
 

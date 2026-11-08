@@ -434,6 +434,13 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Sugar Daddy corpse and existing loot table's native custody closure.
     import boss_reward_item_profiles
     boss_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Primal's source pod and four corpse stages retain their exact Ground-only
+    # custody; neither the visual pod nor a corpse is an inventory loot yield.
+    import primal_item_profiles
+    primal_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Carry the exact explicit-empty Lua witness into the frozen native provider too.
+    import primal_reference_overlay
+    primal_reference_overlay.apply_native(root, generated, NATIVE_MANIFEST, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions

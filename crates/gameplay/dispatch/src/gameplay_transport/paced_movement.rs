@@ -177,6 +177,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match outcome {
             Ok((snapshot, duration)) => {
+                // Crystal hazard_primal.lua:23-55: actual accepted STEP consumes
+                // the exact physical pod, with HP owned by this same player turn.
+                super::primal_pods::step(
+                    self,
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    now / 1000,
+                );
                 // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
                 // owner turn as the committed step.
                 if let Some(map) = self.bundle_map() {

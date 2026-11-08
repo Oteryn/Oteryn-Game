@@ -71,6 +71,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        super::primal_menace::tick(self, &mut runtime, room, content, now.get() / 1_000);
         let mut states = self.states.spell_states.lock().await;
         let periodic_pass = now.get() >= states.next_monster_ai_pass_us;
         if !periodic_pass

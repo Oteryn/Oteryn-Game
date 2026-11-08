@@ -132,6 +132,41 @@ pub struct BundleFacts {
 const AMBIGUOUS: u32 = u32::MAX;
 
 impl BundleFacts {
+    /// A qualified Source owner may use the same bounded volatile-item model
+    /// without inventing a bundle, base tile, durable Item or map placement.
+    /// The caller supplies its already resolved immovable native Item facts.
+    pub fn for_volatile_item(facts: EntryFacts) -> Option<Self> {
+        if !matches!(facts.definition, MapDefinition::Item(_))
+            || facts.terrain_kind.is_some()
+            || facts.appearance_id == 0
+            || facts.pickupable
+            || !facts.bound
+            || facts.count != 1
+        {
+            return None;
+        }
+        let mut value = Self::default();
+        value
+            .movement_definitions
+            .insert(facts.appearance_id, facts);
+        Some(value)
+    }
+
+    /// Snapshot only movement-created entries. Their count is bounded by the
+    /// existing callback-state budget; no World/Character/table scan is involved.
+    pub fn movement_item_entries(&self) -> Vec<(TilePos, view::ComposedEntry)> {
+        self.callbacks.lock().map_or_else(
+            |_| Vec::new(),
+            |state| {
+                state
+                    .movement_items
+                    .iter()
+                    .flat_map(|(pos, entries)| entries.iter().copied().map(|entry| (*pos, entry)))
+                    .collect()
+            },
+        )
+    }
+
     /// Share immutable palette identities, copying only this bounded activity's
     /// placement provenance. Scope-ephemeral facts always start empty.
     pub(super) fn activity_copy(&self, bounds: [i32; 6]) -> Self {

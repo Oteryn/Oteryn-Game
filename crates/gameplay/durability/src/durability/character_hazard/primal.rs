@@ -15,6 +15,10 @@ use oteryn_gameplay_encounter_rules::hazard::unlocked_after_primal_menace;
 use sqlx::{Postgres, Row, Transaction};
 
 const PRIMAL_MENACE: &str = "oteryn:creature.the_primal_menace";
+/// Crystal 201189f, data-global/scripts/quests/the_primal_ordeal/
+/// creaturescripts_the_primal_menace_killed.lua:10-12: completion is independent of Hazard gain.
+pub const PRIMAL_MENACE_KILLED_TRACK: &str =
+    "oteryn:quest-progress/quest/u12_90/primal_ordeal/bosses/the_primal_menace_killed";
 // Crystal the_primal_manace.lua:8-14 has exactly five participant slots.
 const MAX_CONTRIBUTORS: usize = 5;
 type Result<T> = std::result::Result<T, CharacterProgressionError>;

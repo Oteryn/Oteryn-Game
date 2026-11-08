@@ -295,6 +295,7 @@ fn soulpit_common_static_collision_retains_false_true_and_unknown() -> TestResul
                 kind: TerrainKind::Common,
                 walkable,
                 ground_speed: None,
+                blocks_projectile: None,
             })
         );
     }

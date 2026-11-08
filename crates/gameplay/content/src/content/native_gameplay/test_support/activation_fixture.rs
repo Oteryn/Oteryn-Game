@@ -342,6 +342,27 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     assert!(actual.details.children.is_empty());
                     assert!(expected.children.is_empty());
                 }
+            } else if policy.definition_key == "oteryn:creature.the_primal_menace" {
+                // Crystal the_primal_menace.lua:118 is a source-proven empty
+                // Loot table, never the legacy no-binding/corpse-ref fallback.
+                let bound = binding
+                    .loot
+                    .as_ref()
+                    .ok_or("Primal explicit empty source loot binding")?;
+                assert_eq!(bound.family, "Loot");
+                assert_eq!(bound.key, "oteryn:loot.creature.the_primal_menace");
+                assert_eq!(bound.revision, "definition-r1");
+                assert_eq!(
+                    row.loot_table_ref,
+                    LootDefinitionRef::new(&bound.family, &bound.key, &bound.revision)
+                );
+                let original = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity == *bound)
+                    .ok_or("Primal original explicit empty source loot table")?;
+                assert!(original.entries.is_empty());
+                assert!(row.loot_table.entries.is_empty());
             } else {
                 assert!(binding.loot.is_none(), "source boss has no authored loot");
                 assert_eq!(row.loot_table_ref, row.corpse_item);

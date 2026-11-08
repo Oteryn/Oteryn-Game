@@ -12,6 +12,21 @@ import refresh_spkg2_qualification_receipts as refresh
 
 
 class ContextTests(unittest.TestCase):
+    def test_sugar_shard_without_qualified_marker_cannot_be_hidden(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            marker = root / world_context.MARKER
+            marker.parent.mkdir(parents=True)
+            marker.write_bytes(world_context.original_marker(check.ROOT))
+            shard = marker.parent / world_context.SUGAR_GROUND
+            shard.write_bytes(
+                (
+                    check.ROOT / "content/world/terrain" / world_context.SUGAR_GROUND
+                ).read_bytes()
+            )
+            with self.assertRaisesRegex(ValueError, "source digest drift"):
+                world_context.original_marker(root)
+
     def test_soulpit_owner_successor_recovers_the_exact_frozen_marker(self):
         original = world_context.original_marker(check.ROOT)
         self.assertEqual(world_context.sha(original), world_context.BASE_SHA)
@@ -23,6 +38,7 @@ class ContextTests(unittest.TestCase):
                 world_context.MARKER,
                 "content/world/terrain/" + world_context.GROUND,
                 "content/world/terrain/" + world_context.SOULPIT,
+                "content/world/terrain/" + world_context.SUGAR_GROUND,
             ):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
@@ -37,6 +53,7 @@ class ContextTests(unittest.TestCase):
             world_context.MARKER,
             "content/world/terrain/" + world_context.GROUND,
             "content/world/terrain/" + world_context.SOULPIT,
+            "content/world/terrain/" + world_context.SUGAR_GROUND,
         ):
             with (
                 self.subTest(relative=relative),
@@ -47,6 +64,7 @@ class ContextTests(unittest.TestCase):
                     world_context.MARKER,
                     "content/world/terrain/" + world_context.GROUND,
                     "content/world/terrain/" + world_context.SOULPIT,
+                    "content/world/terrain/" + world_context.SUGAR_GROUND,
                 ):
                     target = root / source
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -67,6 +85,7 @@ class ContextTests(unittest.TestCase):
                 world_context.MARKER,
                 "content/world/terrain/" + world_context.GROUND,
                 "content/world/terrain/" + world_context.SOULPIT,
+                "content/world/terrain/" + world_context.SUGAR_GROUND,
                 world_context.HIT_PACKET,
             ):
                 target = root / relative
