@@ -81,3 +81,17 @@ fn t033_selection_follows_filtered_catalogue_rows() {
         Some(71)
     );
 }
+
+#[test]
+fn o059_selected_spell_details_distinguish_unknown_cooldown() {
+    let panel = catalogue();
+    let bar = oteryn_client_runtime::spell::ActionBar::default();
+    let text = oteryn_client_ui::spell_catalog::detail_text(&panel, &bar);
+    assert!(text.contains("Healing"));
+    assert!(text.contains("exura"));
+    assert!(text.contains("Mana: 20"));
+    assert!(text.contains("Cooldown: unknown"));
+    let mut empty = panel;
+    protocol::navigate(&mut empty, "missing", 0);
+    assert_eq!(oteryn_client_ui::spell_catalog::detail_text(&empty, &bar), "No spell selected");
+}
