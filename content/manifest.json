@@ -48,7 +48,7 @@
     },
     "Item": {
       "index": "content/items/index.json",
-      "records": 34111
+      "records": 34114
     },
     "Loot": {
       "index": "content/loot/index.json",
@@ -76,7 +76,7 @@
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
-      "records": 336
+      "records": 337
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
@@ -385,6 +385,9 @@
       "path": "content/interactions/reward_claims/index.json"
     },
     {
+      "path": "content/interactions/reward_claims/reward-claim-source-leaves.json"
+    },
+    {
       "path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
     },
     {
@@ -604,7 +607,7 @@
       "path": "content/items/definitions/items-33500-33999.json"
     },
     {
-      "path": "content/items/definitions/items-34000-34110.json"
+      "path": "content/items/definitions/items-34000-34113.json"
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"
@@ -769,6 +772,12 @@
       "path": "content/starter/starter-kits-00000-00000.json"
     },
     {
+      "path": "crates/gameplay/content/src/content/native_gameplay/quest_collectible_pin.rs"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/questpc5_cook_material_pin.rs"
+    },
+    {
       "path": "imports/canary/batches.json"
     },
     {
@@ -854,6 +863,12 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/quest-collectible-bindings.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/questpc5-cook-material-bindings.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1010,7 +1025,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3668,
+          "record_count": 3808,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1018,12 +1033,12 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "ddfd54a05eb97aeaa220b24549f5c8440602c0408e1e6fcdb8f7c56e8e83199f"
+          "sha256": "4841babdb52d19a51610d8a724b0200d721f492ae03f1afe0bce9bcf72d71a13"
         },
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/starting-loadout-profiles.json",
-          "record_count": 13,
+          "record_count": 10,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1031,7 +1046,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "08c7126b73447929016e33fac7140a7027e7f16152fcfb2d8b28e326329e714c"
+          "sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a"
         }
       ],
       "Presentation": [

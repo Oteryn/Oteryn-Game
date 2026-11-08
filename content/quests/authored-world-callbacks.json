@@ -40,7 +40,7 @@
       },
       "sources": [
         "oteryn-authored:selected-seven-recorded-seals:demonrage",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
         "oteryn:source-map:content/world/placements/region-z15-x125-y124.b3:sha256:7699c9a2d90054fbae282e32e27204fb193888d7a9456952f9cf7062a1cb0fe5",
@@ -91,7 +91,7 @@
       },
       "sources": [
         "oteryn-authored:selected-seven-recorded-seals:escape",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
         "oteryn:source-map:content/world/placements/region-z15-x125-y124.b3:sha256:7699c9a2d90054fbae282e32e27204fb193888d7a9456952f9cf7062a1cb0fe5",
@@ -143,7 +143,7 @@
       },
       "sources": [
         "oteryn-authored:selected-seven-recorded-seals:final-chamber",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
         "oteryn:source-map:content/world/placements/region-z15-x125-y124.b3:sha256:7699c9a2d90054fbae282e32e27204fb193888d7a9456952f9cf7062a1cb0fe5",
@@ -190,7 +190,7 @@
       },
       "sources": [
         "oteryn-authored:selected-seven-recorded-seals:hidden",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
         "oteryn:source-map:content/world/placements/region-z13-x126-y124.b3:sha256:1120d7d7c29c9bbd180d1d44339c60e58e6f31ff9be7cae5a03745dd2d44e5b4",
@@ -237,7 +237,7 @@
       },
       "sources": [
         "oteryn-authored:selected-seven-recorded-seals:logic",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
         "oteryn:source-map:content/world/placements/region-z13-x126-y124.b3:sha256:1120d7d7c29c9bbd180d1d44339c60e58e6f31ff9be7cae5a03745dd2d44e5b4",
@@ -284,7 +284,7 @@
       },
       "sources": [
         "oteryn-authored:selected-seven-recorded-seals:plague",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
         "oteryn:source-map:content/world/placements/region-z15-x125-y124.b3:sha256:7699c9a2d90054fbae282e32e27204fb193888d7a9456952f9cf7062a1cb0fe5",
@@ -331,7 +331,7 @@
       },
       "sources": [
         "oteryn-authored:selected-seven-recorded-seals:sacrifice",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
         "oteryn:source-map:content/world/placements/region-z14-x125-y124.b3:sha256:caa4001cda678cb5d5e93a76e46864460c5b1232624ada4a48e124c4907aaea7",
@@ -378,7 +378,7 @@
       },
       "sources": [
         "oteryn-authored:selected-seven-recorded-seals:true-path",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
         "oteryn:source-map:content/world/placements/region-z14-x125-y124.b3:sha256:caa4001cda678cb5d5e93a76e46864460c5b1232624ada4a48e124c4907aaea7",
@@ -474,7 +474,7 @@
         "oteryn-authored:selected-recipe:legion-training-cave-source-hole-and-rope-spot",
         "oteryn:source-map:content/world/placements/region-z07-x125-y124.b3:sha256:66e2b4e44eb7f3994f6ab3e927124db8682c7b31a5d13e3f9b192132f5da452e",
         "oteryn:source-map:content/world/placements/region-z08-x125-y124.b3:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:c92479283a709d55850966bbfcd70f24a187fcf4103a8cdc5b4f4a9bcda85db9"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:7afd8ef3a73530580d5997a0b7492a8be286ec9332f8734c1c69ce40cefd362b"
       ],
       "minimum_level": 1
     },
@@ -544,7 +544,7 @@
         "oteryn-authored:selected-recipe:legion-source-magic-forcefield-return",
         "oteryn:source-map:content/world/placements/region-z07-x125-y124.b3:sha256:66e2b4e44eb7f3994f6ab3e927124db8682c7b31a5d13e3f9b192132f5da452e",
         "oteryn:source-map:content/world/placements/region-z08-x125-y124.b3:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:c92479283a709d55850966bbfcd70f24a187fcf4103a8cdc5b4f4a9bcda85db9"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:7afd8ef3a73530580d5997a0b7492a8be286ec9332f8734c1c69ce40cefd362b"
       ],
       "movement_origins": [
         {
@@ -672,7 +672,7 @@
         "oteryn:source-map:content/world/placements/region-z07-x125-y124.b3:sha256:66e2b4e44eb7f3994f6ab3e927124db8682c7b31a5d13e3f9b192132f5da452e",
         "oteryn:source-map:content/world/placements/region-z08-x125-y124.b3:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
         "oteryn:source-map:content/world/placements/region-z07-x127-y126.b3:sha256:32f787d0400a876b3382cee79a19901c4193f65df19037657aaa385f34df3af3",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:c92479283a709d55850966bbfcd70f24a187fcf4103a8cdc5b4f4a9bcda85db9"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:7afd8ef3a73530580d5997a0b7492a8be286ec9332f8734c1c69ce40cefd362b"
       ],
       "minimum_level": 1
     },
@@ -1183,7 +1183,7 @@
       },
       "sources": [
         "oteryn-authored:selected-finite-observation-trial:entry",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
@@ -1244,7 +1244,7 @@
       },
       "sources": [
         "oteryn-authored:selected-finite-observation-trial:explore",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
@@ -1333,7 +1333,7 @@
       },
       "sources": [
         "oteryn-authored:selected-finite-observation-trial:lever",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
@@ -1382,7 +1382,7 @@
       },
       "sources": [
         "oteryn-authored:selected-finite-observation-trial:observation",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
@@ -1437,7 +1437,7 @@
       },
       "sources": [
         "oteryn-authored:selected-finite-observation-trial:return",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
@@ -1495,7 +1495,7 @@
       },
       "sources": [
         "oteryn-authored:selected-finite-observation-trial:torch",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",

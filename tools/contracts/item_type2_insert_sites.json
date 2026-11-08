@@ -6,6 +6,7 @@
   "crates/gameplay/durability/src/durability/house_interior.rs",
   "crates/gameplay/durability/src/durability/item_craft/enchanting.rs",
   "crates/gameplay/durability/src/durability/item_craft/harvest.rs",
+  "crates/gameplay/durability/src/durability/item_craft/marriage.rs",
   "crates/gameplay/durability/src/durability/item_craft/soulpit/entry.rs",
   "crates/gameplay/durability/src/durability/item_craft/soulpit.rs",
   "crates/gameplay/durability/src/durability/item_craft.rs",

@@ -45,6 +45,13 @@
         44528
       ],
       "whole_recipe_qualified": false
+    },
+    "collector_integration": {
+      "main": "78294c081",
+      "local_merge": "2a8d79c99",
+      "premerge_physical_pg_green": true,
+      "postmerge_tests": "pending after compiling cadence checkpoint; no whole-quest qualification",
+      "shipping_checks": "PASS workspacealltargets4m16s,fmt,regeneration,equivalence,worldmetadata,pinrefresh/check,duplicates; focusedpostmerge tests/Clippy pending cadence exception"
     }
   },
   {
@@ -375,6 +382,13 @@
       "postgres_red_log": "/tmp/questpc5-oramond-root-red.log",
       "state": "Exact5root native backpack custody PG GREEN131.165344988s; physical slice qualified, whole daily route still unfinished.",
       "proof": "cloud-oramond-root-proof.json"
+    },
+    "collector_integration": {
+      "main": "78294c081",
+      "local_merge": "2a8d79c99",
+      "premerge_physical_pg_green": true,
+      "postmerge_tests": "pending after compiling cadence checkpoint; no whole-quest qualification",
+      "shipping_checks": "PASS workspacealltargets4m16s,fmt,regeneration,equivalence,worldmetadata,pinrefresh/check,duplicates; focusedpostmerge tests/Clippy pending cadence exception"
     }
   },
   {

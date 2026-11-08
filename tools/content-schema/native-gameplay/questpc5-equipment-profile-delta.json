@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "baseline_commit": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
-  "baseline_native_count": 3664,
+  "baseline_commit": "78294c081a099c96a57948573d5dbf0caf398abf",
+  "baseline_native_count": 3706,
   "baseline_overlay_sources": [
     {
       "path": "content/items/definitions/starting-loadout-profiles.json",
@@ -9,7 +9,7 @@
     },
     {
       "path": "content/items/definitions/srx1-item-updates.json",
-      "sha256": "7310a284418f1228b81e1ae2b955805c22409cfae7416c3c9842d0c7a95de3af"
+      "sha256": "bf347779c87526814bb48fd4821098705983dee902c6822ebb9c548a2f2a483f"
     }
   ],
   "baseline_overlay_keys": [
@@ -21,9 +21,9 @@
     "oteryn:item.tibia.i21291"
   ],
   "shared_cohort_sha256": "5dcd48898cdf620181b135577e989896ae8c890363a4ff64182cf8502367a969",
-  "baseline_sha256": "0460b8a17656a13c9148b6518c821f079f0f10560cbc614edddb16cf8a485204",
-  "baseline_count": 3626,
-  "profile_sha256": "68e0e7e12ecd8b617233d80410ef4bbdb41afb5f876ec85a37eb46bd8160f655",
+  "baseline_sha256": "ddfd54a05eb97aeaa220b24549f5c8440602c0408e1e6fcdb8f7c56e8e83199f",
+  "baseline_count": 3668,
+  "profile_sha256": "4841babdb52d19a51610d8a724b0200d721f492ae03f1afe0bce9bcf72d71a13",
   "keys": [
     "oteryn:item.tibia.i10189",
     "oteryn:item.tibia.i10217",
