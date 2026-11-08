@@ -32,6 +32,7 @@ pub mod deepling_boss_access;
 pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
+pub mod ground_stack;
 pub mod hero_of_bounac;
 pub mod hive_access;
 pub mod isle_of_evil;
