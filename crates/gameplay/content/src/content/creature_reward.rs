@@ -616,6 +616,11 @@ fn row(
         .and_then(|facts| facts.container_capacity)
         .filter(|capacity| {
             (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u64).contains(&u64::from(*capacity))
+                // Exact retained Seacrest source capacity is36. This value is not
+                // retained in the reward row or used as a runtime loot budget;
+                // actual planned/minted entries keep their independent30limit.
+                || (*capacity == 36 && corpse.key == "oteryn:item.tibia.i21893"
+                    && corpse.revision == "definition-r1")
         })
         .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
     let corpse_item = corpse.lower();

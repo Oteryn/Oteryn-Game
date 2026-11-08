@@ -1101,3 +1101,40 @@ optional pin-check process and the NPC dispatch test build suffered memory kills
 while running together; the publication pin-check completed successfully, and
 the one-job unit retry remains active. No assertion failure is being reported as
 a pass. The NPC PG case has not executed yet and remains explicitly pending.
+
+
+## PREPUSH-2 integration of main 78294c081
+
+Fetched main and merged the collector plus MAINRED3027. Reused main's shared
+`quest_world_callback/input_authority.rs` rather than retaining a competing local
+authority enum. Preserved the collector's new callback checks and native handover
+caller. The NPC participant retains ENCX's explicit carried-custody check before
+mutation; the net change to that file versus fetched main is two lines.
+No migration, command, capability or mechanic number was allocated.
+
+The previously running f641-generation unit selection reached 2,300 passes.
+Its 37 failures all reported `InvalidArtifact("native gameplay provisioning
+manifest")` after the merge invalidated its source-data generation; two other
+cases were interrupted. It is superseded and is not claimed green. This
+checkpoint regenerates the entire tree before running the new validation.
+W10/W11/W16 full production encounter chains remain unfinished.
+
+
+Fresh checkpoint evidence: all 13 activity-template/source-map tests passed in
+135.067s, including native provisioning activation on the regenerated tree.
+`native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fences`
+executed on PostgreSQL and passed in 4.710s. Workspace/all-target check passed in
+228.070s, changed-crate/all-target clippy with warnings denied in 187.171s, fmt in
+14.930s, duplicate migrations in 0.390s, pin refresh in 26.265s and pin-check in
+28.403s. Client registration regeneration produced no changes. All generators
+completed before this validation; no test expectations or admission gates were
+relaxed.
+
+PREPUSH-2 cadence exception: complete library/binary unit suites were restarted
+with one build job and two test workers, excluding the full PostgreSQL suite.
+They remain pending for oteryn-client, oteryn-client-ui, oteryn-game-server,
+oteryn-gameplay-combat, oteryn-gameplay-content, oteryn-gameplay-dispatch,
+oteryn-gameplay-durability, oteryn-gameplay-entities, oteryn-gameplay-items,
+oteryn-gameplay-monster-ai and oteryn-synthetic-client-harness. The previous
+f641-generation results are retained outside the repository and are superseded;
+the focused native provisioning and corpse regression results above are green.

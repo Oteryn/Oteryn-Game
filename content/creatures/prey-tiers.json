@@ -6251,8 +6251,8 @@
       "minimum_level": 50,
       "nonexclusive_count": 161,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 159,
-      "runtime_unsettleable_count": 159,
+      "runtime_available_count": 158,
+      "runtime_unsettleable_count": 158,
       "tier": 2
     },
     {
@@ -6272,8 +6272,8 @@
       "minimum_level": 100,
       "nonexclusive_count": 188,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 188,
-      "runtime_unsettleable_count": 188,
+      "runtime_available_count": 187,
+      "runtime_unsettleable_count": 187,
       "tier": 3
     },
     {

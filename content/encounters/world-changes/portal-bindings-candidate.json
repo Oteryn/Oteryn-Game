@@ -1,0 +1,394 @@
+{
+  "schema": "OTERYN_WORLD_CHANGE_PORTAL_SOURCE/candidate-1",
+  "coordinate_frame": "global-target-2026-09-27",
+  "positions": "source x,y,z; native movement floor=-z",
+  "native_admission": false,
+  "source_archive": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+  "sources": [
+    {
+      "path": "data-global/scripts/world_changes/fury_gates.lua",
+      "sha256": "e8b1aa7185c34a52e11d97a0b5b7f74b170a5ab71129c7c1ad7b69a72122f37a",
+      "lines": "6-15,51-72"
+    },
+    {
+      "path": "data-global/startup/tables/item.lua",
+      "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd",
+      "lines": "1688-1692"
+    },
+    {
+      "path": "data-global/scripts/world_changes/nightmare_isles.lua",
+      "sha256": "ca41506fb7949527c1254a0a9fca146f455a982b912cead5545fa02acddc5c65",
+      "lines": "5-8,30-55,66-91"
+    },
+    {
+      "path": "data-global/startup/tables/teleport.lua",
+      "sha256": "462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+      "lines": "615-618"
+    }
+  ],
+  "records": [
+    {
+      "key": "fury_gates",
+      "native_admission": false,
+      "requirements": {
+        "premium": true,
+        "promoted": true,
+        "min_level": 60
+      },
+      "return_marker": {
+        "action_id": 9715,
+        "appearance": 776,
+        "position": [
+          33290,
+          31785,
+          13
+        ],
+        "native_region": "content/world/placements/region-z13-x130-y124.b3"
+      },
+      "variants": [
+        {
+          "variant": "abdendriel",
+          "layer": "fury_gates/abdendriel",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6116,
+          "position": [
+            32680,
+            31719,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            32680,
+            31720,
+            7
+          ]
+        },
+        {
+          "variant": "ankrahmun",
+          "layer": "fury_gates/ankrahmun",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6117,
+          "position": [
+            33268,
+            32841,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            33269,
+            32841,
+            7
+          ]
+        },
+        {
+          "variant": "carlin",
+          "layer": "fury_gates/carlin",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6116,
+          "position": [
+            32263,
+            31847,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            32263,
+            31848,
+            7
+          ]
+        },
+        {
+          "variant": "darashia",
+          "layer": "fury_gates/darashia",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6117,
+          "position": [
+            33303,
+            32371,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            33304,
+            32371,
+            7
+          ]
+        },
+        {
+          "variant": "edron",
+          "layer": "fury_gates/edron",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6116,
+          "position": [
+            33221,
+            31922,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            33221,
+            31923,
+            7
+          ]
+        },
+        {
+          "variant": "kazordoon",
+          "layer": "fury_gates/kazordoon",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6116,
+          "position": [
+            32575,
+            31980,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            32575,
+            31981,
+            7
+          ]
+        },
+        {
+          "variant": "libertybay",
+          "layer": "fury_gates/libertybay",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6116,
+          "position": [
+            32348,
+            32692,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            32348,
+            32693,
+            7
+          ]
+        },
+        {
+          "variant": "porthope",
+          "layer": "fury_gates/porthope",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6116,
+          "position": [
+            32530,
+            32711,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            32530,
+            32712,
+            7
+          ]
+        },
+        {
+          "variant": "thais",
+          "layer": "fury_gates/thais",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6117,
+          "position": [
+            32264,
+            32164,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            32265,
+            32164,
+            7
+          ]
+        },
+        {
+          "variant": "venore",
+          "layer": "fury_gates/venore",
+          "selector": {
+            "action_id": 9710
+          },
+          "appearance": 6116,
+          "position": [
+            32834,
+            32081,
+            7
+          ],
+          "destination": [
+            33290,
+            31786,
+            13
+          ],
+          "return_destination": [
+            32834,
+            32082,
+            7
+          ]
+        }
+      ],
+      "spawn_binding": "common base dungeon; source Lua changes entrance patches and does not create variant-specific monsters",
+      "missing_native_bindings": [
+        "accepted W1 compilation and immutable variant/layer-set binding",
+        "conditional native layer composition and return marker restoration",
+        "current-fenced entry/return callback; source eligibility enforcement"
+      ],
+      "selection_source": "content/encounters/world-changes/fury_gates/selection-source.json",
+      "raid_precondition": {
+        "raid_key": "raid:furyfate.furyosa",
+        "world_change": "fury_gates",
+        "enforcement": "existing raid scheduler; false while HELD"
+      }
+    },
+    {
+      "key": "nightmare_isles",
+      "native_admission": false,
+      "requirements": {
+        "player_only": true
+      },
+      "return_marker": {
+        "unique_id": 35020,
+        "appearance": 10840,
+        "position": [
+          33498,
+          32613,
+          8
+        ],
+        "native_region": "content/world/placements/region-z08-x130-y127.b3"
+      },
+      "variants": [
+        {
+          "variant": "ankrahmun-north",
+          "layer": "nightmare_isle/ankrahmun-north",
+          "selector": {
+            "unique_id": 64003
+          },
+          "appearance": 10840,
+          "position": [
+            33255,
+            32676,
+            7
+          ],
+          "destination": [
+            33497,
+            32616,
+            8
+          ],
+          "return_destination": [
+            33255,
+            32678,
+            7
+          ]
+        },
+        {
+          "variant": "darashia-north",
+          "layer": "nightmare_isle/darashia-north",
+          "selector": {
+            "unique_id": 64002
+          },
+          "appearance": 10840,
+          "position": [
+            33215,
+            32271,
+            7
+          ],
+          "destination": [
+            33497,
+            32616,
+            8
+          ],
+          "return_destination": [
+            33215,
+            32273,
+            7
+          ]
+        },
+        {
+          "variant": "darashia-west",
+          "layer": "nightmare_isle/darashia-west",
+          "selector": {
+            "unique_id": 64001
+          },
+          "appearance": 10842,
+          "position": [
+            33033,
+            32398,
+            7
+          ],
+          "destination": [
+            33497,
+            32616,
+            8
+          ],
+          "return_destination": [
+            33032,
+            32400,
+            7
+          ]
+        }
+      ],
+      "spawn_binding": "common base dungeon; source Lua changes entrance patches and does not create variant-specific monsters",
+      "missing_native_bindings": [
+        "accepted W1 compilation and immutable variant/layer-set binding",
+        "conditional native layer composition and return marker restoration",
+        "current-fenced entry/return callback; source eligibility enforcement"
+      ],
+      "selection_source": "content/encounters/world-changes/nightmare_isles/selection-source.json"
+    }
+  ],
+  "rule_source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "layer_source": {
+    "path": "content/encounters/world-changes/layers.json",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+  }
+}
