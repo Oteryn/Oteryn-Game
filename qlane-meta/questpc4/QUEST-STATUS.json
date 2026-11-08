@@ -11021,5 +11021,16 @@
     "clippy": "PASS all-targets/all-features -D warnings 4m09s",
     "workspace_check": "PASS --workspace --all-targets",
     "fmt": "PASS"
+  },
+  "m07_remote_resets": {
+    "state": "TESTED_ENGINE_SLICE",
+    "red": "/tmp/questpc4-m07-timed-red.log: missing TimedPassages variant",
+    "green": "4/4 world owner tests PASS 0.008s; two new M07 cases and existing lifecycle/readset regressions",
+    "clippy": "world all-targets/all-features -D warnings PASS 1m32s",
+    "workspace": "--workspace --all-targets PASS 3m47s",
+    "fmt": "PASS",
+    "pin_check": "PASS, no content input changes",
+    "sql": "none; no new PostgreSQL path in this slice",
+    "remaining": "Wire source-specific lifecycle callbacks, puzzle stages, all five assigned quests and PG stories; M07 remains PARTIAL"
   }
 }

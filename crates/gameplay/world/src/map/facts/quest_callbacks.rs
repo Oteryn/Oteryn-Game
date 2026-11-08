@@ -4,11 +4,20 @@ use super::*;
 #[path = "quest_item_batch.rs"]
 mod item_batch;
 pub use item_batch::QuestMapItemMove;
+#[path = "quest_timed_passages.rs"]
+mod timed_passages;
+pub use timed_passages::QuestTimedPassage;
+
+#[cfg(test)]
+#[path = "quest_timed_passages_tests.rs"]
+mod timed_passages_tests;
 
 #[derive(Clone, Debug)]
 struct MovementDecay {
     revision: u64,
     restore: EntryFacts,
+    /// Remote resets restore visibility and the previous collision override too.
+    overlay: Option<(bool, Option<bool>)>,
 }
 
 #[derive(Clone, Debug)]
@@ -23,6 +32,12 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// Restore a bounded remote group independently of the source lever deadline.
+    TimedPassages {
+        due: u64,
+        entries: Vec<QuestTimedPassage>,
+        source_reset: Option<(u64, EntryFacts)>,
+    },
     /// Each read revision, including cells which do not change, fences the batch.
     ReadsetTransforms {
         entries: Vec<(u64, u64, Option<EntryFacts>)>,
@@ -77,6 +92,15 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::TimedPassages {
+                due,
+                entries,
+                source_reset,
+            } => {
+                if close || !self.project_timed_passages(owner, *due, entries, *source_reset) {
+                    return false;
+                }
+            }
             QuestCallbackProjection::ReadsetTransforms { entries, reset } => {
                 let keys: BTreeSet<_> = entries.iter().map(|(key, _, _)| *key).collect();
                 if entries.is_empty()
@@ -106,6 +130,7 @@ impl CallbackStates {
                         MovementDecay {
                             revision,
                             restore: *restore,
+                            overlay: None,
                         },
                     );
                 }
@@ -129,6 +154,7 @@ impl CallbackStates {
                     MovementDecay {
                         revision,
                         restore: *restore,
+                        overlay: None,
                     },
                 );
             }
@@ -373,9 +399,14 @@ impl BundleFacts {
         }
         let states = Arc::make_mut(&mut states);
         states.changed.insert(key, (revision, after));
-        states
-            .movement_decays
-            .insert((due, key), MovementDecay { revision, restore });
+        states.movement_decays.insert(
+            (due, key),
+            MovementDecay {
+                revision,
+                restore,
+                overlay: None,
+            },
+        );
         true
     }
 
@@ -423,6 +454,18 @@ impl BundleFacts {
                 && let Some(revision) = decay.revision.checked_add(1)
             {
                 states.changed.insert(key, (revision, decay.restore));
+                if let Some((hidden, passable)) = decay.overlay {
+                    if hidden {
+                        states.hidden.insert(key);
+                    } else {
+                        states.hidden.remove(&key);
+                    }
+                    if let Some(passable) = passable {
+                        states.passable.insert(key, passable);
+                    } else {
+                        states.passable.remove(&key);
+                    }
+                }
                 changed += 1;
             }
         }
@@ -912,12 +955,27 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        let projection_capacity = match projection {
+            Some(QuestCallbackProjection::TimedPassages {
+                entries,
+                source_reset,
+                ..
+            }) => {
+                // Changed entry, hidden entry and timer, plus the source revision/reset.
+                if !passages.is_empty() || !replacements.is_empty() {
+                    return false;
+                }
+                entries
+                    .len()
+                    .saturating_mul(3)
+                    .saturating_add(1 + usize::from(source_reset.is_some()))
+            }
+            _ => usize::from(projection.is_some()) * 8,
+        };
         if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8
-            || !states.has_capacity(
-                passages.len() + replacements.len() + usize::from(projection.is_some()) * 8,
-            )
+            || !states.has_capacity(passages.len() + replacements.len() + projection_capacity)
         {
             return false;
         }
