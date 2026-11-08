@@ -27,3 +27,9 @@ QMECH merge ed38719c6 preserves all five bindings;104 authoring modules,
 checks/tree and workspace alltargets8m47s PASS on combined tree. Final merged
 Clippy/World verify running. Report-only pushes were verified at781260bd7
 and7d786a11a; quest batch publication follows these merged gates.
+
+Latest package merge6b40568d1:106 authoring modules, checks/tree, workspace
+alltargets/fmt PASS; prior merged strict dispatch Clippy4m31s PASS. World
+pin refresh PASS, digest unchanged b79b1d74. PG proof scope remains explicit
+in QUEST-STATUS.json. Active owner assignment is M01b only:46 routes/56
+EXPLORE stages; CLAIMED on qmech a17567dbf. Only2000-2009 if SQL is needed.

@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "READY:17PG730.43s on lane candidate; merged qmech ed38719c6 passes104 authoring modules, checks/tree and workspace alltargets8m47s. Final merged Clippy/World verify running. Additional dispatch non-PG unit suite pending under publication-cadence exception.",
+  "batch_state": "READY: five completion bindings; all106 authoring modules/checks/tree, workspace alltargets/fmt, prior strict dispatch Clippy and real17PG proof. Final qmech fetch/merge publication step.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -1085,5 +1085,26 @@
       "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     }
   ],
-  "publication_branch": "claude/happy-davinci-ijz3wy-qmech"
+  "publication_branch": "claude/happy-davinci-ijz3wy-qmech",
+  "active_assignment": {
+    "id": "M01b",
+    "owner": "questpc",
+    "scope": "EXPLORE bindings for46 assigned routes /56 stages",
+    "migration_range": "2000-2009",
+    "state": "CLAIMED",
+    "claim_push": "a17567dbf03d295a9601f04ff0cb1efd5876143e"
+  },
+  "publication_validation": {
+    "postgres_cases": 17,
+    "postgres_seconds": 730.43,
+    "postgres_scope": "five-binding lane candidate before package merge; test SHA and claim hashes revalidated after merge",
+    "authoring_modules": 106,
+    "authoring_checks": "PASS",
+    "content_tree": "PASS",
+    "workspace_all_targets": "PASS on6b40568d1 tree",
+    "strict_dispatch_clippy": "PASS4m31s on preceding package merge",
+    "fmt": "PASS",
+    "world_pin_refresh": "PASS, unchanged b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e",
+    "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
+  }
 }
