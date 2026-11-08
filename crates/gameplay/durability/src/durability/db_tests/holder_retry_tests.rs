@@ -85,7 +85,7 @@ fn foreground_admission_waits_for_busy_holder_without_queuing_maintenance() -> T
 }
 
 #[test]
-fn foreground_admission_is_bounded_and_preserves_recovery_demand() -> TestResult {
+fn foreground_admission_is_bounded_and_leaves_busy_holder_recovery_to_its_return() -> TestResult {
     run_postgres_test(async {
         let (database, url) = migrated_database("holder_foreground_budget").await?;
         let root = ready_root(&url).await?;
