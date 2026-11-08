@@ -17,6 +17,7 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 mod grant_mappings;
+mod item_acquisitions;
 
 const JSON_BYTES_MAX: usize = 8 * 1024 * 1024;
 const SOURCE_BYTES_MAX: usize = 32 * 1024 * 1024;
@@ -131,6 +132,8 @@ struct Document {
     fallbacks: Fallbacks,
     #[serde(default)]
     grant_mappings: Vec<grant_mappings::GrantMapping>,
+    #[serde(default)]
+    item_acquisitions: Vec<item_acquisitions::Admission>,
 }
 
 // Exact existing stage_appearance_tables.py formats. Large rendering observations are ignored,
@@ -203,6 +206,20 @@ impl CosmeticsCandidate {
     }
     pub const fn document_sha256(&self) -> [u8; 32] {
         self.document_sha256
+    }
+    /// Explicit source policy only; current-artifact and earned-grant checks remain required.
+    pub fn allows_item_acquisition(
+        &self,
+        item_key: &str,
+        donor: &str,
+        catalogue_sha256: [u8; 32],
+    ) -> bool {
+        item_acquisitions::allows(
+            &self.document.item_acquisitions,
+            item_key,
+            donor,
+            catalogue_sha256,
+        )
     }
     pub fn look_type(&self, key: &str, sex: Sex) -> Option<u32> {
         let outfit = &self.document.outfits[*self.outfits.get(key)?];
@@ -403,6 +420,7 @@ pub fn compile_candidate(
         &document.outfits,
         &document.mounts,
     )?;
+    item_acquisitions::validate(&document.item_acquisitions)?;
     let grants = document
         .grant_mappings
         .iter()

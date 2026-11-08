@@ -202,6 +202,9 @@ fn scenario_case(
             callback.key = "oteryn:quest-callback/l6-native-step-fixture".into();
         }
     }
+    if matches!(name,"qengine-rewards-authored-world-rewards" | "qengine-rewards-authored-world-rewards-full" | "qengine-rewards-authored-native-admission") {
+        callback = super::super::authored_world_rewards::placeholder(trigger)?;
+    }
     if name.ends_with("-expiry") {
         callback
             .effects
@@ -478,6 +481,7 @@ fn scenario_case(
             || name.contains("l12-")
             || spirit
             || name.starts_with("qengine-rewards-questpc4-paradox")
+            || name.contains("l13-")
         {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,

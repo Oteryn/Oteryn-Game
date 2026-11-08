@@ -3,6 +3,9 @@
 use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition};
 use std::collections::BTreeMap;
 
+mod registry;
+pub use registry::{CounterRef, active_for, counter_for, tracks_creature_for};
+
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
 
 #[derive(Debug, Clone, Copy)]

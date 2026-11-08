@@ -70,8 +70,20 @@ impl AccountUnlocks<String> for Owned {
 fn source_catalogue_keeps_every_item_family_and_numeric_mount_identity() -> Result<(), &'static str>
 {
     let c = catalogue().ok_or("catalogue")?;
-    assert_eq!(c.rules.len(), 48);
-    assert_eq!(c.grants.len(), 205);
+    let captured: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../tools/content-schema/native-gameplay/item-cosmetic-actions.json"
+    ))
+    .map_err(|_| "immutable source capture")?;
+    assert_eq!(
+        captured["rules"].as_array().ok_or("source rules")?.len(),
+        48
+    );
+    assert_eq!(
+        captured["grants"].as_array().ok_or("source grants")?.len(),
+        205
+    );
+    assert_eq!(c.rules.len(), 49);
+    assert_eq!(c.grants.len(), 202);
     let doll = rule("oteryn:item.tibia.i6579").ok_or("doll")?;
     assert_eq!(doll.choices.len(), 88);
     let mount = rule("oteryn:item.tibia.i37746").ok_or("mount")?;

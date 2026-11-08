@@ -1,4 +1,5 @@
 //! Quest exchanges borrow the existing complete backpack MINT and custody owners.
+
 use super::*;
 use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
 use crate::durability::account_achievement::{
@@ -166,6 +167,18 @@ pub(crate) async fn apply(
         })
     {
         return Ok(false);
+    }
+    // Reuse questpc7's read-only completion predicate. The caller holds the
+    // Character root lock, which serializes this character's quest writes.
+    if !callback.requires_completed_quests.is_empty() {
+        let completed:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=ANY($2::text[]) AND completed_character_revision IS NOT NULL")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(&callback.requires_completed_quests).fetch_one(&mut **tx).await?;
+        if completed
+            != i64::try_from(callback.requires_completed_quests.len())
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+        {
+            return Ok(false);
+        }
     }
     if let Some(minimum) = callback.minimum_level {
         let level:Option<i64>=sqlx::query_scalar("SELECT level::bigint FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
@@ -491,6 +504,7 @@ pub(crate) async fn mint(
         callback_key.to_owned()
     };
     let request = RewardClaimMintRequest {
+        additional_items: Vec::new(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
