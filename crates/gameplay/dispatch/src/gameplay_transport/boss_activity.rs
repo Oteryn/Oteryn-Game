@@ -168,6 +168,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         else {
             return refusal(ActivityRefusal::ContentUnavailable);
         };
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && !super::endgame_room_policy::matches_source_cooldown(&definition)
+        {
+            return refusal(ActivityRefusal::ContentChanged);
+        }
         if kind != wire::COMMAND_TYPE_BOSS_LEVER {
             let Some(scope_owner) = self
                 .activity_runtimes

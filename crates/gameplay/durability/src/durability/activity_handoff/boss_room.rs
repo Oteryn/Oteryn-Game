@@ -431,6 +431,9 @@ pub(super) async fn prepare_in_transaction(
     }
     let mut facts = Vec::with_capacity(r.participants.len());
     for p in &r.participants {
+        if !super::quest_encounter::permits(tx, &r.activity_key, p.source.character_id).await? {
+            return Ok(Err(ActivityRefusal::AuthorityRejected));
+        }
         let Some(ordinal) = definition
             .lever_positions
             .iter()

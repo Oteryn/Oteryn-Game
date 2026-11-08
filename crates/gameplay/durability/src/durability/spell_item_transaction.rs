@@ -98,7 +98,7 @@ pub struct WorldItemTraining {
 
 impl DurabilityRoot {
     /// One source-owned due pass; no caller event, caster cost or synthetic command.
-    /// The live Channel owner must remain held around this await. A successful
+    /// The live runtime scope owner must remain held around this await. A successful
     /// return proves the actual SQL COMMIT; an unknown COMMIT is reconciled by
     /// the same immutable source schedule on the next pass.
     pub async fn drain_spell_item_deadlines(

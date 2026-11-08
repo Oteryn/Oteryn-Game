@@ -198,6 +198,53 @@ struct RequestedBy {
 pub fn load_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
+    let lowered = lower_embedded_quest_state(content_revision)?;
+    let bindings = super::authored_bindings::embedded::load().map_err(QuestLoadError::Json)?;
+    admit_native_bindings(lowered, bindings.as_ref())
+}
+
+/// Admit a complete explicit binding snapshot instead of the compiled binding registry.
+/// Both routes use the same canonical recipe evidence and existing native quest owners.
+pub fn load_embedded_quest_state_with_bindings(
+    content_revision: &str,
+    bindings: &super::authored_bindings::Bindings,
+) -> Result<LoweredQuestState, QuestLoadError> {
+    admit_native_bindings(
+        lower_embedded_quest_state(content_revision)?,
+        Some(bindings),
+    )
+}
+
+fn admit_native_bindings(
+    mut lowered: LoweredQuestState,
+    bindings: Option<&super::authored_bindings::Bindings>,
+) -> Result<LoweredQuestState, QuestLoadError> {
+    lowered.catalogue.native_recipe_evidence = Some(std::sync::Arc::new(
+        super::authored_bindings::embedded::RecipeEvidence::embedded()
+            .map_err(QuestLoadError::Json)?,
+    ));
+    if let Some(bindings) = bindings {
+        bindings.validate().map_err(QuestLoadError::Json)?;
+        if !bindings.quests.is_empty() {
+            lowered.catalogue = bindings
+                .attach(&lowered.catalogue)
+                .map_err(QuestLoadError::Json)?;
+            for quest in &bindings.quests {
+                let source = quest.sources.join(";");
+                for track in &quest.tracks {
+                    lowered
+                        .source_tracks
+                        .insert(track.key.clone(), source.clone());
+                }
+            }
+        }
+    }
+    Ok(lowered)
+}
+
+pub(super) fn lower_embedded_quest_state(
+    content_revision: &str,
+) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
     lowered.catalogue =
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -233,6 +280,8 @@ pub fn load_embedded_quest_state(
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::source_deaths::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),

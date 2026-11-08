@@ -31,6 +31,9 @@ use sqlx::{Postgres, Row, Transaction};
 
 mod catalogue;
 mod entry;
+mod quest_encounter;
+#[cfg(any(test, feature = "test-support"))]
+pub use quest_encounter::fixture_first_dragon_trials_permit;
 mod outburst;
 mod primal;
 mod rotten_blood;
