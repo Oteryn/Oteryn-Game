@@ -164,6 +164,48 @@ fn m56_self_target_is_explicit_and_bounded() -> Result<(), String> {
 }
 
 #[test]
+fn m56_wax_uses_source_protection_track_and_exact_crystal_bounds() -> Result<(), String> {
+    let callbacks = load()?;
+    let callback = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-reward/cursed-crystal/protect-ears")
+        .ok_or("wax")?;
+    let area = callback.self_target.as_ref().ok_or("self target")?;
+    assert!(area.contains(31938, 32932, 10));
+    assert!(area.contains(31946, 32940, 10));
+    for (x, y, z) in [
+        (31937, 32936, 10),
+        (31947, 32936, 10),
+        (31942, 32931, 10),
+        (31942, 32941, 10),
+        (31942, 32936, 9),
+    ] {
+        assert!(!area.contains(x, y, z));
+    }
+    assert_eq!(
+        callback.carried_item.as_deref(),
+        Some("oteryn:item.tibia.i9106")
+    );
+    assert_eq!(callback.storage[0].set, 2);
+    assert_eq!(callback.storage[0].maximum, 1);
+    let binding = gated_binding(callback)?.ok_or("bound self target")?;
+    let mut changed = callback.clone();
+    changed.self_target.as_mut().ok_or("self target")?.maximum.x += 1;
+    assert_ne!(gated_binding(&changed)?, Some(binding));
+    let loaded = crate::quest::loader::load_embedded_quest_state("m56-wax").map_err(fail)?;
+    assert!(loaded.catalogue().transition(&callback.key).is_some());
+    assert_eq!(
+        loaded
+            .catalogue()
+            .track(&callback.storage[0].track)
+            .ok_or("protection track")?
+            .quest,
+        "oteryn:quest.tibia_tales"
+    );
+    Ok(())
+}
+
+#[test]
 fn m56_self_target_cannot_also_select_a_carried_recipe_target() -> Result<(), String> {
     let mut callback = load()?
         .into_iter()

@@ -61,7 +61,6 @@ impl QuestCreatureUseProof {
             })?
             .actor;
         runtime.check_mount_taming_subject(creature, key).ok()?;
-        let own = runtime.read_actor_position(actor).ok()?.position();
         let at = runtime.read_actor_position(creature).ok()?.position();
         if at.floor != own.floor || at.x.abs_diff(own.x) > 1 || at.y.abs_diff(own.y) > 1 {
             return None;

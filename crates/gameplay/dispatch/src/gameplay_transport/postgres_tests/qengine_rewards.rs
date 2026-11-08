@@ -32,6 +32,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 super::l6_paradox_story::start()
             } else if name.starts_with("qengine-rewards-questpc4-native-tower-") {
                 super::l6_paradox_native::trigger(name)
+            } else if name == "qengine-rewards-m56-wax" {
+                Position { x: 31942, y: 32936, floor: -10 }
             } else if name.starts_with("qengine-rewards-questpc4-admission-") {
                 super::l6_world_admission::trigger(name)
             } else {
@@ -769,6 +771,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-m56-wax") {
+        return super::m56_cursed_crystal_wax::exercise(owner, admitted, h, name.ends_with("-outside")).await;
+    }
     if name.starts_with("qengine-rewards-m09-tower-") {
         return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
     }
