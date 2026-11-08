@@ -281,3 +281,34 @@ Additional QENGINE2 requests from the pinned source, not new lane engine code:
   ItemPresence explicitly represents no Item instance. Extend the existing mint
   owner with an authored ground destination and ordinary pickup; do not replace
   the physical Item with an appearance or silently grant it into the backpack.
+
+2026-11-08 Secret Service source slice: all three chiefs share the global
+programme counter; first mission issuance locks the faction by requiring the
+other two first missions to remain unstarted. Recruitment alone does not pick
+one. Source success replies, seven ordered mission phases, issued objects and
+consumed returns are extracted from the pinned 9f5a72c6 NPC scripts. A report
+requires objective progress and never manufactures it. The new PG case really
+ran on PostgreSQL 18.6 and failed after 4.573813288 seconds on missing AVIN
+bindings. Chief authoring is IN_PROGRESS, never a full-journey qualification;
+the native journey remains mandatory after its binding probe.
+
+Repenters requires an atomic soul-point resource reward from QENGINE2; Spike
+Tasks requires distinct NPC target collection and a maximum-level guard. These
+are engine requests, not reasons to claim either entry qualified. Krailos facts
+use the repository-pinned BR revision 445501, SHA256
+56902efe8058cfdff6408842c26ed14d5bb3ebab5d74e2faef420d011ab1c9bc;
+the primary text supersedes approximate chosen recipes (the food recipient is
+Vuzrog, and the menu includes twelve cookies and ten roasted meat).
+
+Secret Service's TBI disguise kit is a distinct shared-engine request: the
+pinned actions_amazon_disguise_kit.lua:1-15 consumes item397 and applies outfit137
+for 20 seconds (SHA256
+24aa58e62baf1753c1c21a5590b1de4a17b60fc183b1cf3442f64c1c57acd9c7).
+Durable outfit grants are not a replacement for this temporary condition.
+
+The QREADY main merge exposed a Family Brooch overlay provenance regression:
+the three-case suite failed its production idempotence assertion because the
+merged placement index lost L2 source metadata. The region and UID6055 itself
+survived unchanged. Register L2's existing source-backed overlay in the official
+regeneration sequence after the base world is rebuilt. Reapplying it restores
+provenance and makes all three cases pass; main's QREADY overlays remain present.

@@ -10,8 +10,10 @@
     "oteryn:item.tibia.i3212",
     "oteryn:item.tibia.i3234",
     "oteryn:item.tibia.i3607",
+    "oteryn:item.tibia.i401",
     "oteryn:item.tibia.i4827",
     "oteryn:item.tibia.i4831",
+    "oteryn:item.tibia.i5956",
     "oteryn:item.tibia.i7870",
     "oteryn:item.tibia.i7935"
   ],
@@ -79,7 +81,7 @@
   },
   "reviewed_sources": [
     "dbe5060463120ea78ba3edf2fb79d43c5b157085",
-    "83acbdac3720d7fe2df6c44d82623b7307806402"
+    "c77d436d8be39f348924e66d97928ffd69e61a8c"
   ],
   "baseline_commit": "78294c081a099c96a57948573d5dbf0caf398abf",
   "baseline_sha256": "ddfd54a05eb97aeaa220b24549f5c8440602c0408e1e6fcdb8f7c56e8e83199f",
@@ -225,6 +227,8 @@
     "oteryn:item.tibia.i3424",
     "oteryn:item.tibia.i3466",
     "oteryn:item.tibia.i348",
+    "oteryn:item.tibia.i349",
+    "oteryn:item.tibia.i350",
     "oteryn:item.tibia.i3537",
     "oteryn:item.tibia.i3543",
     "oteryn:item.tibia.i3560",
@@ -238,9 +242,14 @@
     "oteryn:item.tibia.i37059",
     "oteryn:item.tibia.i37060",
     "oteryn:item.tibia.i3734",
+    "oteryn:item.tibia.i396",
+    "oteryn:item.tibia.i397",
     "oteryn:item.tibia.i399",
     "oteryn:item.tibia.i400",
+    "oteryn:item.tibia.i402",
     "oteryn:item.tibia.i403",
+    "oteryn:item.tibia.i404",
+    "oteryn:item.tibia.i405",
     "oteryn:item.tibia.i406",
     "oteryn:item.tibia.i4119",
     "oteryn:item.tibia.i4120",
@@ -295,6 +304,9 @@
     "oteryn:item.tibia.i8191",
     "oteryn:item.tibia.i8192",
     "oteryn:item.tibia.i8532",
+    "oteryn:item.tibia.i897",
+    "oteryn:item.tibia.i898",
+    "oteryn:item.tibia.i899",
     "oteryn:item.tibia.i9081",
     "oteryn:item.tibia.i9125",
     "oteryn:item.tibia.i9126",
@@ -309,5 +321,5 @@
     "oteryn:item.tibia.i9252",
     "oteryn:item.tibia.i9255"
   ],
-  "identity_sha256": "75f6e30ce9dff0f146e931d04c4321aabf867dd7e30eb61bc9ad7a3f7d8067bc"
+  "identity_sha256": "0220171df36fe5d7ac005ff0018d72237e68ebd1ccebf2e32fcdeff3ecb1c107"
 }

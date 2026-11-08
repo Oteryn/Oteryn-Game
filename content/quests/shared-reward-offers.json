@@ -1553,6 +1553,200 @@
       ]
     },
     {
+      "npc": "oteryn:npc.chester_kahs",
+      "keywords": [
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Our bureau is an old and traditional branch of the Thaian government. It takes more than lip service to join our ranks ..."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chester_kahs",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/tbi_mission01",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you fulfilled your current mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chester_kahs",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/tbi_mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you fulfilled your current mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chester_kahs",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/tbi_mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you fulfilled your current mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chester_kahs",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/tbi_mission04",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you fulfilled your current mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chester_kahs",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/tbi_mission05",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you fulfilled your current mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chester_kahs",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/tbi_mission06",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you fulfilled your current mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chester_kahs",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 13,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/mission07",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you fulfilled your current mission?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.chief_grarkharok",
       "keywords": [
         "kill",
@@ -2248,6 +2442,200 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.emma",
+      "keywords": [
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "The girls brigade is the foremost front on which we fight the numerous enemies of our city ... It's a constant race to stay ahead of our enemies. Absolute loyalty and the willingness to put ones life at stake are attributes that are vital for this brigade ... If you join, you dedicate your service to Carlin alone! Do you truly think that you are girl enough to join the brigade?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.emma",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/cgb_mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you been successful?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.emma",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/cgb_mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you been successful?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.emma",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/cgb_mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you been successful?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.emma",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/cgb_mission04",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you been successful?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.emma",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/cgb_mission05",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you been successful?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.emma",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/cgb_mission06",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you been successful?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.emma",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/mission07",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you been successful?"
       ]
     },
     {
@@ -6025,6 +6413,200 @@
       ],
       "reply": [
         "Brewster sent me a strange message about some strange hocus-pocus. I think it's nonsense, but since you have come that far, I'll play along. Are you ready?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uncle",
+      "keywords": [
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Well, well, well! As you might know, we are entrusted by the Venorean tradesmen to ensure the safety of their ventures ..."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uncle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/avin_mission01",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Do you have news to make old Uncle happy?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uncle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/avin_mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Do you have news to make old Uncle happy?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uncle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/avin_mission03",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Do you have news to make old Uncle happy? Don't tell me you need another barrel of beer, though."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uncle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/avin_mission04",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Do you have news to make old Uncle happy?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uncle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/avin_mission05",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Do you have news to make old Uncle happy?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uncle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/avin_mission06",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Do you have news to make old Uncle happy?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uncle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/quest",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/secret_service/mission07",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Do you have news to make old Uncle happy?"
       ]
     },
     {

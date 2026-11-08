@@ -1374,8 +1374,24 @@
     },
     {
       "title": "Secret Service",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [
+        {
+          "stage": "chief authoring; full native journey not qualified",
+          "postgres_red": {
+            "test": "questl2_secret_service_avin_full_player_journey",
+            "server_version": "18.6",
+            "duration_seconds": 4.573813288,
+            "reason": "four required AVIN bindings absent"
+          },
+          "chief_branches": 45,
+          "sources": [
+            "data-global/npc/uncle.lua:71e5ef3bb78d8ffcb428a235ec74c2b70ebede74fc9a7c0644dbeef4fdf2e99a",
+            "data-global/npc/chester_kahs.lua:7ccfcf0a6e7a9d8954c754f1eaf4f692d3926f52847b2aa639e379df5fd0eb73",
+            "data-global/npc/emma.lua:19913fb1c08526479463599085c598747bc7116163857afe3ead00b9a44d8e4c"
+          ]
+        }
+      ]
     },
     {
       "title": "Shadows of Yalahar",
@@ -3815,19 +3831,84 @@
     }
   },
   "current_merge_validation": {
-    "main": "47baa7bb8",
-    "quest_unit_tests": {
-      "passed": 335,
-      "failed": 0,
-      "duration_seconds": 31.45
+    "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+    "state": "WIP: source authoring green; Secret Service native journey still required",
+    "python_units": {
+      "secret_source": 3,
+      "equipment_union": 4,
+      "equipment_pins": 7,
+      "equipment_inputs": 5,
+      "completion_matrix": 8,
+      "brooch_overlay": 3,
+      "regeneration_tool": 12,
+      "callback_profiles": 14
     },
-    "equipment_generator_tests": {
-      "passed": 7,
-      "failed": 0
+    "postgres_red": {
+      "test": "questl2_secret_service_avin_full_player_journey",
+      "server_version": "18.6",
+      "duration_seconds": 4.573813288,
+      "assertion": "required AVIN bindings absent before authoring"
     },
-    "post_merge_postgres": "PASS: four native PostgreSQL journeys and one equipment regression; only these cases are claimed."
+    "pending": [
+      "changed-crate Rust unit runs",
+      "Secret Service native objective callbacks and full player journey"
+    ],
+    "workspace_check": {
+      "command": [
+        "cargo",
+        "check",
+        "--workspace",
+        "--all-targets"
+      ],
+      "seconds": 275.5512744870066,
+      "exit_code": 0
+    },
+    "pin_check": {
+      "command": [
+        "/workspace/oteryn-env/target/release/oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/l2b-mainc77-pin-check"
+      ],
+      "seconds": 30.168553176001296,
+      "exit_code": 0
+    },
+    "fmt_all_check": "PASS",
+    "duplicate_migrations": "PASS; lane1210-1219 unchanged",
+    "clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-content",
+        "-p",
+        "oteryn-client-assets",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 258.12129766900034,
+      "exit_code": 0
+    },
+    "source_freshness": "PASS qengine_rewards --check, equipment union and equipment pins",
+    "grizzly_map_rooms": "PASS 30/30 after Brooch provenance refresh",
+    "workspace_check_after_final_generation": {
+      "command": [
+        "cargo",
+        "check",
+        "--workspace",
+        "--all-targets"
+      ],
+      "seconds": 147.55987595599436,
+      "exit_code": 0
+    }
   },
-  "latest_pushed_head": "6b9c07783444eef9d3e2ae93feda573615784492",
+  "latest_pushed_head": "4ba80f21c65c048f40f30735f4f4ac8af07fb0ab",
   "travel_departure_engine_request": {
     "owner": "qengine2",
     "checked_head": "2ddd4f9cd",
@@ -3839,8 +3920,8 @@
     "state": "REQUESTED; existing full-journey test remains enabled"
   },
   "qualification_counts": {
-    "IN_PROGRESS": 6,
-    "PENDING": 27,
+    "IN_PROGRESS": 7,
+    "PENDING": 26,
     "QUALIFIED": 18
   },
   "engine_requests_current": [
@@ -3897,6 +3978,52 @@
       "scope": "Actual source Father eleven-track journey already qualified; this request preserves its separately shipped generic regression contract",
       "where": "questl2_eleven_tracks_commit_atomically; quest reward effect-limit SQL",
       "state": "Existing generic regression request retained"
+    },
+    {
+      "owner": "qengine2",
+      "feature": "Atomic quest soul-point resource reward",
+      "needed_by": [
+        "The Repenters"
+      ],
+      "where": "quest/reward_callbacks.rs; durability/quest_state/npc_program"
+    },
+    {
+      "owner": "qengine2",
+      "feature": "Distinct NPC recipient target-set collection",
+      "needed_by": [
+        "Spike Tasks"
+      ],
+      "where": "quest/reward_callbacks.rs; NPC dispatch"
+    },
+    {
+      "owner": "qengine2",
+      "feature": "Maximum-level quest eligibility rechecked in reward transaction",
+      "needed_by": [
+        "Spike Tasks"
+      ],
+      "where": "quest/reward_callbacks.rs; NPC reward transaction"
+    },
+    {
+      "owner": "qengine2",
+      "feature": "Consumable temporary outfit disguise with authoritative 20-second expiry",
+      "needed_by": [
+        "Secret Service"
+      ],
+      "where": "quest/world_callbacks/effects.rs; actions_amazon_disguise_kit.lua",
+      "source_sha256": "24aa58e62baf1753c1c21a5590b1de4a17b60fc183b1cf3442f64c1c57acd9c7"
     }
-  ]
+  ],
+  "previous_merge_validation": {
+    "main": "47baa7bb8",
+    "quest_unit_tests": {
+      "passed": 335,
+      "failed": 0,
+      "duration_seconds": 31.45
+    },
+    "equipment_generator_tests": {
+      "passed": 7,
+      "failed": 0
+    },
+    "post_merge_postgres": "PASS: four native PostgreSQL journeys and one equipment regression; only these cases are claimed."
+  }
 }

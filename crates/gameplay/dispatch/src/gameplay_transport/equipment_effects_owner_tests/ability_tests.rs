@@ -290,8 +290,17 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("WORLDCHG", 40),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
+    // BEGIN GENERATED QREADY PROFILE ADDITIONS
+    // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
+    // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json
+    // Source-qualified zero speed: 3068, 3323, 3383, 3579, 3734, 4871.
+    ("QREADY1", 6),
+    // tools/content-migration/qready2_native_profiles.py
+    // Source-qualified zero speed: 2822, 2823, 2848, 3310, 21982.
+    ("QREADY2", 5),
+    // END GENERATED QREADY PROFILE ADDITIONS
     // Published L2 source keys outside the main and QENGINE2 cohorts.
-    ("QUESTL2", 93),
+    ("QUESTL2", 74),
 ];
 
 #[test]
@@ -299,7 +308,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 144 independently captured physical quest Items.
+    // QENGINE2 adds exactly the 164 independently captured physical quest Items.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. Item 3079 has source speed 20; all other source records retain zero.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -331,7 +340,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         };
         assert_eq!(profile.attributes.speed_bonus, Some(source_speed), "{key}");
     }
-    assert_eq!(added_keys.len(), 144);
+    assert_eq!(added_keys.len(), 164);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"

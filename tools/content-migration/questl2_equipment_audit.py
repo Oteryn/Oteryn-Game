@@ -10,7 +10,7 @@ from questl2_equipment_inputs import keys as composed_keys
 ROOT = Path(__file__).resolve().parents[2]
 BASE = '78294c081a099c96a57948573d5dbf0caf398abf'
 L2_SOURCE = 'dbe5060463120ea78ba3edf2fb79d43c5b157085'
-MAIN_SOURCE = '83acbdac3720d7fe2df6c44d82623b7307806402'
+MAIN_SOURCE = 'c77d436d8be39f348924e66d97928ffd69e61a8c'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 DEST = 'tools/content-schema/native-gameplay/questl2-equipment-cohort.json'
@@ -23,14 +23,28 @@ def reviewed_main_overlap(engine_keys):
     return (engine_keys & composed_keys(read)) - prior_engine
 
 
+def checked_source_union(published, source_keys, proof_keys, actual):
+    if source_keys != proof_keys:
+        raise ValueError('L2_EQUIPMENT_UNREVIEWED_SOURCE_PROOF')
+    expected = published | source_keys
+    if actual != expected:
+        raise ValueError('L2_EQUIPMENT_REVIEWED_SOURCE_UNION_DRIFT')
+    return expected
+
+
 def main():
     baseline = subprocess.check_output(['git', 'show', BASE + ':' + PROFILE], cwd=ROOT)
     old = composed_keys(lambda path: subprocess.check_output(['git', 'show', BASE + ':' + path], cwd=ROOT))
     keys = composed_keys(lambda path: (ROOT / path).read_bytes())
     snapshot = lambda ref: composed_keys(lambda path: subprocess.check_output(['git', 'show', ref + ':' + path], cwd=ROOT))
-    expected = snapshot(L2_SOURCE) | snapshot(MAIN_SOURCE)
-    if keys != expected:
-        raise ValueError('L2_EQUIPMENT_REVIEWED_SOURCE_UNION_DRIFT')
+    # New source-backed quest Items are admitted only through the pinned producer;
+    # qengine_equipment_audit has independently checked exact IDs and XML pins.
+    import qengine_reward_item_profiles as source
+    source_keys = {f'oteryn:item.tibia.i{item}' for item in source.IDS}
+    proof_keys = {r['production_definition']['production_key']
+                  for r in json.loads((ROOT / PROOF).read_bytes())['records']}
+    expected = checked_source_union(snapshot(L2_SOURCE) | snapshot(MAIN_SOURCE),
+                                    source_keys, proof_keys, keys)
     if not old <= keys:
         raise ValueError('L2_EQUIPMENT_LOST_OR_DUPLICATE_SOURCE_KEY')
     old_proof = json.loads(subprocess.check_output(['git', 'show', BASE + ':' + PROOF], cwd=ROOT))

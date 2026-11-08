@@ -81,6 +81,7 @@ PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
 SPELLS_MANIFEST = "content/spells.manifest.json"
 
 AUTHORING_TOOLS = (
+    "tools/content-schema/world-authoring/questl2_chest_bindings.py",
     "tools/content-migration/qengine_equipment_audit.py",
     "tools/content-migration/questl2_equipment_audit.py",
     "tools/content-migration/questl2_equipment_inputs.py",

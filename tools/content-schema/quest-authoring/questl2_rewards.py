@@ -6,6 +6,7 @@ import questl2_exchange_recipes as recipes
 import questl2_journeys as journeys
 import questl2_passages as passages
 import questl2_djinn as djinn
+import questl2_secret as secret
 
 
 NPCS = tuple(sorted({'zalamon', 'curos', 'yonan', 'ahmet', 'jerom', 'chief_grarkharok', 'rotem_valos', 'amber', 'norma', 'storkus', 'the_bone_master', 'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'rabaz', *prayers.PRIESTS, *recipes.NPCS}))
@@ -30,7 +31,8 @@ ITEMS = {
 ITEMS |= recipes.ITEMS
 ITEMS |= passages.ITEMS
 ITEMS |= djinn.ITEMS
-NPCS = tuple(sorted(set(NPCS) | set(passages.NPCS) | set(djinn.NPCS)))
+ITEMS |= secret.ITEMS
+NPCS = tuple(sorted(set(NPCS) | set(passages.NPCS) | set(djinn.NPCS) | set(secret.NPCS)))
 
 def append(callbacks, offers, inputs, pin):
     def state(track, before, after, maximum=None, preserve=False):
@@ -115,6 +117,7 @@ def append(callbacks, offers, inputs, pin):
     prayers.append(add, state, callbacks, inputs)
     recipes.append(add, state, callbacks, offers, inputs)
     journeys.append(add, state, callbacks, inputs)
+    secret.append(add, state, callbacks, offers, inputs, pin)
     for offer in offers:
         if offer["npc"] == "oteryn:npc.muriel" and offer["storage"][0]["track"].endswith("into_the_bone_pit"):
             offer.update(minimum_level=35, failure_reply=[journeys.BONE_PIT_LEVEL_REPLY])
