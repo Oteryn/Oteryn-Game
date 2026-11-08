@@ -207,6 +207,13 @@ pub(super) async fn exercise(
                 .any(|s| s.track == PROGRAMME && s.minimum == phase)
         })
         .ok_or("selected phase")?;
+    if phase == 0 {
+        assert!(!callback.requires_premium, "exercise the structured admission path");
+        assert!(callback.admission.as_ref().is_some_and(|guard| guard.premium));
+    } else {
+        assert!(callback.requires_premium, "retain the historical admission path");
+        assert!(callback.admission.is_none());
+    }
     let flag = callback
         .storage
         .iter()

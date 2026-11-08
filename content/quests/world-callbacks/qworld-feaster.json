@@ -52,7 +52,9 @@
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674",
         "oteryn:production/content/quests/world-callbacks/qworld-feaster.json#oteryn:quest-callback/questpc7-feaster-entry"
       ],
-      "requires_premium": true
+      "admission": {
+        "premium": true
+      }
     },
     {
       "key": "oteryn:quest-callback/questpc7-feaster-purification-entry",

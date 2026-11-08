@@ -34,6 +34,7 @@ mod counterparts;
 mod effects;
 mod ground_stack;
 mod imported_explore;
+mod live_admission;
 pub mod phase;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,

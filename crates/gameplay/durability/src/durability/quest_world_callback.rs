@@ -183,6 +183,15 @@ pub(super) async fn consume(
     {
         return Ok(false);
     }
+    // Prepared admission schemas must fail closed until their live owners are wired.
+    // Structured Premium is checked by the enclosing transaction-bound gate.
+    if callback
+        .admission
+        .as_ref()
+        .is_some_and(|guard| guard.regular_blessings || guard.promotion)
+    {
+        return Ok(false);
+    }
     if let Some(minimum) = callback.minimum_level {
         let level: Option<i64> = sqlx::query_scalar(
             "SELECT level FROM game_character_progression_state \
