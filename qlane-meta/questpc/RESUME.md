@@ -40,3 +40,13 @@ Longsword s1 reuses native STEP_IN and atomically writes visited+counter.
 quests+dispatch Clippy pass. Native catalogue PG passes7.422s. Corrected
 immediate-replay PG test is running; never claim that case green yet.
 M01b remains IN_PROGRESS (46 routes/56 stages); CLAIMS belongs to coordinator.
+
+M01b continuation: merged qmech4bed43770 in87eeaa719; generated native
+registries and actual World pin7b680a60 with repository tools. Longsword and
+Geomancer s1 are wired,2/56 assigned EXPLORE stages;44/46 routes remain.
+The new Geomancer catalogue check was RED without its callback, then GREEN.
+342 quest units/109 authoring modules/checks/content-tree pass. Three real
+PostgreSQL18.6 cases pass128.51s (Geomancer59.238595156s), proving native entry,
+once-only storage and immediate replay. Finish workspace/clippy/fmt and push
+to qm-questpc only. Next: authoritative Premium/level, then per-visit and
+predecessor guards. Never mark the whole M01b DONE from these two stages.

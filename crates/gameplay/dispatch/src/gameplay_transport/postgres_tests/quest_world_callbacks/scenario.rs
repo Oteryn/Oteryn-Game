@@ -319,6 +319,7 @@ fn scenario_case(
         let world = if m01b_explore {
             super::super::m01b_explore::world(
                 generation.native_gameplay().ok_or("native explore policies")?,
+                name,
             )?
         } else if native_upper {
             super::super::l6_paradox_upper::world(

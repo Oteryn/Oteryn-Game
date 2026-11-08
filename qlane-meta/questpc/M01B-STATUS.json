@@ -6,19 +6,26 @@
     "routes": 46,
     "explore_stages": 56,
     "first_wired_route": "Longsword Quest",
-    "first_wired_stage": "s1"
+    "first_wired_stage": "s1",
+    "wired_routes": [
+      "Longsword Quest",
+      "Geomancer Quest"
+    ],
+    "wired_explore_stages": 2
   },
   "validation": {
-    "quest_unit_tests": "329 passed,0 failed,23.00s",
+    "quest_unit_tests": "342 passed,0 failed,41.93s",
     "focused_profile_tests": "2 passed,0 failed,0.03s",
-    "authoring_modules": "107 passed,0 failed after authored-recipe lookup fix",
+    "authoring_modules": "109 passed,0 failed",
     "authoring_checks": "PASS",
     "content_tree": "PASS",
-    "clippy": "quests+dispatch all-targets/all-features -D warnings PASS4m04s",
-    "postgres_catalogue": "PASS PostgreSQL18.6,7.422163852s",
-    "postgres_native_step": "counter/wrong-tile/revisit assertions passed; corrected immediate replay rerun in progress, not yet green"
+    "clippy": "running after workspace check",
+    "postgres_catalogue": "PASS PostgreSQL18.6,8.222271585s",
+    "postgres_native_step": "PASS 3 cases,0 failed,128.51s; Geomancer59.238595156s; exact entry once, revisit and immediate command replay",
+    "workspace_all_targets": "running",
+    "fmt": "pending final check"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish native replay validation, then extend all assigned EXPLORE bindings. Do not mark the entire mechanic DONE from this first slice."
+  "continuation": "Push validated Geomancer s1, then implement authoritative Premium/level and predecessor/multi-visit guards for remaining44 routes/54 stages. Entire mechanic remains IN_PROGRESS."
 }

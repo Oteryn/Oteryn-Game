@@ -90,10 +90,55 @@ fn m01b_explore_real_native_steps_credit_exact_anchor_once_and_replay() -> TestR
     result
 }
 
+#[test]
+fn m01b_geomancer_real_native_entry_credits_once_and_replays() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("m01b-geomancer-native-step", || {
+        super::quest_world_callbacks::scenario(
+            "m01b/geomancer/s1/entry",
+            Position {
+                x: 32418,
+                y: 32017,
+                floor: -7,
+            },
+            false,
+        )
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED m01b_geomancer_native_step duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
+    name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if name == "m01b/geomancer/s1/entry" {
+        return native_crop(
+            native,
+            NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z07-x126-y125.b3"
+                )),
+                region: (7, 126, 125),
+                bounds: (32417, 32016, 32420, 32018),
+                start: (32419, 32017),
+                expected: vec![ExpectedTile {
+                    position: (32418, 32017),
+                    ids: vec![4529],
+                    counted_entry: None,
+                }],
+            },
+        );
+    }
     native_crop(
         native,
         NativeCrop {
@@ -127,12 +172,18 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
-    assert!(callback.key.ends_with(ENTRY));
+    let geomancer = callback.key.ends_with("m01b/geomancer/s1/entry");
+    assert!(geomancer || callback.key.ends_with(ENTRY));
+    let counter = if geomancer {
+        "oteryn:quest-progress/chosen-source/geomancer_quest/s1"
+    } else {
+        COUNTER
+    };
     assert_eq!(
         owner
             .quest_catalogue
             .as_ref()
-            .and_then(|c| c.track(COUNTER))
+            .and_then(|c| c.track(counter))
             .ok_or("explore counter")?
             .initial,
         0
@@ -142,18 +193,29 @@ pub(super) async fn exercise(
             "SELECT (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1), \
              (SELECT coalesce(max(value),0) FROM game_character_quest_tracks WHERE track_key=$2), \
              (SELECT count(*) FROM game_character_quest_states WHERE quest_key=$3 AND completed_character_revision IS NOT NULL)")
-            .bind(&callback.key).bind(COUNTER).bind(&callback.quest).fetch_one(&h.pool).await
+            .bind(&callback.key).bind(counter).bind(&callback.quest).fetch_one(&h.pool).await
     };
     assert_eq!(counts().await?, (0, 0, 0));
     // A nearby non-target route tile is not an objective.
-    let moves = [
+    let longsword_moves = [
         StepDirection::South,
         StepDirection::North,
         StepDirection::West,
         StepDirection::East,
         StepDirection::West,
     ];
-    for (index, direction) in moves.into_iter().enumerate() {
+    let geomancer_moves = [
+        StepDirection::West,
+        StepDirection::East,
+        StepDirection::West,
+    ];
+    let moves: &[StepDirection] = if geomancer {
+        &geomancer_moves
+    } else {
+        &longsword_moves
+    };
+    let first_entry = if geomancer { 0 } else { 2 };
+    for (index, &direction) in moves.iter().enumerate() {
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
@@ -172,15 +234,19 @@ pub(super) async fn exercise(
         );
         assert_eq!(
             counts().await?,
-            if index < 2 { (0, 0, 0) } else { (1, 1, 0) }
+            if index < first_entry {
+                (0, 0, 0)
+            } else {
+                (1, 1, 0)
+            }
         );
-        if index == 2 {
+        if index == first_entry {
             // Replay while the command outcome is still retained. The following
             // fresh movements separately prove that a later visit cannot add credit.
             let replay = super::quest_world_callbacks::wire(
                 owner,
                 admitted,
-                3,
+                u64::try_from(index)? + 1,
                 1,
                 oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::West),
             )

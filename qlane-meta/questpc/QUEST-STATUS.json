@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "READY: five completion bindings; all106 authoring modules/checks/tree, workspace alltargets/fmt, prior strict dispatch Clippy and real17PG proof. Final qmech fetch/merge publication step.",
+  "batch_state": "M01b second tested slice: Geomancer s1 and canonical stage/counter-owner validation; awaiting final compile/lint gates before owned-branch publication.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -1085,14 +1085,20 @@
       "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     }
   ],
-  "publication_branch": "claude/happy-davinci-ijz3wy-qmech",
+  "publication_branch": "claude/happy-davinci-ijz3wy-qm-questpc",
   "active_assignment": {
     "id": "M01b",
     "owner": "questpc",
     "scope": "EXPLORE bindings for46 assigned routes /56 stages",
     "migration_range": "2000-2009",
-    "state": "CLAIMED",
-    "claim_push": "a17567dbf03d295a9601f04ff0cb1efd5876143e"
+    "state": "IN_PROGRESS",
+    "claim_push": "a17567dbf03d295a9601f04ff0cb1efd5876143e",
+    "wired_explore_stages": 2,
+    "wired_routes": [
+      "Longsword Quest",
+      "Geomancer Quest"
+    ],
+    "validation": "3 real PG cases pass128.51s;342 quest units;109 authoring modules/checks/tree pass; workspace/clippy/fmt finishing"
   },
   "publication_validation": {
     "postgres_cases": 17,

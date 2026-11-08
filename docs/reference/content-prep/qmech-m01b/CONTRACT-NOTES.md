@@ -35,3 +35,15 @@ The chosen Longsword route is level0, free account, no prerequisites. The
 generator fails closed on additional required guards. The earlier Asura
 prototype is not activated/published: it requires an authoritative Premium
 guard before inclusion. M01b remains in progress; only2000-2009 may be used.
+
+## Geomancer s1
+
+The second chosen entry is the canonical Mount Sternum/Undead Cave Area point,
+32418,32017,z7, pinned by https://tibia.fandom.com/index.php?curid=20335&oldid=1114489
+and Area record280. The unchanged retained region-z07-x126-y125.b3 has plain4529
+at that point; the adjacent eastern tile4515 supplies the real STEP_IN approach.
+This binds the chosen route's first exploration stage, not the later Geomancer
+kill or reward. The recipe is free-account, level0 and has no prerequisites.
+The generator now checks that a binding names an existing EXPLORE first stage,
+its count is1, and its counter namespace belongs to that exact canonical quest.
+Other stages fail closed until their individual visit/predecessor guards land.
