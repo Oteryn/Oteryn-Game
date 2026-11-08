@@ -10029,5 +10029,263 @@
     "log_sha256": "dd6a464a29ee0efb8a2987d42b66aa9b5bba953ffed88700d35d19e7dc56b7df",
     "exact_red": "Captain Marie Denise Banner != Captain Marie-Denise Banner",
     "state": "ACTUAL_PG_RED; five exact source display fields still not applied"
+  },
+  "soulpit_integration": {
+    "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+    "merge": "nine conflicts resolved within two minutes; retain Main activity/terrain and NPCFIX protected arrival/bound-ground/Book World validation",
+    "new_migrations": "Main1140-1141 unchanged; own1230/1233-1238 unchanged",
+    "world_metadata_checks": [
+      {
+        "name": "convert_hunting_places",
+        "exit": 0,
+        "seconds": 0.1
+      },
+      {
+        "name": "convert_islands",
+        "exit": 0,
+        "seconds": 27.21
+      },
+      {
+        "name": "validate_islands",
+        "exit": 0,
+        "seconds": 0.204
+      },
+      {
+        "name": "validate_world_metadata",
+        "exit": 0,
+        "seconds": 1.534
+      },
+      {
+        "name": "validate_world_base",
+        "exit": 0,
+        "seconds": 55.615
+      },
+      {
+        "name": "convert_world_record",
+        "exit": 0,
+        "seconds": 0.67
+      },
+      {
+        "name": "validate_world_record",
+        "exit": 0,
+        "seconds": 0.886
+      },
+      {
+        "name": "validate_materialized_game_tree",
+        "exit": 0,
+        "seconds": 0.117
+      }
+    ],
+    "captured_membership": "New50-line helper authenticates Main base, unchanged region descriptors/source identity/palette source-ID sequence; permits only removal of captured unknown provisional bindings. Reuses existing five XML-declared provisional IDs; validates nonclient placeholder99 stays unknown.",
+    "guard_units": "5PASS; new identities, incomplete client evidence and new provisional identities refused",
+    "metadata_red_seconds": 92.927,
+    "metadata_green_seconds": 52.949,
+    "stats": "13414 fields/6533 items unchanged; generated packet and Rust pin refreshed with repo tools",
+    "tests_pending": "fresh8-package units; physical/state/atomic/paid-travel PG on merged Main",
+    "qualification": "261 QUALIFIED;32 open; six-name batch still pending",
+    "generation": [
+      {
+        "name": "stats",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+        ],
+        "exit": 0,
+        "seconds": 4.1
+      },
+      {
+        "name": "stats-pin",
+        "command": [
+          "python3",
+          "tools/contracts/refresh_item_stats_promotion_pin.py"
+        ],
+        "exit": 0,
+        "seconds": 0.101
+      },
+      {
+        "name": "native",
+        "command": [
+          "python3",
+          "tools/content-migration/regenerate_content.py",
+          "--native-only",
+          "--skip-checks"
+        ],
+        "exit": 0,
+        "seconds": 109.525
+      },
+      {
+        "name": "audit",
+        "command": [
+          "python3",
+          "/tmp/npcfix-evidence/preserve-unchanged-output-times.py",
+          "crates/gameplay/durability/src/durability/item_mint_audit.tags",
+          "crates/gameplay/durability/src/durability/item_mint_audit/tests/write_once_wire.hex",
+          "--",
+          "python3",
+          "tools/contracts/update_item_audit_tags.py"
+        ],
+        "exit": 0,
+        "seconds": 0.083
+      },
+      {
+        "name": "matrix",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+        ],
+        "exit": 0,
+        "seconds": 0.938
+      },
+      {
+        "name": "bindings",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+        ],
+        "exit": 0,
+        "seconds": 20.67
+      },
+      {
+        "name": "raid_catalogue",
+        "command": [
+          "python3",
+          "tools/content-migration/raid_catalogue.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 1.009
+      },
+      {
+        "name": "craft_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/craft-authoring/craft_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.581
+      },
+      {
+        "name": "imbuement_content",
+        "command": [
+          "python3",
+          "tools/content-schema/imbuement-authoring/imbuement_content.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 5.296
+      },
+      {
+        "name": "charm_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/charm-authoring/charm_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.145
+      },
+      {
+        "name": "proficiency_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 4.122
+      },
+      {
+        "name": "reward_claim_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 3.917
+      },
+      {
+        "name": "starter_kit_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.414
+      },
+      {
+        "name": "weapon",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+        ],
+        "exit": 0,
+        "seconds": 0.517
+      },
+      {
+        "name": "crystal",
+        "command": [
+          "python3",
+          "tools/content-census/g4_item_crystal_binding_generator.py"
+        ],
+        "exit": 0,
+        "seconds": 2.424
+      },
+      {
+        "name": "pins",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "--release",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "exit": 0,
+        "seconds": 72.274
+      },
+      {
+        "name": "native-check",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 127.061
+      },
+      {
+        "name": "duplicates",
+        "command": [
+          "bash",
+          ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+        ],
+        "exit": 0,
+        "seconds": 0.6
+      }
+    ],
+    "publication_gates": [
+      {
+        "name": "check",
+        "exit": 0,
+        "seconds": 375.953
+      },
+      {
+        "name": "fmt",
+        "exit": 0,
+        "seconds": 17.376
+      },
+      {
+        "name": "clippy",
+        "exit": 0,
+        "seconds": 155.036
+      }
+    ],
+    "publication": "Compiling Main integration under PREPUSH-2 cadence exception. Fresh8-package units and four focused PG groups pending;261 qualified/32 open unchanged."
   }
 }

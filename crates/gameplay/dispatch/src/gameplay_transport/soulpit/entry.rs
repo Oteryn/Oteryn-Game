@@ -69,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(None);
             };
             let Some(at) =
-                super::super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+                super::super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
             else {
                 return Ok(None);
             };

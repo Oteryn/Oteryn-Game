@@ -40,10 +40,10 @@ fn sha(bytes: &[u8]) -> String {
 fn canonical(value: &impl Serialize) -> TestResult<Vec<u8>> {
     Ok(serde_json::to_vec(&serde_json::to_value(value)?)?)
 }
-struct Signing {
+pub(super) struct Signing {
     directory: PathBuf,
     key: PathBuf,
-    config: StaffConfig,
+    pub(super) config: StaffConfig,
     activation: wire::SignedEnvelope,
     fingerprint: String,
 }
@@ -53,7 +53,7 @@ impl Drop for Signing {
     }
 }
 impl Signing {
-    fn new() -> TestResult<Self> {
+    pub(super) fn new() -> TestResult<Self> {
         let suffix = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos();
@@ -113,7 +113,7 @@ impl Signing {
         )?;
         Ok(fixture)
     }
-    fn sign(&self, bytes: &[u8], receipt: bool) -> TestResult<wire::SignedEnvelope> {
+    pub(super) fn sign(&self, bytes: &[u8], receipt: bool) -> TestResult<wire::SignedEnvelope> {
         let mut child = Command::new("ssh-keygen")
             .args(["-Y", "sign", "-f"])
             .arg(&self.key)
@@ -138,7 +138,7 @@ impl Signing {
             signature: output.stdout,
         })
     }
-    fn request(
+    pub(super) fn request(
         &self,
         seq: u64,
         previous: &str,
@@ -161,7 +161,7 @@ impl Signing {
             world_id: hex(&id(42)),
         }
     }
-    async fn bootstrap(&self, h: &Harness) -> TestResult {
+    pub(super) async fn bootstrap(&self, h: &Harness) -> TestResult {
         let mut tx = h.pool.begin().await?;
         sqlx::query("INSERT INTO game_staff_rosters(environment,activation_sha256,roster_sha256,principal,key_fingerprint,role) VALUES($1,$2,$3,'operator',$4,'ADMIN')")
             .bind(&self.config.environment).bind(&self.config.newest_activation_sha256).bind(&self.config.allowed_signers_sha256).bind(&self.fingerprint).execute(&mut *tx).await?;

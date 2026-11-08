@@ -397,6 +397,7 @@ fn scenario(case: Case) -> TestResult {
                 runtime,
                 door,
                 ActivityRuntimeAssets {
+                        activity_room: None,
                     movement_cells: cells,
                     rooms: SeamRooms::new(Some(&instance_room), Some(&instance_room)),
                 },

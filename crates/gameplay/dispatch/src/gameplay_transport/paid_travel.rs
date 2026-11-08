@@ -346,8 +346,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if protected(cell)
             || !oteryn_gameplay_entities::carrier::respawn_fallback_cells(cell).any(|candidate| {
                 super::super::respawn_cell_admissible(
-                    self.movement_cells.index(),
-                    self.movement_cells.scope(),
+                    self.movement_cells().index(),
+                    self.movement_cells().scope(),
                     self.world_id,
                     runtime.content_pin().server_artifact_digest(),
                     &doors,

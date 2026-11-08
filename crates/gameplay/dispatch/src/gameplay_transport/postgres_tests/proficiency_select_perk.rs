@@ -123,7 +123,7 @@ fn scenario() -> TestResult {
             let mut runtime = deps.runtime.lock().await;
             crate::gameplay_transport::actor_spell::qualified_protection_zone(
                 &mut runtime,
-                owner.movement_cells,
+                owner.movement_cells(),
                 actor,
             ) == Some(true)
         };
