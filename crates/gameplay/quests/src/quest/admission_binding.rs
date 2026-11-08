@@ -127,6 +127,9 @@ pub fn validate_for_catalogue(
     if let Some(bindings) = &catalogue.authored_bindings {
         for quest in &bindings.source.quests {
             for stage in &quest.stages {
+                if stage.is_native_encounter() {
+                    continue;
+                }
                 let expected = stage.transition(&quest.quest)?;
                 if expected.key == transition.key {
                     let world = matches!(
