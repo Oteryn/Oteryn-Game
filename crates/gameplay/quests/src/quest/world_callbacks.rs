@@ -27,11 +27,13 @@ pub enum Trigger {
     StepOut,
 }
 
+mod character_requirements;
+pub use character_requirements::CharacterRequirements;
 mod clock;
 mod counterparts;
 mod effects;
-mod imported_explore;
 mod ground_stack;
+mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
@@ -195,6 +197,9 @@ pub struct Callback {
     /// Checked against the progression owner in the same fenced quest transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
+    /// Current durable character facts, bound to the native world admission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub character_requirements: Option<CharacterRequirements>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub world_change: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -444,6 +449,14 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .minimum_level
                 .is_some_and(|level| level == 0 || !callback.has_personal_state())
+            || callback
+                .character_requirements
+                .as_ref()
+                .is_some_and(|requirements| {
+                    !requirements.valid()
+                        || !callback.requires_world_admission
+                        || callback.actor_kind != ActorKind::Player
+                })
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -1633,6 +1646,39 @@ mod qn1_lifecycle_tests {
                     )
                     .is_err()
             );
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod srvenc_live_requirements_tests {
+    use super::*;
+
+    #[test]
+    fn m03_character_requirements_are_registered_and_bound() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|callback| callback.requires_world_admission && !callback.storage.is_empty())
+            .ok_or("world fixture")?;
+        let baseline = gated_binding(&callback);
+        let mut value = serde_json::to_value(callback).map_err(|error| error.to_string())?;
+        value["character_requirements"] = serde_json::json!({"promoted":true,"blessings":["oteryn:blessing.the_spiritual_shielding"]});
+        let packet = |value: &serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[value]}).to_string()
+        };
+        let admitted = parse(&packet(&value))?;
+        assert_ne!(gated_binding(&admitted[0]), baseline);
+        value["requires_world_admission"] = false.into();
+        assert!(parse(&packet(&value)).is_err());
+        value["requires_world_admission"] = true.into();
+        for invalid in [
+            serde_json::json!({}),
+            serde_json::json!({"blessings":["invalid"]}),
+            serde_json::json!({"blessings":["oteryn:blessing.a","oteryn:blessing.a"]}),
+        ] {
+            value["character_requirements"] = invalid;
+            assert!(parse(&packet(&value)).is_err());
         }
         Ok(())
     }

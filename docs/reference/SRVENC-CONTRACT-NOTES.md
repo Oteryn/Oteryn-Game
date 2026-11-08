@@ -1961,10 +1961,36 @@ normal-profile rebuild exhausted disk; it is not counted as a passing test.
 All13 required M24 PG cases above actually executed and passed. Inactive
 compiler caches were removed and the required format/tree/pin checks rerun.
 
-## Next QMECH work queue item
+## M03: live character requirements, first engine slice
 
-After publishing M24 code, the first OPEN/unclaimed INDEX row is M02, exact
-mutable Ground stack/custody/quantity/order admission for Nomads Land s4.
-Claimed for SRVENC in INDEX only; CLAIMS.md remains coordinator-owned.
-No migration or new numeric registry entry has been allocated. Any required
-forward schema change remains restricted to assigned range2180–2189.
+Coordinator correction: M02 already belongs to ENGNPC2/SRV7 and is not SRVENC
+work. After merging qmech 5b960aa2a, M03 was OPEN/unclaimed and is now claimed by
+SRVENC in INDEX only. CLAIMS.md remains coordinator-owned.
+
+The chosen 25 Years of Tibia recipe requirements are recorded in
+content/quests/definitions/quests-00200-00299.json:1, record 67. The retained
+Crystal donor data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:26-35
+supplies the entrance trigger, not these owner-selected prerequisites.
+The schema now binds explicit promotion/blessing requirements into the native
+world admission digest and rejects unbound or malformed requirements. The
+existing fenced world callback consumer reads permanent promotion and currently
+held blessings inside the Character writer transaction; consumed blessings
+cannot be accepted from session projections.
+
+This is a tested engine slice, not completed M03: premium owner threading and
+the two production quest entrance bindings follow. No migration, command,
+capability or registry number is allocated.
+
+M03 first-slice validation: schema test RED (unknown character_requirements),
+then GREEN. Real PG case
+m03_postgres_character_requirements_read_current_transaction executed in 5.87 s
+(wall 169.323 s including normal-profile compilation), covering missing promotion,
+current promotion, missing/held blessings and consumed blessing refusal.
+The qmech M07 fixture required the missing ground_stack:None initializer to
+compile; no assertion changed. Full quests lib run:356 PASS / 3 FAIL, all three
+failures in untouched reward_callbacks tests; baseline comparison is recorded
+separately in the local validation log. No failing test is skipped or weakened.
+Baseline qmech 5b960aa2a, with only the ground_stack:None compile repair and
+without any M03 source changes: reward_callbacks filter reproduced the same
+3 FAIL / 21 PASS in 3.96 s (wall 16.011 s). Thus these reward fixture failures predate
+this slice; reward code and assertions are unchanged.

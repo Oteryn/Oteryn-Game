@@ -36,7 +36,7 @@ pub(crate) fn uneasy_crystal() -> Callback {
             increment: false,
             at_least: false,
         }],
-        minimum_level: None,
+        minimum_level: None, character_requirements: None,
         experience: None,
         monk_reward: None,
         offerings: Vec::new(),

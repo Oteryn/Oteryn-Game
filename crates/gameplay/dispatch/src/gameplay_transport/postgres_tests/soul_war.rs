@@ -371,7 +371,7 @@ world_change: None,
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
             trigger: Trigger::Use, selector: Selector { native: None, position: Some(trigger), unique: None, action: None, appearance: None },
             lever: None, reversible: false, passages: vec![], teleport: None, facing: None, effects: Default::default(), state_ops: Vec::new(), world_requirements: vec![], storage: vec![],
-            minimum_level: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
+            minimum_level: None, character_requirements: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,
             native_rule: None, sources: vec![],
         }, trigger)?;

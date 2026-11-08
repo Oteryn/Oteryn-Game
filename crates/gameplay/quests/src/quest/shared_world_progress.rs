@@ -207,7 +207,7 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
             selector:Selector{native: None,position:Some(Position{x:binding.position.0,y:binding.position.1,floor:binding.position.2}),unique:None,action:None,appearance:Some(binding.appearance)},
             lever:None,reversible:false,passages:vec![],teleport:None,
             storage:{let mut storage=vec![Storage{increment: false, at_least: false,track:binding.track.into(),minimum:0,maximum:if hive {binding.required-1}else{0},set:if hive {1}else{0},preserve:false}];if hive {storage.push(Storage{increment: false, at_least: false,track:ACTIVE_TRACKS[index].into(),minimum:1,maximum:1,set:1,preserve:true})}storage},
-            minimum_level:None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
+            minimum_level:None, character_requirements: None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
             item_on_target:tool.map(|tool|ItemOnTarget{alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
             return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),
             sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/orockle.lua:explicit-native-geometry-and-execution-adaptation; wiki56916@1184992; NOT_DONOR_POSITION".into()],
