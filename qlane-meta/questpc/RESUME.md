@@ -33,3 +33,21 @@ alltargets/fmt PASS; prior merged strict dispatch Clippy4m31s PASS. World
 pin refresh PASS, digest unchanged b79b1d74. PG proof scope remains explicit
 in QUEST-STATUS.json. Active owner assignment is M01b only:46 routes/56
 EXPLORE stages; CLAIMED on qmech a17567dbf. Only2000-2009 if SQL is needed.
+
+M01b continues on claude/happy-davinci-ijz3wy-qm-questpc only.
+Longsword and Geomancer s1 are wired:2/56 EXPLORE stages,2/46 routes.
+Geomancer code is316cc6842; qmech41edb50ef is merged in d8aba5866.
+The generator rejects unknown/non-explore stages and foreign counter owners;
+retained B3 tiles prove both exact canonical Area anchors without map changes.
+
+Post-merge356 quest units/111 authoring modules/checks/content-tree PASS.
+Workspace alltargets PASS7m59s after fixing the collected map-mark fixture's
+missing creature_use:None; strict quests+dispatch Clippy PASS4m40s and fmt PASS.
+Current locked World compiler pin-check PASS. Authority-target strict Clippy PASS3m02s.
+PG3/3 PASS128.51s on the316cc6842 source tree before the package merge:
+catalogue8.222271585s,Longsword61.045918893s,Geomancer59.238595156s.
+Post-merge PG rerun is pending under the PREPUSH-2 cadence exception (no lane SQL
+changes); rerun all M01b native cases with the next entry batch. This is stage
+credit, never whole-quest completion. Next: authoritative Premium/level, then
+visit/predecessor guards for the remaining44 routes/54 stages. CLAIMS is owned
+by the coordinator; M01b remains IN_PROGRESS. Only2000-2009 if SQL is needed.

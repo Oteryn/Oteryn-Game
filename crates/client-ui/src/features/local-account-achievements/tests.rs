@@ -70,3 +70,108 @@ fn unavailable_and_mismatched_results_never_replace_confirmed_data() {
     apply_result(&mut panel, &Response::Page(Default::default()));
     assert!(panel_text(&panel).contains("No earned achievements"));
 }
+
+#[test]
+fn full_account_list_collects_all_server_pages_before_global_secret_filter_and_sort() {
+    use oteryn_client_runtime::account_achievements::AccountAchievementRow;
+    let row = |i: u32, secret| AccountAchievementRow {
+        key: format!("oteryn:achievement/a{i}"),
+        name: format!("Award {i:03}"),
+        description: "Earned in play".into(),
+        grade: if secret { 4 } else { 1 },
+        points: if secret { 100 } else { 1 },
+        earned_at: i64::from(i),
+        secret,
+    };
+    let mut p = AchievementsPanel {
+        selected: true,
+        ..Default::default()
+    };
+    p.catalog.enabled = true;
+    assert_eq!(request(&mut p, Intent::Refresh), Some(0));
+    apply_result(
+        &mut p,
+        &Response::Page(AccountAchievementsResult {
+            total_points: 164,
+            fact_count: 65,
+            page: 0,
+            has_more: true,
+            rows: (0..64).map(|i| row(i, false)).collect(),
+        }),
+    );
+    assert!(!p.catalog.ready);
+    assert_eq!(catalog_next_request(&mut p), Some(1));
+    apply_result(
+        &mut p,
+        &Response::Page(AccountAchievementsResult {
+            total_points: 164,
+            fact_count: 65,
+            page: 1,
+            has_more: false,
+            rows: vec![row(64, true)],
+        }),
+    );
+    assert!(p.catalog.ready);
+    assert_eq!(p.catalog.rows.len(), 65);
+    assert_eq!(catalog_next_request(&mut p), None);
+    p.catalog.filter = AchievementFilter::Secret;
+    assert_eq!(catalog_rows(&p.catalog).len(), 1);
+    assert_eq!(catalog_rows(&p.catalog)[0].key, "oteryn:achievement/a64");
+    p.catalog.filter = AchievementFilter::All;
+    p.catalog.sort = AchievementSort::Points;
+    assert_eq!(catalog_rows(&p.catalog)[0].points, 100);
+    p.catalog.search = "award 064".into();
+    assert_eq!(catalog_rows(&p.catalog).len(), 1);
+}
+
+#[test]
+fn changing_account_pages_never_replace_a_confirmed_full_list() {
+    use oteryn_client_runtime::account_achievements::AccountAchievementRow;
+    let row = |i| AccountAchievementRow {
+        key: format!("oteryn:achievement/a{i}"),
+        name: format!("Award {i}"),
+        description: "Earned".into(),
+        grade: 1,
+        points: 1,
+        earned_at: 1,
+        secret: false,
+    };
+    let mut p = AchievementsPanel {
+        selected: true,
+        ..Default::default()
+    };
+    p.catalog.enabled = true;
+    assert_eq!(request(&mut p, Intent::Refresh), Some(0));
+    apply_result(
+        &mut p,
+        &Response::Page(AccountAchievementsResult::default()),
+    );
+    assert!(p.catalog.ready);
+    let confirmed = p.catalog.rows.clone();
+    assert_eq!(request(&mut p, Intent::Refresh), Some(0));
+    apply_result(
+        &mut p,
+        &Response::Page(AccountAchievementsResult {
+            fact_count: 65,
+            total_points: 65,
+            page: 0,
+            has_more: true,
+            rows: (0..64).map(row).collect(),
+        }),
+    );
+    assert_eq!(catalog_next_request(&mut p), Some(1));
+    apply_result(
+        &mut p,
+        &Response::Page(AccountAchievementsResult {
+            page: 1,
+            fact_count: 66,
+            total_points: 66,
+            has_more: false,
+            rows: vec![row(64), row(65)],
+        }),
+    );
+    assert!(p.error.is_some());
+    assert_eq!(p.catalog.rows, confirmed);
+    assert!(!p.catalog.collecting);
+    assert_eq!(catalog_next_request(&mut p), None);
+}

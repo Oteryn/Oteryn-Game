@@ -148,6 +148,14 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                 return Err(invalid("invalid source file custody"));
             }
         }
+        let scoped = document.rules.iter().any(|rule| {
+            rule.effects
+                .iter()
+                .any(|effect| matches!(effect, NpcRuleEffect::CompleteSource { .. }))
+        });
+        if scoped && document.rules.iter().any(|rule| rule.completes) {
+            return Err(invalid("source saga cannot close a canonical quest"));
+        }
         for rule in &document.rules {
             if !valid_quest_key(&rule.key)
                 || !keys.insert(&rule.key)
@@ -162,7 +170,12 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                 })
                 || (rule.trigger == NpcRuleTrigger::Say
                     && rule.keywords.is_empty()
-                    && !rule.any_message)
+                    && !rule.any_message
+                    && !rule.match_player_name)
+                || (rule.match_player_name
+                    && (rule.trigger != NpcRuleTrigger::Say
+                        || !rule.keywords.is_empty()
+                        || rule.any_message))
                 || rule.reply.len() > 32
                 || rule
                     .reply
@@ -238,6 +251,13 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     NpcRuleEffect::BigfootSoulMelody => {
                         document.quest == "oteryn:quest.bigfoot_s_burden_quest"
                             && (1..=7).all(|tone| tracks.contains_key(&format!("oteryn:quest-progress/quest/u9_60/bigfoots_burden/melody_tone{tone}")))
+                    }
+                    NpcRuleEffect::CompleteSource { track } => {
+                        let prefix = format!("oteryn:quest-progress/source-completion/{}/",
+                            document.quest.strip_prefix("oteryn:quest.").unwrap_or(""));
+                        track.strip_prefix(&prefix).is_some_and(|scope| !scope.is_empty() && !scope.contains('/'))
+                            && tracks.get(track).is_some_and(|definition|
+                                definition.initial == 0 && definition.min == 0 && definition.max == 1)
                     }
                     NpcRuleEffect::Set { track, value } => {
                         tracks.get(track).is_some_and(|definition| {

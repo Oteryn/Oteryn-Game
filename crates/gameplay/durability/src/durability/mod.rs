@@ -46,6 +46,7 @@ pub mod player_report;
 pub mod prey;
 pub mod private_channel;
 pub mod quest_monk_rewards;
+mod quest_mount_rewards;
 mod quest_unnatural_selection;
 pub mod quest_world_callback;
 pub mod raid_runner;

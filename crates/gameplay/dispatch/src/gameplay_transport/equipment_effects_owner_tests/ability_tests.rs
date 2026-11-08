@@ -313,6 +313,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // tools/content-migration/qready2_native_profiles.py
     // Source-qualified zero speed: 2822, 2823, 2848, 3310, 21982.
     ("QREADY2", 5),
+    // tools/content-schema/native-gameplay/srv7-targuna-item-profiles.json
+    // Source-qualified zero speed: 53073.
+    ("SRV7-M14", 1),
     // END GENERATED QREADY PROFILE ADDITIONS
     // SEASON W18:2126 exact initialized House source profiles. Relative to the
     // frozen9668e0a04 base (including loadout/SRX updates),1959 keys are new.

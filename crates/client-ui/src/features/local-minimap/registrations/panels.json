@@ -5,9 +5,9 @@
   "status": "supported",
   "entry": "view.rs::view",
   "not_applicable": {
-    "state": "Projects the existing live map and spatial state without independent storage.",
+    "state": "Observed world-map cells and local markers persist per admitted world and map revision.",
     "protocol": "Uses existing world-map input and capability-64 target-move dispatch.",
-    "input": "Native app routes primary pointer clicks through the panel projection.",
+    "input": "The native overlay walks on the current floor; Ctrl+Alt+Shift+M opens the local map and marker editor.",
     "settings": "Visibility uses the existing local reference preferences."
   }
 }

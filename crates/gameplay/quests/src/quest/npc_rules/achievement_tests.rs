@@ -27,6 +27,7 @@ fn m41_source_achievement_survives_storage_and_item_planning() -> Result<(), Npc
         let outfits = BTreeMap::new();
         let inventory = NpcInventorySnapshot::default();
         let input = NpcRuleInput {
+            player_name: None,
             npc: "oteryn:npc.fixture",
             trigger: NpcRuleTrigger::Say,
             message: "yes",
@@ -63,6 +64,7 @@ fn m41_stag_authored_finale_preserves_sword_achievement_and_progress() -> Result
     let inventory = NpcInventorySnapshot::default();
     let outfits = BTreeMap::new();
     let input = NpcRuleInput {
+        player_name: None,
         npc: "oteryn:npc.eldoran_the_ambitious",
         trigger: NpcRuleTrigger::Say,
         message: "news",
@@ -140,6 +142,7 @@ fn m41_alyxo_finale_is_native_bound_and_keeps_canonical_remains() -> Result<(), 
         npc: "oteryn:npc.alyxo",
         trigger: NpcRuleTrigger::Say,
         message: "yes",
+        player_name: None,
         topic: 13,
         tracks: &tracks,
         inventory: &inventory,

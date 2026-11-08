@@ -19,7 +19,9 @@ impl NpcRuleCatalog {
                     | NpcRuleGuard::Level { .. }
                     | NpcRuleGuard::Vocation { .. }
                     | NpcRuleGuard::Premium { .. } => {}
-                    NpcRuleGuard::Equipped { slot, item } if slot == "head" => {
+                    NpcRuleGuard::Equipped { slot, item }
+                        if matches!(slot.as_str(), "head" | "necklace") =>
+                    {
                         if required
                             .insert(slot.clone(), item.clone())
                             .is_some_and(|old| old != *item)
@@ -106,6 +108,7 @@ mod tests {
                 npc: "oteryn:npc.fixture",
                 trigger: NpcRuleTrigger::Say,
                 message: "mission",
+                player_name: None,
                 topic: 0,
                 tracks: &tracks,
                 inventory: &inventory,

@@ -84,10 +84,12 @@ pub(in crate::play) fn apply(
             return;
         }
     };
-    let text = operation(panel, intent)
-        .ok()
-        .and_then(|op| wire::result_text(op, &result.payload));
+    let operation = operation(panel, intent).ok();
+    let text = operation.and_then(|op| wire::result_text(op, &result.payload));
     if let Some(text) = text {
+        if let Some(operation) = operation {
+            oteryn_client_ui::character_info::apply_title_reply(panel, operation, &result.payload);
+        }
         panel.summary = text;
         panel.feedback = "Character information updated".into();
     } else {

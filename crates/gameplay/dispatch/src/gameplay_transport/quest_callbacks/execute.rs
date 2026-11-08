@@ -67,7 +67,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
-        if !close && !world_requirements_match(map, callback) {
+        if !close
+            && (!world_requirements_match(map, callback)
+                || !self.ground_requirements_match(runtime, map, callback))
+        {
             return UseDisposition::Rejected;
         }
         if close && callback.lever.is_some() && !callback.reversible {
@@ -84,6 +87,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             after = replacement;
         }
         let mut projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
+            Ok(projection) => projection,
+            Err(result) => return result,
+        };
+        if !close && let Some(delay) = callback.effects.reset_after_ms {
+            let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000) else {
+                return UseDisposition::Exhausted;
+            };
+            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                due,
+                restore: before,
+            });
+        }
+        projection = match super::conditional_cells::prepare(map, callback, projection) {
             Ok(projection) => projection,
             Err(result) => return result,
         };
@@ -590,6 +606,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::reward_claim_mint::QuestRewardAdmission {
                             actor_conditions: None,
                             carried_use: None,
+                            creature_use: None,
                             peer_use: None,
 
                             native,
@@ -693,11 +710,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if matches!(
             projection,
             Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
-        ) || callback
-            .effects
-            .portals
-            .as_ref()
-            .is_some_and(|pair| pair.lifetime_us.is_some())
+        ) || callback.effects.reset_after_ms.is_some()
+            || callback
+                .effects
+                .portals
+                .as_ref()
+                .is_some_and(|pair| pair.lifetime_us.is_some())
         {
             states.owner_wake.notify_one();
         }
@@ -713,6 +731,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .remove_world_change_callback_item(key, expected_revision + 1)
         {
             return UseDisposition::Rejected;
+        }
+        if oteryn_gameplay_quests::quest::children_puzzle::binding(&callback.key)
+            .is_some_and(|(_, solved)| solved)
+        {
+            let _ = map
+                .facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: actor,
+                    position: native(expected.position()).unwrap_or(pos),
+                    talk_type: 36,
+                    text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH,
+                });
         }
         if let Some(proof) = teleport {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {

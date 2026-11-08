@@ -6,7 +6,10 @@ fn fail<E: std::fmt::Debug>(error: E) -> String {
 
 #[test]
 fn carried_peer_predicate_is_explicit_and_bounded() -> Result<(), String> {
-    let mut document: serde_json::Value = serde_json::from_str(DOCUMENTS[0]).map_err(fail)?;
+    let mut document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/shared-reward-callbacks.json"
+    ))
+    .map_err(fail)?;
     let row = document["callbacks"]
         .as_array_mut()
         .ok_or("callbacks array")?
@@ -85,5 +88,56 @@ fn m43_data_attachment_waits_for_separately_packaged_opening() -> Result<(), Str
     colours_peer::append_after_opening(&mut document).map_err(fail)?;
     assert_eq!(document.callbacks, before);
     validate_document(document).map_err(fail)?;
+    Ok(())
+}
+
+#[test]
+fn carried_creature_requires_exact_native_identity() -> Result<(), String> {
+    let mut document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/shared-reward-callbacks.json"
+    ))
+    .map_err(fail)?;
+    let row = document["callbacks"]
+        .as_array_mut()
+        .ok_or("callbacks")?
+        .iter_mut()
+        .find(|row| row["carried_item"].is_string())
+        .ok_or("carried callback")?;
+    row["creature_target"] = "oteryn:creature.rotworm".into();
+    assert!(parse(&document.to_string()).is_ok());
+    let row = document["callbacks"]
+        .as_array_mut()
+        .ok_or("callbacks")?
+        .iter_mut()
+        .find(|row| row["creature_target"].is_string())
+        .ok_or("creature callback")?;
+    row["creature_target"] = "rotworm".into();
+    assert!(parse(&document.to_string()).is_err());
+    Ok(())
+}
+
+#[test]
+fn goblin_rotworm_sample_binds_progress_tool_and_output() -> Result<(), String> {
+    let callbacks = load()?;
+    let callback = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-reward/goblin-merchant/rotworm-sample")
+        .ok_or("Rotworm sample callback")?;
+    assert_eq!(
+        callback.creature_target.as_deref(),
+        Some("oteryn:creature.rotworm")
+    );
+    assert_eq!(
+        callback.carried_item.as_deref(),
+        Some("oteryn:item.tibia.i17673")
+    );
+    assert_eq!(
+        callback.give.as_ref().ok_or("transformed tool")?.item,
+        "oteryn:item.tibia.i17674"
+    );
+    assert_eq!(callback.storage[0].minimum, 0);
+    assert_eq!(callback.storage[0].maximum, 0);
+    assert_eq!(callback.storage[0].set, 1);
+    assert!(gated_binding(callback)?.is_some());
     Ok(())
 }

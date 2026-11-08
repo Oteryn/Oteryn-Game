@@ -54,12 +54,21 @@ pub fn apply_result(panel: &mut CyclopediaTrackerPanel, result: &GatedCommandRes
     apply_snapshot(panel, &result.payload)
 }
 pub fn apply_snapshot(panel: &mut CyclopediaTrackerPanel, payload: &[u8]) -> bool {
-    let snapshot = cyclopedia_tracker::decode_snapshot(payload).or_else(|| {
-        cyclopedia_tracker::decode_domain_snapshot(payload)
-            .map(|(bestiary, bosstiary)| if panel.boss { bosstiary } else { bestiary })
-    });
+    let snapshot =
+        if let Some((bestiary, bosstiary)) = cyclopedia_tracker::decode_domain_snapshot(payload) {
+            panel.bestiary_snapshot = Some(bestiary.clone());
+            panel.bosstiary_snapshot = Some(bosstiary.clone());
+            Some(if panel.boss { bosstiary } else { bestiary })
+        } else {
+            cyclopedia_tracker::decode_snapshot(payload)
+        };
     match snapshot {
         Some(value) => {
+            if value.boss {
+                panel.bosstiary_snapshot = Some(value.clone());
+            } else {
+                panel.bestiary_snapshot = Some(value.clone());
+            }
             panel.snapshot = Some(value);
             panel.feedback = None;
             true
