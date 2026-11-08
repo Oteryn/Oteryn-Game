@@ -44,6 +44,9 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
+    /// Restore the exact pre-transform source revision after this delay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
@@ -330,6 +333,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
                                 .bytes()
                                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                     })
+        })
+        || effects.reset_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay)
+                || callback.actor_kind != ActorKind::Player
+                || (effects.transform.is_none() && callback.lever.is_none())
+                || effects.portals.is_some()
+                || effects.item_presence.is_some()
+                || effects.item_cycle.is_some()
+                || effects.encounter.is_some()
+                || !callback.passages.is_empty()
         })
         || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())

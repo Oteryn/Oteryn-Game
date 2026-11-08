@@ -170,6 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fee_payment: None,
                     actor_conditions: None,
                     carried_use: None,
+                    creature_use: None,
                     peer_use: None,
                 }),
             )

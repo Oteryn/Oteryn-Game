@@ -135,6 +135,8 @@ pub enum ActorConditionRequirement {
     Drunk,
 }
 
+pub use super::map_marks::{MapMarkKind as QuestMapMarkIcon, QuestMapMark};
+
 /// One paid source occurrence advances the existing Character achievement owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -170,6 +172,9 @@ pub struct RewardCallback {
     /// Read-only condition on the selected other live player, checked atomically.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub peer_requires: Option<TrackRequirement>,
+    /// Exact native live creature selected by a carried quest tool.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creature_target: Option<String>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -289,6 +294,10 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
+    include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
 ];
 
@@ -468,6 +477,14 @@ fn validate_document(document: Document) -> Result<Document, String> {
             .as_ref()
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
             || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || c.creature_target.as_ref().is_some_and(|key| {
+                c.carried_item.is_none()
+                    || c.peer_requires.is_some()
+                    || c.give.as_ref().is_some_and(|give| {
+                        give.count != 1 || !give.contents.is_empty() || !give.additional.is_empty()
+                    })
+                    || !slug(key, "oteryn:creature.", b"_", 160)
+            })
             || c.peer_requires.as_ref().is_some_and(|requirement| {
                 c.carried_item.is_none()
                     || c.storage.iter().all(|state| state.preserve)
@@ -507,7 +524,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
                         count: 1,
                         fluid_subtype: None,
                     }]
-                    || c.give.is_some()
+                    || (c.give.is_some() && c.creature_target.is_none())
                     || c.fee.is_some()
                     || !c.requires_actor_conditions.is_empty()
             })
@@ -654,6 +671,8 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     if callback.minimum_level.is_none()
         && callback.world_claim.is_none()
         && callback.peer_requires.is_none()
+        && callback.creature_target.is_none()
+        && callback.map_mark.is_none()
     {
         return Ok(None);
     }
@@ -828,7 +847,12 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 mod tests {
     #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
-        let mut callback = super::load()?.into_iter().next().ok_or("callback")?;
+        let mut callback = super::parse(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))?
+        .into_iter()
+        .next()
+        .ok_or("callback")?;
         callback.storage = (0..16)
             .map(|i| super::Storage {
                 track: format!("oteryn:quest-progress/atomic/{i}"),

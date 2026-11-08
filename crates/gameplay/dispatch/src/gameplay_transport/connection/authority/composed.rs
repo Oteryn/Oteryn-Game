@@ -610,7 +610,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         request: item_move::LoopMove,
     ) -> item_move::LoopMoveResult {
-        loop_move::move_loop_item(self, actor, command, request).await
+        let result = loop_move::move_loop_item(self, actor, command, request).await;
+        if result == item_move::LoopMoveResult::Committed {
+            quest_collections::after_move(self, actor, command).await;
+        }
+        result
     }
 
     /// Carried or reachable proven direct Ground container (capability 14).
@@ -630,14 +634,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         request: item_move::LoopMove,
         house_capacity_v2: bool,
     ) -> item_move::LoopMoveResult {
-        loop_move::move_loop_item_with_house_capacity(
+        let result = loop_move::move_loop_item_with_house_capacity(
             self,
             actor,
             command,
             request,
             house_capacity_v2,
         )
-        .await
+        .await;
+        if result == item_move::LoopMoveResult::Committed {
+            quest_collections::after_move(self, actor, command).await;
+        }
+        result
     }
 
     async fn observe_container_with_house_capacity(
@@ -749,6 +757,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => MovementFacing::East,
             StepDirection::South => MovementFacing::South,
             StepDirection::West => MovementFacing::West,
+            StepDirection::NorthEast => MovementFacing::North,
+            StepDirection::SouthEast => MovementFacing::South,
+            StepDirection::SouthWest => MovementFacing::South,
+            StepDirection::NorthWest => MovementFacing::North,
         };
         movement.commit_turn(expected, facing).is_ok()
     }
@@ -1567,6 +1579,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         crate::durability::item_transfer::ItemTransferOutcome,
         crate::combat_pickup::GroundPickupError,
     > {
-        item_ref_admission::take_corpse_entry(self, actor, command, corpse, entry).await
+        let result =
+            item_ref_admission::take_corpse_entry(self, actor, command, corpse, entry).await;
+        if matches!(
+            result,
+            Ok(crate::durability::item_transfer::ItemTransferOutcome::Committed(_))
+        ) {
+            quest_collections::after_move(self, actor, command).await;
+        }
+        result
     }
 }
