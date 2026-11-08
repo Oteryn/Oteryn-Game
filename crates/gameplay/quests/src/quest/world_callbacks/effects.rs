@@ -253,7 +253,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     && !state.increment
                     && !state.at_least
                     && state.minimum >= 0
-            }) && !callback.clock_reward_epoch(track)
+            }) && !callback.clock_reward_epoch(track) && !callback.craft_reward_epoch(track)
     }) {
         return false;
     }
@@ -297,7 +297,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                             | crate::quest::reward_callbacks::StateMutation::Add { value: 1.. }
                             | crate::quest::reward_callbacks::StateMutation::Add { value: ..=-1 }
                     )
-                }))
+                }) && !effects.item_reward_cycle.as_deref().is_some_and(|track| callback.craft_reward_epoch(track)))
             || !item(&reward.item, reward.count)
             || !reward.valid_literal_text()
             || reward.additional.len() > 19

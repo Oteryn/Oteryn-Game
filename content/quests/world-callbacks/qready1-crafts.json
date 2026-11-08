@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/qready1-cursed-grind",
+      "quest": "oteryn:quest.the_cursed_crystal",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32012,
+          "y": 32908,
+          "floor": -7
+        },
+        "appearance": 21573,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 32012,
+            "y": 32908,
+            "floor": -7
+          },
+          "ordinal": 3,
+          "appearance": 21573
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qready1-craft/grind",
+          "minimum": 0,
+          "maximum": 1000000,
+          "set": 1,
+          "preserve": false,
+          "at_least": false,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i16122",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a green crystal splinter to use the grinder.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21507",
+          "count": 1,
+          "contents": []
+        },
+        "item_reward_cycle": "oteryn:quest-progress/qready1-craft/grind"
+      },
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/lib/register_actions.lua:1156-1182",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/actions/tools/grinder.lua:1-10"
+      ]
+    }
+  ]
+}

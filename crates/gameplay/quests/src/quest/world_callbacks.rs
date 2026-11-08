@@ -30,6 +30,7 @@ pub enum Trigger {
 #[cfg(test)]
 mod admission_tests;
 mod clock;
+mod craft_epoch;
 mod counterparts;
 mod effects;
 mod ground_stack;
@@ -326,6 +327,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.push(super::barbarian_mead::callback()?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qready1-clocks.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qready1-crafts.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
@@ -766,6 +770,8 @@ mod timed_tests;
 
 #[cfg(test)]
 mod clock_tests;
+#[cfg(test)]
+mod craft_epoch_tests;
 
 #[cfg(test)]
 mod literal_text_tests;

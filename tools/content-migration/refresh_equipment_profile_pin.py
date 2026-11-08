@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import questpc4_treasure_reward_equipment_pin
 import qready1_clock_equipment_pin
+import qready1_craft_equipment_pin
 import json
 import os
 import re
@@ -95,6 +96,10 @@ def main():
     source = qready1_clock_equipment_pin.refresh(
         source,
         json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-quest-item-profiles.json").read_bytes()),
+    )
+    source = qready1_craft_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-craft-item-profiles.json").read_bytes()),
     )
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths)

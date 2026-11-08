@@ -1095,7 +1095,7 @@ impl DurabilityRoot {
                         let claim = if let Some(track) = world.effects.item_reward_cycle.as_deref() {
                             let initial = catalogue.track(track).ok_or(DurabilityError::InvalidStoredState)?.initial;
                             super::super::reward_claim_mint::quest::QuestMintClaim::Cycle {
-                                track, value: if world.clock_reward_epoch(track) {
+                                track, value: if world.clock_reward_epoch(track) || world.craft_reward_epoch(track) {
                                     changes.iter().find(|change| change.track == track)
                                         .ok_or(DurabilityError::InvalidStoredState)?.after
                                 } else { stored.get(track).copied().unwrap_or(initial) },
