@@ -116,7 +116,6 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         fee_payment: None,
         actor_conditions: None,
         carried_use: None,
-        creature_use: None,
         peer_use: None,
         creature_use: None,
     };
