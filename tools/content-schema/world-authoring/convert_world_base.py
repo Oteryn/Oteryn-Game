@@ -1189,6 +1189,9 @@ def build(
 
         access = json.loads((ROOT / quest_access_bindings.CAPTURE).read_bytes())
         quest_startup_bindings.overlay_outputs(out, supplied_by=access["bindings"])
+    import npcfix2_shared_sources
+
+    npcfix2_shared_sources.overlay_outputs(out)
     return out
 
 
