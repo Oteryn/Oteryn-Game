@@ -6,6 +6,9 @@ mod options;
 #[path = "gameplay.rs"]
 mod gameplay;
 
+#[path = "screenshots.rs"]
+mod screenshots;
+
 #[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
 {

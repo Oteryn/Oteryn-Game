@@ -9,8 +9,12 @@ use arc_controls::ArcControls;
 #[path = "gameplay_controls.rs"]
 mod gameplay_controls;
 use gameplay_controls::GameplayControls;
+#[path = "screenshot_controls.rs"]
+mod screenshot_controls;
+use screenshot_controls::ScreenshotControls;
 
 pub(super) struct Controls {
+    pub(super) screenshots: ScreenshotControls,
     pub(super) gameplay: GameplayControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
@@ -51,6 +55,7 @@ impl Controls {
         unsafe {
             let arcs = ArcControls::new(hwnd)?;
             let gameplay = GameplayControls::new(hwnd)?;
+            let screenshots = ScreenshotControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
                 hwnd,
@@ -312,6 +317,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                screenshots,
                 gameplay,
                 arcs,
                 interface,

@@ -3,6 +3,8 @@ mod hud;
 mod input;
 #[path = "features/local-native-login/shell.rs"]
 mod native_login_shell;
+#[path = "features/local-reference-preferences/shell_redraw.rs"]
+mod redraw;
 #[path = "features/local-reference-preferences/native.rs"]
 mod settings;
 
@@ -327,25 +329,7 @@ impl ApplicationHandler for Application {
                 }
             }
             WindowEvent::RedrawRequested => {
-                let scene = self
-                    .play
-                    .as_ref()
-                    .map(|play| play.view.scene())
-                    .or(self.scene.as_ref());
-                if let (Some(renderer), Some(scene)) = (&mut self.renderer, scene)
-                    && redraw_eligible(Some(renderer.state().phase()))
-                {
-                    if self.atlas.as_ref() != Some(scene.atlas()) {
-                        renderer.set_atlas(scene.atlas().clone());
-                        self.atlas = Some(scene.atlas().clone());
-                    }
-                    if renderer
-                        .render_batches(self.generation, scene.tiles(), scene.sprites())
-                        .is_err()
-                    {
-                        self.fail(event_loop, ShellError::RendererRender);
-                    }
-                }
+                self.redraw(event_loop);
             }
             _ => {}
         }
@@ -402,24 +386,5 @@ pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fatal_retention_keeps_the_first_error() {
-        let mut error = None;
-        retain_first_error(&mut error, ShellError::RendererResize);
-        retain_first_error(&mut error, ShellError::RendererRender);
-        assert_eq!(error, Some(ShellError::RendererResize));
-    }
-
-    #[test]
-    fn redraw_requires_a_configured_renderer() {
-        assert!(redraw_eligible(Some(SurfacePhase::Configured)));
-        assert!(!redraw_eligible(None));
-        assert!(!redraw_eligible(Some(SurfacePhase::Unconfigured)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Suspended)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Lost)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Closing)));
-    }
-}
+#[path = "windows_shell/tests.rs"]
+mod tests;

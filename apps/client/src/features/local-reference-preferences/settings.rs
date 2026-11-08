@@ -14,6 +14,8 @@ mod bindings;
 mod gameplay;
 #[path = "profiles.rs"]
 mod profiles;
+#[path = "screenshot.rs"]
+pub mod screenshot;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
@@ -88,6 +90,8 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub screenshots: screenshot::ScreenshotPreferences,
+    #[serde(default)]
     pub gameplay: gameplay::GameplayPreferences,
     #[serde(default = "default_arc_distance")]
     pub arc_distance: u16,
@@ -147,6 +151,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            screenshots: screenshot::ScreenshotPreferences::default(),
             gameplay: gameplay::GameplayPreferences::default(),
             arc_distance: 8,
             arc_size: 3,

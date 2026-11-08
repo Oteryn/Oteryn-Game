@@ -18,11 +18,12 @@ pub enum SettingsPage {
     Interface,
     Graphics,
     Sound,
+    Screenshots,
     Help,
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
@@ -31,6 +32,7 @@ impl SettingsPage {
         Self::Interface,
         Self::Graphics,
         Self::Sound,
+        Self::Screenshots,
         Self::Help,
     ];
 
@@ -44,6 +46,7 @@ impl SettingsPage {
             Self::Interface => "Interface",
             Self::Graphics => "Graphics",
             Self::Sound => "Sound",
+            Self::Screenshots => "Screenshots",
             Self::Help => "Help / settings transfer",
         }
     }
@@ -61,6 +64,7 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 ];
 
 pub struct SettingsState {
+    pub(super) screenshot_requested: bool,
     window_action: Option<&'static str>,
     battle_edit: u64,
     store: Option<PreferenceStore>,
@@ -138,6 +142,7 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            screenshot_requested: false,
             window_action: None,
             battle_edit: 0,
             store,

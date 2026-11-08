@@ -446,9 +446,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Screenshots: folder, game-only i manual capture",
-  "status": "MISSING",
-  "gap": "Brak systemu zrzutów i strony wyboru katalogu/zakresu.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/screenshot.rs:127 + manual_screenshot_caller_saves_real_pixels_and_selected_scope"
  },
  {
   "id": "T071",
