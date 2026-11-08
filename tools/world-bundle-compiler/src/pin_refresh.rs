@@ -74,6 +74,20 @@ fn refresh_manifest(path: &Path, old: &Pin, new: &Pin) -> Result<(), Error> {
             table = line.trim().to_owned();
         }
         let mut line = line.replace(&old.digest, &new.digest);
+        // A merge can retain the manifest and pin from different parents. Bind
+        // the named fields even when neither still contains the old pin digest.
+        if (table == "[readiness]" && line.starts_with("map_revision = "))
+            || (table == "[world_bundle]" && line.starts_with("digest = "))
+        {
+            let (prefix, value) = line
+                .split_once('"')
+                .ok_or_else(|| Error::Format("preproduction digest field is not quoted".into()))?;
+            let (_, suffix) = value.split_once('"').ok_or_else(|| {
+                Error::Format("preproduction digest field is not terminated".into())
+            })?;
+            line = format!("{prefix}\"{}\"{suffix}", new.digest);
+        }
+
         if table == "[world_bundle]" {
             for (key, value) in [
                 ("project_format_version", &new.project_format_version),

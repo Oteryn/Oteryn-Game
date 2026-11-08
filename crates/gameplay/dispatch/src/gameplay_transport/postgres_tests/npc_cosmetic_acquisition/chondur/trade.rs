@@ -221,7 +221,7 @@ pub(super) async fn trade_with_provenance(
         owner,
         admitted,
         npc,
-        &[(replay, "mount"), (replay + 1, "yes")],
+        &[(replay, "hi"), (replay + 1, "mount"), (replay + 2, "yes")],
     )
     .await?;
     assert!(

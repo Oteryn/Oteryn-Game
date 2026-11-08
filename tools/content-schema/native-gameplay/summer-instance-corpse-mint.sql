@@ -146,6 +146,91 @@ END $$;
 CREATE TRIGGER game_summer_instance_reservation_admit BEFORE INSERT ON game_item_mint_reservations FOR EACH ROW EXECUTE FUNCTION game_summer_instance_mint_admit();
 CREATE TRIGGER game_summer_instance_receipt_admit BEFORE INSERT ON game_item_mint_receipts FOR EACH ROW EXECUTE FUNCTION game_summer_instance_mint_admit();
 
+-- The existing Instance gate predates qualified Summer corpse MINT. Admit
+-- that exact same-XID cause through the gate, then continue through every
+-- original mature MINT/exclusivity check below it. Never RETURN early here.
+DO $summer_ground_cause$
+DECLARE body TEXT;needle TEXT:='IF NEW.scope_kind=2 THEN';replacement TEXT;
+BEGIN
+ body:=pg_get_functiondef('game_item_ground_insertion_guard()'::regprocedure);
+ IF (length(body)-length(replace(body,needle,'')))/length(needle)<>1 THEN
+  RAISE EXCEPTION 'Summer Ground exact Instance gate changed';
+ END IF;
+ replacement:=$accepted$
+IF NEW.scope_kind=2 AND NOT EXISTS(
+ SELECT 1 FROM game_item_mint_receipts r
+ JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id
+ JOIN game_summer_instance_mint_context c ON c.backend_pid=pg_backend_pid() AND c.transaction_xid=pg_current_xact_id()
+ JOIN game_runtime_scope_assignments ownership ON ownership.scope_key=c.scope_key
+ JOIN game_node_registrations n ON n.node_id=c.node_id AND n.registration_revision=c.registration
+ WHERE r.item_instance_id=NEW.item_instance_id AND r.created_xact_id=pg_current_xact_id()
+ AND r.death_world_id=NEW.world_id AND r.death_channel_id IS NULL AND r.death_instance_id=NEW.instance_id
+ AND r.death_scope_ownership_generation=NEW.runtime_scope_ownership_generation
+ AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.loot_table_family='Item'
+ AND i.world_id=NEW.world_id AND i.lifecycle=1 AND i.quantity=1 AND i.state_revision=1
+ AND i.last_transaction_id IS NULL AND i.minted_transaction_id=r.transaction_id
+ AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)
+     =(r.loot_table_family,r.loot_table_production_key,r.loot_table_revision_ref)
+ AND c.scope_key=game_summer_death_scope_key(NEW.world_id,NULL,NEW.instance_id)
+ AND c.generation=NEW.runtime_scope_ownership_generation
+ AND ownership.scope_kind=3 AND ownership.state=1 AND ownership.ownership_generation=c.generation
+ AND ownership.holder_node_id=c.node_id AND ownership.holder_registration_revision=c.registration
+ AND n.state=1 AND NOT EXISTS(SELECT 1 FROM game_node_registration_endings ending WHERE ending.node_id=c.node_id)
+ AND game_summer_instance_activity_source(c.scope_key,c.generation,r.loot_table_family,r.loot_table_production_key,r.loot_purpose_key)
+) THEN
+$accepted$;
+ EXECUTE replace(body,needle,replacement);
+END $summer_ground_cause$;
+
+-- Extend only native Source MINT INSERT locking. This is not a mutation
+-- authorization: every existing deferred child-MINT proof still runs. Other
+-- Instance operations (including future TAKE/DELETE) retain their old refusal.
+DO $summer_corpse_entry_lock$
+DECLARE body TEXT;needle TEXT;replacement TEXT;
+BEGIN
+ body:=pg_get_functiondef('game_spell_corpse_entry_owner_lock()'::regprocedure);
+ needle:='DECLARE p UUID; w UUID; c UUID;';
+ IF position(needle IN body)=0 THEN RAISE EXCEPTION 'Summer corpse lock declaration changed';END IF;
+ body:=replace(body,needle,'DECLARE p UUID; w UUID; c UUID; source_instance UUID; source_root UUID; source_kind SMALLINT; source_generation NUMERIC;');
+ needle:='SELECT g.world_id,g.channel_id INTO w,c FROM ancestors a JOIN game_item_ground_locations g ON g.item_instance_id=a.id;';
+ IF position(needle IN body)=0 THEN RAISE EXCEPTION 'Summer corpse lock physical root lookup changed';END IF;
+ body:=replace(body,needle,'SELECT g.world_id,g.channel_id,g.instance_id,g.item_instance_id,g.scope_kind,g.runtime_scope_ownership_generation INTO w,c,source_instance,source_root,source_kind,source_generation FROM ancestors a JOIN game_item_ground_locations g ON g.item_instance_id=a.id;');
+ needle:='IF w IS NULL OR c IS NULL THEN';
+ IF position(needle IN body)=0 THEN RAISE EXCEPTION 'Summer corpse lock Channel boundary changed';END IF;
+ replacement:=$source_lock$
+IF TG_OP='INSERT' AND source_kind=2 AND w IS NOT NULL AND c IS NULL AND source_instance IS NOT NULL
+ AND EXISTS(
+ SELECT 1 FROM game_summer_instance_mint_context context
+ JOIN game_runtime_scope_assignments ownership ON ownership.scope_key=context.scope_key
+ JOIN game_node_registrations node ON node.node_id=context.node_id AND node.registration_revision=context.registration
+ JOIN game_item_mint_receipts receipt ON receipt.item_instance_id=source_root
+ JOIN game_item_instances item ON item.item_instance_id=receipt.item_instance_id
+ WHERE context.backend_pid=pg_backend_pid() AND context.transaction_xid=pg_current_xact_id()
+ AND context.scope_key=game_summer_death_scope_key(w,NULL,source_instance) AND context.generation=source_generation
+ AND ownership.scope_kind=3 AND ownership.state=1 AND ownership.ownership_generation=context.generation
+ AND ownership.holder_node_id=context.node_id AND ownership.holder_registration_revision=context.registration
+ AND node.state=1 AND NOT EXISTS(SELECT 1 FROM game_node_registration_endings ending WHERE ending.node_id=node.node_id)
+ AND receipt.death_world_id=w AND receipt.death_channel_id IS NULL AND receipt.death_instance_id=source_instance
+ AND receipt.death_scope_ownership_generation=source_generation
+ AND receipt.created_xact_id=pg_current_xact_id()
+ AND receipt.loot_purpose_key='CORPSE_MATERIALIZATION' AND receipt.loot_table_family='Item'
+ AND item.world_id=w AND item.lifecycle=1 AND item.quantity=1 AND item.state_revision=1
+ AND item.last_transaction_id IS NULL AND item.minted_transaction_id=receipt.transaction_id
+ AND (item.definition_family,item.definition_production_key,item.definition_revision_ref)
+     =(receipt.loot_table_family,receipt.loot_table_production_key,receipt.loot_table_revision_ref)
+ AND game_summer_instance_activity_source(context.scope_key,context.generation,receipt.loot_table_family,receipt.loot_table_production_key,receipt.loot_purpose_key)
+ ) THEN
+ PERFORM pg_advisory_xact_lock(hashtextextended(encode(game_summer_death_scope_key(w,NULL,source_instance),'hex'),33));
+ RETURN NEW;
+END IF;
+IF w IS NULL OR c IS NULL THEN
+$source_lock$;
+ EXECUTE replace(body,needle,replacement);
+END $summer_corpse_entry_lock$;
+-- The closed branch reads private proof; its pinned pg_catalog/schema/pg_temp
+-- path is retained from0042. Definer privilege grants no mutation authorization.
+ALTER FUNCTION game_spell_corpse_entry_owner_lock() SECURITY DEFINER;
+
 -- Extend the existing conservation, materialization and nested-loot functions
 -- in place. All unrelated source-specific branches remain byte-for-byte intact.
 DO $owner_scope$

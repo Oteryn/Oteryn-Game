@@ -10,12 +10,12 @@
     {
       "bytes": 427,
       "path": "content.lock.json",
-      "sha256": "4f432ef0566302360074ddb11d5c76ad7fc71d3f167e811f15ebb6a9f6f0d5fd"
+      "sha256": "1e19acbd7ae4a18d4e1f5e58e22bd938ae6a7e1bc6f4230d0f213b7af59e3f5b"
     },
     {
-      "bytes": 27613127,
+      "bytes": 27795524,
       "path": "definitions/declarations.json",
-      "sha256": "1756c3b46d6430a9b52edbf90634daef9de7fd3ad5c0935a0ed6e3e1da67e759"
+      "sha256": "2240e4cae511e55eba94acbd547c4b543f9234d341eb2b56b656771b0582d6f0"
     },
     {
       "bytes": 27392973,
@@ -30,7 +30,7 @@
     {
       "bytes": 1960,
       "path": "manifest.json",
-      "sha256": "27d8929cb1756da8e17977a5d00d952d1327642b0868d216f990aa1892d33328"
+      "sha256": "91aa8bfad1f6c3a9f34a6ecf03490880d49836fcc88623e3c95e00150eb5c395"
     },
     {
       "bytes": 73,
@@ -40,7 +40,7 @@
     {
       "bytes": 411,
       "path": "project.json",
-      "sha256": "8d3daba0ce968f39f3898fc7cde63307bbb722b4516f36a3f7bcd5fe57ff2790"
+      "sha256": "5ddc694b62e5721511b812a3577fb3ee080342f0d297110cf5ddc11d229ce2aa"
     },
     {
       "bytes": 6775089,
@@ -257,24 +257,24 @@
     "held_npcs": 0,
     "held_offers": {
       "ArbitragePaying": 0,
-      "ChargedOrFluidPending": 865,
+      "ChargedOrFluidPending": 0,
       "CountOutOfRange": 0,
       "NonGoldCurrency": 31,
       "ParityPending": 0,
-      "SellPriceAboveCoinCapacity": 299,
+      "SellPriceAboveCoinCapacity": 17,
       "TimedCountMismatch": 0,
       "UnknownItem": 0
     },
     "npcs": 1283,
-    "offers": 11095,
+    "offers": 12415,
     "routes": 195,
-    "services": 390
+    "services": 400
   },
   "qualification": "canonical source package only; no gameplay readiness",
   "reimport_count": 404,
   "schema": "OTERYN_CURRENT_WORLD_CENSUS/v1",
   "semantic_preserved": true,
-  "service_count": 389,
+  "service_count": 399,
   "source_count": 32,
-  "tree_sha256": "e5bbfb0a95681588a8370552fafcada122df1a2c3bba2caa8c985e090ea4ef15"
+  "tree_sha256": "5573801ba7f14a32b05fca1bbaaf8d9b620e560cdd0888f0522f02bf747a5f3e"
 }

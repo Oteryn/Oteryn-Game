@@ -335,7 +335,7 @@ fn scenario_for_primal_case(
         if simon_lifetime_source {
             owner.premium_coordinator = simon_premium.as_ref();
         }
-        if navigator_source {
+        if navigator_source || simon_lifetime_source || (gnomilly_source && gnomilly::full()) {
             owner.quest_catalogue = Some(Arc::new(
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?

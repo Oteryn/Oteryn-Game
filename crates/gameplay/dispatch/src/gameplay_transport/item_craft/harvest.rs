@@ -170,6 +170,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             };
                             (pos, placement_key, entry.facts)
                         }
+                        Ok(super::super::world_map::MapHandleTarget::Added { pos, id }) => {
+                            // Only the boot owner's distinct stable namespace enters this path.
+                            // Other movement, dropped and player-grown objects retain their USE owner.
+                            let Some((appearance, x, y, z)) = fishing::world_change_item_source(id)
+                            else {
+                                return Ok(None);
+                            };
+                            if appearance != 13842
+                                || (pos.x, pos.y, pos.floor) != (x, y, -(z as i8))
+                            {
+                                return Ok(Some(outcome(UseDisposition::Rejected)));
+                            }
+                            let tile = view::compose_tile(&map.overlay, &facts, pos)
+                                .map_err(|_| ())?
+                                .ok_or(())?;
+                            let Some(entry) = tile.entries.iter().find(|entry|
+                                matches!(entry.source,view::EntrySource::Added(key) if key.get()==id)) else { return Ok(None); };
+                            (pos, id, entry.facts)
+                        }
                         _ => return Ok(None),
                     }
                 }

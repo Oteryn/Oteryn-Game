@@ -595,11 +595,44 @@ def repin_rust_inventory() -> None:
         "NPC_DIALOGUES": dialogue_count,
         "NPC_BINDINGS": sum(row["target"]["family"] == "NPC" for row in bindings),
     }
+    reference = json.loads((WORLD / "definitions/reference.json").read_bytes())["records"]
+    profiles = json.loads((WORLD / "definitions/declarations.json").read_bytes())["authoring_profiles"]
+    creature_families = {"Creature", "Presentation", "Behavior", "Loot", "Ability", "Effect", "Formula"}
+    creature_count = sum(row["identity"]["family"] == "Creature" for row in reference)
+    # NPC Behavior/Presentation rows are already counted separately by the fixture.
+    npc_counts.update({
+        "CREATURES": creature_count,
+        "CREATURE_RECORDS": sum(row["identity"]["family"] in creature_families for row in reference)
+        - npc_counts["NPC_RECORDS"],
+        "CREATURE_PROFILES": len(profiles) - npc_counts["NPC_RECORDS"],
+    })
     for name, total in npc_counts.items():
         text, count = re.subn(r"(const " + name + r": usize = )[\d_]+(;)",
                              lambda match: match.group(1) + literal(total, "0") + match.group(2), text)
         if count != 1:
             raise SystemExit(f"{PIN_TEST.name}: {name} census pin not found")
+    # The Python tree-equivalence fixture pins the same measured source binding
+    # censuses. The seasonal Creature observation adds a binding, not a Creature.
+    # Keep every other family expectation/semantic assertion untouched.
+    python_test = ROOT / "tools/content-migration/test_world_project_v2_to_tree.py"
+    python_text = python_test.read_text(encoding="utf-8")
+    python_text, matches = re.subn(
+        r"(assert family_counts\['Creature'\] == )[\d_]+",
+        lambda match: match.group(1) + str(creature_count), python_text,
+    )
+    if matches != 1:
+        raise SystemExit(f"{python_test.name}: expected one Creature family census pin")
+    for family in ("NPC", "Creature"):
+        measured = sum(row["target"]["family"] == family for row in bindings)
+        python_text, matches = re.subn(
+            r'(assert lock\["source_binding_counts"\] == \{[^\n]*"'
+            + family + r'": )([\d_]+)',
+            lambda match: match.group(1) + str(measured),
+            python_text,
+        )
+        if matches != 1:
+            raise SystemExit(f"{python_test.name}: expected one {family} source-binding census pin")
+    python_test.write_text(python_text, encoding="utf-8", newline="\n")
     tree = hashlib.sha256()
     for locator in document_locators():
         data = (WORLD / locator).read_bytes()

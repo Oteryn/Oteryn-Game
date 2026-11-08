@@ -21,19 +21,40 @@ const TRACKS: [(&str, i64); 4] = [
 pub(super) fn extend(
     catalogue: QuestStateCatalogue,
 ) -> Result<QuestStateCatalogue, QuestCatalogueError> {
-    catalogue.with_quest(
-        TRACKS
-            .iter()
-            .map(|(key, max)| QuestTrack {
-                key: (*key).into(),
+    let mut missing = Vec::new();
+    for (key, max) in TRACKS {
+        if let Some(existing) = catalogue.track(key) {
+            let mature_owner = match key {
+                "oteryn:quest-progress/quest/u7_24/the_annihilator/reward" => {
+                    "oteryn:quest.the_annihilator_quest"
+                }
+                "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet" => {
+                    "oteryn:quest.demon_helmet_quest"
+                }
+                "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission" => {
+                    "oteryn:quest.the_secret_library_quest"
+                }
+                "oteryn:quest-progress/navigator" => "oteryn:quest.outfit_and_addon_quests",
+                _ => return Err(QuestCatalogueError::DuplicateKey(key.into())),
+            };
+            // Main's reward callbacks already declare these exact value domains.
+            // Reuse their owner without changing its definition or accepting drift.
+            if existing.quest != mature_owner
+                || (existing.initial, existing.min, existing.max) != (-1, -1, max)
+            {
+                return Err(QuestCatalogueError::DuplicateKey(key.into()));
+            }
+        } else {
+            missing.push(QuestTrack {
+                key: key.into(),
                 quest: QUEST.into(),
                 initial: -1,
                 min: -1,
-                max: *max,
-            })
-            .collect(),
-        Vec::new(),
-    )
+                max,
+            });
+        }
+    }
+    catalogue.with_quest(missing, Vec::new())
 }
 
 #[cfg(test)]
@@ -70,13 +91,84 @@ mod tests {
             let track = extended
                 .track(key)
                 .ok_or_else(|| format!("missing final track {key}"))?;
-            assert_eq!(track.quest, QUEST);
+            let expected_owner = match key {
+                "oteryn:quest-progress/quest/u7_24/the_annihilator/reward" => {
+                    "oteryn:quest.the_annihilator_quest"
+                }
+                "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet" => {
+                    "oteryn:quest.demon_helmet_quest"
+                }
+                "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission" => {
+                    "oteryn:quest.the_secret_library_quest"
+                }
+                "oteryn:quest-progress/navigator" => "oteryn:quest.outfit_and_addon_quests",
+                _ => QUEST,
+            };
+            assert_eq!(track.quest, expected_owner);
             assert_eq!((track.initial, track.min, track.max), (-1, -1, max));
         }
+        let repeated = extend(extended.clone())
+            .map_err(|error| format!("exact mature declarations remain unchanged: {error:?}"))?;
+        assert_eq!(repeated.tracks, extended.tracks);
+        assert_eq!(repeated.hashes, extended.hashes);
+        let component_owned = QuestStateCatalogue::new(
+            "duplicate-component-test",
+            vec![QuestTrack {
+                key: TRACKS[0].0.into(),
+                quest: QUEST.into(),
+                initial: -1,
+                min: -1,
+                max: 2,
+            }],
+            Vec::new(),
+        )
+        .map_err(|error| format!("duplicate component fixture: {error:?}"))?;
         assert!(
-            extend(extended).is_err(),
-            "a duplicate owner must never rebind a track"
+            extend(component_owned).is_err(),
+            "a duplicate component owner must never rebind a track"
         );
+        Ok(())
+    }
+    #[test]
+    fn mature_final_track_reuse_rejects_owner_or_value_domain_drift() -> Result<(), String> {
+        for (key, owner, max) in [
+            (TRACKS[0].0, "oteryn:quest.the_annihilator_quest", 2),
+            (TRACKS[1].0, "oteryn:quest.demon_helmet_quest", 2),
+            (TRACKS[2].0, "oteryn:quest.the_secret_library_quest", 7),
+            (TRACKS[3].0, "oteryn:quest.outfit_and_addon_quests", 4),
+        ] {
+            for change in 0..5 {
+                let mut track = QuestTrack {
+                    key: key.into(),
+                    quest: owner.into(),
+                    initial: -1,
+                    min: -1,
+                    max,
+                };
+                match change {
+                    0 => {}
+                    1 => track.quest = QUEST.into(),
+                    2 => track.initial = 0,
+                    3 => track.min = -2,
+                    _ => track.max = max + 1,
+                }
+                let catalogue =
+                    QuestStateCatalogue::new("compatibility-test", vec![track.clone()], Vec::new())
+                        .map_err(|error| format!("fixture: {error:?}"))?;
+                let old_hash = catalogue.definition_hash(owner);
+                let result = extend(catalogue);
+                if change == 0 {
+                    let actual =
+                        result.map_err(|error| format!("exact mature declaration: {error:?}"))?;
+                    assert_eq!(actual.track(key), Some(&track));
+                    assert_eq!(actual.definition_hash(owner), old_hash);
+                } else {
+                    assert!(
+                        matches!(result, Err(QuestCatalogueError::DuplicateKey(ref duplicate)) if duplicate == key)
+                    );
+                }
+            }
+        }
         Ok(())
     }
 }

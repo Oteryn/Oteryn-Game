@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "541326f88407217789b2293cafa192b6f10ab9217958c12838c4d2d95ffaffe4",
+  "input_sha256": "14b20a3f41ed689e8b399351d98d0d8d11c355c3d4158234981b806d50541f77",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2483,7 +2483,6 @@
     "oteryn:creature.scorpion",
     "oteryn:creature.sea_captain",
     "oteryn:creature.sea_serpent",
-    "oteryn:creature.seacrest_serpent",
     "oteryn:creature.serpent_spawn",
     "oteryn:creature.shaburak_demon",
     "oteryn:creature.shaburak_lord",
@@ -2645,7 +2644,6 @@
     "oteryn:creature.zombie"
   ],
   "unsettleable_creatures": [
-    "oteryn:creature.abyssal_calamary",
     "oteryn:creature.acid_blob",
     "oteryn:creature.acolyte_of_darkness",
     "oteryn:creature.acolyte_of_the_cult",
@@ -3243,7 +3241,6 @@
     "oteryn:creature.scorpion",
     "oteryn:creature.sea_captain",
     "oteryn:creature.sea_serpent",
-    "oteryn:creature.seacrest_serpent",
     "oteryn:creature.serpent_spawn",
     "oteryn:creature.shaburak_demon",
     "oteryn:creature.shaburak_lord",

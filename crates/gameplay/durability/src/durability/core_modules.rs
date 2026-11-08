@@ -121,6 +121,7 @@ pub mod native_admission_source;
 pub mod native_map_items;
 pub mod native_map_items_abi;
 pub mod newhaven_travel;
+pub mod npc_marriage;
 pub mod npc_cosmetics;
 pub mod npc_purchase;
 pub mod npc_trade;

@@ -6,6 +6,33 @@ use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
 pub const ICE_FLOWER_SEEDS: u32 = 13_844;
 pub const EMPTY_POT: u32 = 306;
 
+/// Stable identity for a boot-created world-change object. The upper two bits are
+/// distinct from ordinary callback objects and volatile moved/player-grown items.
+/// This is an internal map provenance key, never a client-selected handle.
+pub fn world_change_item_key(appearance: u16, x: u16, y: u16, z: u8) -> Option<u64> {
+    (appearance != 0 && z <= 15).then_some(
+        (3_u64 << 62)
+            | (u64::from(appearance) << 36)
+            | (u64::from(z) << 32)
+            | (u64::from(x) << 16)
+            | u64::from(y),
+    )
+}
+
+/// Decode only a canonical world-change provenance key; ordinary callback IDs fail closed.
+pub fn world_change_item_source(key: u64) -> Option<(u16, u16, u16, u8)> {
+    if (key & !((1_u64 << 52) - 1)) != (3_u64 << 62) {
+        return None;
+    }
+    let appearance = (key >> 36 & 0xffff) as u16;
+    (appearance != 0).then_some((
+        appearance,
+        (key >> 16 & 0xffff) as u16,
+        (key & 0xffff) as u16,
+        (key >> 32 & 15) as u8,
+    ))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DecayStep {
     pub target: u32,
@@ -256,6 +283,23 @@ pub fn preservation_effects(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn worldchg_thawing_stable_source_key_excludes_ordinary_and_noncanonical_ids()
+    -> Result<(), &'static str> {
+        let key = world_change_item_key(13842, 32255, 31079, 5).ok_or("source key")?;
+        assert_eq!(
+            world_change_item_source(key),
+            Some((13842, 32255, 31079, 5))
+        );
+        assert_eq!(world_change_item_key(13842, 32255, 31079, 5), Some(key));
+        assert_eq!(world_change_item_source((1_u64 << 63) | 1), None);
+        assert_eq!(world_change_item_source(1), None);
+        assert_eq!(world_change_item_source(key | (1_u64 << 60)), None);
+        assert_eq!(world_change_item_key(13842, 32255, 31079, 16), None);
+        assert_eq!(world_change_item_key(0, 32255, 31079, 5), None);
+        Ok(())
+    }
 
     #[test]
     fn event_planting_use_and_add_item_have_distinct_source_actions() {

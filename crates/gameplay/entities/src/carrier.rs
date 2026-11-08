@@ -236,6 +236,7 @@ pub use spawn_realization::SpawnDriveReport;
 use spawn_realization::SpawnDriveWindow;
 use spawn_realization::SpawnRealization;
 pub use spawn_realization::SpawnSourceId;
+pub use spawn_realization::WorldSpawnProjection;
 pub use spawn_realization::{ActivationSpawnAlternative, ActivationWeightedSpawnPoint};
 
 /// Authority supplied by a future, independently accepted assignment consumer.
@@ -1116,6 +1117,7 @@ pub struct ScopeRuntimeV1 {
     spawn_schedule: spawn::RespawnSchedule,
     boss_spawns: Vec<BossSpawn>,
     raid_spawns: raid_spawn::RaidSpawnLedger,
+    world_change_cycles: Option<(u64, std::collections::BTreeMap<String, u64>)>,
     daily_boost: Option<oteryn_gameplay_content::content::daily_boost::DailyBoostSelection>,
     echo_wardens: echo_warden::EchoRuntime,
     forge_next_tick_micros: u64,
@@ -1262,6 +1264,7 @@ impl ChannelRuntimeV1 {
             spawn_schedule: spawn::RespawnSchedule::default(),
             boss_spawns: Vec::new(),
             raid_spawns: raid_spawn::RaidSpawnLedger::default(),
+            world_change_cycles: None,
             daily_boost: None,
             echo_wardens: echo_warden::EchoRuntime::default(),
             forge_next_tick_micros: 0,
@@ -1527,7 +1530,8 @@ impl ChannelRuntimeV1 {
                         y: cell.y,
                         floor: cell.floor,
                     };
-                    let occupied = self.carrier.cell_occupied(context, local);
+                    let occupied = !self.spawn_point_enabled(point)?
+                        || self.carrier.cell_occupied(context, local);
                     if !occupied {
                         let actor = match self.carrier.respawn_into_free_cell(
                             &self.continuity,

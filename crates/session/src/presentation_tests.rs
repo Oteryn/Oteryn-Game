@@ -310,8 +310,12 @@ fn srv7_item_effects_negotiate_without_casting_and_reject_other_payload_kinds()
                 };
                 join_peer_with(
                     &mut server,
-                    &[6, 385],
-                    if selected { &[6, 385] } else { &[6] },
+                    &[6, CAPABILITY_ITEM_EFFECTS_V1],
+                    if selected {
+                        &[6, CAPABILITY_ITEM_EFFECTS_V1]
+                    } else {
+                        &[6]
+                    },
                     &[],
                     entity_snapshot(vec![]),
                     &raw,
@@ -346,7 +350,8 @@ fn srv7_item_effects_negotiate_without_casting_and_reject_other_payload_kinds()
                 .await?;
                 Ok::<(), BoxError>(())
             });
-            let mut session = Session::admit(client, admission_with(&[6, 385])?).await?;
+            let mut session =
+                Session::admit(client, admission_with(&[6, CAPABILITY_ITEM_EFFECTS_V1])?).await?;
             assert!(!session.is_selected(CAPABILITY_PRESENTATION_V1));
             let result = session.step(StepDirection::North).await;
             peer.await??;

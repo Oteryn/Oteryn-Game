@@ -54,6 +54,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self
+            .use_shared_callback_handle(actor, command, source, target)
+            .await
+        {
+            return Some(outcome);
+        }
         match self
             .use_golden_anchor(actor, command, &intent, source, target)
             .await

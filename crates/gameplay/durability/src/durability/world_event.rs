@@ -21,6 +21,8 @@ pub(super) fn prepare_catalogue() -> Result<oteryn_gameplay_world_change::rules:
     oteryn_gameplay_world_change::rules::Catalogue::embedded().map_err(|_| DurabilityError::InvalidStoredState)
 }
 
+pub mod changes;
+
 /// Called exclusively inside reset finalization, including unknown-commit replay.
 pub(super) async fn record_reset(
     tx: &mut Transaction<'_, Postgres>,
@@ -44,6 +46,7 @@ pub(super) async fn record_reset(
         return Err(DurabilityError::InvalidStoredState);
     }
     capture_calendar(tx, world, epoch, catalogue).await?;
+    changes::record(tx, world, epoch).await?;
     super::world_event_outcomes::capture_reset(tx, world, epoch).await?;
     Ok(())
 }

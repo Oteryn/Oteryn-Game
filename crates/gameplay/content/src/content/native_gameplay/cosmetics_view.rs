@@ -36,6 +36,7 @@ impl AppearanceContent<String> for NativeCosmeticsView {
                 keys.push(key.into());
             }
         }
+        keys.push(MARRIAGE_GRANT_KEY.into());
         keys.sort();
         keys.dedup();
         keys
@@ -46,6 +47,22 @@ impl AppearanceContent<String> for NativeCosmeticsView {
         provenance: &str,
         target: EarnedCosmetic<'_>,
     ) -> UnlockFact {
+        if grant_key == MARRIAGE_GRANT_KEY {
+            let compatible = provenance == MARRIAGE_PROVENANCE
+                && match target {
+                    EarnedCosmetic::Outfit(key) => {
+                        self.look_type(key, crate::domain::appearance::Sex::Male) == Some(328)
+                            && self.look_type(key, crate::domain::appearance::Sex::Female)
+                                == Some(329)
+                    }
+                    _ => false,
+                };
+            return if compatible {
+                UnlockFact::Compatible
+            } else {
+                UnlockFact::Incompatible
+            };
+        }
         if provenance == DROME_PROVENANCE {
             let compatible = match (grant_key, target) {
                 (DROME_PHANT, EarnedCosmetic::Mount(key)) => self
@@ -145,3 +162,7 @@ impl NativeCosmeticsView {
         }
     }
 }
+
+// Crystal201189f outfits.xml:52,184; Lynda grants both base looks at engagement.
+pub const MARRIAGE_GRANT_KEY: &str = "oteryn:appearance-grant/npc/lynda/newly-wed-base";
+pub const MARRIAGE_PROVENANCE: &str = "crystal-201189f-lynda-marriage-v1";

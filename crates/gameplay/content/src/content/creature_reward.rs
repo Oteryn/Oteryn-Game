@@ -661,7 +661,9 @@ fn corpse_physical_capacity_admitted(corpse: &SectionRef, capacity: u32) -> bool
             && corpse.revision == "definition-r1"
             && matches!(
                 (corpse.key.as_str(), capacity),
-                ("oteryn:item.tibia.i9009", 44) | ("oteryn:item.tibia.i12325", 32)
+                ("oteryn:item.tibia.i9009", 44)
+                    | ("oteryn:item.tibia.i12325", 32)
+                    | ("oteryn:item.tibia.i21893", 36)
             ))
 }
 

@@ -5,6 +5,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATION = ROOT / "apps/game-server/migrations/0993_seasonal_events.sql"
 LEAVES = (
+    ("npc-source-program-policy.sql", "SRV7 NPC475 npc-source-program-policy.sql", False),
+    ("npc-source-quest-policy.sql", "SRV7 NPC475 npc-source-quest-policy.sql", False),
     ("npc-source-quest-routing.sql", "SRV7 SOURCE QUEST ROUTING", True),
     ("summer-instance-corpse-mint.sql", "SRV7 RAKESH SOURCE summer-instance-corpse-mint.sql", False),
 )

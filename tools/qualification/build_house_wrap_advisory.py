@@ -13,7 +13,7 @@ def build(root,donor,capture,artifact):
  sys.path.insert(0,str(root/'tools/content-schema/native-gameplay'))
  import build_source_item_profiles as owner
  rules,rules_raw=load(root/'tools/content-schema/native-gameplay/furniture-rules.json')
- expected={x['path']:x['sha256'] for x in rules['sources']}
+ expected={x['path']:x['sha256'] for x in rules['sources'] if 'reference' not in x}
  xml=(donor/'data/items/items.xml').read_bytes();dat=(donor/'data/items/appearances.dat').read_bytes()
  if sha(xml)!=expected['data/items/items.xml'] or sha(dat)!=expected['data/items/appearances.dat']:raise ValueError('source pin')
  nodes=owner.xml_index(xml);objects=owner.engine_items.load_appearance_objects(dat)

@@ -247,11 +247,13 @@ pub(super) async fn scenario(
         id(101)
     };
     let nonpickupable_owner_case = case == Case::Placed && before_key == "oteryn:item.tibia.i2976";
-    let house_owner = if nonpickupable_owner_case {
-        id(41)
-    } else {
-        historical_owner
-    };
+    let artist_wrap_owner_case =
+        case == Case::ArtistEasel && std::env::var_os("OTERYN_SRV7_ARTIST_WRAP_CAPTURE").is_some();
+    // Source Wrap requires actual OWNER/SUBOWNER. Establish property ownership
+    // in the original historical fixture before admission or item gameplay;
+    // ordinary Artist rotation and all other guest journeys remain unchanged.
+    let owner_case = nonpickupable_owner_case || artist_wrap_owner_case;
+    let house_owner = if owner_case { id(41) } else { historical_owner };
     // Historical fixture only: a distinct owner Character, then a real guest ACL
     // entry. The production access function and all write guards remain enabled.
     let mut tx = h.pool.begin().await?;
@@ -273,7 +275,7 @@ pub(super) async fn scenario(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    if !nonpickupable_owner_case {
+    if !owner_case {
         sqlx::query("INSERT INTO game_house_acl_entries(world_id,house_key,list_key,character_id) VALUES(encode($1,'hex')::uuid,$2,'guest',encode($3,'hex')::uuid)")
         .bind(id(42).as_slice()).bind(house_key).bind(id(41).as_slice()).execute(&mut *tx).await?;
     }
@@ -289,14 +291,7 @@ pub(super) async fn scenario(
     .bind(id(41).as_slice())
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(
-        role,
-        if nonpickupable_owner_case {
-            "OWNER"
-        } else {
-            "GUEST"
-        }
-    );
+    assert_eq!(role, if owner_case { "OWNER" } else { "GUEST" });
     sqlx::query("INSERT INTO game_control_house_scope_grants SELECT session_user,encode($1,'hex')::uuid,$2,1")
         .bind(id(42).as_slice()).bind(house_key).execute(&h.pool).await?;
     h.root

@@ -1,41 +1,41 @@
 {
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
-    "Ability": 7392,
-    "Behavior": 3145,
-    "Creature": 1863,
-    "Effect": 5797,
+    "Ability": 7396,
+    "Behavior": 3147,
+    "Creature": 1864,
+    "Effect": 5800,
     "Encounter": 108,
-    "Formula": 6126,
+    "Formula": 6129,
     "Loot": 40,
-    "Presentation": 3145
+    "Presentation": 3147
   },
   "editor_entry_counts": {
     "Item": 165,
     "Mount": 252
   },
   "family_counts": {
-    "Ability": 7392,
-    "Behavior": 3145,
+    "Ability": 7396,
+    "Behavior": 3147,
     "Charm": 25,
-    "Creature": 1863,
-    "Dialogue": 836,
+    "Creature": 1864,
+    "Dialogue": 837,
     "Document": 1609,
-    "Effect": 5797,
+    "Effect": 5800,
     "Encounter": 108,
     "Encounter.Raid": 239,
-    "Formula": 6126,
+    "Formula": 6129,
     "Item": 34111,
-    "Loot": 1290,
+    "Loot": 1291,
     "Mount": 252,
-    "NPC": 1282,
-    "Presentation": 3145,
+    "NPC": 1283,
+    "Presentation": 3147,
     "Proficiency": 443,
     "Quest": 352,
     "RewardClaim": 336,
-    "Service.Bank": 1,
-    "Service.Blessing": 4,
-    "Service.Promotion": 4,
+    "Service.Bank": 2,
+    "Service.Blessing": 10,
+    "Service.Promotion": 7,
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1,
@@ -47,11 +47,11 @@
     "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "64dbc962d8e20470c6441aa04b11c21fbbd74a38",
+    "declarations": "c9ff91f8c1ac67efd7e4a7e14cd9d5ddd66a1333",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "ff16932786c5189e02e11b08456f09f87eaa6565",
-    "reference": "45d4938e30c6b19bd9e29e6b9f2aa387596524bd",
-    "sources": "71e382c6864316e918f77fda32002224b0be1806"
+    "imports": "bf869e44513d9e67addbbdf568388d346d8cbfa1",
+    "reference": "834f8789cbf2def0fcef1ddd46643b34ece6f9f7",
+    "sources": "87508496ead69589896baa1147e6ffaa29c79410"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -89,11 +89,11 @@
   },
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
-    "Creature": 1863,
+    "Creature": 1864,
     "Encounter": 108,
     "Item": 476,
     "Mount": 252,
-    "NPC": 2747
+    "NPC": 2749
   },
   "spell_import": {
     "collections": {
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "26b4e4ff48ce56ff6c32e72ea8ac1f8914632f68b2885f168f329a2cfb0a85f7"
+          "sha256": "d771566d2ab94aeaa420a23ad5d37b664de19b8a086d77fc9bdec7b586ab7ac1"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 5842,
+          "record_count": 5882,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "2582100ffe9ccf99d2730d05c3c24f97a90be1e845e71144a98725eac01757b6"
+          "sha256": "b667310d9a6578fc0775f9895c050e556e2d7a3a0f7a0619912767380d55af22"
         },
         {
           "creates_canonical_identities": false,

@@ -13,7 +13,7 @@
     },
     {
       "storage": "Storage.DreamOutfit + 1",
-      "key": "oteryn:quest-progress/dream_outfit_plus_1"
+      "key": "oteryn:quest-progress/dream_outfit_1"
     },
     {
       "storage": "Storage.OutfitQuest.Ref",
@@ -49,7 +49,7 @@
     },
     {
       "storage": "Storage.WayfarerOutfit + 1",
-      "key": "oteryn:quest-progress/wayfarer_outfit_plus_1"
+      "key": "oteryn:quest-progress/wayfarer_outfit_1"
     }
   ]
 }

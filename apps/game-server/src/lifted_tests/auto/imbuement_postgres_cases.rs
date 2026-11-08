@@ -276,6 +276,8 @@ fn imbuement_postgres_storage_bounds_bindings_and_restart() -> TestResult {
                         &harness.node,
                         fence()?,
                         NpcTradeRequest {
+                            fluid_subtype: None,
+        full_charges: None,
                             cause: NpcTradeCause {
                                 npc_key: "fixture:npc.trader".into(),
                                 catalogue_revision: 1,

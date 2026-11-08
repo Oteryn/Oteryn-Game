@@ -10,17 +10,17 @@
     {
       "storage": "Storage.DreamOutfit",
       "key": "oteryn:quest-progress/dream_outfit",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "quest": "oteryn:quest.outfit_and_addon_quests"
     },
     {
       "storage": "Storage.DreamOutfit + 1",
-      "key": "oteryn:quest-progress/dream_outfit_plus_1",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "key": "oteryn:quest-progress/dream_outfit_1",
+      "quest": "oteryn:quest.outfit_and_addon_quests"
     },
     {
       "storage": "Storage.Navigator",
       "key": "oteryn:quest-progress/navigator",
-      "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+      "quest": "oteryn:quest.outfit_and_addon_quests"
     },
     {
       "storage": "Storage.OutfitQuest.DefaultStart",
@@ -35,7 +35,7 @@
     {
       "storage": "Storage.OutfitQuest.Ref",
       "key": "oteryn:quest-progress/outfit_quest/ref",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "quest": "oteryn:quest.outfit_and_addon_quests"
     },
     {
       "storage": "Storage.OutfitQuest.RoyalCostumeOutfit",
@@ -80,7 +80,7 @@
     {
       "storage": "Storage.Quest.U10_50.OramondQuest.VotingPoints",
       "key": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
-      "quest": "oteryn:quest.outfit_and_addon_quests"
+      "quest": "oteryn:quest.oramond_quest"
     },
     {
       "storage": "Storage.Quest.U11_02.FestiveOutfits.Addon1",
@@ -100,12 +100,12 @@
     {
       "storage": "Storage.Quest.U11_80.BattleMageOutfits.Addon1",
       "key": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "quest": "oteryn:quest.battle_mage_outfits_quest"
     },
     {
       "storage": "Storage.Quest.U11_80.BattleMageOutfits.Addon2",
       "key": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "quest": "oteryn:quest.battle_mage_outfits_quest"
     },
     {
       "storage": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.Questline",
@@ -125,7 +125,7 @@
     {
       "storage": "Storage.Quest.U11_80.TheSecretLibrary.LibraryPermission",
       "key": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
-      "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+      "quest": "oteryn:quest.the_secret_library_quest"
     },
     {
       "storage": "Storage.Quest.U11_80.TheSecretLibrary.LiquidDeath.Questline",
@@ -175,12 +175,12 @@
     {
       "storage": "Storage.Quest.U6_4.DemonHelmet.Rewards.DemonHelmet",
       "key": "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet",
-      "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+      "quest": "oteryn:quest.demon_helmet_quest"
     },
     {
       "storage": "Storage.Quest.U7_24.TheAnnihilator.Reward",
       "key": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
-      "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+      "quest": "oteryn:quest.the_annihilator_quest"
     },
     {
       "storage": "Storage.Quest.U7_6.ExplorerSociety.TheOrcPowder",
@@ -210,7 +210,7 @@
     {
       "storage": "Storage.Quest.U7_8.BeggarOutfits.BeggarFirstAddonDoor",
       "key": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "quest": "oteryn:quest.outfit_and_addon_quests"
     },
     {
       "storage": "Storage.Quest.U7_8.BeggarOutfits.BeggarOutfit",
@@ -270,7 +270,7 @@
     {
       "storage": "Storage.Quest.U7_8.HunterOutfits.Hunter.AddonGlove",
       "key": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "quest": "oteryn:quest.outfit_and_addon_quests"
     },
     {
       "storage": "Storage.Quest.U7_8.HunterOutfits.HunterHatAddon",
@@ -280,7 +280,7 @@
     {
       "storage": "Storage.Quest.U7_8.KnightOutfits.AddonHelmet",
       "key": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "quest": "oteryn:quest.outfit_and_addon_quests"
     },
     {
       "storage": "Storage.Quest.U7_8.KnightOutfits.AddonHelmetTimer",
@@ -305,7 +305,7 @@
     {
       "storage": "Storage.Quest.U7_8.MageAndSummonerOutfits.AddonHatCloak",
       "key": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "quest": "oteryn:quest.outfit_and_addon_quests"
     },
     {
       "storage": "Storage.Quest.U7_8.MageAndSummonerOutfits.AddonWand",
@@ -540,17 +540,17 @@
     {
       "storage": "Storage.Quest.U8_4.InServiceOfYalahar.SideDecision",
       "key": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
-      "quest": "oteryn:quest.outfit_and_addon_quests"
+      "quest": "oteryn:quest.in_service_of_yalahar_quest"
     },
     {
       "storage": "Storage.WayfarerOutfit",
       "key": "oteryn:quest-progress/wayfarer_outfit",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "quest": "oteryn:quest.wayfarer_outfits_quest"
     },
     {
       "storage": "Storage.WayfarerOutfit + 1",
-      "key": "oteryn:quest-progress/wayfarer_outfit_plus_1",
-      "quest": "oteryn:quest.npc_cosmetic_acquisition"
+      "key": "oteryn:quest-progress/wayfarer_outfit_1",
+      "quest": "oteryn:quest.wayfarer_outfits_quest"
     }
   ],
   "items": [

@@ -8,7 +8,13 @@ if not DONOR_GIT:raise SystemExit('Set OTERYN_CRYSTAL_DONOR_GIT to the retained 
 sys.path.insert(0,str(ROOT/'tools/content-schema/quest-authoring'));import lua_tables
 raw=IN.read_bytes();source=json.loads(raw);assert source['schema']=='OTERYN_NPC_COSMETIC_TRANSITIONS/v1' and source['revision']==SHA
 cosmetics=json.loads((ROOT/'content/cosmetics/outfits/authoring.json').read_bytes())['document']
+# Retain the admitted reference identity when an additional native alias has
+# the same source look. Authoring-row order must not rebind existing grants.
 looks={r[s]['id']:{'look':r[s]['id'],'sex':s,'outfit_key':r['key'],'addon_count':r['addon_count']} for r in cosmetics['outfits'] for s in ['male','female']}
+for row in cosmetics['outfits']:
+ if row['key'].startswith('oteryn:content.outfit.'):
+  for sex in ['male','female']:
+   looks[row[sex]['id']]={'look':row[sex]['id'],'sex':sex,'outfit_key':row['key'],'addon_count':row['addon_count']}
 known={t['key']:{'quest':q['quest'],'key':t['key']} for q in json.loads((ROOT/'content/quests/missions/quest-state.json').read_bytes())['quests'] for t in q['tracks']}
 # The source-qualified Rust quest overlays use these existing canonical declarations too.
 for path in (ROOT/'content/quests').glob('*.json'):
@@ -17,14 +23,23 @@ for path in (ROOT/'content/quests').glob('*.json'):
  if not isinstance(d,dict):continue
  for t in d.get('tracks',[]) if isinstance(d.get('tracks'),list) else []:
   if isinstance(t,dict) and isinstance(t.get('key'),str):known.setdefault(t['key'],{'quest':t.get('quest',d.get('quest','oteryn:quest.outfit_and_addon_quests')),'key':t['key']})
+# Match reward_callbacks::extend: callback storage creates native declarations too.
+# These are authoritative existing owners, not new source acquisition components.
+reward_document=json.loads((ROOT/'content/quests/shared-reward-callbacks.json').read_bytes())
+for callback in reward_document['callbacks']:
+ for state in callback['storage']:
+  key=state['track'];owner=callback['quest']
+  if key in known and known[key]['quest']!=owner:
+   raise ValueError('foreign mature reward track '+key)
+  known.setdefault(key,{'key':key,'quest':owner})
 # Explicit new acquisition component: never append tracks to a preexisting Quest definition.
 component=json.loads((ROOT/'tools/content-schema/cosmetics-authoring/source-acquisition-components.json').read_bytes())
 if component['schema']!='OTERYN_NPC_ACQUISITION_COMPONENTS/v1' or component['source_revision']!=SHA:raise ValueError('source acquisition component identity')
 component_bindings={row['storage']:row['key'] for row in component['bindings']}
 if len(component_bindings)!=12 or len(component['bindings'])!=12:raise ValueError('source acquisition component coverage')
 if any(value['quest']==component['quest'] for value in known.values()):raise ValueError('source acquisition component collides with existing Quest owner')
-# Four foreign final flags have no preexisting native declaration. Their
-# explicit acquisition owner does not append to an existing Quest definition.
+# Final flags use their mature native declaration when present; only missing
+# declarations belong to the explicit acquisition component.
 final_component=json.loads((ROOT/'tools/content-schema/cosmetics-authoring/source-final-acquisition-components.json').read_bytes())
 if final_component['schema']!='OTERYN_NPC_FINAL_ACQUISITION_COMPONENT/v1' or final_component['source_revision']!=SHA:
  raise ValueError('final acquisition component identity')
@@ -35,6 +50,16 @@ if any(value['quest']==final_component['quest'] for value in known.values()):
  raise ValueError('final acquisition component collides with existing Quest owner')
 def snake(s):return re.sub(r'([a-z0-9])([A-Z])',r'\1_\2',s).lower()
 def storage_key(s,npc):
+ # Closed aliases of the exact donor arithmetic expressions already declared
+ # by the mature reward owner. Never infer arbitrary numeric-storage aliases.
+ arithmetic_aliases={
+  'Storage.DreamOutfit + 1':'oteryn:quest-progress/dream_outfit_1',
+  'Storage.WayfarerOutfit + 1':'oteryn:quest-progress/wayfarer_outfit_1',
+ }
+ if s in arithmetic_aliases:
+  key=arithmetic_aliases[s]
+  if key not in known:raise ValueError('missing mature arithmetic storage declaration '+s)
+  return key
  if s.isdigit():return f'oteryn:quest-progress/npc-cosmetic/{npc}/storage_{s}'
  tail='/'.join(snake(p) for p in s.removeprefix('Storage.').split('.'));tail=re.sub(r'\s*\+\s*(\d+)',r'_plus_\1',tail)
  choices=[f'oteryn:quest-progress/{tail}',f'oteryn:quest-progress/crystalserver/{tail}']
@@ -86,11 +111,11 @@ for n in source['npcs']:
  for symbol in symbols:
   key=storage_key(symbol,name);binding={'storage':symbol,'key':key,'quest':known.get(key,{}).get('quest','oteryn:quest.outfit_and_addon_quests')}
   if symbol in component_bindings:
-   if key!=component_bindings[symbol] or key in known:raise ValueError('source acquisition component would rebind an existing track')
-   binding['quest']=component['quest']
+   if key!=component_bindings[symbol]:raise ValueError('source acquisition component key drift')
+   if key not in known:binding['quest']=component['quest']
   if symbol in final_bindings:
-   if key!=final_bindings[symbol] or key in known:raise ValueError('final acquisition component would rebind an existing track')
-   binding['quest']=final_component['quest']
+   if key!=final_bindings[symbol]:raise ValueError('final acquisition component key drift')
+   if key not in known:binding['quest']=final_component['quest']
   if symbol in bindings and bindings[symbol]!=binding:raise ValueError('ambiguous symbolic binding '+symbol)
   bindings[symbol]=binding
  node={'npc':n['npc'],'source':n['source'],'greeting':source_greeting(n,code.decode()),'farewell':literal_message(code.decode(),'FAREWELL','Good bye, |PLAYERNAME|.'),'owned_tracks':sorted(owned),'transitions':[]}

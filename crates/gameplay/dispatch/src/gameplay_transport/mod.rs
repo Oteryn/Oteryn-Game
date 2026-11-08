@@ -85,6 +85,7 @@ mod guild_bank;
 mod guild_chat;
 mod guild_war;
 mod highscores;
+mod hive_shared_kills;
 mod horse_station;
 mod house_destroy;
 mod house_furnishing;

@@ -15,7 +15,7 @@
     },
     {
       "path": "content/cosmetics/npc-acquisitions.json",
-      "sha256": "52adaa68d627a923eefc80bc60b014f9a4e43578a9b9926c6a506def10b3caa7"
+      "sha256": "8d73bf72988971273753b4000a470031b994b29aeb5b7996622a817440f1c3af"
     },
     {
       "path": "tools/content-schema/cosmetics-authoring/srv7-source-program-grants.json",
@@ -27,7 +27,7 @@
     },
     {
       "path": "crates/gameplay/content/src/content/native_gameplay/cosmetics_view.rs",
-      "sha256": "068b725ec267c9c9d94542b23303489940ce8f90401aa6a68cf37d9507eb30b3"
+      "sha256": "66503d2d9ac0d4ae97b2b0fa876221f0a0f0c7b1d979026ff4410ea43337cebd"
     },
     {
       "path": "crates/gameplay/durability/src/durability/tibiadrome.rs",

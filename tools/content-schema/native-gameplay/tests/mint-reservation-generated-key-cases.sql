@@ -58,6 +58,23 @@ BEGIN
   END;
  END LOOP;
  IF attempts=0 OR rejects<>attempts THEN RAISE EXCEPTION 'all writable immutable columns require refusal';END IF;
+ -- Each is a work-only update from1, so +2 remains within the registered
+ -- maximum3 and cannot be rejected merely by a range CHECK instead of guard.
+ FOREACH changed IN ARRAY ARRAY[
+  'UPDATE mint_guard_actual_row_probe SET work_units_used=work_units_used+2',
+  'UPDATE mint_guard_actual_row_probe SET work_units_used=work_units_used-1',
+  'UPDATE mint_guard_actual_row_probe SET work_units_used=work_units_used'
+ ] LOOP
+  BEGIN
+   EXECUTE changed;
+   RAISE EXCEPTION 'reservation accepted a non-successor work-unit charge';
+  EXCEPTION WHEN check_violation THEN
+   GET STACKED DIAGNOSTICS failure=MESSAGE_TEXT;
+   IF failure<>'DUR-03 item MINT reservation is immutable except its work-unit charge' THEN
+    RAISE EXCEPTION 'work-only transition refused by a different constraint: %',failure;
+   END IF;
+  END;
+ END LOOP;
  BEGIN
   UPDATE mint_guard_actual_row_probe SET death_scope_key='\x01';
   RAISE EXCEPTION 'generated scope key directly writable';
@@ -130,6 +147,19 @@ BEGIN
  END LOOP;
  IF attempts=0 OR rejects<>attempts THEN RAISE EXCEPTION 'all writable receipt input columns require refusal';END IF;
 END $$;
+DO $$
+DECLARE failure TEXT;
+BEGIN
+ BEGIN
+  UPDATE mint_receipt_actual_row_probe SET materialized_at=materialized_at;
+  RAISE EXCEPTION 'receipt accepted an unmaterialized NULL mark no-op';
+ EXCEPTION WHEN check_violation THEN
+  GET STACKED DIAGNOSTICS failure=MESSAGE_TEXT;
+  IF failure<>'DUR-03 item MINT receipt is immutable except its one-way materialized_at mark' THEN
+   RAISE EXCEPTION 'NULL mark no-op refused by a different constraint: %',failure;
+  END IF;
+ END;
+END $$;
 UPDATE mint_receipt_actual_row_probe p SET materialized_at=e.materialized_at
  FROM mint_receipt_expected e WHERE p.death_scope_key=e.death_scope_key;
 DO $$
@@ -139,6 +169,7 @@ BEGIN
      WHERE p.materialized_at=e.materialized_at)<>2 THEN
   RAISE EXCEPTION 'actual Channel and Instance clones must retain computed keys and accept one mark';END IF;
  FOREACH statement IN ARRAY ARRAY[
+  'UPDATE mint_receipt_actual_row_probe SET materialized_at=materialized_at',
   'UPDATE mint_receipt_actual_row_probe SET materialized_at=NULL',
   'UPDATE mint_receipt_actual_row_probe SET materialized_at=materialized_at+1',
   'DELETE FROM mint_receipt_actual_row_probe'

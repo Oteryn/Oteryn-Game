@@ -9,7 +9,7 @@
           "binding": {
             "storage": "Storage.Quest.U7_24.TheAnnihilator.Reward",
             "key": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
-            "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+            "quest": "oteryn:quest.the_annihilator_quest"
           },
           "value": {
             "op": "literal",
@@ -28,7 +28,7 @@
           "binding": {
             "storage": "Storage.Quest.U6_4.DemonHelmet.Rewards.DemonHelmet",
             "key": "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet",
-            "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+            "quest": "oteryn:quest.demon_helmet_quest"
           },
           "value": {
             "op": "literal",
@@ -120,7 +120,7 @@
           "binding": {
             "storage": "Storage.Quest.U11_80.TheSecretLibrary.LibraryPermission",
             "key": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
-            "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+            "quest": "oteryn:quest.the_secret_library_quest"
           },
           "value": {
             "op": "literal",
@@ -1314,7 +1314,7 @@
           "binding": {
             "storage": "Storage.Navigator",
             "key": "oteryn:quest-progress/navigator",
-            "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+            "quest": "oteryn:quest.outfit_and_addon_quests"
           },
           "value": {
             "op": "literal",

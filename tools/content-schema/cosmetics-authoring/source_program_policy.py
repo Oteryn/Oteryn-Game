@@ -4,7 +4,26 @@ root=Path(__file__).resolve().parents[3];base=root/'tools/content-schema/native-
 def q(s):return "'"+s.replace("'","''")+"'"
 def j(v):return q(json.dumps(v,separators=(',',':')))+'::jsonb'
 def arr(v):return 'ARRAY['+','.join(q(x) for x in v)+']::text[]'
-quest_bindings=json.loads((base/'npc-quest-endpoint-bindings.json').read_bytes())['rows']
+endpoint_path=base/'npc-quest-endpoint-bindings.json'
+endpoint_document=json.loads(endpoint_path.read_bytes())
+quest_bindings=endpoint_document['rows']
+# Retain the reviewed finite endpoints/effects, refreshing only their canonical
+# owner after the source linker has reconciled mature Quest declarations.
+transitions={t['source_key']:(npc,t) for npc in p['npcs'] for t in npc['transitions']}
+owner_updates=0
+for row in quest_bindings:
+ npc,transition=transitions[row['source_key']]
+ if row['npc']!=npc['npc']:raise ValueError('foreign endpoint NPC drift')
+ foreign_effects={e['storage']:e['value'] for e in transition['effects']
+                  if e['kind']=='set_track' and e['storage'] not in npc['owned_tracks']}
+ if set(foreign_effects)!={m['storage'] for m in row['matches']}:raise ValueError('foreign endpoint storage drift')
+ for match in row['matches']:
+  current=bindings[match['storage']]
+  if match['value']!=foreign_effects[match['storage']] or any(match['binding'][k]!=current[k] for k in ['storage','key']):
+   raise ValueError('foreign endpoint identity/effect drift')
+  if match['binding']['quest']!=current['quest']:
+   match['binding']['quest']=current['quest'];owner_updates+=1
+if owner_updates:endpoint_path.write_text(json.dumps(endpoint_document,indent=2)+'\n')
 quest_sources={row['source_key'] for row in quest_bindings}
 if len(quest_sources)!=23:raise ValueError('finite Quest source closure')
 quest_rows=[]

@@ -129,16 +129,16 @@ if quest_families:
 reference = json.loads((ROOT / 'content/world/definitions/reference.json').read_text())
 creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 'Effect', 'Formula']
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
-assert family_counts['Creature'] == 1863
+assert family_counts['Creature'] == 1864
 assert lock["family_counts"] == {
     "Item": 34111, "Mount": 252,  # E06 minted 68 client-only Crystal market Items.
     **family_counts, "Document": 1609,
     "Encounter.Raid": json.loads((ROOT / "content/encounters/raids/index.json").read_text())["record_count"],
-    "NPC": 1283, "Dialogue": 837, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4, "Encounter": 108, "Charm": 25,
+    "NPC": 1283, "Dialogue": 837, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10, "Encounter": 108, "Charm": 25,
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 129,
     **{family: value["records"] for family, value in quest_families.items()},
 }
-assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1863, "Encounter": 108, "NPC": 2747}
+assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1864, "Encounter": 108, "NPC": 2749}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -164,9 +164,9 @@ assert manifest["families"]["NPC"] == {"records": 1283, "index": "content/npcs/d
 assert manifest["families"]["Dialogue"] == {"records": 837, "index": "content/dialogues/definitions/index.json"}
 assert manifest["families"]["Service.Trade"] == {"records": 324, "index": "content/services/trade/index.json"}
 assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "content/services/travel/index.json"}
-assert manifest["families"]["Service.Bank"] == {"records": 1, "index": "content/services/bank/index.json"}
-assert manifest["families"]["Service.Promotion"] == {"records": 4, "index": "content/services/promotion/index.json"}
-assert manifest["families"]["Service.Blessing"] == {"records": 4, "index": "content/services/blessings/index.json"}
+assert manifest["families"]["Service.Bank"] == {"records": 2, "index": "content/services/bank/index.json"}
+assert manifest["families"]["Service.Promotion"] == {"records": 7, "index": "content/services/promotion/index.json"}
+assert manifest["families"]["Service.Blessing"] == {"records": 10, "index": "content/services/blessings/index.json"}
 assert any(path.startswith("content/services/bank/bank-") for path in paths)
 assert manifest["families"]["Charm"] == {"records": 25, "index": "content/charms/index.json"}
 assert "Charm" in project["migrated_families"] and "Charm" not in project["next_population_families"]
@@ -248,12 +248,19 @@ def test_closed_bank_admission():
     mutations = []
     # Each operator changes one admitted data invariant, leaving all unrelated facts intact.
     for operation in ("missing_flag", "false_flag", "wrong_provenance", "extra_offer", "duplicate_bank",
-                      "missing_consumer", "other_consumer", "changed_farewell", "generated_greeting"):
+                      "missing_consumer", "other_consumer", "changed_farewell", "generated_greeting",
+                      "missing_s10_consumer", "other_s10_consumer", "duplicate_s10_reference"):
         bad = copy.deepcopy(declarations)
         service = next(row for row in bad["records"] if row.get("kind") == "Service" and row.get("bank") is True)
         npc = next(row for row in bad["records"] if row.get("kind") == "NPC" and row["identity"]["key"] == "oteryn:npc.paulie")
         dialogue = next(row for row in bad["records"] if row.get("kind") == "Dialogue" and row["identity"]["key"] == "oteryn:dialogue.npc.paulie")
-        if operation == "missing_flag": service.pop("bank")
+        if operation in ("missing_s10_consumer", "duplicate_s10_reference", "other_s10_consumer"):
+            standard = {"family": "Service", "key": "oteryn:service.bank.standard", "revision": "definition-r1"}
+            target = next(row for row in bad["records"] if row.get("kind") == "NPC"
+                          and row["identity"]["key"] == ("oteryn:npc.norf" if operation == "other_s10_consumer" else "oteryn:npc.atur"))
+            if operation == "missing_s10_consumer": target["services"].remove(standard)
+            else: target["services"].append(standard)
+        elif operation == "missing_flag": service.pop("bank")
         elif operation == "false_flag": service["bank"] = False
         elif operation == "wrong_provenance": service["fields"][0]["value"]["value"] = "profession=banker"
         elif operation == "extra_offer": service["offers"] = []
@@ -272,7 +279,7 @@ def test_closed_bank_admission():
             pass
         else:
             raise AssertionError(f"unqualified Bank admission accepted: {operation}")
-    print("ok test_closed_bank_admission positive +9 closed negatives")
+    print("ok test_closed_bank_admission positive +12 closed negatives")
 
 
 test_closed_bank_admission()

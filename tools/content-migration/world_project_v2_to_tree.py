@@ -534,7 +534,7 @@ def main() -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 389:
+    if len(service_records) != 399:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}
@@ -693,10 +693,20 @@ def main() -> int:
     # native provider with its generated Prey rules and value table.
     import bestiary_source_roster
     bestiary_source_roster.regenerate(ROOT)
+    # Qualify source additions against their fresh native providers before the
+    # model reads them. Its loot decoder requires a binding for every pinned
+    # Creature, including seasonal observations excluded from Prey selection.
+    from register_spell_families import outputs as spell_outputs
+    bootstrap = spell_outputs(ROOT, include_prey=False)
+    for relative in ('content/items/definitions/spell-native-profiles.json',
+                     'content/creatures/definitions/spell-native-profiles.json'):
+        (ROOT / relative).write_bytes(bootstrap[relative])
+    subprocess.run([sys.executable,
+                    str(ROOT / 'tools/content-schema/native-gameplay/build_full_spell_artifact.py'),
+                    '--refresh-loot-tables'], cwd=ROOT, check=True)
     import prey_difficulty
     prey_difficulty.regenerate(ROOT)
     # Preserve independently authored spell collections on every regeneration.
-    from register_spell_families import outputs as spell_outputs
     for relative, data in spell_outputs(ROOT).items():
         destination = ROOT / relative
         destination.parent.mkdir(parents=True, exist_ok=True)

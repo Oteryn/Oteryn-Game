@@ -35,6 +35,11 @@ fn raids_global_postgres_badger_map_runtime_e2e() -> TestResult {
 }
 
 #[test]
+fn worldchg_postgres_stampede_map_runtime_e2e() -> TestResult {
+    run_case("worldchg_stampede_map", "raid:porthope.stampede", 16, false)
+}
+
+#[test]
 fn srv7_halloween_hare_native_map_runtime_e2e() -> TestResult {
     run_case(
         "srv7_halloween_hare_e2e",
@@ -179,6 +184,13 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         assert!(selected.definition.announcements[0].text.contains("Beware"));
     } else if flower {
         assert_eq!(selected.definition.announcements.len(), 4);
+    } else if key.as_str() == "raid:porthope.stampede" {
+        assert_eq!(selected.definition.announcements.len(), 1);
+        assert_eq!(selected.definition.announcements[0].delay_ms, 1_000);
+        assert_eq!(
+            selected.definition.announcements[0].text,
+            "Stampede! The Ape God has stirred up Tiquanda's elephants again!"
+        );
     } else {
         assert!(selected.definition.announcements.is_empty());
     }
@@ -296,6 +308,28 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
     seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
     let now = i64::from(selected.definition.waves.first().ok_or("wave")?.delay_ms);
+    if key.as_str() == "raid:porthope.stampede" {
+        let announcement = harness
+            .root
+            .advance_raid_run(
+                &harness.node,
+                firing,
+                owner.channel_id,
+                generation,
+                selected.definition.clone(),
+                1_000,
+            )
+            .await?
+            .ok_or("Stampede announcement")?;
+        assert!(matches!(
+            announcement.action,
+            CommittedRaidAction::Announcement { .. }
+        ));
+        harness
+            .root
+            .acknowledge_raid_effect(&harness.node, announcement.identity, vec![], 1_000)
+            .await?;
+    }
     let mut wave = harness
         .root
         .advance_raid_run(
