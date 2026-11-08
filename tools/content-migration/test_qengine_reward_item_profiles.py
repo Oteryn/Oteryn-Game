@@ -1,10 +1,27 @@
 import copy
+import json
 import unittest
 
 import qengine_reward_item_profiles as q
 
 
 class NativeFactJoin(unittest.TestCase):
+    def test_m09_flask_matches_source_and_runtime_custody(self):
+        key = 'oteryn:item.tibia.i12785'
+        observed = next(r for r in q.capture()['records']
+                        if r['production_definition']['production_key'] == key)
+        document = json.loads((q.ROOT/q.PROFILE).read_bytes())
+        admitted = next(r for r in document['records']
+                        if r['production_definition']['production_key'] == key)
+        self.assertEqual(admitted['production_definition'], observed['production_definition'])
+        self.assertEqual(admitted['admission'], observed['admission'])
+        self.assertEqual(admitted['semantics']['physical'], observed['semantics']['physical'])
+        self.assertEqual(admitted['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 180})
+        self.assertEqual(admitted['admission']['stack_class'], 'NonStackable')
+        for field in ('charges', 'temporal', 'container'):
+            self.assertEqual(admitted['semantics'][field]['state'], 'NOT_APPLICABLE')
+
     def record(self):
         return dict(production_definition={'production_key': 'item'},
                     production_binding={'exact': True}, admission={'materializable': True},

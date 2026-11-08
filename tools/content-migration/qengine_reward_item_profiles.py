@@ -20,6 +20,8 @@ IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 161
 IDS |= {21291}
 # Retain questpc4's qualified native offerings and source tool through this owner.
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
+# Vascalir's source-authored mission 11 grants this ordinary flask with 3054.
+IDS |= {12785}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -132,3 +134,17 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
     manifest['cosmetics']={'path':cosmetics,
         'sha256':hashlib.sha256(cosmetics_raw).hexdigest()}
     generated[manifest_path]=canonical(manifest)
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true')
+    args = parser.parse_args()
+    expected = json.dumps(capture(), ensure_ascii=False, indent=2)+'\n'
+    path = ROOT/PROOF
+    if args.check:
+        if path.read_text() != expected:
+            raise SystemExit('QENGINE reward source capture is stale')
+    else:
+        path.write_text(expected)
