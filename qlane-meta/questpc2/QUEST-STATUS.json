@@ -444,7 +444,7 @@
       "canonical": "oteryn:quest.forgotten_knowledge_quest",
       "title": "Forgotten Knowledge Quest",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
+      "status": "IN_PROGRESS",
       "blocker": "Lloyd, Lady Tenebris, Dragon King, Time Guardian and Last Lore Keeper admissions and frozen-participant death settlement do not earn imbuing access.",
       "source_lane_checks": [
         {
@@ -462,7 +462,7 @@
           ]
         }
       ],
-      "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
+      "qualification_scope": "Albinius five-heavy-old-tome contribution under development; whole quest remains unqualified.",
       "external_owner_blocker": false
     },
     {
@@ -1760,7 +1760,7 @@
       "zero_test_results_accepted": false
     }
   },
-  "current_batch": "gerimor-assignments-main-c77-green",
+  "current_batch": "albinius-green-source-plus-main3209-compiling-checkpoint",
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
@@ -1796,7 +1796,7 @@
     "BATCH-main-6f-postgres-green-2026-11-08.json",
     "BATCH-henricus-green-2026-11-08.json"
   ],
-  "next_batch": "Albinius five-heavy-old-tome hand-in for owned Forgotten Knowledge, through existing plain item/storage owner. No runtime edits until the green receipt push.",
+  "next_batch": "Finish dispatch unit run, collect all failures together, publish green validation receipt; continue supported owned source mechanics.",
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",
     "records": [
@@ -2210,13 +2210,15 @@
     "unit_and_pg": "pending current merge build; prior pushed receipts remain valid for prior source only"
   },
   "current_validation": {
-    "source_head": "50cf70e7fc483f7b5604814eacaf51d53ea090e2",
-    "post_merge_own_pg": "3/3PASS; realPG180006, Gerimor58.553s, Annihilator61.425s, Elvenbane58.353s",
-    "unit_tests": "quests320/320PASS28.45s; client-assets10/10PASS0.29s; dispatch1613/1613selected unitsPASS676.383s",
-    "clippy": "quests+dispatch+client-assets alltargets/allfeatures-DwarningsPASS",
-    "workspace_all_targets": "PASS3m51s initial merged tree; PASS2m08s final receipt prepush on50cf70e7f",
-    "runtime_source_frozen": "All five checkpoint runtime artifact digests reproduced unchanged.",
-    "fmt": "PASS"
+    "own_postgres": "3/3PASS on180006,48.12/48.16/46.23s",
+    "quest_units": "322/322PASS15.24s",
+    "authorer": "2/2PASS1.022s",
+    "workspace_all_targets": "PASS4m09s after main3209; earlier own-source pass3m13s",
+    "clippy": "Own sourcePASS2m26s; main3209 recheck queued",
+    "fmt": "PASS",
+    "generation_pins_duplicates": "PASS",
+    "dispatch_units": "RUNNING",
+    "latest_main": "3209d3d61 clean Rust-only merge; no runtime content changed"
   },
   "engine_requests": [
     {
@@ -2360,11 +2362,12 @@
       "Hero of Rathleton Quest",
       "The Demon Oak Quest",
       "The Inquisition Quest",
-      "Cults of Tibia Quest"
+      "Cults of Tibia Quest",
+      "Forgotten Knowledge Quest"
     ],
     "done_pushed": 3,
-    "in_progress": 6,
-    "not_started_owned": 20,
+    "in_progress": 7,
+    "not_started_owned": 19,
     "excluded_other_lane": 6,
     "packet_total": 35
   },
@@ -2379,8 +2382,12 @@
       "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "50cf70e7fc483f7b5604814eacaf51d53ea090e2",
-  "prepush_pending_tests": [],
+  "last_pushed_sha": "d1feaafe625281215acc71ed334dce651b706506",
+  "prepush_pending_tests": [
+    "Pre-main3209 dispatch unit selection still running",
+    "Post-main3209 durability focused units queued",
+    "Post-main3209 clippy recheck queued"
+  ],
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",
     "parent_frozen_branch": "claude/happy-davinci-ijz3wy-questpc2",
@@ -2418,5 +2425,19 @@
     "pre_merge_postgres_green_seconds": 45.519532968,
     "post_merge_validation": "GREEN: 3ownPG,320quest+10client-assets+1613dispatch units, changed-crate clippy",
     "slice_status": "QUALIFIED_INITIAL_ASSIGNMENT_SLICE; whole quest remains IN_PROGRESS"
+  },
+  "active_albinius": {
+    "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "source": "data-global/npc/albinius.lua:105-137",
+    "source_sha256": "1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18",
+    "scope": "Initial temple contribution only; portal/rune/shop branches and whole Forgotten Knowledge remain unqualified.",
+    "state": "OWN MECHANIC GREEN; dispatch unit selection running",
+    "fixture_correction": "First three PG cases reached180006 but duplicate existing backpack. Reuse existing fenced mint-and-transfer helper instead; no quest rows seeded.",
+    "proof": "BATCH-albinius-contribution-2026-11-08.json",
+    "postgres_green_seconds": [
+      48.121325993,
+      48.162816023,
+      46.231552174
+    ]
   }
 }

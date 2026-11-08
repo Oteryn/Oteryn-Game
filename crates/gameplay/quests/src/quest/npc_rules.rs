@@ -8,6 +8,7 @@ mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+mod questpc2_albinius_source;
 mod questpc2_gerimor_source;
 mod questpc2_henricus_source;
 mod questpc2_oldrak_source;
@@ -444,12 +445,13 @@ impl NpcRuleCatalog {
                 let mut catalogue = Self::load_embedded()?;
                 let supplemental = Self::from_json_documents(&[include_str!(
                     "../../../../../content/dialogues/quest-rules-supplemental/draconia.json"
-                ), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json")])?;
+                ), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json")])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_oldrak_source::PROGRAM)
+                        || p.document.program_key.as_deref() == Some(questpc2_albinius_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_gerimor_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_henricus_source::PROGRAM)
                         || p.document.program_key.as_deref()

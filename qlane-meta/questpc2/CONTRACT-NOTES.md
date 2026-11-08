@@ -1067,3 +1067,24 @@ requires the current player's name after two yes confirmations and interpolates
 it in two of eight replies before questline1. Native rule input has no such
 value/keyword. Requested the source dialogue capability; no hardcoded player
 name, substring wildcard or premature progress credit was authored.
+
+
+## Albinius temple contribution source contract (2026-11-08)
+
+Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+data-global/npc/albinius.lua:105-137, SHA256
+1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18.
+Five exact heavyoldtomesi23986 are removed before Tomes1. First success retains
+topic1; a subsequentyes reports alreadydonated and resets0. Missing five leaves
+the confirmation open. No ends interaction. Independentifs mean templeyes offers
+and contributes in one message. Tomes info sets topic7 and cancels that pending
+contribution. No realm, boss, rune, portal or shop qualification is claimed.
+
+Decision: use the existing plain-item/storage owner, exact item guards and
+continue_matching source order. Unsupported mixed buy/astral-shaper-rune/five
+portal phrases are excluded from this partial program, so no contribution is
+earned by silently omitting known later shop/rune/portal effects. Source fixtures
+use existing fenced mint/transfer owners to carry individual books; no quest
+progress is SQL-seeded. The first fixture attempt duplicated an already-present
+backpack and is NOT a mechanic RED proof. Coordinate conversion uses explicit
+checked u16/u16/i8 conversion from movement's i32/i32/i16 types.

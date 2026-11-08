@@ -1,0 +1,301 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.questpc2-albinius-tomes",
+  "quest": "oteryn:quest.forgotten_knowledge_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:116-124"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/shapers",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "shapers"
+      ],
+      "guards": [],
+      "reply": [
+        "The {Shapers} were an advanced civilisation, well versed in art, construction, language and exploration of our world in their time. ...",
+        "The foundations of this {temple} are testament to their genius and advanced understanding of complex problems. They were master craftsmen and excelled in magic."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:105-110"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "holy portal",
+        "energy portal",
+        "earth portal",
+        "death portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/temple",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "temple"
+      ],
+      "guards": [],
+      "reply": [
+        "The temple has been restored to its former glory, yet we strife to live and praise in the {Shaper} ways. Do you still need me to take some old {tomes} from you my child?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:112-115"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "holy portal",
+        "energy portal",
+        "earth portal",
+        "death portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/already",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You already offered enough tomes for us to study and rebuild this temple. Thank you, my child."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:116-120"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "holy portal",
+        "energy portal",
+        "earth portal",
+        "death portal"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/contribute",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i23986",
+          "count": 5,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Thank you very much for your contribution, child. Your first step in the ways of the {Shapers} has been taken."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i23986",
+          "count": 5,
+          "optional": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:120-124"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "holy portal",
+        "energy portal",
+        "earth portal",
+        "death portal"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/missing",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i23986",
+          "count": 5,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "You need 5 heavy old tome."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:120-128"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "holy portal",
+        "energy portal",
+        "earth portal",
+        "death portal"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/decline",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "I understand. Return to me if you change your mind, my child."
+      ],
+      "effects": [
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:129-132"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "holy portal",
+        "energy portal",
+        "earth portal",
+        "death portal",
+        "yes"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/tomes",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "tomes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "If you have some old shaper tomes I would {buy} them."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:134-137"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "holy portal",
+        "energy portal",
+        "earth portal",
+        "death portal"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/albinius.lua",
+      "sha256": "1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    }
+  ]
+}

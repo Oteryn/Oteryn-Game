@@ -117,6 +117,9 @@ fn scenario_case(
                 | "questpc2-oldrak-npc"
                 | "questpc2-henricus-start"
                 | "questpc2-gerimor-assignments"
+                | "questpc2-albinius-four-tomes"
+                | "questpc2-albinius-five-tomes"
+                | "questpc2-albinius-combined"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
@@ -950,6 +953,8 @@ fn scenario_case(
             .await?;
         } else if name == "questpc2-hero-pipes" {
             super::super::questpc2_hero_rathleton::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name.starts_with("questpc2-albinius-") {
+            super::super::questpc2_albinius::exercise(&mut owner, &mut admitted, &h, &authority, name).await?;
         } else if name == "questpc2-gerimor-assignments" {
             super::super::questpc2_gerimor::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "questpc2-henricus-start" {
