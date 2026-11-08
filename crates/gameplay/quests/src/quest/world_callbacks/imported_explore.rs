@@ -78,34 +78,34 @@ mod tests {
     use super::super::*;
 
     #[test]
-    fn imported_explore_counter_and_visit_start_at_zero() {
-        let callbacks = load().expect("production callback catalogue");
+    fn imported_explore_counter_and_visit_start_at_zero() -> Result<(), String> {
+        let callbacks = load()?;
         let callback = callbacks
             .iter()
             .find(|c| c.key == "oteryn:quest-callback/m01b/longsword/s1/entry")
-            .expect("bound Longsword entry");
+            .ok_or("bound Longsword entry")?;
         let catalogue = extend_callbacks(
-            QuestStateCatalogue::new("content-1", vec![], vec![]).unwrap(),
+            QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(|e| format!("{e:?}"))?,
             std::slice::from_ref(callback),
-        )
-        .unwrap();
+        )?;
         for storage in &callback.storage {
-            let track = catalogue.track(&storage.track).expect("explore track");
+            let track = catalogue.track(&storage.track).ok_or("explore track")?;
             assert_eq!(
                 (track.initial, track.min, track.max),
                 (0, 0, 1),
                 "imported stage counters must not inherit the source absent=-1 sentinel"
             );
         }
+        Ok(())
     }
 
     #[test]
-    fn chosen_explore_profile_cannot_admit_use_or_foreign_tracks() {
-        let callbacks = load().expect("production callback catalogue");
+    fn chosen_explore_profile_cannot_admit_use_or_foreign_tracks() -> Result<(), String> {
+        let callbacks = load()?;
         let original = callbacks
             .iter()
             .find(|c| c.key == "oteryn:quest-callback/m01b/longsword/s1/entry")
-            .unwrap();
+            .ok_or("bound Longsword entry")?;
         assert!(super::admitted(original));
         let mut callback = original.clone();
         callback.trigger = Trigger::Use;
@@ -118,13 +118,21 @@ mod tests {
         assert!(!super::admitted(&callback));
         callback = original.clone();
         callback.experience = Some(1);
-        callback.sources.push("crystal:201189f871d23597b82caf88fd611454a2ddefb8:fixture".into());
-        assert!(parse(&serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()).is_err());
+        callback
+            .sources
+            .push("crystal:201189f871d23597b82caf88fd611454a2ddefb8:fixture".into());
+        assert!(
+            parse(&serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()).is_err()
+        );
         let legacy = callbacks
             .iter()
             .find(|c| c.key == "oteryn:quest-callback/fish-napping-key")
-            .unwrap();
+            .ok_or("legacy fish callback")?;
         assert!(!super::admitted(legacy));
-        assert_eq!(super::initial(legacy, &legacy.storage[0]), -1);
+        assert_eq!(
+            super::initial(legacy, legacy.storage.first().ok_or("legacy storage")?),
+            -1
+        );
+        Ok(())
     }
 }

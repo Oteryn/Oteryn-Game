@@ -19,7 +19,11 @@ def callbacks(root):
                        if r['definition']['identity']['key'] == quest]
         if len(definitions) != 1:
             raise ValueError('Explore binding needs one canonical quest: ' + quest)
-        requirements = definitions[0]['oteryn_recipe']['payload']['recipe']['requirements']
+        definition = definitions[0]
+        recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
+        if not recipe:
+            raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
+        requirements = recipe['requirements']
         if (requirements['premium'] or requirements['min_level'] != 0
                 or requirements['prerequisites']):
             raise ValueError('Explore route requires additional authoritative guards: ' + quest)
