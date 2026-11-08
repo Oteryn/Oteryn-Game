@@ -11,6 +11,7 @@ impl RevisionSlot {
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
         fence: CurrentCharacterGameplayFence,
         request: NpcProgramRequest,
         catalogue: Arc<QuestStateCatalogue>,
@@ -24,6 +25,7 @@ impl RevisionSlot {
                 root.commit_character_npc_program(
                     authority,
                     node,
+                    permit,
                     fence,
                     request.clone(),
                     Arc::clone(&catalogue),
