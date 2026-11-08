@@ -17,6 +17,7 @@ use std::num::NonZeroU32;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    game_notifications: feature_local_game_notifications::state::State,
     creature_drag: feature_0082_creature_push::state::CreatureDrag,
     world_context_feedback: Option<String>,
     death: feature_local_death_respawn::protocol::DeathState,
@@ -72,6 +73,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            game_notifications: Default::default(),
             creature_drag: Default::default(),
             world_context_feedback: None,
             death: Default::default(),
