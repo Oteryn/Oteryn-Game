@@ -1,3 +1,6 @@
+#[path = "state/memorial.rs"]
+mod memorial;
+pub use memorial::{MemorialGallery, MemorialOffer, MemorialTab};
 mod input;
 mod protocol;
 mod state;

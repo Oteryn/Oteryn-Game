@@ -62,6 +62,20 @@ impl Settings {
             let menu = CreateMenu();
             if !menu.is_null() {
                 AppendMenuW(menu, MF_STRING, 25001, wide("Settings...").as_ptr());
+                let windows = CreatePopupMenu();
+                if !windows.is_null() {
+                    for (index, (_, label)) in
+                        oteryn_client::play::WINDOW_ACTIONS.iter().enumerate()
+                    {
+                        AppendMenuW(windows, MF_STRING, 25100 + index, wide(label).as_ptr());
+                    }
+                    AppendMenuW(
+                        menu,
+                        MF_POPUP,
+                        windows as usize,
+                        wide("Game windows").as_ptr(),
+                    );
+                }
                 if SetMenu(self.parent, menu) == 0 {
                     DestroyMenu(menu);
                 }
@@ -74,6 +88,9 @@ impl Settings {
                 (&*self.shared as *const Arc<Mutex<Shared>>) as usize,
             );
         }
+    }
+    pub(super) fn take_window_events(&self) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        lock(&self.shared).take_window_events()
     }
     pub(super) fn input(
         &mut self,
@@ -133,6 +150,14 @@ unsafe extern "system" fn menu_proc(
             let shared = &*(data as *const Arc<Mutex<Shared>>);
             open(Arc::clone(shared));
             return 0;
+        }
+        if msg == WM_COMMAND {
+            let index = (w & 0xffff).wrapping_sub(25100);
+            if let Some((id, _)) = oteryn_client::play::WINDOW_ACTIONS.get(index) {
+                let shared = &*(data as *const Arc<Mutex<Shared>>);
+                lock(shared).queue_window(id);
+                return 0;
+            }
         }
         DefSubclassProc(hwnd, msg, w, l)
     }
@@ -344,7 +369,32 @@ fn run(shared: Arc<Mutex<Shared>>) {
             [535, 265, 185, 30],
             0,
         );
-        let feedback = control(hwnd, "STATIC", "", 0, [10, 320, 710, 150], 0);
+        let hud_checks = [
+            "HP / MP bars",
+            "Harmony",
+            "Serene",
+            "Light effects",
+            "Combat effects",
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(index, label)| {
+            control(
+                hwnd,
+                "BUTTON",
+                label,
+                120 + index,
+                [
+                    10 + (index % 3) as i32 * 230,
+                    310 + (index / 3) as i32 * 30,
+                    220,
+                    26,
+                ],
+                BS_AUTOCHECKBOX as u32,
+            )
+        })
+        .collect::<Vec<_>>();
+        let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
         if [
             pages,
             help,
@@ -365,6 +415,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             defaults,
         ]
         .iter()
+        .chain(hud_checks.iter())
         .any(|h| h.is_null())
         {
             DestroyWindow(hwnd);
@@ -416,9 +467,20 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
                 }
             }
+            for (index, handle) in hud_checks.iter().enumerate() {
+                let page = if index < 3 {
+                    SettingsPage::Interface
+                } else {
+                    SettingsPage::Graphics
+                };
+                ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
+            }
             ShowWindow(
                 apply,
-                if matches!(state.page, SettingsPage::Interface | SettingsPage::Sound) {
+                if matches!(
+                    state.page,
+                    SettingsPage::Interface | SettingsPage::Sound | SettingsPage::Graphics
+                ) {
                     SW_SHOW
                 } else {
                     SW_HIDE
@@ -479,6 +541,16 @@ fn run(shared: Arc<Mutex<Shared>>) {
                             preferences.ui_scale = scale;
                             preferences.audio.master_volume = volume;
                             preferences.audio.muted = SendMessageW(mute, BM_GETCHECK, 0, 0) == 1;
+                            preferences.hud_bars =
+                                SendMessageW(hud_checks[0], BM_GETCHECK, 0, 0) == 1;
+                            preferences.show_harmony =
+                                SendMessageW(hud_checks[1], BM_GETCHECK, 0, 0) == 1;
+                            preferences.show_serene =
+                                SendMessageW(hud_checks[2], BM_GETCHECK, 0, 0) == 1;
+                            preferences.show_lights =
+                                SendMessageW(hud_checks[3], BM_GETCHECK, 0, 0) == 1;
+                            preferences.show_effects =
+                                SendMessageW(hud_checks[4], BM_GETCHECK, 0, 0) == 1;
                             state.apply(preferences);
                         }
                         _ => state.feedback = "Enter valid zoom and volume percentages".into(),
@@ -511,6 +583,15 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     usize::from(state.preferences.audio.muted),
                     0,
                 );
+                for (control, checked) in hud_checks.iter().zip([
+                    state.preferences.hud_bars,
+                    state.preferences.show_harmony,
+                    state.preferences.show_serene,
+                    state.preferences.show_lights,
+                    state.preferences.show_effects,
+                ]) {
+                    SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
+                }
                 selected = -1;
                 held = Some(state.preferences.clone());
             }

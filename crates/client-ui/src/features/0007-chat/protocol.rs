@@ -1,7 +1,7 @@
 use super::{ChatPanel, Mode};
 use oteryn_client_runtime::chat::{ChatIntent, ChatSpeechMode};
 pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<ChatIntent> {
-    if !panel.selected || panel.pending {
+    if !panel.selected || panel.pending || !panel.console.can_send() {
         panel.feedback = Some("Chat unavailable or waiting for the server".into());
         return None;
     }
