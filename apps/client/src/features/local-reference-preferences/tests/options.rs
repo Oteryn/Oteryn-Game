@@ -1,6 +1,25 @@
 use super::*;
 
 #[test]
+fn basic_options_dispatch_selects_all_categories_without_editing_preferences() {
+    use crate::play::{SettingsPage, SettingsState};
+    let mut state = SettingsState::new(None);
+    assert!(state.request_open());
+    let before = state.preferences.clone();
+    for (index, page) in SettingsPage::ALL.iter().enumerate() {
+        assert!(state.select_page(index));
+        assert_eq!(state.page, *page);
+        assert_eq!(state.preferences, before);
+    }
+    let last = state.page;
+    assert!(!state.select_page(SettingsPage::ALL.len()));
+    assert_eq!(state.page, last);
+    for category in [SettingsPage::Gameplay, SettingsPage::Interface, SettingsPage::Graphics, SettingsPage::Sound] {
+        assert!(SettingsPage::ALL.contains(&category));
+    }
+}
+
+#[test]
 fn console_font_preference_reaches_the_live_panel_mailbox() -> Result<(), Box<dyn std::error::Error>> {
     let (link, _, _) = play_channel();
     let mut settings = crate::play::SettingsState::new(None);

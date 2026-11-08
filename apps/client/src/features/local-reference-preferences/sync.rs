@@ -80,6 +80,12 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn select_page(&mut self, index: usize) -> bool {
+        let Some(page) = SettingsPage::ALL.get(index) else { return false; };
+        self.page = *page;
+        true
+    }
+
     pub fn sync_local_preferences(&self, link: &crate::play::PlayLink) {
         if self.preferences.validate().is_err() { return; }
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);

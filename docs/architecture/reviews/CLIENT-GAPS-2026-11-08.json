@@ -220,10 +220,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Basic Options",
-  "status": "PARTIAL",
-  "gap": "Jeden mały Settings zamiast zbiorczej strony Gameplay/Interface/Graphics/Sound.",
+  "status": "DONE",
+  "gap": "Zbiorcze strony Gameplay/Interface/Graphics/Sound są dostępne przez natywny selektor.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/sync.rs:10 + basic_options_navigate_without_changing_preferences; Complete category controls and native interaction verification remain."
+  "evidence": "apps/client/src/features/local-reference-preferences/dialog.rs:100 + basic_options_dispatch_selects_all_categories_without_editing_preferences; Native selection dispatch reaches Gameplay, Interface, Graphics and Sound without modifying saved preferences."
  },
  {
   "id": "T046",
