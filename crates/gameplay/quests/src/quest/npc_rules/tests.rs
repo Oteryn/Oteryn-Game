@@ -670,6 +670,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.the_hidden_city_of_beregar_quest",
         "oteryn:quest.the_order_of_the_stag_quest",
         "oteryn:quest.tibia_tales",
+        "oteryn:quest.tower_defence_quest",
     ]);
     assert_eq!(
         runtime

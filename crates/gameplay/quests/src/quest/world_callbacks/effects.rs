@@ -44,6 +44,9 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
+    /// Restore the exact pre-transform source revision after this delay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
@@ -302,6 +305,44 @@ pub(super) fn valid(callback: &Callback) -> bool {
                             .bytes()
                             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                 })
+        })
+        || effects.mount_reward.as_ref().is_some_and(|r| {
+            !callback.requires_world_admission
+                || callback.trigger != Trigger::Use
+                || callback.storage.is_empty()
+                || callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                || r.achievement.as_ref().is_some_and(|key| {
+                    key.len() > 160
+                        || !key.strip_prefix("oteryn:achievement/").is_some_and(|tail| {
+                            !tail.is_empty()
+                                && tail.bytes().all(|b| {
+                                    b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_'
+                                })
+                        })
+                })
+                || r.mount.len() > 160
+                || !r
+                    .mount
+                    .strip_prefix("oteryn:content.mount.")
+                    .is_some_and(|tail| {
+                        !tail.is_empty()
+                            && tail
+                                .bytes()
+                                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+                    })
+        })
+        || effects.reset_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay)
+                || callback.actor_kind != ActorKind::Player
+                || (effects.transform.is_none() && callback.lever.is_none())
+                || effects.portals.is_some()
+                || effects.item_presence.is_some()
+                || effects.item_cycle.is_some()
+                || effects.encounter.is_some()
+                || !callback.passages.is_empty()
         })
         || effects.mount_reward.as_ref().is_some_and(|r| {
             !callback.requires_world_admission
