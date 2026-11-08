@@ -22,9 +22,9 @@ impl QuestStateCatalogue {
         stored: &BTreeMap<String, i64>,
         changes: &[QuestTrackChange],
     ) -> bool {
-        self.completion_sets
-            .get(&transition.quest)
-            .map_or(self.completes_after(transition, changes), |rule| {
+        self.completion_sets.get(&transition.quest).map_or(
+            self.completes_after(transition, changes),
+            |rule| {
                 rule.groups.iter().all(|group| {
                     group.iter().any(|key| {
                         changes
@@ -36,7 +36,8 @@ impl QuestStateCatalogue {
                             >= 1
                     })
                 })
-            })
+            },
+        )
     }
 }
 
