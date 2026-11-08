@@ -8,6 +8,8 @@ pub struct BossEncounterPanel {
     pub pending: bool,
     pub pending_kind: u32,
     pub fields: [String; 3],
+    pub browser_search: String,
+    pub browser_category: super::BossCategory,
     pub summary: String,
     pub hazard: Option<(u8, u8)>,
     pub rewards: Option<oteryn_client_runtime::boss_encounter::RewardChest>,

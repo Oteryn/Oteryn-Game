@@ -1,0 +1,7 @@
+name=analyser_catalogue
+commands=734
+transport=analyser_catalogue
+composed=analyser_catalogue
+authority=analyser_catalogue
+[route]
+routing::analyser_catalogue::route(authority, &session.admitted, command).await

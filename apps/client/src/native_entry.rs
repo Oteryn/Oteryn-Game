@@ -16,7 +16,7 @@ mod tests;
 use crate::GameplayEntryError;
 pub use admitted::AdmittedSession;
 pub use config::{NativeLoginConfig, NativeLoginSettingError};
-use oteryn_client_runtime::connection::AdmissionAttempt;
+use oteryn_client_runtime::connection::{AdmissionAttempt, AdmissionWait};
 use oteryn_foundation::CancellationToken;
 use oteryn_identity::{IdentityFlow, LoopbackRedirect, PkceMaterial, StateNonce};
 use oteryn_platform_client::PlatformClientConfig;
@@ -62,6 +62,14 @@ pub(crate) async fn enter(
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
 ) -> Result<AdmittedSession, GameplayEntryError> {
+    enter_observed(config, cancellation, None).await
+}
+
+pub(crate) async fn enter_observed(
+    config: &NativeLoginConfig,
+    cancellation: CancellationToken,
+    progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
+) -> Result<AdmittedSession, GameplayEntryError> {
     let platform = PlatformClientConfig::new(&config.platform_url)
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
     let gateway = PlatformClientConfig::new(&config.gateway_url)
@@ -97,6 +105,7 @@ pub(crate) async fn enter(
         .map_err(login_rejected)?;
 
     let mut attempt = NativeAttempt {
+        progress,
         client,
         ticket,
         login,
@@ -111,6 +120,7 @@ pub(crate) async fn enter(
 }
 
 struct NativeAttempt<'a> {
+    progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
     ticket: NativeTicket,
     login: GatewayLogin<'a>,
@@ -125,6 +135,12 @@ struct NativeAttempt<'a> {
 impl AdmissionAttempt for NativeAttempt<'_> {
     type Output = AdmittedSession;
     type Error = GameplayEntryError;
+
+    fn waiting(&mut self, wait: AdmissionWait) {
+        if let Some(progress) = &self.progress {
+            progress.send_replace(Some(wait));
+        }
+    }
 
     async fn admit(&mut self) -> Result<Self::Output, Option<u32>> {
         let session = oteryn_session_tcp::connection::admit(
