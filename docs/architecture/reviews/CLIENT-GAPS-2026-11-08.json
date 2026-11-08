@@ -1566,9 +1566,10 @@
   "src": "OTCAUD1108",
   "area": "Cyclopedia",
   "feature": "Cyklopedia: mapa i odkrywanie",
-  "status": "PARTIAL",
-  "gap": "Brakuje graficznej mapy Cyklopedii z warstwami, regionami i filtrami; formularz pokazuje tekstowy stan odkrywania oraz POI/donacji.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/input/atlas.rs:15 + atlas_geometry_pages_layers_and_floor_filters_use_real_queue; apps/client/src/features/0057-cyclopedia-map/view/atlas_window.rs:104 + atlas_geometry_pages_layers_and_floor_filters_use_real_queue; crates/gameplay/dispatch/src/gameplay_transport/cyclopedia/atlas.rs:30 + atlas_projects_bundle_regions_subareas_floors_and_complete_geometry_pages"
  },
  {
   "id": "O079",
