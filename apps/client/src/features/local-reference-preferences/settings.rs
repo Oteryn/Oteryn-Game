@@ -18,6 +18,9 @@ mod store;
 mod sync;
 #[path = "shortcuts.rs"]
 mod shortcuts;
+#[path = "graphics.rs"]
+mod graphics;
+pub use graphics::GraphicsPreferences;
 pub use shortcuts::ShortcutEdit;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use store::PreferenceStore;
@@ -88,6 +91,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub graphics: GraphicsPreferences,
     #[serde(default = "default_arc_distance")]
     pub arc_distance: u16,
     #[serde(default = "default_arc_size")]
@@ -146,6 +151,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            graphics: GraphicsPreferences::default(),
             arc_distance: 8,
             arc_size: 3,
             hud_names: default_hud_names(),
@@ -260,11 +266,7 @@ impl PlayView {
     pub(in crate::play) fn apply_preference_scale(
         &mut self,
     ) -> Result<(), oteryn_renderer::BatchError> {
-        let pixels = crate::scene::SCENE_TILE_PX * u32::from(self.preferences().ui_scale) / 100;
-        let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
-            .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
-            .max(1);
-        self.scene.set_tile_px(pixels.min(fit))
+        self.scene.set_tile_px(self.preferences().graphics.tile_pixels(self.preferences().ui_scale,self.local.viewport))
     }
 
     pub fn set_world_viewport(&mut self, viewport: [u32; 2]) -> Result<(), PreferenceError> {

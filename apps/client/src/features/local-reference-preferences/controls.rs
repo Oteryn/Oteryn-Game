@@ -9,8 +9,12 @@ use arc_controls::ArcControls;
 #[path = "shortcut_controls.rs"]
 mod shortcut_controls;
 use shortcut_controls::ShortcutControls;
+#[path = "graphics_controls.rs"]
+mod graphics_controls;
+use graphics_controls::GraphicsControls;
 
 pub(super) struct Controls {
+    pub(super) graphics: GraphicsControls,
     pub(super) shortcuts: ShortcutControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
@@ -49,6 +53,7 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let graphics = GraphicsControls::new(hwnd)?;
             let shortcuts = ShortcutControls::new(hwnd)?;
             let arcs = ArcControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
@@ -312,6 +317,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                graphics,
                 shortcuts,
                 arcs,
                 interface,

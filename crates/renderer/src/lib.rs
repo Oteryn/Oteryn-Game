@@ -3,8 +3,10 @@ use oteryn_foundation::ProcessGeneration;
 use std::fmt::{self, Display, Formatter};
 
 mod batch;
+mod graphics;
 pub mod lighting;
 mod resources;
+pub use graphics::{ANTIALIASING, Antialiasing, GRAPHICS_ENGINE, GraphicsEngine, PresentationMode};
 
 #[cfg(windows)]
 mod scene_gpu;

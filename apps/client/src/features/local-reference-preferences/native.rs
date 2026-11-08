@@ -174,6 +174,10 @@ impl Settings {
             state.feedback = error.to_string();
         }
     }
+    pub(super) fn graphics_settings(&self) -> (oteryn_client::play::GraphicsPreferences, u16) {
+        let state = lock(&self.shared);
+        (state.preferences.graphics, state.preferences.ui_scale)
+    }
     pub(super) fn capture(&self, view: &mut PlayView) {
         let mut state = lock(&self.shared);
         if let Err(error) = state.capture(view) {

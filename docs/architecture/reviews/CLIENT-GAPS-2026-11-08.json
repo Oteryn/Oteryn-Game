@@ -356,9 +356,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics: engine, AA, fullscreen, VSync, integral scaling",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak strony konfiguracji obsługiwanych parametrów renderera/okna.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/graphics_controls.rs:9 + apps/client/src/windows_shell/graphics.rs:5 + apps/client/src/features/local-reference-preferences/graphics.rs:27 + apps/client/src/features/local-reference-preferences/tests/graphics.rs:3 t060_graphics_settings_restore_into_real_scene_and_presentation_request"
  },
  {
   "id": "T061",

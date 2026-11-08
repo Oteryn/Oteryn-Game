@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            graphics,
             mut shortcuts,
             arcs,
             interface,
@@ -126,6 +127,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 );
             }
             shortcuts.show(state.page == SettingsPage::Shortcuts);
+            graphics.show(state.page == SettingsPage::Graphics);
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
@@ -274,6 +276,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    graphics.read(&mut preferences);
                     if let Err(error) = arcs.read(&mut preferences) {
                         state.feedback = error;
                         continue;
@@ -309,6 +312,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             }
             if held.as_ref() != Some(&state.preferences) {
                 shortcuts.refresh(&state);
+                graphics.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
                 let selection = selected.max(0) as usize;
@@ -372,7 +376,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
                 }
                 SettingsPage::Graphics => {
-                    "Renderer and window options use the supported native renderer. Additional controls are not available yet."
+                    "Fullscreen, VSync and integral world scaling apply immediately. Engine and antialiasing show the supported modes."
                 }
                 SettingsPage::Sound => {
                     "Master volume % (0–100). Changes apply to playback immediately."

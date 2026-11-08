@@ -240,3 +240,5 @@ fn unregistered_and_sibling_chords_are_reserved() -> Result<(), Box<dyn std::err
 mod presentation;
 #[path = "shortcuts.rs"]
 mod shortcuts;
+#[path = "graphics.rs"]
+mod graphics;

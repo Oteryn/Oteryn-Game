@@ -280,5 +280,7 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 9);
+    assert_eq!(SettingsPage::ALL.len(), 10);
+    assert_eq!(SettingsPage::ALL[6], SettingsPage::Shortcuts);
+    assert_eq!(SettingsPage::ALL[7], SettingsPage::Graphics);
 }

@@ -18,7 +18,6 @@ use oteryn_foundation::ProcessGeneration;
 use oteryn_input_platform::InputPlatformAdapter;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{AtlasImage, SurfacePhase, TileCoord, WindowsRenderer};
-use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
@@ -26,42 +25,12 @@ use winit::event::{DeviceEvent, DeviceId, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ShellError {
-    EventLoopCreation,
-    EventLoopRun,
-    WindowCreation,
-    InputInitialization,
-    LoginInitialization,
-    RendererInitialization,
-    RendererResume,
-    RendererSuspend,
-    RendererResize,
-    RendererRender,
-    RendererClose,
-}
-
-impl Display for ShellError {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
-            Self::EventLoopCreation => "client event loop creation failed",
-            Self::EventLoopRun => "client event loop failed",
-            Self::WindowCreation => "client window creation failed",
-            Self::LoginInitialization => "native login window creation failed",
-            Self::InputInitialization => "client input initialization failed",
-            Self::RendererInitialization => "client renderer initialization failed",
-            Self::RendererResume => "client renderer resume failed",
-            Self::RendererSuspend => "client renderer suspend failed",
-            Self::RendererResize => "client renderer resize failed",
-            Self::RendererRender => "client renderer render failed",
-            Self::RendererClose => "client renderer close failed",
-        })
-    }
-}
-
-impl std::error::Error for ShellError {}
+mod error;
+pub use error::ShellError;
+mod graphics;
 
 struct Application {
+    applied_graphics: Option<oteryn_client::play::GraphicsPreferences>,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -102,6 +71,7 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            applied_graphics: None,
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -352,6 +322,10 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if let Err(error) = self.apply_graphics() {
+            self.fail(event_loop, error);
+            return;
+        }
         let menu_events = self.settings.take_window_events(self.play.is_some());
         if !menu_events.is_empty() && self.play.is_some() {
             self.handle_input(event_loop, &menu_events);
@@ -402,24 +376,4 @@ pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fatal_retention_keeps_the_first_error() {
-        let mut error = None;
-        retain_first_error(&mut error, ShellError::RendererResize);
-        retain_first_error(&mut error, ShellError::RendererRender);
-        assert_eq!(error, Some(ShellError::RendererResize));
-    }
-
-    #[test]
-    fn redraw_requires_a_configured_renderer() {
-        assert!(redraw_eligible(Some(SurfacePhase::Configured)));
-        assert!(!redraw_eligible(None));
-        assert!(!redraw_eligible(Some(SurfacePhase::Unconfigured)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Suspended)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Lost)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Closing)));
-    }
-}
+mod tests;
