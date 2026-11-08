@@ -10,3 +10,9 @@ Implementation in progress; the claim is not DONE and no PG pass is claimed here
 * Red regression: `cargo test --locked -p oteryn-gameplay-quests srv7_world_mount_reward_requires_once_only_progress -- --nocapture` failed because the world-effects decoder rejected mount rewards. The focused test passed after adding the bounded, once-only effect; later changes remain under validation.
 
 Pending qualification: real framed PG case and its duration; final changed-crate tests, source/content checks, generated-file reconciliation, workspace check and formatting. The new PG scenario's initial state after Emiliana is an explicit fixture boundary, not a claim to replay the whole preceding quest.
+
+## Qualified M14 result
+
+The focused real PG case passed before the final qmech integration merge: `srv7_reliable_ram_real_map_use_guards_grants_and_replays`, marker `SRV7_PG_EXECUTED reliable_ram duration=53.69670065s success=true`. It proves unearned refusal, one consumed turnip, one compatible Ram unlock, A reliable Friend, Mission4→5, Ram0→1, preserved earned-turnip flag, and exact historical command replay. The separate generic-taming-owner guard passed. The first production red was eligible framed USE returning NothingToUse; the fix adds an M14-only carried-source/map-target bridge to the existing world receipt owner. Fixture-only failures were repaired without weakening runtime guards or assertions.
+
+Publishing branch: `claude/happy-davinci-ijz3wy-qm-srv7`. The coordinator owns CLAIMS.md and the final DONE marker. No migrations, capabilities or command IDs are introduced.
