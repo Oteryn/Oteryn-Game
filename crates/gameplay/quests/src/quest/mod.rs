@@ -21,9 +21,11 @@ pub mod admission_binding;
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
 pub mod authored_bindings;
+pub mod barbarian_mead;
 #[cfg(test)]
 pub mod batch3_a;
 pub mod carried_step;
+pub mod children_puzzle;
 pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
