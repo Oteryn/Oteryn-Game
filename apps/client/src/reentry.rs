@@ -2,9 +2,13 @@
 
 use crate::play::{PlayLink, PlayView};
 use crate::{AdmittedSession, ClientBootstrap, GameplayEntryError};
+use oteryn_client_runtime::connection::AdmissionWait;
+use oteryn_client_ui::login_queue::QueueWait;
+use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
 use oteryn_input_actions::{ButtonState, NormalizedInputEvent};
 use oteryn_platform_client::native_login::PublicClass;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
+use std::time::Instant;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum EntryState {
@@ -36,6 +40,10 @@ impl EntryState {
 pub struct Reentry {
     client: ClientBootstrap,
     state: EntryState,
+    attempt_cancellation: Option<CancellationToken>,
+    progress: Option<tokio::sync::watch::Receiver<Option<AdmissionWait>>>,
+    waiting: Option<(AdmissionWait, QueueWait)>,
+    last_wait_text: Option<String>,
     pending: Option<Receiver<Result<AdmittedSession, GameplayEntryError>>>,
 }
 
@@ -44,6 +52,10 @@ impl Reentry {
         Self {
             client,
             state: EntryState::Offline,
+            attempt_cancellation: None,
+            progress: None,
+            waiting: None,
+            last_wait_text: None,
             pending: None,
         }
     }
@@ -67,15 +79,94 @@ impl Reentry {
         self.pending = Some(receiver);
         let config = self.client.native_login.clone();
         let cancellation = self.client.runtime.cancellation();
+        let attempt_cancellation = CancellationToken::new();
+        self.attempt_cancellation = Some(attempt_cancellation.clone());
+        let (progress, updates) = tokio::sync::watch::channel(None);
+        self.progress = Some(updates);
+        self.waiting = None;
+        self.last_wait_text = None;
         // Dropping the sender on a stopped runtime is handled as a public refusal by poll.
         let _task = self.client.runtime.spawn(async move {
-            let result = match config {
-                Some(config) => crate::native_entry::enter(&config, cancellation).await,
-                None => Err(GameplayEntryError::NativeProtocolUnavailable),
+            let work = async {
+                match config {
+                    Some(config) => {
+                        crate::native_entry::enter_observed(
+                            &config,
+                            attempt_cancellation.clone(),
+                            Some(progress),
+                        )
+                        .await
+                    }
+                    None => Err(GameplayEntryError::NativeProtocolUnavailable),
+                }
+            };
+            let result = match cancellable(
+                cancellation,
+                cancellable(attempt_cancellation.clone(), work),
+            )
+            .await
+            {
+                Cancellable::Completed(Cancellable::Completed(result)) => result,
+                _ => Err(GameplayEntryError::Rejected(
+                    PublicClass::SessionUnavailable,
+                )),
             };
             let _ = sender.send(result);
         });
         true
+    }
+
+    /// Cancel just this attempt, preserving the process runtime for a fresh sign-in.
+    pub fn cancel_entry(&mut self) -> bool {
+        let Some(token) = &self.attempt_cancellation else {
+            return false;
+        };
+        if self.state != EntryState::Entering || token.is_cancelled() {
+            return false;
+        }
+        token.cancel();
+        if let Some((_, queue)) = &mut self.waiting {
+            queue.cancel();
+        }
+        self.last_wait_text = None;
+        true
+    }
+
+    /// Emits only changed countdown text, so a slow form cannot accumulate frame-rate updates.
+    pub fn poll_wait(&mut self, now: Instant) -> Option<String> {
+        if self.state != EntryState::Entering {
+            return None;
+        }
+        let text = if self
+            .attempt_cancellation
+            .as_ref()
+            .is_some_and(CancellationToken::is_cancelled)
+        {
+            "Cancelling sign-in…".to_owned()
+        } else {
+            let wait = (*self.progress.as_mut()?.borrow_and_update())?;
+            if self
+                .waiting
+                .as_ref()
+                .is_none_or(|(held, _)| held.started != wait.started)
+            {
+                self.waiting = Some((wait, QueueWait::new(None, wait.started, wait.retry_in)));
+            }
+            let (_, queue) = self.waiting.as_ref()?;
+            if wait.code == 1115 {
+                queue.text(now)
+            } else {
+                format!(
+                    "Admission not ready. Retrying in {}s.",
+                    queue.remaining_seconds(now)
+                )
+            }
+        };
+        if self.last_wait_text.as_ref() == Some(&text) {
+            return None;
+        }
+        self.last_wait_text = Some(text.clone());
+        Some(text)
     }
 
     /// Both initial admission and subsequent admissions start play through this same path.
@@ -88,6 +179,10 @@ impl Reentry {
             )),
         };
         self.pending = None;
+        self.attempt_cancellation = None;
+        self.progress = None;
+        self.waiting = None;
+        self.last_wait_text = None;
         let result = result.and_then(|admitted| self.client.start_play(admitted));
         self.state.finish(result.is_ok());
         Some(result)
@@ -176,6 +271,40 @@ mod tests {
                 assert!(!login_key(&[changed]));
             }
         }
+        Ok(())
+    }
+    #[test]
+    fn admission_progress_counts_down_once_and_cancels_only_this_attempt()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut entry = Reentry::new(ClientBootstrap::new()?);
+        assert!(!entry.cancel_entry());
+        entry.state = EntryState::Entering;
+        let token = CancellationToken::new();
+        entry.attempt_cancellation = Some(token.clone());
+        let (progress, updates) = tokio::sync::watch::channel(None);
+        entry.progress = Some(updates);
+        let now = Instant::now();
+        progress.send_replace(Some(AdmissionWait {
+            code: 1115,
+            started: now,
+            retry_in: std::time::Duration::from_secs(2),
+        }));
+        assert_eq!(
+            entry.poll_wait(now).as_deref(),
+            Some("Waiting for capacity. Retrying in 2s.")
+        );
+        assert!(entry.poll_wait(now).is_none());
+        assert_eq!(
+            entry
+                .poll_wait(now + std::time::Duration::from_secs(1))
+                .as_deref(),
+            Some("Waiting for capacity. Retrying in 1s.")
+        );
+        assert!(entry.cancel_entry());
+        assert!(token.is_cancelled());
+        assert!(!entry.client.runtime.cancellation().is_cancelled());
+        assert!(!entry.cancel_entry());
+        entry.shutdown();
         Ok(())
     }
 }

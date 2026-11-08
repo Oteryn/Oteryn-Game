@@ -118,6 +118,8 @@ pub struct ReferencePreferences {
     pub creature_bars: bool,
     #[serde(default)]
     pub health_circle: bool,
+    #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
+    pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
     pub shortcuts_collapsed: bool,
     #[serde(default = "default_shortcuts")]
@@ -159,6 +161,7 @@ impl Default for ReferencePreferences {
             health_circle: false,
             shortcuts_collapsed: false,
             shortcut_order: default_shortcuts(),
+            battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             hotkey_profiles: std::collections::BTreeMap::new(),
@@ -181,7 +184,8 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
-        if self.arc_distance > 80
+        if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+            || self.arc_distance > 80
             || !(1..=8).contains(&self.arc_size)
             || !(80..=200).contains(&self.interface_scale)
             || !matches!(self.rotation_modifier.as_str(), "CTRL" | "ALT" | "SHIFT")

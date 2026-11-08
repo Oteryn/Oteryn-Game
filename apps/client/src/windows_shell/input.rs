@@ -27,7 +27,7 @@ impl Application {
             }
         }
         if let Some(play) = &mut self.play {
-            self.settings.restore(&mut play.view);
+            self.settings.restore(&mut play.view, &play.link);
             if let Some(window) = &self.window {
                 window.set_cursor(if play.view.preferences().cursor_crosshair {
                     winit::window::CursorIcon::Crosshair
