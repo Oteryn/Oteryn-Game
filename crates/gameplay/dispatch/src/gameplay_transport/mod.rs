@@ -26,6 +26,7 @@ mod bed_regen;
 mod bed_sleep;
 mod bed_sleep_production;
 mod boss_activity;
+pub mod bulletin;
 mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
@@ -425,6 +426,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
 
 /// Explicit listener configuration; nothing has a production default.
 pub struct GameplayListenerConfig {
+    pub bulletin_source: Option<std::sync::Arc<bulletin::BulletinSource>>,
     pub server_motd: String,
     pub certificates: Vec<rustls::pki_types::CertificateDer<'static>>,
     pub private_key: rustls::pki_types::PrivateKeyDer<'static>,

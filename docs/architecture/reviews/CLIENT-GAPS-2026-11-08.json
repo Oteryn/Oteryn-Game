@@ -1224,10 +1224,10 @@
   "src": "OTCAUD1108",
   "area": "Login",
   "feature": "Kalendarz wydarzeń i ekran nowości",
-  "status": "PARTIAL",
-  "gap": "Rzeczywisty caller HTTP/Gateway/TLS odbiera opcjonalny dokument ServerAccepted 21 i aktualizuje news/kalendarz; jest bezpieczny podgląd podczas gry. Pozostaje test i publikacja producenta pliku operatora po stronie serwera.",
+  "status": "DONE",
+  "gap": "Jest żywy producent pliku operatora, odczytywany ponownie po uwierzytelnionym admission, z ograniczonym wire ServerAccepted 21; news i przyszłe wydarzenia z opisami trafiają do istniejącego kalendarza miesiąc/rok. Podgląd podczas gry jest tylko do odczytu, błędna publikacja nie blokuje admission.",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/native_entry/tests/live_bulletin.rs:7 + live_operator_bulletin_crosses_gateway_tls_session_and_calendar_caller; Pozostaje: test i publikacja producenta przyszłych wydarzeń na serwerze."
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/bulletin/tests.rs:4 + operator_file_reload_publishes_future_events_and_rejects_invalid_replacements; apps/client/src/native_entry/tests/live_bulletin.rs:7 + live_operator_bulletin_crosses_gateway_tls_session_and_calendar_caller"
  },
  {
   "id": "O005",

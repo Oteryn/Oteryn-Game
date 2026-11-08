@@ -120,8 +120,8 @@ pub(super) fn framed(body: &[u8]) -> Vec<u8> {
 
 /// Drive one connection with the given client frames; return the end state
 /// and every frame the server wrote.
-pub(super) async fn drive(
-    authority: &Authority,
+pub(super) async fn drive<A: FreshAdmissionAuthority>(
+    authority: &A,
     client_frames: &[Vec<u8>],
 ) -> Result<(ConnectionEnd, Vec<Vec<u8>>), Box<dyn Error>> {
     let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 21);

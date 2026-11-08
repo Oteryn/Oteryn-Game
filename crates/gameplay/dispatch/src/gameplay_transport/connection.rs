@@ -861,6 +861,12 @@ where
         selected_capabilities: selected.as_slice(),
     })
     .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
+    let accepted = if let Some(document) = authority.client_bulletin().await {
+        oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
+            .unwrap_or(accepted)
+    } else {
+        accepted
+    };
     write_frame(stream, &accepted)
         .await
         .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
