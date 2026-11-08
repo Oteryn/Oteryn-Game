@@ -336,7 +336,9 @@ impl SettingsState {
             .ok_or_else(|| "Preference storage is unavailable".to_owned())
             .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()));
         // A disk error must not disable local controls for this process.
-        if self.preferences.battle_lists != preferences.battle_lists {
+        if self.preferences.battle_lists != preferences.battle_lists
+            || self.preferences.active_battle_list != preferences.active_battle_list
+        {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
         if self.preferences.archive_bindings != preferences.archive_bindings {
@@ -360,8 +362,11 @@ impl SettingsState {
 
     pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
         let mut preferences = self.preferences.clone();
-        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
-        {
+        if let Some(edit) = link.sync_battle_list_state(
+            &mut preferences.battle_lists,
+            &mut preferences.active_battle_list,
+            self.battle_edit,
+        ) {
             self.apply(preferences);
             self.battle_edit = edit;
         }

@@ -16,15 +16,32 @@ impl PlayLink {
         saved: &mut Vec<BattleListPreferences>,
         saved_edit: u64,
     ) -> Option<u64> {
+        let mut active = lock(&self.mailbox).battle_lists.active;
+        self.sync_battle_list_state(saved, &mut active, saved_edit)
+    }
+    pub fn battle_select_list(&self, active: usize) -> bool {
+        lock(&self.mailbox).battle_lists.select(active)
+    }
+    pub fn active_battle_list(&self) -> usize {
+        lock(&self.mailbox).battle_lists.active
+    }
+    pub fn sync_battle_list_state(
+        &self,
+        saved: &mut Vec<BattleListPreferences>,
+        active: &mut usize,
+        saved_edit: u64,
+    ) -> Option<u64> {
         let mut mailbox = lock(&self.mailbox);
         let lists = &mut mailbox.battle_lists;
         if lists.dirty && lists.edit > saved_edit {
             saved.clone_from(&lists.preferences);
+            *active = lists.active;
             lists.dirty = false;
             Some(lists.edit)
         } else {
             lists.dirty = false;
             lists.preferences.clone_from(saved);
+            lists.active = (*active).min(saved.len().saturating_sub(1));
             None
         }
     }

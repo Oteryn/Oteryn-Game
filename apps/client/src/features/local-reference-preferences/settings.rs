@@ -138,6 +138,8 @@ pub struct ReferencePreferences {
     pub creature_bars: bool,
     #[serde(default)]
     pub health_circle: bool,
+    #[serde(default)]
+    pub active_battle_list: usize,
     #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
     pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
@@ -207,6 +209,7 @@ impl Default for ReferencePreferences {
             shortcuts_collapsed: false,
             shortcut_order: default_shortcuts(),
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
+            active_battle_list: 0,
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
             frames: Default::default(),
@@ -245,7 +248,8 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
-        if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+        if self.active_battle_list >= self.battle_lists.len()
+            || !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || self.arc_distance > 80
             || !(1..=8).contains(&self.arc_size)
             || !(80..=200).contains(&self.interface_scale)

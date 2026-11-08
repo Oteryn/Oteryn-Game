@@ -70,7 +70,7 @@
   "status": "DONE",
   "gap": "Jedna lista; brak zarządzania wieloma listami, filtrowania i ich nazw.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0017-attack/preferences.rs:94 + named_battle_lists_filter_sort_save_and_attack_live_entities"
+  "evidence": "apps/client/src/features/0017-attack/view.rs:25 + named_battle_lists_filter_sort_save_and_attack_live_entities; active_named_battle_list_survives_character_switches"
  },
  {
   "id": "T017",

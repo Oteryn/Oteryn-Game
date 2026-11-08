@@ -134,3 +134,15 @@ impl Default for BattleListsState {
         }
     }
 }
+
+impl BattleListsState {
+    pub fn select(&mut self, active: usize) -> bool {
+        if active >= self.preferences.len() {
+            return false;
+        }
+        self.active = active;
+        self.dirty = true;
+        self.edit = next_edit();
+        true
+    }
+}
