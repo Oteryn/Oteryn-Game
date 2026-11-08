@@ -370,6 +370,11 @@
       "loot_per_kill_micros": 612330880,
       "tier": 4
     },
+    "oteryn:creature.cake_golem": {
+      "kills_per_hour_micros": 303157894,
+      "loot_per_kill_micros": 0,
+      "tier": 2
+    },
     "oteryn:creature.candy_floss_elemental": {
       "kills_per_hour_micros": 60952380,
       "loot_per_kill_micros": 900061735,
@@ -3881,7 +3886,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "50a1fda787c1dd66464780ea5304dc25a6341085fd0ca03f4ed459bbc8b253b7",
+  "model_input_sha256": "d1136594c12539fcd91907291c92f926b85813bd4fc17bdcba4e0383bf98eaf2",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,

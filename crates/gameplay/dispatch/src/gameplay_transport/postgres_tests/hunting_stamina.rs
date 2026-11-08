@@ -78,7 +78,7 @@ pub(super) async fn qualify(
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 session,
                 owner.owner_now(),
@@ -163,7 +163,7 @@ pub(super) async fn qualify(
         let runtime = owner.runtime.lock().await;
         owner.states.attack.lock().await.set_target(
             &runtime,
-            owner.rooms.gate_auto_attack(),
+            owner.rooms().gate_auto_attack(),
             actor,
             session,
             owner.owner_now(),
@@ -207,7 +207,7 @@ pub(super) async fn qualify(
         };
         owner.states.attack.lock().await.set_target(
             &runtime,
-            owner.rooms.gate_auto_attack(),
+            owner.rooms().gate_auto_attack(),
             actor,
             session,
             owner.owner_now(),

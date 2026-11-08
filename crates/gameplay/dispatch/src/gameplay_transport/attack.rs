@@ -1152,7 +1152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Option<(super::StepOutcome, Option<Duration>)> {
         use super::FreshAdmissionAuthority as _;
-        let room = self.rooms.gate_chase_step()?;
+        let room = self.rooms().gate_chase_step()?;
         let step = {
             // Lock order: runtime, spell states, door, then attack.
             let runtime = self.runtime.lock().await;
@@ -1164,7 +1164,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // The same closed doors a player step reads (`paced_step`).
             let (none, bundle_doors, legacy);
             let blocking: &dyn crate::map::floor::CellBlocker = if self
-                .rooms
+                .rooms()
                 .gate_source_world()
                 .is_some_and(|room| room.source_world().is_some())
             {
@@ -1177,7 +1177,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 legacy = self.door.lock().await.blocking_cells().clone();
                 &legacy
             };
-            let cells = self.movement_cells;
+            let cells = self.movement_cells();
             let mut attack = self.states.attack.lock().await;
             // Owner time is read once the locks that serialize chase decisions are held, so the
             // Channel search budget sees its windows in order (`RANGED0-RL-03`).

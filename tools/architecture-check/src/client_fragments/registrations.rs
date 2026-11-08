@@ -43,8 +43,15 @@ pub(super) fn validate(
         }
     } else {
         schema::validate(entry, &schema["$defs"][kind])?;
-        if let Some(entry) = entry["entry"].as_str() {
-            symbol(feature, entry)?;
+        if let Some(symbol_name) = entry["entry"].as_str() {
+            if entry["entry_owner"] == "session" {
+                if kind != "handlers" || entry["direction"] != "client_to_server" {
+                    return Err("Session entries are client-to-server transport handlers".into());
+                }
+                session_symbol(root, symbol_name)?;
+            } else {
+                symbol(feature, symbol_name)?;
+            }
         }
     }
     if kind == "handlers" {
@@ -187,6 +194,42 @@ fn symbol(feature: &Path, entry: &str) -> Result<(), String> {
         .any(|item| matches!(item, syn::Item::Fn(f) if f.sig.ident == name))
     {
         return Err(format!("missing Rust entry symbol {entry}"));
+    }
+    Ok(())
+}
+
+/// Session transport controls run before the native UI sees the committed destination.
+/// The explicit owner keeps ordinary feature-local symbols and full command coverage intact.
+fn session_symbol(root: &Path, entry: &str) -> Result<(), String> {
+    let (file, name) = entry
+        .split_once("::")
+        .ok_or("Session entry must be source.rs::method")?;
+    if !file.ends_with(".rs") {
+        return Err("Session entry must name Rust source".into());
+    }
+    let path = safe_path(&root.join("crates/session/src"), file)?;
+    let source = fs::read_to_string(path).map_err(|error| error.to_string())?;
+    let syntax = syn::parse_file(&source).map_err(|error| error.to_string())?;
+    let found = syntax.items.iter().any(|item| {
+        let syn::Item::Impl(owner) = item else {
+            return false;
+        };
+        let syn::Type::Path(receiver) = owner.self_ty.as_ref() else {
+            return false;
+        };
+        owner.trait_.is_none()
+            && receiver
+                .path
+                .segments
+                .last()
+                .is_some_and(|segment| segment.ident == "Session")
+            && owner.items.iter().any(|member| {
+                matches!(member, syn::ImplItem::Fn(method)
+                if method.sig.ident == name && method.sig.asyncness.is_some())
+            })
+    });
+    if !found {
+        return Err(format!("missing async Session transport entry {entry}"));
     }
     Ok(())
 }

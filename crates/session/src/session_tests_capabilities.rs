@@ -150,7 +150,7 @@ fn derived_gated_routes_match_previous_table() {
         (115, &[124], &[]),
         // P-C05 exposes the existing 117 routes (133, 169, 178-180, 340, 491); no table change.
         // C49: the boss status panel uses the registry-owned capability 117 route.
-        (117, &[133, 169, 178, 179, 180, 340, 491], &[99]),
+        (117, &[133, 169, 178, 179, 180, 340, 491, 710], &[99]),
         (140, &[160], &[]),
         (165, &[220], &[]),
         (16, &[22], &[16]),

@@ -51,7 +51,7 @@ class AcceptedOverlayTests(unittest.TestCase):
         packet=json.loads(actual[qengine.PROOF])
         keys=[row['production_definition']['production_key'] for row in packet['records']]
         self.assertEqual(len(keys),60)
-        self.assertEqual(len(set(keys)),53)
+        self.assertEqual(len(set(keys)),60)
         self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
         native=json.loads(actual[producer.PROVIDER_DESTINATIONS['item_profiles']])
         by_key={row['production_definition']['production_key']:row for row in native['records']}

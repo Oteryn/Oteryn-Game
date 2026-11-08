@@ -259,6 +259,7 @@ async fn equipment_dispatch_scenario(
     );
     let runtime = Mutex::new(runtime);
     let owner = ComposedFreshAdmission {
+        activity_room: None,
         server_motd: "",
         runtime: (&runtime).into(),
         movement_cells: room.movement_cells(),
