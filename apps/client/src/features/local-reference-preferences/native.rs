@@ -394,6 +394,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
         );
         let feedback = control(hwnd, "STATIC", "", 0, [10, 320, 710, 150], 0);
         if [
+            pages,
             rotation_label,
             rotation,
             mouse_preset,
@@ -443,6 +444,41 @@ fn run(shared: Arc<Mutex<Shared>>) {
             if state.shutdown {
                 break;
             }
+            let page_index = SendMessageW(pages, CB_GETCURSEL, 0, 0);
+            if let Some(page) = usize::try_from(page_index)
+                .ok()
+                .and_then(|i| SettingsPage::ALL.get(i))
+            {
+                state.page = *page;
+            }
+            for (handles, page) in [
+                (&[help, list, chord, rebind][..], SettingsPage::Gameplay),
+                (&[label, scale][..], SettingsPage::Interface),
+                (&[volume, mute][..], SettingsPage::Sound),
+                (
+                    &[
+                        transfer_label,
+                        transfer_path,
+                        import,
+                        export,
+                        backup,
+                        defaults,
+                    ][..],
+                    SettingsPage::Help,
+                ),
+            ] {
+                for handle in handles {
+                    ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
+                }
+            }
+            ShowWindow(
+                apply,
+                if matches!(state.page, SettingsPage::Interface | SettingsPage::Sound) {
+                    SW_SHOW
+                } else {
+                    SW_HIDE
+                },
+            );
             let page_index = SendMessageW(pages, CB_GETCURSEL, 0, 0);
             if let Some(page) = usize::try_from(page_index)
                 .ok()
