@@ -119,3 +119,19 @@ fn o059_detail_card_consumes_server_cooldown_observation() -> Result<(), Box<dyn
     assert!(text.contains("Cooldown: 250 ms (last server observation)"));
     Ok(())
 }
+
+#[test]
+fn o080_archive_has_its_own_window_lifetime_and_menu_request() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _, outbox) = play_channel();
+    outbox.spell_catalog_initialize(true, Some(Vec::new()))?;
+    let mut settings = crate::play::SettingsState::new(None);
+    settings.request_magical_archive();
+    assert!(settings.take_magical_archive_request());
+    assert!(!settings.take_magical_archive_request());
+    link.magical_archive_open();
+    assert!(link.spell_catalog_panel().archive_open);
+    assert!(!link.spell_catalog_panel().open);
+    outbox.logged_out();
+    assert!(!link.spell_catalog_panel().archive_open);
+    Ok(())
+}
