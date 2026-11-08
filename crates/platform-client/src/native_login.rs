@@ -6,6 +6,8 @@
 //! and `Display`, never logged. This module decodes its own typed Gateway response, so it does not
 //! pass through the directory's forbidden-field filter; nothing else may.
 
+mod challenge;
+pub use challenge::{ChallengeProof, LoginChallenge, TokenExchange};
 mod owner_characters;
 pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};
 
@@ -511,45 +513,13 @@ impl NativeLoginClient {
         redirect_uri: &str,
         cancellation: CancellationToken,
     ) -> Result<AccessToken, NativeLoginError> {
-        let endpoint = self
-            .platform
-            .join("oauth/token")
-            .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
-        let request = async {
-            let response = self
-                .client
-                .post(endpoint)
-                .form(&[
-                    ("grant_type", "authorization_code"),
-                    ("client_id", self.oauth_client_id.as_str()),
-                    ("redirect_uri", redirect_uri),
-                    ("code_verifier", code_verifier),
-                    ("code", code),
-                ])
-                .send()
-                .await
-                .map_err(|_error| PlatformClientError::Request)?;
-            if !response.status().is_success() {
-                return Err(NativeLoginError::TokenRefused);
-            }
-            let body = read_bounded(response, MAX_OAUTH_RESPONSE_BYTES).await?;
-            // OAuth token responses carry further members (refresh token, expiry); only these two
-            // are read, and the rest is dropped with the body.
-            #[derive(Deserialize)]
-            struct TokenResponse {
-                token_type: String,
-                access_token: String,
-            }
-            let token: TokenResponse = serde_json::from_slice(&body)
-                .map_err(|_error| PlatformClientError::InvalidPayload)?;
-            if !token.token_type.eq_ignore_ascii_case("bearer")
-                || !is_visible_ascii(&token.access_token, MAX_ACCESS_TOKEN_BYTES)
-            {
-                return Err(PlatformClientError::InvalidPayload.into());
-            }
-            Ok(AccessToken(SecretText(token.access_token)))
-        };
-        run(cancellation, request).await
+        match self
+            .exchange_code_challenged(code, code_verifier, redirect_uri, None, cancellation)
+            .await?
+        {
+            TokenExchange::Token(token) => Ok(token),
+            TokenExchange::Challenge(_) => Err(NativeLoginError::TokenRefused),
+        }
     }
 
     /// `POST /api/v1/game-auth/tickets` with the bearer: one native ticket. The access token is
