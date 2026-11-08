@@ -1,0 +1,106 @@
+{
+  "state": "COMPILE_AND_QUEST_UNITS_GREEN_NATIVE_POSTGRES_PENDING",
+  "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+  "baseline": {
+    "case": "nx6_wayfarer_real_npc_atomic_finale_replay_and_fences",
+    "seconds": 67.142,
+    "marker": "NX6_POSTGRES_CASE_COMPLETED elapsed=32.502431928s"
+  },
+  "red": {
+    "postgres_seconds": 65.588,
+    "marker": "POSTGRES_CASE_STARTED questpc8_wrath_dream_report",
+    "error": "WRATH_DREAM_REPORT_RED: chosen stage has no receipt-bound native report",
+    "log": "/tmp/questpc8b-dream-report-red-pg.log"
+  },
+  "quest_units": {
+    "passed": 355,
+    "seconds": 45.51,
+    "log": "/tmp/questpc8b-dream-quest-units-green.log",
+    "initial_failures": 2,
+    "root_cause": "Both receipt-test bases lacked the now-required existing Wrath receipt owner; add source tracks/finale without weakening any assertions"
+  },
+  "python_tests": {
+    "passed": 10,
+    "chosen_progress_seconds": 4.353,
+    "chosen_journal_seconds": 9.854
+  },
+  "checks": {
+    "workspace": {
+      "exit": 0,
+      "seconds": 191.74782913200033
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.697780268004863
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.2944195320014842
+    }
+  },
+  "regeneration": {
+    "proof": {
+      "exit": 0,
+      "seconds": 0.41264674501144327
+    },
+    "tree": {
+      "exit": 0,
+      "seconds": 34.79957839399867
+    },
+    "claims": {
+      "exit": 0,
+      "seconds": 2.785836159993778
+    },
+    "bindings": {
+      "exit": 0,
+      "seconds": 14.542984277999494
+    },
+    "completion": {
+      "exit": 0,
+      "seconds": 4.840443613997195
+    },
+    "matrix": {
+      "exit": 0,
+      "seconds": 0.498045986998477
+    },
+    "native": {
+      "exit": 0,
+      "seconds": 341.1531661300105
+    },
+    "audit": {
+      "exit": 0,
+      "seconds": 0.019867206006892957
+    },
+    "pins": {
+      "exit": 0,
+      "seconds": 114.29354220700043
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.3424597260018345
+    },
+    "chosen": {
+      "exit": 0,
+      "seconds": 0.30668962399067823
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.254852101003053
+    }
+  },
+  "shared_reuse": "Existing NX6 native NPC dialogue, atomic dream finale and Wayfarer achievement; existing required_receipts callback engine",
+  "authoring_repair": "Restore four exact previously-published opening callbacks, three tracks and Zalamon greeting to owning author input; generated existing rows unchanged",
+  "scope": "Chosen Wrath s7 report advances stage6 to7 after exact dream receipt; no item/achievement reward and no whole-quest completion",
+  "own_migrations": "1300-1308 unchanged; no new migration",
+  "review": "Independent final product review: no findings",
+  "remaining_quests": {
+    "qualified": 21,
+    "total": 23,
+    "Colours": "Live-player colour predicate still queued with qengine2",
+    "Wrath": "Continue chosen graph; item-look disguise still queued with qengine2"
+  },
+  "pending": [
+    "remaining dispatch full unit coverage: CI scope; not claimed complete",
+    "three focused native PostgreSQL cases and clippy still in active sequential driver; PREPUSH-2 step3 cadence exception"
+  ]
+}

@@ -1,3 +1,18 @@
+# Latest checkpoint: Wrath dream report compile ready; native PG pending
+
+Main47baa7bb8 merged. Chosen Wrath s7 now has a receipt-bound `dream journey`
+report to the existing Sleeping Dragon NPC: stage6 to7 only after the actual
+production dragon-dream-complete receipt records Questline28. No extra reward,
+achievement or whole-quest completion. Reused NX6 dialogue/atomic finale;
+all existing rollback/fence/replay checks remain. Restored four published opening
+callbacks, three tracks and Zalamon's greeting to the owning author input so
+canonical regeneration preserves both Wrath and Colours openings.
+PG RED65.588s proved missing report; quest units355PASS45.51s; Python10PASS.
+State: COMPILE_AND_QUEST_UNITS_GREEN_NATIVE_POSTGRES_PENDING. Commands, measured results and remaining coverage are
+in wrath-dream-validation.json. Full dispatch unit coverage remains CI scope.
+Whole quest count stays21/23. Both qengine2 feature requests remain queued.
+No new migration or shared engine feature; original questpc8 stays frozen.
+
 # Latest checkpoint: main98d6 integrated; six native PostgreSQL cases GREEN
 
 Pushed product89e75d40b preserves main Soulpit and questpc8 mechanics. Its

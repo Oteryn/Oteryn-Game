@@ -821,3 +821,19 @@ loot becomes a grant and no test count or refusal assertion is relaxed.
   carried_bounds.rs helper aligns admission with that unchanged SQL proof.
   Regression RED accepted nine inputs; rejection coverage also checks cost101.
   This integration fix leaves the reused upstream helper/migration unchanged.
+
+- Wrath chosen stage s7 reuses the existing NX6 source Sleeping Dragon dialogue,
+  final transaction and Wayfarer achievement. Add an authored `dream journey`
+  report to that same NPC after the actual dream finale. It advances chosen
+  stage6 to7 only with the exact dragon-dream-complete receipt's Questline28
+  result, using existing required_receipts support. It grants no extra item or
+  achievement and does not complete the whole Wrath quest. The source finale is
+  https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sleeping_dragon.lua
+  and the accepted chosen route is recipe s7 in the canonical Wrath definition.
+  The fixture seeds only prerequisites through with_fixture_transition, keeping
+  the complete production catalogue and all old rollback/fence/replay checks.
+- Running the owning chosen-campaign generator exposed four prior opening rows,
+  three chosen tracks and Zalamon's greeting missing from its authored input.
+  Restore those exact already-published rows to chosen-route-rewards.json before
+  regeneration; do not hand-patch generated outputs or lose the earlier openings.
+  Revalidate both opening PG cases alongside the new dream-report regression.

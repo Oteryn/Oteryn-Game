@@ -1405,7 +1405,7 @@
   {
     "canonical": "oteryn:quest.authored.the_colours_of_magic",
     "title": "The Colours of Magic",
-    "status": "UNFINISHED",
+    "status": "IN_PROGRESS",
     "disposition": "authoring",
     "qualified_elsewhere": [],
     "mechanism": "chosen fixed-blue native envelope exchange and self-marking; live-player pairing queued",
@@ -1461,17 +1461,11 @@
       "qualification_unchanged": true
     },
     "main_sync": {
-      "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
-      "state": "FOCUSED_GREEN_6_NATIVE_PG",
-      "proof": "main-98d6-validation.json",
-      "native_postgres": "6/6PASS139.376s on pushed89e75d40b; markers and measured cases recorded",
-      "qengine_audit": {
-        "head": "c7f9d9ba79ec4a53c4b874af54affe6898780c5a",
-        "source": "qlane-meta/qengine2/ENGINE-QUEUE.json",
-        "carried_use_live_player_quest_predicate": "QUEUED",
-        "item_look_disguise_restore": "QUEUED"
-      }
-    }
+      "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+      "state": "COMPILE_AND_QUEST_UNITS_GREEN_NATIVE_POSTGRES_PENDING",
+      "proof": "wrath-dream-validation.json"
+    },
+    "authoring_round_trip": "Published envelope/self-mark rows restored to canonical author input; opening PG revalidation included in wrath-dream-validation.json"
   },
   {
     "canonical": "oteryn:quest.the_secret_library_quest",
@@ -1699,14 +1693,14 @@
   {
     "canonical": "oteryn:quest.wrath_of_the_emperor_quest",
     "title": "Wrath of the Emperor Quest",
-    "status": "UNFINISHED",
+    "status": "IN_PROGRESS",
     "disposition": "authoring",
     "qualified_elsewhere": [],
     "mechanism": "native_reward_source_placement",
     "blocker": {
       "kind": "active_implementation",
       "owner": "qengine2 (shared disguise); questpc8 (quest graph)",
-      "missing_piece": "Native exact-material opening and replay qualified as a slice; later source item-look disguise requires the existing qengine2 request. Whole-quest qualification awaits the real remaining graph, without a substitute appearance implementation.",
+      "missing_piece": "Chosen graph work continues; opening and source dream are reused. Item-look disguise remains queued with qengine2.",
       "evidence": [
         "qlane-meta/questpc8/RESUME.md",
         "qlane-meta/questpc8/continuation-validation.json"
@@ -1758,16 +1752,14 @@
       "qualification_unchanged": true
     },
     "main_sync": {
-      "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
-      "state": "FOCUSED_GREEN_6_NATIVE_PG",
-      "proof": "main-98d6-validation.json",
-      "native_postgres": "6/6PASS139.376s on pushed89e75d40b; markers and measured cases recorded",
-      "qengine_audit": {
-        "head": "c7f9d9ba79ec4a53c4b874af54affe6898780c5a",
-        "source": "qlane-meta/qengine2/ENGINE-QUEUE.json",
-        "carried_use_live_player_quest_predicate": "QUEUED",
-        "item_look_disguise_restore": "QUEUED"
-      }
+      "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+      "state": "COMPILE_AND_QUEST_UNITS_GREEN_NATIVE_POSTGRES_PENDING",
+      "proof": "wrath-dream-validation.json"
+    },
+    "dream_slice": {
+      "state": "COMPILE_AND_QUEST_UNITS_GREEN_NATIVE_POSTGRES_PENDING",
+      "proof": "wrath-dream-validation.json",
+      "scope": "Chosen Wrath s7 report advances stage6 to7 after exact dream receipt; no item/achievement reward and no whole-quest completion"
     }
   },
   {

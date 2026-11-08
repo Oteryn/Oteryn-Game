@@ -797,6 +797,238 @@
         }
       ],
       "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/dream-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "dream journey"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "required_receipts": [
+        {
+          "transition": "oteryn:quest-transition/wrath-of-the-emperor/dragon-dream-complete",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "value": 28
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Your journey through the dream is recorded. The four imperial crystal influences remain."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sleeping_dragon.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen Wrath recipe s7 report after the source Sleeping Dragon finale; exact durable questline28 receipt is required, no second achievement and no whole-quest completion."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/start",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "wrath mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission01",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Bring me three nails and one piece of wood, and ask for a crate."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/crate",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "crate"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i953",
+          "count": 3
+        },
+        {
+          "item": "oteryn:item.tibia.i5901",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i11328",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "The marked crate is ready. Use the disguise to enter the maintenance tunnel."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/colours/envelope",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "npc": "oteryn:npc.nathaniel",
+      "keywords": [
+        "colours envelope"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/colours/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12204",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12208",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i12205",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": false,
+      "reply": [
+        "The envelope contains blue powder and a letter."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ],
+      "carried_item": "oteryn:item.tibia.i12204",
+      "carried_exchange": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/colours/mark-blue",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "npc": "oteryn:npc.nathaniel",
+      "keywords": [
+        "colours mark-blue"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/colours/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/colours/colour",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12208",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12228",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": false,
+      "reply": [
+        "You are marked blue; retain the remaining powder for a differently marked participant."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ],
+      "carried_item": "oteryn:item.tibia.i12208",
+      "carried_exchange": true
     }
   ],
   "offers": [
@@ -989,6 +1221,16 @@
         "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
         "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
       ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your wrath mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: explicit opening mission keyword for the chosen recipe."
+      ]
     }
   ],
   "tracks": [
@@ -1068,6 +1310,44 @@
         "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
         "https://www.tibiawiki.com.br/Winterlight_Solstice",
         "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/wrath/stage",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 8,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "oteryn-authored:chosen-recipe:wrath-opening:authored-r1"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/colours/stage",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/colours/colour",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
       ]
     }
   ]

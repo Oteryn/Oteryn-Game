@@ -970,6 +970,44 @@
       "per_occurrence_mint": true
     },
     {
+      "key": "oteryn:quest-reward/chosen/wrath/dream-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "dream journey"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "required_receipts": [
+        {
+          "transition": "oteryn:quest-transition/wrath-of-the-emperor/dragon-dream-complete",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "value": 28
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Your journey through the dream is recorded. The four imperial crystal influences remain."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sleeping_dragon.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen Wrath recipe s7 report after the source Sleeping Dragon finale; exact durable questline28 receipt is required, no second achievement and no whole-quest completion."
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/chosen/wrath/start",
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "npc": "oteryn:npc.zalamon",

@@ -7,7 +7,7 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
     world_callbacks::Position, wrath_sleeping_dragon as quest,
 };
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
@@ -53,37 +53,19 @@ pub(super) async fn exercise(
     let started = std::time::Instant::now();
     let [dragon] = install(owner, admitted, [quest::NPC]).await?;
     let canonical = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    let keys = [quest::QUESTLINE, quest::MISSION, quest::POTION];
-    let tracks = keys
-        .into_iter()
-        .map(|key| canonical.track(key).cloned().ok_or("track"))
-        .collect::<Result<Vec<_>, _>>()?;
-    // Fixture-only prerequisite transition through the fenced owner. No successful
-    // finale, receipt or achievement is seeded; the final transition is production code.
+    let keys = [quest::QUESTLINE, quest::MISSION, quest::POTION, super::questpc8_wrath_dream::STAGE];
+    // Only prerequisites are seeded. The real NPC must earn the dream receipt.
     let setup_key = "oteryn:quest-transition/nx6-fixture-dream-ready";
-    let mut transitions = vec![QuestTransition {
-            world_change: None,
+    let catalogue = Arc::new(canonical.with_fixture_transition(QuestTransition {
+        world_change: None,
         key: setup_key.into(),
         quest: quest::QUEST.into(),
-        effects: keys
-            .into_iter()
-            .zip([27, 1, 1])
-            .map(|(key, value)| QuestEffect {
-                track: key.into(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(value),
-            })
-            .collect(),
+        effects: keys.into_iter().zip([27, 1, 1, 6]).map(|(key, value)| QuestEffect {
+            track: key.into(), from: QuestComparison::Any, effect: QuestEffectKind::Set(value),
+        }).collect(),
         completes: false,
         experience: None,
-    }];
-    if let Some(finale) = canonical.transition(quest::COMPLETE) {
-        transitions.push(finale.clone());
-    }
-    let catalogue = Arc::new(
-        QuestStateCatalogue::new(canonical.content_revision(), tracks, transitions)
-            .map_err(debug)?,
-    );
+    }).map_err(debug)?);
     owner.quest_catalogue = Some(catalogue.clone());
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
@@ -114,8 +96,9 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    talk(owner, admitted, dragon, 6001, "hi").await?;
-    talk(owner, admitted, dragon, 6002, "SOLOSARASATIQUARIUM").await?;
+    super::questpc8_wrath_dream::before(owner, admitted, dragon).await?;
+    talk(owner, admitted, dragon, 6003, "hi").await?;
+    talk(owner, admitted, dragon, 6004, "SOLOSARASATIQUARIUM").await?;
     let source: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../../../content/dialogues/quests-2/wrath-sleeping-dragon.json"
     ))?;
@@ -306,6 +289,7 @@ pub(super) async fn exercise(
         b"\x0a\x1boteryn:achievement/wayfarer\x12\x08Wayfarer\x18\x01\x20\x03",
         "these exact server bytes are decoded by the native client play test"
     );
+    super::questpc8_wrath_dream::after(owner, admitted, dragon, h, authority).await?;
     eprintln!(
         "NX6_POSTGRES_CASE_COMPLETED elapsed={:?}",
         started.elapsed()

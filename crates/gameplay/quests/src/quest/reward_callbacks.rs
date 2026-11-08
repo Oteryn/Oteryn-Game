@@ -1415,6 +1415,9 @@ mod tests {
 }
 
 #[cfg(test)]
+mod receipt_test_base;
+
+#[cfg(test)]
 mod lane_tests {
     use super::*;
     #[test]
@@ -1439,11 +1442,7 @@ mod lane_tests {
             .and_then(|c| c.give.as_mut())
             .ok_or("reward")?
             .count = 51;
-        let empty = || {
-            super::super::grizzly_adams::extend(
-                QuestStateCatalogue::empty("content-1").ok_or("empty")?,
-            )
-        };
+        let empty = receipt_test_base::catalogue;
         let before = extend_callbacks(
             empty()?,
             before,
@@ -1470,11 +1469,9 @@ mod lane_tests {
 
     #[test]
     fn reward_receipt_predicates_require_the_same_quest_and_declared_value() -> Result<(), String> {
-        let empty =
-            QuestStateCatalogue::empty("receipt-predicate-test").ok_or("empty catalogue")?;
-        let base = super::super::grizzly_adams::extend(empty)?;
-        // Isolate the actual receipt-gated campaign; unrelated main callbacks
-        // have their own participant prerequisites and are covered separately.
+        let base = receipt_test_base::catalogue()?;
+        // Include every receipt-gated callback and its production receipt owner;
+        // unrelated participant prerequisites are covered separately.
         let callbacks: Vec<_> = load()?
             .into_iter()
             .filter(|callback| !callback.required_receipts.is_empty())
