@@ -1,0 +1,110 @@
+Reasoning effort: medium.
+
+Task ENGITEM: build the quest-engine mechanics that quest lanes reported as ENGINE-REQUEST, area: item use, rewards, timers, conditions, counters, migrations.
+
+Base: main (merge origin/main first). Branch to push: claude/happy-davinci-ijz3wy-engitem (no force, no PR). Migration numbers reserved for you: 1640-1659 only (do not use others; never edit merged migrations). Before writing a feature, check main and branches claude/happy-davinci-ijz3wy-qengine2, -questl2b, -questpc-pc2, -wpkg2 for an existing implementation and reuse it instead of duplicating (git log -S / git grep).
+
+Requests (deduplicate first; many are the same feature reported by several lanes):
+ENGINE-REQUEST questl2: add a deterministic test clock for authoritative quest waits without shortening production durations or altering quest progress | needed by: Koshei the Deathless; Sea of Light; Spike Tasks | where: gameplay-durability/quest_state/writer; dispatch PostgreSQL harness
+ENGINE-REQUEST questl2: bind personal quest progress to SEASON’s existing Cake extraction and bite receipts (reuse 16cba2868) | needed by: A Piece of Cake | where: gameplay-quests/reward_callbacks; gameplay-durability/cake_event
+ENGINE-REQUEST questl2: carried quest-tool USE_WITH_MAP_ITEM with source-instance proof and target-bound effects | needed by: To Blind the Enemy | where: crates/gameplay/dispatch/src/gameplay_transport/cosmetic_item_use.rs
+ENGINE-REQUEST questl2: consumable temporary outfit disguise with a 20-second expiry | needed by: Secret Service | where: quest/world_callbacks/effects.rs; Secret Service actions_amazon_disguise_kit.lua
+ENGINE-REQUEST questl2: join a personal contribution threshold and once-per-event item grant to an existing NPC donation transaction | needed by: A Piece of Cake (20 substances, Cake Backpack) | where: durability/consume_transform/cake.rs and quest reward minting; reuse season `7bf97ab17` for its existing 200-substance world goal.
+ENGINE-REQUEST questl2: mint a quest reward at an authored ground position atomically with progress, then allow normal pickup | needed by: Shattered Isles (rake.lua:9–14 creates ring 6093 at 32422/32770/1) | where: quest_callbacks/rewards.rs; existing ItemPresence is explicitly not an Item instance.
+ENGINE-REQUEST questl2: native diagonal movement for the sixteen-step dance | needed by: Unnatural Selection | where: protocol-oteryn/world_spatial.rs:41–46; the existing PG dance test explicitly excludes diagonal movement and cannot qualify the full journey
+ENGINE-REQUEST questl2: post-1251 migration preserving 1219’s exact charge plans and root/child fluid proofs | needed by: Hot Cuisine; Annual Autumn Vintage; Demon's Lullaby | where: reward_claim_mint/fluid.rs and migrations 1219/1251
+ENGINE-REQUEST questl2: reconcile main migration 1349’s eight-track cap with L2’s generic eleven-track regression | needed by: retained atomic-transition coverage | where: durability receipt constraint.
+ENGINE-REQUEST questl2: reconcile the retained generic 16-track regression with main’s post-1349 eight-track receipt cap using a new migration after 1349; keep Father’s exact eleven-track exception unchanged | needed by: shared L2 atomic-transition regression | where: migrations/1210, migrations/1349, gameplay-quests/quest/mod.rs
+ENGINE-REQUEST questl2: targeted carried-tool use on map items, including message placement and timed removal | needed by: Thieves Guild | where: cosmetic_item_use.rs; donor actions_note.lua:12-21 requires item7873 on AID12509 and removes the placed note after five minutes
+ENGINE-REQUEST questpc-pc2-n2: atomic multiple root item rewards in one NPC receipt, including capacity refusal and replay | needed by: An Interest In Botany Quest; Bigfoot's Burden Quest | where: crates/gameplay/quests/src/quest/reward_callbacks.rs
+ENGINE-REQUEST questpc-pc2-n2: atomic multiple root item rewards | needed by: An Interest In Botany Quest; Bigfoot's Burden Quest | where: crates/gameplay/quests/src/quest/reward_callbacks.rs
+ENGINE-REQUEST questpc2: atomic tool consumption, live-creature capture and captured-item custody | needed by: Goblin Merchant Quest | where: crates/gameplay/dispatch
+ENGINE-REQUEST questpc2: enforce authored premium-account requirements at native quest admission | needed by: Asura Palace Quest | where: crates/gameplay/quests/src/quest/authored_bindings.rs; crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks
+ENGINE-REQUEST questpc2: independently pinned Crystal Summer Item membership (revision 00ce02a5, XML SHA 13a8773e) for existing bindings 43961/43962/43964/43966/43967/43968 | needed by: Rotten Blood Quest | where: tools/content-schema/native-gameplay/build_spell_item_identities.py
+ENGINE-REQUEST questpc2: qualify pinned Crystal Summer Item membership at revision 00ce02a5, XML SHA 13a8773e, for 43961/43962/43964/43966/43967/43968 | needed by: Rotten Blood Quest | where: tools/content-schema/native-gameplay/build_spell_item_identities.py
+ENGINE-REQUEST questpc2: vocation-dependent damage on tile entry | needed by: The Pits of Inferno Quest | where: crates/gameplay/quests/src/quest/world_callbacks/effects.rs (donor movements_fire_tile.lua:41–48, SHA dc674efa)
+ENGINE-REQUEST questpc3: Atomic carried-target transforms that preserve the donor’s target-stack quantity | needed by: The Tainted Souls Quest | where: gameplay/items item_craft and durability item_loop_move
+ENGINE-REQUEST questpc3: annual-date and stored-cooldown predicates for StepIn, plus transaction-clock reward cooldown writes | needed by: The First Dragon Quest | where: gameplay/quests world_callbacks
+ENGINE-REQUEST questpc3: conditional achievement participants on world Item MINT, for Treasure Hunter on the twentieth unique chest | needed by: The First Dragon Quest | where: crates/gameplay/quests/src/quest/world_callbacks/effects.rs
+ENGINE-REQUEST questpc3: expose existing transaction-clock state operations on world reward callbacks for per-character harvest cooldowns | needed by: Threatened Dreams Quest | where: crates/gameplay/quests/src/quest/world_callbacks.rs and crates/gameplay/durability/src/durability/quest_world_callback.rs
+ENGINE-REQUEST questpc3: ground-item MINT and ground-item USE_WITH cart callbacks | needed by: The Beginning Quest | where: crates/gameplay/quests/src/quest/world_callbacks.rs and crates/gameplay/durability
+ENGINE-REQUEST questpc3: stateless StepIn level-range predicates with an explicit failure teleport destination | needed by: The Beginning Quest | where: gameplay/quests world_callbacks and gameplay/dispatch quest_callbacks
+ENGINE-REQUEST questpc4: atomic NPC reward teleport with destination authority and replay | needed by: The Paradox Tower Quest (Riddler finale) | where: quest reward callbacks and gameplay dispatch  
+ENGINE-REQUEST questpc4: atomic bitmask guard/update with carried-item consumption and experience | needed by: The Rookie Guard Quest | where: gameplay-quests world_callbacks and durability quest_world_callback
+ENGINE-REQUEST questpc4: atomic callback-driven world-item relocation preserving item identity and attributes | needed by: The Outlaw Camp Quest | where: gameplay-quests/quest/world_callbacks/effects.rs and durability callback custody
+ENGINE-REQUEST questpc4: atomic carried-item pair transformations and exact self-target quest USE | needed by: The Cursed Crystal Quest | where: gameplay-quests/quest/world_callbacks and dispatch item-use admission
+ENGINE-REQUEST questpc4: improper-level weapon behavior for `unproperly=true` | needed by: The Outlaw Camp Quest | where: equipment admission/effects; donor `data/items/items.xml` item3295
+ENGINE-REQUEST questpc4: improper-level weapon penalties for `unproperly=true` | needed by: The Outlaw Camp Quest | where: `crates/gameplay/dispatch/src/gameplay_transport/equipment_move.rs`
+ENGINE-REQUEST questpc4: main-compatible native authored-binding admission, reusing qualified 614d00506/192de4928 | needed by: The Paradox Tower Quest; Realm of Dreams Quest; The Ancient Tombs Quest; Treasure Hunt Quest | where: crates/gameplay/quests/src/quest/authored_bindings
+ENGINE-REQUEST questpc4: shared pickup and reset for items inside native map containers | needed by: Skeleton Decoration Quest | where: native map initialization and item-loop custody  
+ENGINE-REQUEST questpc4: shared reset-epoch pickup of items inside map containers | needed by: Skeleton Decoration Quest | where: gameplay-world/map/overlay/pickup.rs and gameplay-durability map pickup custody
+ENGINE-REQUEST questpc4: shared world-object reset epochs and container pickup custody | needed by: Dreamer’s Challenge Quest; Lion’s Rock Quest; Machinery of War Quest; Skeleton Decoration Quest | where: `crates/gameplay/quests/src/quest/world_callbacks.rs`
+ENGINE-REQUEST questpc5: claimant-attributed captured-wolf pickup credit | needed by: Overhunting World Change | where: existing World trap capture and personal quest admission
+ENGINE-REQUEST questpc5: claimant-attributed quest progress from existing wolf-trap capture/pickup events, reusable with daily phase resets | needed by: Overhunting World Change | where: quest_callbacks::monsters capture handling and quest callback admission; reuse existing traps and Benevola World owner
+ENGINE-REQUEST questpc5: daily restart/completion for authored NPC/world callback routes, reusing existing storage-time guards | needed by: Oramond Quest; Overhunting World Change | where: crates/gameplay/quests/src/quest/reward_callbacks.rs and world_callbacks.rs
+ENGINE-REQUEST questpc5: exact live Creature relocation on fenced World USE | needed by: 20 Years a Cook Quest | where: World movement owner and quest callbacks
+ENGINE-REQUEST questpc5: exact selected nested native leaf with source once ledger | needed by: Ornamented Shield Quest | where: native source reward claims UID6062
+ENGINE-REQUEST questpc5: expose bounded readable text on item rewards using the existing mint-plan root_text support | needed by: Nomads Land Quest | where: gameplay-quests ItemReward and durability reward_claim_mint/quest.rs
+ENGINE-REQUEST questpc5: fenced MapBase-to-Ground movement for movable source crates and amphoras | needed by: Nomads Land Quest window stacks | where: gameplay-dispatch item_move.rs:378–405 (also unsupported on QENGINE2 dd35529b6)
+ENGINE-REQUEST questpc5: fenced mutable Ground stack/order predicate | needed by: Nomads Land Quest | where: gameplay-quests world callbacks and World admission
+ENGINE-REQUEST questpc5: fenced world USE callback that relocates an exact live creature together with quest progress and tool validation | needed by: 20 Years a Cook Quest (Fryclops catapult) | where: gameplay-quests world_callbacks and gameplay-dispatch quest_callbacks
+ENGINE-REQUEST questpc5: literal readable NPC/World reward text | needed by: Nomads Land Quest | where: gameplay-quests ItemReward and reward_claim_mint
+ENGINE-REQUEST questpc5: quest-cycle-scoped repeatable World item MINT | needed by: Oramond Quest | where: reward_claim_mint quest give_world
+ENGINE-REQUEST questpc5: quest-guarded object taming with an atomic mount grant and quest-progress write | needed by: Targuna Quest | where: gameplay-content mount_taming; gameplay-durability item_use/mount_taming.rs
+ENGINE-REQUEST questpc5: quest-guarded object taming with atomic progress | needed by: Targuna Quest | where: object-target mount taming
+ENGINE-REQUEST questpc5: read-only foreign quest prerequisite alongside local progress | needed by: Opticording Sphere Quest | where: gameplay-quests/world_callbacks and fenced dispatch admission
+ENGINE-REQUEST questpc5: read-only foreign quest prerequisite with local transition | needed by: Opticording Sphere Quest | where: gameplay-quests world callbacks and fenced dispatch admission
+ENGINE-REQUEST questpc5: recipe-scoped nondecay butterfly specimen | needed by: The Explorer Society Quest | where: native Item duration admission
+ENGINE-REQUEST questpc5: recipe-scoped nondecaying specimen binding that preserves the original timed Item | needed by: The Explorer Society Quest | where: native Item admission and quest reward callbacks
+ENGINE-REQUEST questpc5: reconcile main #3029’s world-reward API with existing premium, completion and read-only callback support | needed by: 20 Years a Cook Quest; Thais Lighthouse Quest; Serpentine Tower Quest | where: gameplay-dispatch quest_callbacks/execute.rs; gameplay-durability quest_world_callback and reward_claim_mint/quest.rs
+ENGINE-REQUEST questpc5: repeatable World USE item rewards with a cycle-scoped MINT identity; transactional clocks already exist | needed by: Oramond Quest | where: durability/reward_claim_mint/quest.rs::give_world currently passes false
+ENGINE-REQUEST questpc5: source-bound selection of a nested reward leaf under its existing once-only chest claim | needed by: Ornamented Shield Quest | where: crates/gameplay/content/src/content/world_reward_claims/selected_leaf.rs; tools/content-schema/reward-claim-authoring/selected_native_leaf.py
+ENGINE-REQUEST questpc7: CallbackEffects/CallbackEffectSet compatibility for safe main merge | needed by: Feaster of Souls Quest; Goblin Merchant Quest; Hot Cuisine Quest; Illuminated Warrior Outfits Quest | where: crates/gameplay/quests/src/quest/world_callbacks.rs
+ENGINE-REQUEST questpc7: bounded repeatable world USE rewards with exact carried and ground input proofs | needed by: Feaster of Souls Quest | where: gameplay-durability/reward_claim_mint/quest.rs and game_quest_reward_complete()
+ENGINE-REQUEST questpc7: carried quest-tool capture of an exact live creature with a fenced quest receipt | needed by: Goblin Merchant Quest | where: gameplay-dispatch/item_use.rs and gameplay-quests/world_callbacks.rs
+ENGINE-REQUEST questpc7: fenced carried-tool sampling of an exact live creature with item transformation | needed by: Goblin Merchant Quest (Rotworm odour) | where: gameplay_transport/item_use.rs
+ENGINE-REQUEST questpc7: first-party portable item and outfit constructors without invented Tibia IDs; questpc8’s constructor currently requires `oteryn:item.tibia.i*` | needed by: Illuminated Warrior Outfits Quest | where: gameplay-content/native_gameplay/authored_items.rs and cosmetics_loader.rs
+ENGINE-REQUEST questpc7: reconcile main’s CallbackEffectSet with retained world item rewards, read-only guards and bounded counters | needed by: Feaster of Souls Quest; Goblin Merchant Quest; Golden Outfits Quest; Formal Dress Outfits Quest | where: quests/world_callbacks.rs; dispatch/quest_callbacks/execute.rs; durability/reward_claim_mint/quest.rs
+ENGINE-REQUEST questpc8: carried USE item replacement/reward and a fenced live-player quest-state predicate | needed by: The Colours of Magic | where: crates/gameplay/quests, crates/gameplay/dispatch, crates/gameplay/durability
+ENGINE-REQUEST questpc8: carried USE item replacement/reward plus a fenced live-player quest-state predicate | needed by: The Colours of Magic | where: crates/gameplay/quests, crates/gameplay/dispatch, crates/gameplay/durability
+ENGINE-REQUEST questpc8: carried USE rewards and fenced live-player quest predicates | needed by: The Colours of Magic | where: gameplay quests/dispatch/durability
+ENGINE-REQUEST questpc8: fenced live-player colour-state predicate | needed by: Colours of Magic | where: gameplay/quests and gameplay/dispatch
+ENGINE-REQUEST questpc8: fenced live-player quest-state predicate for selected carried USE | needed by: The Colours of Magic | where: crates/gameplay/quests, crates/gameplay/dispatch, crates/gameplay/durability
+ENGINE-REQUEST questpc8: fenced live-player quest-state predicate for selected-instance carried USE | needed by: The Colours of Magic | where: crates/gameplay/quests, crates/gameplay/dispatch, crates/gameplay/durability
+ENGINE-REQUEST questpc8: item-look disguise (lookTypeEx) and restoration | needed by: Wrath of the Emperor Quest | where: crates/gameplay/quests, crates/gameplay/dispatch
+ENGINE-REQUEST questpc8: item-look disguise restoration | needed by: Wrath of the Emperor Quest | where: gameplay/quests, gameplay/dispatch
+ENGINE-REQUEST questpc8: item-look disguise with restoration | needed by: Wrath of the Emperor Quest | where: gameplay/quests and gameplay/dispatch
+ENGINE-REQUEST questpc8: item-look disguises with appearance restoration | needed by: Wrath of the Emperor Quest | where: gameplay quests/dispatch
+ENGINE-REQUEST questpc8: live-player colour predicate | needed by: The Colours of Magic | where: gameplay/dispatch
+ENGINE-REQUEST questpc8: source item-look disguises (`lookTypeEx`) with appearance restoration | needed by: Wrath of the Emperor Quest | where: crates/gameplay/quests, crates/gameplay/dispatch
+ENGINE-REQUEST questpc8: source item-look disguises (`lookTypeEx`) with indefinite lifetime and appearance restoration | needed by: Wrath of the Emperor Quest | where: crates/gameplay/quests, crates/gameplay/dispatch
+ENGINE-REQUEST questpc8: source item-look disguises (lookTypeEx) with appearance restoration | needed by: Wrath of the Emperor Quest | where: crates/gameplay/quests, crates/gameplay/dispatch
+ENGINE-REQUEST questpc: atomic quest USE transform with revision-fenced 10-second reset using the existing movement-decay queue | needed by: An Uneasy Alliance Quest | where: crates/gameplay/quests/src/quest/world_callbacks/effects.rs; crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/effects.rs
+ENGINE-REQUEST questpc: carried-tool callbacks that compose quest-counter increments, temporary outfits and replay-bound random spawns | needed by: In Service of Yalahar Quest | where: world callbacks — source sewer UIDs3071–3074 include timed disguises and a random rat-spawn branch.
+ENGINE-REQUEST questpc: carried-tool callbacks with counter increment, temporary outfit and replay-bound random spawn | needed by: In Service of Yalahar Quest | where: quests/world_callbacks and dispatch/quest_callbacks
+ENGINE-REQUEST questpc: fenced quest-objective receipts after successful native tool actions, preserving transformation and decay | needed by: Kissing a Pig Quest | where: dispatch item-tool owner and quest callbacks
+ENGINE-REQUEST questpc: fenced read-only StepIn guards with no quest writes, plus ordered refusal messages | needed by: Bigfoot’s Burden Quest | where: quest_callbacks::step_quest_trigger passes no ReadOnlyGate; execute.rs rejects it
+ENGINE-REQUEST questpc: player-driven shared world state readable by NPC guards and item-use callbacks, with fenced Salt Lake refill/toxin transitions and per-object reset | needed by: Krailos Quest | where: world-change owner, quests/world_callbacks and NPC guard context
+ENGINE-REQUEST questpc: public player speech and atomic conditional object toggles with delayed reset | needed by: Children of the Revolution Quest | where: quests/world_callbacks and dispatch/quest_callbacks
+ENGINE-REQUEST questpc: replay-bound random quest outcomes with live condition predicates | needed by: Barbarian Test Quest | where: world callbacks — mead has random success/reset branches, and the mammoth requires actual CONDITION_DRUNK.
+ENGINE-REQUEST questpc: retain the actual NPC13 Tibia Tales definition predecessor after shared reward baseline additions | needed by: Hidden Threats Quest | where: quests/loader.rs and catalogue_history.rs
+ENGINE-REQUEST questpc: revision-fenced timed ground-item transforms and resets on USE/StepIn | needed by: Lion's Rock Quest; An Uneasy Alliance Quest | where: gameplay world callbacks and the item-decay owner
+
+Do, in order of how many quests each unblocks:
+1. One generic engine feature per commit (not per quest), in the quest engine/dispatch/durability crates, atomic and replay-safe like existing quest transitions, with its own test red then green including its own PG case (prove the test executed: duration/marker). No quest content in this task, only the engine capability plus a minimal fixture.
+2. A request that is really content-only, already supported, or needs an owner decision: do not build it; list it in the reply with the reason.
+3. Focused checks only: own tests, cargo check, clippy of changed crates, fmt, regenerate generated files/pins with repo tooling. No full nextest, no full PG suite, no node boot.
+4. Push after every green feature.
+5. Reply in at most 15 lines: SHA, features done (with which quests they unblock), requests skipped with reason.
+Reasoning effort: medium.
+
+STANDING RULES (from the 2026-11-08 night retro; apply to every push from now on, in addition to PREPUSH-2):
+1. Order before every push: merge origin/main FIRST, then make your changes, then regenerate EVERY generated file/packet LAST (quest packets, NPC dialogue links, completion matrix, pins).
+2. If you touched content/, quest data, NPC data or tools/content-schema: run locally the quest-authoring checks AND the quest-authoring unit-tests runner (same commands as the CI jobs 'quest-authoring (checks)' and 'quest-authoring (unit-tests)'), and the content-tree validation. Push only when they pass.
+3. Sha-pinned proofs (e.g. samples/completion-matrix/reward-use-proofs pins test_sha256 of postgres_tests/qready1_reward_claims.rs): if you change a pinned test file, rerun its PG cases for real (duration > 0.01 s) and re-import with the proof tool (quest_reward_use_proofs.py import_log). Never hand-edit a sha.
+4. If you touch node boot / serve / content activation: run the WHOLE node-boot script locally, every variant (including spell_input=full_manifest), not only the stage you fixed.
+5. A branch with an open PR is FROZEN: push only CI fixes or a main merge I asked for.
+No reply needed; keep working on your current task.
+
+
+PC LANE NOTE: you run on the owner PC worktree (fresh origin/main). Do NOT commit and do NOT push (sandbox cannot write the git index); leave all changes in the worktree, the operator commits and pushes to the branch named above. Focused checks only (fmt, cargo check/clippy of changed crates, own tests incl. own PG cases if a PG route exists). End with at most 15 lines: files changed, tests run with results.
