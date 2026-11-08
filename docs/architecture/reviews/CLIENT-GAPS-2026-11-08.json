@@ -1519,9 +1519,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Cyklopedia: Magical Archive",
-  "status": "PARTIAL",
-  "gap": "Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Istniejący Magical Archive ma własne otwarcie/zamknięcie i menu oraz współdzielony rzeczywisty katalog sesji. Formularz archiwum zawiera ukończone filtry profesji/grupy, wyszukiwanie i kartę szczegółów z cooldownem potwierdzonym przez serwer.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/view.rs:12 + o080_archive_has_its_own_window_lifetime_and_menu_request + o059_profession_search_filters_confirmed_catalog_through_real_caller + o059_detail_card_consumes_server_cooldown_observation"
  },
  {
   "id": "O083",
