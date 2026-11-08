@@ -26,6 +26,19 @@ mod entry;
 mod stack;
 pub(crate) use entry::burn_entry_core;
 
+/// Crystal 201189f soulpit.lua:155-174 and soulpit_fight.lua:37-77.
+/// Resolve the pinned species before reserving entry; the debit rechecks custody
+/// and this same reverse-variation/name rule inside the handoff transaction.
+pub fn entry_species<'a>(
+    native: &'a oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    definition: &crate::durability::item_mint::TypedDefinitionRef,
+) -> Option<&'a str> {
+    let source_id = native_source_id(native, definition).filter(|id| is_soul_core(*id))?;
+    let name = crate::domain::soulpit::soulpit_entry_monster_name(source_id)?;
+    source_monster(&name)?;
+    monster_record_for_name(native.creature_profiles(), &name).map(|(key, _)| key)
+}
+
 #[derive(Debug, Clone)]
 pub struct SoulCoreCraftRequest {
     pub command: CommandRef,

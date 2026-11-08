@@ -47,6 +47,8 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/item_decay_retire.rs", "apply_retire"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "apply_loop_move"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
+    ("crates/gameplay/durability/src/durability/item_loop_move/floor_assembly.rs", "commit_item_loop_floor_assembly"),
+    ("crates/gameplay/durability/src/durability/item_loop_move/floor_transform.rs", "apply"),
     ("crates/gameplay/durability/src/durability/item_loop_move/seed_drop.rs", "commit_item_loop_seed_drop"),
     ("crates/gameplay/durability/src/durability/item_mint.rs", "insert_corpse_loot_mint"),
     ("crates/gameplay/durability/src/durability/item_mint.rs", "insert_mint_with_corpse_attribution"),

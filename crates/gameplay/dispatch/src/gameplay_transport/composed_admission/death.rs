@@ -584,8 +584,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         runtime
             .place_admitted_respawn(actor, session, respawn_cell(recorded), |cell| {
                 respawn_cell_admissible(
-                    self.movement_cells.index(),
-                    self.movement_cells.scope(),
+                    self.movement_cells().index(),
+                    self.movement_cells().scope(),
                     self.world_id,
                     pinned_digest,
                     door.blocking_cells(),

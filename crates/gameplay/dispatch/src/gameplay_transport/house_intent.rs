@@ -163,10 +163,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return refuse();
                     };
                 } else {
-                    let Some(placement) = self
-                        .movement_cells
+                    let Some(placement) = self.movement_cells()
                         .house_tiles()
-                        .house_at(self.movement_cells.scope(), cell)
+                        .house_at(self.movement_cells().scope(), cell)
                         .ok()
                         .flatten()
                     else {
