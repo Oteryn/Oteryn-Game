@@ -7,9 +7,7 @@ pub use kills::KillCounter;
 
 use super::reward_callbacks::RewardCallback;
 use super::world_callbacks::Callback;
-use super::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
-};
+use super::{QuestStateCatalogue, QuestTrack, QuestTransition};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
@@ -193,6 +191,21 @@ impl Bindings {
 
     /// Compose explicit bindings with existing state. Every binding contributes to its quest hash.
     pub fn attach(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+        let mut normalized = self.clone();
+        for quest in &mut normalized.quests {
+            for stage in &mut quest.stages {
+                match &mut stage.trigger {
+                    Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
+                        callback.completes = stage.completes;
+                    }
+                    _ => {}
+                }
+            }
+        }
+        normalized.attach_normalized(base)
+    }
+
+    fn attach_normalized(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
         self.validate()?;
         let mut tracks: Vec<_> = base.tracks.values().cloned().collect();
         let mut transitions: Vec<_> = base.transitions.values().cloned().collect();
@@ -218,41 +231,17 @@ impl Bindings {
                     });
                     continue;
                 }
-                let (key, storage) = match &stage.trigger {
-                    Trigger::Kill { .. } => continue,
+                let mut transition = match &stage.trigger {
                     Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
-                        (&callback.key, &callback.storage)
+                        super::reward_callbacks::primary_transition(callback)?
                     }
                     Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
-                        (&callback.key, &callback.storage)
+                        super::world_callbacks::primary_transition(callback)?
                     }
+                    Trigger::Kill { .. } => continue,
                 };
-                transitions.push(QuestTransition {
-                    world_change: match &stage.trigger {
-                        Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
-                            callback.world_change.clone()
-                        }
-                        Trigger::NpcDialogue { .. }
-                        | Trigger::CarriedUse { .. }
-                        | Trigger::Kill { .. } => None,
-                    },
-                    key: key.clone(),
-                    quest: quest.quest.clone(),
-                    effects: storage
-                        .iter()
-                        .map(|s| QuestEffect {
-                            track: s.track.clone(),
-                            from: QuestComparison::Between(s.minimum, s.maximum),
-                            effect: if s.preserve {
-                                QuestEffectKind::Add(0)
-                            } else {
-                                QuestEffectKind::Set(s.set)
-                            },
-                        })
-                        .collect(),
-                    completes: stage.completes,
-                    experience: None,
-                });
+                transition.completes = stage.completes;
+                transitions.push(transition);
             }
         }
         let mut catalogue =

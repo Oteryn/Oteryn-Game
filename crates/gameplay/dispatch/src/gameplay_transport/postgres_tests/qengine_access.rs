@@ -821,6 +821,7 @@ async fn wardrobe(
         keywords: vec!["fixture".into()],
         topic: 0,
         next_topic: 0,
+        completes: false,
         storage: callback.storage.clone(),
         requires: vec![],
         participants: vec![],

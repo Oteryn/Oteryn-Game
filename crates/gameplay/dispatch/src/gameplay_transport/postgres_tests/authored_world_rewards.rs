@@ -39,6 +39,7 @@ pub(super) fn placeholder(at: Position) -> TestResult<Callback> {
     callback.quest = QUEST.into();
     callback.trigger = Trigger::Use;
     callback.selector = Selector {
+        native: None,
         position: Some(at),
         unique: Some(63001),
         action: None,
@@ -49,6 +50,8 @@ pub(super) fn placeholder(at: Position) -> TestResult<Callback> {
     callback.passages.clear();
     callback.teleport = None;
     callback.storage = vec![Storage {
+        at_least: false,
+        increment: false,
         track: PHASE.into(),
         minimum: 0,
         maximum: 0,
@@ -165,13 +168,13 @@ pub(super) async fn exercise(
         );
         let phase:i64=sqlx::query_scalar("SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key=$2),0)").bind(QUEST).bind(PHASE).fetch_one(&h.pool).await?;
         assert_eq!(phase, 0, "MINT refusal rolls back the quest write");
-        let sources: i64 = sqlx::query_scalar(
-            "SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$1",
+        let mints: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1",
         )
         .bind(STEP)
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!(sources, 0, "refused gift has no committed reward source");
+        assert_eq!(mints, 0, "refused gift has no committed MINT receipt");
         let key = oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1)
             .ok_or("placement")?;
         assert_eq!(
@@ -212,13 +215,19 @@ pub(super) async fn exercise(
         0,
         "per-character gift preserves the shared source object revision"
     );
-    let sources: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$1",
+    let mints: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1",
     )
     .bind(STEP)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(sources, 1, "exactly one reward source owns the MINT");
+    assert_eq!(mints, 1, "exactly one MINT receipt owns the gift");
+    let atomic: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts m JOIN game_character_quest_receipts q ON q.character_id=m.character_id AND q.cause_id=m.game_session_id AND q.cause_ordinal=m.command_id AND q.created_xact_id=m.created_xact_id WHERE m.claim_production_key=$1 AND q.transition_key=$1 AND q.cause_kind='use' AND q.completes")
+        .bind(STEP).fetch_one(&h.pool).await?;
+    assert_eq!(
+        atomic, 1,
+        "reward MINT and completed USE share one transaction"
+    );
     let result = super::quest_world_callbacks::wire(
         owner,
         admitted,

@@ -34,11 +34,22 @@ pub(super) fn prepare(
 ) -> Option<Step> {
     let catalogue = admission.quest_catalogue.as_deref()?;
     let callbacks = reward_callbacks::load_for(catalogue).ok()?;
-    let offers: Offers = serde_json::from_str(include_str!(
+    let mut offers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
     .ok()?;
-    if offers.schema != 1 || offers.offers.iter().any(|o| o.requires.len() > 8) {
+    let authored: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/npc-offers/l6-stories.json"
+    ))
+    .ok()?;
+    if authored.schema != 1 {
+        return None;
+    }
+    offers.offers.extend(authored.offers);
+    if offers.schema != 1
+        || offers.offers.len() > 512
+        || offers.offers.iter().any(|o| o.requires.len() > 8)
+    {
         return None;
     }
     let catalogue = admission.quest_catalogue.as_deref()?;

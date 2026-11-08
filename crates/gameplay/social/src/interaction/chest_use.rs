@@ -315,6 +315,7 @@ pub async fn prepare_chest_use(
             resolve_item_definition_facts(content, definition).map(|item| RewardClaimMintContent {
                 item,
                 quantity: *quantity,
+                fluid_subtype: None,
                 key_number: None,
                 text: None,
             })

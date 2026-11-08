@@ -76,7 +76,7 @@ fn extending_catalogue_preserves_bound_identity_and_runtime_callbacks() -> Resul
         extended.definition_hash(QUEST),
         catalogue.definition_hash(QUEST)
     );
-    assert_eq!(extended.authored_bindings(), Some(&binding));
+    assert_eq!(extended.authored_bindings(), catalogue.authored_bindings());
     assert!(
         super::super::reward_callbacks::load_for(&extended)?
             .iter()
@@ -189,6 +189,32 @@ fn changed_authored_quest_does_not_inherit_an_npc_only_revision_allowance() -> R
             .attach(&different_native_program)?
             .definition_hash(QUEST),
         "the prior native program's binding remains part of the new authored definition"
+    );
+    Ok(())
+}
+
+#[test]
+fn attached_stage_completion_matches_the_durable_callback_plan() -> Result<(), String> {
+    let base = QuestStateCatalogue::empty("engine-fixture-r1").ok_or("base")?;
+    let bindings = fixture()?;
+    let raw = bindings.reward_callbacks().next().ok_or("raw callback")?;
+    assert!(!raw.completes, "legacy authored callback omits completion");
+    let catalogue = bindings.attach(&base)?;
+    let attached = catalogue.authored_bindings().ok_or("attached bindings")?;
+    let callback = attached
+        .reward_callbacks()
+        .next()
+        .ok_or("attached callback")?;
+    assert!(callback.completes);
+    assert_eq!(
+        catalogue.transition(&callback.key),
+        Some(&super::super::reward_callbacks::primary_transition(
+            callback
+        )?)
+    );
+    assert_eq!(
+        attached.attach(&base)?.definition_hash(QUEST),
+        catalogue.definition_hash(QUEST)
     );
     Ok(())
 }

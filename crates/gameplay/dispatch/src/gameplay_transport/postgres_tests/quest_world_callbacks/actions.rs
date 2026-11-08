@@ -311,6 +311,8 @@ fn quest_world_callbacks_qcb3_target_swap_with_consumption_and_teleport() -> Tes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
+    let started = std::time::Instant::now();
+    eprintln!("POSTGRES_CASE_STARTED qcb3_consuming_tool_regression");
     super::super::kill_reward_e2e::scenario_thread::run("quest-qcb3-target-swap", || {
         scenario(
             "fish-napping-key-target-swap",
@@ -321,7 +323,12 @@ fn quest_world_callbacks_qcb3_target_swap_with_consumption_and_teleport() -> Tes
             },
             false,
         )
-    })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qcb3_consuming_tool_regression duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 async fn nest_key(

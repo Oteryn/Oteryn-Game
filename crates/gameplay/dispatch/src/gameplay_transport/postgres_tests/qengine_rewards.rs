@@ -23,10 +23,20 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            Position {
-                x: 33294,
-                y: 31677,
-                floor: -15,
+            if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
+                super::l6_paradox_upper::start(name)
+            } else if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
+                super::l6_paradox_story::start()
+            } else if name.starts_with("qengine-rewards-questpc4-native-tower-") {
+                super::l6_paradox_native::trigger(name)
+            } else if name.starts_with("qengine-rewards-questpc4-admission-") {
+                super::l6_world_admission::trigger(name)
+            } else {
+                Position {
+                    x: 33294,
+                    y: 31677,
+                    floor: -15,
+                }
             },
             false,
         )
@@ -269,7 +279,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
     }
 }
 
-async fn acknowledge_probe(
+pub(super) async fn acknowledge_probe(
     client: &mut tokio::io::DuplexStream,
     generation: u64,
     payload: &[u8],
@@ -749,6 +759,27 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
+        return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
+        return super::l6_paradox_story::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-native-tower-") {
+        return super::l6_paradox_native::exercise(owner, admitted, h, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-admission-") {
+        return super::l6_world_admission::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-puzzle-") {
+        return super::l6_world_puzzles::exercise(owner, admitted, h, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-paradox") {
+        return super::l6_paradox::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name == "qengine-rewards-questpc4-spirit" {
+        return super::l6_spirit::exercise(owner, admitted, h, authority).await;
+    }
     if matches!(name,"qengine-rewards-authored-world-rewards" | "qengine-rewards-authored-world-rewards-full") {
         return super::authored_world_rewards::exercise(owner, admitted, h, name.ends_with("-full")).await;
     }
@@ -825,6 +856,9 @@ pub(super) async fn exercise(
         setup
             .storage
             .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+                at_least: false,
+                increment: false,
+
                 track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision"
                     .into(),
                 minimum: 2,

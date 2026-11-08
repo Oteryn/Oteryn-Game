@@ -154,6 +154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|child| {
                         generation_item_facts(native, &item_ref(&child.item)).map(|item| {
                             RewardClaimMintContent {
+                                fluid_subtype: None,
                                 item,
                                 quantity: child.count,
                                 key_number: child.key_number,
@@ -172,6 +173,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             RewardClaimMintContent {
                                 item,
                                 quantity: reward.count,
+                                fluid_subtype: None,
                                 key_number: None,
                                 text: None,
                             }

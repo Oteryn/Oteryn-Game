@@ -3546,7 +3546,8 @@
     "scope": "generic read-only world USE item delivery; no whole-quest data authored",
     "reuse": [
       "questpc3 6146ee945bc2e01b5c7e751e6499f670062ad03a",
-      "questpc7 653feac452d8dbb2cf03edbfc733a1bf59bd77d7"
+      "questpc7 653feac452d8dbb2cf03edbfc733a1bf59bd77d7",
+      "main83acbdac3 canonical world-with-items owner and primary transitions"
     ],
     "red": {
       "test": "authored_world_use_item_delivery_is_atomic_and_replay_bound_postgres",
@@ -3561,12 +3562,10 @@
       "seconds": 22.34,
       "log": "/tmp/qengine2-world-quest-units.log"
     },
-    "migration": "1553_quest_world_reward_participants.sql",
     "pending": [
-      "workspace/clippy/fmt/generation publication gates",
-      "own PG GREEN normal/replay and full-backpack refusal",
-      "retained authored NPC/carried exchange PG regression",
-      "full dispatch/durability crate unit suites under PREPUSH-2 budget exception"
+      "merged workspace/clippy/fmt/generation gates",
+      "merged PostgreSQL normal/replay/full and retained NPC/carried refresh",
+      "changed-crate units within PREPUSH-2 budget"
     ],
     "whole_quest_qualification_changed": false,
     "publication_gates": {
@@ -3578,10 +3577,39 @@
     },
     "pending_main_merge": {
       "main": "83acbdac3",
-      "unresolved_files": 16,
-      "action": "aborted under owner 15-minute fallback; publish last compiling30c5e649c then continue reconciliation",
-      "integration_note": "main contains effects.item_reward and completion proof1254; reuse canonical mechanisms and reconcile typed Stage.completes before merged qualification"
+      "action": "source reconciliation complete; full generated-content refresh and final publication gates running",
+      "integration_note": "duplicate world helper modules and1553 removed; Stage.completes normalized for1254; canonical primary transitions preserve admission effects"
     },
-    "publication": "Compiling WIP; own PG GREEN/full units pending under PREPUSH-2 budget exception"
+    "publication": "IN_PROGRESS; premerge PG GREEN proved, merged qualification pending",
+    "premerge_green": {
+      "passed": 3,
+      "seconds": 113.478,
+      "markers_seconds": [
+        56.625207378,
+        56.736765222,
+        98.925077502
+      ],
+      "log": "/tmp/qengine2-world-green.log"
+    },
+    "quest_units_merged": {
+      "passed": 320,
+      "failed": 0,
+      "seconds": 40.75,
+      "log": "/tmp/qengine2-main-quests-final.log"
+    },
+    "encoding_integration": {
+      "regression": "threshold_and_bound_set_have_distinct_definition_encoding_tags",
+      "red": "tag7 collided with main SetWithBinding",
+      "fix": "preserve main tag7; assign lane-only threshold tag11",
+      "green": "included in all320 passing units"
+    },
+    "publication_gates_merged": {
+      "workspace": "PASS5m41s final tag11 source",
+      "quest_units": "PASS320/320 in40.75s",
+      "clippy": "PASS4engine crates and fresh dispatch+quest refreshes",
+      "fmt": "PASS",
+      "generation": "all regeneration steps complete; optional broad sweep stopped under owner speed rule; official World pin-refresh PASS unchangeddigest37f50ed7",
+      "main_followup": "prepush fetch found6f61ac15d physical Item lane fix; checkpoint83 merge then merge it"
+    }
   }
 }
