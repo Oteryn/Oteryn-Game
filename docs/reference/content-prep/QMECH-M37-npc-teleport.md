@@ -1,0 +1,9 @@
+# M37: source NPC teleport
+
+Checked pinned donor: <https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/riddler.lua>.
+
+- Riddler's correct final answer uses topic13, answer `1`, and Mathemagics >=1. Source lines131–136 conditionally advance Mathemagics/FavoriteColour from1 to2; line139 teleports to32478,31905,z1 (native floor-1).
+- The wrong-answer branch at143–145 replies, teleports to32725,31589,z12 (native floor-12), and projects `CONST_ME_TELEPORT`. It has no track write. The planner test is an effect-only fixture of this branch, not a newly admitted source programme.
+- Existing Yalahar source data already captures Peter's free factory/trade destinations in `content/dialogues/quest-rules/quest-batch3-a-in_service_of_yalahar.json`. Paid-route guards remain with the existing monetary owner; the free teleport planner cannot reinterpret them as free travel.
+
+The first engine slice plans one bounded destination, preserves source topic/storage operations, rejects multiple destinations and unowned guards/effects, and leaves the legacy storage-only planner closed. It does not enable runtime teleport delivery. The following receipt/arrival slice must preserve the existing quest-receipt constraints: zero-track teleports get a separate NPC response receipt and no fabricated quest start, CharacterRevision, fare, or paid-route receipt. A progress-changing teleport must commit progress and the pending arrival atomically. Migration allocation for this lane is2010–2019; none is used by the pure planner slice.

@@ -1,14 +1,19 @@
 //! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
 //! Crystal source references and source-order branches are retained in each program.
 
+#[cfg(test)]
+mod achievement_tests;
 mod admission;
 mod bounds;
+mod calendar;
 mod equipped_storage;
+pub use calendar::NpcUtcCalendar;
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+pub mod teleport;
 mod player_name;
 mod validate;
 
@@ -148,6 +153,14 @@ pub enum NpcRuleGuard {
     },
     CalendarMonth {
         value: u8,
+    },
+    /// Inclusive, annually repeating UTC dates; the durable owner supplies epoch time.
+    CalendarWindow {
+        start_month: u8,
+        start_day: u8,
+        end_month: u8,
+        end_day: u8,
+        within: bool,
     },
     Vocation {
         value: String,
@@ -343,6 +356,13 @@ pub struct NpcRuleInput<'a> {
     pub outfits: &'a BTreeMap<u16, u8>,
 }
 
+impl NpcRuleInput<'_> {
+    /// M17: preview and commit project the epoch supplied by their existing owners.
+    pub fn utc_calendar(&self) -> Result<NpcUtcCalendar, NpcRuleError> {
+        NpcUtcCalendar::from_epoch(self.now_epoch_seconds)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTrackChange {
     pub key: String,
@@ -455,6 +475,8 @@ impl NpcRuleCatalog {
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.first-dragon-calendar")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
                         || matches!(
@@ -695,7 +717,13 @@ pub fn legacy_defaults<'a>(
 }
 
 #[cfg(test)]
+mod multiple_item_rewards_tests;
+
+#[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod calendar_window_tests;
 
 #[cfg(test)]
 mod draconia_source_tests {
