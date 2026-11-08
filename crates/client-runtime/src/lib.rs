@@ -215,6 +215,7 @@ pub use oteryn_session::potion_durations;
 pub use oteryn_session::rest_status;
 pub use oteryn_session::skill_display;
 pub use oteryn_session::skill_progress;
+pub use oteryn_session::weapon_proficiency_state;
 
 #[path = "features/0117-boss-encounter/protocol.rs"]
 pub mod boss_encounter;

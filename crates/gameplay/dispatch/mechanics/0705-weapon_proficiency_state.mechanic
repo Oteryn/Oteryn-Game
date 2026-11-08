@@ -1,0 +1,8 @@
+name=weapon_proficiency_state
+commands=732
+transport=weapon_proficiency_state
+composed=weapon_proficiency_state
+authority=weapon_proficiency_state
+offer=702,weapon_proficiency_state::offered,weapon_proficiency_state_available
+[route]
+routing::weapon_proficiency_state::route(authority, &session.admitted, command).await

@@ -23,7 +23,7 @@ impl Mailbox {
         self.potion_durations.pending = Default::default();
         self.item_forge.pending = Default::default();
         self.store.pending = Default::default();
-        self.weapon_proficiency.pending = Default::default();
+        self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();
         self.wheel.pending = Default::default();
         self.exiva.pending = Default::default();

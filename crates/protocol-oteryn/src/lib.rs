@@ -129,6 +129,7 @@ pub mod tutorial_notices;
 pub mod vip;
 pub mod vip_presence;
 pub mod weapon_proficiency;
+pub mod weapon_proficiency_state;
 pub mod wheel;
 pub mod world_clock;
 pub mod world_event;

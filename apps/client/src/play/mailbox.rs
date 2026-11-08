@@ -378,6 +378,7 @@ impl Outbox {
         mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
@@ -421,6 +422,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.arena.end();
         mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
@@ -536,6 +538,7 @@ impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
         mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
