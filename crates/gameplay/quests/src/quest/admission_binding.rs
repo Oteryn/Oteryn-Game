@@ -127,8 +127,11 @@ pub fn validate_for_catalogue(
     if let Some(bindings) = &catalogue.authored_bindings {
         for quest in &bindings.source.quests {
             for stage in &quest.stages {
-                let expected = stage.transition(&quest.quest)?;
-                if expected.key == transition.key {
+                if let Some(expected) = stage
+                    .transitions(&quest.quest)?
+                    .into_iter()
+                    .find(|expected| expected.key == transition.key)
+                {
                     let world = matches!(
                         stage.trigger,
                         super::authored_bindings::Trigger::MapUse { .. }

@@ -279,6 +279,10 @@ impl Bindings {
     }
     fn attach_normalized(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
         self.validate()?;
+        if self.quests.is_empty() {
+            // The neutral set must retain already registered consumers and hashes.
+            return Ok(base.clone());
+        }
         if let Some(evidence) = &base.native_recipe_evidence {
             evidence.verify(self)?;
         }
@@ -295,14 +299,7 @@ impl Bindings {
                 });
             }
             for stage in &quest.stages {
-                transitions.push(stage.transition(&quest.quest)?);
-                if let Trigger::NpcDialogue { alternatives, .. } = &stage.trigger {
-                    for callback in alternatives {
-                        let mut transition = super::reward_callbacks::primary_transition(callback)?;
-                        transition.completes = stage.completes;
-                        transitions.push(transition);
-                    }
-                }
+                transitions.extend(stage.transitions(&quest.quest)?);
             }
         }
         let mut catalogue =
@@ -372,6 +369,22 @@ impl Bindings {
 }
 
 impl Stage {
+    /// All exact operations registered for this stage share one ownership boundary.
+    pub(in crate::quest) fn transitions(
+        &self,
+        quest: &str,
+    ) -> Result<Vec<QuestTransition>, String> {
+        let mut transitions = vec![self.transition(quest)?];
+        if let Trigger::NpcDialogue { alternatives, .. } = &self.trigger {
+            for callback in alternatives {
+                let mut transition = super::reward_callbacks::primary_transition(callback)?;
+                transition.completes = self.completes;
+                transitions.push(transition);
+            }
+        }
+        Ok(transitions)
+    }
+
     pub(in crate::quest) fn transition(&self, quest: &str) -> Result<QuestTransition, String> {
         let mut transition = match &self.trigger {
             Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
