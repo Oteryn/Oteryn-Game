@@ -42,6 +42,7 @@ pub fn reset(panel: &mut Panel) {
     *panel = Panel {
         selected: panel.selected,
         open: panel.open,
+        tool: panel.tool,
         ..Panel::default()
     };
 }

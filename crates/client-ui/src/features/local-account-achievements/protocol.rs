@@ -20,6 +20,9 @@ pub fn request(p: &mut AchievementsPanel, intent: Intent) -> Option<u32> {
         Intent::Next if p.has_next() => p.page.as_ref()?.page.checked_add(1)?,
         _ => return None,
     };
+    if matches!(intent, Intent::Refresh) && p.catalog.enabled {
+        p.catalog.begin();
+    }
     p.pending = Some(page);
     p.error = None;
     Some(page)
@@ -30,10 +33,34 @@ pub fn apply_result(p: &mut AchievementsPanel, response: &Response) {
     };
     match response {
         Response::Page(page) if page.page == wanted => {
+            p.catalog.revision = p.catalog.revision.saturating_add(1);
+            p.error = if p.catalog.enabled {
+                p.catalog.accept(page).err()
+            } else {
+                None
+            };
             p.page = Some(page.clone());
-            p.error = None;
         }
-        Response::Page(_) => p.error = Some("Invalid achievements page"),
-        Response::Refused => p.error = Some("The server refused the achievements query"),
+        Response::Page(_) => {
+            p.catalog.collecting = false;
+            p.error = Some("Invalid achievements page");
+        }
+        Response::Refused => {
+            p.catalog.collecting = false;
+            p.error = Some("The server refused the achievements query");
+        }
+    }
+}
+
+pub fn catalog_next_request(p: &mut AchievementsPanel) -> Option<u32> {
+    if p.catalog.enabled
+        && p.catalog.collecting
+        && p.error.is_none()
+        && p.pending.is_none()
+        && p.has_next()
+    {
+        request(p, Intent::Next)
+    } else {
+        None
     }
 }
