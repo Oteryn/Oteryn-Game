@@ -99,6 +99,7 @@ impl Application {
                 || play.link.training_input(events)
                 || play.link.guild_bank_input(events)
                 || play.link.timed_item_input(events)
+                || play.link.cyclopedia_atlas_input(events)
                 || play.link.cyclopedia_map_input(events)
                 || play.link.party_skull_input(events)
                 || play.link.character_info_input(events)
