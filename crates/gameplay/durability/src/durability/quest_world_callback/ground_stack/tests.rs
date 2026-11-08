@@ -57,15 +57,18 @@ fn position() -> Position {
         floor: -1,
     }
 }
-fn spatial() -> Vec<u8> {
-    [
-        120_i32.to_be_bytes().as_slice(),
-        5_i32.to_be_bytes().as_slice(),
-        (-1_i16).to_be_bytes().as_slice(),
-    ]
-    .concat()
-}
+
 async fn mint(harness: &h::Harness, actor: u32, key: &str, quantity: u32) -> h::TestResult {
+    mint_at(harness, actor, key, quantity, position(), &context()).await
+}
+async fn mint_at(
+    harness: &h::Harness,
+    actor: u32,
+    key: &str,
+    quantity: u32,
+    at: Position,
+    context: &QuestWorldContext,
+) -> h::TestResult {
     let seal = harness.recovery.seal_current().map_err(h::debug)?;
     let recovery = harness
         .root
@@ -99,13 +102,13 @@ async fn mint(harness: &h::Harness, actor: u32, key: &str, quantity: u32) -> h::
                 },
                 quantity,
                 ground: GroundPlacement {
-                    spatial_position: spatial(),
+                    spatial_position: super::spatial(at),
                     corpse_ref: h::id(3).to_vec(),
-                    map_revision: "map-1".into(),
-                    content_revision: "content-1".into(),
-                    native_room_placement_context: h::id(6).to_vec(),
+                    map_revision: context.map_revision.clone(),
+                    content_revision: context.content_revision.clone(),
+                    native_room_placement_context: context.placement_context.clone(),
                 },
-                content_revision: "content-1".into(),
+                content_revision: context.content_revision.clone(),
                 ruleset_revision: "ruleset-1".into(),
                 sim_revision: "sim-1".into(),
             },
@@ -189,3 +192,5 @@ async fn exercise(harness: &h::Harness) -> h::TestResult {
     );
     Ok(())
 }
+
+mod stateless;

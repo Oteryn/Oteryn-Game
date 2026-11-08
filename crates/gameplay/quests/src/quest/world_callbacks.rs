@@ -99,6 +99,7 @@ fn is_false(value: &bool) -> bool {
 }
 
 mod native;
+mod nomads_window;
 use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
@@ -250,9 +251,17 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
     }
 }
 
+/// Closed read-only source gates. They create no synthetic personal quest state.
+pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>> {
+    (key == nomads_window::KEY).then(nomads_window::requirements)
+}
+
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(
+        &serde_json::json!({"schema":1,"callbacks":[nomads_window::callback()?]}).to_string(),
+    )?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
     ))?);
@@ -328,7 +337,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
-        if operation_tracks.len() != callback.state_ops.len()
+        if (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
+            || operation_tracks.len() != callback.state_ops.len()
             || !operation_tracks.is_disjoint(&unique_storage)
             || callback.storage.len() + callback.state_ops.len() > MAX_EFFECTS
             || callback.state_ops.iter().any(|op| !op.valid())
@@ -411,7 +421,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .world_requirements
                 .iter()
                 .any(|r| !r.ground_stack.is_empty())
-                && (!callback.has_personal_state()
+                && ((!callback.has_personal_state() && !nomads_window::exact(callback))
                     || callback.reversible
                     || callback.opening_only
                     || callback.actor_kind != ActorKind::Player

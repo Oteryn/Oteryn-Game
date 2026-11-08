@@ -64,3 +64,38 @@ assertion or existing admission predicate was weakened.
 - All-target clippy of quests, durability and dispatch passed before merging;
   all three production libraries passed again together after the merge in
   **2m28s** with `-D warnings`. `cargo fmt --all --check` passed.
+
+
+## Source-specific stateless window slice
+
+The selected Oteryn recipe's crates/amphorae variant now has a closed native
+USE callback: `oteryn:quest-callback/m02/nomads-land/window`. This is a
+chosen Oteryn physical placement, **not** a claim that the wiki provides its
+literal original-world coordinates. The actual base region contains the
+sandstone window1744 at `(33216,32855,9)`, base ordinal1; both north/northwest
+cells `(33216,32854,9)` and `(33215,32854,9)` contain clear floor7358.
+Native floors are `-9`. Region SHA256: `5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc`.
+The ordinal is an existing base slot, not a newly allocated registry number.
+
+Each selected stack is crate2471, crate2471, large amphora2904, quantity1
+per root. The native Item provider already admits both definitions: crate is
+NonStackable with CharacterInventory/Ground destinations; the large amphora
+is NonStackable and Ground-only. No Item facts or inventory permissions were
+invented. The source wiki raw body fetched on2026-11-08 has SHA256
+`a5996f49a2db4e5965cb7867fe0e15916bec672becc15b0791f7db7b3eb81b1c`; lines115–117 describe the arrangement.
+Other source variants and other Nomads Land stages are not certified here.
+
+The existing current World observer now checks this closed read-set under
+its real Character/node/map/content/reset fences and the retained spell
+lane. USE, STEP and replay use the same fence decision. The window has no
+personal storage, quest receipt, reward, teleport or synthetic progress flag;
+its ordinary native USE feedback reports the physical check. A changed
+reserved window callback is rejected by the content parser.
+
+Real Root-observer RED: an empty stack was accepted; the assertion failed
+after **5.28s**. GREEN initially **5.064853258s**. The extended positive/negative
+PG pair then passed together: generic stack **9.351064254s**, actual World
+window observer **9.397071216s**. Both piles are required, repeated checks are
+read-only, an extra root or stale frame refuses, and Item quantities plus
+quest tracks/receipts remain unchanged. This is mechanic-boundary evidence,
+not whole-quest completion evidence.

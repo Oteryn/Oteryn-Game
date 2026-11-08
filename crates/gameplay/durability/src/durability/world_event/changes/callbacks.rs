@@ -34,7 +34,9 @@ pub async fn require(
 
 impl DurabilityRoot {
     /// Stateless entry callbacks use the same current Character/node/map/reset proof
-    /// as a value-bearing quest callback. Hive gates additionally observe the
+    /// as a value-bearing quest callback. Closed Ground puzzles also retain their
+    /// exact Item/custody read-set in this pass without writing personal progress.
+    /// Hive gates additionally observe the
     /// QuestState-owned scent timestamp; this creates no quest receipt. The caller retains its permit and rechecks the local
     /// actor/object CAS before applying the prepared movement.
     #[allow(
@@ -62,8 +64,10 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let ground = oteryn_gameplay_quests::quest::world_callbacks::stateless_ground_requirements(&callback);
+        let mut lane = permit;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut lane, move |holder, deadline, lane| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -82,6 +86,12 @@ impl DurabilityRoot {
                         )
                         .await?
                     {
+                        return Ok(false);
+                    }
+                    if let Some(requirements) = &ground
+                        && !crate::durability::quest_world_callback::ground_stack::matches(
+                            &mut tx, lane, fence, &context, requirements,
+                        ).await? {
                         return Ok(false);
                     }
                     commit_semantic_transaction(tx, deadline).await?;

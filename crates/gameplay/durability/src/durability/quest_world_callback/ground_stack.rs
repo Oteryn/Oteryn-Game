@@ -9,7 +9,7 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement;
 use sqlx::{Postgres, Row, Transaction};
 
-pub(super) async fn matches(
+pub(crate) async fn matches(
     tx: &mut Transaction<'_, Postgres>,
     permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
