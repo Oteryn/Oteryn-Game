@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import questpc4_treasure_reward_equipment_pin
 import json
 import os
 import re
@@ -85,14 +86,19 @@ def main():
         "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json",
         "content/items/definitions/starting-loadout-profiles.json",
     )
+    original = TEST.read_text()
+    source = questpc4_treasure_reward_equipment_pin.refresh(
+        original,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/questpc4-treasure-reward-profiles.json").read_bytes()),
+    )
     from qnpcfx_item_profiles import cohort_receipt
-    source = cohort_receipt(TEST.read_text(), json.loads((ROOT / paths[3]).read_text()))
+    source = cohort_receipt(source, json.loads((ROOT / paths[3]).read_bytes()))
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths)
     )
-    if args.check and generated != TEST.read_text():
+    if args.check and generated != original:
         raise SystemExit("equipment cohort pin is stale")
-    if not args.check and generated != TEST.read_text():
+    if not args.check and generated != original:
         with tempfile.NamedTemporaryFile("w", dir=TEST.parent, delete=False) as output:
             output.write(generated)
             temporary = output.name

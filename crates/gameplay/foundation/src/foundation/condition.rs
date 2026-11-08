@@ -1361,8 +1361,12 @@ impl<S: Clone> ConditionStore<S> {
             }
             ConditionValues::ItemOutfit { duration_ms }
             | ConditionValues::Outfit { duration_ms, .. } => {
-                if existing
-                    .is_some_and(|v| v.ends_at.is_none() || ms(duration_ms) < v.remaining_at(now))
+                // Crystal Condition::updateCondition: incoming ticks=-1 always
+                // refreshes Outfit; only finite applications compare remaining time.
+                if !definition.permanent_outfit
+                    && existing.is_some_and(|v| {
+                        v.ends_at.is_none() || ms(duration_ms) < v.remaining_at(now)
+                    })
                 {
                     return Err(ConditionRefusal::KeptCurrent);
                 }
