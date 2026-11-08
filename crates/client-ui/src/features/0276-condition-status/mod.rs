@@ -10,5 +10,8 @@ pub use state::ConditionStatusPanel;
 pub use view::{panel_text, status_text};
 
 #[cfg(test)]
+#[path = "tests/e2e_c16b.rs"]
+mod e2e_c16b;
+#[cfg(test)]
 #[path = "tests/e2e_c17a.rs"]
 mod e2e_c17a;

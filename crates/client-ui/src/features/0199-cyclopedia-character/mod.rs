@@ -16,6 +16,10 @@ mod tests;
 mod combat_modifier_tests;
 
 #[cfg(test)]
+#[path = "tests/e2e_c03.rs"]
+mod e2e_c03;
+
+#[cfg(test)]
 #[path = "tests/e2e_c20a.rs"]
 mod e2e_c20a;
 

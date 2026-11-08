@@ -370,3 +370,7 @@ fn apply(panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResul
     }
     .into();
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_i04.rs"]
+mod e2e_i04;

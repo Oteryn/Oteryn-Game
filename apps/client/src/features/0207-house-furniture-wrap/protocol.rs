@@ -47,3 +47,7 @@ pub(in crate::play) fn apply(panel: &mut Panel,command: &FeatureCommand,result: 
         _=>"Invalid furniture response".into(),
     };
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_i10.rs"]
+mod e2e_i10;
