@@ -287,6 +287,9 @@ fn words_match(rule: &NpcRule, input: &NpcRuleInput<'_>) -> Result<bool, NpcRule
             return Ok(false);
         }
     }
+    if rule.match_player_name {
+        return super::player_name::matches(input.message, input.player_name, rule.keyword_mode);
+    }
     if rule.any_message || rule.keywords.is_empty() {
         return Ok(true);
     }

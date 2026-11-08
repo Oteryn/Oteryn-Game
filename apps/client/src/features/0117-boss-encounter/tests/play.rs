@@ -112,3 +112,18 @@ fn boss_encounter_play_input_queries_and_displays_server_snapshot() -> Result<()
 
 #[path = "activity.rs"]
 mod activity;
+
+#[test]
+fn cooldown_shortcut_opens_only_the_tracker_and_queries_real_command() -> Result<(), Error> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.boss_encounter_initialize(true);
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(13)?, state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE.with(Modifier::Control).with(Modifier::Alt).with(Modifier::Shift), repeat: false,
+    };
+    assert!(link.boss_encounter_input(&[event]));
+    assert!(link.boss_encounter_panel().cooldowns_open);
+    assert!(!link.boss_encounter_panel().open);
+    assert!(matches!(commands.try_recv(), Ok(crate::combat_input::PlayCommand::Feature(FeatureCommand { capability: 117, kind: 133, .. }))));
+    Ok(())
+}

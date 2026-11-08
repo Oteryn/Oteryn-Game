@@ -114,6 +114,8 @@ impl MapItemPlacement {
 /// the fenced runtime scope's.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MapItemMintRequest {
+    /// Captured key action number; committed with its original source identity.
+    pub key_number: Option<u16>,
     /// The actual FND-02 CommandRef of the player's pickup.
     pub command: CommandRef,
     /// The digest of the World's pinned base bundle.
@@ -873,7 +875,7 @@ fn mint_message(
             definition: Some(definition_message(&request.item.definition)),
             quantity: request.quantity,
             lifecycle: ITEM_LIFECYCLE_LIVE,
-            key_number: 0,
+            key_number: request.key_number.map_or(0, u32::from),
         }),
         destination: Some(ground),
         source: Some(OneItemMapItemMintCauseV1 {
@@ -932,6 +934,10 @@ async fn apply_mint(
     .bind(tx_id)
     .execute(&mut **tx)
     .await?;
+    if let Some(number) = request.key_number {
+        sqlx::query("INSERT INTO game_item_keys(item_instance_id,key_number,minted_transaction_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid)")
+            .bind(item_id).bind(i32::from(number)).bind(tx_id).execute(&mut **tx).await?;
+    }
     let generation = ground.runtime_scope_ownership_generation.to_string();
     sqlx::query(
         "INSERT INTO game_item_ground_locations(item_instance_id, world_id, channel_id, \
@@ -1200,6 +1206,14 @@ fn validate_request(request: &MapItemMintRequest) -> Result<()> {
     {
         return Err(MapItemMintError::InvalidInput);
     }
+    if request.key_number.is_some_and(|number| {
+        number == 0
+            || request.quantity != 1
+            || request.item.stack != crate::durability::item_transfer::ItemStackClass::NonStackable
+            || request.item.container_capacity.is_some()
+    }) {
+        return Err(MapItemMintError::InvalidInput);
+    }
     for revision in [
         &request.content_revision,
         &request.ruleset_revision,
@@ -1238,6 +1252,11 @@ fn intent_binding(
         &request.sim_revision,
     ] {
         push_text(&mut canonical, revision.as_bytes()).map_err(from_transfer_input)?;
+    }
+    // Preserve historical non-key intent bindings.
+    if let Some(number) = request.key_number {
+        canonical.extend_from_slice(b"captured-map-key-v1");
+        canonical.extend_from_slice(&number.to_be_bytes());
     }
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
@@ -1283,6 +1302,7 @@ mod tests {
     fn request() -> MapItemMintRequest {
         use crate::foundation::{CommandId, GameSessionId};
         MapItemMintRequest {
+            key_number: None,
             command: CommandRef::new(
                 GameSessionId::decode(&id(50)).expect("session"),
                 CommandId::new(7).expect("command"),
@@ -1389,6 +1409,7 @@ mod tests {
             ));
         }
     }
+
 
     #[test]
     fn map_item_mint_intent_binds_every_field_of_the_cause() {

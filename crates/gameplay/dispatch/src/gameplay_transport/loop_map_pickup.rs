@@ -100,25 +100,48 @@ pub(super) async fn move_map_item(
     let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
         return stale;
     };
-    let Some(id) = tile
-        .ids()
-        .iter()
-        .zip(tile.depths())
-        .filter(|(_, depth)| **depth == 0)
-        .nth(usize::from(ordinal))
-        .map(|(id, _)| *id)
-    else {
-        return stale;
-    };
-    let Ok(entry) = at.map.facts.pickup_entry(pos, ordinal, id) else {
-        return stale;
-    };
-    let Some(EntryFacts {
-        definition: MapDefinition::Item(reference),
-        ..
-    }) = at.map.facts.base_entry(pos, ordinal, id)
-    else {
-        return stale;
+    let nested = at.map.facts.captured_map_item(placement_key);
+    let (reference, quantity, key_number) = if let Some(node) = &nested {
+        let attrs = &node.attrs;
+        if at.map.facts.house_id(pos).is_some()
+            || !node.facts.pickupable
+            || !node.children.is_empty()
+            || attrs.unique.is_some()
+            || attrs.door.is_some()
+            || attrs.depot.is_some()
+            || attrs.teleport.is_some()
+            || attrs.text.is_some()
+            || attrs.description.is_some()
+            || attrs.charges.is_some()
+        {
+            return stale;
+        }
+        let MapDefinition::Item(reference) = node.facts.definition else {
+            return stale;
+        };
+        (reference, node.facts.count, attrs.action)
+    } else {
+        let Some(id) = tile
+            .ids()
+            .iter()
+            .zip(tile.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .nth(usize::from(ordinal))
+            .map(|(id, _)| *id)
+        else {
+            return stale;
+        };
+        let Ok(entry) = at.map.facts.pickup_entry(pos, ordinal, id) else {
+            return stale;
+        };
+        let Some(EntryFacts {
+            definition: MapDefinition::Item(reference),
+            ..
+        }) = at.map.facts.base_entry(pos, ordinal, id)
+        else {
+            return stale;
+        };
+        (reference, entry.quantity, None)
     };
     let Some(definition) = crate::gameplay_transport::item_look::typed_definition(index, reference)
     else {
@@ -127,27 +150,54 @@ pub(super) async fn move_map_item(
     let Ok(item) = generation_item_facts(native, &definition) else {
         return stale;
     };
-    if plan_map_item_mint(&item, entry.quantity, false).is_err() {
+    if key_number.is_some()
+        && !matches!(
+            definition.production_key.as_str(),
+            "oteryn:item.tibia.i2968"
+                | "oteryn:item.tibia.i2969"
+                | "oteryn:item.tibia.i2970"
+                | "oteryn:item.tibia.i2971"
+                | "oteryn:item.tibia.i2972"
+                | "oteryn:item.tibia.i2973"
+        )
+    {
+        return stale;
+    }
+    if plan_map_item_mint(&item, quantity, false).is_err() {
         return stale;
     }
     let Some(ground) = loop_ground(admission, base, Some(index)).await else {
         return LoopMoveResult::Unknown;
     };
     let mint = MapItemMintRequest {
+        key_number,
         command: CommandRef::new(command.game_session_id, command_id),
         base_bundle_digest: bundle_digest,
         placement_key,
         reset_epoch,
         item,
-        quantity: entry.quantity,
+        quantity,
         content_revision: sha256_revision(native.source_digest()),
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
     };
-    let hidden = ground
-        .overlay()
-        .tile(pos)
-        .is_some_and(|tile| tile.is_hidden(ordinal));
+    if let Some(node) = &nested {
+        let mut ancestor = node.parent;
+        loop {
+            if ground.taken_sources.contains(&ancestor) {
+                return stale;
+            }
+            let Some(parent) = at.map.facts.captured_map_item(ancestor) else {
+                break;
+            };
+            ancestor = parent.parent;
+        }
+    }
+    let hidden = ground.taken_sources.contains(&placement_key)
+        || ground
+            .overlay()
+            .tile(pos)
+            .is_some_and(|tile| tile.is_hidden(ordinal));
     // A crash-retry is the sole exception to the hidden-origin gate. This probe writes nothing.
     if hidden {
         match admission
@@ -212,7 +262,10 @@ pub(super) async fn move_map_item(
     if pickup::rehide_taken_origins(&mut overlay, &taken).is_err() {
         return LoopMoveResult::Unknown;
     }
-    if !hidden && pickup::hide_origin_at_freeze(&mut overlay, placement_key).is_err() {
+    if nested.is_none()
+        && !hidden
+        && pickup::hide_origin_at_freeze(&mut overlay, placement_key).is_err()
+    {
         return refused(LoopMoveRefusal::NoRoom);
     }
     pending_origin(ground_cache, placement_key, Some(mint.command));
