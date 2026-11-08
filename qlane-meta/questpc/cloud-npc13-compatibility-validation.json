@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "state": "UNIT_GREEN; LIVE_PG_GREEN_PENDING",
+  "state": "NPC13_UNIT_GREEN; CARRIED_TARGET_FIX_COMPILE_GREEN; LIVE_PG_RERUN_PENDING",
   "quest_scope": "Existing Hidden Threats/Draconia/Citizen definition compatibility; no new quest started",
   "baseline": "eaffb5405e78044593e547a9c6a5d0ce0117da4d",
   "historical_definition": "8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084",
@@ -29,7 +29,7 @@
     "duration_seconds": 153.7
   },
   "pending": [
-    "four unchanged retained-key PG cases; requires rebuilt dispatch test binary"
+    "all four retained-key PG cases with corrected carried target; changed-dispatch units, workspace and strict Clippy"
   ],
   "migrations_changed": [],
   "logs": {
@@ -103,5 +103,54 @@
     "conflicts": 74,
     "result": "ABORTED under owner15-minute exception",
     "tested_tree_restored": "9b326b567979e5f4d5d67f8d017d356bfaf2e43d"
+  },
+  "live_pg_followup": {
+    "state": "RED; carried-target classification repair pending rebuild",
+    "version": 180006,
+    "cases": 4,
+    "failures": 4,
+    "duration_seconds": 299.15,
+    "failure": "AdmittedThenControlLost on carried-item transport",
+    "saved_definition_assertion": "PASS in all known-definition cases; original assertion unchanged",
+    "active_definition": "8cad8ca2510445fc38fef2aeab01b400ecc5d44e0d451758bb21cf018654400b",
+    "candidate_fix": "Only refresh MapUseTarget::Item from the current vessel handle. Preserve MapUseTarget::Object; the previous generic is_some check demanded a nonexistent vessel and hid the client error behind control loss.",
+    "discarded_hypothesis": "Ready-work maintenance did not fix Unknown; removed that candidate change.",
+    "discarded_maintenance_run": {
+      "cases": 4,
+      "failed": 4,
+      "version": 180006,
+      "durations_seconds": [
+        77.40461576,
+        75.310626553,
+        75.875846407,
+        76.583801218
+      ],
+      "log": "/tmp/questpc-npc13-pg-maintenance.log"
+    }
+  },
+  "target_guard_checkpoint": {
+    "workspace_all_targets": "PASS8m56s; corrected Item-only guard present before dispatch compilation",
+    "strict_dispatch_clippy": "PASS11m16s including Cargo lock wait; all-targets/all-features -Dwarnings",
+    "fmt": "PASS workspace and explicit mounted PG helper",
+    "own_pg": "PENDING rebuilt binary for all4cases",
+    "changed_dispatch_unit_suite": "PENDING under owner cadence exception",
+    "regeneration": "PASS; content/apps/client-assets bytes unchanged",
+    "world_pin": "PASS unchanged0d87e75b463e92f54ba9bf5f851e1070135c42fc99f321385a4c909030cf6d44",
+    "duplicate_migrations": "PASS staged-tree checker"
+  },
+  "latest_main_observed": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+  "checkpoint_logs": {
+    "target_guard_compile": {
+      "sha256": "267ae5c45135804d5ebfe60b68485b7ca770c98504efab1e1b32926187a82432",
+      "bytes": 5637
+    },
+    "target_guard_clippy": {
+      "sha256": "c20b371c75e4d4b0dc3e0344bdb9cd52eb88b1c1fb9ae75bf48426093f972f7b",
+      "bytes": 4807
+    },
+    "target_guard_pin": {
+      "sha256": "41b8cacdb1df5032bf356d058d24be2d5e9768ff5d9c29c684373f0365a0da17",
+      "bytes": 404
+    }
   }
 }

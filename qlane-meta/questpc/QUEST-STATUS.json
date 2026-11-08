@@ -11365,6 +11365,8 @@
       "regeneration": "PASS native44; tree34111Items/252Mounts/1282NPCs; evidence/matrix/mint/equipment/SOURCE",
       "world_pin": "PASS unchanged0d87e75b463e",
       "live_pg_green": "PENDING under PREPUSH-2 cadence exception"
-    }
+    },
+    "live_pg_followup": "PG control-loss traced to exchange_carried replacing Object targets with nonexistent vessel Items; one-line Item-only guard pending rebuilt four-case proof",
+    "carried_target_checkpoint": "WIP COMPILE_GREEN; workspace/strict dispatch Clippy/fmt/generation/pins/duplicate checks pass; corrected four-case PG and dispatch units pending under PREPUSH-2"
   }
 }

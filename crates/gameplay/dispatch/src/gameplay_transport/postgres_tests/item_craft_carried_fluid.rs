@@ -1003,7 +1003,7 @@ pub(super) async fn exchange_carried(
             )
             .map_err(debug)?;
             intent.target = UseTarget::Item(source.ok_or("current source handle")?);
-            if intent.use_with_map_item.is_some() {
+            if matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_))) {
                 intent.use_with_map_item =
                     Some(MapUseTarget::Item(vessel.ok_or("current vessel handle")?));
             }

@@ -792,3 +792,12 @@ and both original key assertions. Add exact-default lookup and cross-quest
 substitution refusal assertions for the newly retained Citizen predecessor.
 This strengthens the complete-history invariant rather than dropping history
 to satisfy the old, incomplete two-key expectation. No PG tests were changed.
+
+## Retained-key PG carried target repair
+The existing exchange_carried helper used is_some() on use_with_map_item and
+then always required a vessel Item handle. Hidden Threats passes a world Object,
+so that fixture-side conversion fails before sending a command; the helper
+subsequently reports server liveness loss instead of the earlier client error.
+Refresh handles only for MapUseTarget::Item; preserve Object targets exactly.
+Ready-work maintenance alone was tried and failed, then removed. No runtime
+policy, liveness deadline, door assertion or saved-definition hash is relaxed.

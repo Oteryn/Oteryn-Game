@@ -1,3 +1,22 @@
+## Current checkpoint: preserve carried world-object targets
+One-line fixture repair in exchange_carried refreshes Item vessel handles only;
+world Object targets retain their original placement and revision. No runtime,
+liveness limit, saved-definition hash, or assertion is changed.
+Workspace all-targets PASS8m56s; strict dispatch Clippy all-targets/all-features
+PASS11m16s including lock wait; fmt PASS. Complete regeneration and world pin
+PASS, with content/application bytes unchanged. Duplicate migrations PASS.
+PG corrected four-case rerun and changed-dispatch unit suite remain PENDING
+under the owner PREPUSH-2 cadence exception. Immediately after push run:
+ cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib hidden_threats_doors_ -- --nocapture --test-threads=1
+The discarded maintenance hypothesis ran all4 on PG18.6 and failed all4; it was
+removed. Root cause: is_some() converted Object targets into nonexistent vessel
+Items before a frame was sent; subsequent server control loss masked that error.
+Counts remain63QUALIFIED/114UNFINISHED/1excluded. No new quest qualification.
+Main latest47baa7bb8 remains pending. Isolated /tmp/questpc-main-prep resolves
+all74conflicts for98d6ae8ce;21Python authoring tests and duplicate migration
+check PASS, but full generation/typecheck remain. Do not publish that draft.
+See /tmp/questpc-main-prep-NOTES.md and cloud-npc13-compatibility-validation.json.
+
 ## NPC13 compiling checkpoint ready to push
 FULL Quest units318/318 PASS153.70s; strict Quest Clippy PASS12.22s; workspace
 all-targets PASS8m03s; fmt PASS; native/tree/evidence/matrix/pins/SOURCE all PASS.
