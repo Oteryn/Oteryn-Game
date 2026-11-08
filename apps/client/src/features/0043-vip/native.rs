@@ -67,7 +67,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             650,
-            500,
+            720,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -177,6 +177,21 @@ fn run(
             );
         }
         let status = control(hwnd, "STATIC", "", 203, [10, 370, 615, 75], 0);
+        for (id, title, x) in [
+            (124, "All contacts", 10),
+            (125, "Friends", 220),
+            (126, "Invitations", 430),
+        ] {
+            control(hwnd, "BUTTON", title, id, [x, 455, 195, 28], WS_TABSTOP);
+        }
+        let friends = control(
+            hwnd,
+            "EDIT",
+            "",
+            204,
+            [10, 490, 615, 140],
+            ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL | WS_BORDER,
+        );
         let mut held: Option<oteryn_client_ui::vip::VipPanel> = None;
         let mut message: MSG = std::mem::zeroed();
         loop {
@@ -197,6 +212,14 @@ fn run(
             let view = super::management_view(mailbox.vip.view.as_deref()).unwrap_or_default();
             for action in std::mem::take(&mut actions.0) {
                 let id = action & 0xffff;
+                if (124..=126).contains(&id) {
+                    mailbox.vip.friends_filter = match id {
+                        125 => oteryn_client_ui::vip::FriendsFilter::Confirmed,
+                        126 => oteryn_client_ui::vip::FriendsFilter::Invitations,
+                        _ => oteryn_client_ui::vip::FriendsFilter::All,
+                    };
+                    continue;
+                }
                 if id == 101 && action >> 16 == LBN_SELCHANGE as usize {
                     let index = SendMessageW(entries, LB_GETCURSEL, 0, 0);
                     if let Ok(index) = usize::try_from(index)
@@ -302,6 +325,10 @@ fn run(
                         }
                     }
                 }
+                SetWindowTextW(
+                    friends,
+                    wide(&oteryn_client_ui::vip::friends_text(&mailbox.vip)).as_ptr(),
+                );
                 let visibility = mailbox
                     .vip
                     .view
