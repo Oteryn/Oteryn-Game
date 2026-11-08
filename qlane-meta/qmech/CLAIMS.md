@@ -35,7 +35,7 @@
 
 | Inclusive annual NPC dialogue date-window predicate evaluated from the authoritative transaction clock | SEASON | none planned; retained range 1160–1169 only | The First Dragon Quest (Tamoril seasonal dialogue admission; encounter remains separate) | RELEASED: SRVWLD published the same claim first in3e73a1cf7; local alternative remains unpublished |
 
-| Live current-Character-name matcher in fenced source NPC dialogue | ENGNPC2 | none planned; retained 1650–1659 | The Dream Courts (Stricken Soul access branch; later stages remain separate) | CLAIMED |
+| M11: live current-Character-name matcher in fenced source NPC dialogue | ENGNPC2 | none planned; binding QMECH range 2290–2299 only | The Dream Courts (Stricken Soul access branch; later stages remain separate) | CLAIMED |
 
 | Remove-only native map-target consequence for reusable carried-tool quest USE, atomic with progress and replay | qworld | none planned; retained range 1320–1329 | Their Master's Voice World Change (fungus-cleaning stage) | RELEASED: pinned donor Gobbler_onUse transforms target to12065; existing target_replacement supports it, so remove-only is unnecessary |
 
@@ -44,7 +44,7 @@
 | Canonical-key achievement grant participant in fenced source NPC progress/item receipts | engclaim | none planned; retain own range1830–1839 | The Order of the Stag (Eldoran news reward); Kilmaresh (Sculptor Apprentice finale, programme binding also needed) | CLAIMED |
 
 | Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | RELEASED: coordinator ASSIGN transfers Cake Golem to SRVENC/M24; no Cake code written |
-| Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
+| Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | RELEASED: coordinator assigns this source to ENGOUTFIT/M36; no implementation written |
 | M36 — NPC outfit/addon grants and real outfit snapshot | engoutfit | none planned; 1820–1829 reserved | In Service of Yalahar; Rock Steady / Deepling | CLAIMED |
 
 | M19 — authoritative transaction clock in world callbacks (reuse existing quest clock) | qready1 | none planned; QMECH range 2090–2099 only | Bewitched; Threatened Dreams | CLAIMED |
@@ -67,3 +67,12 @@
 | M25 — BossLever Ahau configured exit teleporter and Mitmah Vanguard callback closure | boss2 (SRX3-BOSS2) | none planned; 2171–2172 reserved within 2170–2179; 2170 is the existing boss2 cleanup | Adventures of Galthen (s5 Ahau; s8 Mitmah Vanguard) | CLAIMED |
 
 | M18: timed player-admitting encounter with personal cooldown and cleanup | SEASON | 2210 reserved if schema work is needed; coordinator range2210–2219 | The First Dragon Quest (selected final encounter) | CLAIMED |
+
+| M38: conditional NPC presence, stationary/water admission, returns/tickets and Mistrock binding | npcfix | 2140–2149 reserved by coordinator; none allocated yet | Five checked rows in MISSING-npcfix.md, including The Hidden City of Beregar — Way to Beregar | CLAIMED |
+
+| M42: dispatch existing UTC cooking planner and typed ingredient operations | questpc7 | none planned; M42 allocation 2080–2089 only | Hot Cuisine | CLAIMED |
+| M41 — achievement in the NPC transaction and corpse-provenance-bound hand-ins | wpkg | 2130 reserved; only 2130–2139 permitted | Kilmaresh; The Order of the Stag finale | CLAIMED |
+
+| M26: qualified Soul War and Rotten Blood boss rooms with source-faithful Bakragore cooldown | srvgap2 | none allocated yet; reserve 2270–2279 only | Soul War Quest; Rotten Blood Quest | CLAIMED |
+
+| M01a — imported-route native TALK stage bindings through preflight and server consumer | qengine2 | none planned; assigned QMECH range 2040–2049 | 44 TALK quests listed in MISSING-questpc-pc2.md; ASSIGN.md M01a | CLAIMED |
