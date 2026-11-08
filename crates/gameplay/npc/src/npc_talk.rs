@@ -24,6 +24,7 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l2-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
 ];
 const REWARD_GREETINGS: &[&str] = &[

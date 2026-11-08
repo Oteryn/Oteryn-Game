@@ -914,7 +914,10 @@ def build():
     generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
-            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
+            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,
+                'callbacks':[c for c in callbacks if not c['key'].startswith(('oteryn:quest-reward/l2-secret-', 'oteryn:quest-reward/l2-unnatural-'))]}),
+            'content/quests/npc-callbacks/l2-stories.json': encoded({'schema':1,'tracks':[],
+                'callbacks':[c for c in callbacks if c['key'].startswith(('oteryn:quest-reward/l2-secret-', 'oteryn:quest-reward/l2-unnatural-'))]}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     # Preserve the source's complete contiguous 1..10001 supply-package table.
     random_path='data-global/scripts/actions/valuables/random_items.lua'

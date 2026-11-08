@@ -312,3 +312,45 @@ merged placement index lost L2 source metadata. The region and UID6055 itself
 survived unchanged. Register L2's existing source-backed overlay in the official
 regeneration sequence after the base world is rebuilt. Reapplying it restores
 provenance and makes all three cases pass; main's QREADY overlays remain present.
+
+
+2026-11-08 next L2 source slice (unconnected until PostgreSQL RED): Unnatural
+Selection reuses main's sixteen-step dance and UID1052 crystal callbacks. Pinned
+Crystal9f Lazaran (SHA256 d8db5cea049607eba1f6b5dedcbdcc4e048a28c6184ad57dd8e739d96f8f2402)
+and Ulala (SHA256 1f66ef3a2a1541e21f95f123f6a8d6a936c67f613f35f6c25d4bfb25f8716c36)
+provide thirteen NPC progress branches. quest_system2.lua:119-127, SHA256
+04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635,
+provides UID9259's once-only skull mint and Mission01 1->2. The Mission02
+movement script, SHA256 95b0092497a21ca4bc060beae86e004d861d7080715e3c01d352c919d16b7d0d,
+provides eleven ordered views with thirty valid tile alternatives and requires
+the carried skull throughout. The pot hand-in requires fluid subtype3 (beer);
+reuse the existing fluid-container producer for pot3465 rather than treating
+an empty pot as beer. No production hookup or qualification is claimed yet.
+
+Kissing a Pig primary BR revision421885 was fetched and its SHA256 matched the
+repository receipt c05f100f03e3bd08eb25470c578eb18bd9202d10c3c92171dddcf2edbe90f20d.
+Lines206-225 require actual dice wagers and three consecutive wins, so the
+chosen deterministic-success approximation is rejected. Lines317-318 require
+the active drunk condition (correcting the narrower dialogue locator in the
+engine request). QENGINE2 requests cover replay-safe wager settlement/streaks
+and transaction-checked active-condition eligibility. The two-minute ice-cream
+lifetime remains a real item lifecycle requirement.
+
+
+2026-11-08 completion-shard regression repair: the unchanged legacy-serialization
+test detected Secret Service completions in the primary legacy document. Move
+all forty-five Secret Service branches into npc-callbacks/l2-stories.json and
+register it in the existing Quest and NPC multi-document loaders. The primary
+legacy bytes now exactly match pre-Secret commit4ba80f21c (SHA256
+95bcabafc5765d880ec3e9788981635f35904a1da2bfab40efba5e92ddf84af2).
+All335 Quest and36 NPC unit tests pass. Source-qualified inputs401 and5956 now
+have explicit source-membership and Some(0) speed assertions; the remaining
+unknown-speed set stays exact. Their dispatch rerun is pending, and Secret
+Service's native journey still returns Error: "callback" after a passing binding
+probe (46.728115901 seconds for the failed native scenario). Unnatural Selection
+remains an unconnected draft until its PostgreSQL RED case executes.
+
+Main3209d3d61 merged cleanly. The complete workspace check passed in191.603s;
+central regeneration and world pin refresh produced byte-identical checked
+inputs. The preceding strict clippy run of the three owned changed crates
+passed in267.974s. The imported five-file main fix adds no content or migrations.

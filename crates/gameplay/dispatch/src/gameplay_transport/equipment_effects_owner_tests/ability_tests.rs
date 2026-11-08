@@ -483,6 +483,21 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(record.admission.materializable, "{key}");
         assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
     }
+    // Secret Service's independently captured input profiles replace the older
+    // unknown-speed facts. Keep exact zero-speed and source-cohort assertions.
+    for id in [401, 5956] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        assert!(
+            added_keys.contains(key.as_str()),
+            "{key} source qualification"
+        );
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or("missing Secret Service source input")?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     // SRX-1 qualifies zero speed for these 34 newly admitted writing items.
     // The producer preserves 2815/2821/3505/3507 under their existing owners;
     // those four therefore retain their unknown-speed assertions below.
@@ -627,9 +642,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         .chain(
             [
-                347, 401, 635, 636, 2815, 2821, 2827, 2833, 2835,
+                347, 635, 636, 2815, 2821, 2827, 2833, 2835,
                 2842, 3505, 3507,
-                4100, 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 8150,
+                4100, 5785, 5799, 5805, 5806, 5807, 6386, 6538, 8150,
                 8151, 8155, 8156, 8737, 9206, 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214,
                 9215, 9216, 9217, 9218, 9219, 9220, 9221, 9222, 9223, 9224, 9538, 9614, 15276,
                 15633, 19072, 19073, 19074, 21445, 27932, 27933, 27934, 28572,

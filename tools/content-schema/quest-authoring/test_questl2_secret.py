@@ -1,5 +1,6 @@
 """Chief branch provenance and exclusive, ordered Secret Service issuance."""
 import unittest
+import json
 
 import qengine_rewards
 import questl2_secret
@@ -22,6 +23,19 @@ class SecretChiefBranches(unittest.TestCase):
 
         questl2_secret.append(add, state, cls.rows, [], cls.inputs, qengine_rewards.PIN)
         cls.callbacks = {row['key']: row for row in cls.rows}
+
+    def test_completions_use_the_authored_shard_and_keep_legacy_serialization(self):
+        generated = qengine_rewards.build()
+        legacy = json.loads(generated['content/quests/shared-reward-callbacks.json'])['callbacks']
+        authored = [row for row in json.loads(generated['content/quests/npc-callbacks/l2-stories.json'])['callbacks']
+                    if row['key'].startswith('oteryn:quest-reward/l2-secret-')]
+        self.assertFalse(any(row.get('completes') for row in legacy))
+        self.assertFalse(any('completes' in row for row in legacy))
+        self.assertEqual({row['key'].removeprefix('oteryn:quest-reward/') for row in authored},
+                         set(self.callbacks))
+        self.assertEqual({row['key'] for row in authored if row.get('completes')},
+                         {f'oteryn:quest-reward/l2-secret-{faction}-finish'
+                          for faction in questl2_secret.FACTIONS})
 
     def test_all_three_factions_have_seven_issued_and_reported_missions(self):
         self.assertEqual(len(self.rows), 45)
