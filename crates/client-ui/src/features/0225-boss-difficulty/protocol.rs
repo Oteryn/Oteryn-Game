@@ -62,7 +62,17 @@ pub fn apply_result(panel: &mut BossDifficultyPanel, result: &GatedCommandResult
         return false;
     };
     panel.context = match &reply {
-        Reply::Window { context, .. } | Reply::Closed { context } => Some(*context),
+        Reply::Window {
+            context,
+            boss_key,
+            selected_difficulty,
+            ..
+        } => {
+            panel.boss_key.clone_from(boss_key);
+            panel.difficulty = *selected_difficulty;
+            Some(*context)
+        }
+        Reply::Closed { .. } => None,
         Reply::Refused { context, .. } => *context,
     };
     panel.feedback = if matches!(reply, Reply::Refused { .. }) {
