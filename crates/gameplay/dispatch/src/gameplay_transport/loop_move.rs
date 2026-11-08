@@ -236,7 +236,11 @@ impl LoopGroundOverlay {
                 sub_type: 0,
             };
             let id = item.item_instance_id;
-            let added = if native_projection {
+            let added = if entry.native_corpse && entry.field_collision.is_none() {
+                // `native_corpse` comes only from the scoped materialized MINT,
+                // audit and reservation join. A live field never uses history.
+                overlay.add_committed_corpse_ground_view(item, field_pin)
+            } else if native_projection {
                 overlay.add_native_ground_view(item, field_pin)
             } else {
                 overlay.add_ground(item)
@@ -1243,6 +1247,12 @@ mod tests {
             instance_id: id(5),
         };
         assert!(!project(foreign).overlay().has_added_item(tile));
+        let mut future = item.clone();
+        future.item.runtime_scope_ownership_generation = pin.2 + 1;
+        assert!(
+            !project(future).overlay().has_added_item(tile),
+            "future owner history is not visible under an older current fence"
+        );
         let mut field = item;
         field.native_corpse = false;
         field.field_collision = Some((false, false));

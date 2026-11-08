@@ -58,6 +58,42 @@ def source_cohorts(root):
     return result
 
 
+def source_coowners(root):
+    """Main's pinned Primal packet already contributes these five identities."""
+    owner = importlib.import_module("primal_item_profiles")
+    document = owner.load_capture(root)
+    expected = {f"oteryn:item.tibia.i{item}" for item in owner.IDS}
+    if keys(document) != expected:
+        raise ValueError("Primal coowner source identity set differs")
+    return [(owner.COHORT_NAME, document, expected)]
+
+
+def coowner_equivalent(source, qualified):
+    """Two guarded captures may name their own revision of the SAME candidate."""
+    normalized = copy.deepcopy(source)
+    original = normalized.get("authoring", {}).get("item")
+    accepted = qualified.get("authoring", {}).get("item")
+    if original != accepted:
+        if (not isinstance(original, dict) or not isinstance(accepted, dict)
+                or set(original) != {"family", "key", "revision"}
+                or set(accepted) != set(original)
+                or original["family"] != accepted["family"]
+                or original["key"] != accepted["key"]):
+            return False
+        # Neither revision is inferred from actual output: both are independently
+        # source-guarded input rows, and the SRX3 row is also compared in full below.
+        aliases = {f"oteryn:item.tibia.i{item}": f"candidate:item/{item}"
+                   for item in (39527, 39528, 39529, 39530)}
+        key = source["production_definition"]["production_key"]
+        if (key not in aliases or original["family"] != "Item"
+                or original["key"] != aliases[key]
+                or (original["revision"], accepted["revision"]) != (
+                    "spell-p2-r21", "srx3-boss-corpses-crystal-201189f")):
+            return False
+        normalized["authoring"]["item"] = copy.deepcopy(accepted)
+    return normalized == qualified
+
+
 def keys(document):
     rows = [
         row["production_definition"]["production_key"] for row in document["records"]
@@ -67,7 +103,7 @@ def keys(document):
     return set(rows)
 
 
-def regenerate(source, base, updates, qengine, npc, starting=None, srx3=()):
+def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coowners=()):
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(
             "_", ""
@@ -99,6 +135,17 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=()):
         for document in (base, updates, starting or {"records": []})
         for row in document["records"]
     }
+    coowner_rows = {}
+    coowner_keys = set()
+    for name, document, expected in coowners:
+        proven = keys(document)
+        if proven != expected or counts.get(name) != len(proven):
+            raise ValueError("already-counted coowner declaration differs")
+        if coowner_keys & proven or not proven <= actual:
+            raise ValueError("already-counted coowner identity set differs")
+        coowner_keys.update(proven)
+        coowner_rows.update({row["production_definition"]["production_key"]: row
+                             for row in document["records"]})
     additions = []
     added_keys = set()
     cohort_names = set()
@@ -117,7 +164,12 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=()):
             key = row["production_definition"]["production_key"]
             if key in new and actual_rows.get(key) != row:
                 raise ValueError(f"SRX3 source profile differs: {name}/{key}")
-        additions.append((name, len(new)))
+        for key in new & coowner_keys:
+            if not coowner_equivalent(coowner_rows[key], actual_rows[key]):
+                raise ValueError(f"already-counted coowner profile differs: {key}")
+        additions.append((name, len(new - coowner_keys)))
+    if coowner_keys != added_keys & coowner_keys:
+        raise ValueError("already-counted coowner source overlap differs")
     declared += sum(count for _, count in additions)
     if declared != len(actual):
         raise ValueError(
@@ -125,10 +177,12 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=()):
         )
     if additions:
         cohort_block = "    // Generated from closed source packets minus pinned pre-SRX3 identities.\n"
+        if coowners:
+            cohort_block += "    // W10-PRIMAL's independently pinned shared keys are already counted above.\n"
         cohort_block += "    const SRX3_SOURCE_COHORTS: &[(&str, usize)] = &[\n"
         cohort_block += "".join(f'        ("{name}", {count}),\n' for name, count in additions)
         cohort_block += "    ];\n"
-        pattern = r"    // Generated from closed source packets minus pinned pre-SRX3 identities\.\n    const SRX3_SOURCE_COHORTS:.*?    ];\n"
+        pattern = r"    // Generated from closed source packets minus pinned pre-SRX3 identities\.\n(?:    // W10-PRIMAL's independently pinned shared keys are already counted above\.\n)?    const SRX3_SOURCE_COHORTS:.*?    ];\n"
         if "const SRX3_SOURCE_COHORTS:" in source:
             source, replaced = re.subn(pattern, lambda _: cohort_block, source, flags=re.S)
             if replaced != 1:
@@ -164,7 +218,8 @@ def main():
     )
     source = TEST.read_text()
     generated, count = regenerate(
-        source, *(json.loads((ROOT / p).read_text()) for p in paths), srx3=source_cohorts(ROOT)
+        source, *(json.loads((ROOT / p).read_text()) for p in paths), srx3=source_cohorts(ROOT),
+        coowners=source_coowners(ROOT),
     )
     if args.check and generated != source:
         raise SystemExit("equipment cohort pin is stale")

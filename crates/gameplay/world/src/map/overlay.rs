@@ -352,6 +352,12 @@ pub struct ChannelOverlay {
     alarms: u64,
 }
 
+#[derive(Clone, Copy)]
+enum NativeGroundGeneration {
+    Current,
+    CommittedCorpse,
+}
+
 impl ChannelOverlay {
     /// An empty overlay with the default budget.
     pub fn new(base: Arc<WorldBase>, world_id: WorldId, channel_id: ChannelId) -> Self {
@@ -616,6 +622,26 @@ impl ChannelOverlay {
         item: GroundItemInstance,
         field_pin: ([u8; 32], [u8; 32], u64),
     ) -> Result<EntryId, OverlayError> {
+        self.add_native_ground_view_inner(item, field_pin, NativeGroundGeneration::Current)
+    }
+
+    /// Indexes accepted corpse history in the same current scope and source frame.
+    /// The caller must have read a materialized corpse MINT with its matching audit
+    /// and reservation. This read-only view does not grant Item custody or pickup.
+    pub fn add_committed_corpse_ground_view(
+        &mut self,
+        item: GroundItemInstance,
+        field_pin: ([u8; 32], [u8; 32], u64),
+    ) -> Result<EntryId, OverlayError> {
+        self.add_native_ground_view_inner(item, field_pin, NativeGroundGeneration::CommittedCorpse)
+    }
+
+    fn add_native_ground_view_inner(
+        &mut self,
+        item: GroundItemInstance,
+        field_pin: ([u8; 32], [u8; 32], u64),
+        generation: NativeGroundGeneration,
+    ) -> Result<EntryId, OverlayError> {
         use sha2::{Digest, Sha256};
         if item.world_id != self.world_id {
             return Err(OverlayError::World);
@@ -631,8 +657,17 @@ impl ChannelOverlay {
             }
             value
         };
+        let generation_matches = match generation {
+            NativeGroundGeneration::Current => {
+                item.runtime_scope_ownership_generation == field_pin.2
+            }
+            NativeGroundGeneration::CommittedCorpse => {
+                item.runtime_scope_ownership_generation != 0
+                    && item.runtime_scope_ownership_generation <= field_pin.2
+            }
+        };
         if field_pin.2 == 0
-            || item.runtime_scope_ownership_generation != field_pin.2
+            || !generation_matches
             || item.ground.map_revision
                 != revision(Sha256::digest(self.map_revision.as_bytes()).into())
             || item.ground.content_revision != revision(field_pin.0)

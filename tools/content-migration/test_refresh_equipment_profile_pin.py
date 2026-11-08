@@ -103,5 +103,70 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
                        srx3=[("SRX3-A", document(2, 5), {"2"}), ("SRX3-B", document(5), set())])
 
 
+    def coowned(self, *, source=None, actual=None, proof=None, coowner=None, key="5"):
+        source = source or self.srx3_source().replace(
+            '("QNPCFX", 1)', '("QNPCFX", 1), ("W10-PRIMAL", 1)')
+        return regenerate(source, actual or document(0, 1, 2, 3, key), document(4),
+                          document(0), document(1),
+                          srx3=[("SRX3-TEST", proof or document(2, key), {"2"})],
+                          coowners=[("W10-PRIMAL", coowner or document(key), {key})])
+
+    def test_independently_counted_coowner_is_not_counted_again(self):
+        fixed, count = self.coowned()
+        self.assertEqual(count, 6)
+        self.assertIn('("SRX3-TEST", 0)', fixed)
+        self.assertIn('("W10-PRIMAL", 1)', fixed)
+        self.assertEqual(self.coowned(source=fixed), (fixed, 6))
+
+    def test_missing_coowned_profile_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "coowner identity set"):
+            self.coowned(actual=document(0, 1, 2, 3))
+
+    def test_coowner_declared_count_must_match_its_independent_source(self):
+        source = self.srx3_source().replace(
+            '("QNPCFX", 1)', '("QNPCFX", 1), ("W10-PRIMAL", 2)')
+        with self.assertRaisesRegex(ValueError, "coowner declaration"):
+            self.coowned(source=source)
+
+    def test_changed_shared_semantics_cannot_be_hidden_by_matching_actual_and_srx3(self):
+        actual, proof = document(0, 1, 2, 3, 5), document(2, 5)
+        actual['records'][-1]['semantics'] = {'invented': True}
+        proof['records'][-1]['semantics'] = {'invented': True}
+        with self.assertRaisesRegex(ValueError, "coowner profile differs"):
+            self.coowned(actual=actual, proof=proof)
+
+    def test_only_four_closed_candidate_revision_aliases_are_allowed(self):
+        import copy
+        for item in (39527, 39528, 39529, 39530):
+            key = f'oteryn:item.tibia.i{item}'
+            actual, proof, coowner = document(0, 1, 2, 3, key), document(2, key), document(key)
+            for doc, revision in [(actual, 'srx3-boss-corpses-crystal-201189f'),
+                                  (proof, 'srx3-boss-corpses-crystal-201189f'),
+                                  (coowner, 'spell-p2-r21')]:
+                doc['records'][-1]['authoring'] = {'item': {
+                    'family': 'Item', 'key': f'candidate:item/{item}', 'revision': revision}}
+            self.assertEqual(self.coowned(key=key, actual=actual, proof=proof, coowner=coowner)[1], 6)
+            for field, value in [('extra', 'unqualified'), ('revision', 'forged')]:
+                broken = copy.deepcopy(coowner)
+                if field == 'revision': broken['records'][-1]['authoring']['item'][field] = value
+                else: broken['records'][-1]['authoring'][field] = value
+                with self.assertRaisesRegex(ValueError, "coowner profile differs"):
+                    self.coowned(key=key, actual=actual, proof=proof, coowner=broken)
+        key = 'oteryn:item.tibia.i39176'
+        actual, proof, coowner = document(0, 1, 2, 3, key), document(2, key), document(key)
+        for doc, revision in [(actual, 'srx3-boss-corpses-crystal-201189f'),
+                              (proof, 'srx3-boss-corpses-crystal-201189f'),
+                              (coowner, 'spell-p2-r21')]:
+            doc['records'][-1]['authoring'] = {'item': {
+                'family': 'Item', 'key': 'candidate:item/39176', 'revision': revision}}
+        with self.assertRaisesRegex(ValueError, "coowner profile differs"):
+            self.coowned(key=key, actual=actual, proof=proof, coowner=coowner)
+
+    def test_coowner_must_actually_overlap_the_qualified_srx3_owner(self):
+        with self.assertRaisesRegex(ValueError, "coowner source overlap"):
+            self.coowned(proof=document(2))
+
+
+
 if __name__ == "__main__":
     unittest.main()

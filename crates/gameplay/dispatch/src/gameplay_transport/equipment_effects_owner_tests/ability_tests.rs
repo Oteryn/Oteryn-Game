@@ -395,11 +395,12 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     }
 
     // Generated from closed source packets minus pinned pre-SRX3 identities.
+    // W10-PRIMAL's independently pinned shared keys are already counted above.
     const SRX3_SOURCE_COHORTS: &[(&str, usize)] = &[
-        ("SRX3-PRIMAL-POD", 1),
+        ("SRX3-PRIMAL-POD", 0),
         ("SRX3-SOUL-WAR-ITEMS", 7),
         ("SRX3-BOSS-MOVEMENT", 13),
-        ("SRX3-BOSS-CORPSES", 189),
+        ("SRX3-BOSS-CORPSES", 185),
         ("SRX3-BOSS-YIELDS", 32),
     ];
     assert_eq!(

@@ -1276,8 +1276,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 if record != expected {
                     return Err(invalid("native boss reward complete source Item policy"));
                 }
-            }
-            if binding.external_id == "48416" {
+            } else if binding.external_id == "48416" {
                 use super::{ReferenceItemField as F, ReferenceItemType as Type};
                 let semantics = &record.semantics;
                 let attributes = &record.attributes;
@@ -1304,8 +1303,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 {
                     return Err(invalid("W02 Sugar corpse source policy"));
                 }
-            }
-            if binding.external_id == "44179" {
+            } else if binding.external_id == "44179" {
                 use super::ReferenceItemField as F;
                 let canonical: serde_json::Value = serde_json::from_slice(include_bytes!(
                     "../../../../../content/items/definitions/items-25500-25999.json"
