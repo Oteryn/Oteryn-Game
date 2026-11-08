@@ -40,3 +40,4 @@
 | Remove-only native map-target consequence for reusable carried-tool quest USE, atomic with progress and replay | qworld | none planned; retained range 1320–1329 | Their Master's Voice World Change (fungus-cleaning stage) | RELEASED: pinned donor Gobbler_onUse transforms target to12065; existing target_replacement supports it, so remove-only is unnecessary |
 
 | World-change conditions on the existing personal native-death counter adapter, with Fury/Werewolf/Mad Mage registrations | qworld | none planned; retained range1320–1329 | Fury Gates Mini World Change (10 Fury); Grimvale Mini World Change (10 Werewolf); Their Master's Voice World Change (Mad Mage stage) | CLAIMED; preceding personal stages remain separate bindings |
+| Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
