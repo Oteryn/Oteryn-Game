@@ -1642,3 +1642,16 @@ Prepush fetch foundone newmain commit6f61ac15d: physicalItem lane ownership
 for NPC hand-in (13files,137insertions/54deletions). Commit tested83 checkpoint,
 merge6f, refresh compile/fmt/nativeoutputs and pushonce. MergedPG/fullremaining
 unit suites pending PREPUSH2 exception. No world ENGINE-DONE beforefreshPG.
+
+04:29UTC latestmain6f61ac15d merged cleanly. Final latest-main workspace all-target
+check PASS6m13s; affected durability/dispatch strict clippy PASS2m49s; fmt PASS;
+native output regeneration/freshness PASS (44imports,3770equipment/cohort67,
+Grizzly30), registry/itemaudit regeneration and officialWorld pin-refresh PASS
+(unchanged37f50ed7). No duplicate migrations. Publish this compiling integration
+now under PREPUSH2 remaining-test exception.320questunits PASS40.75s on identical
+quest source. Fresh merged world3+kill3 PG cases are NEXT, alongside remaining
+crate unit suites pendingCI (durability/dispatch/social); no merged PG pass claim.
+Keep HEAD and source stable during PG build/run. All old public lane commits
+are retained; reused main83 canonical World APIs plus6f physicalItem lane fix.
+After PG proof, finish explicit native bindings boot admission, then42claim/use.
+Next-plan facts in/tmp/qengine2-next-native-admission-plan.md. Packet44/66 unchanged.

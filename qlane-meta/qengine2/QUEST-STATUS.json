@@ -3563,9 +3563,9 @@
       "log": "/tmp/qengine2-world-quest-units.log"
     },
     "pending": [
-      "merged workspace/clippy/fmt/generation gates",
-      "merged PostgreSQL normal/replay/full and retained NPC/carried refresh",
-      "changed-crate units within PREPUSH-2 budget"
+      "fresh merged PostgreSQL world normal/replay/full and retained NPC/carried cases",
+      "fresh merged native kill sequential/burst/retained cases",
+      "durability,dispatch,social crate unit suites under PREPUSH-2 cadence exception"
     ],
     "whole_quest_qualification_changed": false,
     "publication_gates": {
@@ -3576,11 +3576,11 @@
       "logs_prefix": "/tmp/qengine2-world-"
     },
     "pending_main_merge": {
-      "main": "83acbdac3",
-      "action": "source reconciliation complete; full generated-content refresh and final publication gates running",
-      "integration_note": "duplicate world helper modules and1553 removed; Stage.completes normalized for1254; canonical primary transitions preserve admission effects"
+      "main": "6f61ac15d",
+      "action": "MERGED; both main advances reconciled, canonical owners reused",
+      "integration_note": "duplicate world helpers and1553 removed; canonical primary transitions; Stage.completes normalized; threshold encoding moved to11 preserving main7"
     },
-    "publication": "IN_PROGRESS; premerge PG GREEN proved, merged qualification pending",
+    "publication": "Compiling merge checkpoint;320 quest units green; fresh merged PostgreSQL and remaining crate suites pending under PREPUSH-2",
     "premerge_green": {
       "passed": 3,
       "seconds": 113.478,
@@ -3609,7 +3609,11 @@
       "clippy": "PASS4engine crates and fresh dispatch+quest refreshes",
       "fmt": "PASS",
       "generation": "all regeneration steps complete; optional broad sweep stopped under owner speed rule; official World pin-refresh PASS unchangeddigest37f50ed7",
-      "main_followup": "prepush fetch found6f61ac15d physical Item lane fix; checkpoint83 merge then merge it"
+      "workspace_latest_main": "PASS6m13s --workspace --all-targets --keep-going",
+      "clippy_latest_main": "PASS2m49s affected durability/dispatch; prior fresh quest and social checks pass",
+      "fmt_latest_main": "PASS",
+      "native_generation_latest_main": "PASS44 import files; equipment3770/cohort67; Grizzly30; freshness check",
+      "world_pins_latest_main": "PASS unchanged37f50ed7b12dd2ac1ca93ae46c1f76d4604145da34cea18bc2fe73c4a2605063"
     }
   }
 }
