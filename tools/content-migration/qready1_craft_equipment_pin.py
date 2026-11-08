@@ -14,10 +14,10 @@ def refresh(source, packet):
         or len(keys) != len(IDS)
         or set(keys) != {f"oteryn:item.tibia.i{i}" for i in IDS}
     ):
-        raise ValueError("M20_CLOCK_SOURCE_COHORT")
+        raise ValueError("M20_CRAFT_SOURCE_COHORT")
     for row in packet["records"]:
         if row["attributes"]["speed_bonus"] != 0:
-            raise ValueError("M20_CLOCK_SPEED_SOURCE_CHANGED")
+            raise ValueError("M20_CRAFT_SPEED_SOURCE_CHANGED")
     line = f'    ("{NAME}", {len(IDS)}),'
     matches = list(re.finditer(rf'^    \("{NAME}", \d+\),$', source, re.MULTILINE))
     if len(matches) > 1:

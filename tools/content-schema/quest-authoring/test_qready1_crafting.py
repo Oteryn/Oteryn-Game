@@ -1,9 +1,9 @@
 """M20's tool identity, positive material cost and normalized Items remain reproducible."""
 
 import json
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
 import qready1_craft_callbacks as crafts
 

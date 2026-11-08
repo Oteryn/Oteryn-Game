@@ -2,7 +2,6 @@
 
 import hashlib
 import json
-from pathlib import Path
 
 PACKET = "tools/content-schema/native-gameplay/qready1-craft-item-profiles.json"
 IDS = {21507, 21573}

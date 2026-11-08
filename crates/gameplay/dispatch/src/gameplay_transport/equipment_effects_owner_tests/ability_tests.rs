@@ -304,6 +304,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("SRV9-MARRIAGE", 2),
     // M19: four exact Items in qready1-quest-item-profiles.json.
     ("QREADY1-CLOCKS", 4),
+    // M20: two exact Items in qready1-craft-item-profiles.json.
+    ("QREADY1-CRAFT", 2),
     // BEGIN GENERATED QREADY PROFILE ADDITIONS
     // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
     // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json

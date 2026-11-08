@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import argparse
-import questpc4_treasure_reward_equipment_pin
-import qready1_clock_equipment_pin
-import qready1_craft_equipment_pin
 import json
 import os
 import re
 import tempfile
 from pathlib import Path
+
+import qready1_clock_equipment_pin
+import qready1_craft_equipment_pin
+import questpc4_treasure_reward_equipment_pin
 
 ROOT = Path(__file__).resolve().parents[2]
 TEST = (
