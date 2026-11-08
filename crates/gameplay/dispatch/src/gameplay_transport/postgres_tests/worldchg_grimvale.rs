@@ -98,7 +98,7 @@ fn scenario() -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
@@ -428,6 +428,7 @@ fn producer_world(
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
     data.manifest.palette.push(bundle::PaletteEntry {
@@ -438,6 +439,7 @@ fn producer_world(
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
     for (floor, x, y) in [(-11, 33389, 31539), (-11, 33457, 31531)] {
@@ -705,7 +707,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     deps.combat_room = Some(room);
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.reset_epoch = 1;
     producer_seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
     assert!(

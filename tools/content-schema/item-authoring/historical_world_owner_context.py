@@ -1,7 +1,9 @@
 """Reconstruct pinned pre-W15c owner receipts without changing live ownership."""
 
 import hashlib
+import importlib.util
 import json
+from functools import lru_cache
 from pathlib import Path
 
 MARKER = "content/world/terrain/index.json"
@@ -20,6 +22,33 @@ SOULPIT_NOTE = (
     " Additionally 55 W07 Soulpit static appearance records;"
     " total 8669 Terrain records."
 )
+SUGAR_GROUND = "terrain-08614-08692.json"
+
+
+@lru_cache(maxsize=1)
+def sugar_owner():
+    """Replay the existing pinned official/Crystal witness, never bless a live hash."""
+    path = Path(__file__).resolve().parents[1] / "world-object-authoring/sugar_room.py"
+    spec = importlib.util.spec_from_file_location("historical_sugar_room", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    # sugar_room.outputs verifies the complete official artifact, membership and
+    # Crystal00ce source flags before producing these exact appearance-only rows.
+    return module.MARKER_NOTE, module.outputs()[module.SHARD]
+
+
+def without_sugar(root, raw):
+    marker = json.loads(raw)
+    note, expected = sugar_owner()
+    if not marker["notes"].endswith(note):
+        raise ValueError("source digest drift: Sugar terrain marker note")
+    shard = root / "content/world/terrain" / SUGAR_GROUND
+    if not shard.is_file() or shard.read_bytes() != expected:
+        raise ValueError("source digest drift: Sugar terrain witness")
+    if (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw:
+        raise ValueError("source digest drift: Sugar terrain marker bytes")
+    marker["notes"] = marker["notes"].removesuffix(note)
+    return (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
 
 
 def sha(raw):
@@ -27,13 +56,16 @@ def sha(raw):
 
 
 def original_marker(root):
-    """Accept only the exact old tree or the qualified W15c ground/marker pair."""
+    """Recover the exact old marker after independently qualified owner additions."""
     root = Path(root)
     raw = (root / MARKER).read_bytes()
+    sugar = root / "content/world/terrain" / SUGAR_GROUND
+    if sugar.exists():
+        raw = without_sugar(root, raw)
     soulpit = root / "content/world/terrain" / SOULPIT
     if soulpit.exists():
-        # Project only the exact qualified W07 successor back to the already
-        # pinned W15c frame. Frozen source facts and qualification bytes stay intact.
+        # Sugar is independently stripped first. The remaining marker and shard
+        # must still be byte-exact W07 witnesses, never a newly blessed digest.
         if sha(raw) != SOULPIT_MARKER_SHA or sha(soulpit.read_bytes()) != SOULPIT_SHA:
             raise ValueError(
                 "source digest drift: unrecognized Soulpit World owner inputs"
@@ -79,7 +111,7 @@ def link_world(root, target, detached=()):
         for path in source.iterdir():
             if path.name == "index.json":
                 (destination / path.name).write_bytes(original)
-            elif path.name not in {GROUND, SOULPIT}:
+            elif path.name not in {GROUND, SOULPIT, SUGAR_GROUND}:
                 (destination / path.name).symlink_to(path.resolve())
 
 
@@ -90,11 +122,31 @@ HIT_SHA = "5f7665e304d31b5b9efff5e940e02c1355fef972d830766fa5035a2c558359a9"
 def original_hit_packet(root):
     """Recover only the hash-exact historical receipt, including every Hit fact."""
     original_marker(root)
-    packet = json.loads((root / HIT_PACKET).read_bytes())
+    raw = (root / HIT_PACKET).read_bytes()
+    # Nested weapon replays already carry the exact original receipt. Terrain
+    # remains independently checked above; never reinterpret its BASE marker as
+    # a live Sugar footprint or accept an unpinned historical receipt.
+    if sha(raw) == HIT_SHA:
+        return raw
+    packet = json.loads(raw)
     inputs = packet["sources"]["world_owner_inputs"]
     ground = "content/world/terrain/" + GROUND
     soulpit = "content/world/terrain/" + SOULPIT
-    if inputs.get(MARKER) == SOULPIT_MARKER_SHA and inputs.get(soulpit) == SOULPIT_SHA:
+    sugar = "content/world/terrain/" + SUGAR_GROUND
+    if sugar in inputs and inputs.get(MARKER) == sha((root / MARKER).read_bytes()):
+        if inputs[sugar] != sha((root / sugar).read_bytes()):
+            raise ValueError("source digest drift: historical Hit Sugar footprint")
+        del inputs[sugar]
+        if (root / soulpit).exists():
+            if inputs.get(soulpit) != SOULPIT_SHA:
+                raise ValueError(
+                    "source digest drift: historical Hit Soulpit footprint"
+                )
+            del inputs[soulpit]
+        inputs[MARKER] = MARKER_SHA
+    elif (
+        inputs.get(MARKER) == SOULPIT_MARKER_SHA and inputs.get(soulpit) == SOULPIT_SHA
+    ):
         inputs[MARKER] = MARKER_SHA
         del inputs[soulpit]
     if inputs.get(MARKER) == MARKER_SHA and inputs.get(ground) == GROUND_SHA:

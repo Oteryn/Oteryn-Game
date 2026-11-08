@@ -211,6 +211,12 @@ pub struct QualifiedSpellTiles {
 }
 
 impl QualifiedSpellTiles {
+    pub(super) fn bundle_activity_region(&self, bounds: [i32; 6]) -> Option<Self> {
+        self.bundle.as_ref()?;
+        let mut view = self.clone();
+        view.source_bounds = Some(bounds);
+        Some(view)
+    }
     pub(super) fn from_source_world(
         world: &super::native_spell_world::QualifiedNativeSpellWorld,
     ) -> Self {
@@ -397,9 +403,6 @@ impl QualifiedSpellTiles {
         if active_scope != &self.scope {
             return Err(SpellTileLookupError::ScopeMismatch);
         }
-        if let Some(bundle) = &self.bundle {
-            return bundle.lookup(cell);
-        }
         if self.unknown_cells.contains(&cell)
             || self
                 .source_bounds
@@ -413,6 +416,9 @@ impl QualifiedSpellTiles {
                 })
         {
             return Err(SpellTileLookupError::Unknown);
+        }
+        if let Some(bundle) = &self.bundle {
+            return bundle.lookup(cell);
         }
         self.tiles
             .as_ref()

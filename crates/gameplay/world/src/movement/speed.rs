@@ -102,6 +102,7 @@ mod tests {
                 kind: TerrainKind::Ground,
                 walkable: Some(walkable),
                 ground_speed: Some(speed),
+                blocks_projectile: None,
             }),
         };
         let manifest = Manifest {

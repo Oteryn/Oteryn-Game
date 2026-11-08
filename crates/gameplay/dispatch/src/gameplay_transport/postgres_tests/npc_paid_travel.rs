@@ -158,7 +158,7 @@ fn scenario() -> TestResult {
         );
         let mut owner = dependencies.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.premium_coordinator = Some(&coordinator);
         owner.admit_premium(id(40), dependencies.admitted.game_session_id);
         let catalogue = NpcDataCatalogue::load(
@@ -1123,6 +1123,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
                     kind: TerrainKind::Ground,
                     walkable: Some(true),
                     ground_speed: Some(150),
+                    blocks_projectile: None,
                 }),
             },
             PaletteEntry {
@@ -1133,6 +1134,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
                     kind: TerrainKind::Ground,
                     walkable: Some(false),
                     ground_speed: Some(0),
+                    blocks_projectile: None,
                 }),
             },
         ],

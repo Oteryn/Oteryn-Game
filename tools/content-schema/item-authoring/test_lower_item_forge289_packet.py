@@ -203,6 +203,30 @@ class Forge289(unittest.TestCase):
             self.assertEqual(context.check(root, cohort="formal")["status"], "PASS")
             self.assertEqual(bytes_inventory(), before)
 
+    def test_nested_weapon_replay_preserves_original_hit_sha_and_rejects_tampering(
+        self,
+    ):
+        import historical_world_owner_context as world_context
+
+        with context.historical_context(forge.ROOT, weapon=True) as root:
+            original = (root / world_context.HIT_PACKET).read_bytes()
+            self.assertEqual(world_context.sha(original), world_context.HIT_SHA)
+            with context.historical_context(root, weapon=True) as nested:
+                self.assertEqual(
+                    (nested / world_context.HIT_PACKET).read_bytes(), original
+                )
+                receipt = nested / world_context.HIT_PACKET
+                packet = json.loads(original)
+                packet["sources"]["world_owner_inputs"][world_context.MARKER] = "0" * 64
+                receipt.write_bytes(context.canonical(packet))
+                with self.assertRaisesRegex(ValueError, "historical Hit packet"):
+                    world_context.original_hit_packet(nested)
+                receipt.write_bytes(original)
+                marker = nested / world_context.MARKER
+                marker.write_bytes(marker.read_bytes() + b" ")
+                with self.assertRaises(ValueError):
+                    world_context.original_hit_packet(nested)
+
     def test_weapon_replay_exact700_closure_rejects_unsealed_owners_atomically(self):
         packet = json.loads(forge.OUTPUT.read_bytes())
         proof = json.loads((forge.ROOT / forge.PROOF).read_bytes())

@@ -134,6 +134,10 @@ pub enum VisibleKind {
     Corpse {
         item_definition_ref: std::num::NonZeroU32,
     },
+    /// An immovable Source-owned volatile Item, never a durable corpse.
+    GroundItem {
+        item_definition_ref: std::num::NonZeroU32,
+    },
 }
 
 /// VIS-3: one entity of the session's Channel, before the interest query.
@@ -186,6 +190,16 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
             item_definition_ref,
         } => (
             EntityKind::Corpse,
+            EntityDetail::Object {
+                item_definition_ref: item_definition_ref.get(),
+                quantity: 1,
+                item_handle: None,
+            },
+        ),
+        VisibleKind::GroundItem {
+            item_definition_ref,
+        } => (
+            EntityKind::GroundItem,
             EntityDetail::Object {
                 item_definition_ref: item_definition_ref.get(),
                 quantity: 1,
@@ -342,7 +356,12 @@ impl SessionVisibility {
         let mut index = InterestIndex::new();
         let mut by_identity = BTreeMap::new();
         for entity in &channel.entities {
-            if !self.objects && matches!(entity.kind, VisibleKind::Corpse { .. }) {
+            if !self.objects
+                && matches!(
+                    entity.kind,
+                    VisibleKind::Corpse { .. } | VisibleKind::GroundItem { .. }
+                )
+            {
                 continue;
             }
             // An entity off the -15..=15 floors cannot be shown; the observer then fails below.

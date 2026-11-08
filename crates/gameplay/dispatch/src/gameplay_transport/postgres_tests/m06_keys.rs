@@ -130,7 +130,7 @@ fn scenario() -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -212,7 +212,7 @@ fn scenario() -> TestResult {
         owner.states = states;
         owner.clock_origin = clock_origin;
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         assert!(map.enterable(station_pos));
         assert_eq!(appearance()?, 1630);
         let inventory = harness.root.read_item_use_inventory(&authority, &harness.node, fence).await.map_err(debug)?;

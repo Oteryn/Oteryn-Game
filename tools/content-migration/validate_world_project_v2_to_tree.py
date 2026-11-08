@@ -197,7 +197,7 @@ def validate_forge289_relation(row, definition, closed, source):
 def validate_item_authoring_targets(legacy_authoring, staged_items):
     """Retain every admitted cohort plus sealed103 intrinsic weapon properties."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "adabe5145e89bc308664cfb8a908f05360779a274f06b3b4643cd3c3412e2af8", "HIT_MAGIC_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "8a0b27274f4c3344dd9fea3ef215913c8883407a0de056cc5e61a6dca003be67", "HIT_MAGIC_PACKET_DIGEST")
     magic = {target_id(row["target"]): row for row in json.loads(raw)["promotions"]
              if "required_magic_level" in row["facts"]}
     require(len(staged_items) == 164 and len(magic) == 39 and not set(magic).intersection(staged_items), "CLOSED_ML_OWNER_SCOPE")
@@ -206,7 +206,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     for key, row in magic.items():
         expected[key] = {"item": row["target"], "required_magic_level": row["facts"]["required_magic_level"]}
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "27bad88d34a8a35ea442d0c7cd59d5160281bbaa651563aa9e678e34e4bee594", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "09b18b0c7da8287c5b4447f1fccebfa74ca4371a631e5051ad21536ab289553e", "USE_OBSERVATION_PACKET_DIGEST")
     packet = json.loads(raw)
     observations = {target_id(row["target"]): row for row in packet["promotions"]}
     require(packet["schema"] == "OTERYN_ITEM_USE_OBSERVATION_PROMOTION/v1"
@@ -246,7 +246,7 @@ def validate_forge_relation(row, definition):
 def use_relation_targets():
     """The sealed Use owners; only these rows are the PR's Use relations (D322)."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "27bad88d34a8a35ea442d0c7cd59d5160281bbaa651563aa9e678e34e4bee594", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "09b18b0c7da8287c5b4447f1fccebfa74ca4371a631e5051ad21536ab289553e", "USE_OBSERVATION_PACKET_DIGEST")
     return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}
 
 
@@ -692,6 +692,11 @@ def main() -> int:
         require((ROOT / relative).is_file() and (ROOT / relative).read_bytes() == expected,
                 f"SPELL_IMPORT_DRIFT:{relative}")
     reference = load(LEGACY / "definitions" / "reference.json")
+    # Crystal201189f the_primal_menace.lua:79,118 explicitly declares corpse
+    # 39530 and loot={}; replay the same hash-checked tree-first admission as
+    # the producer before exact family/definition equivalence. Legacy stays raw.
+    from primal_reference_overlay import apply_reference as apply_primal_reference
+    apply_primal_reference(reference["records"], ROOT)
     # Equivalence is protected legacy plus the accepted tree-first reward Item packet.
     from quest_reward_item_semantics import apply_admissions
     apply_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)

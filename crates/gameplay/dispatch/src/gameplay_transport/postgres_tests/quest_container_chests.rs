@@ -321,7 +321,7 @@ fn scenario(case: Case) -> TestResult {
         {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             let mut stale = admitted;
@@ -450,7 +450,7 @@ fn scenario(case: Case) -> TestResult {
             {
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
-                owner.movement_cells = &cells;
+                owner.movement_cells = (&cells).into();
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
                 assert_eq!(
@@ -491,7 +491,7 @@ fn scenario(case: Case) -> TestResult {
             for cold_replay in [false, true] {
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
-                owner.movement_cells = &cells;
+                owner.movement_cells = (&cells).into();
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
                 if cold_replay {

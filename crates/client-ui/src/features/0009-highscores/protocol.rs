@@ -1,4 +1,4 @@
-use super::{Action, HighscoresPanel};
+use super::{Action, CATEGORY_IDS, HighscoresPanel};
 use oteryn_client_runtime::highscores::{
     command,
     wire::{HighscoresQuery, decode_highscores_result},
@@ -19,7 +19,7 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
     match action {
         Action::Refresh => {}
         Action::Filter { category, vocation } => {
-            if !(1..=11).contains(&category) || vocation > 5 {
+            if !CATEGORY_IDS.contains(&category) || vocation > 5 {
                 return None;
             }
             query.category = category;

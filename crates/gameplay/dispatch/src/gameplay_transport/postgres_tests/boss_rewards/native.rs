@@ -17,19 +17,21 @@ pub(super) async fn native_death(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     fence: CurrentCharacterItemFence,
+    creature: &str,
 ) -> TestResult {
     let native = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .ok_or("active native gameplay")?;
-    // Test-only reward classification was authored before activation and is part
-    // of the real pin. Source rat HP, XP, corpse, loot and Items remain unchanged.
+    // Crystal data-global/monster/raids/grand_mother_foulscale.lua:5-25,40-46,78-97:
+    // the production case keeps source boss classification, HP, XP, corpse and loot.
+    // The original rat case retains its explicitly test-only classification.
     let policy = native
         .policies()
         .policies()
         .iter()
         .find(|policy| {
-            policy.definition_key == "oteryn:creature.rat" && policy.reward_boss == Some(true)
+            policy.definition_key == creature && policy.reward_boss == Some(true)
         })
         .ok_or("compiled native reward-boss fixture")?;
     native
@@ -201,5 +203,17 @@ pub(super) async fn native_death(
         page.rows.len(),
         usize::try_from(count.3)?.min(MAX_PAGE_ROWS)
     );
+    let first = page.rows.first().ok_or("native personal reward row")?;
+    let take = encode_take_request(&TakeRequest { death, ordinal: first.ordinal }).map_err(debug)?;
+    let (_, bytes) = exchange(owner, admitted, 2, COMMAND_TYPE_BOSS_REWARD_TAKE, &take).await?;
+    let collected = decode_collect_reply(&bytes).map_err(debug)?;
+    assert_eq!(collected.status, BossRewardStatus::Ok);
+    assert_eq!(collected.moved, 1);
+    let custody: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_boss_reward_items r JOIN game_boss_reward_item_collections c ON c.transaction_id=r.collected_transaction_id AND c.death_id=r.death_id AND c.item_ordinal=r.item_ordinal JOIN game_item_instances i ON i.item_instance_id=c.item_instance_id JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.parent_item_instance_id=c.parent_item_instance_id JOIN game_item_container_slots s ON s.item_instance_id=e.parent_item_instance_id AND s.character_id=r.character_id WHERE r.death_id=encode($1,'hex')::uuid AND r.item_ordinal=$2 AND i.lifecycle=1",
+    ).bind(death.as_slice()).bind(i32::from(first.ordinal)).fetch_one(&h.pool).await?;
+    assert_eq!(custody, 1, "the native entitlement reaches live backpack Item custody");
+    let (_, replay) = exchange(owner, admitted, 2, COMMAND_TYPE_BOSS_REWARD_TAKE, &take).await?;
+    assert_eq!(bytes, replay, "physical collection command replay preserves its receipt");
     Ok(())
 }

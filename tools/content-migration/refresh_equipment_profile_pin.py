@@ -25,6 +25,28 @@ def keys(document):
     return set(rows)
 
 
+def refresh_npcfix_cohort(source, npcfix, boss):
+    """Count this source owner once after merging the independently captured Sugar owner."""
+    owned = keys(npcfix)
+    baseline = {"oteryn:item.tibia.i3456", "oteryn:item.tibia.i6528"}
+    if not baseline <= owned:
+        raise ValueError("NPCFIX baseline source keys missing")
+    shared = (owned - baseline) & keys(boss)
+    count = len(owned - baseline - shared)
+    source, rows = re.subn(
+        r'(\("NPCFIX", )\d+(\),)',
+        lambda match: match[1] + str(count) + match[2], source,
+    )
+    source, comments = re.subn(
+        r'    // i3456/i6528[^\n]*\n',
+        f'    // i3456/i6528; Sugar shares {len(shared)} captured keys. Count {count} once; retain all source assertions.\n',
+        source,
+    )
+    if rows != 1 or comments != 1:
+        raise ValueError("NPCFIX source cohort anchors drifted")
+    return source
+
+
 def regenerate(source, base, updates, qengine, npc, starting=None):
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(
@@ -79,8 +101,14 @@ def main():
         "content/items/definitions/starting-loadout-profiles.json",
     )
     source = TEST.read_text()
+    native = ROOT / "tools/content-schema/native-gameplay"
+    refreshed = refresh_npcfix_cohort(
+        source,
+        json.loads((native / "npcfix-item-profiles.json").read_text()),
+        json.loads((native / "boss-reward-item-profiles.json").read_text()),
+    )
     generated, count = regenerate(
-        source, *(json.loads((ROOT / p).read_text()) for p in paths)
+        refreshed, *(json.loads((ROOT / p).read_text()) for p in paths)
     )
     if args.check and generated != source:
         raise SystemExit("equipment cohort pin is stale")

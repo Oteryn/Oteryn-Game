@@ -24,7 +24,7 @@
     },
     "Dialogue": {
       "index": "content/dialogues/definitions/index.json",
-      "records": 836
+      "records": 839
     },
     "Document": {
       "index": "content/documents/index.json",
@@ -52,7 +52,7 @@
     },
     "Loot": {
       "index": "content/loot/index.json",
-      "records": 1290
+      "records": 1291
     },
     "Mount": {
       "index": "content/cosmetics/mounts/index.json",
@@ -60,7 +60,7 @@
     },
     "NPC": {
       "index": "content/npcs/definitions/index.json",
-      "records": 1282
+      "records": 1290
     },
     "Presentation": {
       "index": "content/presentations/definitions/index.json",
@@ -92,11 +92,11 @@
     },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
-      "records": 324
+      "records": 327
     },
     "Service.Travel": {
       "index": "content/services/travel/index.json",
-      "records": 56
+      "records": 59
     },
     "StarterKit": {
       "index": "content/starter/index.json",
@@ -346,7 +346,7 @@
       "path": "content/dialogues/definitions/dialogues-00000-00499.json"
     },
     {
-      "path": "content/dialogues/definitions/dialogues-00500-00835.json"
+      "path": "content/dialogues/definitions/dialogues-00500-00838.json"
     },
     {
       "path": "content/dialogues/definitions/index.json"
@@ -643,7 +643,7 @@
       "path": "content/loot/loot-00500-00999.json"
     },
     {
-      "path": "content/loot/loot-01000-01289.json"
+      "path": "content/loot/loot-01000-01290.json"
     },
     {
       "path": "content/npcs/definitions/index.json"
@@ -655,7 +655,7 @@
       "path": "content/npcs/definitions/npcs-00500-00999.json"
     },
     {
-      "path": "content/npcs/definitions/npcs-01000-01281.json"
+      "path": "content/npcs/definitions/npcs-01000-01289.json"
     },
     {
       "path": "content/presentations/bindings/client-ids.json"
@@ -751,13 +751,13 @@
       "path": "content/services/trade/index.json"
     },
     {
-      "path": "content/services/trade/trade-00000-00323.json"
+      "path": "content/services/trade/trade-00000-00326.json"
     },
     {
       "path": "content/services/travel/index.json"
     },
     {
-      "path": "content/services/travel/travel-00000-00055.json"
+      "path": "content/services/travel/travel-00000-00058.json"
     },
     {
       "path": "content/spells.manifest.json"
@@ -1013,7 +1013,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3791,
+          "record_count": 3806,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1021,7 +1021,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "89bf51735d658417ec8448a24dfc9f0389e55ee5210bfb9d003fdba0ec15029f"
+          "sha256": "7bf46d254c0251b324181e04c16a32976a09037e5ca90acfef5bd31797625822"
         },
         {
           "creates_canonical_identities": false,

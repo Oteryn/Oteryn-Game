@@ -307,13 +307,71 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 .iter()
                 .find(|binding| binding.creature.key == policy.definition_key)
                 .ok_or("source reward-boss loot binding")?;
-            assert!(binding.loot.is_none(), "source boss has no authored loot");
-            assert_eq!(row.loot_table_ref, row.corpse_item);
+            if policy.definition_key == "oteryn:creature.sugar_daddy" {
+                // W02's exact source capture admits this body and every Item
+                // of the unchanged canonical loot table, never a fixture table.
+                let bound = binding.loot.as_ref().ok_or("Sugar source loot binding")?;
+                assert_eq!(
+                    row.loot_table_ref,
+                    LootDefinitionRef::new(&bound.family, &bound.key, &bound.revision)
+                );
+                let original = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity == *bound)
+                    .ok_or("Sugar original source loot table")?;
+                assert_eq!(row.loot_table.entries.len(), 22);
+                assert_eq!(row.loot_table.entries.len(), original.entries.len());
+                for (actual, expected) in row.loot_table.entries.iter().zip(&original.entries) {
+                    assert_eq!(
+                        actual.item,
+                        LootDefinitionRef::new(
+                            &expected.item.family,
+                            &expected.item.key,
+                            &expected.item.revision
+                        )
+                    );
+                    assert_eq!(
+                        (actual.min_count, actual.max_count, actual.probability_ppm),
+                        (
+                            expected.min_count,
+                            expected.max_count,
+                            expected.probability_ppm
+                        )
+                    );
+                    assert!(actual.details.children.is_empty());
+                    assert!(expected.children.is_empty());
+                }
+            } else if policy.definition_key == "oteryn:creature.the_primal_menace" {
+                // Crystal the_primal_menace.lua:118 is a source-proven empty
+                // Loot table, never the legacy no-binding/corpse-ref fallback.
+                let bound = binding
+                    .loot
+                    .as_ref()
+                    .ok_or("Primal explicit empty source loot binding")?;
+                assert_eq!(bound.family, "Loot");
+                assert_eq!(bound.key, "oteryn:loot.creature.the_primal_menace");
+                assert_eq!(bound.revision, "definition-r1");
+                assert_eq!(
+                    row.loot_table_ref,
+                    LootDefinitionRef::new(&bound.family, &bound.key, &bound.revision)
+                );
+                let original = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity == *bound)
+                    .ok_or("Primal original explicit empty source loot table")?;
+                assert!(original.entries.is_empty());
+                assert!(row.loot_table.entries.is_empty());
+            } else {
+                assert!(binding.loot.is_none(), "source boss has no authored loot");
+                assert_eq!(row.loot_table_ref, row.corpse_item);
+                assert!(row.loot_table.entries.is_empty());
+            }
             assert_eq!(
                 row.loot_table.algorithm,
                 LootSelectionAlgorithm::IndependentBernoulliPpm
             );
-            assert!(row.loot_table.entries.is_empty());
             None
         } else if corpse.is_none() {
             missing += 1;
@@ -329,8 +387,14 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
-    assert_eq!((missing, inadmissible, admitted.len()), (52, 329, 1));
-    assert_eq!(admitted, ["oteryn:creature.the_primal_menace"]);
+    assert_eq!((missing, inadmissible, admitted.len()), (52, 328, 2));
+    assert_eq!(
+        admitted,
+        [
+            "oteryn:creature.sugar_daddy",
+            "oteryn:creature.the_primal_menace"
+        ]
+    );
     shared_body.sort_unstable();
     assert_eq!(
         shared_body,

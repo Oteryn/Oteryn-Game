@@ -128,7 +128,7 @@ async fn scenario(harness: &Harness) -> TestResult {
     deps.runtime = tokio::sync::Mutex::new(runtime);
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = deps.room.movement_cells();
+    owner.movement_cells = (deps.room.movement_cells()).into();
     // Only B is initially eligible, so the real first think must select B.
     deps.initialize_player(&owner, second, second_session).await;
     owner.clock_origin -= std::time::Duration::from_secs(10);

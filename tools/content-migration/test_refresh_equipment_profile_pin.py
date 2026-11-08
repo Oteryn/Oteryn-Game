@@ -1,6 +1,6 @@
 import unittest
 
-from refresh_equipment_profile_pin import regenerate
+from refresh_equipment_profile_pin import regenerate, refresh_npcfix_cohort
 
 
 def document(*ids):
@@ -58,6 +58,19 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
             document(5),
         )
         self.assertEqual(count, 6)
+
+    def test_shared_captured_sugar_keys_are_counted_once(self):
+        source = '// i3456/i6528. original\n("NPCFIX", 4),'
+        source = "    " + source
+        npcfix = document("oteryn:item.tibia.i3456", "oteryn:item.tibia.i6528", 1, 2, 3, 4)
+        fixed = refresh_npcfix_cohort(source, npcfix, document(1, 2, 3, 9))
+        self.assertIn('("NPCFIX", 1),', fixed)
+        self.assertIn('Sugar shares 3 captured keys', fixed)
+        self.assertEqual(refresh_npcfix_cohort(fixed, npcfix, document(1, 2, 3, 9)), fixed)
+
+    def test_shared_sources_never_invent_baseline_membership(self):
+        with self.assertRaisesRegex(ValueError, "baseline source keys missing"):
+            refresh_npcfix_cohort('("NPCFIX", 4),', document(1, 2), document(1))
 
     def test_duplicate_profile_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate production key"):

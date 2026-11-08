@@ -400,6 +400,26 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+        import book_world_ground
+        import npcfix_ground
+        import npcfix_extended_ground
+
+        for producer in (npcfix_ground, npcfix_extended_ground, book_world_ground):
+            files[producer.SHARD] = producer.outputs()[producer.SHARD]
+            index = json.loads(files[index_path])
+            index["notes"] += producer.NOTE
+            files[index_path] = (
+                json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+            ).encode()
+
+        import sugar_room
+
+        files[sugar_room.SHARD] = sugar_room.outputs()[sugar_room.SHARD]
+        index = json.loads(files[index_path])
+        index["notes"] += sugar_room.MARKER_NOTE
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
     return files, world_objects.census_document_bytes(result)
 
 
@@ -452,6 +472,10 @@ def qualified_shards():
             "content/world/terrain/terrain-08578-08611.json",
             "content/world/terrain/terrain-08612-08612.json",
             "content/world/terrain/terrain-08613-08613.json",
+            "content/world/terrain/terrain-08614-08614.json",
+            "content/world/terrain/terrain-08614-08692.json",
+            "content/world/terrain/terrain-08615-08617.json",
+            "content/world/terrain/terrain-08618-08619.json",
             "content/world/terrain/terrain-08614-08668.json",
             "content/world/objects/objects-12917-12931.json",
         )

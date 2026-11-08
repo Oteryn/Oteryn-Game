@@ -108,6 +108,18 @@ pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
         Err(StaticCellEngineError::Unqualified)
     }
     fn same_index(&self, other: &dyn BundleCollisionLookup) -> bool;
+    /// A bounded read-only template, or fresh map state for an already allocated Instance.
+    fn activity_region(
+        &self,
+        _bounds: [i32; 6],
+        _instance: Option<[u8; 16]>,
+        _start: [i32; 3],
+    ) -> Option<BundleCollisionIndex> {
+        None
+    }
+    fn for_activity_instance(&self, _instance: [u8; 16]) -> Option<BundleCollisionIndex> {
+        None
+    }
 }
 
 /// A shared bundle collision port. The World owner retains its concrete map view.
@@ -120,6 +132,17 @@ impl PartialEq for BundleCollisionIndex {
 }
 impl Eq for BundleCollisionIndex {}
 impl BundleCollisionIndex {
+    pub fn activity_region(
+        &self,
+        bounds: [i32; 6],
+        instance: Option<[u8; 16]>,
+        start: [i32; 3],
+    ) -> Option<Self> {
+        self.0.activity_region(bounds, instance, start)
+    }
+    pub fn for_activity_instance(&self, instance: [u8; 16]) -> Option<Self> {
+        self.0.for_activity_instance(instance)
+    }
     pub fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,

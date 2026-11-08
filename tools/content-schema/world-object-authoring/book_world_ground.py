@@ -14,12 +14,13 @@ ROOT = Path(__file__).resolve().parents[3]
 IDENTIFIER = 50362
 KEY = "oteryn:terrain.tibia.i50362"
 SHARD = "content/world/terrain/terrain-08614-08614.json"
+NOTE = " Additionally one NPCFIX appearance-only Book World ground; total 8615 Terrain records."
 
 
 def outputs(root=ROOT):
     return summer_ground.outputs(
         root, identifier=IDENTIFIER, expected_speed=150, shard=SHARD,
-        note=" Additionally one NPCFIX appearance-only Book World ground; total 8615 Terrain records.",
+        note=NOTE,
     )
 
 

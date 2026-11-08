@@ -533,6 +533,7 @@ def validate_record(record):
             )
         import grizzly_ground
         import npcfix_ground
+        import sugar_room
         import summer_ground
 
         import npcfix_extended_ground
@@ -550,6 +551,13 @@ def validate_record(record):
             return (
                 [] if record == expected
                 else ["reviewed NPC Terrain differs from its qualified official source"]
+            )
+        if record["provenance"]["source_item_id"] in sugar_room.IDS:
+            expected = json.loads(sugar_room.outputs()[sugar_room.SHARD])["records"]
+            return (
+                []
+                if record in expected
+                else ["Sugar room differs from its exact official source"]
             )
         ground = {
             grizzly_ground.IDENTIFIER: grizzly_ground,

@@ -169,6 +169,9 @@ def main() -> int:
         spec.loader.exec_module(module)
         cosmetics_outputs = module.materialized_outputs(ROOT)
     reference = load(LEGACY / "definitions" / "reference.json")
+    # Crystal's explicit monster.loot={} is distinct from unavailable loot data.
+    from primal_reference_overlay import apply_reference as apply_primal_reference
+    apply_primal_reference(reference["records"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
     editor = load(LEGACY / "editor" / "author.json")
     sources = load(LEGACY / "provenance" / "sources.json")
