@@ -3,6 +3,7 @@ use super::*;
 
 #[path = "elemental_arrival.rs"]
 mod elemental_arrival;
+pub use elemental_arrival::ElementalArrivalReservation;
 
 #[path = "quest_item_batch.rs"]
 mod item_batch;
@@ -52,6 +53,7 @@ pub enum QuestCallbackProjection {
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct CallbackStates {
+    pub(super) reserved: BTreeSet<u64>,
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
     pub(super) hidden: BTreeSet<u64>,
     passable: BTreeMap<u64, bool>,
@@ -67,6 +69,15 @@ pub(super) struct CallbackStates {
 }
 
 impl CallbackStates {
+    fn position_reserved(&self, position: TilePos) -> bool {
+        self.reserved.iter().any(|key| {
+            view::placement_of(*key)
+                .map(|(pos, _)| pos)
+                .or_else(|| self.movement_item(*key).map(|(pos, _)| pos))
+                == Some(position)
+        })
+    }
+
     fn remove_portals(&mut self, owner: u64) {
         self.portals.retain(|pos, portal| {
             if portal.owner != owner {
@@ -262,7 +273,8 @@ impl CallbackStates {
         })
     }
     fn has_capacity(&self, additional: usize) -> bool {
-        let used = self.changed.len()
+        let used = self.reserved.len()
+            + self.changed.len()
             + self.hidden.len()
             + self.movement_decays.len()
             + self.movement_effects.len()
@@ -367,6 +379,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.reserved.contains(&key) {
+            return false;
+        }
         let Some(revision) = states
             .changed
             .get(&key)
@@ -390,7 +405,8 @@ impl BundleFacts {
         let states = self.callbacks.lock().ok()?;
         states
             .movement_decays
-            .first_key_value()
+            .iter()
+            .find(|((_, key), _)| !states.reserved.contains(key))
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
@@ -415,14 +431,17 @@ impl BundleFacts {
             states.remove_portals(owner);
             changed += 1;
         }
-        while states
+        let due: Vec<_> = states
             .movement_decays
-            .first_key_value()
-            .is_some_and(|((due, _), _)| *due <= now)
-        {
-            let Some(((_, key), decay)) = states.movement_decays.pop_first() else {
-                break;
+            .range(..=(now, u64::MAX))
+            .filter(|((_, key), _)| !states.reserved.contains(key))
+            .map(|(key, _)| *key)
+            .collect();
+        for at in due {
+            let Some(decay) = states.movement_decays.remove(&at) else {
+                continue;
             };
+            let key = at.1;
             if states
                 .changed
                 .get(&key)
@@ -525,6 +544,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.position_reserved(pos) {
+            return false;
+        }
         let Some(sequence) = states.movement_sequence.checked_add(1) else {
             return false;
         };
@@ -562,6 +584,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.position_reserved(pos) {
+            return false;
+        }
         let Some(index) = states.movement_items.get(&pos).and_then(|entries| {
             entries.iter().position(|entry| {
                 matches!(entry.source,
@@ -630,6 +655,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.position_reserved(pos) {
+            return false;
+        }
         if states.changed.get(&key).map_or(0, |(r, _)| *r) != revision {
             return false;
         }
@@ -655,6 +683,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.position_reserved(pos) {
+            return false;
+        }
         // A repeated projection cannot undo a harvest or create a second source.
         if states.movement_items.get(&pos).is_some_and(|entries| {
             entries
@@ -705,6 +736,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return Some(false);
         };
+        if states.position_reserved(pos) {
+            return Some(false);
+        }
         let Some((actual, _)) = states.movement_item(key) else {
             return Some(false);
         };
@@ -846,6 +880,7 @@ impl BundleFacts {
         self.callbacks.lock().is_ok_and(|s| {
             s.changed.get(&key).map_or(0, |(r, _)| *r) == expected
                 && expected < u64::MAX
+                && !s.reserved.contains(&key)
                 && passages <= 8
                 && s.has_capacity(passages)
         })
@@ -920,6 +955,24 @@ impl BundleFacts {
             return false;
         };
         if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
+            || states.reserved.contains(&key)
+            || passages.iter().any(|key| states.reserved.contains(key))
+            || replacements
+                .iter()
+                .any(|(key, _, _)| states.reserved.contains(key))
+            || projection.is_some_and(|projection| match projection {
+                QuestCallbackProjection::ReadsetTransforms { entries, .. } => entries
+                    .iter()
+                    .any(|(key, _, _)| states.reserved.contains(key)),
+                QuestCallbackProjection::ItemPresence { position, .. }
+                | QuestCallbackProjection::ItemCycle { position, .. } => {
+                    states.position_reserved(*position)
+                }
+                QuestCallbackProjection::Portals { endpoints, .. } => endpoints
+                    .iter()
+                    .any(|(pos, _, _)| states.position_reserved(*pos)),
+                QuestCallbackProjection::TimedTransform { .. } => false,
+            })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8
             || !states.has_capacity(
@@ -990,6 +1043,9 @@ impl BundleFacts {
             return false;
         };
         let revision = states.changed.get(&wall).map_or(0, |(r, _)| *r);
+        if states.reserved.contains(&key) || states.reserved.contains(&wall) {
+            return false;
+        }
         if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
             || expected == u64::MAX
             || revision == u64::MAX

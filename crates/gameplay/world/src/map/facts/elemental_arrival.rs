@@ -5,7 +5,68 @@ use oteryn_gameplay_quests::quest::{
     world_callbacks::Position,
 };
 
+/// Retained with the Channel spell lane across the physical arrival transaction.
+/// This value owns no mutex guard. Park it with an unresolved spell-lane attempt
+/// before issuing SQL; it remains owned until that attempt has a known outcome.
+#[must_use]
+pub struct ElementalArrivalReservation {
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
+    keys: Vec<u64>,
+    wake: Arc<tokio::sync::Notify>,
+}
+
 impl BundleFacts {
+    pub fn reserve_elemental_arrival(
+        &self,
+        base: &crate::map::WorldBase,
+        plan: &SummonPlan,
+        wake: Arc<tokio::sync::Notify>,
+    ) -> Option<ElementalArrivalReservation> {
+        let keys: Vec<_> = std::iter::once(plan.target().key)
+            .chain(plan.readset().iter().map(|object| object.key))
+            .collect();
+        if keys.iter().any(|key| self.doors.contains(*key)) {
+            return None;
+        }
+        let doors = self.doors.snapshot();
+        let rotations = self.rotations.lock().ok()?;
+        let mut states = self.callbacks.lock().ok()?;
+        let pinned = PinnedFacts {
+            facts: self,
+            callbacks: Some(Arc::clone(&states)),
+            doors,
+            rotations: Some(Arc::clone(&rotations)),
+        };
+        let target = plan.target().position;
+        let current = Self::observe_elemental_snapshot(
+            base,
+            plan.fence(),
+            TilePos {
+                x: target.x,
+                y: target.y,
+                floor: target.floor,
+            },
+            plan.corpse(),
+            false,
+            &pinned,
+        )?;
+        if &current != plan {
+            return None;
+        }
+        if !states.has_capacity(keys.len()) || keys.iter().any(|key| states.reserved.contains(key))
+        {
+            return None;
+        }
+        Arc::make_mut(&mut states)
+            .reserved
+            .extend(keys.iter().copied());
+        Some(ElementalArrivalReservation {
+            callbacks: Arc::clone(&self.callbacks),
+            keys,
+            wake,
+        })
+    }
+
     pub fn observe_elemental_arrival(
         &self,
         base: &crate::map::WorldBase,
@@ -14,10 +75,20 @@ impl BundleFacts {
         corpse: CorpseArrival,
         boss_active: bool,
     ) -> Option<SummonPlan> {
-        if scope.map != base.digest() || self.house_tile(position) {
+        Self::observe_elemental_snapshot(base, scope, position, corpse, boss_active, &self.pinned())
+    }
+
+    fn observe_elemental_snapshot(
+        base: &crate::map::WorldBase,
+        scope: ArrivalFence,
+        position: TilePos,
+        corpse: CorpseArrival,
+        boss_active: bool,
+        pinned: &PinnedFacts<'_>,
+    ) -> Option<SummonPlan> {
+        if scope.map != base.digest() || pinned.house_tile(position) {
             return None;
         }
-        let pinned = self.pinned();
         let snapshot = |position: TilePos, entry: &view::ComposedEntry| {
             if entry.facts.pickupable {
                 return None;
@@ -39,7 +110,7 @@ impl BundleFacts {
             })
         };
         let mut entries = Vec::new();
-        view::compose_into(base, None, &pinned, position, &mut entries).ok()?;
+        view::compose_into(base, None, pinned, position, &mut entries).ok()?;
         let mut targets = entries
             .iter()
             .filter(|entry| rules::recipe(entry.facts.appearance_id).is_some());
@@ -59,7 +130,7 @@ impl BundleFacts {
                 return None;
             }
             entries.clear();
-            view::compose_into(base, None, &pinned, position, &mut entries).ok()?;
+            view::compose_into(base, None, pinned, position, &mut entries).ok()?;
             let mut candidates = entries
                 .iter()
                 .filter(|entry| entry.facts.appearance_id == recipe.charged);
@@ -70,6 +141,18 @@ impl BundleFacts {
             altars.push(altar);
         }
         rules::prepare_arrival(scope, target, corpse, &altars, boss_active)
+    }
+}
+
+impl Drop for ElementalArrivalReservation {
+    fn drop(&mut self) {
+        if let Ok(mut states) = self.callbacks.lock() {
+            let states = Arc::make_mut(&mut states);
+            for key in &self.keys {
+                states.reserved.remove(key);
+            }
+        }
+        self.wake.notify_one();
     }
 }
 
@@ -201,18 +284,74 @@ mod tests {
         };
         let key = placement_key(pos, 1).ok_or("cell key")?;
         let before = facts.base_entry(pos, 1, 1).ok_or("charged cell")?;
-        assert!(facts.apply_quest_callback(
-            key,
-            0,
-            EntryFacts {
+        let wake = Arc::new(tokio::sync::Notify::new());
+        let reservation = facts
+            .reserve_elemental_arrival(&base, &observed, Arc::clone(&wake))
+            .ok_or("arrival reservation")?;
+        fn assert_send<T: Send + 'static>(_: &T) {}
+        assert_send(&reservation);
+        assert!(!facts.quest_callback_capacity(key, 0, 0));
+        assert!(
+            facts
+                .reserve_elemental_arrival(&base, &observed, Arc::clone(&wake))
+                .is_none(),
+            "overlapping arrivals cannot consume the same ring"
+        );
+        assert!(
+            !facts.apply_quest_callback(key, 0, before, &[], &[], false, None),
+            "the physical transaction owns all observed cells"
+        );
+        drop(reservation);
+        let reset = QuestCallbackProjection::TimedTransform {
+            due: 100,
+            restore: EntryFacts {
                 appearance_id: 7737,
                 ..before
             },
-            &[],
-            &[],
-            false,
-            None
-        ));
+        };
+        assert!(facts.apply_quest_callback(key, 0, before, &[], &[], false, Some(&reset)));
+        let current = facts
+            .observe_elemental_arrival(&base, scope, target, corpse, false)
+            .ok_or("armed ring")?;
+        assert!(
+            facts
+                .reserve_elemental_arrival(&base, &observed, Arc::clone(&wake))
+                .is_none(),
+            "a pre-arm plan is stale"
+        );
+        let reservation = facts
+            .reserve_elemental_arrival(&base, &current, Arc::clone(&wake))
+            .ok_or("frozen armed ring")?;
+        assert!(facts.apply_quest_callback(1, 0, before, &[], &[], false, Some(&reset)));
+        assert_eq!(
+            facts.expire_movement_items(100),
+            1,
+            "unrelated timers still expire"
+        );
+        assert_eq!(
+            facts.object_revision(key),
+            1,
+            "the reserved charged field cannot decay during SQL"
+        );
+        assert_eq!(
+            facts.next_movement_decay_time(),
+            None,
+            "reserved deadlines do not spin the owner"
+        );
+        use std::future::Future;
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        let mut notified = Box::pin(wake.notified());
+        assert!(notified.as_mut().poll(&mut context).is_ready()); // consume the first release
+        let mut notified = Box::pin(wake.notified());
+        assert!(notified.as_mut().poll(&mut context).is_pending());
+        drop(reservation);
+        assert!(
+            notified.as_mut().poll(&mut context).is_ready(),
+            "cancellation wakes the decay owner"
+        );
+        assert_eq!(facts.next_movement_decay_time(), Some(100));
+        assert_eq!(facts.expire_movement_items(100), 1);
+        assert_eq!(facts.object_revision(key), 2);
         assert!(
             facts
                 .observe_elemental_arrival(&base, scope, target, corpse, false)

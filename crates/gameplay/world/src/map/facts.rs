@@ -42,7 +42,9 @@ pub use source_containers::CapturedMapItem;
 mod quest_callbacks;
 mod world_change_phases;
 use quest_callbacks::CallbackStates;
-pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove, RafzaneElevator};
+pub use quest_callbacks::{
+    ElementalArrivalReservation, QuestCallbackProjection, QuestMapItemMove, RafzaneElevator,
+};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -134,7 +136,7 @@ pub struct BundleFacts {
     doors: DoorBook,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
-    callbacks: Mutex<Arc<CallbackStates>>,
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
     monster_steps: Mutex<VecDeque<MonsterStep>>,
 }
 
@@ -249,7 +251,7 @@ impl BundleFacts {
                 .collect(),
             doors: self.doors.activity_copy(inside),
             rotations: Mutex::new(Arc::new(BTreeMap::new())),
-            callbacks: Mutex::new(Arc::new(CallbackStates::default())),
+            callbacks: Arc::new(Mutex::new(Arc::new(CallbackStates::default()))),
             monster_steps: Mutex::new(VecDeque::new()),
         }
     }
@@ -349,7 +351,7 @@ impl BundleFacts {
             house_doors: Vec::new(),
             doors: DoorBook::default(),
             rotations: Mutex::default(),
-            callbacks: Mutex::default(),
+            callbacks: Arc::default(),
             monster_steps: Mutex::default(),
         })
     }
@@ -794,6 +796,13 @@ impl BundleFacts {
         let Ok(mut states) = self.rotations.lock() else {
             return UseDisposition::Rejected;
         };
+        if !self
+            .callbacks
+            .lock()
+            .is_ok_and(|callbacks| !callbacks.reserved.contains(&key))
+        {
+            return UseDisposition::StaleState;
+        }
         let current = states.get(&key);
         if current.map_or(0, |(revision, _)| *revision) != expected_revision
             || current.is_some_and(|(_, facts)| *facts != before)
