@@ -262,7 +262,18 @@ pub(super) fn run_scenario() -> TestResult {
             }
             let (exhausted_id, exhausted_bytes) = exhausted.ok_or("VIP bucket did not exhaust")?;
             assert!((1..=3).contains(&wait(&exhausted_bytes)?));
-            let replayed = owner
+            // The wire owner can start periodic work after delivering the result.
+            // Keep this receipt replay independent of that owner's busy holder,
+            // just as the other live session uses its own root above.
+            let replay_root = h.independent_root()?;
+            assert!(replay_root.maintain_ready_once().await?);
+            let replay_authority = replay_root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let mut replay_owner = deps.owner(&h, &replay_authority);
+            replay_owner.root = &replay_root;
+            let replayed = replay_owner
                 .vip_command(admitted, exhausted_id, 48, &named(1, "Unknown Friend"))
                 .await
                 .ok_or("rate replay")?;
@@ -391,7 +402,9 @@ pub(super) fn run_scenario() -> TestResult {
             let mut a = admitted.continuity.next_command_id;
             assert_eq!(a, add_command);
             assert_eq!(
-                command(&mut client, &mut a, &named(1, "Other Name")).await?.0,
+                command(&mut client, &mut a, &named(1, "Other Name"))
+                    .await?
+                    .0,
                 10
             );
             client.shutdown().await?;
@@ -424,9 +437,9 @@ pub(super) fn run_scenario() -> TestResult {
             tokio::time::timeout(Duration::from_secs(30), fixture::join_two(serving, driving))
                 .await?;
         let next = outcome?;
-        let crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(
-            mut old,
-        ) = ended else {
+        let crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(mut old) =
+            ended
+        else {
             return Err(format!("VIP reload connection ended {ended:?}").into());
         };
         assert_eq!(old.continuity.next_command_id, next);

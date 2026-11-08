@@ -1128,3 +1128,13 @@ inventory row for each input. The 500/501-node, depth-eight/nine, cycle and
 foreign Character/World/absent-item cases were compared against migration 0268's
 actual function on real PostgreSQL (six fixtures, full/selected equality).
 No deadline, recipe quantity, custody exclusion or receipt assertion was relaxed.
+
+QENGPR follow-up: VIP immutable replay retains its exact byte assertion.
+The failed payload decodes to Unavailable (9), revision/number/wait zero;
+the expected payload is RateLimited (8), revision 25, wait two seconds.
+The unchanged dispatcher emits the former when prepare_vip cannot acquire
+the ready holder. The transcript directly replayed through the same root as
+the still-serving wire owner, whose periodic work can hold it after delivery.
+The replay now opens an independent admitted holder against the same database
+and uses the same session, command, payload, fencing and stored receipt.
+No frame layout, refusal code, rate bucket or equality assertion is relaxed.
