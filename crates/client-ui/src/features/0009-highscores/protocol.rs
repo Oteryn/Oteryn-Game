@@ -18,6 +18,26 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
     };
     match action {
         Action::Refresh => {}
+        Action::ShowMe => {
+            let reply = p.reply.as_ref()?;
+            let own = reply.own_row.as_ref()?;
+            if own.rank
+                > u64::from(oteryn_client_runtime::highscores::wire::MAX_HIGHSCORES_LIST_ROWS)
+            {
+                p.feedback = Some(
+                    "Your rank is outside the published top 1000; your rank remains shown below"
+                        .into(),
+                );
+                return None;
+            }
+            query.page = u32::try_from(
+                own.rank.saturating_sub(1)
+                    / oteryn_client_runtime::highscores::wire::MAX_HIGHSCORES_PAGE_ROWS as u64
+                    + 1,
+            )
+            .ok()?;
+            query.snapshot_id = reply.snapshot_id;
+        }
         Action::Filter { category, vocation } => {
             if !CATEGORY_IDS.contains(&category) || vocation > 5 {
                 return None;

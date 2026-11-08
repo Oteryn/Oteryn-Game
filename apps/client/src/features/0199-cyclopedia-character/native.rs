@@ -119,7 +119,7 @@ mod window {
                 let note = (w >> 16) & 0xffff;
                 if !actions.is_null()
                     && (*actions).0.len() < 32
-                    && matches!(id, 101..=116 | 140 | 145..=150)
+                    && matches!(id, 101..=117 | 140 | 145..=150)
                     && note == BN_CLICKED as usize
                 {
                     (*actions).0.push(id);
@@ -226,7 +226,11 @@ mod window {
                     WS_TABSTOP,
                 );
             }
-            for (id, label, x) in [(112, "Previous page", 10), (113, "Next page", 190)] {
+            for (id, label, x) in [
+                (112, "Previous page", 10),
+                (113, "Next page", 190),
+                (117, "Analytics", 370),
+            ] {
                 control(hwnd, "BUTTON", label, id, [x, 112, 165, 28], WS_TABSTOP);
             }
             let output = control(
@@ -252,27 +256,7 @@ mod window {
                 [545, 155, 165, 28],
                 WS_TABSTOP,
             );
-            let heading = control(hwnd, "STATIC", "", 401, [10, 355, 690, 22], 0);
-            let history = control(
-                hwnd,
-                "LISTBOX",
-                "",
-                402,
-                [10, 380, 690, 155],
-                WS_BORDER | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP | LBS_USETABSTOPS as u32,
-            );
-            let detail = control(
-                hwnd,
-                "EDIT",
-                "",
-                403,
-                [10, 545, 690, 50],
-                ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
-            );
-            let tabs: [i32; 2] = [100, 180];
-            SendMessageW(history, LB_SETTABSTOPS, tabs.len(), tabs.as_ptr() as isize);
-            SendMessageW(history, LB_SETHORIZONTALEXTENT, 1800, 0);
-            let status_label = control(hwnd, "STATIC", "", 472, [10, 192, 690, 34], 0);
+            let [heading, history, detail, status_label] = super::controls::tables(hwnd);
             let common = INITCOMMONCONTROLSEX {
                 dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
                 dwICC: ICC_PROGRESS_CLASS,
@@ -317,6 +301,7 @@ mod window {
                 if mailbox.cyclopedia_character_shutdown {
                     break;
                 }
+                let mut analytics = false;
                 let mut browse_achievements = false;
                 for action in std::mem::take(&mut actions.0) {
                     if action == 150 {
@@ -324,6 +309,10 @@ mod window {
                             &mut mailbox.cyclopedia_character,
                             badge_id,
                         );
+                        continue;
+                    }
+                    if action == 117 {
+                        analytics = true;
                         continue;
                     }
                     if action == 140 {
@@ -566,6 +555,9 @@ mod window {
                     &mut held_profile,
                 );
                 drop(mailbox);
+                if analytics {
+                    crate::play::feature_0010_analyser::view::open_shared(&shared, &commands);
+                }
                 if browse_achievements {
                     crate::play::feature_local_account_achievements::view::open_character(
                         weak.clone(),

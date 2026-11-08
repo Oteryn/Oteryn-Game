@@ -17,15 +17,12 @@ pub fn navigate(panel: &mut Panel, filter: &str, action: usize) {
         panel.filter = filter.to_owned();
         panel.page = 0;
     }
-    let search = filter.to_lowercase();
+
     let count = panel
         .catalog
         .entries()
         .iter()
-        .filter(|entry| {
-            entry.name.to_lowercase().contains(&search)
-                || entry.words.to_lowercase().contains(&search)
-        })
+        .filter(|entry| panel.matches(entry))
         .count();
     panel.page = match action {
         1 => panel.page.saturating_sub(1),
@@ -35,4 +32,31 @@ pub fn navigate(panel: &mut Panel, filter: &str, action: usize) {
             .min(count.saturating_sub(1) / 16),
         _ => 0,
     };
+}
+
+/// Local filters never change the server's eligibility decision.
+pub fn set_filters(panel: &mut Panel, max_level: &str, group: &str, learned_only: bool) -> bool {
+    fn number(text: &str) -> Option<Option<u32>> {
+        if text.trim().is_empty() {
+            Some(None)
+        } else {
+            text.trim()
+                .parse::<u32>()
+                .ok()
+                .filter(|value| *value > 0)
+                .map(Some)
+        }
+    }
+    let (Some(max_level), Some(group)) = (number(max_level), number(group)) else {
+        panel.filter_error = true;
+        return false;
+    };
+    panel.filter_error = false;
+    if (panel.max_level, panel.group, panel.learned_only) != (max_level, group, learned_only) {
+        panel.page = 0;
+    }
+    panel.max_level = max_level;
+    panel.group = group;
+    panel.learned_only = learned_only;
+    true
 }

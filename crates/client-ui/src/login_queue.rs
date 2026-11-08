@@ -22,15 +22,18 @@ impl QueueWait {
         if !self.active {
             return "Queue wait ended.".into();
         }
-        let remaining = self
-            .delay
-            .saturating_sub(now.saturating_duration_since(self.started));
-        let seconds = remaining.as_secs() + u64::from(remaining.subsec_nanos() != 0);
+        let seconds = self.remaining_seconds(now);
         let position = self.position.map_or_else(
             || "Waiting for capacity.".into(),
             |n| format!("Queue position {n}."),
         );
         format!("{position} Retrying in {seconds}s.")
+    }
+    pub fn remaining_seconds(&self, now: Instant) -> u64 {
+        let remaining = self
+            .delay
+            .saturating_sub(now.saturating_duration_since(self.started));
+        remaining.as_secs() + u64::from(remaining.subsec_nanos() != 0)
     }
     pub fn cancel(&mut self) {
         self.active = false;

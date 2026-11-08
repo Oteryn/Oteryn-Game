@@ -3,7 +3,10 @@
   "name": "ANALYSER_V1",
   "owner_decision": "ANALYSERS-0 ANALYSERS0-HUNTING-ANALYSERS-V1 \u00a74 and \u00a76 (docs/architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md, D298); numbers leased to ANALYSER-WIRE-1 by the #1622 control plane",
   "owner": "Analyser module (facts derived from committed combat, loot, item-use and progression outcomes)",
-  "command_types": [],
+  "command_types": [
+    734,
+    735
+  ],
   "state_domains": [
     15
   ],

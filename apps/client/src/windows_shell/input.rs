@@ -13,13 +13,21 @@ impl Application {
         let events = routed.as_slice();
         let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
+            match play.view.tutorial_input(events) {
+                Ok(true) => return,
+                Ok(false) => {}
+                Err(_) => {
+                    self.fail(event_loop, ShellError::RendererRender);
+                    return;
+                }
+            }
             play.view.observe_creature_pointer(events);
             if play.link.use_with_cancel_input(events) {
                 return;
             }
         }
         if let Some(play) = &mut self.play {
-            self.settings.restore(&mut play.view);
+            self.settings.restore(&mut play.view, &play.link);
             if play.view.audio_input(events) {
                 self.settings.capture(&mut play.view);
                 return;
