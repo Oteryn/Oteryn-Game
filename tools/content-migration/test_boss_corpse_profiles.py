@@ -36,6 +36,11 @@ class SharedSourceCorpseTests(unittest.TestCase):
         conflicting[0]['attributes']['spell_augments']=[{'kind':'UNREVIEWED'}]
         with self.assertRaisesRegex(ValueError,'BOSS_CORPSE_PROFILE_CONFLICT'):
             self.apply(conflicting)
+        conflicting=copy.deepcopy(shared)
+        conflicting[0]['attributes']['always_on_top_order'] = 3
+        conflicting[0]['attributes']['always_on_top'] = True
+        with self.assertRaisesRegex(ValueError,'BOSS_CORPSE_PROFILE_CONFLICT'):
+            self.apply(conflicting)
 
     def test_shared_source_profile_cannot_splice_other_effective_metadata(self):
         shared=copy.deepcopy(self.shared())

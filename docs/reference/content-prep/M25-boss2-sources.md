@@ -137,3 +137,17 @@ URLs below are immutable raw donor files. SHA256 covers the complete raw file, i
 | canary | [src/items/items.hpp](https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/items.hpp) | `b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6` | `5181a8894449fd552626bd932ce0aaaeff749919` |
 | canary | [src/items/items.cpp](https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/items.cpp) | `f695ed647e111923cf8e4d487c4a0706f19e7edbfb7896655c20494d6d927fd7` | `eecbf060ef9e85b452bb897277ff3d3d013a0cf9` |
 | canary | [src/items/containers/container.cpp](https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/containers/container.cpp) | `b988ef26ec847e6849240344d45c75daa8842826702a4c4a975fe07e2083883a` | `2688a2d59bebac33b801cfdd11d0aa5c26a07016` |
+
+## Shared complete-policy prerequisite observed in the M25 play cases
+
+The first real M25 dispatch PG run rejected the same complete Item policy in all
+three gameplay cases. The canonical House projection had already supplied stack
+order while historical reward/movement/terminal captures omitted those fields.
+Crystal `src/items/items.hpp:343` initializes order to zero, and
+[`src/items/items.cpp:203-208`](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/items/items.cpp#L203-L208)
+selects clip=1, otherwise top=3, otherwise bottom=2 from the pinned DAT.
+The dedicated producers now capture those same source facts. The regression
+compares all 23 closed reward/movement/terminal policies against the canonical
+native catalogue, retaining full-record equality and the existing identity and
+custody guards. It failed for all 23 records before the fix and passed after it.
+The whole canonical Item-policy qualification then passed in 15.752 seconds.

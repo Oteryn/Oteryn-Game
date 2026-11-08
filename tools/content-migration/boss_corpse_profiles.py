@@ -164,6 +164,19 @@ def admit(root, generated, destination, manifest_path, order, canonical):
             # pre-existing six Player-body records; no nonempty augment differs.
             if item_id in (4240,4241,4242,4246,4247,4248) and 'spell_augments' not in previous['attributes'] and expected['attributes'].get('spell_augments') == []:
                 del expected['attributes']['spell_augments']
+            if any(name in previous['attributes'] for name in ('always_on_top', 'always_on_top_order')):
+                # Compare against the guarded later owner's source facts, not
+                # against arbitrary metadata supplied by the existing record.
+                import house_decoration_actions as house
+                capsule = {'profiles': encode({'records': [copy.deepcopy(expected)]}),
+                           'manifest': b'{"item_profiles":{}}'}
+                house.admit(root, capsule, 'profiles', 'manifest',
+                            lambda row: row['production_definition']['production_key'], encode)
+                decorated = next(row for row in json.loads(capsule['profiles'])['records']
+                                 if row['production_definition']['production_key'] == key)
+                for name in ('always_on_top', 'always_on_top_order'):
+                    if name in decorated['attributes']:
+                        expected['attributes'][name] = decorated['attributes'][name]
             if previous != expected:
                 raise ValueError(f'BOSS_CORPSE_PROFILE_CONFLICT:{key}')
         else:
