@@ -424,3 +424,11 @@ Behemoth or Draccoon acquisition lore is authored or qualified by the fixture.
 Only new migration1553 is copied/adapted; do not duplicate peer1225/1101 or the
 already-owned1552 carried-input extension. Peer original world gift fields were
 moved into effects by later main merges; use the current effects shape.
+
+Main83acbdac3 integration: completion-exact migration1254 requires reward plan
+completes to equal the owning Quest receipt and completed state. Preserve the
+existing authored Stage.completes authority by explicitly reconciling normalized
+callback completion at runtime attachment. Main also includes world item reward
+support: drop duplicate shared implementations during reconciliation. The
+attempted16-conflict merge was aborted under the owner's15-minute fallback;
+this is active reconciliation work, not a final blocker.

@@ -1135,3 +1135,17 @@ compiling WIP under PREPUSH-2 cadence exception when mandatory checks pass, then
 start focused world normal/full + retained authored NPC/carried PG AFTER push.
 Keep HEAD stable during build and cases. Packet44/66 unchanged; no ENGINE-DONE
 world delivery until actual PG GREEN. New source guide QUEST-WORLD-ITEM-DELIVERY.md.
+
+03:24UTC prepush main moved to83acbdac3 (#3029 questpc4). Checkpointed compiling
+world port as30c5e649c. Merge produced16 conflicts across shared reward owners,
+quest state/effects, callbacks, schema and generated files; safe reconciliation
+exceeds15-minute window. Used OWNER abort-and-push fallback; no force/rebase.
+Publish last compiling checkpoint now (workspace7m16s/clippy5m55s/fmt/gen/292units
+passed; own PG GREEN pending). Main already carries effects.item_reward plus
+new1254 completion-exact proof, so adopt canonical engine instead of duplicate
+world helpers/migration when reconciling. Typed Bindings Stage.completes must be
+aligned with callback completion fields before merged-world qualification.
+Start focused world normal/full + retained authored NPC/carried PG after push,
+keep HEAD/worktree source stable through build/tests. Prepare merge resolutions
+outside the checkout while tests run, then finish actual main merge. No
+ENGINE-DONE world delivery; packet44/66 unchanged.

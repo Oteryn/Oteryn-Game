@@ -3568,6 +3568,20 @@
       "retained authored NPC/carried exchange PG regression",
       "full dispatch/durability crate unit suites under PREPUSH-2 budget exception"
     ],
-    "whole_quest_qualification_changed": false
+    "whole_quest_qualification_changed": false,
+    "publication_gates": {
+      "workspace": "PASS7m16s including lock wait",
+      "clippy": "PASS5m55s including lock wait; all-feature engine libs -Dwarnings",
+      "fmt": "PASS",
+      "generated_outputs": "PASS8authorers/native/qengine/NPC evidence/item audit/registry",
+      "logs_prefix": "/tmp/qengine2-world-"
+    },
+    "pending_main_merge": {
+      "main": "83acbdac3",
+      "unresolved_files": 16,
+      "action": "aborted under owner 15-minute fallback; publish last compiling30c5e649c then continue reconciliation",
+      "integration_note": "main contains effects.item_reward and completion proof1254; reuse canonical mechanisms and reconcile typed Stage.completes before merged qualification"
+    },
+    "publication": "Compiling WIP; own PG GREEN/full units pending under PREPUSH-2 budget exception"
   }
 }
