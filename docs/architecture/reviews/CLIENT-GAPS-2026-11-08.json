@@ -701,9 +701,10 @@
   "src": "TIBAUD-1",
   "area": "Trackers",
   "feature": "Bosstiary tracker",
-  "status": "PARTIAL",
-  "gap": "Wspólny edytor z checkbox Bosstiary; brak osobnego widżetu z konfiguracją.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0197-cyclopedia-tracker/input.rs:6 + tracker_widgets_round_trip_admitted_commands_and_keep_independent_state"
  },
  {
   "id": "T100",
