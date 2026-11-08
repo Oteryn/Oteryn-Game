@@ -13,6 +13,9 @@ pub enum Facing {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Complete a separately owned child quest with this native once-only reward.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quest_completion: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -193,6 +196,19 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.quest_completion.as_ref().is_some_and(|quest| {
+        !super::super::valid_quest_key(quest)
+            || !quest.starts_with("oteryn:quest.")
+            || quest == &callback.quest
+            || callback.trigger != Trigger::Use
+            || callback.reversible
+            || callback.opening_only
+            || callback.actor_kind != ActorKind::Player
+            || effects.item_reward.is_none()
+            || callback.storage.iter().all(|s| s.preserve)
+    }) {
+        return false;
+    }
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
     if effects.item_reward.as_ref().is_some_and(|reward| {

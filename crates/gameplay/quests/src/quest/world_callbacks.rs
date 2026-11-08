@@ -549,6 +549,9 @@ fn extend_callbacks(
             }
         }
         transitions.push(primary_transition(callback)?);
+        if let Some(completion) = completion_transition(callback) {
+            transitions.push(completion);
+        }
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
@@ -1452,3 +1455,32 @@ mod worldchg_grimvale_tests {
         Ok(())
     }
 }
+
+/// A child completion is usable only as a participant of its native primary callback.
+/// The durable owner refuses direct requests for this synthetic transition.
+pub fn completion_transition(callback: &Callback) -> Option<QuestTransition> {
+    use sha2::{Digest, Sha256};
+    callback.effects.quest_completion.as_ref()?;
+    // Preserve the published parent definition while the child pins the exact
+    // native selector, reward and prerequisites. Human citations are not authority.
+    let mut value = serde_json::to_value(callback).ok()?;
+    let fields = value.as_object_mut()?;
+    for field in ["sources", "success_message", "failure_message"] {
+        fields.remove(field);
+    }
+    let binding: String = Sha256::digest(serde_json::to_vec(&value).ok()?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    Some(QuestTransition {
+        world_change: None,
+        key: format!("oteryn:quest-completion/{binding}"),
+        quest: callback.effects.quest_completion.clone()?,
+        effects: Vec::new(),
+        completes: true,
+        experience: None,
+    })
+}
+
+#[cfg(test)]
+mod completion_tests;
