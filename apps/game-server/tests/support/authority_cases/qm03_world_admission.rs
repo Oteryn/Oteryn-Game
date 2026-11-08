@@ -61,6 +61,10 @@ async fn snapshot(h: &f::Harness) -> f::TestResult<serde_json::Value> {
 }
 
 async fn exercise(h: &f::Harness) -> f::TestResult {
+    let version: String = sqlx::query_scalar("SELECT version()")
+        .fetch_one(&h.pool)
+        .await?;
+    eprintln!("M03_POSTGRES {version}");
     let mut callback = world_callbacks::load()?
         .into_iter()
         .find(|c| !c.storage.is_empty() && !c.reversible && c.effects.is_empty())
@@ -205,10 +209,12 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     let blessings =
         oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()?;
-    for blessing in &blessings.blessings {
-        if blessing.storage_key != "oteryn:blessing.twist_of_fate" {
-            sqlx::query("INSERT INTO game_character_blessings(character_id,blessing_key,provenance) VALUES(encode($1,'hex')::uuid,$2,'qm03-fixture')").bind(f::id(f::CHARACTER).as_slice()).bind(&blessing.storage_key).execute(&h.pool).await?;
-        }
+    let (_, regular) = blessings
+        .henricus_quote(20, &[])
+        .ok_or("five regular blessings")?;
+    assert_eq!(regular.len(), 5);
+    for blessing in regular {
+        sqlx::query("INSERT INTO game_character_blessings(character_id,blessing_key,provenance) VALUES(encode($1,'hex')::uuid,$2,'qm03-fixture')").bind(f::id(f::CHARACTER).as_slice()).bind(&blessing.storage_key).execute(&h.pool).await?;
     }
     gate.0.store(false, Ordering::SeqCst);
     assert!(

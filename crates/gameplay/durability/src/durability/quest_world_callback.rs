@@ -228,9 +228,7 @@ pub(super) async fn consume(
                 oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
             if !catalogue
-                .blessings
-                .iter()
-                .filter(|blessing| blessing.storage_key != "oteryn:blessing.twist_of_fate")
+                .regular()
                 .all(|blessing| held.contains(&blessing.storage_key))
             {
                 return Ok(false);

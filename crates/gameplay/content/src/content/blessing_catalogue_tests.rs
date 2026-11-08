@@ -101,3 +101,26 @@ fn henricus_offer_is_exactly_five_regular_blessings_with_ten_percent_surcharge()
         assert_eq!(quoted, price);
     }
 }
+
+#[test]
+fn m03_regular_admission_set_excludes_enhanced_and_twist() {
+    let catalogue = BlessingCatalogue::load().expect("admitted blessing catalogue");
+    let regular: Vec<_> = catalogue.regular().collect();
+    assert_eq!(regular.len(), 5);
+    assert!(
+        regular
+            .iter()
+            .all(|blessing| blessing.price_family == PriceFamily::Regular)
+    );
+    assert!(regular.iter().all(|blessing| !matches!(
+        blessing.storage_key.as_str(),
+        "oteryn:blessing.blood_of_the_mountain"
+            | "oteryn:blessing.heart_of_the_mountain"
+            | "oteryn:blessing.twist_of_fate"
+    )));
+    let held: Vec<_> = regular
+        .iter()
+        .map(|blessing| blessing.storage_key.clone())
+        .collect();
+    assert_eq!(catalogue.henricus_quote(20, &held), None);
+}

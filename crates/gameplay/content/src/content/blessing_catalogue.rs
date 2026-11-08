@@ -85,17 +85,20 @@ impl BlessingCatalogue {
         Ok(catalogue)
     }
 
+    /// The five regular blessings; enhanced blessings and Twist remain separate.
+    pub fn regular(&self) -> impl Iterator<Item = &Blessing> {
+        self.blessings
+            .iter()
+            .filter(|blessing| blessing.price_family == PriceFamily::Regular)
+    }
+
     /// Price the five regular Pilgrimage blessings with Henricus' 10% surcharge.
     /// The durable owner also enforces eligibility and refuses partial regular ownership;
     /// this pure missing-set calculation alone does not authorize a purchase.
     pub fn henricus_quote(&self, level: u32, held: &[String]) -> Option<(u64, Vec<&Blessing>)> {
         let missing = self
-            .blessings
-            .iter()
-            .filter(|blessing| {
-                blessing.price_family == PriceFamily::Regular
-                    && !held.iter().any(|key| key == &blessing.storage_key)
-            })
+            .regular()
+            .filter(|blessing| !held.iter().any(|key| key == &blessing.storage_key))
             .collect::<Vec<_>>();
         if missing.is_empty() {
             return None;
