@@ -19,9 +19,10 @@ LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
 ITEMHOLD_ADMISSIONS = frozenset({
     "oteryn:reward-claim.kv.ornamentedshield",
     "oteryn:reward-claim.kv.powerring2",
-    "oteryn:reward-claim.kv.triangletower",
 })
-EXPECTED_DENOMINATOR = 280 + len(ITEMHOLD_ADMISSIONS)
+# Merged source inventory: 283 held claims; Draconia becomes supported while
+# Triangle Tower gains its main dispatch witness (one addition, one removal).
+EXPECTED_DENOMINATOR = 281 + len(ITEMHOLD_ADMISSIONS)
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

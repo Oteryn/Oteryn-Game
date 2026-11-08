@@ -20,10 +20,23 @@ MAX_CONTENTS = 20  # Existing BAGS-0 direct-container admission, not a donor cap
 # Their source total remains 200; this deliberately preserves the accepted
 # native two-stack recipe over Container:addItem's donor clamp to one stack.
 ACCEPTED_TWO_STACKS = {6218: 3031, 6226: 3450}
-
-
-# Reuse native charged custody only for this lane's exact source claim.
-CHARGED_QUEST_CLAIMS = {'canary:reward-claim/kv/desert2': 3084}
+# These Item profiles already have native charged-instance custody. The
+# historical canonical hold predates that owner. Scope the admission to these
+# exact quest claims; neither global Item definitions nor other quests change.
+CHARGED_QUEST_CLAIMS = {
+    'canary:reward-claim/kv/desert2': 3084,
+    'canary:reward-claim/kv/timering3': 3082,
+    'canary:reward-claim/kv/triangletower': 3083,
+    'canary:reward-claim/kv/trollcave1': 3083,
+    'canary:reward-claim/kv/weddingring1': 3085,
+}
+FULL_CHARGE_LEAVES = {
+    'canary:reward-claim/kv/madmageroom3': (6082, 3081, 5),
+    'canary:reward-claim/kv/timering3': (6051, 3082, 50),
+    'canary:reward-claim/kv/trollcave1': (6039, 3083, 150),
+    'canary:reward-claim/kv/weddingring1': (6043, 3085, 200),
+}
+CHARGE_SOURCE_SHA256 = 'b1c6603253e04042c113a8e5c69bff2b58b4f61f94f03ffdf4df6a07906c7dec'
 
 
 def native_charge_item(item, profile):
@@ -135,7 +148,7 @@ def item_id(ref):
 
 
 def full_charge_leaf(item, pilot_key, position, key, raw_count):
-    """UID6082 is one already-admitted Item at its exact definition charges.
+    """A pinned leaf is one already-admitted Item at its exact definition charges.
 
     Missing native timed state means full definition values; this does not
     authorize partial source charges or make a held Item materializable.
@@ -143,16 +156,32 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
     from itemhold_charge_precedence import qualifies
     if qualifies(item, pilot_key, position, key, raw_count):
         return True
-    if (pilot_key != 'canary:reward-claim/kv/madmageroom3'
-            or key != 'oteryn:item.tibia.i3081' or raw_count != 5
+    binding = FULL_CHARGE_LEAVES.get(pilot_key)
+    if binding is None:
+        return False
+    unique, source_id, charges = binding
+    if (key != f'oteryn:item.tibia.i{source_id}' or raw_count != charges
             or not item or item.get('identity', {}).get('key') != key
             or not item.get('materializable') or item.get('stack_class') != 'NonStackable'
             or fact(item, 'charges', 'count') != raw_count):
         return False
-    _, entries = source()
-    setting = entries[6082]['setting']
-    return (setting.get('useKV') is True and setting.get('questName') == 'madmageroom3'
-            and setting.get('itemPos') == position and setting.get('reward') == [[3081, 5]])
+    if unique == 6082:
+        _, entries = source()
+    else:
+        raw = SOURCE.with_name('questpc4_charge_source.json').read_bytes()
+        if hashlib.sha256(raw).hexdigest() != CHARGE_SOURCE_SHA256:
+            raise ValueError('QUESTPC4_CHARGE_SOURCE_CHANGED')
+        evidence = json.loads(raw)
+        original, _ = source()
+        if (evidence['schema'] != 'OTERYN_QUESTPC4_FULL_CHARGE_SOURCE/v1'
+                or any(evidence[field] != original[field] for field in
+                       ('revision', 'source_path', 'source_blob_sha1', 'source_sha256'))
+                or [row['unique_id'] for row in evidence['entries']] != [6039, 6043, 6051]):
+            raise ValueError('QUESTPC4_CHARGE_SOURCE_CHANGED')
+        entries = {row['unique_id']: row for row in evidence['entries']}
+    setting = entries[unique]['setting']
+    return (setting.get('useKV') is True and setting.get('questName', '').lower() == pilot_key.rsplit('/', 1)[1]
+            and setting.get('itemPos') == position and setting.get('reward') == [[source_id, charges]])
 
 
 def derive(definition, items, stack_problem):

@@ -3,7 +3,7 @@ use super::*;
 
 pub(super) async fn apply(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: &super::super::quest_state::npc_program::NpcItemPermit,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     input: &Input,
     transaction: &str,

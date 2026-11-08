@@ -18,6 +18,21 @@ DEMON_HELMET_REWARDS = {
     'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet': 'oteryn:item.tibia.i3387',
     'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield': 'oteryn:item.tibia.i3420',
 }
+# These T..Z source chests carry already-admitted Item facts into the native
+# provider. No quest progress or access puzzle is inferred here.
+QUESTPC4_REWARD_QUESTS = {
+    'canary:quest/the_ape_city_quest', 'canary:quest/the_explorer_society_quest',
+    'canary:quest/the_hidden_city_of_beregar_quest',
+    'canary:quest/the_inquisition_quest', 'canary:quest/the_pits_of_inferno_quest',
+    'canary:quest/the_thieves_guild_quest', 'canary:quest/the_white_raven_monastery_quest',
+    'canary:quest/threatened_dreams_quest', 'canary:quest/throwing_star_quest',
+    'canary:quest/time_ring_quest', 'canary:quest/to_blind_the_enemy_quest',
+    'canary:quest/to_outfox_a_fox_quest', 'canary:quest/tomes_of_knowledge_quest',
+    'canary:quest/triangle_tower_quest', 'canary:quest/troll_cave_quest',
+    'canary:quest/vampire_hunter_quest', 'canary:quest/vampire_shield_quest',
+    'canary:quest/waterfall_quest', 'canary:quest/wedding_ring_quest',
+    'canary:quest/what_a_foolish_quest',
+}
 
 CHEST_PROFILES = 'tools/content-schema/native-gameplay/quest-chest-item-profiles.json'
 CHEST_IDS = {1777, 2436, 2438, 2473, 2474}
@@ -206,6 +221,18 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                         or placements[0]['reward']['items'] != expected):
                     raise ValueError('DEMON_HELMET_QUALIFIED_CLAIM_CHANGED')
                 keys.add(demon_item)
+            # Crystal201189f chest.lua:556: UID5024 grants the already-canonical
+            # silver key3700. KEY owns its native numbered instance; the claim's
+            # historical waiting_implementation flag is not an Item hold.
+            if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3700':
+                placements = definition['placements']
+                key = 'oteryn:item.tibia.i2971'
+                expected = {'items': [{'count': 1, 'item': {
+                    'family': 'Item', 'key': key, 'revision': 'definition-r1'}}],
+                    'key_binding': 'canary:door-key/3700'}
+                if len(placements) != 1 or placements[0]['reward'] != expected:
+                    raise ValueError('PITS_OF_INFERNO_KEY_CLAIM_CHANGED')
+                keys.add(key)
             # W15b's complete recipe already qualified the canonical root and
             # every child. Carry that whole closure into the native provider;
             # admitting only the visible chest reward would mint a partial bag.
@@ -214,7 +241,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 keys.update(child['item']['key'] for child in placement['contents'])
             if definition.get('readiness') == 'ready':
                 for placement in definition['placements']:
-                    if placement.get('quest_transition'):
+                    if (placement.get('quest_transition')
+                            or definition.get('quest', {}).get('key') in QUESTPC4_REWARD_QUESTS):
                         keys.update(item['item']['key'] for item in placement['reward']['items'])
     if selected_chests:
         raise ValueError('SELECTED_QUEST_CHEST_MISSING')
@@ -262,7 +290,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if (not definition['materializable']
                 or definition['stack_class'] not in ('StackCapable', 'NonStackable')
                 or len(matches) != 1 or matches[0]['disposition'] != 'EXACT'):
-            raise ValueError('QUEST_CALLBACK_ITEM_NOT_ADMITTED')
+            raise ValueError(f'QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}')
         physical = definition['semantics']['physical']
         if (physical['state'] != 'KNOWN'
                 or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}

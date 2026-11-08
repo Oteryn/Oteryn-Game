@@ -31,6 +31,8 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         maximum: from,
         set: to,
         preserve,
+        increment: false,
+        at_least: false,
     };
     [
         (CROSS_POISON, Position {x:32589, y:31644, floor:-6},
@@ -39,8 +41,10 @@ pub(crate) fn callbacks() -> Vec<Callback> {
             vec![storage(rules::PHASE,1,2,false),storage(POISON,1,1,true)]),
     ].into_iter().map(|(key, position, storage)| Callback {
         world_change: None,
+        actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
+        facing: None, world_requirements: Vec::new(),
         key:key.into(), quest:rules::QUEST.into(), trigger:Trigger::StepIn,
-        selector:Selector { position_aliases:Vec::new(),position:Some(position),unique:None,action:None,appearance:None},
+        selector:Selector { native: None, position_aliases:Vec::new(),position:Some(position),unique:None,action:None,appearance:None},
         lever:None,reversible:false,passages:Vec::new(),teleport:None,storage,
         minimum_level:None,experience:None,monk_reward:None,offerings:Vec::new(),
         item_on_target:None,return_on_failure:false,failure_message:None,success_message:None,

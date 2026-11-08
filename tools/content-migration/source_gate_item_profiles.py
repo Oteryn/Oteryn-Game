@@ -89,7 +89,12 @@ def admit(root, generated, canonical):
         key = record['production_definition']['production_key']
         if key in present:
             if present[key] != record:
-                raise ValueError('SOURCE_GATE_ITEM_EXISTING_CONFLICT')
+                from questpc2_ladder_composition import compose
+                combined = compose(present[key], record)
+                if combined is None:
+                    raise ValueError('SOURCE_GATE_ITEM_EXISTING_CONFLICT')
+                present[key].clear()
+                present[key].update(combined)
         else:
             document['records'].append(record)
     document['records'].sort(key=lambda r: (r['production_definition']['family'],

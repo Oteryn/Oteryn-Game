@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 QUALIFIED = {
     "oteryn:reward-claim.kv.bear_chest1": "quest_container_chests_bear_bag_once_and_replay",
+    "oteryn:reward-claim.kv.desert2": "source_quest_rewards::the_desert_dungeon_rewards",
     "oteryn:reward-claim.kv.madmageroom3": "quest_container_chests_full_definition_charges_mint_one_instance",
     "oteryn:reward-claim.kv.naginata": "quest_reward_claims_naginata_use_once_and_replay",
     "oteryn:reward-claim.kv.nightmare_teddy_quest": "quest_reward_claims_nightmare_teddy_use_once_and_replay",
@@ -33,6 +34,10 @@ QUALIFIED = {
     "oteryn:reward-claim.kv.purpletome2": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
     "oteryn:reward-claim.kv.purpletome3": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
     "oteryn:reward-claim.kv.steelhelmet1": "quest_callbacks_source_chest_use_once_replay_and_second_use_refused",
+    "oteryn:reward-claim.kv.timering3": "source_quest_rewards::time_ring_rewards",
+    "oteryn:reward-claim.kv.triangletower": "source_quest_rewards::triangle_tower_rewards",
+    "oteryn:reward-claim.kv.trollcave1": "source_quest_rewards::troll_cave_rewards",
+    "oteryn:reward-claim.kv.weddingring1": "source_quest_rewards::wedding_ring_rewards",
     "oteryn:reward-claim.quest.key.id3002": "quest_container_chests_crystal_key3002_is_minted_once",
     "oteryn:reward-claim.quest.key.id4055": "quest_reward_claims_panpipe_key_4055_once_and_replay",
     "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": "quest_container_chests_key_attributes_are_atomic",

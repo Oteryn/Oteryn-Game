@@ -71,18 +71,23 @@ fn run_case(before: u16, yields: bool) -> TestResult {
 }
 fn run_case_with_source(before: u16, yields: bool, source: Option<ThawingSource>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
-        eprintln!("W19 POSTGRES_CASE_COMPLETED status=SKIPPED no_admin_url map_harvest");
+        eprintln!("W19 POSTGRES_CASE_SKIPPED no_admin_url map_harvest");
         assert!(
             std::env::var_os("OTERYN_REQUIRE_PG").is_none(),
             "Map harvest PG lane requires PostgreSQL"
         );
         return Ok(());
     }
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || scenario(before, yields, source).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "map harvest e2e panic")??;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED map_harvest source={before} yields={yields} duration={:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 
@@ -123,10 +128,12 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
             .iter()
             .map(|key| Ok((key.as_str(), reference(key).ok_or("plant state")?.get() - 1)))
             .collect::<Result<Vec<_>, &str>>()?;
+        // Ordinary flowers retain the base placement; only projected flowers omit it.
+        let projected_flower = before == 13842 && !matches!(source, Some(ThawingSource::Ordinary));
         let (bytes, pins) = crate::map::boot::tests::bundle_with_item_states(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (water, reference(water).ok_or("water")?.get() - 1),
-            &states,
+            if projected_flower { &[] } else { &states },
         );
         let (bytes, pins) = if source.is_some() {
             thawing_fixture(
@@ -146,6 +153,46 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
             x: (actor_cell.0 + 1) as u16,
             y: actor_cell.1 as u16,
             floor: -(actor_cell.2 as i8),
+        };
+        let (bytes, pins) = if projected_flower {
+            // The reset projection supplies the live flower, not the static fixture.
+            let mut bundle = oteryn_world_bundle::bundle::read(&bytes)?;
+            let flower = u32::try_from(
+                bundle
+                    .manifest
+                    .palette
+                    .iter()
+                    .position(|entry| entry.key == water)
+                    .ok_or("source palette")?,
+            )?;
+            bundle.manifest.palette.remove(usize::try_from(flower)?);
+            for sector in &mut bundle.sectors {
+                for tile in &mut sector.tiles {
+                    tile.items.retain(|item| item.palette != flower);
+                    for item in &mut tile.items {
+                        if item.palette > flower {
+                            item.palette -= 1;
+                        }
+                    }
+                }
+            }
+            assert!(
+                !bundle
+                    .manifest
+                    .palette
+                    .iter()
+                    .any(|entry| entry.key == water)
+            );
+            let bytes = oteryn_world_bundle::writer::write(
+                &bundle.manifest,
+                &bundle.sectors,
+                &Default::default(),
+            )?;
+            let mut pins = pins;
+            pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+            (bytes, pins)
+        } else {
+            (bytes, pins)
         };
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let boot_pins = crate::map::boot::BootPins {
@@ -168,14 +215,25 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
                 door: false,
             })
         };
-        let map = crate::map::boot::boot(
-            &bytes,
-            &boot_pins,
-            deps.admitted.world_id,
-            deps.admitted.channel_id,
-            definitions,
-        )
-        .map_err(debug)?;
+        let world = deps.admitted.world_id;
+        let channel = deps.admitted.channel_id;
+        let boot = || {
+            let checked =
+                crate::map::boot::check(bytes.clone(), boot_pins.clone()).map_err(debug)?;
+            let checked = if projected_flower {
+                checked.with_daily_map(crate::map::daily::DailyMap {
+                    seed: [0; 32],
+                    fungus: false,
+                    grimvale_full_moon: false,
+                    items: vec![(13842, (target_pos.x, target_pos.y, -target_pos.floor))],
+                    trader: None,
+                })
+            } else {
+                checked
+            };
+            checked.boot(world, channel, definitions).map_err(debug)
+        };
+        let map = boot()?;
         let cells = map
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -448,14 +506,7 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
         assert_eq!(progress, yields.then_some(1));
         // Reboot projection and replay the original bytes after the visible source changed.
         drop(owner);
-        let restored_map = crate::map::boot::boot(
-            &bytes,
-            &boot_pins,
-            deps.admitted.world_id,
-            deps.admitted.channel_id,
-            definitions,
-        )
-        .map_err(debug)?;
+        let restored_map = boot()?;
         if matches!(source, Some(ThawingSource::Daily { .. })) {
             // A preceding unrelated callback must not change this daily object's identity.
             assert!(
@@ -499,7 +550,7 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
             expected_revision: 1,
             ..target.clone()
         });
-        let (_, refused, _) = if matches!(source, Some(ThawingSource::Daily { .. })) {
+        let (mut next, refused, _) = if matches!(source, Some(ThawingSource::Daily { .. })) {
             exchange_daily_flower(
                 &restored,
                 next,
@@ -536,6 +587,85 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
                     .iter()
                     .any(|entry| entry.facts.appearance_id == before)
             );
+        }
+        if before == 13842 && yields {
+            // Every seed is earned by another real USE after four-hour regrowth.
+            // Only the test clock is advanced; progress and rewards are never seeded.
+            let mut seeds = 1_i64;
+            for attempt in 1..=128_u64 {
+                let revision = restored_map.facts().pinned().object_revision(key);
+                let roll = oteryn_gameplay_items::event_planting::map_harvest_roll(
+                    native.source_digest(),
+                    *admitted.world_id.as_bytes(),
+                    *admitted.channel_id.as_bytes(),
+                    &target.placement,
+                    epoch,
+                    i64::try_from(revision)?,
+                )
+                .ok_or("harvest draw")?;
+                let expected = oteryn_gameplay_items::event_planting::map_harvest(before, roll)
+                    .ok_or("harvest plan")?;
+                let mut intent = intent.clone();
+                intent.target = UseTarget::WorldObject(WorldObjectTarget {
+                    expected_revision: revision,
+                    ..target.clone()
+                });
+                let command = next.continuity.next_command_id;
+                let payload = encode_item_use_intent(&intent).map_err(debug)?;
+                let (current, result, wire) = if matches!(source, Some(ThawingSource::Daily { .. }))
+                {
+                    exchange_daily_flower(&restored, next, command, &payload).await?
+                } else {
+                    exchange(&restored, next, command, &payload, None).await?
+                };
+                assert_eq!(result, UseDisposition::Committed, "harvest {attempt}");
+                seeds += i64::from(expected.yield_item.is_some());
+                assert_eq!(sqlx::query_scalar::<_, i64>(
+                    "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+                    .bind(output).fetch_one(&harness.pool).await?, seeds);
+                assert_eq!(sqlx::query_scalar::<_, i64>(
+                    "SELECT progress FROM game_character_achievement_progress WHERE character_id=encode($1,'hex')::uuid AND achievement_key=$2")
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(achievement)
+                    .fetch_one(&harness.pool).await?, seeds.min(10));
+                let grants: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_account_achievements a JOIN game_character_roots c USING(account_id) WHERE c.character_id=encode($1,'hex')::uuid AND a.achievement_key=$2")
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(achievement)
+                    .fetch_one(&harness.pool).await?;
+                assert_eq!(grants, i64::from(seeds >= 10));
+                // Replaying the exact successful command cannot add a seed or a grant.
+                let (current, replayed, _) =
+                    exchange(&restored, current, command, &wire, None).await?;
+                assert_eq!(replayed, UseDisposition::Committed);
+                next = current;
+                sqlx::query("UPDATE game_terrain_tool_transforms SET decay_at_unix_ms=0")
+                    .execute(&harness.pool)
+                    .await?;
+                restored.refresh_terrain_tools().await;
+                assert_eq!(
+                    restored_map.facts().pinned().object_revision(key),
+                    revision + 2
+                );
+                if seeds >= 11 {
+                    break;
+                }
+            }
+            assert!(
+                seeds >= 11,
+                "ten-seed award and a subsequent seed were exercised"
+            );
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_map_harvest_records")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                seeds
+            );
+            assert_eq!(sqlx::query_scalar::<_, i64>(
+                "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+                .bind(output).fetch_one(&harness.pool).await?, seeds);
+            assert_eq!(sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_account_achievements a JOIN game_character_roots c USING(account_id) WHERE c.character_id=encode($1,'hex')::uuid AND a.achievement_key=$2")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(achievement)
+                .fetch_one(&harness.pool).await?, 1);
         }
         drop(restored);
         drop(authority);

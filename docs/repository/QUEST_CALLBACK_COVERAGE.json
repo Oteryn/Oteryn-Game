@@ -1,7 +1,7 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 28,
-    "not_playable": 25,
+    "dispatch_pg_qualified": 33,
+    "not_playable": 20,
     "supported_unqualified": 283
   },
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
@@ -2046,8 +2046,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "source_quest_rewards::the_desert_dungeon_rewards",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/desert_dungeon_quest"
@@ -2318,8 +2318,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.draconia2",
@@ -9415,8 +9415,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "source_quest_rewards::time_ring_rewards",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/time_ring_quest"
@@ -9743,8 +9743,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "source_quest_rewards::triangle_tower_rewards",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/triangle_tower_quest"
@@ -9797,8 +9797,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "source_quest_rewards::troll_cave_rewards",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/troll_cave_quest"
@@ -9985,8 +9985,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "source_quest_rewards::wedding_ring_rewards",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.weddingring2",

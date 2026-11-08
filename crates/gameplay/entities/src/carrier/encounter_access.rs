@@ -214,6 +214,35 @@ impl ChannelRuntimeV1 {
         result
     }
 
+    /// A source switch may spawn native creatures without moving any player.
+    /// All admission/policy changes roll back together if any slot cannot commit.
+    /// This does not relax the player proofs required by party encounter entry.
+    pub fn commit_quest_creature_spawn(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        if monsters.is_empty() || monsters.len() > 8 {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut actors = Vec::new();
+        actors
+            .try_reserve(monsters.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let before = self.carrier.clone();
+        let result = (|| {
+            for (key, health, at) in monsters {
+                let actor = self.admit_encounter_actor(key, *health, *at)?;
+                self.install_creature_policy(actor, key)?;
+                actors.push(actor);
+            }
+            Ok(actors)
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
     pub fn encounter_owner_scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
         (
             self.binding.runtime_scope,

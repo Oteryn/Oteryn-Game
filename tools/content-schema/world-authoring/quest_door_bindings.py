@@ -179,7 +179,7 @@ def capture_sources(crystal, canary):
     return document
 
 
-def overlay_region(raw, palette, document):
+def overlay_region(raw, palette, document, *, attribute="action", item_ids=None):
     """Preserve every tile/item fact; add only a matching top-level quest action."""
     z, rx, ry, table = codec.parse_region(raw)
     bindings = {
@@ -191,7 +191,11 @@ def overlay_region(raw, palette, document):
     }
     if not bindings:
         return raw, []
-    quest_ids = {r["closed"] for r in document["pairs"]}
+    if attribute not in ("action", "unique"):
+        raise ValueError("invalid startup attribute")
+    quest_ids = (
+        {r["closed"] for r in document["pairs"]} if item_ids is None else item_ids
+    )
     sectors = {}
     imported = []
     changed = False
@@ -213,12 +217,12 @@ def overlay_region(raw, palette, document):
                     continue
                 if binding["item"] not in (None, item):
                     continue
-                if (attrs or {}).get("action", binding["action"]) != binding["action"]:
+                if (attrs or {}).get(attribute, binding["action"]) != binding["action"]:
                     raise ValueError(f"door action conflict at {(x, y, z)}")
                 imported.append(
-                    {"position": [x, y, z], "item": item, "action": binding["action"]}
+                    {"position": [x, y, z], "item": item, attribute: binding["action"]}
                 )
-                replacement = {**(attrs or {}), "action": binding["action"]}
+                replacement = {**(attrs or {}), attribute: binding["action"]}
                 if attrs != replacement:
                     items[slot] = (index, depth, replacement)
                     sector_changed = True

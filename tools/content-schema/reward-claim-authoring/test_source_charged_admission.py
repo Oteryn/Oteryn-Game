@@ -25,8 +25,12 @@ class SourceChargedAdmission(unittest.TestCase):
         self.assertEqual(native.fact(projected[KEY], 'charges', 'count'), 250)
         self.assertEqual(self.items[KEY], before)
         self.assertIsNot(projected[KEY], self.items[KEY])
-        self.assertEqual(native.CHARGED_QUEST_CLAIMS, {PILOT: 3084})
-        self.assertIs(native.claim_items('canary:reward-claim/kv/timering3', self.items), self.items)
+        self.assertEqual(native.CHARGED_QUEST_CLAIMS, {PILOT: 3084,
+            'canary:reward-claim/kv/timering3': 3082,
+            'canary:reward-claim/kv/triangletower': 3083,
+            'canary:reward-claim/kv/trollcave1': 3083,
+            'canary:reward-claim/kv/weddingring1': 3085})
+        self.assertIs(native.claim_items(PILOT + '/foreign', self.items), self.items)
 
     def test_only_exact_full_source_charges_become_one_instance(self):
         reward = [[3084, 250], [3098, 1], [3046, 1], [3077, 1]]

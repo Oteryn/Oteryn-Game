@@ -901,3 +901,46 @@ remain from that merge; publish the final receipt with the next green slice.
   Sourcecustody39unitfailures sharedoneextra per-fileguard; sameexactOldrak
   custodychecksnowcoverbothgates. Fullrerun289/290:soleexpectedactivation
   closureupdatedfornewdemon_oakprogramme, allotherlegacy/hashassertionskept.
+
+### Main integration 2026-11-08: stationary profile composition
+
+Main 6f61ac15d introduces floor projection profiles for 1948 and 1791. The
+retained source-gate packet identifies 1948 as LADDER from its pinned Canary
+XML; main's Crystal packet has no item-type classification for the same physical
+record. Preserve the positive LADDER fact and main's nonmaterializable projection
+admission. For 1791 both packets match in every field except materializable;
+preserve main's false admission. The new composition helper requires exact
+record equality after only these named differences, rejecting other collisions.
+Source custody remains in source-gate-item-profiles.json and
+floor-assembly-item-profiles.json, including their XML hashes and line evidence.
+
+The merge driver's additive Python resolution duplicated `native_charge_item`,
+`claim_items` and `CHARGED_QUEST_CLAIMS`. The later Desert-only declaration
+silently shadowed main's five exact claims. Keep one shared implementation and
+the union map. Canonical3083 is already materializable in BOTH merge parents;
+3082 is materializable in the lane parent. Main's tests that assumed3083 held
+were therefore stale even on main. Preserve all negative mutations using an
+explicit held copy, assert the real catalogue is unchanged, and exercise all
+five exact claims. Focused source-reward7cases now pass13.184s.
+
+Pinned source coverage retains283 supported-unqualified claims after composition:
+Draconia becomes supported and Triangle Tower gains main's dispatch witness.
+Neither transition certifies a complete quest. Coverage was regenerated using
+Git blob7b9f823542f9b8d5f99fb6960abe070324c89b8e (Crystal SHA2567c3ac128...)
+and retained Canary blob13efcb4d1294ec1ff1ee5e5da18e2eeb3c904c02
+(SHA2562b130d41...). The coverage generator verifies the full pinned hashes.
+
+WorldProject base regeneration was bounded to applicable outputs: all11 accepted
+WorldProject documents have identical Git blob IDs in both merge parents. Stop
+the unnecessary historical predecessor re-admission before any repository base
+write, and run world_project_v2_to_tree.py against those accepted inputs. Native,
+registry and pin producers still run. Dispatch test build is ordered AFTER final
+pin refresh because client placement-index hashes are compile-time inputs.
+
+Exact classification evidence for the composition: imports/canary/items-xml/items.xml:3918-3920,
+SHA2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+explicitly declares1948 type=ladder. Main's retained floor packet pins
+Crystal201189f data/items/items.xml:3935 (1948) and:3873 (1791),
+SHA2568a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509.
+The helper preserves the positive classification and conservative false
+materializable admission; every remaining field must match exactly.
