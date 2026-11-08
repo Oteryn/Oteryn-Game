@@ -1,5 +1,5 @@
 //! Catalogue-scoped counter views; retained counter declarations keep their existing bytes.
-use super::{COUNTERS, Counter};
+use super::Counter;
 use crate::quest::{QuestStateCatalogue, authored_bindings::Trigger};
 use std::collections::BTreeMap;
 
@@ -82,7 +82,7 @@ pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64
 }
 
 pub fn tracks_creature_for(catalogue: &QuestStateCatalogue, creature: &str) -> bool {
-    COUNTERS.iter().any(|counter|counter.creature==creature && catalogue.transition(counter.transition).is_some())
+    super::counters().any(|counter|counter.creature==creature && catalogue.transition(counter.transition).is_some())
         || catalogue.authored_bindings().is_some_and(|bindings|bindings.quests.iter().any(|quest|
             quest.stages.iter().any(|stage|matches!(&stage.trigger,Trigger::Kill {counter} if counter.creature==creature))))
 }
