@@ -6,6 +6,8 @@
 //! changes progress only; its caller owns tool custody and map-object authority.
 use super::{QuestRefusal, distinct_targets};
 
+pub mod targets;
+
 pub const QUEST: &str = "oteryn:quest.the_ice_islands_quest";
 pub const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
 pub const TARGETS: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/painted_seal_targets";
@@ -24,7 +26,7 @@ pub fn paint(seal: u16, mut snapshot: Snapshot) -> Result<Snapshot, QuestRefusal
         return Err(QuestRefusal::StageMismatch);
     }
     let (targets, complete) =
-        distinct_targets::record_three(snapshot.targets, seal, distinct_targets::MAX_TARGETS)?;
+        distinct_targets::record_three(snapshot.targets, seal, targets::TARGET_COUNT)?;
     snapshot.targets = targets;
     if complete {
         snapshot.questline = 9;
@@ -71,6 +73,7 @@ mod tests {
             );
         }
         assert!(paint(distinct_targets::MAX_TARGETS, base).is_err());
+        assert!(paint(targets::TARGET_COUNT, base).is_err());
         assert!(
             paint(
                 0,

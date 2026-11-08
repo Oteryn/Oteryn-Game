@@ -55,7 +55,7 @@ impl NativeRule {
         match self {
             Self::CultsSymbol { symbol } => symbol < cults_of_tibia::SYMBOL_COUNT,
             Self::UnnaturalDance { tile } => tile >= 1 && tile <= 9,
-            Self::IceSealPaint { seal } => seal < super::distinct_targets::MAX_TARGETS,
+            Self::IceSealPaint { seal } => seal < ice_islands_seals::targets::TARGET_COUNT,
         }
     }
 
@@ -215,6 +215,10 @@ mod tests {
             NativeRule::CultsSymbol { symbol: u8::MAX },
             NativeRule::UnnaturalDance { tile: 0 },
             NativeRule::UnnaturalDance { tile: 10 },
+            NativeRule::IceSealPaint {
+                seal: ice_islands_seals::targets::TARGET_COUNT,
+            },
+            NativeRule::IceSealPaint { seal: u16::MAX },
         ] {
             assert!(!rule.valid_effects(rule.quest(), &effects(rule)));
             assert_eq!(
