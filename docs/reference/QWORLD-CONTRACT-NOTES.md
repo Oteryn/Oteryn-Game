@@ -1278,3 +1278,7 @@ completed generated caches were removed and the focused run succeeded.
 The owner's newer PUSH READY WORK NOW instruction supersedes the earlier hold
 for a PG shard message or 19:25 UTC. Any additional CI failures remain a separate
 follow-up batch; this repair does not claim full-suite qualification.
+
+## QMECH fungus-source correction
+
+The recipe marks Slime Fungus ambiguous, but the pinned donor supplies the needed consequence: Crystal201189f `data-global/lib/quests/their_masters_voice.lua:111–149` preserves Slime Gobbler and transforms the selected fungus to12065 (line127). Native daily projection already supplies appearances12059–12063 (`crates/gameplay/world/src/map/daily.rs:233–254`). Existing target replacement/tool reuse is sufficient; do not add remove-only map semantics for this quest. Personal cleaning-stage, Sentry/tool handout and death-stage registrations still need binding; this correction does not qualify the complete journey.
