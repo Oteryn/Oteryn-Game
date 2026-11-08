@@ -1,3 +1,13 @@
+# Main synchronization correction IN PROGRESS
+
+Pushed continuationb0917af8aa1404e8a99ad27989b61ed02d9477fe. Main moved
+tob3864f14a during preflight and the failed ancestry result was incorrectly
+followed by a push. Correct immediately by merging incoming main, regenerating
+four conflicted prey artifacts with the actual simulation, then native outputs
+and pins, and fresh focused PG/compile/fmt/clippy validation. Old-head units
+stopped at690PASS,3interrupted,1857not run; no assertion failures or full-suite
+success claimed. Original frozen questpc8 branch remains untouched.
+
 # Continuation AUTHORING: questpc8b Colours opening
 
 Original questpc8 is frozen at8639b16b158d39e36bf08d98f2a4dd998a4e2c5e.

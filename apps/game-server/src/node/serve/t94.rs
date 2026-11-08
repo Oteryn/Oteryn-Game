@@ -58,7 +58,7 @@ pub(super) fn material(
         if let Some(c) = &platform.character_commands {
             others.push(read_chain(&c.client_certificate_file)?);
         }
-        if let Some(c) = &platform.public_projections {
+        if let Some(c) = platform.public_projections.as_ref().filter(|p| p.enabled) {
             others.push(read_chain(&c.client_certificate_file)?);
         }
         if let Some(c) = &platform.bazaar {

@@ -88,7 +88,10 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         native,
         shutdown,
     ));
-    let mut expiry = pin!(audit_expiry_loop(root, authority, &loops_stop));
+    let mut expiry = pin!(both(
+        audit_expiry_loop(root, authority, &loops_stop),
+        online_statistics_retention_loop(root, authority, &loops_stop)
+    ));
     // Never gates serving; its end is not a shutdown reason. The public
     // projections run beside it, disabled unless configured and enabled.
     let collector = audit_collector::Collector {

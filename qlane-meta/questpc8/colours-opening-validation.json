@@ -68,5 +68,24 @@
     "fmt": "PASS",
     "clippy": "PASS",
     "no_full_suite_claim": true
+  },
+  "publication": {
+    "head": "b0917af8aa1404e8a99ad27989b61ed02d9477fe",
+    "branch": "claude/happy-davinci-ijz3wy-questpc8b",
+    "original_branch_unchanged": true
+  },
+  "prior_head_unit_run": {
+    "selected": 2550,
+    "passed": 690,
+    "interrupted": 3,
+    "assertion_failures": 0,
+    "not_run": 1857,
+    "seconds": 251.855,
+    "reason": "Stopped after incoming main changed the tree; rerun on merged sources required"
+  },
+  "main_followup": {
+    "incoming": "b3864f14a",
+    "conflicts": "Four generated prey files; actual simulation running before canonical native regeneration",
+    "result": "IN_PROGRESS"
   }
 }
