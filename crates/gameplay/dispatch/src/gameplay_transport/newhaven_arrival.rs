@@ -198,8 +198,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let snapshot = runtime
                 .place_admitted_respawn(actor, session, Some(destination), |cell| {
                     respawn_cell_admissible(
-                        self.movement_cells.index(),
-                        self.movement_cells.scope(),
+                        self.movement_cells().index(),
+                        self.movement_cells().scope(),
                         self.world_id,
                         digest,
                         &doors,

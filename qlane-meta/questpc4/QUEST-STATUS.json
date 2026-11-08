@@ -11062,7 +11062,7 @@
       }
     },
     "beregar_equipment_slice": {
-      "status": "QUALIFIED_COMPONENT_PENDING_PUBLICATION",
+      "status": "QUALIFIED_COMPONENT",
       "item": 3398,
       "scope": "Source-qualified dwarven legs native custody and exact replay, preserving armor7/physical resistance3/legs slot; whole quest stays IN_PROGRESS.",
       "source": "Crystal201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:10132",
@@ -11072,7 +11072,7 @@
       "engine_request": "Subtype-aware NPC exchanges needed for Yalahar rum flask5552; request sent, no generic runtime feature authored."
     },
     "seven_item_slice": {
-      "status": "QUALIFIED_COMPONENTS_PENDING_PUBLICATION_GATES",
+      "status": "QUALIFIED_COMPONENTS",
       "items": [
         3398,
         14682,
@@ -11239,7 +11239,27 @@
         "equipment_profiles": 3788
       },
       "workspace_check": "PASS --workspace --all-targets 5m19s; clippy/fmt final gates running.",
-      "freshness": "Source/native/equipment checks pass; binding write/check and world metadata exit0; completion write/check exit0. Full donor command and variant check still pending, do not infer completion from child output."
+      "freshness": "Source/native/equipment checks pass; binding write/check and world metadata exit0; completion write/check exit0. Full donor command and variant check still pending, do not infer completion from child output.",
+      "publication_validation": {
+        "workspace": "MAIN_CHECK=0 duration=284s MAIN_FMT=0",
+        "clippy": "MAIN_CLIPPY=0 duration=250s",
+        "freshness": "MAIN_EQUIPMENT=0 MAIN_NATIVE=0 MAIN_VARIANT=0 MAIN_WORLD_METADATA=0 MAIN_COMPLETION=0",
+        "donor": "MAIN_DONOR=0",
+        "duplicate_migrations": "PASS0; upstream1140-1141 retained, own1250-1258 unchanged.",
+        "postgres": "Nine actual PostgreSQL18.6 cases GREEN before main merge,44.137-66.658s; all7new policies RED before admission. Fresh post-merge9PG+3central regression units queued/running; explicitly pending under PREPUSH-2 cadence allowance.",
+        "full_units": "Previous fresh run579PASS,2SIGINT,19repo skips,3334notrun; incomplete, no full unit-pass claim."
+      }
+    },
+    "main47_integration": {
+      "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+      "scope": "Reuse SOULPIT1140-1141 and MAINRED6F61 physical floor/cosmetics proof fixes as-is. No competing engine or world changes authored.",
+      "conflicts": [
+        "content/world/pins/oteryn.json",
+        "deploy/synology-game/preprod-topology.toml"
+      ],
+      "resolution": "Main deployment configuration adopted as regeneration input; native-only repo tooling and freshly rebuilt current world compiler regenerate both pins. Main world package/placements retained. Full merge-driver materializer was stopped to keep the merge bounded; it had only written a temporary world output.",
+      "preservation": "All3750 feature-checkpoint native records identical; branch diff againstmain41files6515insertions131deletions, not empty. Canonical quest-input hashes unchanged, validating parallel donor check inputs.",
+      "validation": "Merged normally, all3750records retained. Workspace/alltargets and fmt PASS; changed content/dispatch/durability alltargets/allfeatures clippy -Dwarnings PASS; donor/native/equipment/variant/worldmetadata/completion checks exit0. Fresh post-merge PG/unit execution pending, premerge own9PG green."
     }
   }
 }

@@ -25,6 +25,12 @@ pub(crate) async fn burn_entry_core(
     };
     let inputs = load_inputs(tx, fence, &craft).await?;
     let source = inputs.first().ok_or(SoulpitWriteError::StaleState)?;
+    // Keep the native AI preflight bound to the exact carried core definition.
+    // Another craft may have transformed this instance before the shared lane
+    // was acquired; never burn an unchecked replacement species.
+    if source.definition != request.source_definition {
+        return Err(SoulpitWriteError::StaleState);
+    }
     let source_id = native_source_id(native, &source.definition)
         .filter(|id| is_soul_core(*id))
         .ok_or(SoulpitWriteError::Rule(
