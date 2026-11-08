@@ -1,6 +1,6 @@
 {
-  "state": "COMPILE_GREEN_NATIVE_FIXTURE_RED",
-  "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+  "state": "NATIVE_POSTGRES_GREEN",
+  "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
   "red": {
     "postgres_seconds": 3.298,
     "marker": "POSTGRES_CASE_STARTED questpc8_wrath_imperial_hunt after PostgreSQL fixture initialization",
@@ -9,7 +9,7 @@
   },
   "quest_units": {
     "passed": 355,
-    "seconds": 37.53,
+    "seconds": 41.48,
     "log": "/tmp/questpc8b-imperial-quest-units.log"
   },
   "placement_tests": {
@@ -21,77 +21,77 @@
   "checks": {
     "workspace": {
       "exit": 0,
-      "seconds": 195.9275635459926
+      "seconds": 194.13622917699104
     },
     "fmt": {
       "exit": 0,
-      "seconds": 11.659296035999432
+      "seconds": 11.744325339008356
     },
     "dups": {
       "exit": 0,
-      "seconds": 0.29384936300630216
+      "seconds": 0.3382187130046077
     },
     "clippy": {
       "exit": 0,
-      "seconds": 184.48640465798962
+      "seconds": 186.31639243400423
     },
     "pg": {
-      "exit": 100,
-      "seconds": 394.7877000980079
+      "exit": 0,
+      "seconds": 429.3978318669979
     }
   },
   "regeneration": {
     "placement-check": {
       "exit": 0,
-      "seconds": 0.33601813499990385
+      "seconds": 0.3484723250003299
     },
     "proof": {
       "exit": 0,
-      "seconds": 0.4016651200072374
+      "seconds": 0.42008248600177467
     },
     "tree": {
       "exit": 0,
-      "seconds": 35.55667045500013
+      "seconds": 36.93629084799613
     },
     "claims": {
       "exit": 0,
-      "seconds": 2.879429449007148
+      "seconds": 2.871340751997195
     },
     "bindings": {
       "exit": 0,
-      "seconds": 14.79170665499987
+      "seconds": 15.376640736998525
     },
     "completion": {
       "exit": 0,
-      "seconds": 4.897506736000651
+      "seconds": 5.095486877995427
     },
     "matrix": {
       "exit": 0,
-      "seconds": 0.48842305500875227
+      "seconds": 0.5228457189950859
     },
     "native": {
       "exit": 0,
-      "seconds": 333.94519165699603
+      "seconds": 327.96716773499793
     },
     "audit": {
       "exit": 0,
-      "seconds": 0.01891064300434664
+      "seconds": 0.020480460007092915
     },
     "pins": {
       "exit": 0,
-      "seconds": 115.90144585999951
+      "seconds": 127.88155473899678
     },
     "dups": {
       "exit": 0,
-      "seconds": 0.31413513798906934
+      "seconds": 0.3260672050091671
     },
     "chosen": {
       "exit": 0,
-      "seconds": 0.3315553389984416
+      "seconds": 0.31039105899981223
     },
     "fmt": {
       "exit": 0,
-      "seconds": 11.476663763998658
+      "seconds": 11.34257604299637
     }
   },
   "scope": "Wrath selected s6: exact four magistrati and six nobles, counter activation, bounded native source floor, saturation, cold reload, once-only Zlak report; stage5 to6 and existing source dream readiness",
@@ -132,15 +132,40 @@
     "scope": "Quest slices only; no whole Wrath or Colours completion claimed"
   },
   "pending": [
-    "Fix source-native fixture landing without weakening collision; rerun both focused PG cases",
-    "remaining dispatch full unit coverage: CI scope"
+    "remaining dispatch full unit coverage: CI scope; not claimed complete"
   ],
-  "native_red_point": {
-    "case": "questpc8_wrath_imperial_hunt_native_exact_quotas_and_replay",
-    "seconds": 35.533,
-    "error": "StartNotEnterable",
-    "point": "source fixture boot at33082,31219,z7; native collision checks remain strict",
-    "other_case": "NX6 dream PASS68.927s",
+  "green": {
+    "cases": [
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::nx6_wayfarer::nx6_wayfarer_real_npc_atomic_finale_replay_and_fences",
+        "seconds": 69.897
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_wrath_hunt::questpc8_wrath_imperial_hunt_native_exact_quotas_and_replay",
+        "seconds": 100.044
+      }
+    ],
+    "markers": [
+      "POSTGRES_CASE_STARTED questpc8_wrath_dream_report",
+      "POSTGRES_WRATH_DREAM_RECEIPT_STAGE_REPLAY_AND_COLD_REFUSAL_PASS",
+      "NX6_POSTGRES_CASE_COMPLETED elapsed=33.859771839s",
+      "POSTGRES_CASE_STARTED authored-wrath-hunt after PostgreSQL fixture initialization",
+      "POSTGRES_CASE_STARTED questpc8_wrath_imperial_hunt after PostgreSQL fixture initialization",
+      "POSTGRES_WRATH_IMPERIAL_NATIVE_EXACT_FOUR_SIX_COLD_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_wrath_imperial_hunt duration=99.996434037s result=Ok(())"
+    ],
+    "summary": "Summary [ 100.047s] 2 tests run: 2 passed (2 slow), 3009 skipped",
+    "product_head": "c0f43b96717180f2cdb24090ca96a5dfc801109a"
+  },
+  "corrected_fixture_failure": {
+    "prior_error": "StartNotEnterable",
+    "prior_seconds": 35.533,
+    "fix": "Native B3/compiler probe identifies original2342 obstruction; use west plain ground and exact source NPC cell with unchanged collision rules",
     "log": "/tmp/questpc8b-imperial-first-green-attempt.log"
-  }
+  },
+  "limitations": [
+    "Normal corpse loot remains refused for both lizard types; quest-native death counters are credited and tested independently. No normal loot qualification claimed.",
+    "Whole Wrath remains in progress; only stages6/7 and opening slices qualified."
+  ],
+  "main_integration": "main-c77-validation.json"
 }

@@ -1462,8 +1462,8 @@
     },
     "main_sync": {
       "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-      "state": "COMPILE_AND_UNITS_GREEN_NATIVE_RETEST_PENDING",
-      "proof": "main-c77-validation.json"
+      "state": "NATIVE_POSTGRES_GREEN",
+      "proof": "wrath-imperial-validation.json"
     },
     "authoring_round_trip": "Published envelope/self-mark rows restored to canonical author input; opening PG revalidation included in wrath-dream-validation.json"
   },
@@ -1696,7 +1696,7 @@
     "status": "IN_PROGRESS",
     "disposition": "authoring",
     "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
+    "mechanism": "native exact-material opening; native imperial4/6 quotas and source Zlak; source Sleeping Dragon finale/receipt bound to chosen stage7",
     "blocker": {
       "kind": "active_implementation",
       "owner": "qengine2 (shared disguise); questpc8 (quest graph)",
@@ -1753,8 +1753,8 @@
     },
     "main_sync": {
       "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-      "state": "COMPILE_AND_UNITS_GREEN_NATIVE_RETEST_PENDING",
-      "proof": "main-c77-validation.json"
+      "state": "NATIVE_POSTGRES_GREEN",
+      "proof": "wrath-imperial-validation.json"
     },
     "dream_slice": {
       "state": "NATIVE_POSTGRES_GREEN",
@@ -1762,18 +1762,13 @@
       "scope": "Chosen Wrath s7 report advances stage6 to7 after exact dream receipt; no item/achievement reward and no whole-quest completion"
     },
     "imperial_slice": {
-      "state": "SOURCE_FIXTURE_CORRECTED_NATIVE_RETEST_PENDING",
+      "state": "NATIVE_POSTGRES_GREEN",
       "proof": "wrath-imperial-validation.json",
       "scope": "Wrath selected s6: exact four magistrati and six nobles, counter activation, bounded native source floor, saturation, cold reload, once-only Zlak report; stage5 to6 and existing source dream readiness",
-      "red_point": {
-        "case": "questpc8_wrath_imperial_hunt_native_exact_quotas_and_replay",
-        "seconds": 35.533,
-        "error": "StartNotEnterable",
-        "point": "source fixture boot at33082,31219,z7; native collision checks remain strict",
-        "other_case": "NX6 dream PASS68.927s",
-        "log": "/tmp/questpc8b-imperial-first-green-attempt.log"
-      },
-      "main_merge_proof": "main-c77-validation.json"
+      "green_cases_seconds": {
+        "hunt": 100.044,
+        "dream": 69.897
+      }
     }
   },
   {

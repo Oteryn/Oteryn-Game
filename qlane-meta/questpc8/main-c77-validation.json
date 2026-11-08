@@ -1,6 +1,6 @@
 {
   "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-  "state": "COMPILE_AND_UNITS_GREEN_NATIVE_RETEST_PENDING",
+  "state": "FOCUSED_GREEN_2_NATIVE_PG",
   "checks": {
     "workspace": {
       "exit": 0,
@@ -13,6 +13,14 @@
     "dups": {
       "exit": 0,
       "seconds": 0.3382187130046077
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 186.31639243400423
+    },
+    "pg": {
+      "exit": 0,
+      "seconds": 429.3978318669979
     }
   },
   "regeneration": {
@@ -87,15 +95,15 @@
   },
   "conflicts": "All10 resolved retaining main QREADY1/2 and own reward/NPC/corpse/loot producers. Generated files regenerated; exact immutable union retained. No migration changes.",
   "native_validation": {
-    "last_failure": "StartNotEnterable at original fixture33082,31219,z7 after35.533s",
-    "fix": "Actual B3/registry probe: north cell includes2342; west33081,31220 is admitted plain ground11038. KeepNPC at source33082,31220 through test-only installer. Wrongfloor kill moved to plain ground33083/33084,31217. Floor3source hunt ground/borders verified.",
-    "state": "Focused2PG rerun pending active driver; do not claim full hunt green",
-    "prior_dream": "PASS68.927s"
+    "state": "PASS both focused PG cases100.047s on exact pushedc0f43b967",
+    "hunt_seconds": 100.044,
+    "dream_seconds": 69.897,
+    "proof": "wrath-imperial-validation.json",
+    "normal_corpse_loot": "Not claimed qualified; current native kill logs retain refusal."
   },
   "review": "Independent merge producer/pin-tool review: no blocking findings. Duplicate idempotent QENGINE admission call is nonblocking extra generation work.",
   "pending": [
-    "clippy and focused2PG cases in active driver",
-    "full remaining dispatch unit coverage remains CI scope"
+    "remaining dispatch full unit coverage: CI scope"
   ],
   "whole_quests_qualified": 21,
   "whole_quests_total": 23
