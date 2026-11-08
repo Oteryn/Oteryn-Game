@@ -247,7 +247,7 @@ impl DurabilityRoot {
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
         )>,
     ) -> Result<QuestTransitionOutcome> {
-        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
+        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let world_callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
