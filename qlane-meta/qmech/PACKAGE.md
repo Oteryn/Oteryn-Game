@@ -24,5 +24,5 @@ Molehill PC, merged with main, validated there, and only then marked ready.
 | reward / achievement claims | engclaim | 1830-1839 | 14 | open |
 | world change | engworldchg | 1840-1859 | 10 | open |
 | NPC quest dialogue | engnpc2 | (lane's range) | - | open |
-| quest items | engitem | (lane's range) | - | open |
+| quest items | engitem | 1640-1659 | clock waits; Nomads Land text | imported tested clock/text; MISSING-ENGITEM.md PARTIAL; cycle MINT WIP |
 | other blockers | (to assign) | - | 44 | open |
