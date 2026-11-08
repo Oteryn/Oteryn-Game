@@ -1385,9 +1385,10 @@
   "src": "OTCAUD1108",
   "area": "Minimap",
   "feature": "Minimapa i nawigacja",
-  "status": "PARTIAL",
-  "gap": "Brakuje trwałej mapy odkrytych terenów, edytowanych znaczników, przewijania i zmiany pięter/zoomu minimapy; nakładka pokazuje bieżące okno świata.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/local-minimap/state.rs:79 + live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_binding; apps/client/src/features/local-minimap/tests/play_persistence.rs:10"
  },
  {
   "id": "O040",

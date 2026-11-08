@@ -80,8 +80,19 @@ impl Minimap {
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
-            self.feedback = "Invalid minimap world binding; local saving is disabled".into();
+            if let Err(error) = self.save() {
+                self.feedback =
+                    format!("Could not save minimap before refusing world binding: {error}");
+            } else {
+                self.feedback = "Invalid minimap world binding; local saving is disabled".into();
+            }
             self.world = None;
+            self.binding = None;
+            self.cells.clear();
+            self.markers.clear();
+            self.dirty = false;
+            self.tracking = true;
+            self.zoom = 1;
         } else if self.world.as_deref() != Some(world) {
             if let Err(error) = self.save() {
                 self.feedback = error.to_string();
@@ -339,3 +350,7 @@ impl Drop for Minimap {
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/play_persistence.rs"]
+mod play_persistence;
