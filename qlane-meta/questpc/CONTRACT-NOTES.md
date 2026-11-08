@@ -1,0 +1,35 @@
+# questpc-n3 source completion contract
+
+The frozen pc2 branch remains owned by the wpkg3 collector. This continuation
+starts from main and reuses QREADY1's native source objects and existing
+claim-obligation writer. No earlier branch is changed.
+
+The first five bindings cover Adorned UH Rune, Barbarian Axe, Battle Axe, Blood
+Herb and Captain Iglues Treasure. Each canonical definition is a standalone,
+definition-ready reward-only quest with one personal once-claim identity.
+Conservative Oteryn rule: its successful native claim starts and completes
+that quest. Alternative placements of one claim retain their shared once
+identity. The transition writes an exact0-to1 claimed flag and completes;
+reward custody, obligation recovery and replay retain their existing owners.
+
+The original source selectors, item identities, quantities and startup hashes
+are retained in tools/content-schema/world-authoring/samples/quest-chest-bindings/qready1.json
+and the original reward-use tests. These bindings add Oteryn lifecycle metadata,
+not a new source reward or an invented NPC/monster requirement.
+
+Quests with multiple required/alternative claims need a declared aggregate
+completion policy. A fixed final transition with unmet prerequisites is unsafe:
+quest_state.rs documents that refused obligations become terminal, rather than
+waiting for another chest. Those quests remain WAITING-ENGINE with QENGINE2.
+
+Full authored routes require the engine-owned Bindings::attach API and typed
+NPC/USE/STEP_IN/kill trigger delivery. They exist on QENGINE2 source925d8480,
+but are absent from main3b4696be; that branch also records pending post-merge
+engine validation. Retain those delivery dependencies without duplicating the
+shared engine or promoting historical reward-only tests to full-path proof.
+
+Father's unchanged source acceptance is one eleven-track write. Current-main
+real-PG reproduction stops at missing native material definition admission.
+The NPC programme writer also hardcodes completes=false; source completion
+needs the ENGNPC owner. The reproduction stays local until those dependencies
+land. No incomplete Father test is published or counted as DONE.
