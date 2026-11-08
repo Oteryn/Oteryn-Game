@@ -1268,3 +1268,29 @@ tool checks exact identity-set equality against the hash-bound WorldProject
 before updating central counts, source bindings, source blobs and managed
 shards. A same-count Creature substitution is rejected (3.849s regression).
 Both normal regeneration modes now invoke the source-qualified refresh.
+
+## Final owner-requested main update3209d3d61
+
+Merged MAINRED47 without rebasing. Its five changed files are taken exactly
+from origin/main, including the strict NPC400/12415/17 snapshot and the
+read-only Soulpit contention/25P04 classification handling. The temporary
+NPC snapshot generator/fixture was removed in favor of the owner's main
+version; the original test function and all metrics remain. The normal
+dispatch build regenerates PostgreSQL test mounts for the added Soulpit
+boot tests. Source content and migrations are unchanged by MAINRED47.
+
+Final3209d3d61 validation: focused19/19 passed, 970.511s
+including compilation/lock wait. This repeats all eleven seasonal/House
+focused cases and runs both new real Soulpit boot/contention PG cases,
+owner-read retry semantics, all four SQLx classification/commit certainty
+tests and exact Soulpit native identity lookup. Full source-tree and
+Item/Mount goldens passed249 managed paths,69 Item shards, including all
+closed-negative relation and Bank cases. Workspace all-target check
+519.142s; changed dispatch/durability Clippy
+213.266s; fmt 16.224s;
+main's NPC snapshot test 192.465s (all green).
+Earlier19-crate Clippy passed525.489s; unchanged crates retain that proof.
+Full dispatch/server suites and the post-MAINRED47 full durability rerun
+remain with CI under PREPUSH-2's cadence exception; focused current-source
+cases above passed. No tests, constraints or source-gap guards were weakened.
+After this single push the branch returns to frozen CI-fix-only status.
