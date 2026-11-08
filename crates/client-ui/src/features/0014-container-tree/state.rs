@@ -5,6 +5,7 @@ use oteryn_client_runtime::container_tree::{
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ContainerPanel {
     pub open: bool,
+    pub house_capacity_v2: bool,
     pub views: Option<ContainerViews>,
     pub active: Option<u8>,
     pub pending: bool,

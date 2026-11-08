@@ -41,7 +41,15 @@ pub fn stage_item_health_loss(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, amount, now_us, false, false, None, true)
+    stage_hit(
+        state,
+        amount,
+        now_us,
+        false,
+        false,
+        None,
+        HitDelivery::DirectHealth,
+    )
 }
 
 #[cfg(test)]

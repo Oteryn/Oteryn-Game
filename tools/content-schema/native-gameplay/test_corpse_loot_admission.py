@@ -40,7 +40,7 @@ class CorpseLootAdmissionTests(unittest.TestCase):
         self.assertFalse(facts['oteryn:item.tibia.i3056']['stackable'])
         self.assertTrue(facts['oteryn:item.tibia.i11472']['stackable'])
 
-    def produce(self, profile, *, body_is_yield=False):
+    def produce(self, profile, *, body_is_yield=False, candidate_profile=None):
         body = {'family': 'Item', 'key': 'oteryn:item.tibia.i5969', 'revision': 'definition-r1'}
         creature = {'family': 'Creature', 'key': 'oteryn:creature.test-corpse', 'revision': 'definition-r1'}
         loot = {'family': 'Loot', 'key': 'oteryn:loot.test-corpse', 'revision': 'definition-r1'}
@@ -61,8 +61,17 @@ class CorpseLootAdmissionTests(unittest.TestCase):
             profiles = {'records': [{'profile': {'target': creature, 'data': {'profile': {
                 'details': {'corpse_item': body}}}}}]}
             with patch.object(full, 'creature_products', return_value=set()):
-                result = json.loads(full.loot_tables(profiles, creatures, tables, items))
+                result = json.loads(full.loot_tables(profiles, creatures, tables, items,
+                    {"records": [candidate_profile]} if candidate_profile is not None else None))
             return result['items'][0]
+
+    def test_fresh_candidate_item_profiles_close_loot_before_disk_registration(self):
+        result = self.produce(None, candidate_profile=copy.deepcopy(self.profile))
+        self.assertTrue(result['materializable'])
+        self.assertEqual(result['container_capacity'], 10)
+        substituted = copy.deepcopy(self.profile)
+        substituted['production_binding']['target']['revision'] = 'wrong-revision'
+        self.assertFalse(self.produce(None, candidate_profile=substituted)['materializable'])
 
     def test_source_ground_container_facts_are_reused_without_inventory_grant(self):
         result = self.produce(copy.deepcopy(self.profile))

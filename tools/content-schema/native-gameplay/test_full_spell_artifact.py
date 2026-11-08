@@ -124,6 +124,44 @@ class SourceCompositionTests(unittest.TestCase):
 
 
 
+class NativeItemProviderBoundaryTests(unittest.TestCase):
+    def test_actual_build_preserves_item_provider_bytes_through_production_bound(self):
+        # The real pinned Familiar export is checked in; this case never skips
+        # for a machine-local source checkout and does not read the active Item provider.
+        familiars = full.ROOT / 'docs/reference/spells/r21-local-candidate/familiar-profiles'
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            catalog = {'bundles': [{'identity': 'test'}], 'revision': 'r1'}
+            cat_raw = full.encoded(catalog)
+            (base / 'catalog.json').write_bytes(cat_raw)
+            (base / 'selection.json').write_bytes(full.encoded({
+                'revision': 'r1', 'catalog_sha256': full.digest(cat_raw), 'selections': []}))
+            args = argparse.Namespace(
+                out=base/'out', catalog=base/'catalog.json', selection=base/'selection.json',
+                expected_spells=1, familiars=familiars, items=base/'items.json',
+                build_revision='build-content-r1', appearances=full.NATIVE/'spell_appearances.json',
+                training=full.NATIVE/'build-training.json', familiar_config=full.NATIVE/'familiar-config.json',
+                familiar_defenses=full.NATIVE/'familiar-defenses.json', wheel=full.NATIVE/'wheel-profile.json',
+                source_world=None, native_map_profile='accepted-entry-r1')
+            item_json = b'{ "schema":"OTERYN_NATIVE_ITEM_PROFILES/v1", "records":[{"proof":"source bytes"}] }\n'
+            # JSON permits this UTF-8 whitespace. Exercise actual build/hash/output
+            # admission above the old8MiB limit and at the existing16MiB native limit.
+            for size in (8 * 1024**2 + 1, 16 * 1024**2):
+                with self.subTest(accepted_bytes=size):
+                    raw = item_json + b' ' * (size - len(item_json))
+                    args.items.write_bytes(raw)
+                    proof = full.build(args)
+                    self.assertEqual((args.out/'item-profiles.json').read_bytes(), raw)
+                    manifest_bytes = (args.out/'manifest.json').read_bytes()
+                    manifest = json.loads(manifest_bytes)
+                    self.assertEqual(manifest['item_profiles']['sha256'], full.digest(raw))
+                    self.assertEqual(proof['manifest_sha256'], full.digest(manifest_bytes))
+            raw = item_json + b' ' * (16 * 1024**2 + 1 - len(item_json))
+            args.items.write_bytes(raw)
+            with self.assertRaisesRegex(ValueError, 'Native input exceeds bounded provider size: item_profiles'):
+                full.build(args)
+
+
 class ItemKeySetTests(unittest.TestCase):
     """MAP-ITEM-REF-1: the pinned Item key set is generated from the Item definitions."""
 

@@ -246,8 +246,12 @@ pub(in crate::play) fn open_shared(
                             }
                             SetWindowTextW(
                                 status,
-                                wide(&oteryn_client_ui::container_tree::view::panel_text(panel))
-                                    .as_ptr(),
+                                wide(
+                                    &oteryn_client_ui::house_container_capacity::view::panel_text(
+                                        panel,
+                                    ),
+                                )
+                                .as_ptr(),
                             );
                             held = Some(panel.clone());
                         }
