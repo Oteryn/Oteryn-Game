@@ -431,6 +431,17 @@ impl ReservedNativeThinkBatch {
     pub fn occurrences(&self) -> &[ThinkOccurrence] {
         &self.occurrences
     }
+    /// Original owner clock, not a newly issued reservation.
+    pub fn observed_at_us(&self) -> u64 {
+        self.now_us
+    }
+    /// Read-only continuity check for a retained original reservation.
+    pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+        runtime
+            .owner_fence()
+            .is_ok_and(|fence| fence.accepts_stamp(self.stamp))
+            && native_think_pin(runtime) == self.pin
+    }
 }
 impl CreatureAiTable {
     /// Reserve only thinks admitted by the existing bounded owner window, without
@@ -508,6 +519,25 @@ impl CreatureAiTable {
         revisions: &RevisionSet,
         players: &[TargetCandidate],
         reader: &mut R,
+        consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
+    ) -> Vec<(ExactActorRef, ThinkReport)> {
+        self.run_reserved_current_thinks_borrowed(
+            runtime, &batch, root, revisions, players, reader, consume,
+        )
+        .await
+    }
+
+    /// Consume the SAME opaque reservation retained by a source continuation.
+    /// All original sequence/deadline, incarnation, stamp and pin guards remain.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn run_reserved_current_thinks_borrowed<R: MonsterThinkReader>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        batch: &ReservedNativeThinkBatch,
+        root: &GameplayDecisionRoot,
+        revisions: &RevisionSet,
+        players: &[TargetCandidate],
+        reader: &mut R,
         mut consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
     ) -> Vec<(ExactActorRef, ThinkReport)> {
         if !runtime
@@ -533,7 +563,7 @@ impl CreatureAiTable {
             })
             .collect::<Vec<_>>();
         let mut reports = Vec::new();
-        for reserved in batch.entries {
+        for reserved in &batch.entries {
             if !runtime
                 .owner_fence()
                 .is_ok_and(|fence| fence.accepts_stamp(batch.stamp))

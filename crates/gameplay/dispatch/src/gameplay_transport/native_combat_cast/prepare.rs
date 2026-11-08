@@ -757,6 +757,9 @@ fn prepare_preview(
     };
     if let Some(owner) = preview_magnitude.as_mut() {
         owner
+            .bind_native_health_observations(runtime, owned.native_health_observations())
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+        owner
             .select_item_spell(spell)
             .map_err(|_| SpellCastDisposition::Rejected)?;
     }
@@ -985,6 +988,9 @@ fn prepare_payment(
         None
     };
     if let Some(owner) = magnitude.as_mut() {
+        owner
+            .bind_native_health_observations(runtime, owned.native_health_observations())
+            .map_err(|_| SpellCastDisposition::Rejected)?;
         owner
             .select_item_spell(spell)
             .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -1247,6 +1253,9 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         now.get() / 1000,
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
+    magnitude
+        .bind_native_health_observations(runtime, owned.native_health_observations())
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     magnitude
         .select_item_spell(spell)
         .map_err(|_| SpellCastDisposition::Rejected)?;

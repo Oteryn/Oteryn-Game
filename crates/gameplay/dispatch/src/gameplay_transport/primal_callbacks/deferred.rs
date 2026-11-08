@@ -4,7 +4,7 @@ use oteryn_gameplay_encounters::bosses::hazard_primal::primal_menace_think::{
 };
 /// Deferred callbacks belong to the source room, not the parent's live actor.
 /// In particular Pod and presentation closures survive the parent disappearing.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(super) struct DeferredCallbacks(pub(super) Vec<DeferredOccurrence>, u64);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct DeferredOccurrence {
@@ -40,20 +40,20 @@ impl DeferredCallbacks {
         self.1 = id;
         Ok(())
     }
-    #[cfg(test)]
-    fn peek_due_through(
+    pub(super) fn peek_due_through(
         &self,
         now_ms: u64,
         eligible_through_ms: u64,
     ) -> Result<Option<DeferredOccurrence>, ()> {
-        if self
+        Ok(self
             .0
             .iter()
-            .any(|queued| queued.original_due_ms <= now_ms.min(eligible_through_ms))
-        {
-            return Err(());
-        }
-        Ok(None)
+            .filter(|queued| queued.original_due_ms <= now_ms.min(eligible_through_ms))
+            .min_by_key(|queued| (queued.original_due_ms, queued.id))
+            .copied())
+    }
+    pub(super) fn original_next_due(&self) -> Option<u64> {
+        self.0.iter().map(|queued| queued.original_due_ms).min()
     }
     /// Read-only observation of source work that the real native Think enqueued.
     #[cfg(test)]
@@ -107,20 +107,23 @@ impl DeferredCallbacks {
         due
     }
     /// Inspect the original occurrence without moving it across a Map await.
+    #[cfg(test)]
     pub(super) fn peek_due(
         &mut self,
         now_ms: u64,
         parent_live: bool,
     ) -> Option<DeferredOccurrence> {
-        let due = |occurrence: &DeferredOccurrence| match occurrence.effect {
-            PrimalMenaceEffect::SpawnSparkle { at_ms, .. }
-            | PrimalMenaceEffect::ScheduledSpawn { at_ms, .. } => at_ms <= now_ms,
-            PrimalMenaceEffect::ReplaceWithFungosaurus { .. } => true,
-        };
-        // Only these source beast callbacks test original parent liveness.
+        self.peek_due_registered_through(now_ms, now_ms, parent_live)
+    }
+    pub(super) fn peek_due_registered_through(
+        &mut self,
+        now_ms: u64,
+        cutoff_ms: u64,
+        parent_registered: bool,
+    ) -> Option<DeferredOccurrence> {
         self.0.retain(|occurrence| {
-            parent_live
-                || !due(occurrence)
+            parent_registered
+                || occurrence.original_due_ms > now_ms.min(cutoff_ms)
                 || !matches!(
                     occurrence.effect,
                     PrimalMenaceEffect::ScheduledSpawn {
@@ -129,7 +132,7 @@ impl DeferredCallbacks {
                     }
                 )
         });
-        self.0.iter().find(|occurrence| due(occurrence)).copied()
+        self.peek_due_through(now_ms, cutoff_ms).ok().flatten()
     }
     /// Remove only after its physical source effect committed synchronously.
     pub(super) fn acknowledge(&mut self, id: u64) -> Result<(), ()> {

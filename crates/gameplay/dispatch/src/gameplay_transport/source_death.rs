@@ -372,6 +372,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &mut CurrentMonsterMap<'_, '_>,
         parties: &super::monster_profile_cycle::physical_spell::ReferenceParties,
         now: u64,
+        native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<bool, ()> {
         let Some(notice) = runtime.next_source_creature_death().map_err(|_| ())? else {
             return Ok(true);
@@ -398,7 +399,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let callbacks = states.native_callbacks.clone();
         callbacks
             .drain_due_through(
-                active, runtime, states, attack, room, native, map, parties, cutoff, now,
+                active,
+                runtime,
+                states,
+                attack,
+                room,
+                native,
+                map,
+                parties,
+                cutoff,
+                now,
+                native_health_names,
             )
             .await?;
         if !map.validate_transaction(runtime).await {

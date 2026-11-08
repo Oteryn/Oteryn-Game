@@ -153,7 +153,7 @@ impl ChannelRuntimeV1 {
         now_us: u64,
         facts: TickFacts,
     ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
-        self.stage_creature_periodic_turn_inner(actor, now_us, facts, None)
+        self.stage_creature_periodic_turn_inner(actor, now_us, facts, None, &[])
     }
     /// Source snapshots/PlayerSpellState reads are acquired and committed in
     /// one locked Channel-owner call. This is not a detached damage capability.
@@ -164,8 +164,34 @@ impl ChannelRuntimeV1 {
         facts: TickFacts,
         player_source: &mut CurrentPlayerPeriodicSource<'_>,
     ) -> Result<CreaturePeriodicReceipt, CarrierError> {
-        let prepared =
-            self.stage_creature_periodic_turn_inner(actor, now_us, facts, Some(player_source))?;
+        let prepared = self.stage_creature_periodic_turn_inner(
+            actor,
+            now_us,
+            facts,
+            Some(player_source),
+            &[],
+        )?;
+        self.commit_creature_periodic_turn(prepared)
+    }
+
+    /// Same periodic owner with current all-role source-name observations. The
+    /// opaque observations carry no damage or HP authority and are revalidated
+    /// against the actual target and physical cohort before publication.
+    pub fn apply_creature_periodic_turn_with_sources_and_health_observations(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        facts: TickFacts,
+        player_source: &mut CurrentPlayerPeriodicSource<'_>,
+        observations: &[super::native_health_change::NativeHealthChangeObservation],
+    ) -> Result<CreaturePeriodicReceipt, CarrierError> {
+        let prepared = self.stage_creature_periodic_turn_inner(
+            actor,
+            now_us,
+            facts,
+            Some(player_source),
+            observations,
+        )?;
         self.commit_creature_periodic_turn(prepared)
     }
 
@@ -175,6 +201,7 @@ impl ChannelRuntimeV1 {
         now_us: u64,
         facts: TickFacts,
         mut player_source: Option<&mut CurrentPlayerPeriodicSource<'_>>,
+        observations: &[super::native_health_change::NativeHealthChangeObservation],
     ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
         if self.actor_spell_reserved(actor) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
@@ -201,7 +228,7 @@ impl ChannelRuntimeV1 {
         let mut total = 0i64;
         let mut had_damage = false;
         let mut health_after = before.health;
-        let mut health_events = PeriodicHealthEvents::new(self, actor, stamp)?;
+        let mut health_events = PeriodicHealthEvents::new(self, actor, stamp, observations)?;
         let mut current_type = before.clone();
         for (tick_index, tick) in ticks.iter().enumerate() {
             match tick.kind {
@@ -611,6 +638,9 @@ impl ChannelRuntimeV1 {
             || self.companion_snapshot(prepared.before.actor)? != prepared.before
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
+        }
+        if let Some(observation) = &prepared.health_events.native {
+            self.validate_native_health_change_observation(observation)?;
         }
         if let Some(master) = prepared.before.state.master {
             self.carrier

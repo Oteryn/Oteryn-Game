@@ -172,6 +172,7 @@ impl NativeCallbackState {
         proposals: &[ProfileAbilityProposal],
         parties: &super::physical_spell::ReferenceParties,
         now: u64,
+        native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
         self.bind_current(runtime, room, native)?;
         if let Some(expiry) = self.death_items.next_due().filter(|due| *due <= now) {
@@ -186,6 +187,7 @@ impl NativeCallbackState {
                 parties,
                 expiry.saturating_sub(1),
                 now,
+                native_health_names,
             )
             .await?;
             return Err(());
@@ -217,6 +219,7 @@ impl NativeCallbackState {
                 proposals,
                 parties,
                 now,
+                native_health_names,
             )
             .await?;
         self.smelly
@@ -645,6 +648,7 @@ impl NativeCallbacks {
         parties: &super::physical_spell::ReferenceParties,
         eligible_through_us: u64,
         now: u64,
+        native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
         let mut owner = self.owner.lock().await;
         owner.bind_current(runtime, room, native)?;
@@ -660,6 +664,7 @@ impl NativeCallbacks {
                 parties,
                 eligible_through_us,
                 now,
+                native_health_names,
             )
             .await
     }
@@ -833,12 +838,23 @@ impl NativeCallbacks {
         proposals: &[ProfileAbilityProposal],
         parties: &super::physical_spell::ReferenceParties,
         now: u64,
+        native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
         self.retained_owner()
             .lock_owned()
             .await
             .execute(
-                active, runtime, states, attack, room, native, map, proposals, parties, now,
+                active,
+                runtime,
+                states,
+                attack,
+                room,
+                native,
+                map,
+                proposals,
+                parties,
+                now,
+                native_health_names,
             )
             .await
     }
@@ -861,6 +877,7 @@ impl NativeCallbackState {
         parties: &super::physical_spell::ReferenceParties,
         eligible_through_us: u64,
         now: u64,
+        native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
         // Recompute the minimum after each retained family advances; do not
         // run a later deadline merely because its leaf appears earlier here.
@@ -893,8 +910,18 @@ impl NativeCallbackState {
                     } = &mut *self;
                     casts
                         .drive_due_through(
-                            active, outburst, runtime, states, attack, room, native, map, parties,
-                            through, now,
+                            active,
+                            outburst,
+                            runtime,
+                            states,
+                            attack,
+                            room,
+                            native,
+                            map,
+                            parties,
+                            through,
+                            now,
+                            native_health_names,
                         )
                         .await?;
                 }

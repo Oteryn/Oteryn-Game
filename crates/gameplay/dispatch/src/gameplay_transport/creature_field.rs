@@ -22,7 +22,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         room: &crate::content::QualifiedNativeEntryRoom,
         native: &crate::content::native_gameplay::NativeGameplayState,
         now: u64,
+        native_health_names: &super::source_names::NativeHealthNamesData,
     ) -> Result<(), DurabilityError> {
+        native_health_names
+            .validate_frame(runtime)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
         for visible in runtime.visible_entities().creatures {
@@ -168,12 +172,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime
                 .commit_creature_field_entry(actor, now, entry.as_ref())
                 .map_err(|_| DurabilityError::Unavailable)?;
+            let observations = match native_health_names.observe(runtime, actor) {
+                Ok(observation) => observation.into_iter().collect::<Vec<_>>(),
+                // Only this required health callback lacks facts. The original
+                // condition/entry clock remains installed and its HP ticks
+                // remain unconsumed; unrelated actors continue normally.
+                Err(()) => continue,
+            };
             states
-                .tick_source_creature_conditions(
+                .tick_source_creature_conditions_with_health_observations(
                     runtime,
                     actor,
                     facts,
                     crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
+                    &observations,
                 )
                 .map_err(|_| DurabilityError::Unavailable)?;
         }

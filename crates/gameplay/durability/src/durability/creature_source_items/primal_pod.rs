@@ -156,6 +156,10 @@ impl PrimalPodCallback {
             item,
         })
     }
+    /// Stable source transaction identity; grants no clock or Item authority.
+    pub fn source_transaction_id(&self) -> [u8; 16] {
+        identity(&self.cause, b"oteryn:primal-pod-transaction:v1")
+    }
     pub fn due_us(&self) -> u64 {
         self.due_us
     }
@@ -376,12 +380,19 @@ pub async fn drain_primal_pod_expiry_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
 ) -> Result<Option<PrimalPodExpiry>> {
+    drain_primal_pod_expiry_selected_in_transaction(tx, authority, None).await
+}
+async fn drain_primal_pod_expiry_selected_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    source: Option<[u8; 16]>,
+) -> Result<Option<PrimalPodExpiry>> {
     check_scope_transaction(tx, authority).await?;
     let RuntimeScopeRefV1::Instance { instance_id, .. } = authority.runtime_scope() else {
         return Ok(None);
     };
-    let row=sqlx::query("SELECT p.source_transaction_id::text,p.spatial_position,p.content_digest,p.map_digest,p.frame_digest,p.completion_kind FROM game_primal_pod_callbacks p WHERE p.world_id=encode($1,'hex')::uuid AND p.instance_id=encode($2,'hex')::uuid AND p.ownership_generation=$3::text::numeric(20,0) AND (p.completion_kind=0 OR (p.completion_kind=2 AND NOT p.effect_acknowledged)) AND p.due_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint AND EXISTS(SELECT 1 FROM game_activity_handoff_groups g JOIN game_activity_runtime_entries e USING(handoff_id) WHERE g.world_id=p.world_id AND g.instance_id=p.instance_id AND g.ownership_generation=p.ownership_generation AND g.state=2 AND e.destination_server_artifact_digest=p.content_digest AND e.destination_map_revision_digest=p.map_digest AND e.destination_coordinate_frame_digest=p.frame_digest) ORDER BY p.due_unix_ms,p.source_transaction_id LIMIT 1 FOR UPDATE OF p")
-        .bind(authority.world_bytes().as_slice()).bind(instance_id.as_slice()).bind(authority.generation().to_string())
+    let row=sqlx::query("SELECT p.source_transaction_id::text,p.spatial_position,p.content_digest,p.map_digest,p.frame_digest,p.completion_kind FROM game_primal_pod_callbacks p WHERE p.world_id=encode($1,'hex')::uuid AND p.instance_id=encode($2,'hex')::uuid AND p.ownership_generation=$3::text::numeric(20,0) AND ($4::bytea IS NULL OR p.source_transaction_id=encode($4,'hex')::uuid) AND (p.completion_kind=0 OR (p.completion_kind=2 AND NOT p.effect_acknowledged) OR ($4::bytea IS NOT NULL AND p.completion_kind=3 AND p.effect_acknowledged)) AND p.due_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint AND EXISTS(SELECT 1 FROM game_activity_handoff_groups g JOIN game_activity_runtime_entries e USING(handoff_id) WHERE g.world_id=p.world_id AND g.instance_id=p.instance_id AND g.ownership_generation=p.ownership_generation AND g.state=2 AND e.destination_server_artifact_digest=p.content_digest AND e.destination_map_revision_digest=p.map_digest AND e.destination_coordinate_frame_digest=p.frame_digest) ORDER BY p.due_unix_ms,p.source_transaction_id LIMIT 1 FOR UPDATE OF p")
+        .bind(authority.world_bytes().as_slice()).bind(instance_id.as_slice()).bind(authority.generation().to_string()).bind(source.as_ref().map(|id| id.as_slice()))
         .fetch_optional(&mut **tx).await?;
     let Some(row) = row else {
         return Ok(None);
@@ -389,6 +400,13 @@ pub async fn drain_primal_pod_expiry_in_transaction(
     let source = uuid(&row.try_get::<String, _>("source_transaction_id")?)?;
     let spatial = row.try_get::<Vec<u8>, _>("spatial_position")?;
     let position = decode_position(&spatial)?;
+    if row.try_get::<i16, _>("completion_kind")? == 3 {
+        return Ok(Some(PrimalPodExpiry {
+            source_transaction_id: source,
+            position,
+            requires_spawn: false,
+        }));
+    }
     if row.try_get::<i16, _>("completion_kind")? == 2 {
         return Ok(Some(PrimalPodExpiry {
             source_transaction_id: source,
@@ -496,6 +514,47 @@ impl DurabilityRoot {
         scope: RuntimeScopeRefV1,
         generation: u64,
     ) -> Result<Option<PrimalPodExpiry>> {
+        self.drain_primal_pod_expiry_selected(permit, recovery, node, scope, generation, None)
+            .await
+    }
+    /// Exact retained source callback only. SQL's original receipt clock and
+    /// due condition remain authoritative independently of native eligibility.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "same scoped source owner with one exact retained transaction filter"
+    )]
+    pub async fn drain_primal_pod_expiry_for_source(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: u64,
+        source: [u8; 16],
+    ) -> Result<Option<PrimalPodExpiry>> {
+        self.drain_primal_pod_expiry_selected(
+            permit,
+            recovery,
+            node,
+            scope,
+            generation,
+            Some(source),
+        )
+        .await
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "common scoped SQL owner preserves legacy query and exact source filtering"
+    )]
+    async fn drain_primal_pod_expiry_selected(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: u64,
+        source: Option<[u8; 16]>,
+    ) -> Result<Option<PrimalPodExpiry>> {
         let record = creature_item_recovery_record(recovery, self)?;
         let node = node.clone();
         let mut context = permit;
@@ -508,8 +567,10 @@ impl DurabilityRoot {
                             &mut tx, permit, &record, &node, scope, generation,
                         )
                         .await?;
-                        let expired =
-                            drain_primal_pod_expiry_in_transaction(&mut tx, &authority).await?;
+                        let expired = drain_primal_pod_expiry_selected_in_transaction(
+                            &mut tx, &authority, source,
+                        )
+                        .await?;
                         Ok(expired)
                     }
                     .await;

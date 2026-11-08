@@ -12,6 +12,7 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub(super) struct PeriodicHealthEvents {
     callback: Option<Arc<QualifiedSoulWarHealthPolicy>>,
+    pub(super) native: Option<super::super::native_health_change::NativeHealthChangeObservation>,
     pub(super) target_identity: Option<Arc<[u8]>>,
     pub(super) conditions: Option<runtime_actor_conditions::ActorConditionState>,
     hatred_defense: Option<u32>,
@@ -23,8 +24,17 @@ impl PeriodicHealthEvents {
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
         stamp: RuntimeWorkStamp,
+        observations: &[super::super::native_health_change::NativeHealthChangeObservation],
     ) -> Result<Self, CarrierError> {
+        let mut matching = observations
+            .iter()
+            .filter(|observation| observation.target() == actor);
+        let native = matching.next().cloned();
+        if matching.next().is_some() {
+            return Err(CarrierError::PlanConflict);
+        }
         Ok(Self {
+            native,
             callback: runtime
                 .soul_war_health_callback(actor)?
                 .cloned()
@@ -55,6 +65,22 @@ impl PeriodicHealthEvents {
         if damage <= 0 {
             return Ok(damage);
         }
+        // ConditionDamage invokes HEALTHCHANGE with ORIGIN_CONDITION. Transform
+        // its original signed primary after target mitigation, once, before HP.
+        // The direct Lua ORIGIN_NONE path does not enter this periodic owner.
+        if self.native.is_none() {
+            let unknown_names = |_: ExactActorRef, _: MovementPositionSnapshot| None;
+            self.native = runtime.observe_native_health_change(actor, &unknown_names)?;
+        }
+        let damage = if let Some(observation) = &self.native {
+            runtime.validate_native_health_change_observation(observation)?;
+            observation
+                .primary(damage.checked_neg().ok_or(CarrierError::DamageOverflow)?)?
+                .checked_neg()
+                .ok_or(CarrierError::DamageOverflow)?
+        } else {
+            damage
+        };
         let Some(policy) = self.callback.as_ref() else {
             return Ok(damage);
         };

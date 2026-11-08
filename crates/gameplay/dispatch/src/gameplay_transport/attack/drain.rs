@@ -57,6 +57,66 @@ pub(super) struct PvpSwing {
     pub(super) generation: u64,
 }
 
+// Inspect a clone: a missing source name read must not consume the real swing
+// deadline/ordinal or draw any RNG. Cleave uses its existing exact target selector.
+fn native_health_swing_targets(
+    entry: &ActorAttack,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    digest: [u8; 32],
+    now: SemanticTimeMicros,
+    constants: &AttackConstants,
+) -> Result<Vec<ExactActorRef>, ()> {
+    let mut preview = entry.clone();
+    let Some(selected) = select_swing(&mut preview, runtime, states, room, digest, now, constants)
+    else {
+        return Ok(Vec::new());
+    };
+    let mut targets = equipped_offence::cleave_targets(&preview, &selected, runtime, room, now);
+    targets.push(selected.target);
+    targets.retain(|target| runtime.contains_live_creature(*target));
+    let mut required = Vec::new();
+    for target in targets {
+        if runtime.companion_snapshot(target).is_err() {
+            let key = std::str::from_utf8(
+                runtime
+                    .current_live_creature_identity(target)
+                    .map_err(|_| ())?,
+            )
+            .map_err(|_| ())?;
+            if crate::content::native_monster_callbacks::requires_native_health_event(key) {
+                return Err(());
+            }
+            continue;
+        }
+        if runtime.native_health_event(target).map_err(|_| ())?.is_some_and(|event| {
+            event.kind() == crate::content::native_monster_callbacks::NativeHealthEventKind::HealthForgotten
+        }) && !required.contains(&target) {
+            required.push(target);
+        }
+    }
+    Ok(required)
+}
+
+fn observe_native_attack_health(
+    runtime: &ChannelRuntimeV1,
+    names: Option<&crate::gameplay_transport::source_names::NativeHealthNamesData>,
+    target: ExactActorRef,
+) -> Result<Option<crate::foundation::NativeHealthChangeObservation>, ()> {
+    match names {
+        Some(names) => names.observe(runtime, target),
+        None => match runtime.observe_native_health_change(
+            target,
+            &|_: crate::foundation::ExactActorRef,
+              _: crate::foundation::MovementPositionSnapshot| None,
+        ) {
+            Ok(None) => Ok(None),
+            Ok(Some(_)) | Err(_) => Err(()),
+        },
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
     /// catch-up), never a backlog.
@@ -105,7 +165,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             talismans.insert(session, snapshot);
         }
         let now = now.unwrap_or_else(|| self.owner_now());
+        let needs_health_names = {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            let attack = self.states.attack.lock().await;
+            let digest = runtime.content_pin().server_artifact_digest();
+            let mut required = false;
+            for entry in &attack.entries {
+                match native_health_swing_targets(
+                    entry, &runtime, &states, room, digest, now, constants,
+                ) {
+                    Ok(targets) => required |= !targets.is_empty(),
+                    // Missing metadata belongs to this entry; the real pass
+                    // below retries it without starving unrelated attackers.
+                    Err(()) => {}
+                }
+            }
+            required
+        };
+        // The actual fixed-name SQL runs with no Runtime, spell-state or attack
+        // guard held. Ordinary targets cause no extra name read.
+        let health_names = if needs_health_names {
+            self.read_native_health_names(&pvp_permit).await.ok()
+        } else {
+            None
+        };
         let mut runtime = self.runtime.lock().await;
+        let health_names_data =
+            health_names.and_then(|read| self.seal_native_health_names(&runtime, read).ok());
         let digest = runtime.content_pin().server_artifact_digest();
         if runtime.owner_fence().is_err()
             || content.source_digest() != digest
@@ -227,6 +314,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             if unavailable_source_players.contains(&entry.actor.placement_identity()) {
+                continue;
+            }
+            let Ok(required_health) =
+                native_health_swing_targets(entry, &runtime, &states, room, digest, now, constants)
+            else {
+                continue;
+            };
+            if required_health.iter().any(|target| {
+                observe_native_attack_health(&runtime, health_names_data.as_ref(), *target).is_err()
+            }) {
+                // A foreign identity change after the detached read retries
+                // without consuming the actual held attack's timer or ordinal.
                 continue;
             }
             let state_before = entry.state.clone();
@@ -633,6 +732,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
+                let health_change = match observe_native_attack_health(
+                    &runtime,
+                    health_names_data.as_ref(),
+                    target,
+                ) {
+                    Ok(observation) => observation,
+                    Err(()) => continue,
+                };
                 let cruelty_drain = match runtime.soul_war_health_callback(target) {
                     Ok(Some(policy)) if policy.is_cruelty() => {
                         match runtime.soul_war_cruelty_drain(&snapshot) {
@@ -650,6 +757,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         damage,
                         (&root, constants, entry.actor, swing.lineage, ordinal),
                         cruelty_drain,
+                        health_change.as_ref(),
                         states
                             .get(&runtime, entry.actor, entry.session)
                             .and_then(|state| {
@@ -715,6 +823,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     magnitude
                 };
                 let landed = if selected.weapon.ranged.is_none() {
+                    let landed = match health_change.as_ref() {
+                        Some(event) => match landed
+                            .checked_neg()
+                            .and_then(|value| event.primary(value).ok())
+                            .and_then(i64::checked_neg)
+                        {
+                            Some(value) => value,
+                            None => continue,
+                        },
+                        None => landed,
+                    };
                     let Some(landed) = super::cruelty_health_component(landed, cruelty_drain)
                     else {
                         continue;

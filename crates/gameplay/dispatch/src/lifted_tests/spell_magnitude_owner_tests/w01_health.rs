@@ -31,6 +31,11 @@ fn srx3_health_forgotten_actual_magnitude_doubles_healing_before_wheel_flat()
             combat.hits[0].side_percent = None;
             let hit = combat.hits[0].clone();
             let mut owner = qualify(&f, &native).expect("actual native magnitude owner");
+            let current = f.runtime.observe_native_health_change(f.bindings[1].actor,&|_: crate::foundation::ExactActorRef, _: crate::foundation::MovementPositionSnapshot| None)
+                .expect("actual source observation; real caster is on a different floor")
+                .expect("actual attached HealthForgotten");
+            owner.bind_native_health_observations(&f.runtime,&[current])
+                .expect("same production target preprocessing");
             let magnitude = owner
                 .finish(&native, &hit, &f.bindings[1], &mut |low, _| low)
                 .expect("actual source ordered primary healing");

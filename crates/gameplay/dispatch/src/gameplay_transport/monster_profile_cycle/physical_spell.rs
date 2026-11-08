@@ -278,6 +278,7 @@ pub(super) async fn execute_proposals(
     parties: &ReferenceParties,
     now: u64,
     charms: &crate::content::charm_source::CanonicalCharmCatalogue,
+    native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
 ) {
     for proposal in proposals {
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack {
@@ -286,8 +287,18 @@ pub(super) async fn execute_proposals(
         let Some(parent_source) = source_for(runtime, native, proposal) else {
             if let Some(source) = composed::source_for(runtime, native, proposal) {
                 composed::execute(
-                    runtime, states, attack, room, native, map, &source, proposal, parties, now,
+                    runtime,
+                    states,
+                    attack,
+                    room,
+                    native,
+                    map,
+                    &source,
+                    proposal,
+                    parties,
+                    now,
                     charms,
+                    native_health_names,
                 )
                 .await;
             }

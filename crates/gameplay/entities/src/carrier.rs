@@ -64,11 +64,15 @@ mod corpse_views;
 mod creature_heal;
 mod native_callback_controls;
 mod native_creature_event_birth;
+mod native_health_change;
 mod native_null_health;
 mod native_retained_caster;
 mod native_retained_teleport;
 mod native_xml_spawns;
 pub use native_creature_event_birth::PreparedNativeCreatureEventBirth;
+pub use native_health_change::{
+    NativeHealthChangeObservation, NativeHealthGuardName, NativeHealthNameRead,
+};
 pub use native_null_health::NativeNullHealthSample;
 pub use native_retained_caster::NativeRetainedCallbackCaster;
 pub use native_retained_teleport::NativeRetainedCallbackTeleport;
@@ -102,6 +106,8 @@ pub mod soul_war_spite;
 pub mod soulpit;
 #[cfg(test)]
 mod w01_health_events_native_tests;
+#[cfg(test)]
+mod w01_health_events_periodic_native_tests;
 #[cfg(test)]
 mod w01_prepare_death_native_tests;
 
@@ -147,6 +153,7 @@ mod player_control;
 pub use player_control::RuntimeSessionAbsence;
 
 mod positions;
+mod source_tile_occupancy;
 mod tile_stack;
 
 mod raid_spawn;

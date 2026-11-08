@@ -211,6 +211,9 @@ pub use runtime_actor_carrier::runtime_actor_spell_types;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::runtime_actor_spell_types::DeferredCommitAuthority;
 pub use runtime_actor_carrier::{
+    NativeHealthChangeObservation, NativeHealthGuardName, NativeHealthNameRead,
+};
+pub use runtime_actor_carrier::{
     NativeRaidSpawnSpec, RaidCreatureStatus, RaidSpawnIdentity, RaidSpawnOutcome, RaidSpawnReceipt,
 };
 pub use runtime_actor_carrier::{ScopeRuntimeAssignmentBinding, ScopeRuntimeV1};

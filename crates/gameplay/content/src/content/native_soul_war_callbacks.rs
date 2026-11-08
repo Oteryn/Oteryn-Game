@@ -340,8 +340,22 @@ mod health_tests {
                         | SoulWarHealthCallbackKind::WhitePaleHeal
                 ))
                 .count(),
+            0,
+            "production cannot attach unregistered W01 declarations"
+        );
+        // Canary47df raids/hirintror.lua:1-128 and white_pale.lua:1-119
+        // never attach these events. Their declarations remain review-only.
+        assert_eq!(
+            w01_prepare_death::policies(&document, [7; 32])
+                .iter()
+                .filter(|p| matches!(
+                    p.kind(),
+                    SoulWarHealthCallbackKind::HirintrorHeal
+                        | SoulWarHealthCallbackKind::WhitePaleHeal
+                ))
+                .count(),
             2,
-            "an unrelated changed Mirror body cannot disable independently qualified W01 events"
+            "an unrelated changed Mirror body cannot disable independently qualified review declarations"
         );
     }
 }

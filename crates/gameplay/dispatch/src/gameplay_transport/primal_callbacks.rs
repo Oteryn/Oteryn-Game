@@ -3,7 +3,6 @@
 use super::actor_spell::ChannelSpellStates;
 use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
-use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_gameplay_encounters::bosses::hazard_primal::primal_menace_think::{
     self as primal, PrimalMenaceEffect, PrimalMenaceThinkFacts, PrimalMenaceThinkOwner, WaveKind,
 };
@@ -12,7 +11,15 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+#[cfg(test)]
+static NORMAL_MAP_READ_EPOCH: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+#[cfg(test)]
+pub(super) fn normal_map_read_epoch_for_test() -> u64 {
+    NORMAL_MAP_READ_EPOCH.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 mod deferred;
+mod normal;
 #[cfg(test)]
 mod retention_tests;
 use deferred::DeferredCallbacks;
@@ -27,11 +34,21 @@ struct PendingPodStep {
     applied_events: std::sync::atomic::AtomicUsize,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PodExecution {
+    source: [u8; 16],
+    started_us: u64,
+    expiry_us: u64,
+    created: bool,
+}
+
 #[derive(Debug, Default)]
 pub(super) struct PrimalCallbacks {
     owner: std::sync::Arc<tokio::sync::Mutex<PrimalCallbackState>>,
     expiries: Vec<crate::durability::creature_source_items::PrimalPodExpiry>,
     expiry_attempted: Vec<[u8; 16]>,
+    pod_executions: Vec<PodExecution>,
+    normal: Option<std::sync::Arc<normal::PendingNormalPrimal>>,
     pod_cells: std::collections::BTreeSet<(i32, i32, i16)>,
     steps: Vec<std::sync::Arc<PendingPodStep>>,
     pub(super) pods:
@@ -71,260 +88,12 @@ fn draw(root: &GameplayDecisionRoot, now: u64, ordinal: &mut u64) -> u32 {
     primal::DRAW_PPM
 }
 
-/// Runs on every actual native owner turn, including turns after the boss died,
-/// so already-scheduled source closures are not silently discarded.
-pub(super) async fn drive(
-    runtime: &mut ChannelRuntimeV1,
-    states: &mut ChannelSpellStates,
-    room: &QualifiedNativeEntryRoom,
+fn source_spawn_plan(
     native: &NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
-    actors: &[ExactActorRef],
-    now: u64,
-) -> Result<Option<u64>, ()> {
-    runtime.owner_fence().map_err(|_| ())?;
-    if room.pinned_activity_source_room()
-        != Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
-    {
-        return Ok(None);
-    }
-    if !matches!(
-        runtime.binding().runtime_scope(),
-        crate::foundation::RuntimeScopeRefV1::Instance { .. }
-    ) || native.source_digest() != runtime.content_pin().server_artifact_digest()
-    {
-        return Ok(None);
-    }
-    let census = runtime.positioned_actor_census().map_err(|_| ())?;
-    let retained = states.primal_callbacks.retained_owner();
-    let mut owner = retained.lock_owned().await;
-    async {
-        if owner.content != Some(native.source_digest()) {
-            if !native.qualifies_primal_callbacks(runtime.content_pin().server_artifact_digest()) {
-                return Ok(None);
-            }
-            owner.content = Some(native.source_digest());
-        }
-        if owner.think.centre().is_none() && !census.iter().any(|(_,position,session)|session.is_some()&&in_room(position.position())) {
-            return Ok(None);
-        }
-        if owner.boss.is_none() {
-            let bosses = census
-                .iter()
-                .filter(|(actor, p, session)| {
-                    session.is_none()
-                        && in_room(p.position())
-                        && runtime.matches_live_creature_identity(
-                            *actor,
-                            primal::PRIMAL_MENACE_KEY.as_bytes(),
-                        )
-                        && runtime
-                            .companion_snapshot(*actor)
-                            .is_ok_and(|snapshot| snapshot.state.master.is_none())
-                        && runtime.native_summon_master(*actor).is_none()
-                })
-                .map(|(actor, ..)| *actor)
-                .collect::<Vec<_>>();
-            if bosses.len() != 1 {
-                return Ok(None);
-            }
-            owner.boss = Some(bosses[0]);
-        }
-        let boss = owner.boss.ok_or(())?;
-        let snapshot = runtime
-            .companion_snapshot(boss)
-            .ok()
-            .filter(|s| s.health > 0 && in_room(s.position));
-        let live = snapshot.is_some();
-        let root = GameplayDecisionRoot::from_bytes(
-            Sha256::new()
-                .chain_update(b"srx3:primal:callbacks:v1")
-                .chain_update(native.source_digest())
-                .chain_update(boss.placement_identity())
-                .finalize()
-                .into(),
-        );
-        let mut ordinal = 0;
-        // os.time is integral seconds, including the strict > wave/age checks.
-        let source_ms = (now / 1_000_000) * 1_000;
-        if let Some(snapshot) = snapshot
-            && actors.contains(&boss)
-        {
-            let center = owner.think.centre().unwrap_or(snapshot.position);
-            // Load the complete bounded radius under the current Item+Map scope
-            // transaction before the pure callback asks about a candidate cell.
-            for dx in -5..=5 {
-                for dy in -5..=5 {
-                    let at = MovementLocalPosition {
-                        x: center.x + dx,
-                        y: center.y + dy,
-                        floor: center.floor,
-                    };
-                    map.read(runtime, at).await;
-                }
-            }
-            if !map.validate_transaction(runtime).await {
-                return Err(());
-            }
-            let shares = runtime
-                .borrow_combat_death()
-                .current_session_damage_shares(boss)
-                .map_err(|_| ())?;
-            let levels = shares
-                .iter()
-                .filter(|share| share.total > 0)
-                .filter_map(|share| {
-                    let session = share.session?;
-                    census.iter().find_map(|(actor, _, bound)| {
-                        if *bound != Some(session) {
-                            return None;
-                        }
-                        let lease = runtime.bound_attacker_lease(*actor, session).ok()?;
-                        (lease.character_id() == share.character
-                            && Some(lease.generation()) == share.lease_generation)
-                            .then(|| runtime.hazard_level(*actor, session))
-                            .flatten()
-                    })
-                })
-                .collect::<Vec<_>>();
-            let positions = owner
-                .beasts
-                .iter()
-                .filter_map(|(id, actor)| {
-                    runtime
-                        .companion_snapshot(*actor)
-                        .ok()
-                        .filter(|s| s.health > 0)
-                        .map(|s| (*id, s.position))
-                })
-                .collect::<Vec<_>>();
-            let mut next_think=owner.think.clone();
-            let effects = next_think.think(
-                    &PrimalMenaceThinkFacts {
-                        position: snapshot.position,
-                        now_ms: source_ms,
-                        health: u64::try_from(snapshot.health).map_err(|_| ())?,
-                        max_health: u64::try_from(snapshot.maximum_health).map_err(|_| ())?,
-                        damage_map_levels: &levels,
-                    },
-                    || draw(&root, now, &mut ordinal),
-                    |at| map.view().source_spawn_admits(at) && runtime.native_summon_cell_free(at),
-                    |id| {
-                        positions
-                            .iter()
-                            .find_map(|(key, p)| (*key == id).then_some(*p))
-                    },
-                )
-                .map_err(|_| ())?;
-            let pods=effects.iter().filter(|effect|matches!(effect,PrimalMenaceEffect::ScheduledSpawn{kind:WaveKind::Pod,..})).count();
-            if states.primal_callbacks.pods.len()+pods>32 || owner.deferred.0.len()+effects.len()-pods>128 {return Err(());}
-            let mut pending=Vec::new();
-            for mut effect in effects {
-                if let PrimalMenaceEffect::ScheduledSpawn{kind:WaveKind::Pod,position,..}=effect {
-                    owner.next_id=owner.next_id.checked_add(1).ok_or(())?;
-                    let callback=crate::durability::creature_source_items::PrimalPodCallback::from_current_native_wave(
-                        runtime,room,native,boss,position,owner.next_id,now,
-                    ).map_err(|_|())?;
-                    pending.push(std::sync::Arc::new(callback));
-                    continue;
-                }
-                // addEvent starts now; source wave/age clocks use os.time.
-                let offset=now/1_000-source_ms;
-                match &mut effect {
-                    PrimalMenaceEffect::SpawnSparkle{at_ms,..}|PrimalMenaceEffect::ScheduledSpawn{at_ms,..}=>*at_ms=at_ms.saturating_add(offset),
-                    PrimalMenaceEffect::ReplaceWithFungosaurus{..}=>{},
-                }
-                owner.deferred.enqueue_at(effect, now / 1_000)?;
-            }
-            states.primal_callbacks.pods.extend(pending);
-            owner.think=next_think;
-        }
-        while let Some(mut callback)=owner.deferred.peek_due(now/1_000,live) {
-            let applied:Result<(),()>=async {
-                match callback.effect {
-                    PrimalMenaceEffect::SpawnSparkle{position,..}=>emit_sparkle(room,position),
-                    PrimalMenaceEffect::ScheduledSpawn{kind:WaveKind::Pod,..}=>return Err(()),
-                    PrimalMenaceEffect::ScheduledSpawn{kind:WaveKind::Beast,position,..}=>{
-                        let mut creation_draw=0;
-                        let child=primal::pick_beast(draw(&root,callback.id,&mut creation_draw)).ok_or(())?;
-                        let plan=prepare_spawn(runtime,native,map,child,position,&root,callback.id,None).await?;
-                        if let Some(actor)=spawn_prepared(runtime,states,native,map,child,&plan,now)? {
-                            owner.next_id=owner.next_id.checked_add(1).ok_or(())?;
-                            let id = owner.next_id;
-                            owner.beasts.push((id,actor));
-                            owner.think.record_beast(id,source_ms);
-                        }
-                    }
-                    PrimalMenaceEffect::ReplaceWithFungosaurus{beast,position}=>{
-                        let old=owner.beasts.iter().position(|(id,_)|*id==beast)
-                            .map(|index|(index,owner.beasts[index].1));
-                        if callback.replacement_removed || old.is_some_and(|(_,actor)|runtime.contains_live_creature(actor)) {
-                            let removed=if callback.replacement_removed {None}else{old.map(|(_,actor)|actor)};
-                            let plan=prepare_spawn(runtime,native,map,primal::FUNGOSAURUS_KEY,position,&root,callback.id,removed).await?;
-                            if !callback.replacement_removed {
-                                let (index,actor)=old.ok_or(())?;
-                                runtime.remove_arena_opponent(actor).map_err(|_|())?;
-                                owner.beasts.remove(index);
-                                callback.replacement_removed=true;
-                            }
-                            spawn_prepared(runtime,states,native,map,primal::FUNGOSAURUS_KEY,&plan,now)?;
-                        }
-                    }
-                }
-                Ok(())
-            }.await;
-            if applied.is_err() {
-                let retained = owner.deferred.0.iter_mut().find(|queued| queued.id == callback.id).ok_or(())?;
-                retained.replacement_removed = callback.replacement_removed;
-                return Err(());
-            }
-            owner.deferred.acknowledge(callback.id)?;
-        }
-        while let Some(expiry) = states.primal_callbacks.expiries.first().copied() {
-            if states.primal_callbacks.expiry_attempted.contains(&expiry.source_transaction_id){
-                states.primal_callbacks.expiries.remove(0);
-                continue;
-            }
-            if states.primal_callbacks.expiry_attempted.len()>=512{return Err(());}
-            if !in_room(expiry.position) || map.read(runtime,expiry.position).await.is_none()
-                || map.source_tile_exists(runtime,expiry.position).is_none()
-                || !map.validate_transaction(runtime).await {return Err(());}
-            let target=native.creature_profiles().records.iter().find(|record|record.profile.target.key==primal::FUNGOSAURUS_KEY)
-                .ok_or(())?;
-            if let Ok(actor)=runtime.spawn_primal_pod_fungosaurus(expiry.position,|r,p|{
-                if !map.view().matches(r) { return None; }
-                map.source_tile_exists(r,p)
-            }) {
-                if runtime.install_creature_policy(actor,primal::FUNGOSAURUS_KEY).is_err()
-                    || states.monster_melee.creature_ai.admit_native_creature(runtime,native,actor,&target.profile.target,now).is_err() {
-                    runtime.remove_arena_opponent(actor).map_err(|_|())?;
-                    return Err(());
-                }
-                emit_pod_speech(runtime,room,actor);
-            }
-            states.primal_callbacks.expiry_attempted.push(expiry.source_transaction_id);
-            states.primal_callbacks.expiries.remove(0);
-        }
-        owner
-            .beasts
-            .retain(|(_, actor)| runtime.contains_live_creature(*actor));
-        let due = owner.deferred.next_due().map(|ms| ms.saturating_mul(1_000))
-            .into_iter().chain(states.primal_callbacks.pods.iter().map(|pod|pod.due_us())).min();
-        Ok(due)
-    }
-    .await
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn prepare_spawn(
-    runtime: &ChannelRuntimeV1,
-    native: &NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
     child: &str,
     center: MovementLocalPosition,
     root: &GameplayDecisionRoot,
     creation: u64,
-    removed: Option<ExactActorRef>,
 ) -> Result<oteryn_gameplay_world::movement::source_placement::SourcePlacementPlan, ()> {
     use oteryn_gameplay_world::movement::source_placement::SourcePlacementPlan;
     if !in_room(center)
@@ -355,36 +124,20 @@ async fn prepare_spawn(
         bound
     })
     .map_err(|_| ())?;
-    for at in plan.candidates().iter().copied() {
-        // The qualified selector distinguishes actual captured absence from
-        // an unavailable item/map read; a failed read alone cannot do that.
-        map.read(runtime, at).await;
-        let cell = |at| match removed {
-            Some(actor) => map.source_placement_cell_after_removal(runtime, child, at, actor),
-            None => map.source_placement_cell(runtime, child, at),
-        };
-        cell(at).ok_or(())?;
-        if plan.select(cell, |_, _| Some(true)).is_ok() {
-            if !map.validate_transaction(runtime).await {
-                return Err(());
-            }
-            return Ok(plan);
-        }
-    }
-    Err(())
+    Ok(plan)
 }
-fn spawn_prepared(
+fn spawn_in_view(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     native: &NativeGameplayState,
-    map: &CurrentMonsterMap<'_, '_>,
+    map: &crate::movement::monster_map::MonsterMap,
     child: &str,
     plan: &oteryn_gameplay_world::movement::source_placement::SourcePlacementPlan,
     now: u64,
 ) -> Result<Option<ExactActorRef>, ()> {
     let at = plan
         .select(
-            |at| map.source_placement_cell(runtime, child, at),
+            |at| map.source_placement_cell(runtime, native, child, at, None),
             |_, _| Some(true),
         )
         .map_err(|_| ())?;
@@ -398,10 +151,10 @@ fn spawn_prepared(
         .find(|record| record.profile.target.key == child)
         .ok_or(())?;
     let actor = match runtime.spawn_arena_opponent(child, at, |r, p| {
-        if !map.view().matches(r) {
+        if !map.matches(r) {
             return None;
         }
-        map.source_placement_cell(r, child, p)
+        map.source_placement_cell(r, native, child, p, None)
             .map(|cell| cell.query_add)
     }) {
         Ok(actor) => actor,
@@ -457,17 +210,44 @@ impl PrimalCallbacks {
         let owner = self.owner.try_lock().map_err(|_| ())?;
         Ok(owner.deferred.original_deadlines_for_test())
     }
+    #[cfg(test)]
+    pub(super) fn pod_execution_deadlines_for_test(&self) -> Vec<([u8; 16], u64, u64, bool)> {
+        self.pod_executions
+            .iter()
+            .map(|execution| {
+                (
+                    execution.source,
+                    execution.started_us,
+                    execution.expiry_us,
+                    execution.created,
+                )
+            })
+            .collect()
+    }
+    #[cfg(test)]
+    pub(super) fn queued_pod_expiry_sources_for_test(&self) -> Vec<[u8; 16]> {
+        self.expiries
+            .iter()
+            .map(|expiry| expiry.source_transaction_id)
+            .collect()
+    }
     pub(super) fn has_pending_step(
         &self,
         actor: ExactActorRef,
         session: crate::foundation::GameSessionId,
     ) -> bool {
-        self.steps
-            .iter()
-            .any(|step| step.actor == actor && step.session == session)
+        self.normal
+            .as_ref()
+            .is_some_and(|pending| !pending.source_ready())
+            || self
+                .steps
+                .iter()
+                .any(|step| step.actor == actor && step.session == session)
     }
     pub(super) fn has_native_work(&self) -> bool {
-        !self.expiries.is_empty()
+        self.normal.is_some()
+            || !self.expiries.is_empty()
+            || !self.pod_executions.is_empty()
             || !self.pods.is_empty()
             || !self.steps.is_empty()
             || self
@@ -476,8 +256,13 @@ impl PrimalCallbacks {
                 .map_or(true, |owner| !owner.deferred.0.is_empty())
     }
     pub(super) fn has_native_due(&self, now: u64) -> bool {
-        !self.expiries.is_empty()
+        self.normal.is_some()
+            || !self.expiries.is_empty()
             || !self.steps.is_empty()
+            || self
+                .pod_executions
+                .iter()
+                .any(|execution| execution.created && execution.expiry_us <= now)
             || self.pods.iter().any(|pod| pod.due_us() <= now)
             || self.owner.try_lock().map_or(true, |owner| {
                 owner
@@ -487,6 +272,12 @@ impl PrimalCallbacks {
             })
     }
     pub(super) fn next_due_us(&self) -> Option<u64> {
+        if self.normal.is_some() {
+            return Some(0);
+        }
+        self.next_retained_due_us()
+    }
+    pub(in crate::gameplay_transport) fn next_retained_due_us(&self) -> Option<u64> {
         if !self.expiries.is_empty() || !self.steps.is_empty() {
             return Some(0);
         }
@@ -500,6 +291,12 @@ impl PrimalCallbacks {
         deferred
             .into_iter()
             .chain(self.pods.iter().map(|pod| pod.due_us()))
+            .chain(
+                self.pod_executions
+                    .iter()
+                    .filter(|execution| execution.created)
+                    .map(|execution| execution.expiry_us),
+            )
             .min()
     }
 }
@@ -508,26 +305,84 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
     /// A sealed immutable callback crosses SQL. Native runtime/spell guards are
     /// released before the writer independently proves the current Node/scope.
     pub(super) async fn drain_primal_pod_callbacks(&self) {
+        let cutoff = match self.states.attack.lock().await.kills().core_head() {
+            Ok(Some((_, _, Some(clock)))) => clock.get(),
+            Ok(None) => u64::MAX,
+            Ok(Some((_, _, None))) | Err(()) => return,
+        };
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
         for _ in 0..4 {
+            if self
+                .drain_primal_pod_creates_with_permit(&permit, cutoff)
+                .await
+                .is_err()
+            {
+                return;
+            }
+        }
+    }
+    #[cfg(test)]
+    pub(super) async fn drain_primal_pod_creates_through(&self, cutoff: u64) -> Result<(), ()> {
+        let permit = self.spell_lane_permit().await.ok_or(())?;
+        self.drain_primal_pod_creates_with_permit(&permit, cutoff)
+            .await
+    }
+    async fn drain_primal_pod_creates_with_permit(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        cutoff: u64,
+    ) -> Result<(), ()> {
+        for _ in 0..1 {
             let now = self.owner_now().get();
             let pending = {
                 let runtime = self.runtime.lock().await;
-                let states = self.states.spell_states.lock().await;
+                let mut states = self.states.spell_states.lock().await;
                 if runtime.owner_fence().is_err() {
-                    return;
+                    return Err(());
                 }
-                states
+                let pending = states
                     .primal_callbacks
                     .pods
                     .iter()
-                    .find(|pod| pod.due_us() <= now)
-                    .map(std::sync::Arc::clone)
+                    .filter(|pod| pod.due_us() <= now.min(cutoff))
+                    .min_by_key(|pod| pod.due_us())
+                    .map(std::sync::Arc::clone);
+                if let Some(pending) = &pending {
+                    let source = pending.source_transaction_id();
+                    let state = &mut states.primal_callbacks;
+                    if !state
+                        .pod_executions
+                        .iter()
+                        .any(|execution| execution.source == source)
+                    {
+                        if state.pod_executions.len() >= 512 {
+                            return Err(());
+                        }
+                        state.pod_executions.try_reserve(1).map_err(|_| ())?;
+                        state
+                            .expiries
+                            .try_reserve(4_usize.saturating_sub(state.expiries.len()))
+                            .map_err(|_| ())?;
+                        state
+                            .expiry_attempted
+                            .try_reserve(512_usize.saturating_sub(state.expiry_attempted.len()))
+                            .map_err(|_| ())?;
+                        // First ACTUAL create invocation, before uncertain SQL.
+                        // This is native timer DATA, never a caller SQL epoch.
+                        state.pod_executions.push(PodExecution {
+                            source,
+                            started_us: now,
+                            expiry_us: now.checked_add(4_000_000).ok_or(())?,
+                            created: false,
+                        });
+                    }
+                }
+                pending
             };
             let Some(pending) = pending else {
-                return;
+                return Ok(());
             };
             let result = self
                 .root
@@ -538,10 +393,17 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 eprintln!("SRX3_PRIMAL_ACTUAL_POD_WRITER_REFUSAL {error:?}");
                 #[cfg(not(test))]
                 let _ = error;
-                return;
+                return Err(());
             }
             self.states.loop_ground.invalidate();
             let mut states = self.states.spell_states.lock().await;
+            states
+                .primal_callbacks
+                .pod_executions
+                .iter_mut()
+                .find(|execution| execution.source == pending.source_transaction_id())
+                .ok_or(())?
+                .created = true;
             let at = pending.position();
             states
                 .primal_callbacks
@@ -552,6 +414,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 .pods
                 .retain(|pod| !std::sync::Arc::ptr_eq(pod, &pending));
         }
+        Ok(())
     }
 }
 
@@ -576,88 +439,122 @@ fn emit_pod_speech(
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn drain_primal_pod_expiries(&self) {
-        let Some(permit) = self.spell_lane_permit().await else {
-            return;
+        let cutoff = match self.states.attack.lock().await.kills().core_head() {
+            Ok(Some((_, _, Some(clock)))) => clock.get(),
+            Ok(None) => u64::MAX,
+            _ => return,
         };
-        let (scope, generation) = {
+        let _ = self.drain_primal_expiry_through(cutoff).await;
+    }
+    async fn drain_primal_expiry_through(&self, cutoff: u64) -> Result<(), ()> {
+        let permit = self.spell_lane_permit().await.ok_or(())?;
+        self.drain_primal_expiry_with_permit(&permit, cutoff).await
+    }
+    async fn drain_primal_expiry_with_permit(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        cutoff: u64,
+    ) -> Result<(), ()> {
+        let now = self.owner_now().get();
+        let selected = {
+            let states = self.states.spell_states.lock().await;
+            states
+                .primal_callbacks
+                .pod_executions
+                .iter()
+                .filter(|execution| execution.created && execution.expiry_us <= now.min(cutoff))
+                .min_by_key(|execution| (execution.expiry_us, execution.source))
+                .copied()
+        };
+        let Some(selected) = selected else {
+            return Ok(());
+        };
+        let (scope, generation, attempted) = {
             let runtime = self.runtime.lock().await;
-            if runtime.owner_fence().is_err() {
-                return;
-            }
+            runtime.owner_fence().map_err(|_| ())?;
+            let states = self.states.spell_states.lock().await;
             (
                 runtime.binding().runtime_scope(),
                 runtime.binding().scope_generation().get(),
+                states
+                    .primal_callbacks
+                    .expiry_attempted
+                    .contains(&selected.source),
             )
         };
-        if !matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
-            return;
-        }
-        for _ in 0..4 {
-            let ack = {
-                self.states
-                    .spell_states
-                    .lock()
-                    .await
-                    .primal_callbacks
-                    .expiry_attempted
-                    .first()
-                    .copied()
-            };
-            if let Some(source) = ack {
-                if self
-                    .root
-                    .acknowledge_primal_pod_expiry(
-                        &permit,
-                        self.character,
-                        self.holder,
-                        scope,
-                        generation,
-                        source,
-                    )
-                    .await
-                    .is_err()
-                {
-                    return;
-                }
-                self.states
-                    .spell_states
-                    .lock()
-                    .await
-                    .primal_callbacks
-                    .expiry_attempted
-                    .retain(|id| *id != source);
-            }
-            let expired = match self
-                .root
-                .drain_primal_pod_expiry(&permit, self.character, self.holder, scope, generation)
+        if attempted {
+            self.root
+                .acknowledge_primal_pod_expiry(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    scope,
+                    generation,
+                    selected.source,
+                )
                 .await
-            {
-                Ok(Some(expired)) => expired,
-                _ => return,
-            };
-            self.states.loop_ground.invalidate();
-            if !expired.requires_spawn {
-                continue;
-            }
+                .map_err(|_| ())?;
             let mut states = self.states.spell_states.lock().await;
+            states
+                .primal_callbacks
+                .expiry_attempted
+                .retain(|source| *source != selected.source);
+            states
+                .primal_callbacks
+                .pod_executions
+                .retain(|execution| *execution != selected);
+            return Ok(());
+        }
+        {
+            let states = self.states.spell_states.lock().await;
             if states
                 .primal_callbacks
                 .expiries
                 .iter()
-                .any(|pending| pending.source_transaction_id == expired.source_transaction_id)
-                || states
-                    .primal_callbacks
-                    .expiry_attempted
-                    .contains(&expired.source_transaction_id)
+                .any(|expiry| expiry.source_transaction_id == selected.source)
             {
-                return;
+                return Ok(());
             }
+        }
+        // Native original eligibility AND unchanged independent SQL due gate.
+        let expired = self
+            .root
+            .drain_primal_pod_expiry_for_source(
+                &permit,
+                self.character,
+                self.holder,
+                scope,
+                generation,
+                selected.source,
+            )
+            .await
+            .map_err(|_| ())?
+            .ok_or(())?;
+        self.states.loop_ground.invalidate();
+        let mut states = self.states.spell_states.lock().await;
+        if !states.primal_callbacks.pod_executions.contains(&selected) {
+            return Err(());
+        }
+        if !expired.requires_spawn {
+            states
+                .primal_callbacks
+                .pod_executions
+                .retain(|execution| *execution != selected);
+            return Ok(());
+        }
+        if !states
+            .primal_callbacks
+            .expiries
+            .iter()
+            .any(|expiry| expiry.source_transaction_id == selected.source)
+        {
             if states.primal_callbacks.expiries.len() >= 4 {
-                return;
+                return Err(());
             }
             states.primal_callbacks.expiries.push(expired);
-            states.owner_wake.notify_one();
         }
+        states.owner_wake.notify_one();
+        Ok(())
     }
 }
 
@@ -840,5 +737,560 @@ fn emit_pod_damage_effects(room: &QualifiedNativeEntryRoom, position: MovementLo
         let at = crate::map::overlay::TilePos { x, y, floor };
         collision.map().facts.emit_movement_effect(at, 12);
         collision.map().facts.emit_movement_effect(at, 1);
+    }
+}
+
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    /// One retained original source deadline, before this exact core prefix.
+    pub(super) async fn drain_primal_core_prefix(
+        &self,
+        target: ExactActorRef,
+        cutoff: u64,
+    ) -> Result<(), ()> {
+        let permit = self.spell_lane_permit().await.ok_or(())?;
+        self.drain_primal_core_prefix_with_permit(&permit, target, cutoff)
+            .await
+    }
+    pub(in crate::gameplay_transport) async fn drain_primal_core_prefix_with_permit(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        target: ExactActorRef,
+        cutoff: u64,
+    ) -> Result<(), ()> {
+        let expected = self
+            .states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .core_head()?
+            .ok_or(())?;
+        if expected.0 != target || expected.2.map(|clock| clock.get()) != Some(cutoff) {
+            return Err(());
+        }
+        if self
+            .drain_primal_retained_through(permit, Some(expected), cutoff)
+            .await?
+        {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+    async fn drain_primal_retained_through(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        expected_head: Option<(
+            ExactActorRef,
+            crate::foundation::CreatureDeathOccurrenceKey,
+            Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+        )>,
+        cutoff: u64,
+    ) -> Result<bool, ()> {
+        let room = self.rooms().gate_monster_ai().ok_or(())?;
+        if room.pinned_activity_source_room()
+            != Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
+        {
+            return Ok(true);
+        }
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or(())?;
+        let now = self.owner_now().get();
+        if self.states.attack.lock().await.kills().core_head()? != expected_head {
+            return Err(());
+        }
+        let (callback, boss, child, plan, removed, map_plan, scope, generation) = {
+            let runtime = self.runtime.lock().await;
+            runtime.owner_fence().map_err(|_| ())?;
+            if native.source_digest() != runtime.content_pin().server_artifact_digest()
+                || room.compiled().server_digest() != native.source_digest()
+                || !native.qualifies_primal_callbacks(native.source_digest())
+            {
+                return Err(());
+            }
+            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
+            let mut owner = states.primal_callbacks.owner.try_lock().map_err(|_| ())?;
+            let deferred_due = owner
+                .deferred
+                .original_next_due()
+                .map(|due| due.saturating_mul(1000));
+            let pod_due = states
+                .primal_callbacks
+                .pods
+                .iter()
+                .map(|pod| pod.due_us())
+                .min();
+            let expiry = states
+                .primal_callbacks
+                .pod_executions
+                .iter()
+                .filter(|execution| execution.created && execution.expiry_us <= now.min(cutoff))
+                .min_by_key(|execution| (execution.expiry_us, execution.source))
+                .copied();
+            if let Some(expiry) = expiry
+                && deferred_due.is_none_or(|due| expiry.expiry_us <= due)
+                && pod_due.is_none_or(|due| expiry.expiry_us <= due)
+            {
+                drop(owner);
+                drop(states);
+                drop(runtime);
+                self.drain_primal_expiry_with_permit(permit, expiry.expiry_us)
+                    .await?;
+                self.publish_primal_expiry_native_with_permit(permit, expiry.source)
+                    .await?;
+                return Ok(false);
+            }
+            if pod_due.is_some_and(|due| {
+                due <= now.min(cutoff) && deferred_due.is_none_or(|other| due <= other)
+            }) {
+                let due = pod_due.ok_or(())?;
+                drop(owner);
+                drop(states);
+                drop(runtime);
+                self.drain_primal_pod_creates_with_permit(permit, due)
+                    .await?;
+                return Ok(false); // re-read exact core head and all original deadlines
+            }
+            // Known default owner before the first real Think has no retained
+            // source work. This is distinct from an unavailable owner lease.
+            let Some(boss) = owner.boss else {
+                return if owner.deferred.0.is_empty() && states.primal_callbacks.pods.is_empty() {
+                    Ok(true)
+                } else {
+                    Err(())
+                };
+            };
+            if owner.content != Some(native.source_digest()) {
+                return Err(());
+            }
+            let registered = primal_parent_registered(&runtime, boss)?;
+            let Some(callback) =
+                owner
+                    .deferred
+                    .peek_due_registered_through(now / 1000, cutoff / 1000, registered)
+            else {
+                return if states
+                    .primal_callbacks
+                    .pods
+                    .iter()
+                    .any(|pod| pod.due_us() <= now.min(cutoff))
+                    || states.primal_callbacks.expiries.iter().any(|expiry| {
+                        !states
+                            .primal_callbacks
+                            .pod_executions
+                            .iter()
+                            .any(|execution| execution.source == expiry.source_transaction_id)
+                    }) {
+                    Err(())
+                } else {
+                    Ok(true)
+                };
+            };
+            if let PrimalMenaceEffect::SpawnSparkle { position, .. } = callback.effect {
+                if self
+                    .states
+                    .attack
+                    .try_lock()
+                    .map_err(|_| ())?
+                    .kills()
+                    .core_head()?
+                    != expected_head
+                {
+                    return Err(());
+                }
+                emit_sparkle(room, position);
+                owner.deferred.acknowledge(callback.id)?;
+                return Ok(false); // one deadline, then re-evaluate the canonical prefix
+            }
+            let root = GameplayDecisionRoot::from_bytes(
+                Sha256::new()
+                    .chain_update(b"srx3:primal:callbacks:v1")
+                    .chain_update(native.source_digest())
+                    .chain_update(boss.placement_identity())
+                    .finalize()
+                    .into(),
+            );
+            let (child, position, removed) = match callback.effect {
+                PrimalMenaceEffect::ScheduledSpawn {
+                    kind: WaveKind::Beast,
+                    position,
+                    ..
+                } => {
+                    let mut draw_ordinal = 0;
+                    (
+                        primal::pick_beast(draw(&root, callback.id, &mut draw_ordinal)).ok_or(())?,
+                        position,
+                        None,
+                    )
+                }
+                PrimalMenaceEffect::ReplaceWithFungosaurus { beast, position } => {
+                    let removed = if callback.replacement_removed {
+                        None
+                    } else {
+                        owner
+                            .beasts
+                            .iter()
+                            .find(|(id, _)| *id == beast)
+                            .map(|(_, actor)| *actor)
+                    };
+                    if !callback.replacement_removed
+                        && removed.is_none_or(|actor| !runtime.contains_live_creature(actor))
+                    {
+                        owner.deferred.acknowledge(callback.id)?;
+                        return Ok(false);
+                    }
+                    (primal::FUNGOSAURUS_KEY, position, removed)
+                }
+                _ => return Err(()),
+            };
+            let plan = source_spawn_plan(native, child, position, &root, callback.id)?;
+            let objects = self.door.try_lock().map_err(|_| ())?;
+            let map_plan = crate::movement::monster_map::PreparedMonsterMapRead::prepare(
+                &runtime,
+                room,
+                &objects,
+                plan.candidates(),
+            )
+            .ok_or(())?;
+            (
+                callback,
+                boss,
+                child,
+                plan,
+                removed,
+                map_plan,
+                runtime.binding().runtime_scope(),
+                runtime.binding().scope_generation().get(),
+            )
+        };
+        let mut context = (self, &permit, map_plan, room, native);
+        self.root
+            .try_issue_semantic_pass()
+            .map_err(|_| ())?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    use crate::durability::spell_item_transaction::{
+                        assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
+                    };
+                    let (admission, permit, map_plan, room, native) = context;
+                    let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
+                    let authority = assert_spell_item_scope_in_transaction(
+                        &mut tx,
+                        permit,
+                        admission.root,
+                        admission.character,
+                        admission.holder,
+                        scope,
+                        generation,
+                    )
+                    .await
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    let read = map_plan
+                        .read(&mut tx, &authority)
+                        .await
+                        .ok_or(crate::durability::DurabilityError::Unavailable)?;
+                    {
+                        let mut runtime = admission.runtime.lock().await;
+                        let mut states = admission
+                            .states
+                            .spell_states
+                            .try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        let objects = admission
+                            .door
+                            .try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        let view = read
+                            .into_current_view(&runtime, room, &objects, native)
+                            .ok_or(crate::durability::DurabilityError::Unavailable)?;
+                        let retained = states.primal_callbacks.retained_owner();
+                        let mut owner = retained
+                            .try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        if admission
+                            .states
+                            .attack
+                            .try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                            .kills()
+                            .core_head()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                            != expected_head
+                            || owner.boss != Some(boss)
+                            || owner.content != Some(native.source_digest())
+                            || owner
+                                .deferred
+                                .peek_due_through(now / 1000, cutoff / 1000)
+                                .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                                != Some(callback)
+                        {
+                            return Err(crate::durability::DurabilityError::Unavailable);
+                        }
+                        let result: Result<(), ()> = (|| {
+                            if !primal_parent_registered(&runtime, boss)?
+                                && matches!(
+                                    callback.effect,
+                                    PrimalMenaceEffect::ScheduledSpawn {
+                                        kind: WaveKind::Beast,
+                                        ..
+                                    }
+                                )
+                            {
+                                return owner.deferred.acknowledge(callback.id);
+                            }
+                            // Qualify complete candidate facts and current occupancy before
+                            // source remove; no owner guard crosses a SQL await below.
+                            plan.select(
+                                |at| {
+                                    view.source_placement_cell(&runtime, native, child, at, removed)
+                                },
+                                |_, _| Some(true),
+                            )
+                            .map_err(|_| ())?;
+                            owner.beasts.try_reserve(1).map_err(|_| ())?;
+                            if let Some(actor) = removed {
+                                runtime.remove_arena_opponent(actor).map_err(|_| ())?;
+                                owner.beasts.retain(|(_, old)| *old != actor);
+                                owner
+                                    .deferred
+                                    .0
+                                    .iter_mut()
+                                    .find(|work| work.id == callback.id)
+                                    .ok_or(())?
+                                    .replacement_removed = true;
+                            }
+                            if let Some(actor) = spawn_in_view(
+                                &mut runtime,
+                                &mut states,
+                                native,
+                                &view,
+                                child,
+                                &plan,
+                                now,
+                            )? && matches!(
+                                callback.effect,
+                                PrimalMenaceEffect::ScheduledSpawn {
+                                    kind: WaveKind::Beast,
+                                    ..
+                                }
+                            ) {
+                                owner.next_id = owner.next_id.checked_add(1).ok_or(())?;
+                                let id = owner.next_id;
+                                owner.beasts.push((id, actor));
+                                owner.think.record_beast(id, (now / 1_000_000) * 1000);
+                            }
+                            owner.deferred.acknowledge(callback.id)
+                        })();
+                        result.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    }
+                    tx.rollback()
+                        .await
+                        .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|_| ())?;
+        Ok(false) // re-evaluate before any queue take or next original deadline
+    }
+}
+
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    async fn publish_primal_expiry_native_with_permit(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        source: [u8; 16],
+    ) -> Result<(), ()> {
+        let room = self.rooms().gate_monster_ai().ok_or(())?;
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or(())?;
+        let now = self.owner_now().get();
+        let (expiry, execution, map_plan, scope, generation) = {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
+            if states.primal_callbacks.expiry_attempted.contains(&source) {
+                return Ok(());
+            }
+            let Some(expiry) = states
+                .primal_callbacks
+                .expiries
+                .iter()
+                .find(|expiry| expiry.source_transaction_id == source)
+                .copied()
+            else {
+                return Ok(());
+            };
+            let execution = states
+                .primal_callbacks
+                .pod_executions
+                .iter()
+                .find(|execution| execution.source == source)
+                .copied()
+                .ok_or(())?;
+            if !execution.created || execution.expiry_us > now {
+                return Err(());
+            }
+            let objects = self.door.try_lock().map_err(|_| ())?;
+            let plan = crate::movement::monster_map::PreparedMonsterMapRead::prepare(
+                &runtime,
+                room,
+                &objects,
+                &[expiry.position],
+            )
+            .ok_or(())?;
+            (
+                expiry,
+                execution,
+                plan,
+                runtime.binding().runtime_scope(),
+                runtime.binding().scope_generation().get(),
+            )
+        };
+        let mut context = (self, &permit, map_plan, room, native);
+        self.root
+            .try_issue_semantic_pass()
+            .map_err(|_| ())?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    use crate::durability::spell_item_transaction::{
+                        assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
+                    };
+                    let (owner, permit, map_plan, room, native) = context;
+                    let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
+                    let authority = assert_spell_item_scope_in_transaction(
+                        &mut tx,
+                        permit,
+                        owner.root,
+                        owner.character,
+                        owner.holder,
+                        scope,
+                        generation,
+                    )
+                    .await
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    let read = map_plan
+                        .read(&mut tx, &authority)
+                        .await
+                        .ok_or(crate::durability::DurabilityError::Unavailable)?;
+                    {
+                        let mut runtime = owner.runtime.lock().await;
+                        let mut states = owner
+                            .states
+                            .spell_states
+                            .try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        let objects = owner
+                            .door
+                            .try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        let view = read
+                            .into_current_view(&runtime, room, &objects, native)
+                            .ok_or(crate::durability::DurabilityError::Unavailable)?;
+                        if !states.primal_callbacks.pod_executions.contains(&execution)
+                            || !states
+                                .primal_callbacks
+                                .expiries
+                                .iter()
+                                .any(|pending| pending.source_transaction_id == source)
+                            || states.primal_callbacks.expiry_attempted.contains(&source)
+                        {
+                            return Err(crate::durability::DurabilityError::Unavailable);
+                        }
+                        // A concurrently earlier core prefix cannot authorize this later
+                        // expiry merely because its SQL due condition is already true.
+                        if let Some((_, _, clock)) = owner
+                            .states
+                            .attack
+                            .try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                            .kills()
+                            .core_head()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                        {
+                            if clock.is_none_or(|clock| execution.expiry_us > clock.get()) {
+                                return Err(crate::durability::DurabilityError::Unavailable);
+                            }
+                        }
+                        let record = native
+                            .creature_profiles()
+                            .records
+                            .iter()
+                            .find(|record| record.profile.target.key == primal::FUNGOSAURUS_KEY)
+                            .ok_or(crate::durability::DurabilityError::Unavailable)?;
+                        let exists = view
+                            .source_placement_cell(
+                                &runtime,
+                                native,
+                                primal::FUNGOSAURUS_KEY,
+                                expiry.position,
+                                None,
+                            )
+                            .ok_or(crate::durability::DurabilityError::Unavailable)?
+                            .exists;
+                        if !exists {
+                            return Err(crate::durability::DurabilityError::Unavailable);
+                        }
+                        if let Ok(actor) = runtime
+                            .spawn_primal_pod_fungosaurus(expiry.position, |runtime, _| {
+                                view.matches(runtime).then_some(exists)
+                            })
+                        {
+                            if runtime
+                                .install_creature_policy(actor, primal::FUNGOSAURUS_KEY)
+                                .is_err()
+                                || states
+                                    .monster_melee
+                                    .creature_ai
+                                    .admit_native_creature(
+                                        &runtime,
+                                        native,
+                                        actor,
+                                        &record.profile.target,
+                                        now,
+                                    )
+                                    .is_err()
+                            {
+                                runtime
+                                    .remove_arena_opponent(actor)
+                                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                                return Err(crate::durability::DurabilityError::Unavailable);
+                            }
+                            emit_pod_speech(&runtime, room, actor);
+                        }
+                        states.primal_callbacks.expiry_attempted.push(source);
+                        states
+                            .primal_callbacks
+                            .expiries
+                            .retain(|pending| pending.source_transaction_id != source);
+                    }
+                    tx.rollback()
+                        .await
+                        .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|_| ())
+    }
+}
+
+fn primal_parent_registered(runtime: &ChannelRuntimeV1, boss: ExactActorRef) -> Result<bool, ()> {
+    runtime.owner_fence().map_err(|_| ())?;
+    if boss.runtime_scope() != runtime.binding().runtime_scope()
+        || boss.scope_generation() != runtime.binding().scope_generation()
+    {
+        return Err(());
+    }
+    match runtime.companion_snapshot_including_dead(boss) {
+        Ok(_) => runtime.source_creature_is_registered(boss).map_err(|_| ()),
+        Err(
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration
+            | oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature,
+        ) => Ok(false),
+        Err(_) => Err(()),
     }
 }

@@ -70,7 +70,6 @@ impl ChannelRuntimeV1 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags};
     type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
     fn id(n: u8) -> [u8; 16] {
@@ -94,47 +93,16 @@ mod tests {
             16,
             ChannelContentPin::test(world),
         )?;
-        let policy = CompiledCreaturePolicy {
-            definition_key: SPITE.into(),
-            definition_revision: "definition-r1".into(),
-            display_name: "Goshnar's Spite".into(),
-            maximum_health: 300_000,
-            forge_difficulty: None,
-            base_speed: 200,
-            outfit_look_type: 1310,
-            object_look_type: None,
-            summonable: false,
-            convinceable: false,
-            mana_cost: None,
-            is_familiar: false,
-            condition_immunities: Vec::new(),
-            defense: Some(160),
-            armor: Some(100),
-            mitigation: None,
-            resistances: Vec::new(),
-            damage_immunities: Vec::new(),
-            healing_from_damage: Vec::new(),
-            flags: CreatureFlags {
-                attackable: true,
-                illusionable: false,
-                health_hidden: false,
-            },
-            preferred_distance: Some(1),
-            reward_boss: Some(true),
-            blocked_by_nearby_players: false,
-        };
-        let mut weak = policy.clone();
-        weak.definition_key = "oteryn:creature.weak_soul".into();
-        let mut sphere = policy.clone();
-        sphere.definition_key = "oteryn:creature.soul_sphere".into();
-        runtime.install_companion_policies(CompiledCreaturePolicies::from_active_artifact(
-            runtime.content_pin().server_artifact_digest(),
-            vec![policy, weak, sphere],
-        )?)?;
+        let mut policies = super::super::soul_war_mirror_runtime::tests::policies();
+        // The cached decoded native bodies retain their real callbacks. Bind
+        // this clone to the actual runtime outer pin, outside the shared cache.
+        policies.bind_qualified_outer_artifact(runtime.content_pin().server_artifact_digest())?;
+        runtime.install_companion_policies(policies)?;
+        let maximum = runtime.companion_policy(SPITE)?.maximum_health;
         let actor = ExactActorRef(runtime.admit_encounter_fixture_actor(
             ActorState(1),
             SPITE,
-            300_000,
+            maximum,
             Some(LocalPosition {
                 x: 33746,
                 y: 31666,
@@ -175,8 +143,12 @@ mod tests {
         let wounded = runtime.companion_snapshot(boss)?;
         runtime.change_soul_war_spite(&wounded, 170, SpiteChange::WeepingHeal)?;
         let healed = runtime.companion_snapshot(boss)?;
-        assert_eq!(healed.health, 30_100);
-        assert_eq!(healed.maximum_health, 300_000);
+        assert_eq!(
+            before.maximum_health, 550_000,
+            "actual source Spite maximum"
+        );
+        assert_eq!(healed.health, 100 + before.maximum_health / 10);
+        assert_eq!(healed.maximum_health, before.maximum_health);
         assert_eq!(healed.state.policy.defense, Some(160));
         assert_eq!(runtime.effective_creature_defense(&healed)?, 170);
         Ok(())

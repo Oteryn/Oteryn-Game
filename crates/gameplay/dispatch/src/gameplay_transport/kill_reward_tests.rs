@@ -1552,3 +1552,32 @@ fn srx3_source_death_wait_precedes_loot_capacity_reservation_and_take() {
     );
     assert_eq!(queue.counts(), (1, 0, 0));
 }
+
+#[test]
+fn core_prefix_prunes_departed_head_and_conditionally_takes_its_successor() {
+    let queue = KillSettlementQueue::default();
+    let first = pending(2, 50, 3, 0);
+    let second = pending(3, 51, 3, 0);
+    let first_death = first.facts.death;
+    let second_death = second.facts.death;
+    assert_eq!(queue.append(first), AppendOutcome::Queued);
+    assert_eq!(queue.append(second), AppendOutcome::Queued);
+    queue.discard_gone(session(50), None);
+    assert_eq!(
+        queue
+            .core_head()
+            .map(|head| head.map(|(_, death, _)| death)),
+        Ok(Some(second_death))
+    );
+    assert!(matches!(
+        queue.take_inner(session(51), 3, true, Some(first_death)),
+        TakeOutcome::CapacityWait
+    ));
+    let second = taken(queue.take_inner(session(51), 3, true, Some(second_death)));
+    assert_eq!(
+        second.entry().map(|entry| entry.facts.death),
+        Some(second_death)
+    );
+    second.finish();
+    assert_eq!(queue.core_head(), Ok(None));
+}

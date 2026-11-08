@@ -221,8 +221,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // Exact native corpse/yield producer admission now qualifies sixteen source
-    // reward bosses. Four further admitted corpses retain unresolved loot yields;
+    // Exact native corpse/yield producer admission now qualifies twenty-four source
+    // reward bosses. Eleven further admitted corpses retain unresolved loot yields;
     // those rows must remain refused rather than silently dropping their Items.
     // Shared demon, vampire and dragon bodies retain independent loot qualification.
     // Keep each exact admission reason:
@@ -288,6 +288,13 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.orshabaal"
                     | "oteryn:creature.the_weakened_count"
                     | "oteryn:creature.gravelord_oshuran"
+                    | "oteryn:creature.bazir"
+                    | "oteryn:creature.infernatil"
+                    | "oteryn:creature.irgix_the_flimsy"
+                    | "oteryn:creature.the_enraged_thorn_knight"
+                    | "oteryn:creature.the_souldespoiler"
+                    | "oteryn:creature.unaz_the_mean"
+                    | "oteryn:creature.vok_the_freakish"
             )
         {
             inadmissible_loot += 1;
@@ -381,14 +388,19 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     admitted.sort_unstable();
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 315, 4, 16)
+        (52, 300, 11, 24)
     );
     assert_eq!(
         admitted,
         [
+            "oteryn:creature.anomaly",
             "oteryn:creature.armenius_creature",
             "oteryn:creature.bakragore",
             "oteryn:creature.chagorz",
+            "oteryn:creature.chayenne",
+            "oteryn:creature.dreadful_disruptor",
+            "oteryn:creature.eradicator",
+            "oteryn:creature.eradicator2",
             "oteryn:creature.goshnar_s_cruelty",
             "oteryn:creature.goshnar_s_greed",
             "oteryn:creature.goshnar_s_hatred",
@@ -400,8 +412,11 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.grand_mother_foulscale",
             "oteryn:creature.ichgahal",
             "oteryn:creature.murcion",
+            "oteryn:creature.outburst",
+            "oteryn:creature.rupture",
             "oteryn:creature.the_primal_menace",
-            "oteryn:creature.vemiath"
+            "oteryn:creature.the_scion_of_havoc",
+            "oteryn:creature.vemiath",
         ]
     );
     shared_body.sort_unstable();

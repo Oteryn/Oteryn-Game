@@ -916,7 +916,37 @@ mod source_48_corpse_tests {
             records: serde_json::from_value(captured["records"].clone())
                 .map_err(|error| error.to_string())?,
         };
-        assert_eq!(verified_soul_war_corpses(Some(&items)).len(), 6);
+        // The exact source closure includes sixteen48-capacity bodies and
+        // five plain bodies; unrelated admitted Items remain excluded.
+        assert_eq!(
+            verified_soul_war_corpses(Some(&items)),
+            std::collections::HashSet::from(
+                [
+                    "oteryn:item.tibia.i33792",
+                    "oteryn:item.tibia.i33797",
+                    "oteryn:item.tibia.i33801",
+                    "oteryn:item.tibia.i33805",
+                    "oteryn:item.tibia.i33809",
+                    "oteryn:item.tibia.i33813",
+                    "oteryn:item.tibia.i33817",
+                    "oteryn:item.tibia.i33859",
+                    "oteryn:item.tibia.i33863",
+                    "oteryn:item.tibia.i33867",
+                    "oteryn:item.tibia.i33871",
+                    "oteryn:item.tibia.i33875",
+                    "oteryn:item.tibia.i33876",
+                    "oteryn:item.tibia.i33889",
+                    "oteryn:item.tibia.i33891",
+                    "oteryn:item.tibia.i33897",
+                    "oteryn:item.tibia.i33901",
+                    "oteryn:item.tibia.i33905",
+                    "oteryn:item.tibia.i33909",
+                    "oteryn:item.tibia.i33949",
+                    "oteryn:item.tibia.i33984",
+                ]
+                .map(str::to_owned)
+            )
+        );
         let greed_key = "oteryn:item.tibia.i33863";
         let original = items
             .records

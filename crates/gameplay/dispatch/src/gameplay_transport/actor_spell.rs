@@ -2704,6 +2704,26 @@ impl ChannelSpellStates {
         crate::foundation::CreaturePeriodicReceipt,
         oteryn_gameplay_domain::domain::carrier_values::CarrierError,
     > {
+        self.tick_source_creature_conditions_with_health_observations(
+            runtime,
+            target,
+            facts,
+            now,
+            &[],
+        )
+    }
+
+    pub fn tick_source_creature_conditions_with_health_observations(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        facts: crate::foundation::TickFacts,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        observations: &[oteryn_gameplay_entities::NativeHealthChangeObservation],
+    ) -> Result<
+        crate::foundation::CreaturePeriodicReceipt,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
         let mut lookup = |r: &ChannelRuntimeV1, source: ExactActorRef, at: u64| {
             if !r.borrow_exact_actor_lookup().contains(source) {
                 return Ok(None);
@@ -2746,11 +2766,12 @@ impl ChannelSpellStates {
             };
             Ok(Some(percent))
         };
-        let receipt = runtime.apply_creature_periodic_turn_with_sources(
+        let receipt = runtime.apply_creature_periodic_turn_with_sources_and_health_observations(
             target,
             now.get(),
             facts,
             &mut lookup,
+            observations,
         )?;
         for impact in &receipt.impacts {
             if let Some(source) = impact.source

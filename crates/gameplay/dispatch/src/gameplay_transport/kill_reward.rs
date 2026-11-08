@@ -1077,6 +1077,55 @@ impl KillSettlementQueue {
             .collect()
     }
 
+    pub(super) fn core_head(
+        &self,
+    ) -> Result<
+        Option<(
+            ExactActorRef,
+            CreatureDeathOccurrenceKey,
+            Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+        )>,
+        (),
+    > {
+        let mut state = self.state();
+        state.prune_accepted_order();
+        let Some(death) = state.accepted_order.front() else {
+            return if state.entries() == 0 {
+                Ok(None)
+            } else {
+                Err(())
+            };
+        };
+        let entry = state
+            .queued
+            .iter()
+            .find(|entry| entry.facts.death == *death)
+            .ok_or(())?;
+        Ok(Some((
+            entry.target,
+            entry.facts.death,
+            entry.activity_observed_at,
+        )))
+    }
+
+    /// Read-only observation of the actual accepted core-death prefix.
+    #[cfg(test)]
+    pub(super) fn core_head_for_test(
+        &self,
+    ) -> Option<(
+        ExactActorRef,
+        CreatureDeathOccurrenceKey,
+        Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+    )> {
+        let state = self.state();
+        let death = state.accepted_order.front()?;
+        let entry = state
+            .queued
+            .iter()
+            .find(|entry| entry.facts.death == *death)?;
+        Some((entry.target, entry.facts.death, entry.activity_observed_at))
+    }
+
     #[cfg(test)]
     pub fn has_session(&self, session: GameSessionId) -> bool {
         self.state()
@@ -1090,11 +1139,12 @@ impl KillSettlementQueue {
     /// reports it.
     #[cfg(test)]
     pub fn take(&self, session: GameSessionId, lease_generation: u64) -> TakeOutcome {
-        self.take_inner(session, lease_generation, false)
+        self.take_inner(session, lease_generation, false, None)
     }
 
+    #[cfg(test)]
     fn take_ordered(&self, session: GameSessionId, lease_generation: u64) -> TakeOutcome {
-        self.take_inner(session, lease_generation, true)
+        self.take_inner(session, lease_generation, true, None)
     }
 
     fn take_inner(
@@ -1102,9 +1152,13 @@ impl KillSettlementQueue {
         session: GameSessionId,
         lease_generation: u64,
         ordered: bool,
+        expected: Option<CreatureDeathOccurrenceKey>,
     ) -> TakeOutcome {
         let mut state = self.state();
         state.prune_accepted_order();
+        if expected.is_some_and(|death| state.accepted_order.front() != Some(&death)) {
+            return TakeOutcome::CapacityWait;
+        }
         if ordered && !state.in_flight.is_empty() {
             return TakeOutcome::CapacityWait;
         }
@@ -2629,14 +2683,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Err(()) => return DrainOutcome::Deferred,
             };
+            let core_head = match self.states.attack.lock().await.kills().core_head() {
+                Ok(Some(head)) => head,
+                Ok(None) => continue,
+                Err(()) => return DrainOutcome::Deferred,
+            };
+            // The actual queued lethal owner clock bounds retained callbacks;
+            // an unavailable clock never authorizes skipping a Primal prefix.
+            if self.rooms().gate_monster_ai().is_some_and(|room| {
+                room.pinned_activity_source_room()
+                    == Some(
+                        crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal,
+                    )
+            }) {
+                let Some(cutoff) = core_head.2 else {
+                    return DrainOutcome::Deferred;
+                };
+                if self
+                    .drain_primal_core_prefix(core_head.0, cutoff.get())
+                    .await
+                    .is_err()
+                {
+                    return DrainOutcome::Deferred;
+                }
+            }
             let taken = {
                 let attack = self.states.attack.lock().await;
                 attack
                     .kills()
                     .discard_gone(principal.0, Some(fence.character_lease_generation));
-                attack
-                    .kills()
-                    .take_ordered(principal.0, fence.character_lease_generation)
+                attack.kills().take_inner(
+                    principal.0,
+                    fence.character_lease_generation,
+                    true,
+                    Some(core_head.1),
+                )
             };
             let mut taken = match taken {
                 TakeOutcome::Empty => continue,

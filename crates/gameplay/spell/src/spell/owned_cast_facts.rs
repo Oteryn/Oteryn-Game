@@ -62,6 +62,7 @@ pub struct OwnedCastFacts {
     level: u32,
     equipment: EquipmentSnapshot,
     pub access: AccessProjections,
+    native_health_observations: Vec<oteryn_gameplay_entities::NativeHealthChangeObservation>,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OwnedFactsError {
@@ -106,6 +107,7 @@ impl OwnedCastFacts {
             level,
             equipment,
             access,
+            native_health_observations: Vec::new(),
         })
     }
     pub fn current_premium(&self, now: u64) -> Option<&CurrentProjection<bool>> {
@@ -169,6 +171,19 @@ impl OwnedCastFacts {
     }
     pub fn equipment(&self) -> &EquipmentSnapshot {
         &self.equipment
+    }
+    /// Opaque, current source observations supplied by the fenced composition
+    /// loader. The magnitude owner independently validates them before use.
+    pub fn set_native_health_observations(
+        &mut self,
+        observations: Vec<oteryn_gameplay_entities::NativeHealthChangeObservation>,
+    ) {
+        self.native_health_observations = observations;
+    }
+    pub fn native_health_observations(
+        &self,
+    ) -> &[oteryn_gameplay_entities::NativeHealthChangeObservation] {
+        &self.native_health_observations
     }
     pub fn magnitude(&self) -> Option<&super::magnitude_owner::MagnitudeOwnedAttributes> {
         self.access.magnitude.as_ref()

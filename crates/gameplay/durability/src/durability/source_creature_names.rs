@@ -42,7 +42,9 @@ pub struct PreparedSourcePlayerNames {
     entries: Vec<PreparedPlayer>,
 }
 impl PreparedSourcePlayerNames {
-    pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+    /// Identity/name DATA can be rechecked after known movement in one held
+    /// owner turn. The original full seal below still requires exact poses.
+    pub fn identities_current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
         runtime.owner_fence().is_ok()
             && runtime.binding().runtime_scope() == self.scope
             && runtime.binding().scope_generation().get() == self.generation
@@ -56,11 +58,17 @@ impl PreparedSourcePlayerNames {
                 ]
             && self.entries.iter().all(|entry| {
                 entry.observed.matches(runtime)
-                    && runtime.read_actor_position(entry.actor) == Ok(entry.position)
                     && runtime
                         .bound_attacker_lease(entry.actor, entry.session)
                         .is_ok_and(|lease| lease.character_id().as_bytes() == &entry.character)
             })
+    }
+    pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.identities_current_for(runtime)
+            && self
+                .entries
+                .iter()
+                .all(|entry| runtime.read_actor_position(entry.actor) == Ok(entry.position))
     }
 }
 
@@ -150,11 +158,23 @@ pub async fn read_prepared_source_player_names_in_transaction(
         .collect::<Vec<_>>();
     let names = &plan.names;
     let rows = sqlx::query(
-        "SELECT uuid_send(r.character_id) AS character,r.name,r.character_revision::text AS revision \
+        "SELECT uuid_send(r.character_id) AS character, \
+         CASE WHEN lower(r.name)=ANY($2::text[]) THEN r.name ELSE NULL END AS name, \
+         r.character_revision::text AS revision \
          FROM game_character_roots r JOIN unnest($1::text[]) AS requested(id) \
          ON r.character_id=requested.id::uuid \
-         WHERE r.lifecycle=1 AND lower(r.name)=ANY($2::text[]) FOR SHARE OF r"
-    ).bind(requested).bind(names).fetch_all(&mut **tx).await?;
+         WHERE r.lifecycle=1 FOR SHARE OF r",
+    )
+    .bind(requested)
+    .bind(names)
+    .fetch_all(&mut **tx)
+    .await?;
+    #[cfg(any(test, feature = "test-support"))]
+    eprintln!(
+        "SRX3_SOURCE_NAMES_FIXED_SQL_QUERY_EXECUTED captured={} rows={}",
+        plan.entries.len(),
+        rows.len()
+    );
     let mut result = Vec::with_capacity(rows.len());
     for entry in &plan.entries {
         let (actor, session, character) = (entry.actor, entry.session, entry.character);
@@ -168,18 +188,7 @@ pub async fn read_prepared_source_player_names_in_transaction(
         if matching.len() > 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let Some(row) = matching.first() else {
-            continue;
-        };
-        // Unicode SQL lower() supplies candidates; source literal comparisons
-        // must not acquire aliases through a different Unicode case fold.
-        let name: String = row.try_get("name")?;
-        if !names
-            .iter()
-            .any(|literal| name.eq_ignore_ascii_case(literal))
-        {
-            continue;
-        }
+        let row = matching.first().ok_or_else(refuse)?;
         if current_visible_character_for_source_read_in_transaction(
             tx,
             root,
@@ -190,6 +199,17 @@ pub async fn read_prepared_source_player_names_in_transaction(
             != Some(character)
         {
             return Err(refuse());
+        }
+        let Some(name) = row.try_get::<Option<String>, _>("name")? else {
+            continue; // Active Root and current canonical admission proved no match.
+        };
+        // Unicode SQL lower() supplies candidates; source literal comparisons
+        // must not acquire aliases through a different Unicode case fold.
+        if !names
+            .iter()
+            .any(|literal| name.eq_ignore_ascii_case(literal))
+        {
+            continue;
         }
         result.push(CurrentSourcePlayerName {
             actor,

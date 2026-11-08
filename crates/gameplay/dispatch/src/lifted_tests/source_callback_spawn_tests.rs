@@ -72,13 +72,44 @@ fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
     }
 }
 fn policies(r: &ChannelRuntimeV1) -> CompiledCreaturePolicies {
-    crate::content::native_gameplay::callback_source_native_test_policies(
-        include_bytes!("../../../../../apps/game-server/src/callback_native_child_profiles.json"),
-        include_bytes!("../../../../../apps/game-server/src/callback_native_child_looks.json"),
-        r.content_pin().server_artifact_digest(),
-    )
-    .expect("qualified fixture")
+    // Cache only the authentic immutable catalogue. Each fixture runtime has its
+    // own qualified outer artifact; rebinding must never be cached across pins.
+    static BASE: std::sync::OnceLock<CompiledCreaturePolicies> = std::sync::OnceLock::new();
+    let mut policies = BASE
+        .get_or_init(|| {
+            let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            crate::content::native_gameplay::retained_callback_native_fixture_at(
+                r.binding().world_id(),
+                &manifest,
+            )
+            .policies()
+            .clone()
+        })
+        .clone();
+    policies
+        .bind_qualified_outer_artifact(r.content_pin().server_artifact_digest())
+        .expect("actual native policies preserve sealed metadata under fixture outer pin");
+    policies
 }
+fn admit_source_parent(
+    runtime: &mut ChannelRuntimeV1,
+    at: MovementLocalPosition,
+    key: &str,
+) -> ExactActorRef {
+    let maximum_health = runtime
+        .companion_policy(key)
+        .expect("actual native parent policy")
+        .maximum_health;
+    let actor = runtime
+        .admit_source_pinned_lab_creature(at, key, maximum_health)
+        .expect("actual native parent physical slot");
+    runtime
+        .install_creature_policy(actor, key)
+        .expect("actual native parent metadata and policy");
+    actor
+}
+
 fn fence(r: &ChannelRuntimeV1, g: u64) -> (ScopeRuntimeFence, RuntimeWorkStamp) {
     let b = r.binding();
     crate::foundation::crystal_timer_fixture(
@@ -221,17 +252,15 @@ fn sixteen_exact_source_spawns_actual_policy_health_origin_delay_replay_and_clea
         let (mut r, _, _) = runtime_with_player(0x86);
         r.install_companion_policies(policies(&r))
             .expect("qualified fixture");
-        let parent = r
-            .admit_source_pinned_lab_creature(
-                MovementLocalPosition {
-                    x: 100,
-                    y: 100,
-                    floor: 7,
-                },
-                &case.caster,
-                300000,
-            )
-            .expect("qualified fixture");
+        let parent = admit_source_parent(
+            &mut r,
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            &case.caster,
+        );
         let d = draft(&r);
         let list = if case.phase == "attacks" {
             ScheduleList::Attack
@@ -415,17 +444,15 @@ fn all_sixteen_sources_missing_map_stale_fence_and_provenance_never_spawn() {
         let (mut r, _, _) = runtime_with_player(0x87);
         r.install_companion_policies(policies(&r))
             .expect("qualified fixture");
-        let parent = r
-            .admit_source_pinned_lab_creature(
-                MovementLocalPosition {
-                    x: 100,
-                    y: 100,
-                    floor: 7,
-                },
-                &case.caster,
-                300000,
-            )
-            .expect("qualified fixture");
+        let parent = admit_source_parent(
+            &mut r,
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            &case.caster,
+        );
         let mut d = draft(&r);
         let cr = Ref {
             family: Family::Creature,
@@ -535,17 +562,15 @@ fn source_spawn_fixture(caster: &str) -> (ChannelRuntimeV1, ExactActorRef, Sourc
         .into_iter()
         .find(|case| case.caster == caster)
         .expect("Gaz source");
-    let actor = runtime
-        .admit_source_pinned_lab_creature(
-            MovementLocalPosition {
-                x: 100,
-                y: 100,
-                floor: 7,
-            },
-            &case.caster,
-            300000,
-        )
-        .expect("actual source Gaz");
+    let actor = admit_source_parent(
+        &mut runtime,
+        MovementLocalPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+        &case.caster,
+    );
     let source = SourceCallbackSpawn::qualify(
         &draft(&runtime),
         &Ref {
@@ -830,6 +855,9 @@ fn srx3_gaz_failed_chance_branch_retains_source_desired_count_across_incarnation
             parent_health,
         )
         .expect("new exact source incarnation");
+    runtime
+        .install_creature_policy(replacement, &source.creature)
+        .expect("replacement retains actual source policy and metadata");
     for replacement_sequence in 0..16 {
         let now =
             SemanticTimeMicros::from_micros((sequence + replacement_sequence + 1) * 2_000_000);

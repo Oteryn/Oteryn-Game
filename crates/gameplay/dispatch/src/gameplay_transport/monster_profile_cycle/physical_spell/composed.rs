@@ -54,6 +54,7 @@ pub(super) async fn execute(
     parties: &ReferenceParties,
     now: u64,
     charms: &crate::content::charm_source::CanonicalCharmCatalogue,
+    native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
 ) {
     let Ok(stamp) = runtime.issue_owner_work() else {
         return;
@@ -69,6 +70,12 @@ pub(super) async fn execute(
     else {
         return;
     };
+    if reader
+        .bind_native_health_names(runtime, native_health_names)
+        .is_none()
+    {
+        return;
+    }
     let Ok(catalog) =
         crate::creature_area_heal::CreatureHealCatalog::from_current_native(runtime, native)
     else {
@@ -127,14 +134,16 @@ struct CurrentCreature {
     primary_requires_heal: bool,
 }
 
-pub(in crate::gameplay_transport::monster_profile_cycle) struct CurrentComposed<'native> {
+pub(in crate::gameplay_transport::monster_profile_cycle) struct CurrentComposed<'native, 'turn> {
     pub(in crate::gameplay_transport::monster_profile_cycle) base: CurrentTarget<'native>,
     ability: crate::content::ProjectV2DefinitionRef,
     creatures: Vec<CurrentCreature>,
     primary_conditions: bool,
+    native_health_names:
+        Option<&'turn crate::gameplay_transport::source_names::NativeHealthNamesData>,
 }
 
-impl<'native> CurrentComposed<'native> {
+impl<'native, 'turn> CurrentComposed<'native, 'turn> {
     pub(in crate::gameplay_transport::monster_profile_cycle) fn prepare(
         runtime: &ChannelRuntimeV1,
         attack: &mut ChannelAttackStates,
@@ -251,7 +260,18 @@ impl<'native> CurrentComposed<'native> {
             ability: source.ability.clone(),
             creatures,
             primary_conditions: primary.is_some_and(|p| !p.conditions.is_empty()),
+            native_health_names: None,
         })
+    }
+
+    pub(in crate::gameplay_transport::monster_profile_cycle) fn bind_native_health_names(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        names: &'turn crate::gameplay_transport::source_names::NativeHealthNamesData,
+    ) -> Option<()> {
+        names.validate_frame(runtime).ok()?;
+        self.native_health_names = Some(names);
+        Some(())
     }
 
     fn is_current(&self, runtime: &ChannelRuntimeV1, stamp: RuntimeWorkStamp) -> bool {
@@ -263,7 +283,7 @@ impl<'native> CurrentComposed<'native> {
     }
 }
 
-impl SpellWorldReader for CurrentComposed<'_> {
+impl SpellWorldReader for CurrentComposed<'_, '_> {
     fn source_damage_draw(
         &mut self,
         minimum: u32,
@@ -349,7 +369,7 @@ impl SpellWorldReader for CurrentComposed<'_> {
     }
 }
 
-impl ComposedWorldReader for CurrentComposed<'_> {
+impl ComposedWorldReader for CurrentComposed<'_, '_> {
     fn creature_combat(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -390,11 +410,21 @@ impl ComposedWorldReader for CurrentComposed<'_> {
         }
         let element = element?;
         let snapshot = runtime.companion_snapshot(target).ok()?;
-        crate::creature_damage_spell::native_event::prepare_native_creature_damage(
+        let prepared = crate::creature_damage_spell::native_event::prepare_native_creature_damage(
             &snapshot.state.policy,
             element,
             amount,
-        )
+        )?;
+        if runtime.native_health_event(target).ok()?.is_some_and(|event| {
+            event.kind() == oteryn_gameplay_content::content::native_monster_callbacks::NativeHealthEventKind::HealthForgotten
+        }) {
+            let observation = self.native_health_names?.observe(runtime, target).ok()??;
+            runtime.validate_native_health_change_observation(&observation).ok()?;
+            let signed = observation.primary(-i64::from(prepared)).ok()?;
+            u32::try_from(signed.checked_neg()?).ok()
+        } else {
+            Some(prepared)
+        }
     }
 
     fn callback_allowed(

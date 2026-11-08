@@ -32,9 +32,9 @@ impl OwnerClock for Now {
         SemanticTimeMicros::from_micros(self.0)
     }
 }
-struct StageReader<'native> {
+struct StageReader<'native, 'turn> {
     id: CallbackStageId,
-    reader: physical_spell::composed::CurrentComposed<'native>,
+    reader: physical_spell::composed::CurrentComposed<'native, 'turn>,
     source: crate::creature_damage_spell::composed::ComposedSource,
     proposal: ProfileAbilityProposal,
     eruption_prelude_completed: bool,
@@ -50,15 +50,15 @@ type StagePostlude<'a> = dyn FnMut(
         SemanticTimeMicros,
     ) -> Result<(), crate::creature_auto_attack::AttackError>
     + 'a;
-struct Readers<'native, 'map, 'post> {
+struct Readers<'native, 'turn, 'map, 'post> {
     facts: Option<&'map crate::map::facts::BundleFacts>,
     postlude: &'post mut StagePostlude<'post>,
-    stages: Vec<StageReader<'native>>,
+    stages: Vec<StageReader<'native, 'turn>>,
     terminal: Vec<(CallbackStageId, crate::creature_auto_attack::AttackError)>,
     owner: crate::creature_damage_spell::composed::ComposedOwner,
     catalog: crate::creature_area_heal::CreatureHealCatalog,
 }
-impl CallbackStageReaders for Readers<'_, '_, '_> {
+impl CallbackStageReaders for Readers<'_, '_, '_, '_> {
     fn terminal_error(
         &self,
         stage: CallbackStageId,
@@ -244,10 +244,22 @@ impl NativeCasts {
         proposals: &[ProfileAbilityProposal],
         parties: &ReferenceParties,
         now: u64,
+        native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
         self.drive_bound(
-            active, globals, runtime, states, attack, room, native, map, proposals, parties, now,
+            active,
+            globals,
+            runtime,
+            states,
+            attack,
+            room,
+            native,
+            map,
+            proposals,
+            parties,
+            now,
             None,
+            native_health_names,
         )
         .await
     }
@@ -269,6 +281,7 @@ impl NativeCasts {
         parties: &ReferenceParties,
         eligible_through_us: u64,
         now: u64,
+        native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
         self.drive_bound(
             active,
@@ -283,6 +296,7 @@ impl NativeCasts {
             parties,
             now,
             Some(eligible_through_us),
+            native_health_names,
         )
         .await
     }
@@ -305,6 +319,7 @@ impl NativeCasts {
         parties: &ReferenceParties,
         now: u64,
         eligible_through_us: Option<u64>,
+        native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
         if self.owner.is_none() && !proposals.iter().any(callback) {
             return Ok(());
@@ -473,9 +488,12 @@ impl NativeCasts {
                         .map_err(|_| ())?,
                     None => return Err(()),
                 };
-                if let Some(reader) = physical_spell::composed::CurrentComposed::prepare(
+                if let Some(mut reader) = physical_spell::composed::CurrentComposed::prepare(
                     runtime, attack, room, &source, reader, now,
                 ) {
+                    reader
+                        .bind_native_health_names(runtime, native_health_names)
+                        .ok_or(())?;
                     let mut cues = Vec::new();
                     if facts.is_some() {
                         let effect = match plan.source_impact_binding() {

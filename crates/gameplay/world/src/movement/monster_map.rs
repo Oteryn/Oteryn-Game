@@ -5,6 +5,8 @@ mod prepared;
 #[cfg(test)]
 mod source_solid_tests;
 #[cfg(test)]
+mod source_spawn_surface_tests;
+#[cfg(test)]
 mod source_teleport_tests;
 #[cfg(test)]
 mod source_walkable_tests;
@@ -63,6 +65,35 @@ impl MonsterMap {
             && runtime.content_pin().frame_binding_digest() == self.frame
             && runtime.content_pin().map_revision_digest() == self.map
     }
+    /// Current child queryAdd DATA from a fully qualified cached tile. Detached
+    /// readers retain their SQL row locks; occupancy is always read anew here.
+    pub fn source_placement_cell(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        content: &NativeGameplayState,
+        child: &str,
+        at: MovementLocalPosition,
+        removed: Option<ExactActorRef>,
+    ) -> Option<SourcePlacementCell> {
+        if !self.matches(runtime)
+            || content.source_digest() != runtime.content_pin().server_artifact_digest()
+            || removed.is_some_and(|actor| !runtime.contains_live_creature(actor))
+        {
+            return None;
+        }
+        let tile = self.tile(at)?;
+        if !tile.source_placement_proven {
+            return None;
+        }
+        let occupancy = runtime
+            .current_native_source_occupancy(content, child, at, removed)
+            .ok()?;
+        let mut cell = tile
+            .source_placement
+            .for_masterless_monster(occupancy.familiar, false, &[]);
+        cell.query_add &= occupancy.admits_occupants;
+        Some(cell)
+    }
     pub fn admits(&self, at: MovementLocalPosition) -> bool {
         self.tile(at).is_some_and(|tile| tile.admits)
     }
@@ -88,8 +119,24 @@ impl MonsterMap {
                 && !tile.source_placement.immovable_solid,
         )
     }
-    /// Crystal getSpawnPosition tests only tile existence and immutable solid
-    /// barriers; the source callback separately checks current creature occupancy.
+    /// Literal source spawn-surface DATA, preserving Unknown separately from
+    /// a known absent tile or an actual IMMOVABLEBLOCKSOLID barrier. This does
+    /// not impose ground/PZ/projectile/occupancy restrictions or grant a spawn.
+    pub fn source_spawn_surface_admits(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        at: MovementLocalPosition,
+    ) -> Option<bool> {
+        if !self.matches(runtime) {
+            return None;
+        }
+        let tile = self.tile(at)?;
+        if !tile.source_placement_proven {
+            return None;
+        }
+        Some(tile.source_placement.exists && !tile.source_placement.immovable_solid)
+    }
+    /// Existing conservative source predicate, unchanged for its current consumers.
     pub fn source_spawn_admits(&self, at: MovementLocalPosition) -> bool {
         self.tile(at).is_some_and(|tile| tile.source_spawn_admits)
     }
@@ -653,14 +700,8 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         if !tile.source_placement.exists && !absence_proven {
             return None;
         }
-        let occupancy = runtime
-            .current_native_source_occupancy(self.content, child, at, removed)
-            .ok()?;
-        let mut cell = tile
-            .source_placement
-            .for_masterless_monster(occupancy.familiar, false, &[]);
-        cell.query_add &= occupancy.admits_occupants;
-        Some(cell)
+        self.view
+            .source_placement_cell(runtime, self.content, child, at, removed)
     }
 
     pub async fn read(

@@ -39,7 +39,7 @@ fn run_source(
         let player=runtime.commit_fresh_session(reserved).map_err(debug)?;
         let character=CharacterId::decode(&id(74)).map_err(debug)?;
         runtime.bind_attacker_lease(player,session,CharacterLease::new(character,1).map_err(debug)?).map_err(debug)?;
-        runtime.initialize_pinned_test_position(player,MovementLocalPosition{x:99,y:100,floor:7}).map_err(debug)?;
+        runtime.initialize_pinned_test_position(player,MovementLocalPosition{x:90,y:100,floor:7}).map_err(debug)?;
         let maximum=runtime.companion_policy(key).map_err(debug)?.maximum_health;
         let actor=runtime.admit_source_pinned_lab_creature(MovementLocalPosition{x:100,y:100,floor:7},key,maximum).map_err(debug)?;
         runtime.install_creature_policy(actor,key).map_err(debug)?;
@@ -49,7 +49,17 @@ fn run_source(
             let max=runtime.companion_policy(guard_key).map_err(debug)?.maximum_health;
             let guard=runtime.admit_source_pinned_lab_creature(MovementLocalPosition{x:107,y:107,floor:7},guard_key,max).map_err(debug)?;
             runtime.install_creature_policy(guard,guard_key).map_err(debug)?;
-            runtime.borrow_exact_actor_commit_at(10).commit_damage(guard,OwnerDamageCommand{target:guard_key.as_bytes(),occurrence:b"health-forgotten:guard-death",binding:b"health-forgotten:guard-death",damage:max}).map_err(debug)?;
+            let guard_batch=runtime_actor_spell_types::OwnerCombatBatch {
+                caster:player,attacker:character,current_lease_generation:1,
+                command:CommandRef::new(session,oteryn_gameplay_foundation::foundation::CommandId::new(1).map_err(debug)?),
+                occurrence:runtime_actor_spell_types::SpellOccurrenceBinding{id:"source.health-forgotten.guard-death".into(),
+                    revisions:["rules:1","content:1","world:1","formula:1","sim:1"].map(str::to_owned)},
+                binding:b"source.health-forgotten.guard-death".to_vec(),anchor:None,now_us:Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(10)),now_ms:0,
+                effects:vec![runtime_actor_spell_types::OwnerCombatEffect{target:guard,sub_ordinal:0,
+                    change:runtime_actor_spell_types::OwnerCombatChange::Damage{target_atom:guard_key.into(),magnitude:max}}],deferred:None,
+            };
+            let guard_prepared=runtime.stage_spell_batch(&guard_batch).map_err(debug)?;
+            runtime.commit_spell_batch(guard_prepared).map_err(debug)?;
             assert!(runtime.source_creature_is_registered(guard).map_err(debug)?,"queued onDeath leaves HP0 spectator registered");
             assert!(runtime.source_registered_creature_census().map_err(debug)?.iter().any(|(candidate,_)|*candidate==guard));
             Some(guard)
@@ -61,14 +71,38 @@ fn run_source(
             runtime.complete_source_creature_death(guard,death).map_err(debug)?;
             assert!(!runtime.source_creature_is_registered(guard).map_err(debug)?,"actual queued source death completion removes spectator registration");
         }
+        assert!(runtime.observe_native_health_change(player,&|_: ExactActorRef, _: MovementPositionSnapshot| None).map_err(debug)?.is_none(),"unrelated real Player has no native Creature event");
+        let raw=runtime.admit_pinned_test_creature(MovementLocalPosition{x:150,y:150,floor:7}).map_err(debug)?;
+        assert!(runtime.observe_native_health_change(raw,&|_: ExactActorRef, _: MovementPositionSnapshot| None).map_err(debug)?.is_none(),"unrelated raw Creature does not acquire a Companion prerequisite");
+        runtime.remove_test_actor(raw).map_err(debug)?;
+        assert!(runtime.observe_native_health_change(raw,&|_: ExactActorRef, _: MovementPositionSnapshot| None).is_err(),"retired exact incarnation cannot issue an observation");
+        let unbound=runtime.admit_source_pinned_lab_creature(MovementLocalPosition{x:151,y:150,floor:7},key,maximum).map_err(debug)?;
+        assert!(runtime.observe_native_health_change(unbound,&|_: ExactActorRef, _: MovementPositionSnapshot| None).is_err(),"a reserved source identity still requires actual policy metadata");
+        // The actual bound Player is outside +/-7, so no invented Player name
+        // is needed to qualify this current source spectator observation.
+        let unknown_names = |_: ExactActorRef, _: MovementPositionSnapshot| None;
+        let mut observation=runtime.observe_native_health_change(actor,&unknown_names).map_err(debug)?;
+        if let Some(source)=observation.as_ref() {
+            assert_eq!(source.primary(-100).map_err(debug)?,if doubles&&(guard.is_none()||completed_guard){-200}else{-100});
+            assert_eq!(source.primary(0).map_err(debug)?,0);
+            runtime.validate_native_health_change_observation(source).map_err(debug)?;
+            let before=runtime.read_actor_position(actor).map_err(debug)?;
+            runtime.borrow_movement_position().commit_creature_relocation(actor,before,MovementLocalPosition{x:96,y:100,floor:7}).map_err(debug)?;
+            assert!(runtime.observe_native_health_change(actor,&unknown_names).is_err(),"unknown Player name INSIDE the spectator bounds cannot become no guard");
+            assert!(runtime.validate_native_health_change_observation(source).is_err(),"a changed target/source cohort cannot reuse an old preprocessing observation");
+            let moved=runtime.read_actor_position(actor).map_err(debug)?;
+            runtime.borrow_movement_position().commit_creature_relocation(actor,moved,before.position()).map_err(debug)?;
+            observation=runtime.observe_native_health_change(actor,&unknown_names).map_err(debug)?;
+        }
+        let primary=observation.as_ref().map_or(Ok(100),|source|source.primary(100)).map_err(debug)?;
         let change=if heal {
-            runtime_actor_spell_types::OwnerCombatChange::Heal{target_atom:key.into(),magnitude:100}
+            runtime_actor_spell_types::OwnerCombatChange::Heal{target_atom:key.into(),magnitude:primary}
         } else {
-            runtime_actor_spell_types::OwnerCombatChange::Damage{target_atom:key.into(),magnitude:100}
+            runtime_actor_spell_types::OwnerCombatChange::Damage{target_atom:key.into(),magnitude:primary}
         };
         let batch=runtime_actor_spell_types::OwnerCombatBatch {
             caster:player,attacker:character,current_lease_generation:1,
-            command:CommandRef::new(session,oteryn_gameplay_foundation::foundation::CommandId::new(1).map_err(debug)?),
+            command:CommandRef::new(session,oteryn_gameplay_foundation::foundation::CommandId::new(2).map_err(debug)?),
             occurrence:runtime_actor_spell_types::SpellOccurrenceBinding{id:"source.health-forgotten.combat".into(),
                 revisions:["rules:1","content:1","world:1","formula:1","sim:1"].map(str::to_owned)},
             binding:b"source.health-forgotten.combat".to_vec(),anchor:None,now_us:None,now_ms:20,

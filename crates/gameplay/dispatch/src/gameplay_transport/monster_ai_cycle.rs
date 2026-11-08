@@ -67,6 +67,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(true) | Err(()) => return,
             Ok(false) => {}
         }
+        // Snapshot the real core prefix before native owners. While present,
+        // only its detached retained Primal work runs; no fresh Think/expiry sweep.
+        if self.rooms().gate_monster_ai().is_some_and(|room| {
+            room.pinned_activity_source_room()
+                == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
+        }) {
+            let head = self.states.attack.lock().await.kills().core_head();
+            match head {
+                Ok(Some((target, _, Some(cutoff)))) => {
+                    let _ = self
+                        .drain_primal_core_prefix_with_permit(&permit, target, cutoff.get())
+                        .await;
+                    return;
+                }
+                Ok(None) => {}
+                Ok(Some((_, _, None))) | Err(()) => return,
+            }
+        }
+        let primal_source_pending = self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .primal_callbacks
+            .normal_pending()
+            .is_some_and(|pending| !pending.source_ready());
+        if primal_source_pending && self.finish_primal_normal_source(&permit).await.is_err() {
+            return;
+        }
+        let health_names = match self.read_native_health_names(&permit).await {
+            Ok(names) => names,
+            Err(()) => return,
+        };
         let mut runtime = self.runtime.lock().await;
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
@@ -90,9 +123,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let native_health_names = match self.seal_native_health_names(&runtime, health_names) {
+            Ok(observations) => observations,
+            Err(()) => return,
+        };
         let Ok(mut states) = self.states.spell_states.try_lock() else {
             return;
         };
+        // A lethal producer may have won the runtime lock after the detached
+        // snapshot. Revalidate before any fresh native work; retry detached.
+        if room.pinned_activity_source_room()
+            == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
+        {
+            let Ok(attack) = self.states.attack.try_lock() else {
+                return;
+            };
+            if !matches!(attack.kills().core_head(), Ok(None)) {
+                return;
+            }
+        }
+
         if states.source_death_action_ready {
             drop(states);
             drop(runtime);
@@ -266,6 +316,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &revisions,
                     &candidates,
                     now.get(),
+                    &native_health_names,
                 )
                 .await
             {
@@ -284,6 +335,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             (None, Vec::new())
         };
+        if states
+            .primal_callbacks
+            .normal_pending()
+            .is_some_and(|pending| !pending.source_ready())
+        {
+            drop(attack);
+            drop(states);
+            drop(runtime);
+            if self.finish_primal_normal_source(&permit).await.is_ok() {
+                // A Primal-only continuation transitions once from source-pending
+                // to known source. Resume the SAME reservation/time under SAME lane.
+                Box::pin(self.drain_monster_melee_with_permit(permit, now)).await;
+            }
+            return;
+        }
         if states.rotten_area.pending() {
             drop(attack);
             drop(states);
