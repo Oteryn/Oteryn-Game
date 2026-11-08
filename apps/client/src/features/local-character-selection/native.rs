@@ -139,7 +139,16 @@ pub(super) fn select(
             [15, 345, 280, 32],
             WS_TABSTOP,
         );
+        let train = control(
+            hwnd,
+            "BUTTON",
+            "Train selected character",
+            6,
+            [310, 345, 280, 32],
+            WS_TABSTOP,
+        );
         if [
+            train,
             label,
             list,
             channel_label,
@@ -211,10 +220,14 @@ pub(super) fn select(
                 play,
                 i32::from(row.is_some_and(|row| row.available)),
             );
+            windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
+                train,
+                i32::from(row.is_some_and(|row| row.available)),
+            );
             let command = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
             match command {
-                1 => {
+                1 | 6 => {
                     if let Some(row) = row.filter(|row| row.available) {
                         let selected = SendMessageW(channels, CB_GETCURSEL, 0, 0);
                         let channel_id = usize::try_from(selected)
@@ -222,9 +235,17 @@ pub(super) fn select(
                             .and_then(|index| index.checked_sub(1))
                             .and_then(|index| row.channels.get(index))
                             .map(|channel| channel.0.clone());
-                        break SelectionAction::Play {
-                            character_id: row.character.character_id.clone(),
-                            channel_id,
+                        let character_id = row.character.character_id.clone();
+                        break if command == 6 {
+                            SelectionAction::Train {
+                                character_id,
+                                channel_id,
+                            }
+                        } else {
+                            SelectionAction::Play {
+                                character_id,
+                                channel_id,
+                            }
                         };
                     }
                 }

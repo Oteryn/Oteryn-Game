@@ -67,9 +67,10 @@
   "src": "TIBAUD-1",
   "area": "Battle list",
   "feature": "Wiele list, sort/filter, rename",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Jedna lista; brak zarządzania wieloma listami, filtrowania i ich nazw.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0017-attack/preferences.rs:94 + named_battle_lists_filter_sort_save_and_attack_live_entities"
  },
  {
   "id": "T017",
@@ -175,36 +176,40 @@
   "src": "TIBAUD-1",
   "area": "Hotkeys",
   "feature": "Profile, chat on/off, primary/secondary",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Jedna mapa bindingów; brak nazwanych presetów i dwóch kontekstów czatu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:116 + named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate"
  },
  {
   "id": "T041",
   "src": "TIBAUD-1",
   "area": "Hotkeys",
   "feature": "Object equip / smart equip",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Komenda equip jest; brak pełnego selektora obiektów i opcji smart UI.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0179-hotkey-equip/preferences.rs:21 + item_hotkeys_persist_per_character_and_negotiate_smart_sources"
  },
  {
   "id": "T042",
   "src": "TIBAUD-1",
   "area": "Action bars",
   "feature": "Spell slots i cooldown",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Cztery sloty w formularzu; brak pełnych rzędów i wskaźników cooldown/amount.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/slots_native.rs:39 + full_spell_row_dispatches_last_slot_and_projects_server_cooldown"
  },
  {
   "id": "T043",
   "src": "TIBAUD-1",
   "area": "Action bars",
   "feature": "Object/text/passive ability assignments",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak spójnego przypisywania wszystkich typów akcji w barze.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/assignments.rs:101 + mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices"
  },
  {
   "id": "T044",

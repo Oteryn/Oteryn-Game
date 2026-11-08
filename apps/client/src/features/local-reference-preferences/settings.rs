@@ -116,6 +116,8 @@ pub struct ReferencePreferences {
     pub creature_bars: bool,
     #[serde(default)]
     pub health_circle: bool,
+    #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
+    pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
     pub shortcuts_collapsed: bool,
     #[serde(default = "default_shortcuts")]
@@ -136,8 +138,6 @@ pub struct ReferencePreferences {
     pub controls: ControlPreferences,
     #[serde(default)]
     pub skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout,
-    #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
-    pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
@@ -175,6 +175,7 @@ impl Default for ReferencePreferences {
             health_circle: false,
             shortcuts_collapsed: false,
             shortcut_order: default_shortcuts(),
+            battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
             frames: Default::default(),
@@ -182,7 +183,6 @@ impl Default for ReferencePreferences {
             minimap: Default::default(),
             shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
-            battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout::default(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),

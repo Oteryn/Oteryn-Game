@@ -30,9 +30,15 @@ pub(in crate::play) struct Panels {
 }
 impl Panels {
     pub fn end(&mut self) {
-        self.house_furniture_rotation = oteryn_client_ui::house_furniture_rotation::Panel { feedback: "The session has ended".into(), ..Default::default() };
+        self.house_furniture_rotation = oteryn_client_ui::house_furniture_rotation::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         self.house = Default::default();
-        self.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel { feedback: "The session has ended".into(), ..Default::default() };
+        self.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         self.staff = super::super::feature_0051_staff::state::Panel {
             feedback: "The session has ended".into(),
             ..Default::default()
@@ -129,7 +135,10 @@ impl Outbox {
     pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
         let mut shared = lock(&self.0);
         shared.imbue.details_selected = session.feature_selected(447);
-        shared.properties.house.initialize(session.feature_selected(49));
+        shared
+            .properties
+            .house
+            .initialize(session.feature_selected(49));
         shared.properties.staff = super::super::feature_0051_staff::state::Panel {
             selected: session.feature_selected(51),
             tools: session.feature_selected(330),
@@ -197,8 +206,15 @@ impl Outbox {
             session,
         );
         shared.properties.mail.selected = session.feature_selected(115);
-        shared.properties.house_furniture_rotation = oteryn_client_ui::house_furniture_rotation::Panel { selected: session.feature_selected(445), ..Default::default() };
-        shared.properties.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel {selected: session.feature_selected(207), ..Default::default()};
+        shared.properties.house_furniture_rotation =
+            oteryn_client_ui::house_furniture_rotation::Panel {
+                selected: session.feature_selected(445),
+                ..Default::default()
+            };
+        shared.properties.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel {
+            selected: session.feature_selected(207),
+            ..Default::default()
+        };
         shared.properties.house_podium.selected = session.feature_selected(150);
         shared.properties.training.selected = session.feature_selected(54);
         shared.properties.guild_bank.selected = session.feature_selected(55);
@@ -285,8 +301,16 @@ impl Outbox {
                 command,
                 result,
             ),
-            445 => super::super::feature_0445_house_furniture_rotation::protocol::apply(&mut shared.properties.house_furniture_rotation, command, result),
-            207 => super::super::feature_0207_house_furniture_wrap::protocol::apply(&mut shared.properties.house_furniture_wrap, command, result),
+            445 => super::super::feature_0445_house_furniture_rotation::protocol::apply(
+                &mut shared.properties.house_furniture_rotation,
+                command,
+                result,
+            ),
+            207 => super::super::feature_0207_house_furniture_wrap::protocol::apply(
+                &mut shared.properties.house_furniture_wrap,
+                command,
+                result,
+            ),
             115 => apply(&mut shared.properties.mail, command, result),
             134 => super::super::feature_0134_party_skull::protocol::apply(
                 &mut shared.properties.party_skull,

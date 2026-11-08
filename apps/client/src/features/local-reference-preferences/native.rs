@@ -203,9 +203,9 @@ impl Settings {
             }
         }
         let mut state = lock(&self.shared);
+        state.sync_battle_lists(link);
         state.select_character(view.preference_character());
         state.open_help_report(Some(link));
-        state.sync_battle_lists(link);
         state.sync_skills_layout(link);
         state.sync_item_hotkeys(link);
         state.sync_bar_actions(link);

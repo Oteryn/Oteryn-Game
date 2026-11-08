@@ -101,11 +101,11 @@ Zasady przeciw dublowaniu:
 
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
-| T042 | Action bars | Spell slots i cooldown | PARTIAL | Cztery sloty w formularzu; brak pełnych rzędów i wskaźników cooldown/amount. |
-| T043 | Action bars | Object/text/passive ability assignments | PARTIAL | Brak spójnego przypisywania wszystkich typów akcji w barze. |
+| T042 | Action bars | Spell slots i cooldown | DONE | evidence: apps/client/src/features/local-spell-action-bar/slots_native.rs:39 + full_spell_row_dispatches_last_slot_and_projects_server_cooldown |
+| T043 | Action bars | Object/text/passive ability assignments | DONE | evidence: apps/client/src/features/local-spell-action-bar/assignments.rs:101 + mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices |
 | T044 | Action bars | Bottom/left/right, lock, drag/drop, scroll | PARTIAL | Brak dokowanych wielorzędowych barów, przenoszenia slotów i blokady układu. |
 | O011 | Action bars | Konfigurowalne paski akcji | PARTIAL | Brakuje wielu konfigurowalnych pasków z akcjami przedmiotu/tekstu i układem slotów; natywny pasek obsługuje cztery przypisania czarów. |
-| T015 | Battle list | Wiele list, sort/filter, rename | PARTIAL | Jedna lista; brak zarządzania wieloma listami, filtrowania i ich nazw. |
+| T015 | Battle list | Wiele list, sort/filter, rename | DONE | evidence: apps/client/src/features/0017-attack/preferences.rs:94 + named_battle_lists_filter_sort_save_and_attack_live_entities |
 | O014 | Battle list | Battle list i wybór celu | PARTIAL | Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora. |
 | T010 | Game window | HUD i sidebar: dock/show/hide/order/layout | PARTIAL | Osobne okna Win32 zamiast pełnego dokowania i zapisu rozmiarów/kolejności paneli. |
 | T011 | Game window | HP/mana, soul/stamina, conditions/rest | PARTIAL | Dane i teksty są; brak pełnej konfigurowalnej prezentacji pasków/łuków/ikon. |
@@ -116,8 +116,8 @@ Zasady przeciw dublowaniu:
 | O025 | Game window | Okręgi HP/MP i status mnicha | PARTIAL | Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD. |
 | O033 | Game window | Układ interfejsu i okna boczne | PARTIAL | Brakuje dokowanych, przeciąganych i zapamiętywanych miniokien w kolumnach interfejsu; istnieją osobne okna Win32 i przełączniki widoczności. |
 | O037 | Game window | Główny panel skrótów funkcji | PARTIAL | Brakuje zwijanego głównego panelu ikon funkcji gry z utrwalonym układem; funkcje są otwierane skrótami. |
-| T040 | Hotkeys | Profile, chat on/off, primary/secondary | PARTIAL | Jedna mapa bindingów; brak nazwanych presetów i dwóch kontekstów czatu. |
-| T041 | Hotkeys | Object equip / smart equip | PARTIAL | Komenda equip jest; brak pełnego selektora obiektów i opcji smart UI. |
+| T040 | Hotkeys | Profile, chat on/off, primary/secondary | DONE | evidence: apps/client/src/features/local-reference-preferences/profiles.rs:116 + named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate |
+| T041 | Hotkeys | Object equip / smart equip | DONE | evidence: apps/client/src/features/0179-hotkey-equip/preferences.rs:21 + item_hotkeys_persist_per_character_and_negotiate_smart_sources |
 | O028 | Hotkeys | Skróty klawiszowe i akcje przedmiotów | PARTIAL | Brakuje menedżera dowolnych skrótów tekstowych i użycia przedmiotów na self/target/cursor; istnieją przypisania akcji klienta, czarów i formularz equip. |
 | T045 | Options | Basic Options | PARTIAL | Jeden mały Settings zamiast zbiorczej strony Gameplay/Interface/Graphics/Sound. |
 | T046 | Options | Controls / General: mouse preset, movement, rotation, keyboard delay | PARTIAL | Rebinding jest; brak presetów myszy, rotation modifier i keyboard delay. |
@@ -164,26 +164,26 @@ Zasady przeciw dublowaniu:
 | T149 | Appearance | Outfits/mounts/addons/colors | PARTIAL | Apply przez klucze/mask/colors/revision; brak galerii i preview. |
 | T150 | Appearance | Outfit Memorial golden/token outfits | MISSING | Brak zakładek token exchange i preview memorial outfits. |
 | O043 | Appearance | Wybór stroju, dodatków i kolorów | PARTIAL | Brakuje wizualnego podglądu stroju i selektorów palety/addonów; obecny formularz wymaga klucza stroju, maski dodatków i czterech indeksów kolorów. |
-| T127 | Depot | Search/details po item/tier, retrieve | PARTIAL | Search/details są; brak pełnego widżetu wyników i widocznych działań retrieve-all. |
+| T127 | Depot | Search/details po item/tier, retrieve | PARTIAL | Retrieve one/all są już w cgmech; dodano indeksy, sumy, tier i zakres retrieve-all. Brak pełnego natywnego widżetu wyboru wyników. |
 | T118 | Exaltation | Tier effects i rezultat exaltation | PARTIAL | Są wyniki forge i item effects; brak pełnej prezentacji tier bonuses i wyniku. |
 | T116 | Forge | Fusion/convergence i transfer/convergence | PARTIAL | Numeric operation/item handles/occurrence zamiast selektora i podglądu przedmiotów. |
 | T117 | Forge | Dust/slivers/cores/limit i historia | PARTIAL | Odczyt/mutacje/historia są; brak pełnego confirmation/result dialog. |
 | O041 | Game window | Banery i powiadomienia gry | PARTIAL | Brakuje ogólnego systemu konfigurowalnych banerów/okienek zdarzeń; dostępne są komunikaty samouczka i HUD. |
 | T121 | Gems | Reveal/socket/unsocket/dismantle/enhance | PARTIAL | Komendy/selektory są; brak kompletnej wizualnej prezentacji gem/mod i atelier. |
-| T134 | House | Guest/subowner/door ACL, bid/leave/notice | PARTIAL | Controller i wire są; brak play.json i produkcyjnego wywołania controller::submit (montaż tylko apps/client/tests/gap_house.rs:21). |
-| T135 | House | Transfer/move-out/furniture wrapping | PARTIAL | Operacje są; brak pełnego wyboru i wszystkich potwierdzeń referencji. |
-| T136 | House | Podium: outfit/mount/creature/item | PARTIAL | Set/projection są; brak preview i kompletu przełączników creature podium. |
-| T137 | House | Hireling jobs/name/sex/outfit config | PARTIAL | Banker/management są; brak jednolitego pełnego okna konfiguracji/podglądu. |
-| O079 | House | Cyklopedia: katalog domów i aukcje | PARTIAL | Brakuje podłączenia katalogu i aukcji domów do sesji oraz natywnego okna; kontroler 0049 i model odpowiedzi istnieją, ale nie są zamontowane w aplikacji. |
-| O083 | House | Edycja list gości, współwłaścicieli i drzwi | PARTIAL | Brakuje natywnego edytora list domowych i podłączonej wymiany wyników HouseResult; istnieją jedynie kontroler i model ACL. |
+| T134 | House | Guest/subowner/door ACL, bid/leave/notice | DONE | Montaż play.json, natywne okno i submit/HouseResult są już w cgmech; dodano informacje o braku środków, limicie i konieczności odświeżenia. |
+| T135 | House | Transfer/move-out/furniture wrapping | PARTIAL | Dodano potwierdzenie dokładnego itemu i celu wrap/place; pozostaje pełny wybór transfer/move-out i pozostałe potwierdzenia. |
+| T136 | House | Podium: outfit/mount/creature/item | PARTIAL | Dodano tekstowy preview outfit/mount/item z kierunkiem; brak graficznego preview i przełączników creature podium. |
+| T137 | House | Hireling jobs/name/sex/outfit config | PARTIAL | Podgląd nazwy/płci, jobów i oczekującego outfitu jest; brak wspólnego pełnego edytora name/sex/jobs/outfit. |
+| O079 | House | Cyklopedia: katalog domów i aukcje | DONE | Sesja i natywne okno są już zamontowane w cgmech; uzupełniono własność, typ, termin aukcji, własny max bid i paginację. |
+| O083 | House | Edycja list gości, współwłaścicieli i drzwi | DONE | Natywny edytor i HouseResult są zamontowane; door ACL korzysta z rewizji wybranego domu bez ręcznego wpisywania rewizji. |
 | T115 | Imbuing | Shrine: apply/clear, sloty i materiały/szansa | PARTIAL | Komendy/lista są; brak pełnego interaktywnego widoku slotów i szczegółów koszt/szansa. |
 | T002 | Login | Połączenie, re-entry i logout | PARTIAL | Obsługa sesji jest; brak pełnego zestawu okien kolejki i ponawiania jak w referencji. |
 | T003 | Login | Pozycja kolejki i odliczanie | MISSING | Brak ekranu kolejki i ponownej próby po jej odliczeniu. |
 | T004 | Login | News i kalendarz zdarzeń | PARTIAL | Raid schedule i world events są; brak news feed oraz kalendarza z opisami wydarzeń. |
 | T005 | Login | Launcher, wersja, kontrola/aktualizacja pakietów | PARTIAL | Launcher i wersja są; brak dowodu równoważnego UI aktualizacji/naprawy pakietów. |
 | O002 | Login | Kalendarz wydarzeń i ekran nowości | PARTIAL | Brakuje przeglądanego miesiącami kalendarza zaplanowanych wydarzeń i ekranu nowości; dostępny jest tylko bieżący komunikat wydarzenia. |
-| T124 | Market | Browse/buy/sell/create/cancel/history | PARTIAL | Handel/anonimowość są; brak pełnego katalogu filtrów, statystyk cen i tabel UI. |
-| T125 | Market | Coin market / transaction details | PARTIAL | Zwykły market nie dowodzi pełnej historii/detail monet; to nie zakup real-money. |
+| T124 | Market | Browse/buy/sell/create/cancel/history | PARTIAL | Dodano statystyki loaded item page oddzielnie buy/sell (min/max/weighted average); brak pełnych filtrów i globalnych statystyk/historii cen. |
+| T125 | Market | Coin market / transaction details | PARTIAL | Dodano order id/revision/debit w historii zakupów za coins; brak dedykowanego coin market i wire tej funkcji. |
 | T158 | Modal dialogs | Amount/text/edit/confirm/dont-show-again | PARTIAL | Są count confirmation/formularze; brak pełnego wspólnego zestawu text editor i trwałego dont-show-again. |
 | T159 | Modal dialogs | Server choices/buttons i show-image | MISSING | Brak ogólnego modal UI sterowanego serwerem; zwykłe okna mechanik go nie zastępują. |
 | T160 | Modal dialogs | Blessings / death protection overview | PARTIAL | Stan i death notices są; brak pełnego dedykowanego Blessings dialog. |
@@ -195,10 +195,10 @@ Zasady przeciw dublowaniu:
 | T144 | Rewards | Daily wall/streak/jokers/claim/pick items | PARTIAL | 30-day wall/claim są; brak pełnego kalendarza, historii i pick-items dialog. |
 | T145 | Rewards | Returner reward | MISSING | Brak dedykowanego przepływu i notyfikacji nagrody powrotnej. |
 | T147 | Rewards | Boosted creature/boss i daily boost | PARTIAL | Status/komendy są; brak pełnego daily spotlight z prezentacją boosted creature/boss. |
-| T128 | Stash | Stow/withdraw/paging i search/filter/sort | PARTIAL | Stow/withdraw/paging są; brak pełnej wyszukiwarki, filtrów trader/category i sort stock/name. |
-| T130 | Store | Katalog/search/buy/confirmation/result | PARTIAL | Zakup jest; brak pełnej nawigacji kategorii, sortów, preview i layoutu. |
-| T131 | Store | Purchase history i coins history | PARTIAL | Odczyt historii istnieje; brak pełnych filtrów, szczegółów i wszystkich rodzajów transakcji. |
-| T132 | Store | Transfer/gift monet w grze | PARTIAL | Catalogue/purchase nie dowodzi kompletnego gift recipient/amount/confirm workflow. |
+| T128 | Stash | Stow/withdraw/paging i search/filter/sort | PARTIAL | Search strony i sort name/stock działają w oknie z zachowaniem handle withdrawal; brak global search i filtrów trader/category (brak metadanych w wire). |
+| T130 | Store | Katalog/search/buy/confirmation/result | PARTIAL | Natywne search/sort strony i preview oferty zachowują server quote; brak pełnej nawigacji kategorii i graficznego preview. |
+| T131 | Store | Purchase history i coins history | PARTIAL | Filtry offer/time strony, szczegóły i sumy per currency są; brak pełnej historii ledger monet i typów top-up/transfer (Platform). |
+| T132 | Store | Transfer/gift monet w grze | PARTIAL | Dodano natywne recipient/amount/review/confirm w trybie disabled, bez komend i debit; transfer wymaga kontraktu i endpointu Platform, którego STORE_V1 nie definiuje. |
 | T151 | Support | Bug report map/technical/typo/other | PARTIAL | Komenda bug i pozycja są; brak pełnego prowadzenia po kategoriach/diagnostyce. |
 | T152 | Support | Violation name/statement/bot/reasons | PARTIAL | Komenda jest; brak pełnego wyboru powodów/examples/translation/confirmation. |
 | T153 | Support | Crash report i zgoda | MISSING | Brak lokalnego workflow raportu awarii; nie wymaga kontaktu z CipSoft. |

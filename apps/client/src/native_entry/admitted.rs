@@ -7,12 +7,18 @@ pub struct AdmittedSession {
     pub(super) character_id: String,
     pub(super) preference_character_id: oteryn_session::CharacterId,
     pub(super) character_name: String,
+    pub(super) training_requested: bool,
     pub(super) session: Session<TcpTlsStream>,
     pub(super) world_id: String,
     pub(super) channel_id: String,
 }
 
 impl AdmittedSession {
+    #[must_use]
+    pub fn training_requested(&self) -> bool {
+        self.training_requested
+    }
+
     pub fn character_id(&self) -> &str {
         &self.character_id
     }

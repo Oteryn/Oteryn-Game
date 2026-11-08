@@ -50,10 +50,10 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 
 pub struct SettingsState {
     window_action: Option<&'static str>,
+    battle_edit: u64,
     pub(super) help_report_pending: bool,
     base_path: Option<PathBuf>,
     character: Option<[u8; 16]>,
-    battle_edit: u64,
     skills_edit: u64,
     pub(crate) item_hotkeys_edit: u64,
     pub(crate) bar_actions_edit: u64,
@@ -194,12 +194,12 @@ impl SettingsState {
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
             window_action: None,
+            battle_edit: 0,
             help_report_pending: false,
             control_input: super::controls::ControlInput::default(),
             control_epoch: std::time::Instant::now(),
             base_path,
             character: None,
-            battle_edit: 0,
             skills_edit: 0,
             item_hotkeys_edit: 0,
             bar_actions_edit: 0,
@@ -346,6 +346,15 @@ impl SettingsState {
         };
     }
 
+    pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
+        let mut preferences = self.preferences.clone();
+        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
+        {
+            self.apply(preferences);
+            self.battle_edit = edit;
+        }
+    }
+
     pub fn sync_archive_bindings(&mut self, link: &crate::play::PlayLink) {
         let mut prefs = self.preferences.clone();
         if let Some(edit) =
@@ -373,15 +382,6 @@ impl SettingsState {
         {
             self.apply(preferences);
             self.skills_edit = edit;
-        }
-    }
-
-    pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
-        let mut preferences = self.preferences.clone();
-        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
-        {
-            self.apply(preferences);
-            self.battle_edit = edit;
         }
     }
 

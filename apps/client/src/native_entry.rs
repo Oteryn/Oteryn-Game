@@ -16,7 +16,7 @@ mod tests;
 use crate::GameplayEntryError;
 pub use admitted::AdmittedSession;
 pub use config::{NativeLoginConfig, NativeLoginSettingError};
-use oteryn_client_runtime::connection::AdmissionAttempt;
+use oteryn_client_runtime::connection::{AdmissionAttempt, AdmissionWait};
 use oteryn_foundation::CancellationToken;
 use oteryn_identity::{IdentityFlow, LoopbackRedirect, PkceMaterial, StateNonce};
 use oteryn_platform_client::PlatformClientConfig;
@@ -62,6 +62,14 @@ pub(crate) async fn enter(
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
 ) -> Result<AdmittedSession, GameplayEntryError> {
+    enter_observed(config, cancellation, None).await
+}
+
+pub(crate) async fn enter_observed(
+    config: &NativeLoginConfig,
+    cancellation: CancellationToken,
+    progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
+) -> Result<AdmittedSession, GameplayEntryError> {
     let platform = PlatformClientConfig::new(&config.platform_url)
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
     let gateway = PlatformClientConfig::new(&config.gateway_url)
@@ -76,7 +84,7 @@ pub(crate) async fn enter(
         &config.oauth_client_id,
         config.retry_unit,
     )?;
-    let (ticket, selected_character, selected_channel, character_name) =
+    let (ticket, selected_character, selected_channel, character_name, training_requested) =
         authorize::authorize(&client, config, cancellation.clone()).await?;
     let character_id = parse_uuid_v7(&selected_character)
         .and_then(|bytes| CharacterId::decode(&bytes).ok())
@@ -97,6 +105,7 @@ pub(crate) async fn enter(
         .map_err(login_rejected)?;
 
     let mut attempt = NativeAttempt {
+        progress,
         client,
         ticket,
         login,
@@ -104,12 +113,14 @@ pub(crate) async fn enter(
         root,
         character_id,
         character_name,
+        training_requested,
         config,
     };
     oteryn_client_runtime::connection::enter(&mut attempt, config.retry_unit, cancellation).await
 }
 
 struct NativeAttempt<'a> {
+    progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
     ticket: NativeTicket,
     login: GatewayLogin<'a>,
@@ -117,12 +128,19 @@ struct NativeAttempt<'a> {
     root: CertificateDer<'static>,
     character_id: CharacterId,
     character_name: String,
+    training_requested: bool,
     config: &'a NativeLoginConfig,
 }
 
 impl AdmissionAttempt for NativeAttempt<'_> {
     type Output = AdmittedSession;
     type Error = GameplayEntryError;
+
+    fn waiting(&mut self, wait: AdmissionWait) {
+        if let Some(progress) = &self.progress {
+            progress.send_replace(Some(wait));
+        }
+    }
 
     async fn admit(&mut self) -> Result<Self::Output, Option<u32>> {
         let capabilities = crate::play::feature_0179_hotkey_equip::view::supported_capabilities(
@@ -149,6 +167,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             character_id: self.login.character_id.to_owned(),
             preference_character_id: self.character_id,
             character_name: self.character_name.clone(),
+            training_requested: self.training_requested,
             session,
             world_id: self.grant.world_id.clone(),
             channel_id: self.grant.channel_id.clone(),
