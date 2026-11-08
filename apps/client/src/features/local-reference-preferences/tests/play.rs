@@ -1,6 +1,20 @@
 use super::*;
 
 #[test]
+fn basic_options_navigate_without_changing_preferences() {
+    use crate::play::{SettingsPage, SettingsState};
+    let mut state = SettingsState::new(None);
+    let before = state.preferences.clone();
+    assert_eq!(state.page, SettingsPage::Gameplay);
+    for page in SettingsPage::ALL {
+        state.page = page;
+        assert!(!page.label().is_empty());
+        assert_eq!(state.preferences, before);
+    }
+    assert_eq!(SettingsPage::ALL.len(), 5);
+}
+
+#[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
 {
     use crate::play::{PreferenceStore, ReferencePreferences, SettingsState};
@@ -318,6 +332,8 @@ fn t012_visual_preferences_control_live_effect_projection() -> Result<(), Box<dy
     assert!(play.scene().sprites().lighting.sources.is_empty());
     Ok(())
 }
+
+
 
 #[test]
 fn t162_monk_hud_has_independent_visibility() -> Result<(), Box<dyn std::error::Error>> {

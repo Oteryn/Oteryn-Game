@@ -16,11 +16,12 @@ pub fn slot_label(panel: &ImbuePanel, slot: u8) -> String {
             || format!("Slot {}: empty", slot + 1),
             |applied| {
                 format!(
-                    "Slot {}: family {}, tier {}, {} seconds left",
+                    "Slot {}: family {}, tier {}, {} seconds left{}",
                     slot + 1,
                     applied.family,
                     applied.tier,
-                    applied.remaining_ms / 1000
+                    applied.remaining_ms / 1000,
+                    time_alert(applied.remaining_ms)
                 )
             },
         )
@@ -85,8 +86,12 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
     if let Some(window) = &panel.window {
         for applied in &window.applied {
             text.push_str(&format!(
-                "Slot {}: family {}, tier {}, {} ms remaining\n",
-                applied.slot, applied.family, applied.tier, applied.remaining_ms
+                "Slot {}: family {}, tier {}, {} ms remaining{}\n",
+                applied.slot + 1,
+                applied.family,
+                applied.tier,
+                applied.remaining_ms,
+                time_alert(applied.remaining_ms)
             ));
         }
         for (index, offer) in window.offers.iter().enumerate() {
@@ -111,4 +116,12 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
         text.push_str(feedback);
     }
     text
+}
+
+fn time_alert(remaining_ms: u32) -> &'static str {
+    match remaining_ms {
+        0 => " — EXPIRED",
+        1..=300_000 => " — LOW TIME (5 minutes or less)",
+        _ => "",
+    }
 }

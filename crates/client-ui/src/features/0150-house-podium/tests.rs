@@ -36,3 +36,21 @@ fn cp01_house_podium_shortcut_and_request_gate() -> Result<(), Box<dyn std::erro
     assert!(panel_text(&panel).contains("ended"));
     Ok(())
 }
+
+#[test]
+fn podium_previews_the_draft_separately_from_committed_projection() {
+    let panel = Panel {
+        selected: true,
+        fields: [
+            "item".into(),
+            "2".into(),
+            "1".into(),
+            "oteryn:mount.horse".into(),
+        ],
+        summary: "Committed: empty podium".into(),
+        ..Panel::default()
+    };
+    let text = panel_text(&panel);
+    assert!(text.contains("Preview: mount oteryn:mount.horse facing east"));
+    assert!(text.contains("Committed: empty podium"));
+}

@@ -1,7 +1,9 @@
 //! Native settings controls and menu, with preferences shared only on the shell thread boundary.
 // SAFETY: HWNDs and subclass data are created, used and destroyed on their owning thread.
 #![allow(unsafe_code)]
-use oteryn_client::play::{PlayView, PreferenceStore, SettingsState, preference_bindings};
+use oteryn_client::play::{
+    PlayView, PreferenceStore, SettingsPage, SettingsState, preference_bindings,
+};
 use std::{
     ptr::{null, null_mut},
     sync::{Arc, Mutex, MutexGuard},
@@ -255,12 +257,24 @@ fn run(shared: Arc<Mutex<Shared>>) {
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
+        let pages = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            120,
+            [10, 10, 720, 240],
+            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
+        );
+        for page in SettingsPage::ALL {
+            SendMessageW(pages, CB_ADDSTRING, 0, wide(page.label()).as_ptr() as isize);
+        }
+        SendMessageW(pages, CB_SETCURSEL, 0, 0);
         let help = control(
             hwnd,
             "STATIC",
             "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse1 is fixed. Conflicts include all registered actions.",
             0,
-            [10, 10, 720, 45],
+            [10, 50, 720, 45],
             0,
         );
         let list = control(
@@ -268,7 +282,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             "COMBOBOX",
             "",
             101,
-            [10, 65, 440, 280],
+            [10, 100, 440, 280],
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
         let chord = control(
@@ -276,14 +290,14 @@ fn run(shared: Arc<Mutex<Shared>>) {
             "EDIT",
             "",
             102,
-            [460, 65, 140, 26],
+            [460, 100, 140, 26],
             WS_BORDER | ES_AUTOHSCROLL as u32,
         );
-        let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 65, 110, 26], 0);
+        let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
         let label = control(
             hwnd,
             "STATIC",
-            "World zoom % (80–180, fitted to window) / Master volume % (0–100)",
+            "World zoom % (80–180, fitted to window)",
             0,
             [10, 110, 700, 25],
             0,
@@ -382,6 +396,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
         .collect::<Vec<_>>();
         let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
         if [
+            pages,
             help,
             list,
             chord,
@@ -425,6 +440,45 @@ fn run(shared: Arc<Mutex<Shared>>) {
             if state.shutdown {
                 break;
             }
+            let page_index = SendMessageW(pages, CB_GETCURSEL, 0, 0);
+            if let Some(page) = usize::try_from(page_index)
+                .ok()
+                .and_then(|i| SettingsPage::ALL.get(i))
+            {
+                state.page = *page;
+            }
+            for (handles, page) in [
+                (&[help, list, chord, rebind][..], SettingsPage::Gameplay),
+                (&[label, scale][..], SettingsPage::Interface),
+                (&[volume, mute][..], SettingsPage::Sound),
+                (
+                    &[
+                        transfer_label,
+                        transfer_path,
+                        import,
+                        export,
+                        backup,
+                        defaults,
+                    ][..],
+                    SettingsPage::Help,
+                ),
+            ] {
+                for handle in handles {
+                    ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
+                }
+            }
+            for (index, handle) in hud_checks.iter().enumerate() {
+                let page = if index < 3 { SettingsPage::Interface } else { SettingsPage::Graphics };
+                ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
+            }
+            ShowWindow(
+                apply,
+                if matches!(state.page, SettingsPage::Interface | SettingsPage::Sound | SettingsPage::Graphics) {
+                    SW_SHOW
+                } else {
+                    SW_HIDE
+                },
+            );
             let index = SendMessageW(list, CB_GETCURSEL, 0, 0);
             if index != selected && index >= 0 {
                 selected = index;
@@ -534,7 +588,19 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            SetWindowTextW(feedback, wide(&state.feedback).as_ptr());
+            let page_help = match state.page {
+                SettingsPage::Graphics => {
+                    "Renderer and window options use the supported native renderer. Additional controls are not available yet."
+                }
+                SettingsPage::Sound => {
+                    "Master volume % (0–100). Changes apply to playback immediately."
+                }
+                _ => "",
+            };
+            SetWindowTextW(
+                feedback,
+                wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),
+            );
             drop(state);
             std::thread::sleep(Duration::from_millis(20));
         }

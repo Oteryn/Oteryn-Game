@@ -7,6 +7,30 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SettingsPage {
+    #[default]
+    Gameplay,
+    Interface,
+    Graphics,
+    Sound,
+    Help,
+}
+
+impl SettingsPage {
+    pub const ALL: [Self; 5] = [Self::Gameplay, Self::Interface, Self::Graphics, Self::Sound, Self::Help];
+
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Gameplay => "Gameplay",
+            Self::Interface => "Interface",
+            Self::Graphics => "Graphics",
+            Self::Sound => "Sound",
+            Self::Help => "Help / settings transfer",
+        }
+    }
+}
+
 pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
     ("0199-cyclopedia-character-open", "Cyclopedia"),
     ("0287-actor-spell-catalog-open", "Spellbook"),
@@ -26,6 +50,7 @@ pub struct SettingsState {
     pub feedback: String,
     pub open: bool,
     pub shutdown: bool,
+    pub page: SettingsPage,
 }
 
 impl SettingsState {
@@ -99,6 +124,7 @@ impl SettingsState {
             open: false,
             shutdown: false,
             input: PreferenceInput::default(),
+            page: SettingsPage::default(),
         }
     }
 
