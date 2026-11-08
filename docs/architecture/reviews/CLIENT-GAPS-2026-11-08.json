@@ -240,10 +240,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / General Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak równoważnej strony i presetów chat-on/chat-off.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/bindings.rs:92 + general_hotkey_presets_route_movement_and_preserve_other_bindings; Automatic selection from chat composer mode remains."
+  "evidence": "apps/client/src/features/local-reference-preferences/chat_context.rs:6 + chat_hotkey_presets_follow_the_live_composer_context; General hotkey editing and saved on/off presets follow on, off and temporary composer modes; manual bindings can opt out."
  },
  {
   "id": "T048",

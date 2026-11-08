@@ -27,6 +27,7 @@ pub(super) struct Controls {
     pub(super) list: HWND,
     pub(super) chord: HWND,
     pub(super) rebind: HWND,
+    pub(super) manual: HWND,
     pub(super) chat_on: HWND,
     pub(super) chat_off: HWND,
     pub(super) mouse_preset: HWND,
@@ -112,6 +113,14 @@ impl Controls {
                 WS_BORDER | ES_AUTOHSCROLL as u32,
             );
             let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
+            let manual = control(
+                hwnd,
+                "BUTTON",
+                "Manual hotkeys (no automatic chat presets)",
+                227,
+                [10, 190, 630, 30],
+                0,
+            );
             let chat_on = control(
                 hwnd,
                 "BUTTON",
@@ -283,6 +292,7 @@ impl Controls {
             .collect::<Vec<_>>();
             let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
             if [
+                manual,
                 profile_name,
                 profile_save,
                 profile_load,
@@ -320,6 +330,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                manual,
                 console,
                 layout,
                 arcs,

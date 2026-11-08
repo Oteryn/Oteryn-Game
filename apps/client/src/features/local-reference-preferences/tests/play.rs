@@ -2,6 +2,8 @@ use super::*;
 
 #[path = "options.rs"]
 mod options;
+#[path = "contexts.rs"]
+mod contexts;
 
 #[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>

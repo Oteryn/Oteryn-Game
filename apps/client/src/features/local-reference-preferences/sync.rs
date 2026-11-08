@@ -67,6 +67,8 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 ];
 
 pub struct SettingsState {
+    pending_chat_mode: Option<bool>,
+    chat_context: Option<bool>,
     window_action: Option<&'static str>,
     battle_edit: u64,
     store: Option<PreferenceStore>,
@@ -156,6 +158,8 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            pending_chat_mode: None,
+            chat_context: None,
             window_action: None,
             battle_edit: 0,
             store,
@@ -286,3 +290,6 @@ impl SettingsState {
         Ok(())
     }
 }
+
+#[path = "chat_context.rs"]
+mod chat_context;

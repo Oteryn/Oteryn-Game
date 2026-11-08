@@ -34,6 +34,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            manual,
             console,
             layout,
             arcs,
@@ -134,7 +135,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     &[profile_name, profile_save, profile_load, profile_delete][..],
                     SettingsPage::CustomHotkeys,
                 ),
-                (&[chat_on, chat_off][..], SettingsPage::Hotkeys),
+                (&[chat_on, chat_off, manual][..], SettingsPage::Hotkeys),
                 (
                     &[
                         mouse_preset,
@@ -219,13 +220,11 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         Err(error) => state.feedback = error.to_string(),
                     }
                 } else if matches!(action, 225 | 226) {
-                    match preferences.general_hotkey_preset(action == 225) {
-                        Ok(()) => state.apply(preferences),
-                        Err(error) => {
-                            state.feedback =
-                                format!("Preset conflicts with a custom binding: {error}")
-                        }
+                    if let Err(error) = state.apply_chat_preset(action == 225) {
+                        state.feedback = error.to_string();
                     }
+                } else if action == 227 {
+                    state.manual_hotkeys();
                 } else if action == 223 {
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
