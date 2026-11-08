@@ -8,10 +8,10 @@ mod view;
 pub use achievements::{next_request as achievement_next_request, request as achievement_request};
 pub use input::{open_key, set_target};
 pub use protocol::{Intent, apply_result, request};
-pub use state::{CyclopediaCharacterPanel, HistoryRow};
+pub use state::{BadgeFilter, BadgeRow, CyclopediaCharacterPanel, HistoryRow};
 pub use view::{
-    CombatRow, combat_detail, combat_rows, history_rows, misc_bars, misc_cards, overview_bars,
-    overview_cards, panel_text, store_blessings, store_cards,
+    CombatRow, badge_rows, badge_text, combat_detail, combat_rows, history_rows, misc_bars,
+    misc_cards, overview_bars, overview_cards, panel_text, store_blessings, store_cards,
 };
 
 #[cfg(test)]
