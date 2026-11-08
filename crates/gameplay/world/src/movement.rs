@@ -48,15 +48,29 @@ pub enum CardinalStep {
     East,
     South,
     West,
+    NorthEast,
+    SouthEast,
+    SouthWest,
+    NorthWest,
 }
 
 impl CardinalStep {
-    const fn delta(self) -> (i32, i32) {
+    pub const fn is_diagonal(self) -> bool {
+        matches!(
+            self,
+            Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest
+        )
+    }
+    pub const fn delta(self) -> (i32, i32) {
         match self {
             Self::North => (0, -1),
             Self::East => (1, 0),
             Self::South => (0, 1),
             Self::West => (-1, 0),
+            Self::NorthEast => (1, -1),
+            Self::SouthEast => (1, 1),
+            Self::SouthWest => (-1, 1),
+            Self::NorthWest => (-1, -1),
         }
     }
 }
@@ -202,7 +216,7 @@ impl<'a> MovementDecision<'a> {
             return Err(MovementError::NotQualified);
         }
         owner
-            .commit_cardinal(self.expected, self.destination)
+            .commit_adjacent(self.expected, self.destination)
             .map_err(MovementError::Actor)
     }
 }
@@ -937,12 +951,16 @@ mod tests {
     }
 
     #[test]
-    fn real_movement_all_cardinals_use_exact_content_and_owner() -> Result<(), Box<dyn Error>> {
+    fn real_movement_all_directions_use_exact_content_and_owner() -> Result<(), Box<dyn Error>> {
         for (direction, x, y) in [
             (CardinalStep::North, 4, 4),
             (CardinalStep::East, 5, 5),
             (CardinalStep::South, 4, 6),
             (CardinalStep::West, 3, 5),
+            (CardinalStep::NorthEast, 5, 4),
+            (CardinalStep::SouthEast, 5, 6),
+            (CardinalStep::SouthWest, 3, 6),
+            (CardinalStep::NorthWest, 3, 4),
         ] {
             let mut fixture = self::fixture(4, 5, false)?;
             let scope = self::scope(&fixture)?;
@@ -963,6 +981,66 @@ mod tests {
                 fixture.raw_position()?,
                 (result.position(), result.revision())
             );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn real_movement_published_dance_route_uses_sixteen_atomic_steps() -> Result<(), Box<dyn Error>>
+    {
+        let data: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../content/quests/world-callbacks.json"
+        ))?;
+        let mut tiles = std::collections::BTreeMap::new();
+        for callback in data["callbacks"].as_array().ok_or("callbacks")? {
+            if callback["native_rule"]["kind"] != "unnatural_dance" {
+                continue;
+            }
+            let tile = callback["native_rule"]["tile"].as_u64().ok_or("tile")?;
+            let position = &callback["selector"]["position"];
+            let x = i32::try_from(position["x"].as_i64().ok_or("x")?)?;
+            let y = i32::try_from(position["y"].as_i64().ok_or("y")?)?;
+            let floor = i16::try_from(position["floor"].as_i64().ok_or("floor")?)?;
+            tiles.insert(tile, MovementLocalPosition { x, y, floor });
+        }
+        assert_eq!(tiles.len(), 9);
+        let mut actor_fixture = MovementActorFixture::new(*tiles.get(&8).ok_or("start")?, false)?;
+        let scope = self::scope(&actor_fixture)?;
+        let actor = actor_fixture.actor();
+        let initial = actor_fixture.current_position()?.revision();
+        // Crystal movements_mission3_dance_dance_evolution.lua config[1..16].
+        for (offset, tile) in [5, 7, 5, 9, 5, 8, 4, 2, 6, 2, 5, 1, 5, 3, 5, 2]
+            .into_iter()
+            .enumerate()
+        {
+            let target = *tiles.get(&tile).ok_or("dance tile")?;
+            let before = actor_fixture.current_position()?;
+            let at = before.position();
+            let direction = match (target.x - at.x, target.y - at.y) {
+                (0, -1) => CardinalStep::North,
+                (1, 0) => CardinalStep::East,
+                (0, 1) => CardinalStep::South,
+                (-1, 0) => CardinalStep::West,
+                (1, -1) => CardinalStep::NorthEast,
+                (1, 1) => CardinalStep::SouthEast,
+                (-1, 1) => CardinalStep::SouthWest,
+                (-1, -1) => CardinalStep::NorthWest,
+                _ => return Err("dance route is not adjacent".into()),
+            };
+            let index = self::index(
+                &scope,
+                &[(target.x, target.y, i32::from(target.floor), walkable())],
+            )?;
+            let result = step_cardinal(
+                &mut actor_fixture.borrow_position(),
+                actor,
+                before,
+                &selection(before, &scope),
+                &index,
+                direction,
+            )?;
+            assert_eq!(result.position(), target);
+            assert_eq!(result.revision(), initial + u64::try_from(offset)? + 1);
         }
         Ok(())
     }
@@ -1106,6 +1184,10 @@ mod tests {
             (i32::MIN, 5, CardinalStep::West),
             (5, i32::MAX, CardinalStep::South),
             (5, i32::MIN, CardinalStep::North),
+            (i32::MAX, 5, CardinalStep::NorthEast),
+            (5, i32::MAX, CardinalStep::SouthEast),
+            (i32::MIN, 5, CardinalStep::SouthWest),
+            (5, i32::MIN, CardinalStep::NorthWest),
         ] {
             let mut fixture = self::fixture(x, y, false)?;
             let scope = self::scope(&fixture)?;

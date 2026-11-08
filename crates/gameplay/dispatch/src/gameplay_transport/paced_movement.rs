@@ -94,6 +94,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => CardinalStep::East,
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
         };
         // Resolve steering before any direction-dependent field/floor read. Pass
         // this same frozen `now` to the common movement owner after preflight.
@@ -115,6 +119,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             CardinalStep::East => StepDirection::East,
             CardinalStep::South => StepDirection::South,
             CardinalStep::West => StepDirection::West,
+            CardinalStep::NorthEast => StepDirection::NorthEast,
+            CardinalStep::SouthEast => StepDirection::SouthEast,
+            CardinalStep::SouthWest => StepDirection::SouthWest,
+            CardinalStep::NorthWest => StepDirection::NorthWest,
         };
         let (direction, hicks) =
             drunk::admitted_direction(&mut runtime, &states, actor, session, direction, now);
@@ -123,6 +131,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => CardinalStep::East,
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
         };
         // The closed bundle doors are read live per candidate cell, not collected per step: a
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).

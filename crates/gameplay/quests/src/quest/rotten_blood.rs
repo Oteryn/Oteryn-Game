@@ -70,7 +70,7 @@ pub fn essence(item: &str) -> Option<&'static EssenceSource> {
 /// by the existing quest callback consumption owner under the Character lock.
 pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
-    Callback {
+    Callback { admission: None,
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,

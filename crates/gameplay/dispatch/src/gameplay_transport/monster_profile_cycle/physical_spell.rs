@@ -734,6 +734,8 @@ async fn prepare_source_reader<'native>(
                 crate::movement::CardinalStep::East => Facing::East,
                 crate::movement::CardinalStep::South => Facing::South,
                 crate::movement::CardinalStep::West => Facing::West,
+                crate::movement::CardinalStep::NorthEast | crate::movement::CardinalStep::NorthWest => Facing::North,
+                crate::movement::CardinalStep::SouthEast | crate::movement::CardinalStep::SouthWest => Facing::South,
             })
     };
     let canonical_facing = physical_facing.map(|facing| match facing {

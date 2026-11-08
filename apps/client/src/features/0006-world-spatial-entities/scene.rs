@@ -106,6 +106,10 @@ impl Scene {
                     StepDir::East => 1,
                     StepDir::South => 2,
                     StepDir::West => 3,
+                    StepDir::NorthEast => 0,
+                    StepDir::SouthEast => 2,
+                    StepDir::SouthWest => 2,
+                    StepDir::NorthWest => 0,
                 }
             } else {
                 match entity.detail {

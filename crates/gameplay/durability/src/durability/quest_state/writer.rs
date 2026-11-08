@@ -20,16 +20,33 @@ impl DurabilityRoot {
         callback: oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
     ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner_resolved::<_, 0>(
-            authority, node, fence, request, catalogue, None, None, None, None,
-            &grizzly::NoGrizzlyPremium, None, None, Some(admission), None, None,
-            vec![callback], Vec::new(),
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            None,
+            Some(admission),
+            None,
+            None,
+            vec![callback],
+            Vec::new(),
         )
         .await
     }
 
     /// The same immutable fixture resolution as NPC rewards, retaining every World fence.
     #[cfg(feature = "test-support")]
-    #[allow(clippy::too_many_arguments, reason = "fixture retains the complete production World admission tuple")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "fixture retains the complete production World admission tuple"
+    )]
     pub async fn commit_fixture_world_reward(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -43,10 +60,65 @@ impl DurabilityRoot {
         callback: oteryn_gameplay_quests::quest::world_callbacks::Callback,
     ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner_resolved::<_, 0>(
-            authority, node, fence, request, catalogue, Some((permit, context, Some(admission.native))),
-            None, None, None, &grizzly::NoGrizzlyPremium, None, None, Some(admission), None, None,
-            Vec::new(), vec![callback],
-        ).await
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, Some(admission.native))),
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            None,
+            Some(admission),
+            None,
+            None,
+            Vec::new(),
+            vec![callback],
+        )
+        .await
+    }
+
+    /// The same immutable fixture resolution as NPC rewards, retaining every World fence.
+    #[cfg(feature = "test-support")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "fixture retains the complete production World admission tuple"
+    )]
+    pub async fn commit_fixture_world_admission<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        gate: &G,
+        callback: oteryn_gameplay_quests::quest::world_callbacks::Callback,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner_resolved::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, None)),
+            None,
+            None,
+            None,
+            gate,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Vec::new(),
+            vec![callback],
+        )
+        .await
     }
 
     /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
@@ -126,7 +198,7 @@ impl DurabilityRoot {
 
     /// A content-bound world callback uses the same fenced quest writer and receipt.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_character_world_callback_with_items(
+    pub async fn commit_character_world_callback_with_items<G: grizzly::GrizzlyPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -137,6 +209,7 @@ impl DurabilityRoot {
         context: super::super::quest_world_callback::QuestWorldContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
         admission: Option<QuestRewardAdmission<'_>>,
+        gate: &G,
     ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner::<_, 0>(
             authority,
@@ -148,7 +221,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            &grizzly::NoGrizzlyPremium,
+            gate,
             None,
             None,
             admission,
@@ -268,14 +341,29 @@ impl DurabilityRoot {
         flame: Option<super::rotten_flame::RottenFlameUse>,
         source_action: Option<super::QuestSourceAction>,
     ) -> Result<QuestTransitionOutcome> {
-        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        let world_callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()
+        let reward_callbacks =
+            oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
+                .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let world_callbacks = oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_quest_inner_resolved(
-            authority, node, fence, request, catalogue, context, grizzly_action,
-            grizzly_boss, grizzly_party, grizzly_gate, grizzly_policy, payment,
-            reward_admission, native, benevola, reward_callbacks, world_callbacks,
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            context,
+            grizzly_action,
+            grizzly_boss,
+            grizzly_party,
+            grizzly_gate,
+            grizzly_policy,
+            payment,
+            reward_admission,
+            native,
+            benevola,
+            reward_callbacks,
+            world_callbacks,
         )
         .await
     }
@@ -321,9 +409,12 @@ impl DurabilityRoot {
         let native_key = request
             .transition_key
             .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX)
-            || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key).is_some();
+            || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
+                .is_some();
         if native_key != native.is_some()
-            || native.as_ref().is_some_and(|death| !death.valid(&request))
+            || native
+                .as_ref()
+                .is_some_and(|death| !death.valid(&request, &catalogue))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -340,22 +431,54 @@ impl DurabilityRoot {
             .iter()
             .any(|callback| {
                 // Ownership survives a caller renaming the synthetic transition.
-                callback.effects.quest_completion.as_ref().is_some_and(|quest| {
-                    catalogue.transition(&request.transition_key).is_some_and(|transition| {
-                        transition.completes && transition.quest.as_str() == quest.as_str()
+                callback
+                    .effects
+                    .quest_completion
+                    .as_ref()
+                    .is_some_and(|quest| {
+                        catalogue
+                            .transition(&request.transition_key)
+                            .is_some_and(|transition| {
+                                transition.completes && transition.quest.as_str() == quest.as_str()
+                            })
                     })
-                }) || oteryn_gameplay_quests::quest::world_callbacks::completion_transition(callback)
+                    || oteryn_gameplay_quests::quest::world_callbacks::completion_transition(
+                        callback,
+                    )
                     .is_some_and(|transition| transition.key == request.transition_key)
             })
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        let collection = catalogue
+            .authored_bindings()
+            .and_then(|bindings| {
+                bindings
+                    .quests
+                    .iter()
+                    .flat_map(|quest| &quest.stages)
+                    .find_map(|stage| match &stage.trigger {
+                        oteryn_gameplay_quests::quest::authored_bindings::Trigger::Collect {
+                            collection,
+                        } if collection.key == request.transition_key => Some(collection.as_ref()),
+                        _ => None,
+                    })
+            })
+            .cloned();
         let reward_callback = reward_callbacks
             .into_iter()
             .find(|c| c.key == request.transition_key);
+        if reward_callback
+            .as_ref()
+            .and_then(|c| c.map_mark.as_ref())
+            .is_some_and(|mark| !mark.valid())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         // Ownership survives a caller removing or renaming a bound effect.
         if let Some(transition) = catalogue.transition(&request.transition_key) {
-            oteryn_gameplay_quests::quest::admission_binding::validate(
+            oteryn_gameplay_quests::quest::admission_binding::validate_for_catalogue(
+                &catalogue,
                 transition,
                 context.is_some(),
             )
@@ -476,7 +599,8 @@ impl DurabilityRoot {
         }
         let callback = if context.is_some() {
             Some(
-                world_callbacks.iter()
+                world_callbacks
+                    .iter()
                     .find(|c| c.key == request.transition_key)
                     .cloned()
                     .ok_or(CharacterProgressionError::InvalidInput)?,
@@ -499,6 +623,8 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let mount_achievement = super::super::quest_mount_rewards::prepare(callback.as_ref())
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let dance_achievement = super::super::quest_unnatural_selection::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         // Native rules require a world occurrence even if a caller renames the
@@ -517,20 +643,19 @@ impl DurabilityRoot {
         // Value-bearing or context-dependent callbacks cannot use a weaker generic caller.
         if context.is_none()
             && (native_world_rule
-                || world_callbacks
-                    .iter()
-                    .any(|c| {
-                        c.key == request.transition_key
-                            && (!c.state_ops.is_empty()
-                                || !c.offerings.is_empty()
-                                || c.item_on_target.is_some()
-                                || c.world_change.is_some()
-                                || c.minimum_level.is_some()
-                                || c.experience.is_some()
-                                || c.monk_reward.is_some()
-                                || c.native_rule.is_some()
-                                || c.effects.item_reward.is_some())
-                    }))
+                || world_callbacks.iter().any(|c| {
+                    c.key == request.transition_key
+                        && (!c.state_ops.is_empty()
+                            || !c.offerings.is_empty()
+                            || c.item_on_target.is_some()
+                            || c.world_change.is_some()
+                            || c.minimum_level.is_some()
+                            || c.admission.is_some()
+                            || c.experience.is_some()
+                            || c.monk_reward.is_some()
+                            || c.native_rule.is_some()
+                            || c.effects.item_reward.is_some())
+                }))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -692,6 +817,16 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
+                    // Premium's shared latch precedes the Character root lock. Historical
+                    // receipts above replay without evaluating current entrance eligibility.
+                    if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium) {
+                        let account: String = sqlx::query_scalar(
+                            "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+                        ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        if !grizzly_gate.task_permitted(&mut tx, uuid_text(&account)?).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     let root = match super::rotten_essence::assert_fence(&mut tx, &fence, &node, essence.is_some() || soul_input).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
@@ -869,6 +1004,12 @@ impl DurabilityRoot {
                         }
                         stored.insert(key, row.try_get("value")?);
                     }
+                    let refusal = if refusal.is_none() {
+                        if let Some(collection) = &collection {
+                            (!super::collection::admit(&mut tx, fence, &request, collection).await?)
+                                .then_some(QuestRefusal::StageMismatch)
+                        } else { None }
+                    } else { refusal };
                     // Parent guards use the same root lock and sorted track locks as
                     // owned writes. A conversation snapshot cannot authorize value.
                     let refusal = refusal.or_else(|| {
@@ -881,7 +1022,8 @@ impl DurabilityRoot {
                             .then_some(QuestRefusal::StageMismatch)
                     });
                     let refusal=if refusal.is_none() {
-                        if let Some(death)=&native {(!death.admit(&mut tx,fence).await?).then_some(QuestRefusal::StageMismatch)} else {None}
+                        if let Some(death)=&native {(!death.admit(&mut tx,fence,&catalogue).await?).then_some(QuestRefusal::StageMismatch)} else {None}
+
                     } else {refusal};
                     let mut grizzly_plan = None;
                     let refusal = if let (None, Some(action)) = (refusal, &grizzly_action) {
@@ -1035,7 +1177,7 @@ impl DurabilityRoot {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
-                        && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
+                        && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context, (&recovery, &node)).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
@@ -1185,7 +1327,7 @@ impl DurabilityRoot {
                     .bind(binding.as_slice())
                     .bind(&pin)
                     .bind(hash.as_slice())
-                    .bind(transition.completes)
+                    .bind(catalogue.completes_after(transition,&changes))
                     .bind(&track_keys)
                     .bind(&before)
                     .bind(&after)
@@ -1195,6 +1337,17 @@ impl DurabilityRoot {
                     .await?;
                     if receipt.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
+                    }
+                    // The same native receipt that owns shared Hive/Deeplings credit
+                    // also owns personal progress in this World occurrence. Historical
+                    // replay returned earlier, so it cannot attach to a later save.
+                    if transition.world_change.is_some()
+                        || oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
+                        || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()
+                    {
+                        sqlx::query("INSERT INTO game_character_event_quest_progress(character_id,world_id,reset_epoch,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after) SELECT r.character_id,a.world_id,a.reset_epoch,r.committed_character_revision,r.quest_key,r.transition_key,r.completes,r.track_keys,r.values_after FROM game_character_quest_receipts r JOIN game_world_reset_active a ON a.world_id=encode($3,'hex')::uuid WHERE r.character_id=encode($1,'hex')::uuid AND r.committed_character_revision=$2::text::numeric")
+                            .bind(id).bind(&committed).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                            .execute(&mut *tx).await?;
                     }
                     if let Some(input)=&flame {
                         super::rotten_flame::record(&mut tx,fence,input,&binding).await?;
@@ -1221,7 +1374,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
-                    let completed = transition.completes.then_some(committed.as_str());
+                    let completed = catalogue.completes_after(transition,&changes).then_some(committed.as_str());
                     let written = if stored_state.is_some() {
                         sqlx::query(
                             "UPDATE game_character_quest_states \
@@ -1303,6 +1456,18 @@ impl DurabilityRoot {
                         super::super::quest_unnatural_selection::earn(&mut tx, fence, &request, callback,
                             &changes, dance_achievement.as_ref()).await?;
                     }
+                    // Item custody participants finish before the account appearance lock.
+                    if let Some(world) = &callback
+                        && world.effects.mount_reward.is_some()
+                    {
+                        let Some(native) = context.as_ref().and_then(|(_, _, native)| *native) else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        if !super::super::quest_mount_rewards::earn(&mut tx, fence, &request, world, native, mount_achievement.as_ref()).await? {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     super::hero_of_bounac::earn(&mut tx, fence, &request, &changes, lionheart.as_ref()).await?;
                     super::planegazer_finale::earn(&mut tx, fence, &request, &changes).await?;
                     super::wrath_sleeping_dragon::earn(&mut tx, fence, &request, &changes, wayfarer.as_ref()).await?;
@@ -1313,6 +1478,9 @@ impl DurabilityRoot {
                         grizzly_boss::earn(&mut tx, fence, &request, context).await?;
                     }
                     if timer_recipe.is_some() { server_timer::audit(&mut tx,&request).await?; }
+                    if let Some(callback) = &reward_callback {
+                        map_marks::record(&mut tx, fence, callback, committed_revision).await?;
+                    }
                     let committed = CommittedQuestTransition {
                         character_id: character,
                         cause: request.cause,
@@ -1323,7 +1491,7 @@ impl DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                         pinned_content_revision: pin,
                         definition_hash: hash,
-                        completes: transition.completes,
+                        completes: catalogue.completes_after(transition,&changes),
                         changes,
                         experience,
                     };

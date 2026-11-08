@@ -158,3 +158,34 @@ pub(crate) fn qmech_siblings_weight_counts_all_outputs_before_claim() -> TestRes
     );
     Ok(())
 }
+
+/// Exercise the installed quest-side trigger, including its SQL name resolution.
+/// Complete dispatch cases separately prove positive reward/source participants.
+pub(crate) fn qmech_siblings_incomplete_source_is_an_integrity_refusal() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    let started = std::time::Instant::now();
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin,"m09_source_guard").await?;
+        let mut tx = h.pool.begin().await?;
+        let key="oteryn:quest-reward/m09-incomplete-source";
+        let plan=serde_json::json!({"key":key,"quest":"oteryn:quest.m09_source_fixture",
+            "take":[],"give":{"item":"fixture:b3.stone","count":1},"outfit":null});
+        sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,100,$3,$4,encode($5,'hex')::uuid,'{}')")
+            .bind(id(CHARACTER).as_slice()).bind(id(SESSION).as_slice()).bind(key)
+            .bind(plan).bind(id(151).as_slice()).execute(&mut *tx).await?;
+        let error=sqlx::query("SET CONSTRAINTS game_quest_reward_complete IMMEDIATE")
+            .execute(&mut *tx).await.err().ok_or("incomplete source was accepted")?;
+        let database=error.as_database_error().ok_or("expected integrity error")?;
+        assert_eq!(database.code().as_deref(),Some("23514"),"{error}");
+        assert!(database.message().contains("quest reward lacks exact independent outputs"),"{error}");
+        tx.rollback().await?;
+        h.cleanup().await
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED m09_sibling_source_guard duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}

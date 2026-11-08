@@ -176,6 +176,21 @@ impl CurrentOwnerMovementPosition<'_> {
         if next.floor != before.floor || !(east || west || south || north) {
             return Err(CarrierError::MovementNonCardinal);
         }
+        self.commit_adjacent(expected, next)
+    }
+
+    /// Commit one same-floor adjacent step, including a diagonal, against the exact snapshot.
+    pub fn commit_adjacent(
+        &mut self,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        let before = expected.position();
+        let dx = before.x.abs_diff(next.x);
+        let dy = before.y.abs_diff(next.y);
+        if next.floor != before.floor || dx > 1 || dy > 1 || (dx == 0 && dy == 0) {
+            return Err(CarrierError::MovementNonCardinal);
+        }
         self.carrier.commit_movement_position(
             self.continuity,
             expected.0,
@@ -698,6 +713,8 @@ impl ChannelActorCarrier {
                 (true, Some(-1), Some(0)) => MovementFacing::West,
                 (true, Some(0), Some(1)) => MovementFacing::South,
                 (true, Some(0), Some(-1)) => MovementFacing::North,
+                (true, Some(-1 | 1), Some(-1)) => MovementFacing::North,
+                (true, Some(-1 | 1), Some(1)) => MovementFacing::South,
                 _ => return Err(CarrierError::MovementNonCardinal),
             };
             let order = self.next_tile_entry_order()?;

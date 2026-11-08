@@ -12,3 +12,7 @@ pub fn panel_text(panel: &Panel) -> String {
         }
     )
 }
+
+pub fn title_rows(panel: &Panel) -> Vec<super::titles::TitleChoice> {
+    super::titles::title_rows(panel)
+}

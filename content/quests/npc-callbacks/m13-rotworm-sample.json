@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/goblin_merchant/rotworm_sample",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "chosen:Goblin Merchant Quest/s3:Rotworm odour sample"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/goblin-merchant/rotworm-sample",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "rotworm sample"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i17673",
+      "creature_target": "oteryn:creature.rotworm",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/rotworm_sample",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17673",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i17674",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the Rotworm odour."
+      ],
+      "sources": [
+        "chosen:Goblin Merchant Quest/s3:third perfume sample uses a live Rotworm; 17673 to 17674 retained perfume-gatherer variants; personal sample receipt does not finish the four-odour stage",
+        "content/creatures/definitions:oteryn:creature.rotworm",
+        "content/items/definitions/items-06500-06999.json:17673,17674"
+      ]
+    }
+  ]
+}

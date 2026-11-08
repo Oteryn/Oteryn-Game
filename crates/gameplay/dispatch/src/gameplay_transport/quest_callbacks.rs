@@ -4,11 +4,13 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
+mod conditional_cells;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod effects;
 mod encounter;
 mod execute;
+mod ground_stack;
 pub(super) mod monsters;
 mod rewards;
 mod rotten_flame;
@@ -162,7 +164,7 @@ fn shared_added_source(
         .then_some((pos, entry.facts))
 }
 
-fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
+pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
         return shared_added_source(map, callback, key).is_some();
     }
@@ -325,11 +327,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.iter().any(|pending| {
             callbacks().iter().any(|callback| {
                 callback.key == pending.callback
-                    && callback
-                        .effects
-                        .item_reward
-                        .as_ref()
-                        .is_some_and(|reward| reward.premium)
+                    && (callback.admission.as_ref().is_some_and(|a| a.premium)
+                        || callback
+                            .effects
+                            .item_reward
+                            .as_ref()
+                            .is_some_and(|reward| reward.premium))
             })
         }) {
             // Settle delivery before channel locks. A historical receipt still
@@ -365,6 +368,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
                         actor_conditions: None,
                         carried_use: None,
+                        creature_use: None,
                         peer_use: None,
 
                         native,
@@ -400,6 +404,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.active_generation
                         .and_then(|generation| generation.native_gameplay()),
                     admission,
+                    &self.premium_coordinator,
                 )
                 .await
             };
@@ -455,6 +460,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(content) = self.states.quest_callbacks.fixture.get() {
             return content;
         }
+        if let Some(callbacks) = self
+            .quest_catalogue
+            .as_deref()
+            .and_then(|c| c.authored_world_callbacks())
+        {
+            return callbacks;
+        }
         callbacks()
     }
 
@@ -474,6 +486,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         revision: u64,
         expected: Option<MovementPositionSnapshot>,
     ) -> Result<Option<ObservedWorldCallback>, UseDisposition> {
+        if callback
+            .world_requirements
+            .iter()
+            .any(|r| r.ground_stack.is_some())
+        {
+            let index = {
+                let runtime = self.runtime.lock().await;
+                super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+            };
+            if super::loop_move::loop_ground(self, map.overlay.base(), index)
+                .await
+                .is_none()
+            {
+                return Err(UseDisposition::Rejected);
+            }
+        }
         if callback.has_personal_state()
             || world_callbacks::world_change_requirement(&callback.key).is_none()
         {
@@ -751,16 +779,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
                     && matches(map, c, resolved.placement_key)
+                    && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
         let [callback] = selected.as_slice() else {
             return None;
         };
-        if callback
-            .effects
-            .item_reward
-            .as_ref()
-            .is_some_and(|reward| reward.premium)
+        if callback.admission.as_ref().is_some_and(|a| a.premium)
+            || callback
+                .effects
+                .item_reward
+                .as_ref()
+                .is_some_and(|reward| reward.premium)
         {
             // The synchronous live view used by MINT needs delivery settled;
             // await that read before taking the spell lane and Channel guards.
@@ -945,6 +975,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return entered;
         };
+        if callback.admission.as_ref().is_some_and(|a| a.premium) {
+            let _ = self.session_premium_gate(session).await;
+        }
         let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)
         else {
             return entered;

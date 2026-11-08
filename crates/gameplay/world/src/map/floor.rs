@@ -343,6 +343,10 @@ fn resolve_landing_with_teleports(
         CardinalStep::East => (1, 0),
         CardinalStep::South => (0, 1),
         CardinalStep::West => (-1, 0),
+        CardinalStep::NorthEast => (1, -1),
+        CardinalStep::SouthEast => (1, 1),
+        CardinalStep::SouthWest => (-1, 1),
+        CardinalStep::NorthWest => (-1, -1),
     };
     let next = (origin.0 + dx, origin.1 + dy, origin.2);
     match ground(next) {
@@ -755,6 +759,10 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
             CardinalStep::East => MovementFacing::East,
             CardinalStep::South => MovementFacing::South,
             CardinalStep::West => MovementFacing::West,
+            CardinalStep::NorthEast => MovementFacing::North,
+            CardinalStep::SouthEast => MovementFacing::South,
+            CardinalStep::SouthWest => MovementFacing::South,
+            CardinalStep::NorthWest => MovementFacing::North,
         };
         (self.actor, self.expected, self.destination, facing)
     }

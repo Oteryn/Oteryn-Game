@@ -68,7 +68,7 @@ fn registry() -> Result<&'static Registry, String> {
             }
             // Native death writes share tracks with bound NPC trial stages.
             // Their specialised writer already requires an exact native-death proof.
-            for counter in super::native_kills::COUNTERS {
+            for counter in super::native_kills::registered_counters()? {
                 add(counter.transition(), false, true)?;
             }
             // M24 source deaths may share questline tracks with existing NPC
@@ -105,6 +105,53 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
         return Err("unregistered write to bound track".into());
     }
     Ok(())
+}
+
+/// Catalogue-scoped authored world owners remain immutable and cannot seize a
+/// global owner's tracks or downgrade a registered native operation.
+pub fn validate_for_catalogue(
+    catalogue: &super::QuestStateCatalogue,
+    transition: &QuestTransition,
+    world_context: bool,
+) -> Result<(), String> {
+    let global = registry()?;
+    if global.owners.contains_key(&transition.key)
+        || transition
+            .effects
+            .iter()
+            .any(|effect| global.protected_tracks.contains(&effect.track))
+    {
+        return validate(transition, world_context);
+    }
+    let mut protected = BTreeSet::new();
+    if let Some(bindings) = &catalogue.authored_bindings {
+        for quest in &bindings.source.quests {
+            for stage in &quest.stages {
+                let expected = stage.transition(&quest.quest)?;
+                if expected.key == transition.key {
+                    let world = matches!(
+                        stage.trigger,
+                        super::authored_bindings::Trigger::MapUse { .. }
+                            | super::authored_bindings::Trigger::StepIn { .. }
+                    );
+                    return if world == world_context && transition == &expected {
+                        Ok(())
+                    } else {
+                        Err("authored operation or physical context mismatch".into())
+                    };
+                }
+            }
+            protected.extend(quest.tracks.iter().map(|track| track.key.clone()));
+        }
+    }
+    if transition
+        .effects
+        .iter()
+        .any(|effect| protected.contains(effect.track.as_str()))
+    {
+        return Err("unregistered write to authored bound track".into());
+    }
+    validate(transition, world_context)
 }
 
 #[cfg(test)]

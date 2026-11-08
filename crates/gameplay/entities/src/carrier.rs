@@ -149,6 +149,9 @@ mod owner_views;
 #[path = "carrier/party_reward_occurrence_tests.rs"]
 mod party_reward_occurrence_tests;
 
+mod platform_displacement;
+pub use platform_displacement::PlatformDisplacement;
+
 mod player_control;
 pub use player_control::RuntimeSessionAbsence;
 

@@ -18,6 +18,7 @@ mod floor_assembly;
 mod house_container;
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
+mod map_sources;
 mod seed_drop;
 
 use super::ComposedFreshAdmission;
@@ -154,6 +155,7 @@ pub struct LoopGroundOverlay {
     facts: HashMap<[u8; 16], EntryFacts>,
     source_plain_corpses: HashSet<[u8; 16]>,
     field_pin: ([u8; 32], [u8; 32], u64),
+    taken_sources: std::collections::BTreeSet<u64>,
 }
 
 impl LoopGroundOverlay {
@@ -257,6 +259,7 @@ impl LoopGroundOverlay {
             facts,
             source_plain_corpses,
             field_pin,
+            taken_sources: Default::default(),
         }
     }
 
@@ -363,6 +366,25 @@ impl LoopGroundCache {
             state.epoch = state.epoch.wrapping_add(1);
             state.current = None;
         }
+    }
+
+    /// Read only a non-invalidated projection of this exact live Channel pin.
+    pub(super) fn current_for(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        base: &Arc<WorldBase>,
+    ) -> Option<Arc<LoopGroundOverlay>> {
+        let pin = runtime.content_pin();
+        self.cached().1.filter(|current| {
+            current.field_pin
+                == (
+                    pin.server_artifact_digest(),
+                    pin.frame_binding_digest(),
+                    runtime.binding().scope_generation().get(),
+                )
+                && current.overlay.runtime_scope() == runtime.binding().runtime_scope()
+                && current.overlay.base().digest() == base.digest()
+        })
     }
 
     /// The complete scoped corpse read also reconciles an ambiguous retirement.
@@ -495,7 +517,21 @@ pub async fn loop_ground(
             .active_generation
             .and_then(|generation| generation.native_gameplay()),
     );
-    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &taken).ok()?;
+    let valid_source = |key| {
+        map_sources::is_top_level(base, key)
+            || admission
+                .bundle_map()
+                .is_some_and(|map| map.facts.captured_map_item(key).is_some())
+    };
+    if taken.iter().any(|key| !valid_source(*key)) {
+        return None;
+    }
+    built.taken_sources.extend(taken.iter().copied());
+    let roots: Vec<_> = taken
+        .into_iter()
+        .filter(|key| map_sources::is_top_level(base, *key))
+        .collect();
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
     let pending: Vec<_> = admission
         .states
         .loop_ground
@@ -506,7 +542,15 @@ pub async fn loop_ground(
         .keys()
         .copied()
         .collect();
-    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &pending).ok()?;
+    if pending.iter().any(|key| !valid_source(*key)) {
+        return None;
+    }
+    built.taken_sources.extend(pending.iter().copied());
+    let roots: Vec<_> = pending
+        .into_iter()
+        .filter(|key| map_sources::is_top_level(base, *key))
+        .collect();
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
     {
         let runtime = admission.runtime.lock().await;
         super::echo_warden::append_portals(
@@ -1059,6 +1103,9 @@ pub(super) async fn observe_container_with_house_capacity(
     }
     if matches!(target, ItemKey::BrowseField { .. }) {
         return super::browse_field::observe(admission, actor, fence, target).await;
+    }
+    if matches!(target, ItemKey::MapBase { .. }) {
+        return map_sources::observe(admission, actor, fence, target).await;
     }
     let ItemKey::Instance(container) = target else {
         return None;

@@ -11,6 +11,12 @@ pub struct CyclopediaCharacterPanel {
     pub limit: u8,
     pub target: Option<[u8; 16]>,
     pub result: Option<String>,
+    pub store: Option<oteryn_client_runtime::cyclopedia_character::StoreSummary>,
+    pub combat: Option<oteryn_client_runtime::cyclopedia_character::combat::CombatStats>,
+    pub general: Option<oteryn_client_runtime::cyclopedia_character::GeneralStats>,
+    pub history_tab: Option<CharacterTab>,
+    pub history: Vec<HistoryRow>,
+    pub kill_filter: Option<oteryn_client_runtime::cyclopedia_character::KillStatus>,
     pub feedback: Option<&'static str>,
 }
 impl Default for CyclopediaCharacterPanel {
@@ -26,7 +32,20 @@ impl Default for CyclopediaCharacterPanel {
             limit: 20,
             target: None,
             result: None,
+            store: None,
+            combat: None,
+            general: None,
+            history_tab: None,
+            history: Vec::new(),
+            kill_filter: None,
             feedback: None,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HistoryRow {
+    pub at: i64,
+    pub status: Option<oteryn_client_runtime::cyclopedia_character::KillStatus>,
+    pub description: String,
 }
