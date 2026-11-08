@@ -8,10 +8,10 @@
       "state": "IN_PROGRESS",
       "api": "quest::authored_bindings::Bindings::attach; catalogue-scoped callback resolution",
       "remaining": [
-        "real-dispatch PostgreSQL qualification",
         "generic kill bindings",
         "world item delivery",
-        "explicit native content admission"
+        "explicit native content admission",
+        "real-dispatch world and kill qualification"
       ]
     },
     {
@@ -97,15 +97,16 @@
     {
       "feature": "carried_quest_exchanges_and_authored_npc_delivery",
       "state": "QUALIFIED",
-      "code_sha": "15ac677d3dcf9386e02a2a36c3b0fe2374ad2798",
-      "real_dispatch_pg_seconds": 129.459,
+      "code_sha": "cca7c5790df42b7afd2aeabadaa399a250c74858",
+      "real_dispatch_pg_seconds": 136.845,
       "api": [
         "RewardCallback.carried_exchange",
         "authored_bindings::Bindings::parse",
         "authored_bindings::Bindings::attach",
         "reward_callbacks::load_for"
       ],
-      "scope": "Engine capability only; no whole quest qualification"
+      "scope": "Engine capability only; no whole quest qualification",
+      "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)"
     }
   ]
 }

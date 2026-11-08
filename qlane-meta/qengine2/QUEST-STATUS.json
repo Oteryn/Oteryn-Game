@@ -3230,27 +3230,19 @@
       }
     },
     "pending_tests": [
-      "Full backend unit run remains incomplete under PREPUSH-2 budget exception",
-      "equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
-      "authored_bindings_npc_delivery_and_carried_use_dispatch_postgres",
-      "catalogue_npc_general_xp_handin_runs_in_real_dispatch",
-      "catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
-      "s06_glider_seven_carried_pieces_are_atomic_and_replayed",
-      "s06_glider_missing_one_piece_never_spends",
-      "s06_glider_ground_trigger_preserves_source_and_consumes_carried_recipe",
-      "mount_taming_postgres_real_dispatch_outcomes_refusals_replay_and_reload"
+      "Full backend crate unit completion; CI owns full suites under budget exception"
     ],
     "pending_log": "/tmp/qengine2-prepush2-backend/state.json",
-    "workspace_log": "/tmp/qengine2-collector-workspace-check.log",
-    "fmt_log": "/tmp/qengine2-collector-fmt-check.log",
+    "workspace_log": "/tmp/qengine2-merged-proof-workspace.log",
+    "fmt_log": "/tmp/qengine2-merged-proof-fmt.log",
     "no_new_quest_qualification": true,
     "native_program_metadata_regression": {
       "red": "/tmp/qengine2-npc-metadata-red2.log",
       "green": "/tmp/qengine2-qnpcfx-quests-units-green2.log",
       "policy": "Preserve unaffected program hashes and predecessor metadata; changed authored semantics do not silently inherit NPC-only revision allowances"
     },
-    "workspace_result": "PASS merged workspace all targets,6m20s",
-    "fmt_result": "PASS merged tree",
+    "workspace_result": "PASS unchanged merged source,6m58s",
+    "fmt_result": "PASS",
     "publication_policy": "PREPUSH-2 cadence exception: mandatory merge/regeneration/workspace/fmt green; listed tests continue after publication",
     "clippy_result": "PASS changed engine crates,-Dwarnings,2m48s",
     "clippy_log": "/tmp/qengine2-collector-clippy.log",
@@ -3273,7 +3265,7 @@
       "Refresh QENGINE2 equipment source count60 via repo tooling; no unshipped peer cohorts imported"
     ],
     "current_followup": {
-      "state": "MERGED_COMPILE_FMT_CLIPPY_GENERATION_GREEN; PG_REFRESH_PENDING",
+      "state": "MERGED_FOCUSED_UNIT_AND_SEVEN_REAL_PG_GREEN",
       "authoring_tests": {
         "passed": 32,
         "seconds": 73.225,
@@ -3353,5 +3345,54 @@
     ],
     "full_backend_units": "Pending under PREPUSH-2 budget exception; no full-suite green claimed",
     "collector_merge_pending": "78294c081a099c96a57948573d5dbf0caf398abf"
+  },
+  "engine_pg_qualification_2026_11_08_merged": {
+    "source_commit": "cca7c5790df42b7afd2aeabadaa399a250c74858",
+    "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "passed": 7,
+    "failed": 0,
+    "seconds": 423.443,
+    "cases": [
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::mount_taming::mount_taming_postgres_real_dispatch_outcomes_refusals_replay_and_reload",
+        "seconds": 76.345,
+        "result": "PASS"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::authored_quest_bindings::authored_bindings_npc_delivery_and_carried_use_dispatch_postgres",
+        "seconds": 136.845,
+        "result": "PASS"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_general_xp_handin_runs_in_real_dispatch",
+        "seconds": 180.922,
+        "result": "PASS"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
+        "seconds": 179.199,
+        "result": "PASS"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::qengine_s06_construction::s06_glider_ground_trigger_preserves_source_and_consumes_carried_recipe",
+        "seconds": 81.746,
+        "result": "PASS"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::qengine_s06_construction::s06_glider_missing_one_piece_never_spends",
+        "seconds": 82.901,
+        "result": "PASS"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::qengine_s06_construction::s06_glider_seven_carried_pieces_are_atomic_and_replayed",
+        "seconds": 84.337,
+        "result": "PASS"
+      }
+    ],
+    "log": "/tmp/qengine2-collector-focused/own-pg.log",
+    "native_completion_markers": 6,
+    "equipment_unit_seconds": 65.643,
+    "execution": "cargo nextest, exact focused cases; HEAD unchanged between build and PG",
+    "full_backend_units": "Still pending under PREPUSH-2 budget exception; no full-suite success claimed"
   }
 }
