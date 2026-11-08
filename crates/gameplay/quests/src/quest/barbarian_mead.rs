@@ -41,6 +41,8 @@ pub fn message(changes: &[super::QuestTrackChange]) -> Option<&'static str> {
     let draw = changes.iter().find(|c| c.track == DRAW)?;
     if line.after == 1 {
         Some("Ask Sven for another round.")
+    } else if line.before >= 3 && line.after == line.before {
+        Some("You already passed the test, no need to torture yourself anymore.")
     } else if line.after == 3 {
         Some("10 sips in a row. Yeah!")
     } else if draw.after > 1 {
@@ -50,13 +52,18 @@ pub fn message(changes: &[super::QuestTrackChange]) -> Option<&'static str> {
     }
 }
 
+/// Source randomness is needed only for an eligible sip, not round resets or passed tests.
+pub fn needs_draw(questline: i64, total_sips: i64) -> bool {
+    questline == 2 && total_sips <= 20
+}
+
 /// Locked source snapshot: questline, mission01, successful sips, total sips.
 /// Roll is supplied by the durable owner, never by a gameplay client.
 pub fn apply(mut state: [i64; 4], roll: u8) -> Result<[i64; 4], QuestRefusal> {
     if !(1..=5).contains(&roll) {
         return Err(QuestRefusal::NotSupported);
     }
-    if state[0] == 2 && state[3] <= 20 {
+    if needs_draw(state[0], state[3]) {
         state[2] = if roll > 1 {
             state[2].checked_add(1).ok_or(QuestRefusal::OutOfRange)?
         } else {
@@ -71,7 +78,7 @@ pub fn apply(mut state: [i64; 4], roll: u8) -> Result<[i64; 4], QuestRefusal> {
     } else if state[3] > 20 {
         state[0] = 1;
         state[1] = 1;
-    } else {
+    } else if state[0] < 3 {
         return Err(QuestRefusal::StageMismatch);
     }
     Ok(state)
@@ -80,6 +87,37 @@ pub fn apply(mut state: [i64; 4], roll: u8) -> Result<[i64; 4], QuestRefusal> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn m47_completed_mead_is_a_silent_progress_noop_with_source_feedback() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("m47-passed")
+            .map_err(|e| format!("{e:?}"))?;
+        let catalogue = lowered.catalogue();
+        let transition = catalogue.transition(KEY).ok_or("transition")?;
+        let stored = NATIVE_TRACKS
+            .into_iter()
+            .zip([3, 3, 9, 17, 4])
+            .map(|(key, value)| (key.to_owned(), value))
+            .collect();
+        let changes = catalogue
+            .evaluate_with_roll(transition, &stored, 0, None)
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            changes
+                .iter()
+                .filter(|c| c.track != DRAW)
+                .all(|c| c.before == c.after)
+        );
+        assert_eq!(
+            changes.iter().find(|c| c.track == DRAW).map(|c| c.after),
+            Some(0)
+        );
+        assert_eq!(
+            message(&changes),
+            Some("You already passed the test, no need to torture yourself anymore.")
+        );
+        Ok(())
+    }
+
     #[test]
     fn m47_first_sip_preserves_absence_and_committed_draw() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("m47-first")

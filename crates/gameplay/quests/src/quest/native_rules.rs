@@ -99,13 +99,14 @@ impl NativeRule {
                     read(barbarian_mead::TRACKS[2])?,
                     read(barbarian_mead::TRACKS[3])?,
                 ];
-                let roll = roll.ok_or(QuestRefusal::NotSupported)?;
-                let mut after = barbarian_mead::apply(before, roll)?.to_vec();
-                after.push(if before[0] == 2 && before[3] <= 20 {
-                    i64::from(roll)
+                let random = barbarian_mead::needs_draw(before[0], before[3]);
+                let roll = if random {
+                    roll.ok_or(QuestRefusal::NotSupported)?
                 } else {
-                    0
-                });
+                    1
+                };
+                let mut after = barbarian_mead::apply(before, roll)?.to_vec();
+                after.push(if random { i64::from(roll) } else { 0 });
                 after
             }
             Self::CultsSymbol { symbol } => {

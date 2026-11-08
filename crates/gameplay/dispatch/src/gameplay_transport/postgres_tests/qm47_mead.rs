@@ -74,12 +74,32 @@ pub(super) async fn exercise(
         experience: None,
         world_change: None,
     };
+    let seed = |key: &str, values: [i64; 4]| QuestTransition {
+        key: key.into(),
+        effects: mead::TRACKS
+            .into_iter()
+            .zip(values)
+            .map(|(track, value)| QuestEffect {
+                track: track.into(),
+                from: QuestComparison::Between(-1, i64::MAX),
+                effect: QuestEffectKind::Set(value),
+            })
+            .collect(),
+        ..setup.clone()
+    };
+    let passed = seed("oteryn:quest-transition/m47-fixture-passed", [3, 3, 9, 17]);
+    let exhausted = seed(
+        "oteryn:quest-transition/m47-fixture-exhausted",
+        [2, 2, 4, 21],
+    );
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             base.content_revision(),
             tracks,
             vec![
                 setup.clone(),
+                passed.clone(),
+                exhausted.clone(),
                 world_callbacks::primary_transition(callback)?,
             ],
         )
@@ -273,5 +293,141 @@ pub(super) async fn exercise(
             value
         );
     }
+    for (seed, n, line, message) in [
+        (
+            &passed,
+            7100,
+            3,
+            "You already passed the test, no need to torture yourself anymore.",
+        ),
+        (&exhausted, 7200, 1, "Ask Sven for another round."),
+    ] {
+        let setup_request = QuestTransitionRequest {
+            transition_key: seed.key.clone(),
+            cause: QuestCause::Command(CommandRef::new(
+                admitted.game_session_id,
+                CommandId::new(n).map_err(debug)?,
+            )),
+        };
+        assert!(matches!(
+            slot.commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                setup_request,
+                catalogue.clone()
+            )
+            .await?,
+            QuestTransitionOutcome::Committed(_)
+        ));
+        let attempt = request(mead::KEY, n + 1)?;
+        let outcome = slot
+            .commit_world_callback(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                attempt.clone(),
+                catalogue.clone(),
+                &permit,
+                context.clone(),
+                None,
+            )
+            .await?;
+        let QuestTransitionOutcome::Committed(saved) = outcome else {
+            return Err(format!("M47 nonrandom outcome refused: {outcome:?}").into());
+        };
+        assert_eq!(
+            saved
+                .changes
+                .iter()
+                .find(|c| c.track == mead::DRAW)
+                .map(|c| c.after),
+            Some(0)
+        );
+        assert_eq!(
+            saved
+                .changes
+                .iter()
+                .find(|c| c.track == mead::TRACKS[0])
+                .map(|c| c.after),
+            Some(line)
+        );
+        assert_eq!(callback.committed_message(&saved.changes), Some(message));
+        if line == 3 {
+            assert!(
+                saved
+                    .changes
+                    .iter()
+                    .filter(|c| c.track != mead::DRAW)
+                    .all(|c| c.before == c.after)
+            );
+        } else {
+            assert_eq!(
+                saved
+                    .changes
+                    .iter()
+                    .find(|c| c.track == mead::TRACKS[1])
+                    .map(|c| c.after),
+                Some(1)
+            );
+            assert_eq!(
+                saved
+                    .changes
+                    .iter()
+                    .find(|c| c.track == mead::TRACKS[2])
+                    .map(|c| c.after),
+                Some(4)
+            );
+            assert_eq!(
+                saved
+                    .changes
+                    .iter()
+                    .find(|c| c.track == mead::TRACKS[3])
+                    .map(|c| c.after),
+                Some(21)
+            );
+        }
+        let replay = slot
+            .commit_world_callback(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                attempt,
+                catalogue.clone(),
+                &permit,
+                context.clone(),
+                None,
+            )
+            .await?;
+        assert_eq!(replay, QuestTransitionOutcome::AlreadyCommitted(saved));
+    }
+    // A late replay must return its original roll without undoing the round reset.
+    let before: Vec<(String,i64)> = sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key=ANY($1::text[]) ORDER BY track_key").bind(mead::NATIVE_TRACKS.as_slice()).fetch_all(&h.pool).await?;
+    let late = slot
+        .commit_world_callback(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            command,
+            catalogue.clone(),
+            &permit,
+            context,
+            None,
+        )
+        .await?;
+    assert_eq!(late, QuestTransitionOutcome::AlreadyCommitted(receipt));
+    let after: Vec<(String,i64)> = sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key=ANY($1::text[]) ORDER BY track_key").bind(mead::NATIVE_TRACKS.as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(before, after);
+    let count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(mead::KEY)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(count, 3);
     Ok(())
 }
