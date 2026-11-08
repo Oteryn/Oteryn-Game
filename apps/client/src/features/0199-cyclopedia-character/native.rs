@@ -62,7 +62,7 @@ pub(in crate::play) fn submit(
     p.tab = tab;
     p.offset = offset;
     p.limit = limit;
-    p.target = target;
+    p.change_target(target);
     request(
         p,
         match id {
@@ -334,6 +334,15 @@ mod window {
                     output,
                     wide(&display(&mailbox.cyclopedia_character)).as_ptr(),
                 );
+                let p = &mut mailbox.cyclopedia_character;
+                if !p.pending
+                    && p.misc_resources_due
+                    && let Some(command) = request(p, Intent::MiscResources)
+                    && commands.send(PlayCommand::Feature(command)).is_err()
+                {
+                    p.pending = false;
+                    p.feedback = Some("The session has ended");
+                }
                 let panel = &mailbox.cyclopedia_character;
                 let status = if panel.pending {
                     "Waiting for the server"
@@ -354,7 +363,18 @@ mod window {
                 let store = panel.store.is_some()
                     && panel.tab
                         == oteryn_client_runtime::cyclopedia_character::CharacterTab::StoreSummary;
-                let card_rows = if store {
+                let misc =
+                    panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc;
+                super::misc_layout::layout(
+                    &cards,
+                    [stamina_bar, training_bar],
+                    heading,
+                    detail,
+                    misc,
+                );
+                let card_rows = if misc {
+                    oteryn_client_ui::cyclopedia_character::misc_cards(panel)
+                } else if store {
                     oteryn_client_ui::cyclopedia_character::store_cards(panel)
                 } else {
                     oteryn_client_ui::cyclopedia_character::overview_cards(panel)
@@ -370,7 +390,7 @@ mod window {
                 for (i, handle) in cards.iter().enumerate() {
                     ShowWindow(
                         *handle,
-                        if (overview || store) && i < card_rows.len() {
+                        if (overview || store || misc) && i < card_rows.len() {
                             SW_SHOW
                         } else {
                             SW_HIDE
@@ -378,14 +398,25 @@ mod window {
                     );
                 }
                 for handle in [stamina_bar, training_bar] {
-                    ShowWindow(handle, if overview { SW_SHOW } else { SW_HIDE });
+                    ShowWindow(
+                        handle,
+                        if overview || (misc && panel.misc_general.is_some()) {
+                            SW_SHOW
+                        } else {
+                            SW_HIDE
+                        },
+                    );
                 }
-                if overview || store {
+                if overview || store || misc {
                     for (handle, (label, value)) in cards.iter().zip(card_rows) {
                         SetWindowTextW(*handle, wide(&format!("{label}\r\n{value}")).as_ptr());
                     }
-                    if let Some(bars) = oteryn_client_ui::cyclopedia_character::overview_bars(panel)
-                    {
+                    let bars = if misc {
+                        oteryn_client_ui::cyclopedia_character::misc_bars(panel)
+                    } else {
+                        oteryn_client_ui::cyclopedia_character::overview_bars(panel)
+                    };
+                    if let Some(bars) = bars {
                         for (handle, (value, max)) in
                             [stamina_bar, training_bar].into_iter().zip(bars)
                         {
@@ -410,7 +441,7 @@ mod window {
                     null_mut(),
                     10,
                     if store { 415 } else { 380 },
-                    690,
+                    if misc { 400 } else { 690 },
                     if store { 180 } else { 155 },
                     SWP_NOZORDER | SWP_NOACTIVATE,
                 );
@@ -544,3 +575,7 @@ mod window {
         }
     }
 }
+
+#[cfg(windows)]
+#[path = "view/misc_layout.rs"]
+mod misc_layout;
