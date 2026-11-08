@@ -587,6 +587,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.a_pirates_tail",
         "oteryn:quest.bigfoot_s_burden_quest",
         "oteryn:quest.draconia_quest",
+        "oteryn:quest.grimvale_quest",
         "oteryn:quest.hero_of_rathleton_quest",
         "oteryn:quest.hot_cuisine_quest",
         "oteryn:quest.in_service_of_yalahar_quest",

@@ -1,0 +1,56 @@
+{
+  "quest": "Grimvale Quest",
+  "slice": "Maeryn helmet preference0..5 only",
+  "whole_quest_qualified": false,
+  "base": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+  "main_merge": "64d8bb8b8",
+  "source": {
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "file": "data-global/npc/maeryn.lua",
+    "lines": "60-70,134-173",
+    "sha256": "43b066a640d3b3d01a73cec683c0c0ddf7fce54e8e8491b0ddd80dc9dec954f8"
+  },
+  "red": {
+    "version_num": 180006,
+    "seconds": 45.930878472,
+    "error": "missing source helmet offer:[]"
+  },
+  "green": {
+    "version_num": 180006,
+    "seconds": 53.763178006,
+    "passed": 1
+  },
+  "validation": {
+    "quest_units": {
+      "passed": 310,
+      "seconds": 17.2
+    },
+    "own_authorer": {
+      "passed": 2,
+      "seconds": 0.78
+    },
+    "full_authoring_checks": "PASS exact CI --part checks",
+    "full_authoring_units": {
+      "modules_passed": 104,
+      "reported_tests": 1120
+    },
+    "content_tree": "PASS34111Items/252Mounts/336RewardClaims",
+    "workspace_all_targets": "PASS3m10s",
+    "clippy": "quests+dispatch alltargets/allfeatures-Dwarnings PASS3m21s",
+    "fmt": "PASS",
+    "generation": "Full quest/reward packet pipeline, equipment/audit/worldpins PASS; no existing content changes",
+    "dispatch_non_pg": "Fresh selection compiling/running with --no-fail-fast; owner cadence exception, no pass claim"
+  },
+  "logs": {
+    "/tmp/questpc2-n2-maeryn-red.log": "144183873ea8b49809361b9a19e853543fb62bbab07ba847fff9fe0fa3646681",
+    "/tmp/questpc2-n2-maeryn-green.log": "a93d698ffee69b4f355acdd47cb03a81bbfb5b4f0a5474df0186e87e0d34b926",
+    "/tmp/questpc2-n2-maeryn-authorer.log": "d401c9b1397a7503ace8335be0798942208f8acf82934aabba8d3a7cfc393fe6",
+    "/tmp/questpc2-n2-maeryn-quest-units.log": "04a7517feaf574140958e5b0e2798328a75d2c6b3c11016266cdd07fb131becd",
+    "/tmp/questpc2-n2-maeryn-workspace.log": "7e222bb235d31ca76da25a4af5d208cd2e998a7b03e746b49912be8a56b8a901",
+    "/tmp/questpc2-n2-maeryn-clippy.log": "06ebb6aaddbb264bedb11d387eef8340afa45eb2af33771726c74296755c4c5e",
+    "/tmp/questpc2-n2-maeryn-authoring-checks.log": "a593c022804b13896275c21980ec847a7349a8f01c9ee38bc0d70dacd0ecf4f5",
+    "/tmp/questpc2-n2-maeryn-authoring-units.log": "6981dcb37cfa8d9eb798eaa5088e058ba61f7b1bb8c94dad8cccad8f46d039fb",
+    "/tmp/questpc2-n2-maeryn-content-tree.log": "e7137dc7c7d6d37cf00c63b7763bca60c944c6910f27423e081c89fefce5d28c",
+    "/tmp/questpc2-n2-maeryn-generation.log": "a0e6b70718bc8fd1eefddf0365fb64f94c8e55bc81ea86678b6bfedb76906350"
+  }
+}

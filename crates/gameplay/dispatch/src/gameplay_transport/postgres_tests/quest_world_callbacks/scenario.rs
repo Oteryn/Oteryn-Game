@@ -111,6 +111,7 @@ fn scenario_case(
             name,
             "catalogue-npc" | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp" | "nx6-wayfarer"
                 | "classic-quests-npc"
+                | "questpc2-maeryn-helmet"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
@@ -914,6 +915,8 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if name == "questpc2-maeryn-helmet" {
+            super::super::questpc2_maeryn::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if classic_npc {
             super::super::classic_quests::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;

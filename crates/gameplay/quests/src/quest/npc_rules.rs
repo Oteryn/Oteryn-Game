@@ -8,6 +8,7 @@ mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+mod questpc2_maeryn_source;
 mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
@@ -441,11 +442,12 @@ impl NpcRuleCatalog {
                 let mut catalogue = Self::load_embedded()?;
                 let supplemental = Self::from_json_documents(&[include_str!(
                     "../../../../../content/dialogues/quest-rules-supplemental/draconia.json"
-                )])?;
+                ), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-maeryn.json")])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
+                        || p.document.program_key.as_deref() == Some(questpc2_maeryn_source::PROGRAM)
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
                         || matches!(

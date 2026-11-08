@@ -24,6 +24,7 @@ fn sources(sources: &[String], quest: &str) -> bool {
                         })
                 })
                 .or_else(|| super::hidden_threats::reference(quest, source))
+                .or_else(|| super::questpc2_maeryn_source::reference(quest, source))
                 .is_some_and(|reference| {
                     reference
                         .rsplit_once(':')
@@ -88,6 +89,11 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         {
             return Err(invalid("Draconia source custody"));
         }
+        if document.quest == super::questpc2_maeryn_source::QUEST
+            && !super::questpc2_maeryn_source::custody(document)
+        {
+            return Err(invalid("Maeryn source custody"));
+        }
         if !super::hidden_threats::custody(document) {
             return Err(invalid("Corym source custody"));
         }
@@ -105,6 +111,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         for file in &document.source_files {
             if file.path.is_empty()
                 || (file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                    && !super::questpc2_maeryn_source::custody(document)
                     && !super::hidden_threats::file_is_pinned(
                         &document.quest,
                         &file.path,

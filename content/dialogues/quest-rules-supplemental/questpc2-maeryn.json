@@ -1,0 +1,466 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.questpc2-maeryn-helmet-choice",
+  "quest": "oteryn:quest.grimvale_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u10_80/grimvale_quest/were_helmet_enchant",
+      "quest": "oteryn:quest.grimvale_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:60-70",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:134-173"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/grimvale/maeryn/offer",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.maeryn",
+      "trigger": "say",
+      "keywords": [
+        "werewolf helmet"
+      ],
+      "guards": [],
+      "reply": [
+        "You brought the wolven helmet, as i see. Do you want to change something?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:134-136"
+      ],
+      "exclude_keywords": [
+        "tokens",
+        "pitiful",
+        "changed",
+        "hope",
+        "tunnels",
+        "hunch",
+        "artefacts",
+        "moon",
+        "nightshade",
+        "name",
+        "maeryn",
+        "time",
+        "job",
+        "grimvale",
+        "owin",
+        "werewolves",
+        "gladys",
+        "cornell"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/grimvale/maeryn/confirm",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.maeryn",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "So, which profession would you give preference to when enchanting the helmet: {knight}, {sorcerer}, {druid} or {paladin}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:137-140"
+      ],
+      "exclude_keywords": [
+        "tokens",
+        "pitiful",
+        "changed",
+        "hope",
+        "tunnels",
+        "hunch",
+        "artefacts",
+        "moon",
+        "nightshade",
+        "name",
+        "maeryn",
+        "time",
+        "job",
+        "grimvale",
+        "owin",
+        "werewolves",
+        "gladys",
+        "cornell"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/grimvale/maeryn/knight",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.maeryn",
+      "trigger": "say",
+      "keywords": [
+        "knight"
+      ],
+      "guards": [],
+      "reply": [
+        "And what would be your preferred weapon? {Club}, {axe} or {sword}"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:142-150"
+      ],
+      "exclude_keywords": [
+        "tokens",
+        "pitiful",
+        "changed",
+        "hope",
+        "tunnels",
+        "hunch",
+        "artefacts",
+        "moon",
+        "nightshade",
+        "name",
+        "maeryn",
+        "time",
+        "job",
+        "grimvale",
+        "owin",
+        "werewolves",
+        "gladys",
+        "cornell"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/grimvale/maeryn/sorcerer",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.maeryn",
+      "trigger": "say",
+      "keywords": [
+        "sorcerer"
+      ],
+      "guards": [],
+      "reply": [
+        "So this is your choice. If you want to change it, you will have to come to me again."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_80/grimvale_quest/were_helmet_enchant",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:142-159"
+      ],
+      "exclude_keywords": [
+        "tokens",
+        "pitiful",
+        "changed",
+        "hope",
+        "tunnels",
+        "hunch",
+        "artefacts",
+        "moon",
+        "nightshade",
+        "name",
+        "maeryn",
+        "time",
+        "job",
+        "grimvale",
+        "owin",
+        "werewolves",
+        "gladys",
+        "cornell"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/grimvale/maeryn/druid",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.maeryn",
+      "trigger": "say",
+      "keywords": [
+        "druid"
+      ],
+      "guards": [],
+      "reply": [
+        "So this is your choice. If you want to change it, you will have to come to me again."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_80/grimvale_quest/were_helmet_enchant",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:142-159"
+      ],
+      "exclude_keywords": [
+        "tokens",
+        "pitiful",
+        "changed",
+        "hope",
+        "tunnels",
+        "hunch",
+        "artefacts",
+        "moon",
+        "nightshade",
+        "name",
+        "maeryn",
+        "time",
+        "job",
+        "grimvale",
+        "owin",
+        "werewolves",
+        "gladys",
+        "cornell"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/grimvale/maeryn/paladin",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.maeryn",
+      "trigger": "say",
+      "keywords": [
+        "paladin"
+      ],
+      "guards": [],
+      "reply": [
+        "So this is your choice. If you want to change it, you will have to come to me again."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_80/grimvale_quest/were_helmet_enchant",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:142-159"
+      ],
+      "exclude_keywords": [
+        "tokens",
+        "pitiful",
+        "changed",
+        "hope",
+        "tunnels",
+        "hunch",
+        "artefacts",
+        "moon",
+        "nightshade",
+        "name",
+        "maeryn",
+        "time",
+        "job",
+        "grimvale",
+        "owin",
+        "werewolves",
+        "gladys",
+        "cornell"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/grimvale/maeryn/club",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.maeryn",
+      "trigger": "say",
+      "keywords": [
+        "club"
+      ],
+      "guards": [],
+      "reply": [
+        "So this is your choice. If you want to change it, you will have to come to me again."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_80/grimvale_quest/were_helmet_enchant",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:161-173"
+      ],
+      "exclude_keywords": [
+        "tokens",
+        "pitiful",
+        "changed",
+        "hope",
+        "tunnels",
+        "hunch",
+        "artefacts",
+        "moon",
+        "nightshade",
+        "name",
+        "maeryn",
+        "time",
+        "job",
+        "grimvale",
+        "owin",
+        "werewolves",
+        "gladys",
+        "cornell"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/grimvale/maeryn/axe",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.maeryn",
+      "trigger": "say",
+      "keywords": [
+        "axe"
+      ],
+      "guards": [],
+      "reply": [
+        "So this is your choice. If you want to change it, you will have to come to me again."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_80/grimvale_quest/were_helmet_enchant",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:161-173"
+      ],
+      "exclude_keywords": [
+        "tokens",
+        "pitiful",
+        "changed",
+        "hope",
+        "tunnels",
+        "hunch",
+        "artefacts",
+        "moon",
+        "nightshade",
+        "name",
+        "maeryn",
+        "time",
+        "job",
+        "grimvale",
+        "owin",
+        "werewolves",
+        "gladys",
+        "cornell"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/grimvale/maeryn/sword",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.maeryn",
+      "trigger": "say",
+      "keywords": [
+        "sword"
+      ],
+      "guards": [],
+      "reply": [
+        "So this is your choice. If you want to change it, you will have to come to me again."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_80/grimvale_quest/were_helmet_enchant",
+          "value": 5
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maeryn.lua:161-173"
+      ],
+      "exclude_keywords": [
+        "tokens",
+        "pitiful",
+        "changed",
+        "hope",
+        "tunnels",
+        "hunch",
+        "artefacts",
+        "moon",
+        "nightshade",
+        "name",
+        "maeryn",
+        "time",
+        "job",
+        "grimvale",
+        "owin",
+        "werewolves",
+        "gladys",
+        "cornell"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        3
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/maeryn.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "43b066a640d3b3d01a73cec683c0c0ddf7fce54e8e8491b0ddd80dc9dec954f8"
+    }
+  ]
+}
