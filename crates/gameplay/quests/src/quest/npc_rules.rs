@@ -13,6 +13,7 @@ mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+pub mod teleport;
 mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
