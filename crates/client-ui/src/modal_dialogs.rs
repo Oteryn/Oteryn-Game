@@ -106,3 +106,77 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod server_dialog_tests {
+    use super::*;
+    #[test]
+    fn server_dialog_keeps_ids_and_content_image_reference() {
+        let dialog = ServerDialog {
+            id: 41,
+            title: "Choose a reward".into(),
+            message: "One choice".into(),
+            choices: vec![(7, "Sword".into()), (9, "Shield".into())],
+            buttons: vec![(2, "Accept".into()), (4, "Cancel".into())],
+            image: Some("oteryn:ui.reward".into()),
+        };
+        assert!(dialog.valid());
+        assert!(dialog.text().contains("7: Sword"));
+        assert!(dialog.text().contains("oteryn:ui.reward"));
+        let mut invalid = dialog.clone();
+        invalid.buttons.push((2, "Duplicate".into()));
+        assert!(!invalid.valid());
+        invalid = dialog;
+        invalid.image = Some("https://example.org/image.png".into());
+        assert!(!invalid.valid());
+    }
+}
+
+/// Presentation of an identified server modal. Image keys resolve through client assets;
+/// arbitrary network URLs are never fetched by the dialog.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ServerDialog {
+    pub id: u32,
+    pub title: String,
+    pub message: String,
+    pub choices: Vec<(u8, String)>,
+    pub buttons: Vec<(u8, String)>,
+    pub image: Option<String>,
+}
+impl ServerDialog {
+    pub fn valid(&self) -> bool {
+        fn items_valid(items: &[(u8, String)]) -> bool {
+            items.len() <= 32
+                && items.iter().enumerate().all(|(index, (id, text))| {
+                    !text.is_empty()
+                        && text.len() <= 256
+                        && !text.contains('\0')
+                        && !items[..index].iter().any(|(prior, _)| prior == id)
+                })
+        }
+        self.title.len() <= 256
+            && !self.title.contains('\0')
+            && self.message.len() <= 8192
+            && !self.message.contains('\0')
+            && !self.buttons.is_empty()
+            && items_valid(&self.buttons)
+            && items_valid(&self.choices)
+            && self.image.as_ref().is_none_or(|key| {
+                key.starts_with("oteryn:")
+                    && key.len() <= 128
+                    && key
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"_:.-".contains(&b))
+            })
+    }
+    pub fn text(&self) -> String {
+        let mut text = format!("{}\r\n{}\r\n", self.title, self.message);
+        for (id, choice) in &self.choices {
+            text.push_str(&format!("{id}: {choice}\r\n"));
+        }
+        if let Some(image) = &self.image {
+            text.push_str(&format!("Image: {image}\r\n"));
+        }
+        text
+    }
+}
