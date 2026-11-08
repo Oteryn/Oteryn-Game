@@ -48,3 +48,38 @@ pub fn panel_text(panel: &Panel) -> String {
     }
     text
 }
+
+/// A card for the selected server catalogue entry; cooldowns remain server observations.
+#[must_use]
+pub fn detail_text(panel: &Panel, bar: &oteryn_client_runtime::spell::ActionBar) -> String {
+    let Some(entry) = panel.selected_spell() else {
+        return "No spell selected".into();
+    };
+    let cooldown = if bar.cooldowns.is_some() {
+        std::num::NonZeroU32::new(entry.cast_index).map_or_else(
+            || "unknown".into(),
+            |spell| {
+                format!(
+                    "{} ms (last server observation)",
+                    bar.remaining_ms(spell, &entry.cooldown_groups)
+                )
+            },
+        )
+    } else {
+        "unknown".into()
+    };
+    format!(
+        "Selected spell\r\n{} — {}\r\nLevel: {} | Mana: {}{} | Soul: {}\r\nLearned: {} | Available: {}\r\nCooldown: {}\r\nGroups: {:?} | Rune: {:?}\r\n",
+        entry.name,
+        entry.words,
+        entry.level,
+        entry.mana,
+        if entry.mana_percent { "%" } else { "" },
+        entry.soul,
+        entry.learned,
+        entry.available,
+        cooldown,
+        entry.cooldown_groups,
+        entry.rune_item
+    )
+}

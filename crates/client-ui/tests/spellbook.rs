@@ -93,5 +93,8 @@ fn o059_selected_spell_details_distinguish_unknown_cooldown() {
     assert!(text.contains("Cooldown: unknown"));
     let mut empty = panel;
     protocol::navigate(&mut empty, "missing", 0);
-    assert_eq!(oteryn_client_ui::spell_catalog::detail_text(&empty, &bar), "No spell selected");
+    assert_eq!(
+        oteryn_client_ui::spell_catalog::detail_text(&empty, &bar),
+        "No spell selected"
+    );
 }

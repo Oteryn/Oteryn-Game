@@ -75,3 +75,47 @@ fn t033_selected_spell_assigns_slot_without_sending_a_cast()
     assert!(!link.spell_catalog_assign(2));
     Ok(())
 }
+
+#[test]
+fn o059_detail_card_consumes_server_cooldown_observation() -> Result<(), Box<dyn std::error::Error>>
+{
+    let (link, _, outbox) = play_channel();
+    let entry = SpellCatalogEntry {
+        cast_index: 19,
+        name: "Healing".into(),
+        words: "exura".into(),
+        level: 8,
+        mana: 20,
+        mana_percent: false,
+        soul: 0,
+        learned: true,
+        available: true,
+        cooldown_groups: vec![1],
+        rune_item: None,
+    };
+    outbox.spell_catalog_initialize(
+        true,
+        Some(encode_catalog(&[entry]).map_err(|e| format!("{e:?}"))?),
+    )?;
+    outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
+        server_sequence: 3,
+        base_revision: 1,
+        new_revision: 2,
+        value: oteryn_session::ActorCooldowns {
+            server_now_ms: 100,
+            rtt_ms: None,
+            entries: vec![oteryn_session::ActorCooldown {
+                kind: oteryn_session::ActorCooldownKind::Group,
+                id: 1,
+                expires_at_ms: 350,
+            }],
+        },
+    })]);
+    let mailbox = crate::play::mailbox::lock(&link.mailbox);
+    let text = oteryn_client_ui::spell_catalog::detail_text(
+        &mailbox.spell_catalog,
+        &mailbox.spell_bar.bar,
+    );
+    assert!(text.contains("Cooldown: 250 ms (last server observation)"));
+    Ok(())
+}

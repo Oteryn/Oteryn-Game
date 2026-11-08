@@ -43,7 +43,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             .map_or_else(String::new, |group| group.to_string()),
                         u8::from(panel.learned_only).to_string(),
                     ],
-                    oteryn_client_ui::spell_catalog::panel_text(panel),
+                    format!(
+                        "{}\r\n{}",
+                        oteryn_client_ui::spell_catalog::detail_text(panel, &mailbox.spell_bar.bar),
+                        oteryn_client_ui::spell_catalog::panel_text(panel)
+                    ),
                 )
             },
             set_open: |mailbox, value| mailbox.spell_catalog.open = value,
