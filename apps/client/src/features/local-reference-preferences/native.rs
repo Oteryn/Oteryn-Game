@@ -375,6 +375,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             "Serene",
             "Light effects",
             "Combat effects",
+            "Creature health / icons",
         ]
         .into_iter()
         .enumerate()
@@ -551,6 +552,8 @@ fn run(shared: Arc<Mutex<Shared>>) {
                                 SendMessageW(hud_checks[3], BM_GETCHECK, 0, 0) == 1;
                             preferences.show_effects =
                                 SendMessageW(hud_checks[4], BM_GETCHECK, 0, 0) == 1;
+                            preferences.creature_bars =
+                                SendMessageW(hud_checks[5], BM_GETCHECK, 0, 0) == 1;
                             state.apply(preferences);
                         }
                         _ => state.feedback = "Enter valid zoom and volume percentages".into(),
@@ -589,6 +592,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     state.preferences.show_serene,
                     state.preferences.show_lights,
                     state.preferences.show_effects,
+                    state.preferences.creature_bars,
                 ]) {
                     SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
                 }

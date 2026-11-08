@@ -38,6 +38,7 @@ impl PlayView {
         let atlas = atlas.atlas();
         let bars = self.preferences().hud_bars;
         let effects = self.preferences().show_effects;
+        let creature_bars = self.preferences().creature_bars;
         let harmony = self.preferences().show_harmony;
         let serene = self.preferences().show_serene;
         let (view, batch) = self.scene.presentation_base()?;
@@ -103,6 +104,70 @@ impl PlayView {
                         PresentationColor::LightGrey
                     },
                 )?;
+            }
+        }
+        if creature_bars {
+            for entity in &self.entities {
+                let oteryn_session::EntityDetail::Actor { health_percent, .. } = entity.detail
+                else {
+                    continue;
+                };
+                let tile = TileCoord::new(entity.position.x, entity.position.y);
+                if entity.position.floor != self.floor || !view.contains(tile) {
+                    continue;
+                }
+                let [x, y] = view.tile_to_screen(tile);
+                let at = [x + 2.0, y + view.tile_px() as f32 - 5.0];
+                let width = (view.tile_px() as f32 - 4.0).max(1.0);
+                pixel(
+                    batch,
+                    view,
+                    atlas,
+                    at,
+                    [width, 3.0],
+                    PresentationColor::DarkRed,
+                )?;
+                pixel(
+                    batch,
+                    view,
+                    atlas,
+                    at,
+                    [width * f32::from(health_percent.min(100)) / 100.0, 3.0],
+                    PresentationColor::LightGreen,
+                )?;
+                if let Some(icon) = self
+                    .party_icons
+                    .iter()
+                    .find(|icon| icon.entity == entity.entity)
+                {
+                    for (offset, value, pattern) in [
+                        (0.0, icon.shield, [5_u8, 7, 2]),
+                        (8.0, icon.skull, [7_u8, 5, 2]),
+                    ] {
+                        if value == 0 {
+                            continue;
+                        }
+                        let color = match value {
+                            1 | 3 | 5 | 7 | 9 => PresentationColor::Blue,
+                            2 | 4 | 6 | 8 | 10 => PresentationColor::Yellow,
+                            _ => PresentationColor::Red,
+                        };
+                        for (row, bits) in pattern.into_iter().enumerate() {
+                            for col in 0..3 {
+                                if bits & (4 >> col) != 0 {
+                                    pixel(
+                                        batch,
+                                        view,
+                                        atlas,
+                                        [x + offset + col as f32 * 2.0, y + row as f32 * 2.0],
+                                        [2.0, 2.0],
+                                        color,
+                                    )?;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         if !effects {
