@@ -5,7 +5,7 @@ pub use oteryn_protocol_oteryn::{
     house_rotation, house_wrap, loop_training, mail, pvp_expert, staff, staff_tools,
 };
 
-pub use oteryn_protocol_oteryn::house_move_out;
+pub use oteryn_protocol_oteryn::{house, house_move_out};
 #[path = "property_services/house_handoff.rs"]
 mod house_handoff;
 #[path = "property_services/house_transfer.rs"]

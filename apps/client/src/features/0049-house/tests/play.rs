@@ -76,7 +76,8 @@ fn house_changes_require_confirmation_and_current_catalogue()
 }
 
 #[test]
-fn door_editor_uses_catalogue_revision_without_manual_revision() -> Result<(), Box<dyn std::error::Error>> {
+fn door_editor_uses_catalogue_revision_without_manual_revision()
+-> Result<(), Box<dyn std::error::Error>> {
     use crate::play::feature_0049_house::{input::prepare, state::Panel};
     use oteryn_client_runtime::house::{Action, Row};
     let mut panel = Panel::default();
@@ -85,11 +86,136 @@ fn door_editor_uses_catalogue_revision_without_manual_revision() -> Result<(), B
     panel.fields[1] = "oteryn:content.area.city.thais".into();
     prepare(&mut panel, 0)?;
     panel.model.pending = None;
-    panel.model.page.rows.push(Row { house: "oteryn:house.test".into(), acl_revision: 37, ..Row::default() });
+    panel.model.page.rows.push(Row {
+        house: "oteryn:house.test".into(),
+        acl_revision: 37,
+        ..Row::default()
+    });
     panel.fields[2] = "1".into();
     panel.fields[5] = "100 200 -7".into();
     panel.fields[6] = "CONFIRM".into();
     let command = prepare(&mut panel, 5)?;
-    assert_eq!(command, oteryn_client_runtime::house::mutation(panel.model.world, "oteryn:house.test", 37, &Action::Door { x: 100, y: 200, floor: -7, revision: 37, members: vec![] })?);
+    assert_eq!(
+        command,
+        oteryn_client_runtime::house::mutation(
+            panel.model.world,
+            "oteryn:house.test",
+            37,
+            &Action::Door {
+                x: 100,
+                y: 200,
+                floor: -7,
+                revision: 37,
+                members: vec![]
+            }
+        )?
+    );
+    Ok(())
+}
+
+#[test]
+fn house_acl_editor_loads_each_server_list_and_saves_its_revision()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::house::Row;
+    use oteryn_session::property_services::house as wire;
+    let (link, mut receiver, outbox) = play_channel();
+    let world_text = "01010101-0101-7101-8101-010101010101";
+    let world = crate::play::feature_0115_mail::protocol::uuid(world_text)?;
+    let member_text = "02020202-0202-7202-8202-020202020202";
+    let member = crate::play::feature_0115_mail::protocol::uuid(member_text)?;
+    let house = "oteryn:content.house.test";
+    {
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        let p = &mut m.properties.house;
+        p.initialize(true);
+        p.fields[0] = world_text.into();
+        p.fields[1] = "oteryn:content.area.city.thais".into();
+        p.fields[2] = "1".into();
+        p.fields[5] = "6 0 -7".into();
+        p.model.world = world;
+        p.model.town = p.fields[1].clone();
+        p.model.page.rows.push(Row {
+            house: house.into(),
+            acl_revision: 1,
+            ..Row::default()
+        });
+    }
+    for (read_button, save_button, selector) in [
+        (10, 3, wire::HouseAclSelector::Guest),
+        (11, 4, wire::HouseAclSelector::Subowner),
+        (
+            12,
+            5,
+            wire::HouseAclSelector::Door {
+                x: 6,
+                y: 0,
+                floor: -7,
+            },
+        ),
+    ] {
+        link.house_request(read_button);
+        let PlayCommand::Feature(read) = receiver.try_recv()? else {
+            return Err("read missing".into());
+        };
+        let query = wire::decode_house_query(&read.payload).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            query.acl,
+            Some(wire::HouseAclRead {
+                house: house.into(),
+                selector
+            })
+        );
+        let revision = 100 + read_button as u64;
+        outbox.properties_result(
+            &read,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: wire::encode_house_acl_snapshot(&wire::HouseAclSnapshot {
+                    revision,
+                    members: vec![member],
+                })
+                .map_err(|e| format!("{e:?}"))?,
+            },
+        );
+        assert_eq!(link.house_panel().fields[4], member_text);
+        assert_eq!(link.house_panel().model.page.rows[0].acl_revision, revision);
+        link.house_edit(6, "CONFIRM".into());
+        link.house_request(save_button);
+        let PlayCommand::Feature(save) = receiver.try_recv()? else {
+            return Err("save missing".into());
+        };
+        let intent = wire::decode_house_intent(&save.payload).map_err(|e| format!("{e:?}"))?;
+        match intent.action {
+            wire::HouseAction::Acl {
+                revision: actual,
+                members,
+                ..
+            }
+            | wire::HouseAction::Door {
+                revision: actual,
+                members,
+                ..
+            } => {
+                assert_eq!(actual, revision);
+                assert_eq!(members, vec![member]);
+            }
+            _ => return Err("wrong ACL action".into()),
+        }
+        outbox.properties_result(
+            &save,
+            &GatedCommandResult {
+                command_id: 2,
+                server_sequence: 2,
+                status: CommandStatus::Accepted,
+                payload: wire::encode_house_result(wire::HouseDisposition::Ok, revision + 1),
+            },
+        );
+        assert_eq!(
+            link.house_panel().model.page.rows[0].acl_revision,
+            revision + 1
+        );
+    }
     Ok(())
 }

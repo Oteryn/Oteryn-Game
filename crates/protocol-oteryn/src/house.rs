@@ -4,6 +4,13 @@ use crate::charm_wire::{
     push_message_field as bytes, push_varint_field as scalar, read_bytes, read_varint, set_once,
 };
 
+#[path = "house/acl_read.rs"]
+mod acl_read;
+pub use acl_read::{
+    HouseAclRead, HouseAclSelector, HouseAclSnapshot, decode_house_acl_snapshot,
+    encode_house_acl_read_query, encode_house_acl_snapshot,
+};
+
 pub const CAPABILITY_HOUSE_V1: u32 = 49;
 pub const CAPABILITY_GUILDHALL_V1: u32 = 99;
 pub const COMMAND_TYPE_HOUSE_INTENT: u32 = 56;
@@ -86,6 +93,7 @@ pub enum HouseAction {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HouseQuery {
+    pub acl: Option<HouseAclRead>,
     pub world: [u8; 16],
     pub town: String,
     pub cursor: Option<String>,
@@ -279,7 +287,7 @@ pub fn decode_house_query(body: &[u8]) -> Result<HouseQuery> {
     if body.len() > MAX_QUERY_BYTES {
         return Err(Error::LimitExceeded);
     }
-    let (mut c, mut world, mut town, mut cursor) = (0, None, None, None);
+    let (mut c, mut world, mut town, mut cursor, mut acl) = (0, None, None, None, None);
     while c < body.len() {
         match read_varint(body, &mut c)? {
             10 => set_once(&mut world, uuid(read_bytes(body, &mut c)?)?)?,
@@ -295,6 +303,7 @@ pub fn decode_house_query(body: &[u8]) -> Result<HouseQuery> {
                     },
                 )?;
             }
+            34 => set_once(&mut acl, acl_read::decode_read(read_bytes(body, &mut c)?)?)?,
             _ => return Err(Error::Malformed),
         }
     }
@@ -309,10 +318,15 @@ pub fn decode_house_query(body: &[u8]) -> Result<HouseQuery> {
     {
         return Err(Error::Malformed);
     }
+    let cursor = cursor.flatten();
+    if acl.is_some() && cursor.is_some() {
+        return Err(Error::Malformed);
+    }
     Ok(HouseQuery {
+        acl,
         world: world.ok_or(Error::Malformed)?,
         town,
-        cursor: cursor.flatten(),
+        cursor,
     })
 }
 /// A terminal, known result; ambiguous commits disconnect and are retried by CommandRef.

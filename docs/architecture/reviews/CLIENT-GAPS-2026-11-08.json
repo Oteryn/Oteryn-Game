@@ -1529,9 +1529,9 @@
   "src": "OTCAUD1108",
   "area": "House",
   "feature": "Edycja list gości, współwłaścicieli i drzwi",
-  "status": "PARTIAL",
-  "gap": "Natywny formularz i HouseResult są podłączone, rewizja pochodzi z katalogu; brak odczytu aktualnych członków list ACL do edycji.",
-  "evidence": "apps/client/src/features/0049-house/input.rs:64 + door_editor_uses_catalogue_revision_without_manual_revision; left: Natywny formularz i HouseResult są podłączone, rewizja pochodzi z katalogu; brak odczytu aktualnych członków list ACL do edycji.",
+  "status": "DONE",
+  "gap": "Natywny wielowierszowy edytor wczytuje Guest/Subowner/Door z serwera i zapisuje z odczytaną globalną rewizją; odczyt jest session/World/content/access-fenced.",
+  "evidence": "apps/client/src/features/0049-house/input.rs:57 + house_acl_editor_loads_each_server_list_and_saves_its_revision; crates/gameplay/dispatch/src/gameplay_transport/house_query/acl.rs:7 + house_wire_postgres_real_dispatch_acl_notice_replay_reload_and_fences",
   "lane": "cg_ui"
  }
 ]
