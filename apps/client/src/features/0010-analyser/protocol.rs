@@ -1,5 +1,17 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
+    pub(in crate::play) fn analyser_boss_rewards_result(
+        &self,
+        response: &oteryn_client_runtime::boss_rewards::BossRewardsResponse,
+    ) {
+        let mut guard = lock(&self.0);
+        let mailbox = &mut *guard;
+        oteryn_client_ui::analyser::bosses::observe(
+            &mut mailbox.analyser,
+            &mailbox.boss_encounter,
+            response,
+        );
+    }
     pub(in crate::play) fn analyser_result(
         &self,
         command: &oteryn_client_runtime::raw_feature::FeatureCommand,

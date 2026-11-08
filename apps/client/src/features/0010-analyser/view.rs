@@ -1,7 +1,23 @@
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
+    pub fn analyser_text(&self) -> String {
+        panel_text(&lock(&self.mailbox))
+    }
     pub fn analyser_panel(&self) -> oteryn_client_ui::analyser::Panel {
         lock(&self.mailbox).analyser.clone()
+    }
+}
+fn panel_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
+    if mailbox.analyser.selected
+        && mailbox.analyser.tool == oteryn_client_ui::analyser::Tool::Bosses
+    {
+        oteryn_client_ui::analyser::bosses::text(
+            &mailbox.analyser,
+            &mailbox.boss_encounter,
+            &mailbox.boss_rewards,
+        )
+    } else {
+        oteryn_client_ui::analyser::panel_text(&mailbox.analyser)
     }
 }
 #[cfg(windows)]
@@ -45,7 +61,7 @@ fn form() -> crate::play::feature_0115_mail::view::native::Form {
         title: "Analysers",
         labels: &[
             "XP still needed for your level goal (blank disables)",
-            "Item or creature race number from analyser",
+            "Item / creature race number, or boss death id",
             "Unit item value (gold) or kill target",
             "Session export file path",
         ],
@@ -63,6 +79,7 @@ fn form() -> crate::play::feature_0115_mail::view::native::Form {
             "Party hunt",
             "Loot tracker",
             "Kill tracker",
+            "Boss tracker",
             "Reset session",
             "Apply level goal",
             "Apply item price",
@@ -76,6 +93,11 @@ fn form() -> crate::play::feature_0115_mail::view::native::Form {
             "Set race kill target",
             "Remove race target",
             "Refresh hunting tasks",
+            "Refresh boss cooldowns",
+            "Next boss cooldowns",
+            "Refresh boss drop chests",
+            "Next boss drop chests",
+            "Inspect / next drop items",
         ],
         snapshot: |mailbox| {
             let panel = &mailbox.analyser;
@@ -88,7 +110,7 @@ fn form() -> crate::play::feature_0115_mail::view::native::Form {
                     panel.price_input[1].clone(),
                     panel.export_path.clone(),
                 ],
-                oteryn_client_ui::analyser::panel_text(panel),
+                panel_text(mailbox),
             )
         },
         set_open: |mailbox, value| mailbox.analyser.open = value,

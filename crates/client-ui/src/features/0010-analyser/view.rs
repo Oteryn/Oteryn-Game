@@ -21,6 +21,7 @@ pub fn panel_text(panel: &Panel) -> String {
         super::Tool::Party => super::party::text(panel),
         super::Tool::LootTracker => super::tracking::text(panel, panel.clock.seconds()),
         super::Tool::Kills => super::kills::text(panel),
+        super::Tool::Bosses => "Boss Tracker\r\nRefresh cooldowns and personal drop records".into(),
     };
     if panel.dropped != 0 {
         text.push_str(&format!(

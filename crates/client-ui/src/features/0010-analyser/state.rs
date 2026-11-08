@@ -7,6 +7,8 @@ pub use measurements::{Clock, Series, chart_values, eta_seconds, per_hour};
 // Measurements continue while the window is closed; charts retain at most 60 minute buckets.
 #[derive(Debug, Clone, Default)]
 pub struct Panel {
+    pub boss_drops: std::collections::VecDeque<super::bosses::Drop>,
+    pub boss_drops_truncated: bool,
     pub tool: Tool,
     pub party: Vec<oteryn_client_runtime::analyser::party::Member>,
     pub party_pending: bool,
@@ -75,6 +77,7 @@ pub enum Tool {
     Party,
     LootTracker,
     Kills,
+    Bosses,
 }
 impl Tool {
     pub const CYCLOPEDIA: [Self; 7] = [
@@ -86,7 +89,7 @@ impl Tool {
         Self::Damage,
         Self::Healing,
     ];
-    pub const ALL: [Self; 13] = [
+    pub const ALL: [Self; 14] = [
         Self::Overview,
         Self::Hunting,
         Self::Experience,
@@ -100,6 +103,7 @@ impl Tool {
         Self::Party,
         Self::LootTracker,
         Self::Kills,
+        Self::Bosses,
     ];
     #[allow(
         non_upper_case_globals,
@@ -126,6 +130,7 @@ impl Tool {
             Self::Party => "party",
             Self::LootTracker => "loot-tracker",
             Self::Kills => "kills",
+            Self::Bosses => "bosses",
         }
     }
     pub const fn title(self) -> &'static str {
@@ -143,6 +148,7 @@ impl Tool {
             Self::Party => "Party Hunt",
             Self::LootTracker => "Loot Tracker",
             Self::Kills => "Kill Tracker",
+            Self::Bosses => "Boss Tracker",
         }
     }
 }

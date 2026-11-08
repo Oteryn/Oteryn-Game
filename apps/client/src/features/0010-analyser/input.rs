@@ -12,6 +12,9 @@ pub(in crate::play) fn select_tool(panel: &mut oteryn_client_ui::analyser::Panel
 }
 
 use tokio::sync::mpsc::UnboundedSender;
+#[cfg(any(windows, test))]
+#[path = "input/bosses.rs"]
+mod bosses;
 impl PlayLink {
     pub fn analyser_xp_goal(&self, value: &str) -> bool {
         oteryn_client_ui::analyser::set_xp_goal(
@@ -131,6 +134,13 @@ pub(in crate::play) fn submit(
         oteryn_client_ui::analyser::kills::goal(&mut mailbox.analyser, race, None);
     } else if action == tools + 12 {
         refresh_tasks(mailbox, commands);
+    } else if (tools + 13..=tools + 17).contains(&action) {
+        bosses::action(
+            mailbox,
+            commands,
+            action - tools - 13,
+            values.get(1).map(String::as_str),
+        );
     }
 }
 
