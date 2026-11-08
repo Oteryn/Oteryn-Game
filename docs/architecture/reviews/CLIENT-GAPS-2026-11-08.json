@@ -677,9 +677,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Titles: unlock/select/filter",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Operacje istnieją; brak pełnego selektora i filtrów tytułów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0097-character-info/input.rs:54 + apps/client/src/features/0097-character-info/view/titles.rs:155 + crates/client-ui/src/features/0097-character-info/state/titles.rs:58 + apps/client/src/features/0097-character-info/tests/play.rs:438 title_selector_receives_self_ownership_and_selected_title_from_the_command_adapter + crates/client-ui/src/features/0097-character-info/tests.rs:64 title_selector_filters_owned_titles_and_foreign_profiles_never_replace_ownership"
  },
  {
   "id": "T097",
