@@ -213,6 +213,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 .iter()
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
             || !item(&reward.item, reward.count)
+            || !reward.valid_literal_text()
             || reward.additional.len() > 19
             || reward
                 .additional

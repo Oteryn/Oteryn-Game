@@ -546,7 +546,7 @@ pub(crate) async fn mint(
                 })
             })
             .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
-        root_text: None,
+        root_text: reward.text.clone(),
         backpack: resolve(&backpack)?,
         content_revision,
         ruleset_revision,
