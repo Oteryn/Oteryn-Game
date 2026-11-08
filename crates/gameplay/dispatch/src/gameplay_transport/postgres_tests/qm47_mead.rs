@@ -10,10 +10,7 @@ use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::AdmittedSession;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
-use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
-    barbarian_mead as mead, world_callbacks,
-};
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, barbarian_mead as mead, world_callbacks};
 use std::sync::Arc;
 
 #[test]
@@ -50,34 +47,22 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
+    // M48 owns the shared questline through a physical binding. Arrange Sven's
+    // accepted round as fixture initials, without a generic write to that track.
     let tracks = mead::TRACKS
         .into_iter()
-        .map(|k| base.track(k).cloned().ok_or("mead track"))
-        .collect::<Result<Vec<_>, _>>()?;
-    let setup = QuestTransition {
-        key: "oteryn:quest-transition/m47-fixture-round".into(),
-        quest: mead::QUEST.into(),
-        effects: mead::TRACKS
-            .into_iter()
-            .zip([2, 2, 0, 0])
-            .map(|(track, value)| QuestEffect {
-                track: track.into(),
-                from: QuestComparison::Between(-1, i64::MAX),
-                effect: QuestEffectKind::Set(value),
-            })
-            .collect(),
-        completes: false,
-        experience: None,
-        world_change: None,
-    };
+        .zip([2, 2, 0, 0])
+        .map(|(key, accepted)| {
+            let mut track = base.track(key).cloned().ok_or("mead track")?;
+            track.initial = accepted;
+            Ok(track)
+        })
+        .collect::<Result<Vec<_>, &str>>()?;
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             base.content_revision(),
             tracks,
-            vec![
-                setup.clone(),
-                world_callbacks::primary_transition(callback)?,
-            ],
+            vec![world_callbacks::primary_transition(callback)?],
         )
         .map_err(debug)?,
     );
@@ -118,23 +103,6 @@ pub(super) async fn exercise(
         (context, owner.spell_lane_permit().await.ok_or("permit")?)
     };
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    let mut start = request(&setup.key, 7000)?;
-    start.cause = QuestCause::Command(CommandRef::new(
-        admitted.game_session_id,
-        CommandId::new(7000).map_err(debug)?,
-    ));
-    assert!(matches!(
-        slot.commit_quest_transition(
-            owner.root,
-            owner.character,
-            owner.holder,
-            fence,
-            start,
-            catalogue.clone()
-        )
-        .await?,
-        QuestTransitionOutcome::Committed(_)
-    ));
     let command = request(mead::KEY, 7001)?;
     let generic = slot
         .commit_quest_transition(
