@@ -156,12 +156,14 @@ pub(super) async fn exercise(
         admitted.game_session_id,
         CommandId::new(2403).map_err(debug)?,
     );
+    let item_permit = owner.spell_lane_permit().await.ok_or("NPC item lane")?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     assert!(matches!(
         slot.commit_npc_program(
             owner.root,
             authority,
             owner.holder,
+            &item_permit,
             stale,
             fresh,
             owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone(),
@@ -176,6 +178,7 @@ pub(super) async fn exercise(
         Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)
     ));
     drop(slot);
+    drop(item_permit);
     assert_eq!(
         owner
             .root
