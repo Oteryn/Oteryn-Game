@@ -22,6 +22,87 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let small_ruby = name.starts_with("l6-small-ruby");
+    let shared_gate = name.starts_with("l6-tomb-gate-");
+    let shared_switch = name.starts_with("l6-tomb-switch-");
+    let tomb_native = name.starts_with("l6-tomb-native-");
+    let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
+    let mead = name == "l6/waterskin-of-mead";
+    let spirit = name == "qengine-rewards-questpc4-spirit";
+    let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
+    let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let native_upper = name.starts_with("qengine-rewards-questpc4-paradox-upper-");
+    let native_story = name.starts_with("qengine-rewards-questpc4-paradox-story-");
+    let diprath_room = name.starts_with("l6-diprath-room-");
+    let native_signs = name.starts_with("l6-native-signs-");
+    let native_flames = name.starts_with("l6-native-flames-");
+    let native_room = name.starts_with("l6-native-room-");
+    let native_altar = name.starts_with("l6-floor-assembly-native");
+    let native_gate = name.starts_with("l6-tomb-gate-native-");
+    let native_crop = small_ruby
+        || mead
+        || spirit
+        || tomb_native
+        || native_tower
+        || native_switch
+        || native_gate
+        || native_altar
+        || native_room
+        || native_flames
+        || native_signs
+        || diprath_room
+        || native_story
+        || native_upper;
+    let start = if native_upper {
+        super::super::l6_paradox_upper::start(name)
+    } else if native_story {
+        super::super::l6_paradox_story::start()
+    } else if diprath_room {
+        super::super::l6_diprath_room::start()?
+    } else if native_signs {
+        super::super::l6_native_signs::start()?
+    } else if native_flames {
+        super::super::l6_native_flames::start()?
+    } else if native_room {
+        super::super::l6_native_rooms::start(name)?
+    } else if native_altar {
+        super::super::l6_floor_native::start()
+    } else if native_gate {
+        super::super::l6_shared_gate_native::start(name)?
+    } else if native_tower {
+        super::super::l6_paradox_native::start(name)
+    } else if native_switch {
+        super::super::l6_shared_switch_native::start(name)?
+    } else if tomb_native {
+        Position {
+            x: trigger.x,
+            y: trigger.y - 1,
+            ..trigger
+        }
+    } else if spirit {
+        Position {
+            x: 33081,
+            y: 31159,
+            floor: -8,
+        }
+    } else if mead {
+        Position {
+            x: trigger.x,
+            y: trigger.y + 1,
+            ..trigger
+        }
+    } else {
+        Position {
+            x: trigger.x - 1,
+            ..trigger
+        }
+    };
+    let reward_fluids = name == "l6-reward-fluids";
+    let ancient_instruments = name == "l6-ancient-instruments";
+    let floor_profiles = matches!(name, "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile");
+    let room_raise = name.starts_with("l6-room-raise-");
+    let floor_assembly = name.starts_with("l6-floor-assembly");
+    let reusable_tool = name.starts_with("l6-reusable-tool");
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
@@ -37,17 +118,91 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc {
-        "behemoth"
-    } else if rotten_purchase {
-        "rotten-blood/sacrifice"
-    } else if monk {
-        "monk-guidance"
-    } else if target_swap {
-        "fish-napping-key"
+    let mut callback = if native_signs || diprath_room {
+        callback("ancient-tombs-diprath-sign-1")?
+    } else if native_flames {
+        callback("ancient-tombs-morguthis-seven-flame-gate")?
+    } else if native_room {
+        super::super::l6_native_rooms::callback(name)?
     } else {
-        name.strip_suffix("-expiry").unwrap_or(name)
-    })?;
+        callback(if name == "triangle-tower-wall" {
+            "triangle-tower-lever"
+        } else if ancient_instruments {
+            "ancient-tombs-diprath-sign-1"
+        } else if classic_npc || small_ruby || reward_fluids {
+            "behemoth"
+        } else if rotten_purchase {
+            "rotten-blood/sacrifice"
+        } else if monk {
+            "monk-guidance"
+        } else if target_swap
+            || reusable_tool
+            || floor_profiles
+            || floor_assembly
+            || room_raise
+            || carried_step
+            || shared_switch
+            || shared_gate
+        {
+            "fish-napping-key"
+        } else {
+            name.strip_suffix("-expiry").unwrap_or(name)
+        })?
+    };
+    if shared_gate {
+        let unique = name.rsplit('-').next().ok_or("gate UID")?.parse()?;
+        callback.key = "oteryn:quest-callback/l6-shared-gate-fixture".into();
+        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = Some(unique);
+        callback.selector.action = None;
+        callback.selector.appearance = Some(100);
+        callback.lever = None;
+        callback.storage.clear();
+        callback.offerings.clear();
+        callback.passages.clear();
+        callback.item_on_target = None;
+        callback.effects = Default::default();
+        callback.teleport = Some(super::super::l6_shared_gates::spec(unique)?.2);
+        callback.return_on_failure = true;
+    }
+    if shared_switch {
+        callback.key = "oteryn:quest-callback/l6-shared-switch-fixture".into();
+        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = None;
+        callback.selector.action = Some(name.rsplit('-').next().ok_or("switch action")?.parse()?);
+        callback.selector.appearance = Some(2772);
+        callback.lever = Some([2772, 2773]);
+        callback.reversible = false;
+        callback.storage.clear();
+        callback.offerings.clear();
+        callback.passages.clear();
+        callback.item_on_target = None;
+        callback.teleport = None;
+        callback.effects = Default::default();
+    }
+    if carried_step {
+        // Geometry supplies the exact source UID and both floor endpoints only.
+        // Production callback selection and physical branch ownership are unchanged.
+        let unique = name.rsplit('-').next().ok_or("tomb UID")?.parse::<u16>()?;
+        callback.key = "oteryn:quest-callback/l6-carried-step-fixture".into();
+        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = Some(unique);
+        callback.selector.action = None;
+        callback.selector.appearance = Some(100);
+        callback.item_on_target = None;
+        callback.storage.clear();
+        callback.passages.clear();
+        callback.offerings.clear();
+        callback.lever = None;
+        callback.effects = Default::default();
+        callback.teleport = stateless_destination;
+        if tomb_native {
+            callback.key = "oteryn:quest-callback/l6-native-step-fixture".into();
+        }
+    }
     if name.ends_with("-expiry") {
         callback
             .effects
@@ -55,6 +210,34 @@ fn scenario_case(
             .as_mut()
             .ok_or("portal pair")?
             .lifetime_us = Some(60_000_000);
+    }
+    if reusable_tool {
+        callback = super::super::l6_reusable_tools::fixture(callback);
+    }
+    if floor_profiles || floor_assembly {
+        callback.key = "oteryn:quest-callback/l6-floor-profile-fixture".into();
+        callback.selector.unique = None;
+        callback.selector.action = if name.ends_with("-unbound") {
+            Some(40041)
+        } else if floor_assembly {
+            Some(40040)
+        } else {
+            None
+        };
+        callback.selector.appearance = Some(100);
+        callback.selector.position = None;
+        callback.item_on_target = None;
+        callback.storage.clear();
+        callback.teleport = None;
+    }
+    if ancient_instruments {
+        // The fixture supplies source-verified native positions and appearances;
+        // all matching and durable effects still come from the production registry.
+        callback.key = "oteryn:quest-callback/l6-instrument-fixture".into();
+        callback.selector.unique = None;
+        callback.selector.position = Some(trigger);
+        callback.selector.action = None;
+        callback.selector.appearance = Some(3255);
     }
     if target_swap {
         callback
@@ -72,6 +255,22 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
+    if name.starts_with("qengine-rewards-questpc4-admission-") {
+        callback = super::super::l6_world_admission::callback(name)?;
+    }
+    if name.starts_with("qengine-rewards-questpc4-puzzle-predicate") {
+        callback = super::super::l6_world_puzzles::predicate_fixture(
+            callback,
+            trigger,
+            name.ends_with("-refuse"),
+        );
+    }
+    if name == "qengine-rewards-questpc4-puzzle-presence" {
+        callback = super::super::l6_world_puzzles::presence_fixture(callback, trigger);
+    }
+    if name == "qengine-rewards-questpc4-puzzle-ladder" {
+        callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
+    }
     let world = world(&callback, trigger)?;
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
@@ -85,6 +284,20 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
+        if small_ruby || carried_step || native_tower || name == "triangle-tower-wall" {
+            let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
+                .fetch_one(&h.pool)
+                .await?;
+            if native_tower {
+                eprintln!("POSTGRES_DATABASE_READY {name} native_scene_pending version={version}");
+            } else if carried_step {
+                eprintln!("POSTGRES_DATABASE_READY l6_carried_step version={version}");
+            } else if name == "triangle-tower-wall" {
+                eprintln!("POSTGRES_DATABASE_READY triangle_tower_wall version={version}");
+            } else {
+                eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
+            }
+        }
         prepare_current_session(&h)
             .await
             .map_err(|e| format!("callback session: {e}"))?;
@@ -101,19 +314,126 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
+        let world = if native_upper {
+            super::super::l6_paradox_upper::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native upper policies")?,
+                name,
+            )?
+        } else if native_story {
+            super::super::l6_paradox_story::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native story policies")?,
+            )?
+        } else if diprath_room {
+            super::super::l6_diprath_room::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("Diprath native policies")?,
+            )?
+        } else if native_signs {
+            super::super::l6_native_signs::world(
+                generation.native_gameplay().ok_or("native sign policies")?,
+            )?
+        } else if native_flames {
+            super::super::l6_native_flames::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native flame policies")?,
+            )?
+        } else if native_room {
+            super::super::l6_native_rooms::world(
+                generation.native_gameplay().ok_or("native room policies")?,
+                name,
+            )?
+        } else if native_altar {
+            super::super::l6_floor_native::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native altar policies")?,
+            )?
+        } else if native_gate {
+            super::super::l6_shared_gate_native::world(
+                generation.native_gameplay().ok_or("native gate policies")?,
+                name,
+            )?
+        } else if native_tower {
+            super::super::l6_paradox_native::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native tower policies")?,
+                name,
+            )?
+        } else if native_switch {
+            super::super::l6_shared_switch_native::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native switch policies")?,
+                name,
+            )?
+        } else if tomb_native {
+            super::super::l6_tomb_native::world(
+                generation.native_gameplay().ok_or("native Tomb policies")?,
+                callback.selector.unique.ok_or("source UID")?,
+            )?
+        } else if small_ruby {
+            super::super::l6_world_pickups::small_ruby(
+                generation
+                    .native_gameplay()
+                    .ok_or("native pickup policies")?,
+            )?
+        } else if spirit {
+            super::super::l6_spirit::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native Spirit policies")?,
+            )?
+        } else if mead {
+            super::super::l6_mead::world(
+                generation.native_gameplay().ok_or("native Mead policies")?,
+            )?
+        } else {
+            world
+        };
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
+        let frame_binding = if native_crop {
+            world.frame_binding_digest(deps.admitted.world_id)
+        } else {
+            activated.frame_binding().digest()
+        };
+        let bundle_room = if native_crop {
+            Some(
+                activated
+                    .qualified_room()
+                    .bundle_view(
+                        cells.clone(),
+                        frame_binding,
+                        world.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: i32::from(start.x),
+                            y: i32::from(start.y),
+                            floor: -i16::from(trigger.floor),
+                        },
+                    )
+                    .ok_or("qualified native Bundle room")?,
+            )
+        } else {
+            None
+        };
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
-            activated.frame_binding().digest(),
+            frame_binding,
             world.map_revision_digest(),
             (
-                i32::from(trigger.x) - 1,
-                i32::from(trigger.y),
+                i32::from(start.x),
+                i32::from(start.y),
                 -i16::from(trigger.floor),
             ),
         );
@@ -127,6 +447,8 @@ fn scenario_case(
             "runtime-scope-assignment:1",
             if name.starts_with("qengine-rewards-l12-") {
                 128
+            } else if native_story || (native_upper && name.ends_with("-complete")) {
+                6
             } else if classic_npc {
                 5
             } else if monk {
@@ -143,10 +465,7 @@ fn scenario_case(
             .reserve_fresh_session(deps.admitted.game_session_id)
             .map_err(debug)?;
         deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        let origin = local(Position {
-            x: trigger.x - 1,
-            ..trigger
-        });
+        let origin = local(start);
         runtime
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
@@ -158,6 +477,8 @@ fn scenario_case(
             || name.contains("l10-documents-")
             || name.contains("l11-")
             || name.contains("l12-")
+            || spirit
+            || name.starts_with("qengine-rewards-questpc4-paradox")
         {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,
@@ -181,17 +502,54 @@ fn scenario_case(
         } else {
             None
         };
+        let (consumer, clock, activation, _) =
+            crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+        if mead {
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+        }
+        let mead_premium =
+            crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            );
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
+        if mead {
+            owner.premium_coordinator = Some(&mead_premium);
+        }
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
+        if let Some(room) = bundle_room.as_ref() {
+            owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(room), Some(room));
+        }
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
                 .catalogue()
                 .clone(),
         ));
-        if lever_fixture || target_swap || name.ends_with("-expiry") {
+        if mead {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::l6_mead::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("Mead catalogue")?,
+                &callback,
+            )?));
+        }
+        if name.starts_with("qengine-rewards-questpc4-admission-")
+            || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
+            || lever_fixture
+            || target_swap
+            || name.ends_with("-expiry")
+            || name == "triangle-tower-lever"
+        {
             assert!(
                 owner
                     .states
@@ -213,7 +571,7 @@ fn scenario_case(
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
-            .bind(generation.identity().client_artifact_digest().as_slice()).bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_binding.as_slice()).execute(&h.pool).await?;
         let fresh = super::super::fresh_fixture::fresh::Source::new(0)?.request()?;
         h.root
             .initialize_admission_equipment(
@@ -246,8 +604,225 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
+        if mead {
+            owner.admit_premium(id(40), admitted.game_session_id);
+        }
         owner.admit_quest_session(&admitted).await;
-        if name == "catalogue-npc-xp" {
+        if mead {
+            super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
+                .await?;
+        } else if reward_fluids {
+            super::super::l6_reward_fluids::exercise(&owner, admitted, &h, &authority).await?;
+        } else if small_ruby {
+            super::super::l6_world_pickups::exercise(&owner, &mut admitted, &h, 0).await?;
+            if name.ends_with("-reset") {
+                let mut next = super::super::l6_world_pickups::cycle(
+                    &owner,
+                    admitted,
+                    &h,
+                    &authority,
+                    bundle_room.as_ref().ok_or("native reset room")?,
+                )
+                .await?;
+                drop(owner);
+                let reset_world = super::super::l6_world_pickups::small_ruby(
+                    generation
+                        .native_gameplay()
+                        .ok_or("native pickup policies")?,
+                )?;
+                let reset_cells = reset_world
+                    .movement_cells(activated.qualified_room().movement_cells())
+                    .map_err(debug)?;
+                let reset_frame = reset_world.frame_binding_digest(deps.admitted.world_id);
+                let reset_room = activated
+                    .qualified_room()
+                    .bundle_view(
+                        reset_cells.clone(),
+                        reset_frame,
+                        reset_world.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: origin.x,
+                            y: origin.y,
+                            floor: origin.floor,
+                        },
+                    )
+                    .ok_or("reset Bundle room")?;
+                let reset_pin = ChannelContentPin::from_activation(
+                    deps.admitted.world_id,
+                    2,
+                    generation.identity().server_artifact_digest(),
+                    generation.identity().client_artifact_digest(),
+                    reset_frame,
+                    reset_world.map_revision_digest(),
+                    (origin.x, origin.y, origin.floor),
+                );
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    deps.admitted.world_id,
+                    deps.admitted.channel_id,
+                    crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+                    1,
+                    2,
+                    2,
+                    "runtime-scope-assignment:2",
+                    2,
+                    reset_pin,
+                )
+                .map_err(debug)?;
+                let reserved = runtime
+                    .reserve_fresh_session(next.game_session_id)
+                    .map_err(debug)?;
+                deps.actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+                runtime
+                    .initialize_pinned_test_position(deps.actor, origin)
+                    .map_err(debug)?;
+                next.runtime_actor = Some(deps.actor);
+                deps.admitted = next;
+                deps.room = reset_room.clone();
+                *deps.runtime.lock().await = runtime;
+                let mut owner = deps.owner(&h, &authority);
+                owner.active_generation = Some(generation);
+                owner.movement_cells = &reset_cells;
+                owner.rooms =
+                    crate::gameplay_transport::SeamRooms::new(Some(&reset_room), Some(&reset_room));
+                owner.reset_epoch = h
+                    .root
+                    .active_world_reset_epoch(owner.world_id)
+                    .await?
+                    .ok_or("active reset epoch")?;
+                deps.initialize(&owner).await;
+                owner.admit_progression_session(&mut next).await;
+                super::super::l6_world_pickups::exercise(&owner, &mut next, &h, 1).await?;
+                super::super::l6_world_pickups::refuse_old_epoch(&owner, next, &h).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
+        } else if name == "l6-stag-item-profile" {
+            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence).await?;
+        } else if name == "l6-ruby-profile" {
+            super::super::l6_ruby_profile::exercise(&owner, &h).await?;
+        } else if floor_profiles {
+            super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
+        } else if diprath_room {
+            super::super::l6_diprath_room::exercise(&mut owner, &mut admitted, &h, name).await?;
+        } else if native_signs {
+            super::super::l6_native_signs::exercise(&mut owner, &mut admitted, &h, name).await?;
+        } else if native_flames {
+            super::super::l6_native_flames::exercise(&mut owner, &mut admitted, &h, name).await?;
+        } else if native_room {
+            super::super::l6_native_rooms::exercise(&mut owner, &mut admitted, &h, name).await?;
+        } else if room_raise {
+            super::super::l6_room_raise::exercise(&mut owner, &mut admitted, &h, name).await?;
+        } else if native_altar {
+            super::super::l6_floor_native::exercise(&mut owner, &mut admitted, &h, fence, name)
+                .await?;
+        } else if floor_assembly {
+            super::super::l6_floor_assembly::exercise(&mut owner, &mut admitted, &h, fence, name)
+                .await?;
+        } else if native_gate {
+            super::super::l6_shared_gate_native::exercise(&mut owner, &mut admitted, &h, name)
+                .await?;
+        } else if shared_gate {
+            super::super::l6_shared_gates::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                trigger,
+                name,
+            )
+            .await?;
+        } else if native_switch {
+            super::super::l6_shared_switch_native::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                trigger,
+                name,
+            )
+            .await?;
+        } else if shared_switch && name.contains("-treasure-") {
+            super::super::l6_shared_switch_treasure::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                trigger,
+                name,
+                deps.actor,
+            )
+            .await?;
+        } else if shared_switch && name.contains("-timer-") {
+            super::super::l6_shared_switch_timers::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                trigger,
+                name,
+            )
+            .await?;
+        } else if shared_switch {
+            super::super::l6_shared_switches::exercise(&owner, &mut admitted, &h, trigger).await?;
+        } else if carried_step {
+            if name.contains("-present-") {
+                let recipe = oteryn_gameplay_quests::quest::carried_step::RECIPES
+                    .iter()
+                    .find(|r| Some(r.unique) == callback.selector.unique)
+                    .ok_or("source key recipe")?;
+                super::input_item(
+                    &owner,
+                    fence.item_fence(),
+                    &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                        position: trigger,
+                        item: recipe.item.into(),
+                        count: 1,
+                    },
+                    71,
+                    true,
+                )
+                .await?;
+            }
+            super::stateless::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                stateless_destination.ok_or("source branch destination")?,
+            )
+            .await?;
+            super::super::l6_carried_step::verify(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                name.contains("-present-"),
+                tomb_native,
+            )
+            .await?;
+        } else if ancient_instruments {
+            super::super::l6_ancient_tombs::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                trigger,
+            )
+            .await?;
+        } else if name == "triangle-tower-wall" {
+            super::super::triangle_tower::exercise(
+                &mut owner,
+                &mut admitted,
+                &world,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if name == "catalogue-npc-xp" {
             super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "catalogue-npc-calendar" {
             super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
@@ -256,6 +831,7 @@ fn scenario_case(
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if outfit_world {
+
             super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,
@@ -286,7 +862,9 @@ fn scenario_case(
                 name,
             )
             .await?;
-        } else if callback.effects != Default::default() {
+        } else if callback.effects != Default::default()
+            || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
+        {
             super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,
@@ -390,6 +968,20 @@ fn scenario_case(
                 &callback,
                 trigger,
                 rotten_purchase,
+            )
+            .await?;
+        } else if reusable_tool {
+            super::super::l6_reusable_tools::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                if name.ends_with("multitool") {
+                    "oteryn:item.tibia.i9598"
+                } else {
+                    "oteryn:item.tibia.i3304"
+                },
             )
             .await?;
         } else if callback.item_on_target.is_some()

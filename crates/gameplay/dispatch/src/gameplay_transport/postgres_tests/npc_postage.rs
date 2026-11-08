@@ -312,8 +312,13 @@ fn scenario(keys: &[&str]) -> TestResult {
                         let definition = format!("oteryn:item.tibia.i{item}");
                         let reference = index.definition_ref("Item", &definition, "definition-r1")
                             .ok_or("fluid container reference")?.get();
+                        let source_subtype = u16::try_from(subtype)?;
+                        assert!(book.get(&npc_key).is_some_and(|entry| entry.offers().iter().any(|offer|
+                            offer.item.key == definition && offer.sub_type == Some(source_subtype)
+                                && offer.count == Some(1) && offer.unit_price == u64::from(price))),
+                            "exact sourced fluid subtype in one physical container");
                         let offer = window.offers.iter().position(|o| o.item_definition_ref == reference
-                            && o.side == NpcTradeSide::Buy && o.count == subtype && o.unit_price == price)
+                            && o.side == NpcTradeSide::Buy && o.count == 1 && o.unit_price == price)
                             .ok_or("Ahmet must offer the exact sourced filled container")?;
                         let intent = NpcTradeIntent { npc_actor: npc, catalogue_revision: revision,
                             offer_index: u32::try_from(offer)?, side: NpcTradeSide::Buy,

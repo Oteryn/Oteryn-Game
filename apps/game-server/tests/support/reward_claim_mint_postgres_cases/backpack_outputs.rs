@@ -44,9 +44,11 @@ fn questl2_peer_outputs_are_atomic_audited_and_replay_safe() -> TestResult {
             request.backpack_outputs = true;
             request.content_revision = format!("sha256:{}", "d1".repeat(32));
             request.contents = vec![RewardClaimMintContent {
+                fluid_subtype: None,
                 item: facts(COIN, STACKABLE), quantity: 100,
                 key_number: None, text: None,
             }, RewardClaimMintContent {
+                fluid_subtype: None,
                 item: facts(STONE, ItemStackClass::NonStackable), quantity: 1,
                 key_number: None, text: None,
             }];

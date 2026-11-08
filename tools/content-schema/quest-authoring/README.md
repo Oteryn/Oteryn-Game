@@ -25,6 +25,7 @@ verifies the normalized pinned source capture and current map projection.
 | `ots_interactions.py` | Transcribes every quest script of both servers into interaction definitions (D36): edge, read-only conditions and children for the Quest, Ability, Item, Achievement and Presentation owners; Movement children are D37 relocations (to a named anchor or the previous tile; a computed target stays blocked) and WorldObject children are D38 overlay operations (`TRANSFORM`/`CREATE`/`REMOVE`/`RETAG`, optionally `revert_after_ms`; a call the converter cannot yet classify by kind stays blocked); joined by quest and script path. |
 | `ots_chests.py` | Transcribes the reward chests of Canary and CrystalServer (`startup/tables/chest.lua` plus the text and achievement tables of `quest_reward_common.lua`), joined by map position, into reward claims, reward-only quests, a catalog and a manifest. |
 | `quest_callback_coverage.py` | Generates `docs/repository/QUEST_CALLBACK_COVERAGE.json` from the existing claims and the task-pinned Canary/Crystal chest tables (`--canary <root> --crystal <root>`, `--check` to verify). Separates dispatch/PostgreSQL-qualified chests, supported shapes requiring World/Item qualification, and unsupported claims. The dispatch `quest_callbacks` tests verify the supported set against the actual binder. |
+| `refresh_donor_crosswalk_witness.py` | After a full donor capture and Quest-tree rebuild, replays the component crosswalk, NPC and bounded dialogue producers against the pinned portable archive. Verifies all existing capture digests, permits only definition-file witness changes, and updates the coverage descriptor. Changed Source associations require a full donor replay. `--check` verifies freshness. |
 | `quest_content.schema.json` | JSON Schema of reward claims, door gates, reward-only and storyline quests. |
 | `conflict_decisions.json` | D25 decisions for every Canary/CrystalServer conflict of the chest, door, quest-log and interaction transcriptions: chosen server, basis, the difference in our own words and the wiki revision when it decides; the converters apply it and fail on a stale decision. |
 | `interaction_overrides.json` | Curated replacements for an interaction condition `ots_interactions.py` cannot read statically because it lives in a sibling `lib/quests/*.lua` table indexed by a role field or a world state: interaction key and source line to the resolved condition (existing D36 vocabulary only) plus a basis citing the table and its registration; `ots_interactions.py` applies it and fails on a stale entry (a line no longer unresolved). |
@@ -457,3 +458,10 @@ The dispatch callback test compares its supported set to the live binder.
 Shared atomic NPC item exchanges and outfit/addon grants are described in
 [shared-reward-callbacks.md](shared-reward-callbacks.md), with the closed callback
 schema and offline donor catalogue producer beside it.
+
+When a full donor capture changes attachment packets, rebuild the Quest tree before
+its binding packets. Then run `refresh_donor_crosswalk_witness.py` to replay the
+component crosswalk against the final definition bytes, followed by
+`quest_binding_authoring.py` and its downstream state/candidate generators. This
+keeps file witnesses current without changing Source associations or granting
+Native admission. `quest_donor_source_authoring.py --check` remains the full replay.

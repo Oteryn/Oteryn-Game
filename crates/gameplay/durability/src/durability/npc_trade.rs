@@ -31,6 +31,7 @@
 
 use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
+mod legacy_eligibility;
 pub mod yeo;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
@@ -850,6 +851,9 @@ impl DurabilityRoot {
                     let house_key=if hireling.is_some() {Some(super::house_hireling::audit::read_key(&mut tx,&fence).await?)} else {None};
 
                     if !grizzly::permitted(&mut tx, fence.character_id, &request).await? {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
+                    if !legacy_eligibility::permitted(&mut tx, fence.character_id, &request).await? {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
                     let backpack = sqlx::query(

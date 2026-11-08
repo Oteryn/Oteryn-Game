@@ -92,6 +92,7 @@ pub(super) async fn resolve(
     while remaining > 0 {
         let quantity = remaining.min(maximum);
         give.backpack_outputs.push(ItemAmount {
+            fluid_subtype: None,
             item: config.output.clone(),
             count: u16::try_from(quantity).map_err(|_| DurabilityError::InvalidStoredState)?,
         });

@@ -9738,5 +9738,35 @@
       }
     ],
     "publication": "All generation/freshness/migration/workspace/fmt/Clippy gates PASS. Publish Main+scoped fixture correction as compiling checkpoint, with current PG/unit reruns pending under PREPUSH-2. Fresh dispatch build28149, PG runner69064 and all10-crate units18148 queued after current gates. No new qualification."
+  },
+  "questpc4_integration": {
+    "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+    "conflicts": "Resolved within five minutes; incoming quest and world ownership retained.",
+    "fixes": [
+      "New migration1238 changes the conflicting SQL reward alias without changing predicates.",
+      "Reuse Main count-one fluid-container normalization; strengthen exact-subtype offer assertion.",
+      "Restore previously published merchant/Postman checks under the existing transaction lock.",
+      "Initialize new Main constructor fields with prior ordinary defaults."
+    ],
+    "generation": "All18 repo tooling steps passed, including native freshness, equipment3818, world pins and duplicate migrations.",
+    "tests": "Prior current PG collected all8 groups:5 passed,3 failed. Three roots fixed together; fresh post-merge PG and crate unit reruns pending. No new qualification.",
+    "migration_files": [
+      "1230_quest_atomic_track_capacity.sql",
+      "1233_quest_reward_absolute_deadlines.sql",
+      "1234_quest_cooldown_repeat_occurrences.sql",
+      "1235_quest_reward_workshop_clocks.sql",
+      "1236_quest_reward_backpack_outputs.sql",
+      "1237_quest_reward_bulk_draws.sql",
+      "1238_quest_deadline_move_alias.sql"
+    ],
+    "workspace_check": {
+      "exit": 0,
+      "seconds": 406.799
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 26.827
+    },
+    "publication": "Compiling integration checkpoint under PREPUSH-2 cadence exception. Fresh unit/PG reruns pending; no new qualifications."
   }
 }

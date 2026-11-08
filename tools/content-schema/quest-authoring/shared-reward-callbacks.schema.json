@@ -69,7 +69,7 @@
           "type": "array",
           "maxItems": 20,
           "items": {
-            "$ref": "#/$defs/item"
+            "$ref": "#/$defs/giftItem"
           }
         },
         "decay": {
@@ -610,6 +610,10 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 65535
+        },
+        "completes": {
+          "type": "boolean",
+          "default": false
         }
       }
     },
@@ -866,6 +870,47 @@
           "maximum": 100
         }
       }
+    },
+    "giftItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "count"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "fluid_subtype": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "fluid_subtype"
+            ]
+          },
+          "then": {
+            "properties": {
+              "count": {
+                "const": 1
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

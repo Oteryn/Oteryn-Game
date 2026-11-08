@@ -415,25 +415,6 @@ fn classify(
         return Some(NpcOfferHeldReason::UnknownItem);
     }
     let count = count_of(offer);
-    if let Some(subtype) = offer
-        .sub_type
-        .filter(|_| facts.default_charges(key).is_none())
-    {
-        return if offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
-            && facts.fluid_container(key)
-            && !facts.stackable(key)
-            && !facts.charged(key)
-            && facts.timed_charges(key).is_none()
-            && (1..=255).contains(&subtype)
-            && count == u32::from(subtype)
-            && !offer.parity_pending
-            && offer.unit_price <= NPC_SELL_PRICE_COIN_CAPACITY
-        {
-            None
-        } else {
-            Some(NpcOfferHeldReason::ChargedOrFluidPending)
-        };
-    }
     if offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
         && count == 1
         && offer.sub_type.is_none()

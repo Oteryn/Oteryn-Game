@@ -145,6 +145,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // by build_newhaven_starter_profiles.py (Canary 04b83b51 items.xml + official 15.30).
     // Each has known speed_bonus=0; preserve the exact unknown-speed set below.
     ("NEWHAVEN-C19B", 5),
+    // NPCFIX source proof has 56 keys; frozen Main 83acbdac3 already owns
+    // i3456/i6528. Count the remaining 54 once; retain all source assertions.
+    ("NPCFIX", 54),
+    // Albinius's canonical Tome: npc_trade_item_profiles.py KEY i23986.
+    ("NPCFIX-TOME", 1),
     // P11: condition potions 7439/7440/7443/49271 from Crystal 201189f potions.lua:1-31
     // (tools/content-migration/condition_potion_profiles.py). All have speed_bonus=0.
     ("P11-CONDITION-POTIONS", 4),
@@ -154,6 +159,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
     // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
     ("QNPCFX", 1),
+    // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
+    ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
@@ -295,9 +302,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 53 independently captured physical quest Items.
+    // QENGINE2 captures 53 shared Items plus seven portable QUESTPC4 Items.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
-    // data. Main d34807f5 has none of these keys; all retain qualified zero speed.
+    // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
@@ -322,7 +329,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
-    assert_eq!(added_keys.len(), 53);
+    assert_eq!(added_keys.len(), 60);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -372,11 +379,14 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
+
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
             + additions.len()
+            // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
+            + 26 + 23
     );
     for id in [2949, 12369, 14156, 33330, 44179, 52732] {
         let key = format!("oteryn:item.tibia.i{id}");
