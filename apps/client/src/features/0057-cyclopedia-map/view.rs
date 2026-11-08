@@ -42,6 +42,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Load item definition",
                 "Previous item category",
                 "Next item category",
+                "Previous map floor",
+                "Next map floor",
+                "Toggle POI layer",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -68,6 +71,16 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         mailbox.discovery.inspection.category =
                             values.get(2).cloned().unwrap_or_default();
                     }
+                    return;
+                }
+                if (23..=25).contains(&action) {
+                    let panel = &mut mailbox.properties.cyclopedia_map;
+                    if action == 25 {
+                        panel.hide_pois = !panel.hide_pois;
+                    } else {
+                        panel.select_floor(action == 23);
+                    }
+                    panel.navigate(oteryn_client_ui::cyclopedia_map::Section::Map);
                     return;
                 }
                 if (20..=22).contains(&action) {
@@ -173,14 +186,14 @@ fn section_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
 #[cfg(any(windows, test))]
 fn select_analytics(mailbox: &mut crate::play::mailbox::Mailbox, previous: bool) {
     use oteryn_client_ui::{analyser::Tool, cyclopedia_map::Section};
-    let index = Tool::ALL
+    let index = Tool::CYCLOPEDIA
         .iter()
         .position(|tool| *tool == mailbox.analyser.tool)
         .unwrap_or(0);
     let index = if previous {
-        (index + Tool::ALL.len() - 1) % Tool::ALL.len()
+        (index + Tool::CYCLOPEDIA.len() - 1) % Tool::CYCLOPEDIA.len()
     } else {
-        (index + 1) % Tool::ALL.len()
+        (index + 1) % Tool::CYCLOPEDIA.len()
     };
     crate::play::feature_0010_analyser::input::select_tool(&mut mailbox.analyser, index);
     mailbox

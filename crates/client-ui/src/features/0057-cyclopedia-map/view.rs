@@ -25,6 +25,9 @@ pub struct MapPoint {
 }
 /// Project the server's visible POIs; unknown region geometry is never invented.
 pub fn map_points(panel: &Panel) -> Vec<MapPoint> {
+    if panel.hide_pois {
+        return Vec::new();
+    }
     let points: Vec<_> = panel
         .map
         .iter()
@@ -55,6 +58,9 @@ pub fn map_text(panel: &Panel) -> String {
         "Visible POI overview — floor {} (north up; fitted to visible points)\r\n",
         panel.floor
     );
+    if panel.hide_pois {
+        out.push_str("POI layer hidden\r\n");
+    }
     for row in 0..12 {
         for column in 0..32 {
             out.push(
