@@ -15,6 +15,9 @@ pub enum Facing {
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
+    /// An existing, preserved local quest epoch; commands never create reward cycles.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reward_cycle: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
@@ -193,6 +196,18 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.item_reward_cycle.as_ref().is_some_and(|track| {
+        effects.item_reward.is_none()
+            || !callback.storage.iter().any(|state| {
+                state.track == *track
+                    && state.preserve
+                    && !state.increment
+                    && !state.at_least
+                    && state.minimum >= 0
+            })
+    }) {
+        return false;
+    }
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
     if effects.item_reward.as_ref().is_some_and(|reward| {
@@ -214,6 +229,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
             || !item(&reward.item, reward.count)
             || !reward.valid_literal_text()
+            || reward.additional.len() > 19
+            || reward
+                .additional
+                .iter()
+                .any(|c| !item(&c.item, c.count) || c.fluid_subtype.is_some())
             || reward.contents.len() > 20
             || reward.contents.iter().any(|c| {
                 !item(&c.item, c.count) || c.fluid_subtype.is_some_and(|f| f == 0 || c.count != 1)

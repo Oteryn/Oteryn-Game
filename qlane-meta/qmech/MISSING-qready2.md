@@ -20,3 +20,11 @@
   unrelated client mechanics are not certified by the reward-only cases.
 - Decision: no mechanic claim or migration is warranted for this lane's checked
   entries. Retain the original qready2 migration range 1440–1449; none are used.
+
+## Coordinator M09 assignment (supersedes initial scope/range)
+
+The later binding assignment adds the shared multi-grant MINT participant and
+Rookie Guard, Treasure Hunt and Tower Defence reward boundaries to this lane.
+Use QMECH migrations **2100–2109**, superseding the earlier retained range.
+The live claim is recorded in `CLAIMS.md`; exact checked reward distinctions and
+URLs are in `docs/reference/content-prep/qmech-m09/reward-sources.md`.

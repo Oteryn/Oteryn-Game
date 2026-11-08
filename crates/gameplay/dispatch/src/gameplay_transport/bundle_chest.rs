@@ -190,6 +190,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return outcome(UseDisposition::Rejected);
                 };
                 let request = RewardClaimMintRequest {
+                    additional_items: Vec::new(),
                     command: CommandRef::new(command.game_session_id, command_id),
                     claim: TypedDefinitionRef {
                         family: "RewardClaim".into(),
