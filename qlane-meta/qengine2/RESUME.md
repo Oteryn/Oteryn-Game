@@ -1807,3 +1807,37 @@ finds once-only writers. Reuse QUESTPC5 nativeItem9081 proof from5ee913340;
 saved/tmp/qengine2-w15b-9081-peer.json. Newmigration required:0012 explicitly
 constrains next_allowed_atNULL and immutableclaimrows; extend current guardchain
 (including0056/0762/1550), newrange1550-1569, avoid historical1553; prefer1554.
+
+2026-11-08 world callback clock engine: merged main 64d8bb8b8 (CI-only),
+no conflicts. Reuse existing NPC StateOperation/transaction clock, add physical
+SetNow binding and catalogue-scoped exact-owner validation. Preserve literal
+1,800,000-second raven-herb interval; never normalize it to 30 minutes. Actual
+PG18.6 RED: 58.197645125s and 71.403533167s, unknown state_operations field.
+New real-wire USE/STEP fixtures cover replay, cooldown and full-bag rollback.
+This is shared engine work, not ownership or completion of Threatened Dreams.
+Packet remains44QUALIFIED/22UNFINISHED. W15b unqualified local stash remains
+f1b19e3554fb478bde08a2050a99a7858367a428 (see local dropped-slice note).
+Actual PostgreSQL18.6 GREEN: cooldown/replay62.911933117s;
+full-bag timestamp rollback66.894592149s;2/2PASS130.001s. Proof:
+PG-WORLD-CLOCK-2026-11-08.json. Exact authoring checks and all103modules/
+1122testsPASS. Native regeneration, binding packets, completion matrix,
+content-tree and world metadata validationPASS. Current-source release
+pin-refreshPASS; worlddigest unchanged0aac4a46b1eef52983f86141295f59f9063296e20723ee8551108f5e80db8b58.
+Post-proof main advance107625470 included397encounter/content files. Integrated
+as27c485e95, preserving both Item cohorts via keyed merge and regenerating native
+providers. Profiles3799; ownedcohort67; source-tree Item34111/Mount252PASS.
+Resolved movement-cell SharedOwner and generic captured-death API adaptations,
+preserving existing quest stories. Workspace RED: quest_callbacks.rs546 E0308,
+expected SharedOwner, found &NativeEntryMovementCells; corrected (&cells).into().
+The current PG proof is explicitly PRE-MERGE9b8e7b6bc, not relabelled as current.
+Use the owner's PREPUSH-2 cadence exception for pending post-merge crate units
+and the two clock PG reruns once merge/regen/workspace/fmt gates pass. Keep the
+feature IN_PROGRESS until those run. No packet quest was dropped or promoted.
+Publication gates PASS: main107625470unchanged on final fetch; workspace alltargets
+--keep-going8m51s; fmt allcheck; exact authoringchecks;103modules1122tests;
+Item/Mount equivalence; worldmetadata; native+binding+matrixregeneration; current
+source release pinrefresh; staged-tree duplicate-migrations and diffchecks.
+PREPUSH-2 cadence exception: publish compiling WIP now, with current quests,
+durability and dispatch unit suites plus2post-merge clock PG cases pending.
+Strict changed-crate clippy is running. Do not emit ENGINE-DONE until the
+current runtime tests pass. PUBLICATION-STATUS.md names44DONE/22NOTDONE.

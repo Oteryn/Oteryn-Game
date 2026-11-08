@@ -543,7 +543,7 @@ pub(super) fn scenario_with_definition_ready_claim(
         if definition_ready {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             let mut attempt = admitted;

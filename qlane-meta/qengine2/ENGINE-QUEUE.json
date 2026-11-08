@@ -48,10 +48,49 @@
     {
       "feature": "world_callback_transaction_clock_operations",
       "quests_reported": 1,
-      "state": "QUEUED",
+      "state": "IN_PROGRESS",
       "requesting_lane": "questpc3",
       "quest": "Threatened Dreams Quest",
-      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24",
+      "reuse": "Existing reward_callbacks::StateOperation evaluator and authoritative PostgreSQL transaction clock; no new migration",
+      "red": {
+        "postgres": "18.6",
+        "cases_seconds": [
+          58.197645125,
+          71.403533167
+        ],
+        "error": "unknown field state_operations"
+      },
+      "source": {
+        "request_sha": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75",
+        "path": "data-global/scripts/quests/threatened_dreams_quest/event_raven_herb_bush.lua:46-53",
+        "corpus_sha": "9f5a72c6",
+        "blob_sha": "84bb7ea71ddbd0457f714c31952a6822724276a1",
+        "literal_cooldown_seconds": 1800000
+      },
+      "peer_audit": [
+        "npcfix 50e5d9a89a756113243e3cb8261b480be1ec84f3",
+        "questpc3b dc9e763c856503bfd897e50238b99002f5791005",
+        "questpc3 09c26dcee; qworld/qnpcfx/wpkg already merged on main"
+      ],
+      "scope": "Shared engine fixture only; requesting lane retains whole quest ownership",
+      "proof": "PG-WORLD-CLOCK-2026-11-08.json",
+      "focused_state": "GREEN2 realPG cases130.001s",
+      "api": [
+        "world_callbacks::Callback::state_operations",
+        "reward_callbacks::StateOperation",
+        "StateCondition::ElapsedAtLeast",
+        "StateMutation::SetNow",
+        "QuestEffectKind::SetNowWithBinding"
+      ],
+      "publication_state": "compiling WIP under owner PREPUSH-2 cadence exception; prior actualPG2green, post-merge runtime validation pending",
+      "post_merge_pending": [
+        "oteryn-gameplay-quests unit suite",
+        "oteryn-gameplay-durability unit suite",
+        "oteryn-gameplay-dispatch unit suite",
+        "two clock PostgreSQL cases after encounter merge"
+      ],
+      "post_merge_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
     },
     {
       "feature": "conditional_world_reward_achievement",

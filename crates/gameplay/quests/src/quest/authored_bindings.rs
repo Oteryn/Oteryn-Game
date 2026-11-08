@@ -156,6 +156,13 @@ impl Bindings {
                         super::world_callbacks::validate_callbacks(std::slice::from_ref(
                             callback.as_ref(),
                         ))?;
+                        if callback
+                            .state_operations
+                            .iter()
+                            .any(|operation| !tracks.contains(&operation.track))
+                        {
+                            return Err("authored foreign clock track".into());
+                        }
                         let expected = if matches!(&stage.trigger, Trigger::MapUse { .. }) {
                             super::world_callbacks::Trigger::Use
                         } else {
@@ -169,7 +176,10 @@ impl Bindings {
                 };
                 if owner != &quest.quest
                     || !transitions.insert(key)
-                    || storage.is_empty()
+                    || (storage.is_empty()
+                        && !matches!(&stage.trigger,
+                        Trigger::MapUse { callback } | Trigger::StepIn { callback }
+                        if !callback.state_operations.is_empty()))
                     || storage.iter().any(|s| {
                         !tracks.contains(&s.track)
                             || quest

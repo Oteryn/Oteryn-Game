@@ -3796,5 +3796,21 @@
       "pending_ci": "remaining dispatch unit suite per PREPUSH2 cadence exception",
       "intermittent_drain": "first-run sequential test drain timeout recorded; complete set passed unchanged; no fix claimed"
     }
+  },
+  "current_engine_batch": {
+    "feature": "world_callback_transaction_clock_operations",
+    "status": "IN_PROGRESS",
+    "packet_counts_unchanged": true,
+    "red_pg_seconds": [
+      58.197645125,
+      71.403533167
+    ],
+    "validation_pending": [
+      "oteryn-gameplay-quests unit suite",
+      "oteryn-gameplay-durability unit suite",
+      "oteryn-gameplay-dispatch unit suite",
+      "two clock PostgreSQL cases after encounter merge"
+    ],
+    "publication": "PREPUSH-2 cadence exception; counts unchanged"
   }
 }

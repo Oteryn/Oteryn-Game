@@ -228,8 +228,8 @@ impl DurabilityRoot {
             .find(|c| c.key == request.transition_key);
         // Ownership survives a caller removing or renaming a bound effect.
         if let Some(transition) = catalogue.transition(&request.transition_key) {
-            oteryn_gameplay_quests::quest::admission_binding::validate(
-                transition,
+            oteryn_gameplay_quests::quest::admission_binding::validate_for_catalogue(
+                &catalogue, transition,
                 context.is_some(),
             )
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
@@ -831,7 +831,7 @@ impl DurabilityRoot {
                             .map(|byte| format!("{byte:02x}")).collect::<String>());
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
                             || admission.weights.generation_digest() != admission.native.source_digest()
-                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,false,reward,admission).await?.is_none()
+                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,world.has_repeating_clock(),reward,admission).await?.is_none()
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     }
                     if let Some(world) = &callback
