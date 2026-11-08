@@ -9,5 +9,8 @@ pub use protocol::{Intent, apply_result, carried_intent, request};
 pub use state::StashPanel;
 pub use view::{panel_text, row_label};
 #[cfg(test)]
+#[path = "tests/e2e_e07.rs"]
+mod e2e_e07;
+#[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
