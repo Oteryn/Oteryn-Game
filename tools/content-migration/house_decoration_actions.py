@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from event_item_actions import PIN, table
+from compact_record_json import encode
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
@@ -20,10 +21,6 @@ SQL = 'apps/game-server/migrations/1161_house_decoration_source_pairs.sql'
 OBJECTS = 'data/scripts/actions/objects/'
 KINDS = ('ROTATE', 'WRAP', 'USE', 'EQUIP', 'DEEQUIP', 'MALE', 'FEMALE', 'DESTROY', 'DECAY', 'WRITE_ONCE')
 CANARY = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
-
-
-def encode(document):
-    return (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
 
 
 def initialized_item_ids(raw):
@@ -355,10 +352,18 @@ def apply_bed_semantics(records, overlay):
 
 def apply_top_order(records, overlay):
     """Crystal items.cpp:203-208 source facts survive richer specialized profiles."""
+    from qready1_reward_profiles import IDS as reward_ids
+    reward_ids = {str(value) for value in reward_ids}
     for row in records:
         item = row['production_definition']['production_key'].removeprefix('oteryn:item.tibia.i')
         if item in overlay['always_on_top']:
             top = overlay['always_on_top'][item]
+            # QREADY1 owns these exact reward profiles. Crystal items.cpp:203-208's
+            # zero default adds no House behavior in either base or SRX enrichment.
+            if item in reward_ids:
+                if top != 0:
+                    raise ValueError('HOUSE_QREADY1_TOP_ORDER_CONFLICT')
+                continue
             row['attributes']['always_on_top'] = top != 0
             row['attributes']['always_on_top_order'] = top
 
@@ -419,6 +424,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
+def compact_values(rows):
+    rows = [row.strip() for row in rows]
+    return ',\n'.join('  ' + ','.join(rows[start:start + 8]) for start in range(0, len(rows), 8))
+
+
 def sql_pairs(catalogue, profiles=None):
     base = {(row['item_id'], row['target']) for field in ('windows', 'native_transforms') for row in catalogue[field]}
     pairs = base | {(row['item_id'], row['target']) for field in ('carpets', 'magic_trees') for row in catalogue[field]}
@@ -440,14 +450,14 @@ def sql_pairs(catalogue, profiles=None):
     text += '-- W18 exact donor file:line locators and input hashes: house-decoration-actions.json.\n'
     for function, values in [('game_house_decoration_pair', pairs), ('game_house_base_decoration_pair', base),
                              ('game_house_native_wrap_pair', {(row['item_id'], row['target']) for row in catalogue['wrap_pairs']})]:
-        rows = ',\n'.join(f"  ('oteryn:item.tibia.i{a}','oteryn:item.tibia.i{b}')" for a, b in sorted(values))
+        rows = compact_values(f"('oteryn:item.tibia.i{a}','oteryn:item.tibia.i{b}')" for a, b in sorted(values))
         text += (f'CREATE OR REPLACE FUNCTION {function}(p_source TEXT,p_target TEXT)\n'
                  'RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$\n'
                  ' SELECT EXISTS(SELECT 1 FROM (VALUES\n' + rows +
                  '\n ) AS pairs(source,target) WHERE source=p_source AND target=p_target)\n$$;\n'
                  f'REVOKE ALL ON FUNCTION {function}(TEXT,TEXT) FROM PUBLIC,oteryn_game_control;\n'
                  f'GRANT EXECUTE ON FUNCTION {function}(TEXT,TEXT) TO oteryn_game_runtime;\n')
-    eligible = ',\n'.join(f"  ('oteryn:item.tibia.i{row['item_id']}')" for row in catalogue['wrap_eligibility'])
+    eligible = compact_values(f"('oteryn:item.tibia.i{row['item_id']}')" for row in catalogue['wrap_eligibility'])
     text += ('CREATE OR REPLACE FUNCTION game_house_native_wrap_eligible(p_source TEXT)\n'
              'RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$\n'
              ' SELECT EXISTS(SELECT 1 FROM (VALUES\n' + eligible +
@@ -461,7 +471,7 @@ def sql_pairs(catalogue, profiles=None):
         spec_rows.append("  (ARRAY[" + item_ids + "]::bigint[],'" + json.dumps(facts, separators=(',', ':')) + "'::jsonb)")
     text += ('CREATE OR REPLACE FUNCTION game_house_native_item_spec(p_item_id BIGINT)\n'
              'RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$\n'
-             ' SELECT spec FROM (VALUES\n' + ',\n'.join(spec_rows) +
+             ' SELECT spec FROM (VALUES\n' + compact_values(spec_rows) +
              '\n ) AS specs(item_ids,spec) WHERE p_item_id=ANY(item_ids)\n$$;\n'
              'REVOKE ALL ON FUNCTION game_house_native_item_spec(BIGINT) FROM PUBLIC,oteryn_game_control;\n'
              'GRANT EXECUTE ON FUNCTION game_house_native_item_spec(BIGINT) TO oteryn_game_runtime;\n')
@@ -472,7 +482,7 @@ def sql_pairs(catalogue, profiles=None):
             heads = set(originals) | {row[orientation][0] for row in catalogue['bed_kits']}
             bed_pairs.update((kit['item_id'], item, head) for item in heads)
             bed_pairs.update((kit['item_id'], item, tail) for item in catalogue['bed_item_ids'])
-    rows = ',\n'.join(f"  ('oteryn:item.tibia.i{k}','oteryn:item.tibia.i{a}','oteryn:item.tibia.i{b}')"
+    rows = compact_values(f"('oteryn:item.tibia.i{k}','oteryn:item.tibia.i{a}','oteryn:item.tibia.i{b}')"
                        for k, a, b in sorted(bed_pairs))
     function = 'game_house_bed_kit_pair'
     text += (f'CREATE OR REPLACE FUNCTION {function}(p_kit TEXT,p_source TEXT,p_target TEXT)\n'
@@ -481,7 +491,7 @@ def sql_pairs(catalogue, profiles=None):
              '\n ) AS pairs(kit,source,target) WHERE kit=p_kit AND source=p_source AND target=p_target)\n$$;\n'
              f'REVOKE ALL ON FUNCTION {function}(TEXT,TEXT,TEXT) FROM PUBLIC,oteryn_game_control;\n'
              f'GRANT EXECUTE ON FUNCTION {function}(TEXT,TEXT,TEXT) TO oteryn_game_runtime;\n')
-    rows = ',\n'.join("  ('oteryn:item.tibia.i" + str(row['item_id']) + "','"
+    rows = compact_values("('oteryn:item.tibia.i" + str(row['item_id']) + "','"
                        + json.dumps({'south': row['south'], 'east': row['east']}, separators=(',', ':'))
                        + "'::jsonb)" for row in catalogue['bed_kits'])
     text += ('CREATE OR REPLACE FUNCTION game_house_bed_kit_layout(p_kit TEXT)\n'
@@ -517,7 +527,7 @@ def sql_pairs(catalogue, profiles=None):
             temporal.append((row['production_definition']['production_key'],
                              {'duration_ms': duration['value'], 'target': target['value']['key'],
                               'static_rotation': row['production_definition']['production_key'] in static_rotation}))
-    rows = ',\n'.join("  ('" + key + "','" + json.dumps(spec, separators=(',', ':')) + "'::jsonb)"
+    rows = compact_values("('" + key + "','" + json.dumps(spec, separators=(',', ':')) + "'::jsonb)"
                        for key, spec in sorted(temporal))
     text += ('CREATE OR REPLACE FUNCTION game_house_base_decay_spec(p_key TEXT)\n'
              'RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$\n'

@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from creature_admission_stage import Mapper, Stage
+from compact_record_json import encode
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/monster-authoring'))
@@ -141,7 +142,7 @@ if __name__ == '__main__':
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     packet = capture(args.crystal)
-    raw = (json.dumps(packet, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode(packet)
     for path, data in [(OUTPUT, raw), (PIN_OUTPUT, pin_output(packet, raw))]:
         target = ROOT / path
         if args.check:

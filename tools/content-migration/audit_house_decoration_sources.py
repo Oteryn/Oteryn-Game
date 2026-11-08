@@ -88,4 +88,5 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     result = capture({'crystal': args.crystal, 'canary': args.canary})
-    args.output.write_text(json.dumps(result, indent=2) + '\n')
+    from compact_record_json import encode
+    args.output.write_bytes(encode(result))

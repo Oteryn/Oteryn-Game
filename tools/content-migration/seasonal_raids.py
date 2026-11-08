@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import re
 import urllib.request
+from compact_record_json import encode as encoded
 
 ROOT = Path(__file__).resolve().parents[2]
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -16,10 +17,6 @@ CONFIG = "data-global/scripts/lib/a_piece_of_cake_config.lua"
 SLOTS = "data-global/scripts/quests/a_piece_of_cake/globalevents_cake_raids.lua"
 BLOBS = {CONFIG: "b8291626b473b91916cdac2fe5727323c1367c6d", SLOTS: "e927d84e1eea91574a2198745da3c1474daf8353"}
 SCHEMA = "OTERYN_CRYSTAL_SEASONAL_RAID_SOURCE_CAPTURE/v1"
-
-
-def encoded(value):
-    return (json.dumps(value, sort_keys=True, indent=2) + "\n").encode()
 
 
 def verify(document):

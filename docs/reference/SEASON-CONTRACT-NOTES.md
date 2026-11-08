@@ -1294,3 +1294,31 @@ Full dispatch/server suites and the post-MAINRED47 full durability rerun
 remain with CI under PREPUSH-2's cadence exception; focused current-source
 cases above passed. No tests, constraints or source-gap guards were weakened.
 After this single push the branch returns to frozen CI-fix-only status.
+
+## PR3039 final quest-authoring CI repair (2026-11-08)
+
+Main3209d3d61 was fetched and was already an ancestor of48bfdb692 before
+these changes. The QREADY1 requalification and talk-NPC packet failures
+were both reproduced locally. House top-order enrichment was adding two
+redundant zero/default attributes to all six QREADY1-owned reward profiles.
+Those initialized defaults are Crystal201189f src/items/items.cpp:203-208;
+the exact reward facts belong to qready1-reward-item-profiles.json. House
+admission now preserves those records and rejects nonzero source top-order
+conflicts instead of silently discarding meaningful drawing-order facts.
+The existing strict QREADY1 comparison is unchanged. A new regression was
+red before the fix and checks all six complete records plus conflict refusal.
+No pinned PostgreSQL test, reward proof, native identity or numeric
+allocation changes. Talk-NPC candidates are regenerated after all content
+and quest packets, using quest_talk_npc_candidates.py.
+
+Owner's compact-format add-on: lane-authored packet generators now share
+compact_record_json.py. House profiles/actions shrink354115->2141 and
+73194->6871 lines; seasonal Item profiles7182->69; Cake admission1552->249.
+Archived source evidence and seasonal raid captures use the same record-line
+layout. JSON-load equality was checked for all seven packets, allowing only
+the generated catalogue/capture-tool hash changes. Migration1161's VALUES
+formatter emits eight tuples per line:9860->1286 lines, identical SQL tokens.
+House, seasonal Item and Cake source generators pass their --check modes
+against pinned donor snapshots. Nineteen compact/House/SRX tests passed.
+The committed immutable Cake source packet requires a local checkpoint
+before downstream native regeneration; publication remains one final push.

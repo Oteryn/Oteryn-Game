@@ -63,7 +63,8 @@ def main():
     args = parser.parse_args()
     result = project(json.loads(args.cached_response.read_bytes()))
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + "\n")
+    from compact_record_json import encode
+    args.out.write_bytes(encode(result))
     print("seasonal wiki evidence: two pinned pages,15 exact Santa positions")
 
 if __name__ == "__main__":

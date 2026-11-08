@@ -9,6 +9,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from compact_record_json import encode
 
 from audit_house_decoration_sources import SOURCE_HASHES
 
@@ -42,10 +43,6 @@ CAKE_POLICY_SOURCES = {
 }
 SANTA = 'data-global/npc/santa_claus.lua'
 CAKE = 'data-global/monster/quests/a_piece_of_cake/cake_golem.lua'
-
-
-def encode(document):
-    return (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
 
 
 def capture(crystal, canary):

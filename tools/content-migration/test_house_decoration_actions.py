@@ -4,6 +4,7 @@ import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from house_decoration_actions import (
     CATALOGUE,
@@ -23,6 +24,29 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class HouseDecorationActions(unittest.TestCase):
+    def test_house_admission_preserves_owned_qready1_reward_profiles(self):
+        packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/qready1-reward-item-profiles.json').read_bytes())
+        original = copy.deepcopy(packet['records'])
+        generated = {'profiles': encode({'records': original}),
+                     'manifest': encode({'item_profiles': {}})}
+        admit(ROOT, generated, 'profiles', 'manifest',
+              lambda row: row['production_definition']['production_key'], encode)
+        actual = {row['production_definition']['production_key']: row
+                  for row in json.loads(generated['profiles'])['records']}
+        for record in original:
+            self.assertEqual(actual[record['production_definition']['production_key']], record)
+        overlay = json.loads((ROOT / PROFILES).read_bytes())
+        reused = copy.deepcopy(original)
+        apply_top_order(reused, overlay)  # SRX also calls the shared enrichment.
+        self.assertEqual(reused, original)
+        overlay['always_on_top']['3068'] = 1
+        read_bytes = Path.read_bytes
+        with patch.object(Path, 'read_bytes',
+                          lambda path: encode(overlay) if path == ROOT / PROFILES else read_bytes(path)):
+            with self.assertRaisesRegex(ValueError, 'HOUSE_QREADY1_TOP_ORDER_CONFLICT'):
+                admit(ROOT, generated, 'profiles', 'manifest',
+                      lambda row: row['production_definition']['production_key'], encode)
+
     def test_bed_parser_zero_reverse_free_slot_is_initialized_in_xml_order(self):
         from xml.etree import ElementTree as ET
         # Crystal item_parse.cpp:741-742 checks zero, not dictionary absence.
