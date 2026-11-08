@@ -42,8 +42,14 @@ pub enum ArchiveSlot {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ArchiveBindings {
-    #[serde(deserialize_with = "read_slots")]
+    #[serde(deserialize_with = "read_slots", serialize_with = "write_slots")]
     pub slots: [ArchiveSlot; oteryn_client_runtime::spell::ACTION_BAR_SLOTS],
+}
+fn write_slots<S: serde::Serializer>(
+    slots: &[ArchiveSlot; oteryn_client_runtime::spell::ACTION_BAR_SLOTS],
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    slots.as_slice().serialize(serializer)
 }
 fn read_slots<'de, D: serde::Deserializer<'de>>(
     deserializer: D,

@@ -216,9 +216,10 @@
   "src": "TIBAUD-1",
   "area": "Action bars",
   "feature": "Bottom/left/right, lock, drag/drop, scroll",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak dokowanych wielorzędowych barów, przenoszenia slotów i blokady układu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/layout.rs:44 + docked_bars_lock_swaps_scroll_and_persist_all_rows"
  },
  {
   "id": "T045",
@@ -1251,9 +1252,10 @@
   "src": "OTCAUD1108",
   "area": "Action bars",
   "feature": "Konfigurowalne paski akcji",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje wielu konfigurowalnych pasków z akcjami przedmiotu/tekstu i układem slotów; natywny pasek obsługuje cztery przypisania czarów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/layout.rs:44 + third_bar_last_slot_uses_the_same_real_cast_caller"
  },
  {
   "id": "O012",

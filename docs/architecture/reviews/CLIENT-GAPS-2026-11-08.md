@@ -103,8 +103,8 @@ Zasady przeciw dublowaniu:
 |---|---|---|---|---|
 | T042 | Action bars | Spell slots i cooldown | DONE | evidence: apps/client/src/features/local-spell-action-bar/slots_native.rs:39 + full_spell_row_dispatches_last_slot_and_projects_server_cooldown |
 | T043 | Action bars | Object/text/passive ability assignments | DONE | evidence: apps/client/src/features/local-spell-action-bar/assignments.rs:101 + mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices |
-| T044 | Action bars | Bottom/left/right, lock, drag/drop, scroll | PARTIAL | Brak dokowanych wielorzędowych barów, przenoszenia slotów i blokady układu. |
-| O011 | Action bars | Konfigurowalne paski akcji | PARTIAL | Brakuje wielu konfigurowalnych pasków z akcjami przedmiotu/tekstu i układem slotów; natywny pasek obsługuje cztery przypisania czarów. |
+| T044 | Action bars | Bottom/left/right, lock, drag/drop, scroll | DONE | evidence: apps/client/src/features/local-spell-action-bar/layout.rs:44 + docked_bars_lock_swaps_scroll_and_persist_all_rows |
+| O011 | Action bars | Konfigurowalne paski akcji | DONE | evidence: apps/client/src/features/local-spell-action-bar/layout.rs:44 + third_bar_last_slot_uses_the_same_real_cast_caller |
 | T015 | Battle list | Wiele list, sort/filter, rename | DONE | evidence: apps/client/src/features/0017-attack/preferences.rs:94 + named_battle_lists_filter_sort_save_and_attack_live_entities |
 | O014 | Battle list | Battle list i wybór celu | PARTIAL | Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora. |
 | T010 | Game window | HUD i sidebar: dock/show/hide/order/layout | PARTIAL | Osobne okna Win32 zamiast pełnego dokowania i zapisu rozmiarów/kolejności paneli. |

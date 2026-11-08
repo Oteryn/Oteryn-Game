@@ -56,7 +56,7 @@ pub(in crate::play) fn configure(
     panel: &mut oteryn_client_ui::spell_action_bar::ActionBarPanel,
     fields: &[String],
 ) -> bool {
-    if fields.len() != 4 && fields.len() != ACTION_BAR_SLOTS {
+    if !matches!(fields.len(), 4 | 12 | ACTION_BAR_SLOTS) {
         return false;
     }
     let mut next = panel.bar.clone();

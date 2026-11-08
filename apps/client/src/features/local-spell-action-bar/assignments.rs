@@ -38,11 +38,12 @@ impl BarActions {
 #[derive(Debug, Default)]
 pub(crate) struct BarActionsState {
     pub saved: BarActions,
+    pub layout: super::layout::BarLayout,
     pub dirty: bool,
     pub edit: u64,
 }
 impl BarActionsState {
-    fn edited(&mut self) {
+    pub(super) fn edited(&mut self) {
         self.dirty = true;
         self.edit = crate::play::feature_0017_attack::view::next_edit();
     }
@@ -84,6 +85,7 @@ impl SettingsState {
             let edit = state.edit;
             let mut preferences = self.preferences.clone();
             preferences.bar_actions = state.saved.clone();
+            preferences.bar_layout = state.layout.clone();
             state.dirty = false;
             drop(mailbox);
             self.apply(preferences);
@@ -91,6 +93,7 @@ impl SettingsState {
         } else {
             state.dirty = false;
             state.saved.clone_from(&self.preferences.bar_actions);
+            state.layout.clone_from(&self.preferences.bar_layout);
         }
     }
 }
@@ -148,12 +151,14 @@ pub(in crate::play) fn activate_shared(
 pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
     match action {
         BarAction::Equip { definition } => format!(
-            "Equip {definition}\n{}",
+            "Equip {definition}\n{}\nVisible: {}",
             if mailbox.hotkey_equip.items.contains(&definition.get()) {
                 "Carried"
             } else {
                 "Unavailable"
-            }
+            },
+            super::amount::visible_count(mailbox, definition.get())
+                .map_or_else(|| "?".into(), |count| count.to_string())
         ),
         BarAction::Text { text } => format!("Say: {text}"),
         BarAction::Passive { ability } => match ability {

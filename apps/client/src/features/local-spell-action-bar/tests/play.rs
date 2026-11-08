@@ -308,7 +308,7 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
         settings.preferences.bar_actions
     );
     assert!(!link.assign_bar_action(
-        12,
+        36,
         BarAction::Text {
             text: "out of bounds".into()
         }
@@ -317,3 +317,6 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+#[path = "layout.rs"]
+mod layout;

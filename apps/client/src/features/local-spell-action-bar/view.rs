@@ -1,3 +1,8 @@
+#[path = "amount.rs"]
+mod amount;
+#[path = "layout.rs"]
+mod layout;
+pub use layout::{BarDock, BarGesture, BarLayout};
 #[path = "assignments.rs"]
 mod assignments;
 use crate::play::PlayView;
@@ -75,7 +80,7 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
         Form {
             title: "Spell action bar",
             labels: &[
-                "Slot number (1–12)",
+                "Slot number (1–36)",
                 "Server cast index (see live catalogue)",
                 "Carried item definition (equip)",
                 "Text to say",
@@ -123,6 +128,29 @@ impl crate::play::PlayLink {
             &mailbox.spell_bar,
             &mailbox.spell_catalog.catalog,
         );
+        for (slot, label) in labels.iter_mut().enumerate() {
+            let Some(spell) = u32::try_from(slot + 1)
+                .ok()
+                .and_then(std::num::NonZeroU32::new)
+                .and_then(|slot| mailbox.spell_bar.bar.spell(slot))
+            else {
+                continue;
+            };
+            if let Some(definition) = mailbox
+                .spell_catalog
+                .catalog
+                .entries()
+                .iter()
+                .find(|entry| entry.cast_index == spell.get())
+                .and_then(|entry| entry.rune_item)
+            {
+                label.push_str(&format!(
+                    "\nVisible: {}",
+                    amount::visible_count(&mailbox, definition)
+                        .map_or_else(|| "?".into(), |count| count.to_string())
+                ));
+            }
+        }
         for (slot, action) in &mailbox.bar_actions.saved.0 {
             if let Some(label) = labels.get_mut(*slot) {
                 *label = format!("{}: {}", slot + 1, assignments::label(&mailbox, action));
