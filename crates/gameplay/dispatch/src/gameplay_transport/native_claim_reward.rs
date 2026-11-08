@@ -31,9 +31,20 @@ fn callback(claim: &ServedClaim, bound: &BoundPlacement) -> Option<RewardCallbac
         return None;
     }
     let reward = callback.give.as_ref()?;
-    let [root] = bound.placement.items.as_slice() else {
+    let (root, additional) = bound.placement.items.split_first()?;
+    if additional.len() != reward.additional.len()
+        || reward
+            .additional
+            .iter()
+            .zip(additional)
+            .any(|(expected, actual)| {
+                expected.item != actual.item.key().as_str()
+                    || u32::from(expected.count) != actual.count
+                    || expected.fluid_subtype.is_some()
+            })
+    {
         return None;
-    };
+    }
     if reward.item != root.item.key().as_str()
         || u32::from(reward.count) != root.count
         || reward.contents.len() != bound.contents.len()

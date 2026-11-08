@@ -37,3 +37,41 @@ fn native_claim_reward_refuses_npc_routing_and_unbound_identity() -> Result<(), 
     }
     Ok(())
 }
+
+#[test]
+fn native_claim_production_allocations_are_complete_and_gated() -> Result<(), String> {
+    let callbacks = load()?;
+    let native: Vec<_> = callbacks
+        .iter()
+        .filter(|c| c.world_claim.is_some())
+        .collect();
+    assert_eq!(native.len(), 9);
+    let corpse = native
+        .iter()
+        .find(|c| c.key.ends_with("kormarak-corpse"))
+        .ok_or("corpse")?;
+    assert_eq!(
+        corpse.give.as_ref().ok_or("allocation")?.additional.len(),
+        3
+    );
+    assert!(corpse.completes);
+    let guardian = native
+        .iter()
+        .find(|c| c.key.ends_with("valley-guardian"))
+        .ok_or("guardian")?;
+    assert_eq!(guardian.take.len(), 3);
+    assert!(guardian.requires_premium && guardian.completes);
+    assert!(
+        guardian
+            .requires
+            .iter()
+            .any(|r| r.track.ends_with("the_ice_islands/mission06") && r.minimum == 8)
+    );
+    assert!(
+        guardian
+            .requires
+            .iter()
+            .any(|r| r.track.ends_with("the_new_frontier/mission08") && r.minimum == 2)
+    );
+    Ok(())
+}

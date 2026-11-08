@@ -280,6 +280,7 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
 ];
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {

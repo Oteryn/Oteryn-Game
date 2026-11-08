@@ -98,6 +98,15 @@ def build_records(root):
             'runtime_enabled': False, 'recipe': copy.deepcopy(recipe),
             'provenance': {'path': DIRECTORY + 'recipes.json', 'sha256': digest(path)},
         }
+        # M34 allocations are physical native claims, independently of pending
+        # non-reward route bindings. Preserve the truthful overall hold.
+        import sys
+        sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
+        import engclaim_native
+        claims, callbacks = engclaim_native.records()
+        selected = [c for c in callbacks['callbacks'] if c['quest'] == definition['identity']['key']]
+        definition['native_lowering']['canonical_reward_refs'] = [c['world_claim']['key'] for c in selected]
+        definition['native_lowering']['canonical_interaction_refs'] = [c['key'] for c in selected]
         Draft202012Validator(schema).validate(definition)
         records.append({'definition': definition})
     return records
