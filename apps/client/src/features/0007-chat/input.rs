@@ -21,6 +21,11 @@ impl PlayLink {
         mailbox.chat.console.mode = mode;
         *mailbox.chat.console.filter_mut() = filter;
     }
+    /// Save the visible, confirmed transcript to a user-selected file.
+    pub fn chat_save_log(&self, path: &std::path::Path, append: bool) -> std::io::Result<()> {
+        let transcript = oteryn_client_ui::chat::panel_text(&lock(&self.mailbox).chat);
+        write_log(path, append, &transcript)
+    }
     pub fn chat_request(&self, mode: Mode, recipient: &str) {
         enqueue(&mut lock(&self.mailbox), &self.commands, mode, recipient);
     }
@@ -53,4 +58,21 @@ pub(in crate::play) fn enqueue(
             mailbox.chat.feedback = Some("The session has ended".into());
         }
     }
+}
+
+/// The caller supplies the destination; no path is derived from remote player/channel names.
+pub(in crate::play) fn write_log(
+    path: &std::path::Path,
+    append: bool,
+    transcript: &str,
+) -> std::io::Result<()> {
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(append)
+        .truncate(!append)
+        .open(path)?;
+    file.write_all(transcript.as_bytes())?;
+    file.flush()
 }

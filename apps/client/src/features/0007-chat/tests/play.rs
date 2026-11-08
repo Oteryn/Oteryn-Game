@@ -115,3 +115,40 @@ fn local_chat_input_reaches_session_and_received_private_message_is_visible() ->
         .join()
         .map_err(|_| "local chat UI test thread panicked")?
 }
+
+#[test]
+fn channel_logs_save_replace_and_append_confirmed_channel_contents() -> Result<(), Error> {
+    let (link, _incoming, outbox) = play_channel();
+    let path = std::env::temp_dir().join(format!(
+        "oteryn-channel-log-{}-{}.txt",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos()
+    ));
+    outbox.chat_public_state(
+        ChatRoomSet::default(),
+        vec![ChatLine::Private {
+            speaker_name: "Alice".into(),
+            text: "confirmed".into(),
+        }],
+    );
+    link.chat_console(
+        oteryn_client_ui::chat::ConsoleTab::Private,
+        oteryn_client_ui::chat::ComposerMode::On,
+        Default::default(),
+    );
+    link.chat_save_log(&path, false)?;
+    let saved = std::fs::read_to_string(&path)?;
+    assert!(saved.contains("[Private] Alice: confirmed"));
+    link.chat_save_log(&path, true)?;
+    assert_eq!(std::fs::read_to_string(&path)?, saved.repeat(2));
+    link.chat_save_log(&path, false)?;
+    assert_eq!(std::fs::read_to_string(&path)?, saved);
+    std::fs::remove_file(&path)?;
+    assert!(
+        link.chat_save_log(&path.join("missing/file"), false)
+            .is_err()
+    );
+    Ok(())
+}

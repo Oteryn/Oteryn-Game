@@ -25,6 +25,9 @@ const TABS: usize = 110;
 const FILTER: usize = 111;
 const HIDE_YELLS: usize = 112;
 const INPUT_MODE: usize = 113;
+const LOG_PATH: usize = 115;
+const LOG_SAVE: usize = 116;
+const LOG_APPEND: usize = 117;
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 
 #[derive(Default)]
@@ -37,7 +40,8 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let id = w & 0xffff;
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
-                && ((matches!(id, SEND | HIDE_YELLS | INPUT_MODE) && note == BN_CLICKED as usize)
+                && ((matches!(id, SEND | HIDE_YELLS | INPUT_MODE | LOG_SAVE | LOG_APPEND)
+                    && note == BN_CLICKED as usize)
                     || (id == TABS && note == LBN_SELCHANGE as usize)
                     || PrivateControls::accepts(id, note))
             {
@@ -195,6 +199,38 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [10, 530, 230, 28],
             WS_TABSTOP,
         );
+        control(
+            hwnd,
+            "STATIC",
+            "Channel log file",
+            118,
+            [250, 480, 430, 24],
+            0,
+        );
+        let log_path = control(
+            hwnd,
+            "EDIT",
+            "channel.log",
+            LOG_PATH,
+            [250, 505, 430, 28],
+            WS_BORDER | WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Save (replace file)",
+            LOG_SAVE,
+            [250, 545, 210, 28],
+            WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Append to file",
+            LOG_APPEND,
+            [470, 545, 210, 28],
+            WS_TABSTOP,
+        );
         let mut tabs = Vec::new();
         let mut preferences_initialized = false;
         let mut private = PrivateControls::new(hwnd);
@@ -261,6 +297,21 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
             for action in std::mem::take(&mut actions.0) {
                 if private.action(action, &mut mailbox, &commands) {
+                    continue;
+                }
+                if matches!(action, LOG_SAVE | LOG_APPEND) {
+                    let path = read_text(log_path);
+                    let transcript = panel_text(&mailbox.chat);
+                    mailbox.chat.feedback = Some(
+                        match super::super::input::write_log(
+                            std::path::Path::new(&path),
+                            action == LOG_APPEND,
+                            &transcript,
+                        ) {
+                            Ok(()) => "Channel log written".into(),
+                            Err(error) => format!("Could not write channel log: {error}"),
+                        },
+                    );
                     continue;
                 }
                 if action == TABS {
