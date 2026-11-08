@@ -1,3 +1,40 @@
+Cadence push: strict clippy and grouped dispatch/PG still running. Exact
+known reds: NPC13 predecessor and missing65-native-callback inventory; neither
+assertion changed. Main fetch still78294c081; workspace/fmt/generation pass.
+
+## Prepush gate update
+Final workspace all-targets PASS3m40s; fmt PASS. World pin refresh PASS (two
+compiler builds), digest26bf812c23df. Profile Python22PASS327.277s; shared importer
+6PASS1.480s; native bindings3PASS0.867s. Jade speed refinement adds zero records:
+166 qualified source profiles,165 additions. Full quest unit309:307PASS/2FAIL.
+Unchanged NPC13 historical predecessor mismatch remains queued to qengine2.
+Exact Dawnport/scope inventory lacks65 main native callbacks (48Hive gates and17
+other native callbacks); Dawnport exclusion itself still holds. Repair exact
+inventory after cadence push, preserving set equality and all exclusion asserts.
+Grouped dispatch/own PostgreSQL retry is running; no post-activation green claim.
+Push compiling state under PREPUSH-2 cadence exception with both failures and
+pending tests explicit; continue immediately. No quest count promoted.
+
+## Yalahar mechanism component and jade source fact — current batch
+Last push c6f2a2390 includes collector main78294c081. Post-merge focused6 cases:
+5PASS (both Citizen stories real PG18.6, source gate inventories, mana fixture),
+1RED jade31268 physical admission retained unknown equipment speed. Fix now
+qualifies only that exact item from pinned XML + Canary Abilities zero default;
+other four unknown equipment profiles remain unmaterializable. Python RED/GREEN
+passes; generated equipment pins6cohorts/166profiles. Rust retry pending.
+
+Shared startup importer restored18 original Yalahar UIDs on18 existing roots in
+6regions. Native tests RED before/3GREEN after0.866s. Pinned source Git blob
+5d5323401d243df8416a38aba33c3d6e738b2d1a. Fourteen original mechanism callbacks
+published, obsolete held shard removed by tooling. Read-only Questline gates and
+original destinations/refusal text unchanged. New PG test connected to18.6 and
+RED "callback"0.119s before activation; GREEN pending. Component scene only;
+separate native test proves original UID/item/position. Stage fixture keeps all
+production tracks and compatibility history. No whole-quest qualification.
+Sewer RNG/outfit/counter engine request is in ENGINE-REQUESTS.md; no partial
+counter-only sewer programme is published. Generation/check/clippy/pin gates run
+before next push; unit/PG pending exceptions must be explicit if cadence applies.
+
 ## Collector3030 integration — next push
 Main78294c081 merged locally; conflicts resolved. Shared World observations and
 Yasir/Yeo/fluid/full-charge trade paths retained alongside own carried tools,

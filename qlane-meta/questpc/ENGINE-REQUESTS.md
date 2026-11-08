@@ -16,6 +16,8 @@ Source URLs and immutable hashes are in CONTRACT-NOTES.md and QUEST-STATUS.json.
 | Player-driven shared world-state predicates and fenced refill/object reset | Krailos Quest | Salt Lake dryness, six refill uses and toxin removal; machinery sabotage/reset. Do not substitute character-only flags. |
 | Retain actual historical NPC13 definition predecessor | Hidden Threats Quest / catalogue compatibility | Existing regression pins8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084. Keep its real historical definition/defaults; never replace the expected hash. |
 
+| Carried-tool callback composes counter increment, temporary outfit and replay-bound random spawn | In Service of Yalahar Quest | Original sewer UIDs3071–3074: crowbar3304/9598, four once-only flags, Mission01 increment; Skeleton3s/BogRaider5s outfits and rat spawn branch. Never publish four flag writes with missing coupled effects. |
+
 Resolved requests: main QNPCFX supplies actual UTC calendar month and delayed
 conversation end. Citizen uses that existing programme planner through a small
 local adapter; both mainland source stories pass on PostgreSQL18.6.

@@ -22,7 +22,22 @@
     },
     {
       "path": "content/quests/world-callbacks/batch3-a-in_service_of_yalahar.json",
-      "keys": []
+      "keys": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1018",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1019",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3091",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3092",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3093",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3094",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3095",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3096",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3097",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3098",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3099",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3100",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3101",
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3102"
+      ]
     },
     {
       "path": "content/quests/world-callbacks/batch3-a-the_cursed_crystal.json",

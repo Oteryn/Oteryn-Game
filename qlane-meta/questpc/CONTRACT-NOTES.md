@@ -686,3 +686,25 @@ onUseCrowbar(3304/9598) uses3071–3074, increments Mission01 once per pipe, giv
 3s skeleton/5s bog-raider disguises and random rat spawns on the second pipe.
 These coupled effects remain requested from qengine2; a four-USE approximation
 would omit source behavior. No new whole-quest qualification claimed.
+
+## Yalahar startup bindings and jade replica qualification
+The raw OTBM has no script UIDs because Crystal assigns them at startup. Reuse
+the shared quest_access_bindings importer and original ItemUnique facts from
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item.lua
+The pinned Git blob is verified before generating SHA pins;18 exact roots are
+restored, without creating objects or replacing UID matching with positions.
+Only14 supported mechanism callbacks may activate. Sewer3071–3074 stays with
+qengine2 until its coupled counter/outfit/random effects exist. Whole quest is
+not qualified by a mechanism component test. Test-only stage arrangements retain
+all production tracks and compatibility history.
+
+Post-collector raw-speed regression revealed own Jorge jade replica31268 was
+physically admitted with source equipment facts but unknown speed. Qualify its
+speed from the same pinned Canary XML and Abilities zero default used by the
+existing quest item importer, rather than relaxing the four remaining unknown
+equipment records. XML omits speed for jade amulet; zero is the documented source
+default. Regenerate the exact cohort/unknown-speed pins with repo tooling; require
+raw ability equivalence and source facts to pass. Other unknown profiles remain
+unchanged. Source: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml
+
+Verified zero default at https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/items/items.hpp#L29 (Abilities::speed=0).

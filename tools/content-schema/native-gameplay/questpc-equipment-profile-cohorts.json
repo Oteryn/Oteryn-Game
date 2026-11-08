@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline_commit": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
-  "scope": "Finite source-qualified questpc native additions; existing source profiles and speed expectations are retained. Captured from producer admission deltas, not a runtime count.",
+  "scope": "Finite source-qualified questpc native additions; existing source profiles and speed expectations are retained. Captured from producer admission deltas, not a runtime count. Jade31268 reuses its existing WRITE-CONTENT-1 profile; speed refinement adds zero records.",
   "cohorts": [
     {
       "cohort": "QUESTPC-CRAFT",
@@ -197,6 +197,17 @@
         "oteryn:item.tibia.i9252",
         "oteryn:item.tibia.i9255"
       ]
+    },
+    {
+      "cohort": "QUESTPC-JADE-REPLICA",
+      "producer": "tools/content-migration/questpc_replica_speed.py",
+      "keys": [
+        "oteryn:item.tibia.i31268"
+      ],
+      "new_profiles": 0
     }
+  ],
+  "source_qualified_previously_unknown_speed": [
+    31268
   ]
 }

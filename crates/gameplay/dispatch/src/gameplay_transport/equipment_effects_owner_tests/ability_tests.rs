@@ -184,6 +184,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QUESTPC-KEYS", 3),
     ("QUESTPC-NEWHAVEN", 8),
     ("QUESTPC-REWARDS", 137),
+    ("QUESTPC-JADE-REPLICA", 0),
     // END generated questpc native profile cohorts.
     // Batch 3 admits only the canonical demon helmet 3387 through quest_callback_profiles.py.
     // Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:9970-9986
@@ -544,7 +545,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 4100, 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 8150,
                 8151, 8155, 8156, 8737, 9206, 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214,
                 9215, 9216, 9217, 9218, 9219, 9220, 9221, 9222, 9223, 9224, 9538, 9614, 15276,
-                15633, 19072, 19073, 19074, 21445, 27932, 27933, 27934, 28572, 31266, 31268,
+                15633, 19072, 19073, 19074, 21445, 27932, 27933, 27934, 28572, 31266,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )

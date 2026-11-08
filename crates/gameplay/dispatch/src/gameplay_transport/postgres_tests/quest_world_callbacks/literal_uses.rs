@@ -248,8 +248,20 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                 QuestTransition,
             };
             let storage = callback.storage.first().ok_or("guard storage")?;
-            let seed = "oteryn:quest-transition/fixture/stag-stage";
-            let catalogue = std::sync::Arc::new(
+            let yalahar = callback.quest == "oteryn:quest.in_service_of_yalahar_quest";
+            let seed = if yalahar {
+                format!("oteryn:quest-transition/test/questpc-yalahar-stage-{stage}")
+            } else {
+                "oteryn:quest-transition/fixture/stag-stage".into()
+            };
+            let catalogue = if yalahar {
+                oteryn_gameplay_quests::quest::questpc_yalahar_fixture::with_yalahar_stages(
+                    owner
+                        .quest_catalogue
+                        .as_ref()
+                        .ok_or("production catalogue")?,
+                )?
+            } else {
                 QuestStateCatalogue::new(
                     "content-1",
                     vec![QuestTrack {
@@ -261,7 +273,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                     }],
                     vec![QuestTransition {
                         world_change: None,
-                        key: seed.into(),
+                        key: seed.clone(),
                         quest: callback.quest.clone(),
                         effects: vec![QuestEffect {
                             track: storage.track.clone(),
@@ -272,8 +284,9 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                         experience: None,
                     }],
                 )
-                .map_err(debug)?,
-            );
+                .map_err(debug)?
+            };
+            let catalogue = std::sync::Arc::new(catalogue);
             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
             let seeded = slot
                 .commit_quest_transition(
@@ -282,7 +295,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                     owner.holder,
                     fence,
                     crate::durability::quest_state::QuestTransitionRequest {
-                        transition_key: seed.into(),
+                        transition_key: seed,
                         cause: crate::durability::quest_state::QuestCause::Command(
                             crate::foundation::CommandRef::new(
                                 admitted.game_session_id,
@@ -395,3 +408,5 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
         h.cleanup().await
     })
 }
+
+mod questpc_yalahar;

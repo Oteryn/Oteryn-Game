@@ -1130,3 +1130,6 @@ mod questpc_sources;
 
 #[cfg(feature = "test-support")]
 pub mod questpc_clock_fixture;
+
+#[cfg(feature = "test-support")]
+pub mod questpc_yalahar_fixture;

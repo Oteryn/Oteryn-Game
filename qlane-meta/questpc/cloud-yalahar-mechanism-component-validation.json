@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "scope": "Yalahar source mechanism component; not whole-quest qualification",
+  "startup_bindings": 18,
+  "native_regions": 6,
+  "active_mechanisms": 14,
+  "pg_red": {
+    "server_version": "18.6",
+    "duration_seconds": 0.119,
+    "error": "callback"
+  },
+  "pg_green": "PENDING; grouped focused dispatch run in progress",
+  "quest_units": {
+    "run": 309,
+    "passed": 307,
+    "failed": 2,
+    "failures": [
+      "source_layers_preserve_the_actual_npc13_tibia_tales_definition",
+      "owner_scope_excludes_dawnport_from_runtime_state_and_callbacks"
+    ],
+    "details": "Historical NPC13 predecessor mismatch remains; exact native callback inventory lacks65 main additions. No assertions weakened."
+  },
+  "world_digest": "26bf812c23dfc7c2a451cf671c762bfe927f8d572252d2b6b53b00d7ec252961",
+  "source_profile_counts": {
+    "qualified": 166,
+    "new_records": 165,
+    "jade_reuses_existing_record": true
+  },
+  "logs": {
+    "native-final-green": {
+      "sha256": "60f7bf070ceb3f8bc681c6ac954cdb05823db903a335f8c8f080de9507fa14ff",
+      "bytes": 101
+    },
+    "shared-import-tests": {
+      "sha256": "26838159c30714e4cbffebd44efe88b38d3fcea0c30933fce02df4b497e8902e",
+      "bytes": 104
+    },
+    "item-profile-tests": {
+      "sha256": "e86ad32035ac000e868f848b0b5fd40db3ba503cae01f3f470f93d630e0ad070",
+      "bytes": 123
+    },
+    "pin-refresh-direct": {
+      "sha256": "0a264d8fbd212b81afc465f299ee1fd7ef8a04c66d11c7a8528dcf54fba71f96",
+      "bytes": 404
+    },
+    "final-workspace-check": {
+      "sha256": "28c97b450a0a6e177e1523f45bc10fa37e6a7771adf64a4e45481e9c6a3d7530",
+      "bytes": 2498
+    },
+    "final-fmt-check": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "mechanism-pg-red": {
+      "sha256": "ab55f454c0c45e9f46cbd162e0adca4582bd59ab442589176538587e6c5a126f",
+      "bytes": 4325
+    }
+  }
+}

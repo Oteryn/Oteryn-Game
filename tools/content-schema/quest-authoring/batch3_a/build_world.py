@@ -32,6 +32,11 @@ def documents():
 
 def publication_holds(quest, row):
     """Closed evidence-based refusals; never lower a read-only guard to SET."""
+    from questpc_yalahar_publication import restored
+    # Current shared engine supports the unchanged read-only source guards.
+    # Release only original UIDs proved on their original native source items.
+    if restored(quest, row):
+        return []
     pr = "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-"
     holds = []
     missing = []
@@ -112,6 +117,11 @@ def main():
                 "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
                 "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
             }))
+        held_path = REPO / "content/quests/world-callbacks-held" / f"batch3-a-{quest}.json"
+        if not held and held_path.exists():
+            if args.check:
+                raise ValueError(f"Obsolete held callback shard: {held_path}")
+            held_path.unlink()
         for path, value in targets:
             payload = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
             if args.check:

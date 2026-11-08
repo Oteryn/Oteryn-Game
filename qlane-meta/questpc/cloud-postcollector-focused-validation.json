@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "head": "c6f2a2390",
+  "summary": "6 tests; 5 passed; 1 failed; 238.632s",
+  "postgres_version": "18.6",
+  "postgres_cases": {
+    "qengine-rewards-questpc-citizen-female-story": {
+      "duration_seconds": 102.351961112,
+      "passed": true
+    },
+    "qengine-rewards-questpc-citizen-male-story": {
+      "duration_seconds": 95.736700364,
+      "passed": true
+    }
+  },
+  "red_point": "equipment raw-speed regression: exact admitted jade replica31268 lacked qualified speed",
+  "not_a_complete_dispatch_unit_suite": true,
+  "log_sha256": "8cefa2ae7823e51d611f4819f6c5da5a4b76e1db864ed3fd0cad353ef0a41e83"
+}

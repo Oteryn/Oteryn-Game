@@ -242,6 +242,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
         if key in present:
             raid_tokens_item_profiles.promote_existing(present[key], definition, matches[0])
+            if key == 'oteryn:item.tibia.i31268':
+                import questpc_replica_speed
+                questpc_replica_speed.qualify(present[key], source_items)
             complete_native_stack(root, present[key], definition, matches[0])
             continue
         item_id = int(matches[0]['external_id'])
