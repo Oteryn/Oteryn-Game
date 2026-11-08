@@ -163,15 +163,14 @@ pub(super) fn prepare(
             if matching.next().is_some() {
                 return None;
             }
-            if !meets_level(callback.minimum_level)
+            if (!meets_level(callback.minimum_level)
                 || !callback
                     .inventory
                     .iter()
-                    .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+                    .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities))))
+                && let Some(choice) = refusal(&callback.failure_reply)
             {
-                if let Some(choice) = refusal(&callback.failure_reply) {
-                    return Some(choice);
-                }
+                return Some(choice);
             }
             failure_reply = callback.failure_reply.clone();
             Some(Choice {

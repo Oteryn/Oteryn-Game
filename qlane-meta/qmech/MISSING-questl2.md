@@ -1,15 +1,21 @@
-# L2 missing mechanics — PARTIAL
+# L2 missing mechanics
 
-Checked against qmech aca848557. Source candidates below are preserved on
-`claude/happy-davinci-ijz3wy-questl2b` at be6626b49508c33b062c097480ed173472a8bdba.
-This report covers three checked gaps; it is not a claim that the rest of the
-51-entry packet has been audited. Existing finished work is being integrated
-separately. Main has not been merged into this package by this lane.
+Checked against qmech `e278b09a75f13e089d3e903bfb2ee399b1fdc9dd` plus this lane's M39 implementation.
+This is a mechanic report, not a claim that every quest in the older packet is qualified.
 
-| quest | missing mechanic (server or client) | evidence (the quest file and step, plus the missing hook/table/command) | blocks the quest fully or partly |
+M39 now implements `any_topic` in `npc_command/reward_callbacks/offer_topic.rs`,
+inclusive inventory guards in `quest/reward_callbacks/inventory.rs`, and their
+transactional enforcement in `durability/quest_world_callback/reward_inventory.rs`.
+Scoped refusal replies are handled by `npc_command/quest_dialogue.rs`.
+Into the Bone Pit is wired through the two `m39-stories.json` shards; both native
+PG journeys passed (78.255105046 s / 78.718498797 s, PostgreSQL 18.6), including
+canonical-writer rejection of a false loss claim and literal command replay.
+Tomes of Knowledge's authoring is not enabled by this slice; its missing
+`any_topic` engine capability is now available and covered by the M39 native conversation test.
+
+| quest | missing mechanic (server or client) | evidence (quest file and step, missing hook/table/command) | blocks fully or partly |
 |---|---|---|---|
-| Tomes of Knowledge | Server: NPC offers accepted independently of the current topic (`any_topic`). | Published `tools/content-schema/quest-authoring/questl2_knowledge.py:61-64,71-73`: Cael's incremental Tome offers and Zalamon's mission offer set `any_topic: true`. Current `crates/gameplay/dispatch/src/gameplay_transport/npc_command/reward_callbacks.rs:17-28` has `#[serde(deny_unknown_fields)]` on `Offer`, which has only an exact `topic` and no `any_topic` field. Thus these authored offers cannot deserialize as-is. | Partly: blocks the authored Tome NPC sequence. |
-| Into The Bone Pit | Server: inventory quantity-range/absence eligibility and explicit refusal dialogue for NPC reward branches. | Published `tools/content-schema/quest-authoring/questl2_journeys.py:26-37`: Muriel's return/lost-sample branches distinguish sample 131 present versus quantity exactly zero and provide `failure_reply`. Current `crates/gameplay/quests/src/quest/reward_callbacks.rs:144-162` supports `minimum_level` and positive `present` amounts, but its deny-unknown-fields reward DTO has neither `inventory` range predicates nor `failure_reply`; the dispatcher `Offer` also has no refusal-dialogue field. The missing-sample branch needs an absence predicate, not another positive item requirement. | Partly: blocks the distinct lost-sample/refusal path. |
-| Unnatural Selection | Server and client: native diagonal movement commands for the full dance route. | `content/quests/world-callbacks.json:8719` onward contains the dance callbacks and cites `data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67`. `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/unnatural_selection.rs:1-6` explicitly states that its seam proof does not qualify diagonal movement and arranges fifteen setup steps through the fenced writer. `crates/protocol-oteryn/src/world_spatial.rs:41-46` defines only North/East/South/West in `StepDirection`; there is no diagonal command variant. | Partly: blocks qualification of the complete native dance journey. |
+| Unnatural Selection | Server and client: native diagonal movement commands for the complete dance route. | `content/quests/world-callbacks.json:8719` onward contains dance callbacks citing `data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67`. `postgres_tests/quest_world_callbacks/unnatural_selection.rs:1-6` explicitly leaves diagonal movement unqualified and arranges fifteen setup steps through the writer. `crates/protocol-oteryn/src/world_spatial.rs:41-46` still defines only cardinal `StepDirection` variants. | Partly: the complete native dance journey. |
 
-No migration is claimed by this report. L2 retains its existing 1210-1219 range.
+Current coordinator-assigned migration range: **2020-2029**; M39 uses **2020**
+for the existing reward trigger's quantity-variable collision with the independent-output SQL alias.

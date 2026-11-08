@@ -1,30 +1,63 @@
-//! Advisory selection cannot bypass the writer's absence predicate.
+//! The canonical writer must refuse loss while a real sample is carried.
 use super::*;
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use oteryn_gameplay_quests::quest::QuestRefusal;
 
 pub(super) async fn reject_stale_advisory_loss(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
-    muriel: EntityRef,
 ) -> TestResult {
-    let mut advisory = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
-    let candidate = advisory
-        .iter_mut()
-        .find(|c| c.key.ends_with("/bone-pit-lost-sample"))
-        .ok_or("loss callback")?;
-    // Simulate a stale selector, while leaving canonical durable terms intact.
-    candidate.inventory.clear();
-    candidate.keywords = vec!["lostproof".into()];
-    let candidate = candidate.clone();
-    owner
-        .states
-        .npc_conversations
-        .fixture_reward_callbacks(advisory)?;
+    assert_eq!(stage(h, BONE).await?, Some(2));
+    assert_eq!(carried(h, 131).await?, 1);
     let before = xp(h).await?;
-    let result =
-        super::super::qengine_rewards::wire_reward(owner, admitted, muriel, &candidate, false)
-            .await?;
-    assert_eq!(result.0, NpcIntentDisposition::Rejected);
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+        .with_wheel(owner.premium_coordinator);
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    // Deliberately bypass advisory selection, using the canonical loss callback.
+    let outcome = slot
+        .commit_quest_reward(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            QuestTransitionRequest {
+                transition_key: callback("bone-pit-lost-sample")?.key,
+                cause: QuestCause::Command(CommandRef::new(
+                    admitted.game_session_id,
+                    CommandId::new(1_000_000).map_err(debug)?,
+                )),
+            },
+            owner.quest_catalogue.clone().ok_or("catalogue")?,
+            crate::durability::reward_claim_mint::QuestRewardAdmission {
+                native,
+                weights: &weights,
+                fee_payment: None,
+                actor_conditions: None,
+                carried_use: None,
+                peer_use: None,
+            },
+            &owner.premium_coordinator,
+        )
+        .await
+        .map_err(debug)?;
+    drop(slot);
+    assert!(
+        matches!(
+            outcome,
+            QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+        ),
+        "canonical absence guard must reject the stale branch: {outcome:?}"
+    );
     assert_eq!(stage(h, BONE).await?, Some(2));
     assert_eq!(carried(h, 131).await?, 1);
     assert_eq!(carried(h, 6299).await?, 0);

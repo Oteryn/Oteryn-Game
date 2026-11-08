@@ -267,7 +267,7 @@ async fn bone(
         drop_sample(owner, admitted, h).await?;
         assert_eq!(carried(h, 131).await?, 0);
     } else {
-        absence::reject_stale_advisory_loss(owner, admitted, h, muriel).await?;
+        absence::reject_stale_advisory_loss(owner, admitted, h).await?;
     }
     let before = xp(h).await?;
     let branch = if lost {
