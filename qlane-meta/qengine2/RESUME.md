@@ -1794,3 +1794,16 @@ the11native admissions; no duplicate producer or artificial PG RED. Packet
 counts44/66 unchanged. Broad non-PG unit suite still RUNNING: 715/1612passed,
 0failed so far; no full-unit success claim. PREPUSH-2 cadence exception
 publishes this focused proof while the remaining unit cases continue.
+
+Ready-claim engine qualification COMPLETE: full selected non-PG dispatch units
+1612/1612PASS,0failures,3145.423s. Focused5/5PASS187.179s includes actualPG18.6
+and all59claims/60placements/54native reward Items. Engine feature QUALIFIED;
+packet remains44/66. Reused QREADY1+2/mainc77 for11native admissions.
+NextW15b repeat/random PG RED ran55.219218677s onPG18.6, actualUSE returned
+[NothingToUse,NothingToUse] instead of[Committed,NothingToUse]. Fixture is
+temporarily stashed asqengine2-w15b-red-fixture for this qualification push;
+restore afterward. Peer8head reuse audit/tmp/qengine2-w15b-peer-reuse-audit.json
+finds once-only writers. Reuse QUESTPC5 nativeItem9081 proof from5ee913340;
+saved/tmp/qengine2-w15b-9081-peer.json. Newmigration required:0012 explicitly
+constrains next_allowed_atNULL and immutableclaimrows; extend current guardchain
+(including0056/0762/1550), newrange1550-1569, avoid historical1553; prefer1554.

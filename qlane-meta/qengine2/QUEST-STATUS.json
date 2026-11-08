@@ -3161,13 +3161,13 @@
       "feature": "definition_ready_reward_claim_use_wiring",
       "quests_unblocked": 42,
       "gap": "REWARD_CLAIM_USE_PENDING",
-      "state": "IN_PROGRESS",
-      "remaining": [
-        "finish broad non-PostgreSQL dispatch unit confirmation; focused PostgreSQL/source coverage is GREEN"
-      ],
+      "state": "QUALIFIED",
+      "remaining": [],
       "reuse": "main c77d436d8 QREADY1+2: all11missing native admissions; retain existing generic resolver",
       "focused_state": "GREEN5cases187.179s; source/native coverage59claims60placements54Items",
-      "proof": "PG-READY-CLAIMS-2026-11-08.json"
+      "proof": "PG-READY-CLAIMS-2026-11-08.json",
+      "units": "1612PASS3145.423s",
+      "scope": "shared resolver/native admission capability; no whole quest ownership or qualification changed"
     }
   ],
   "owner_role": "Single shared quest engine owner for25lanes; coordinator ENGINE-REQUEST ordered by unblock count; collector wpkg; no PR; new migrations1550-1569",

@@ -29,13 +29,13 @@
     {
       "feature": "definition_ready_reward_claim_use",
       "quests_reported": 42,
-      "state": "IN_PROGRESS",
-      "remaining": [
-        "finish broad non-PostgreSQL dispatch unit confirmation; focused PostgreSQL/source coverage is GREEN"
-      ],
+      "state": "QUALIFIED",
+      "remaining": [],
       "reuse": "main c77d436d8 QREADY1+2: all11missing native admissions; retain existing generic resolver",
       "focused_state": "GREEN5cases187.179s; source/native coverage59claims60placements54Items",
-      "proof": "PG-READY-CLAIMS-2026-11-08.json"
+      "proof": "PG-READY-CLAIMS-2026-11-08.json",
+      "units": "1612PASS3145.423s",
+      "scope": "shared resolver/native admission capability; no whole quest ownership or qualification changed"
     },
     {
       "feature": "ground_item_mint_and_ground_use_with",

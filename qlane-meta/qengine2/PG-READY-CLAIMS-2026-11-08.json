@@ -1,5 +1,5 @@
 {
-  "state": "FOCUSED_PG_GREEN; broad unit confirmation running",
+  "state": "QUALIFIED",
   "base": "614d005067a2a645539303ee2a8bb875f21cde85",
   "baseline": {
     "passed": 1,
@@ -24,9 +24,7 @@
     3734,
     4871
   ],
-  "pending": [
-    "finish broad non-PostgreSQL dispatch unit confirmation; collect all failures before repairs"
-  ],
+  "pending": [],
   "production_changes": 0,
   "whole_quest_counts_changed": false,
   "checks": {
@@ -99,13 +97,13 @@
     "scope": "shared engine capability only; no whole quest qualification"
   },
   "unit_confirmation": {
-    "state": "RUNNING; PREPUSH-2 cadence exception",
+    "state": "PASS",
+    "source_sha": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
     "selected": 1612,
-    "passed_so_far": 715,
-    "failed_so_far": 0,
-    "not_completed": 897,
+    "passed": 1612,
+    "failed": 0,
+    "seconds": 3145.423,
     "filter": "not(test(postgres))",
-    "log": "/tmp/qengine2-ready-postmerge-units.log",
-    "not_claimed": "full crate unit success"
+    "log": "/tmp/qengine2-ready-postmerge-units.log"
   }
 }
