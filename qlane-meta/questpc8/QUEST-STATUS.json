@@ -1431,7 +1431,7 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+        "main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
         "qengine2": "dd35529b6f1c61042e798723f71768109f9573f8",
         "result": "Qualified selected-instance exchanges reused; live-player colour predicate remains queued."
       }
@@ -1444,15 +1444,16 @@
     },
     "opening_slice": {
       "branch": "claude/happy-davinci-ijz3wy-questpc8b",
-      "state": "POSTGRES_GREEN",
+      "state": "POSTGRES_GREEN_ON_MERGED_MAIN",
       "red_seconds": 64.054450351,
       "red_marker": "POSTGRES_CASE_STARTED authored-colours-opening after PostgreSQL fixture initialization",
       "red_error": "source envelope binding missing",
       "shared_reuse": "QENGINE2 dd35529b6; exact carried helper and migration1552",
       "whole_quest_qualification_unchanged": true,
-      "green_seconds": 65.107784213,
+      "green_seconds": 83.822630302,
       "green_marker": "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
-      "proof": "colours-opening-validation.json"
+      "proof": "colours-opening-validation.json",
+      "merged_main": "b3864f14a0035a582ef80f1da7d2a931691dd035"
     }
   },
   {
@@ -1706,9 +1707,9 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
-        "qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
-        "result": "Canonical NPC reward repairs available; selected-player colour predicate and item-look disguise still absent."
+        "main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
+        "qengine2": "dd35529b6f1c61042e798723f71768109f9573f8",
+        "result": "Source item-look disguise/restoration remains explicitly QUEUED upstream; no bypass authored."
       }
     },
     "active_validation": {

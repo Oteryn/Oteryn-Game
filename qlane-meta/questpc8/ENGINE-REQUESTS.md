@@ -1,6 +1,11 @@
 # Requests sent under the latest owner boundary
 
-ENGINE-REQUEST questpc8: carried USE item replacement/reward and a fenced live-player quest-state predicate | needed by: The Colours of Magic | where: crates/gameplay/quests, crates/gameplay/dispatch, crates/gameplay/durability
+Carried replacement/reward is now satisfied by qualified QENGINE2dd35529b6,
+reused in pushed questpc8bb0917af8a. Colours opening PG passed65.107784213s.
+The remaining requests below are both still QUEUED in QENGINE2 on a fresh
+2026-11-08 recheck; its head remainsdd35529b6. Mainb3864f14a adds neither.
+
+ENGINE-REQUEST questpc8: fenced live-player quest-state predicate for selected-instance carried USE | needed by: The Colours of Magic | where: crates/gameplay/quests, crates/gameplay/dispatch, crates/gameplay/durability
 
 The chosen recipe needs an actual blue-marked actor paired with another current,
 yellow-marked player, then its once-only reward. Preserve selected-instance USE
