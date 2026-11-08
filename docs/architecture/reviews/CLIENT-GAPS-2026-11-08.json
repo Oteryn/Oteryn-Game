@@ -595,7 +595,8 @@
   "feature": "Offence / źródła i spell augments",
   "status": "PARTIAL",
   "gap": "Tekstowy odczyt; brak pełnego układu i interaktywnych opisów źródeł.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:136 + offence_sources_reach_the_native_table_through_the_real_adapter; completed: typed Offence table and interactive source contributions; left: named spell-augment breakdown"
  },
  {
   "id": "T088",

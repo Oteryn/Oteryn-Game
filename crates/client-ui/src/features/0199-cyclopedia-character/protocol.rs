@@ -197,7 +197,8 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             p.combat = if matches!(
                 tab,
                 Some(
-                    cyclopedia_character::CharacterTab::Defence
+                    cyclopedia_character::CharacterTab::Offence
+                        | cyclopedia_character::CharacterTab::Defence
                         | cyclopedia_character::CharacterTab::Misc
                 )
             ) {
