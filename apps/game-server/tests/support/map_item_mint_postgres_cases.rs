@@ -828,6 +828,7 @@ fn entry(x: u16, y: u16, ordinal: u8) -> TestResult<u64> {
 /// The pickup of `quantity` coins of the entry `key` in reset epoch `epoch`.
 fn pickup(command: CommandRef, key: u64, epoch: u64, quantity: u32) -> MapItemMintRequest {
     MapItemMintRequest {
+        key_number: None,
         command,
         base_bundle_digest: DIGEST,
         placement_key: key,
