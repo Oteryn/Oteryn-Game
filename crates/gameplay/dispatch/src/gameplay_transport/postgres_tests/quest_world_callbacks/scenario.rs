@@ -272,7 +272,7 @@ fn scenario_case(
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward || outfit_world {
+        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" {
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
@@ -829,6 +829,8 @@ fn scenario_case(
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "srv7-reliable-ram" {
+            super::super::srv7_reliable_ram::exercise(&mut owner, &mut admitted, &h, &callback, trigger).await?;
         } else if outfit_world {
 
             super::super::qengine_access::exercise(

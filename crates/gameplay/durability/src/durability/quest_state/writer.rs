@@ -372,6 +372,8 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let mount_achievement = super::super::quest_mount_rewards::prepare(callback.as_ref())
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let dance_achievement = super::super::quest_unnatural_selection::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         // Native rules require a world occurrence even if a caller renames the
@@ -877,6 +879,17 @@ impl DurabilityRoot {
                     {
                         tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
+                    if let Some(world) = &callback
+                        && world.effects.mount_reward.is_some()
+                    {
+                        let Some(native) = context.as_ref().and_then(|(_, _, native)| *native) else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        if !super::super::quest_mount_rewards::earn(&mut tx, fence, &request, world, native, mount_achievement.as_ref()).await? {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
