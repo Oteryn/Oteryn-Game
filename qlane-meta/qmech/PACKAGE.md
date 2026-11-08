@@ -20,7 +20,7 @@ Molehill PC, merged with main, validated there, and only then marked ready.
 | mechanic | lane | migrations | quests unblocked | state |
 |---|---|---|---|---|
 | outfit / addon grants | engoutfit | 1820-1829 | 47 | open |
-| boss / encounter | engenc, engenc2 | (lane's range) | 27 | open |
+| boss / encounter | engenc, engenc2 | (lane's range) | 27 | ENGENC2: shared native phase foundation; Cults production closure claimed, not DONE |
 | reward / achievement claims | engclaim | 1830-1839 | 14 | open |
 | world change | engworldchg | 1840-1859 | 10 | open |
 | NPC quest dialogue | engnpc2 | (lane's range) | - | open |
