@@ -167,7 +167,6 @@ async fn prepare_items(
             item,
             quantity: 1,
             contents: Vec::new(),
-            additional_items: Vec::new(),
             root_text: None,
             backpack: backpack.clone(),
             content_revision: inventory.content_revision.clone(),

@@ -221,7 +221,7 @@ pub(super) async fn exercise(
             let closed = crate::map::floor::BundleDoors(map.facts.doors());
             let proof = crate::map::floor::prepare_bundle_step(
                 &runtime,
-                owner.movement_cells(),
+                &owner.movement_cells,
                 partner,
                 session,
                 expected,
@@ -322,7 +322,7 @@ pub(super) async fn exercise(
             let map = owner.bundle_map().ok_or("map")?;
             assert!(
                 crate::map::floor::is_teleport(
-                    owner.movement_cells(),
+                    &owner.movement_cells,
                     crate::content::LogicalCell {
                         x: i32::from(portal.position.x),
                         y: i32::from(portal.position.y),
@@ -656,7 +656,7 @@ async fn relocate(
     let expected = runtime.read_actor_position(actor).map_err(debug)?;
     let proof = crate::map::floor::prepare_quest_callback_teleport(
         &runtime,
-        owner.movement_cells(),
+        &owner.movement_cells,
         actor,
         session,
         expected,
@@ -810,9 +810,7 @@ async fn wardrobe(
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
         carried_item: None,
-        carried_exchange: false,
         minimum_level: None,
-        requires_completed_quests: vec![],
         requires_addons: vec![],
         forbids_outfits: vec![],
         key: callback.key.clone(),

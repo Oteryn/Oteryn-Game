@@ -153,7 +153,6 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
-        "l13-rift-first" | "l13-rift-second" => &["addon"],
         "knight-sword" => &["forge"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
@@ -766,6 +765,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-authored-imported-talk" {
+        return super::qengine_m01a_imported_talk::exercise(owner, admitted, h).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
     }
@@ -786,24 +788,6 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-questpc4-spirit" {
         return super::l6_spirit::exercise(owner, admitted, h, authority).await;
-    }
-    if name == "qengine-rewards-authored-native-admission" {
-        return super::authored_world_rewards::exercise_native_admission(owner, admitted, h).await;
-    }
-    if matches!(name,"qengine-rewards-authored-world-rewards" | "qengine-rewards-authored-world-rewards-full") {
-        return super::authored_world_rewards::exercise(owner, admitted, h, name.ends_with("-full")).await;
-    }
-    if matches!(name,"qengine-rewards-authored-kills" | "qengine-rewards-authored-kills-burst") {
-        return super::authored_kill_bindings::exercise(owner, admitted, h, name.ends_with("-burst")).await;
-    }
-    if name == "qengine-rewards-authored-bindings" {
-        return super::authored_quest_bindings::exercise(owner, admitted, h).await;
-    }
-    if name == "qengine-rewards-authored-imported-talk" {
-        return super::qengine_m01a_imported_talk::exercise(owner, admitted, h).await;
-    }
-    if name == "qengine-rewards-l13-rift-story" {
-        return super::qengine_endgame_stories::rift(owner, admitted, h, authority).await;
     }
     if name.starts_with("qengine-rewards-l12-") {
         return super::qengine_kill_stories::exercise(owner, admitted, h, authority, name).await;

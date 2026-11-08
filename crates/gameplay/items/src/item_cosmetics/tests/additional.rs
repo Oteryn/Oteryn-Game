@@ -193,22 +193,7 @@ fn generated_random_feedback_preserves_the_source_messages() -> Result<(), &'sta
                 GrantKind::Addon => {
                     owned.addons.insert((grant.cosmetic_key, grant.addon));
                 }
-                GrantKind::Outfit => {
-                    assert_eq!(id, 6579);
-                    assert!(matches!(
-                        choice.feedback.as_deref(),
-                        Some(
-                            "You received the Wedding outfit!"
-                                | "You received the Jungle Explorer outfit!"
-                        )
-                    ));
-                    assert_eq!(
-                        success.grants.len(),
-                        1,
-                        "addonless looks grant only their base"
-                    );
-                    owned.outfits.insert(grant.cosmetic_key);
-                }
+                GrantKind::Outfit => return Err("unexpected random base"),
             }
             let duplicate = decide(
                 c,
@@ -225,11 +210,7 @@ fn generated_random_feedback_preserves_the_source_messages() -> Result<(), &'sta
             if id == 6579 {
                 assert_eq!(
                     duplicate.feedback.as_deref(),
-                    Some(if grant.kind == GrantKind::Outfit {
-                        "You already have this outfit."
-                    } else {
-                        "You already have this outfit with this addon."
-                    })
+                    Some("You already have this outfit with this addon.")
                 );
             } else {
                 assert!(

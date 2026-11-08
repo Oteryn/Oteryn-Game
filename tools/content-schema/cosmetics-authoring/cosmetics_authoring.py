@@ -60,8 +60,6 @@ def parse(data: bytes):
 def promotion_paths(document):
     result = {"/source_manifest_sha256", "/source_appearances_sha256", "/palette",
               "/fallbacks/female", "/fallbacks/male"}
-    if "item_acquisitions" in document:
-        result.add("/item_acquisitions")
     if "grant_mappings" in document:
         result.add("/grant_mappings")
     for family, fields in [
@@ -111,8 +109,6 @@ def validate(authoring):
     seen = set()
     for promotion in authoring["promotions"]:
         path = promotion["path"]
-        if (path == "/item_acquisitions" and promotion["source_kind"] != "OWNER_DECISION"):
-            raise ValueError("item acquisition requires explicit owner promotion")
         if (path not in expected or path in seen
                 or canonical(promotion["value"]) != canonical(pointer(document, path))):
             raise ValueError("missing, duplicated or mismatched cosmetic promotion")
@@ -135,12 +131,6 @@ def validate(authoring):
         keys.add(row["key"])
         if row["speed_bonus"] != authoring["profile"]["mount_speed_bonus"]:
             raise ValueError("Reference ruleset mount speed disagreement")
-    acquisitions = set()
-    for row in document.get("item_acquisitions", []):
-        atom(row["item_key"])
-        if row["item_key"] in acquisitions:
-            raise ValueError("duplicate item acquisition")
-        acquisitions.add(row["item_key"])
     grants = set()
     mounts = {row["key"] for row in document["mounts"]}
     for mapping in document.get("grant_mappings", []):

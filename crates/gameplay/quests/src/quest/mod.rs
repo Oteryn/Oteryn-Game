@@ -17,10 +17,10 @@
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
 pub mod admission_binding;
+pub mod authored_bindings;
 
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
-pub mod authored_bindings;
 #[cfg(test)]
 pub mod batch3_a;
 pub mod carried_step;
@@ -197,13 +197,6 @@ pub enum QuestEffectKind {
     Computed,
     /// A source-specific bounded rule over its complete locked snapshot.
     Native(native_rules::NativeRule),
-    /// Preserve this track until another effect's original locked value reaches a threshold.
-    /// Reused from questpc3 262618b3; the index remains inside this transition.
-    SetWhenAtLeast {
-        other_effect: u8,
-        minimum: i64,
-        value: i64,
-    },
 }
 
 impl QuestEffectKind {
@@ -241,15 +234,6 @@ impl QuestEffectKind {
             Self::Native(rule) => {
                 out.push(5);
                 rule.encode(out);
-            }
-            Self::SetWhenAtLeast {
-                other_effect,
-                minimum,
-                value,
-            } => {
-                out.extend_from_slice(&[11, other_effect]);
-                out.extend_from_slice(&minimum.to_be_bytes());
-                out.extend_from_slice(&value.to_be_bytes());
             }
         }
     }
@@ -340,7 +324,7 @@ pub struct QuestStateCatalogue {
     hashes: BTreeMap<String, [u8; 32]>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
-    authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
+    authored_bindings: Option<std::sync::Arc<authored_bindings::Bindings>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
 }
 
@@ -418,7 +402,7 @@ impl QuestStateCatalogue {
                 return Err(E::InvalidEffect(transition.key));
             }
             let mut seen = BTreeSet::new();
-            for (index, effect) in transition.effects.iter().enumerate() {
+            for effect in &transition.effects {
                 let Some(track) = track_map.get(&effect.track) else {
                     return Err(E::UnknownTrack(effect.track.clone()));
                 };
@@ -439,15 +423,6 @@ impl QuestStateCatalogue {
                     | QuestEffectKind::RaiseTo(value)
                     | QuestEffectKind::RaiseToWithBinding { value, .. } => {
                         (track.min..=track.max).contains(&value)
-                    }
-                    QuestEffectKind::SetWhenAtLeast {
-                        other_effect,
-                        value,
-                        ..
-                    } => {
-                        usize::from(other_effect) < transition.effects.len()
-                            && usize::from(other_effect) != index
-                            && (track.min..=track.max).contains(&value)
                     }
                     _ => true,
                 };
@@ -508,7 +483,6 @@ impl QuestStateCatalogue {
                 .chain(transitions)
                 .collect(),
         )?;
-        // Existing definitions may include the immutable native binding document in their hash.
         extended.hashes.extend(self.hashes.clone());
         extended.npc_legacy = self.npc_legacy.clone();
         extended.predecessors = self.predecessors.clone();
@@ -524,16 +498,8 @@ impl QuestStateCatalogue {
     }
 
     #[must_use]
-    pub fn authored_world_callbacks(&self) -> Option<&[world_callbacks::Callback]> {
-        self.authored_bindings
-            .as_ref()
-            .map(|runtime| runtime.world.as_slice())
-    }
-
     pub fn authored_bindings(&self) -> Option<&authored_bindings::Bindings> {
-        self.authored_bindings
-            .as_ref()
-            .map(|runtime| &runtime.source)
+        self.authored_bindings.as_deref()
     }
 
     pub fn content_revision(&self) -> &str {
@@ -566,11 +532,10 @@ impl QuestStateCatalogue {
         stored: &BTreeMap<String, i64>,
         now: i64,
     ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
-        if transition.effects.iter().enumerate().any(|(index,effect)| {
-            effect.effect==QuestEffectKind::Computed || matches!(effect.effect,
-                QuestEffectKind::SetWhenAtLeast {other_effect,..}
-                    if usize::from(other_effect)==index || usize::from(other_effect)>=transition.effects.len())
-        })
+        if transition
+            .effects
+            .iter()
+            .any(|effect| effect.effect == QuestEffectKind::Computed)
         {
             return Err(QuestRefusal::NotSupported);
         }
@@ -608,7 +573,7 @@ impl QuestStateCatalogue {
         transition
             .effects
             .iter()
-            .zip(current.iter().copied())
+            .zip(current)
             .map(|(effect, (track, before))| {
                 let after = match effect.effect {
                     QuestEffectKind::RaiseTo(value)
@@ -621,13 +586,6 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::SetNow => Some(now),
                     QuestEffectKind::Computed => None,
-                    QuestEffectKind::SetWhenAtLeast {
-                        other_effect,
-                        minimum,
-                        value,
-                    } => current
-                        .get(usize::from(other_effect))
-                        .map(|(_, observed)| if *observed >= minimum { value } else { before }),
                     QuestEffectKind::Native(_) => native_after
                         .as_ref()
                         .and_then(|after| after.get(&effect.track).copied()),

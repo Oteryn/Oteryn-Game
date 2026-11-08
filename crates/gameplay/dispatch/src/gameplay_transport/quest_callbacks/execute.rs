@@ -678,27 +678,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        let read_only_gift = callback.effects.item_reward.is_some()
-            && callback.lever.is_none()
-            && callback.effects.transform.is_none()
-            && callback
-                .item_on_target
-                .as_ref()
-                .is_none_or(|item| item.target_replacement.is_none())
-            && passages.is_empty()
-            && replacements.is_empty()
-            && projection.is_none();
-        if !read_only_gift
-            && !map.facts.apply_quest_callback(
-                key,
-                expected_revision,
-                after,
-                &passages,
-                &replacements,
-                close,
-                projection.as_ref(),
-            )
-        {
+        if !map.facts.apply_quest_callback(
+            key,
+            expected_revision,
+            after,
+            &passages,
+            &replacements,
+            close,
+            projection.as_ref(),
+        ) {
             return UseDisposition::Rejected;
         }
         if matches!(

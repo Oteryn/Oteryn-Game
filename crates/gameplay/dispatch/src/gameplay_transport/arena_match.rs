@@ -171,9 +171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         payload: &[u8],
     ) -> Option<Vec<u8>> {
         let action = wire::decode_match_request(payload).ok()?;
-        if let A::Drome(action) = action {
-            return self.drome_command(admitted, id, action, payload).await;
-        }
+        if let A::Drome(action) = action { return self.drome_command(admitted, id, action, payload).await; }
         let actor = admitted.runtime_actor?;
         let supplied = admitted.item_fence?;
         let command = CommandRef::new(admitted.game_session_id, CommandId::new(id).ok()?);
@@ -292,9 +290,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match action {
                 A::Drome(_) => return None,
                 A::Status => {}
-                A::Enter if self.runtime.lock().await.is_tibiadrome(actor) => {
-                    disposition = D::WrongState;
-                }
+                A::Enter if self.runtime.lock().await.is_tibiadrome(actor) => {disposition=D::WrongState;}
                 A::Enter if after.rank == 0 && after.completed < 3 => {
                     let rank = after.completed + 1;
                     let runtime = self.runtime.lock().await;

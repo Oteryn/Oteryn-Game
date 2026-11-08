@@ -239,14 +239,6 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
-/// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
-pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
-    match catalogue.authored_world_callbacks() {
-        Some(callbacks) => Ok(callbacks.to_vec()),
-        None => load(),
-    }
-}
-
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
@@ -308,10 +300,6 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         }
     }
     Ok(())
-}
-
-pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
-    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }
 
 fn parse(text: &str) -> Result<Vec<Callback>, String> {
@@ -439,31 +427,6 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .minimum_level
                 .is_some_and(|level| level == 0 || !callback.has_personal_state())
-            || callback.effects.item_reward.as_ref().is_some_and(|reward| {
-                !super::reward_callbacks::valid_item_reward(reward)
-                    || callback.trigger != Trigger::Use
-                    || callback.storage.is_empty()
-                    || callback
-                        .storage
-                        .iter()
-                        .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
-                    || callback.reversible
-                    || callback.lever.is_some()
-                    || !callback.passages.is_empty()
-                    || callback.teleport.is_some()
-                    || !callback.offerings.is_empty()
-                    || callback.item_on_target.is_some()
-                    || callback.native_rule.is_some()
-                    || callback.monk_reward.is_some()
-                    || callback.experience.is_some()
-                    || callback.effects.outfit_reward.is_some()
-                    || callback.effects.transform.is_some()
-                    || callback.effects.facing.is_some()
-                    || callback.effects.magic.is_some()
-                    || callback.effects.portals.is_some()
-                    || callback.effects.item_cycle.is_some()
-                    || callback.effects.encounter.is_some()
-            })
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience

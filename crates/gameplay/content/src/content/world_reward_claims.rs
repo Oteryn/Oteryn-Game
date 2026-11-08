@@ -278,7 +278,6 @@ struct CandidatePlacement {
     native_ordinal: Option<u8>,
     item: TypedDefinitionRef,
     count: u32,
-    additional_items: Vec<RewardClaimItem>,
     quest_transition: Option<String>,
     key_number: Option<u16>,
     achievement: Option<String>,
@@ -381,10 +380,6 @@ fn candidate(
     }
     if parsed.iter().any(|placement| {
         !admitted(&placement.item)
-            || placement
-                .additional_items
-                .iter()
-                .any(|item| !admitted(&item.item))
             || placement
                 .contents
                 .iter()
@@ -787,32 +782,6 @@ fn authored_text_matches(
 
 /// `None` for a placement with a field or shape the server artifact does not encode. A key
 /// variant's placement must carry a key binding of one item; no other placement may.
-fn candidate_reward_item(entry: &Value) -> Result<Option<RewardClaimItem>, ClaimsError> {
-    let bad = ClaimsError("reward item is not in the shard shape");
-    if !only(entry, &["count", "item"]) {
-        return Ok(None);
-    }
-    let count = entry
-        .get("count")
-        .and_then(Value::as_u64)
-        .and_then(|count| u32::try_from(count).ok())
-        .filter(|count| *count > 0)
-        .ok_or(bad.clone())?;
-    let item = entry.get("item").ok_or(bad.clone())?;
-    let text = |field: &str| item.get(field).and_then(Value::as_str).ok_or(bad.clone());
-    if text("family")? != "Item" {
-        return Ok(None);
-    }
-    Ok(Some(RewardClaimItem {
-        count,
-        item: TypedDefinitionRef::new(
-            DefinitionFamily::Item,
-            ProductionKey::new(text("key")?)?,
-            DefinitionRevisionRef::new(text("revision")?)?,
-        ),
-    }))
-}
-
 fn candidate_placement(
     placement: &Value,
     key_variant: bool,
@@ -850,27 +819,32 @@ fn candidate_placement(
         .get("items")
         .and_then(Value::as_array)
         .ok_or(bad.clone())?;
-    let Some((entry, rest)) = items.split_first() else {
+    let [entry] = items.as_slice() else {
         return Ok(None);
     };
-    if items.len() > 20 || (key_variant && !rest.is_empty()) {
+    if !only(entry, &["count", "item"]) {
         return Ok(None);
     }
-    let Some(first) = candidate_reward_item(entry)? else {
-        return Ok(None);
-    };
-    let item = first.item;
-    let count = first.count;
+    let count = entry
+        .get("count")
+        .and_then(Value::as_u64)
+        .and_then(|count| u32::try_from(count).ok())
+        .filter(|count| *count > 0)
+        .ok_or(bad.clone())?;
+    // A key is one non-stackable item.
     if key_number.is_some() && count != 1 {
         return Ok(None);
     }
-    let mut additional_items = Vec::with_capacity(rest.len());
-    for entry in rest {
-        let Some(item) = candidate_reward_item(entry)? else {
-            return Ok(None);
-        };
-        additional_items.push(item);
+    let item = entry.get("item").ok_or(bad.clone())?;
+    let text = |field: &str| item.get(field).and_then(Value::as_str).ok_or(bad.clone());
+    if text("family")? != "Item" {
+        return Ok(None);
     }
+    let item = TypedDefinitionRef::new(
+        DefinitionFamily::Item,
+        ProductionKey::new(text("key")?)?,
+        DefinitionRevisionRef::new(text("revision")?)?,
+    );
     let crystal_unique_id = binding
         .get("legacy_unique_ids")
         .and_then(Value::as_array)
@@ -902,7 +876,6 @@ fn candidate_placement(
         native_ordinal: None,
         item,
         count,
-        additional_items,
         quest_transition,
         key_number,
         achievement: None,
@@ -939,12 +912,10 @@ fn bind_candidate(
             Ok((cell, bundle_placement_key)) => bound.push(BoundPlacement {
                 placement: RewardClaimPlacement {
                     placement: PlacementKey::new(&format!("oteryn:placement/{local}/{index}"))?,
-                    items: std::iter::once(RewardClaimItem {
+                    items: vec![RewardClaimItem {
                         item: placement.item.clone(),
                         count: placement.count,
-                    })
-                    .chain(placement.additional_items.iter().cloned())
-                    .collect(),
+                    }],
                     achievement: placement.achievement.clone(),
                     quest_transition: placement.quest_transition.clone(),
                     key_number: placement.key_number,
