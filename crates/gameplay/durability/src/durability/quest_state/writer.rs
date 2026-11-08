@@ -574,7 +574,10 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::InvalidInput);
         }
         if fence.character_lease_generation == 0
-            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            || !native.as_ref().map_or_else(
+                || matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }),
+                |death| death.permits_scope(&fence),
+            )
             || !valid_quest_key(&request.transition_key)
         {
             return Err(CharacterProgressionError::InvalidInput);

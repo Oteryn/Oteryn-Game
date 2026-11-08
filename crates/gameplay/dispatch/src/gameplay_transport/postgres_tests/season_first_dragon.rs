@@ -549,6 +549,58 @@ async fn settle_selected_boss(
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
+    // A party snapshot alone cannot turn a request inside the room into a kill.
+    // The positive path below obtains the carrier's actual committed death key.
+    let party = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .cached_world_party(actor, session)
+            .map_err(debug)?
+            .ok_or("native party snapshot")?
+            .clone()
+    };
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "native quest fence")?
+        .ok_or("current native quest fence")?;
+    let unproven = crate::durability::quest_state::native_kills::NativeQuestDeath {
+        transition: "oteryn:quest-transition/native-kills/first-dragon-selected".into(),
+        creature: CREATURE.into(),
+        observed_revision: 1,
+        definition_hash: None,
+        source: crate::durability::quest_state::native_kills::NativeDeathSource::Party(
+            std::sync::Arc::new(party),
+        ),
+    };
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let refused = slot
+        .commit_native_quest_kill(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            crate::durability::quest_state::QuestCause::CreatureDeath(
+                crate::durability::character_progression::ExperienceRewardOccurrence::from_bytes(
+                    fixture::id(241),
+                )
+                .map_err(debug)?,
+            ),
+            &unproven,
+            owner
+                .quest_catalogue
+                .clone()
+                .ok_or("native quest catalogue")?,
+        )
+        .await;
+    assert!(
+        matches!(
+            refused,
+            Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
+        ),
+        "an unkeyed Instance counter cannot claim the still-living boss: {refused:?}"
+    );
+    drop(slot);
     {
         let mut runtime = owner.runtime.lock().await;
         let creature = CREATURE;

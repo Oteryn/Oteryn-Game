@@ -310,6 +310,16 @@ pub(super) fn capture(
                 &entry.creature,
                 &live,
             );
+            if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
+                for recipient in &mut frozen.native {
+                    if recipient.death.transition != "oteryn:quest-transition/native-kills/first-dragon-selected" { continue; }
+                    let crate::durability::quest_state::native_kills::NativeDeathSource::Party(party) = &recipient.death.source else { continue; };
+                    recipient.death.source = crate::durability::quest_state::native_kills::NativeDeathSource::InstanceBoss {
+                        party: Arc::clone(party), death: entry.facts.death,
+                        died_at_unix_ms: entry.facts.died_at_unix_ms,
+                    };
+                }
+            }
             frozen.native.extend(super::quest_batch3_c::capture(
                 runtime,
                 entry,
