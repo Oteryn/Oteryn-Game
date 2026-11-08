@@ -1349,3 +1349,46 @@ full PostgreSQL test suite is launched.
 At the cadence publication, changed-crate clippy with warnings denied is also
 still running; it is not represented as passed. The checked/pinned code is
 published without waiting for the remaining validation processes.
+
+## Final combined PR candidate (2026-11-08)
+
+Owner requests ONE publication followed by a FROZEN branch. Merged final ENCX
+9da977650 with merge commit dbde2f037; the subsequent main merge reports already
+up to date, with main47db34f09 included through the existing merge commits.
+No rebase, force push, PR creation or labels are performed by this lane.
+
+Preserved the scoped/current-parent combat-room publisher while relocating
+ENCX's unavailable_source_hooks diagnostic to that real production caller.
+Quest inputs retain the incoming opaque World/NPC authority sum type: World
+keeps its Channel spell-lane check; NPC requires its current admission permit
+and rejects Ground before mutation. No bare row-mutation helper survives.
+Independent read-only review of both resolutions found no concrete P0/P1.
+
+Exactly one1150 remains INSERT-only with its template/content uniqueness and
+1104 closure.1151 and dual-schema1152 are retained; own migrations remain
+1100,1101,1103-1107. Duplicate check PASS0.392s, no collision or renumbering.
+All11 World package documents continue matching main; native-provider and
+central-list tools regenerate the merged data without hand-editing pins.
+Final native generation PASS86.999s; NPC binding evidence PASS17.934s;
+pin-refresh PASS25.770s; pin-check PASS28.452s; world metadata PASS1.500s.
+Final workspace/all-target check PASS252.310s; fmt PASS17.858s;
+changed-crate all-target/all-feature clippy with -D warnings PASS260.640s.
+
+Final unit scope is the PR diff against main, not the previously merged-main
+scope: oteryn-client, oteryn-client-assets, oteryn-client-ui,
+oteryn-game-server, oteryn-gameplay-combat, oteryn-gameplay-content,
+oteryn-gameplay-dispatch, oteryn-gameplay-durability, oteryn-gameplay-entities,
+oteryn-gameplay-native-admission-source, oteryn-gameplay-spell,
+oteryn-gameplay-world, oteryn-protocol-oteryn, oteryn-world-bundle,
+oteryn-world-bundle-compiler. Unit targets run separately from the focused
+real-PG cases; no full-workspace or full-PG suite is launched. Tests from a
+superseded pre-merge candidate were cancelled and are not claimed as evidence.
+
+Final candidate native PostgreSQL proof:3/3 PASS11.318s runtime, with real
+committed-cause preservation5.807s, legacyv1 corpse/loot preservation5.845s,
+and physical Instance corpse/loot/scope fences5.503s. No route-less execution
+is counted as PG proof. Wider own-PG cases (including NPC input authority)
+and the15 PR-changed crate unit targets are queued/running separately.
+The PR body explicitly retains the known production gaps: Primal custom
+callback composition and unsourced Tibiadrome archetypes are not invented or
+claimed complete. The inherited required-Primal PG assertion is retained.
