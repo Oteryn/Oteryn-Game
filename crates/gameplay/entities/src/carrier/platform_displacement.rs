@@ -11,6 +11,28 @@ pub struct PlatformDisplacement {
 }
 
 impl ChannelRuntimeV1 {
+    /// Carry only the source rider, with the sealed native teleport proof. Other
+    /// occupants stay put, as in the pinned source's on-platform use branch.
+    pub fn commit_quest_platform_rider<P: crate::SourceStepCommitProof>(
+        &mut self,
+        proof: P,
+        project: impl FnOnce() -> bool,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        proof.validate_current(self)?;
+        let before = self.carrier.clone();
+        let result = (|| {
+            let landed = self.commit_source_step(proof)?;
+            if !project() {
+                return Err(CarrierError::PlanConflict);
+            }
+            Ok(landed)
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
     /// The caller holds the Channel owner and proves each destination against its
     /// current map. The complete native census, rather than a top-creature lookup,
     /// defines the occupants. `project` must publish the map batch atomically or
