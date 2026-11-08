@@ -880,15 +880,6 @@ fn scenario_case(
                 trigger,
             )
             .await?;
-        } else if name == "srv7-reliable-ram" {
-            super::super::srv7_reliable_ram::exercise(
-                &mut owner,
-                &mut admitted,
-                &h,
-                &callback,
-                trigger,
-            )
-            .await?;
         } else if outfit_world {
             super::super::qengine_access::exercise(
                 &mut owner,
