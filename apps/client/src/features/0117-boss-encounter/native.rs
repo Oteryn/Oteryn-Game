@@ -28,6 +28,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Previous boss",
                 "Next boss",
                 "Apply search",
+                "Next unlocked slot",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.boss_encounter;
@@ -51,6 +52,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 if action >= 12 {
                     if action <= 13 {
                         mailbox.boss_encounter.select_boss(action == 12);
+                    }
+                    if action == 15 {
+                        mailbox.boss_encounter.select_slot();
                     }
                     return;
                 }

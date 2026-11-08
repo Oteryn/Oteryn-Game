@@ -50,6 +50,23 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
     } else {
         text.push_str("No server snapshot loaded\n");
     }
+    if let Some(slots) = &panel.slots {
+        for (index, boss) in slots.bosses.iter().enumerate() {
+            let state = if slots.unlocked & (1 << index) == 0 {
+                "Locked"
+            } else if boss.is_empty() {
+                "Empty"
+            } else {
+                boss
+            };
+            let _ = writeln!(text, "Slot {}: {state}", index + 1);
+        }
+        let _ = writeln!(
+            text,
+            "Confirmed bonus: {} | Points: {} | Removal fee: {} gold | Ready at: {}",
+            slots.bonus, slots.points, slots.remove_fee, slots.ready_at_ms
+        );
+    }
     let _ = writeln!(text, "{}", panel.summary);
     if panel.pending {
         text.push_str("Waiting for the server\n");

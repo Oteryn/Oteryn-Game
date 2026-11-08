@@ -7,6 +7,7 @@ pub struct BossEncounterPanel {
     pub cooldown_received_at: Option<std::time::Instant>,
     pub pending: bool,
     pub pending_kind: u32,
+    pub slots: Option<oteryn_client_runtime::boss_encounter::bosstiary_slots::BossSlotReply>,
     pub boss_search: String,
     pub fields: [String; 3],
     pub summary: String,
@@ -41,5 +42,22 @@ impl BossEncounterPanel {
             }
         });
         self.fields[0] = cards[index].0.clone();
+    }
+}
+
+impl BossEncounterPanel {
+    pub fn select_slot(&mut self) {
+        if self.pending {
+            return;
+        }
+        let Some(slots) = &self.slots else {
+            return;
+        };
+        let current = self.fields[1].parse::<u8>().unwrap_or(0);
+        let order = if current == 1 { [2, 1] } else { [1, 2] };
+        self.fields[1] = order
+            .into_iter()
+            .find(|slot| slots.unlocked & (1 << (slot - 1)) != 0)
+            .map_or_else(String::new, |slot| slot.to_string());
     }
 }
