@@ -99,6 +99,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 restore: before,
             });
         }
+        projection = match super::conditional_cells::prepare(map, callback, projection) {
+            Ok(projection) => projection,
+            Err(result) => return result,
+        };
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()
@@ -517,9 +521,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if !callback.has_personal_state()
-            && world_callbacks::world_change_requirement(&callback.key).is_some()
-        {
+        if stateless_observation_required(callback) {
             let Some(observed) = observed_world else {
                 return UseDisposition::Rejected;
             };
@@ -629,6 +631,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.active_generation
                         .and_then(|generation| generation.native_gameplay()),
                     reward_admission,
+                    &self.premium_coordinator,
                 )
                 .await;
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
@@ -706,11 +709,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if matches!(
             projection,
             Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
-        ) || callback
-            .effects
-            .portals
-            .as_ref()
-            .is_some_and(|pair| pair.lifetime_us.is_some())
+        ) || callback.effects.reset_after_ms.is_some()
+            || callback
+                .effects
+                .portals
+                .as_ref()
+                .is_some_and(|pair| pair.lifetime_us.is_some())
         {
             states.owner_wake.notify_one();
         }
@@ -726,6 +730,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .remove_world_change_callback_item(key, expected_revision + 1)
         {
             return UseDisposition::Rejected;
+        }
+        if oteryn_gameplay_quests::quest::children_puzzle::binding(&callback.key)
+            .is_some_and(|(_, solved)| solved)
+        {
+            let _ = map
+                .facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: actor,
+                    position: native(expected.position()).unwrap_or(pos),
+                    talk_type: 36,
+                    text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH,
+                });
         }
         if let Some(proof) = teleport {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
