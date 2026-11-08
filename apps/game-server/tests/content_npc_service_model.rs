@@ -30,19 +30,23 @@ fn pinned_catalogue_service_model_counts() {
     assert_eq!(model.npcs().len(), 1290);
     assert_eq!(model.held_npcs().len(), 0);
     // NPC-ECON-1 Bank, PREM-5's services, BANK-3's Henricus blessing offer, and #2810's
-    // Grizzly Adams rank shop.
-    assert_eq!(model.services().len(), 396);
-    assert_eq!(model.admitted_offer_count(), 11_359);
+    // Grizzly Adams rank shop plus Main #3030's ten non-trade services.
+    // NPCFIX retains eight additional NPCs, six services, twelve routes and
+    // five generated-reply NPCs. Keep the exact combined catalogue counts.
+    assert_eq!(model.services().len(), 406);
+    // Main NPC-TRADE-3 fluid/full-charge admissions plus NPCFIX's retail repairs.
+    assert_eq!(model.admitted_offer_count(), 12_680);
     assert_eq!(model.admitted_route_count(), 207);
     assert_eq!(model.generated_reply_npc_count(), 451);
     let expected: BTreeMap<&str, usize> = BTreeMap::from([
-        // The one arbitrage-paying offer is charged or fluid, now held for NPC-TRADE-3.
+        // NPC-TRADE-3 admits the proven fluid/full-charge tuples. Remaining
+        // oversized ordinary offers still obey the physical coin capacity.
         ("ArbitragePaying", 0),
-        ("ChargedOrFluidPending", 865),
+        ("ChargedOrFluidPending", 0),
         ("CountOutOfRange", 0),
         ("NonGoldCurrency", 31),
         ("ParityPending", 0),
-        ("SellPriceAboveCoinCapacity", 299),
+        ("SellPriceAboveCoinCapacity", 17),
         ("TimedCountMismatch", 0),
         ("UnknownItem", 0),
     ]);

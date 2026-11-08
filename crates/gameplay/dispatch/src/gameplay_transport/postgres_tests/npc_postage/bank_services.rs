@@ -24,11 +24,14 @@ pub(super) async fn run(
     ];
     for (ordinal, text, expected) in rows {
         owner.clock_origin -= std::time::Duration::from_secs(1);
-        let outcome = owner.npc_talk(actor, command(ordinal), NpcTalkIntent {
-            npc_actor: npc, text: text.into(),
-        }).await;
+        let outcome = match owner.resume_npc_bank(actor, command(ordinal)).await {
+            Some(outcome) => outcome,
+            None => owner.npc_talk(actor, command(ordinal), NpcTalkIntent {
+                npc_actor: npc, text: text.into(),
+            }).await,
+        };
         assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "Bank {text}");
-        let lines = outcome.conversation.ok_or("native Bank conversation")?.lines;
+        let lines = outcome.conversation.ok_or_else(|| format!("Bank {ordinal}:{text} conversation"))?.lines;
         if let Some(original) = replies.insert(ordinal, lines.clone()) { assert_eq!(lines, original, "exact Bank replay"); }
         if !expected.is_empty() {
             assert!(lines.iter().any(|line| line == expected), "Bank {text}: {lines:?}");

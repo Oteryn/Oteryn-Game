@@ -10952,7 +10952,7 @@
       "Wally",
       "Rashid"
     ],
-    "state": "COMPILES; Wally physical admission GREEN; fresh Bank pacing PostgreSQL and current-crate units pending",
+    "state": "COMPILES; existing wire replay boundary mirrored; fresh own PG cases pending",
     "source_base": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
     "anchors": 11,
     "postgres_red": {
@@ -11066,7 +11066,7 @@
           "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
         ],
         "exit": 0,
-        "seconds": 4.028
+        "seconds": 7.9
       },
       {
         "name": "stats-pin",
@@ -11075,7 +11075,7 @@
           "tools/contracts/refresh_item_stats_promotion_pin.py"
         ],
         "exit": 0,
-        "seconds": 0.113
+        "seconds": 0.134
       },
       {
         "name": "native",
@@ -11086,7 +11086,7 @@
           "--skip-checks"
         ],
         "exit": 0,
-        "seconds": 128.177
+        "seconds": 154.616
       },
       {
         "name": "audit",
@@ -11100,7 +11100,7 @@
           "tools/contracts/update_item_audit_tags.py"
         ],
         "exit": 0,
-        "seconds": 0.096
+        "seconds": 0.108
       },
       {
         "name": "matrix",
@@ -11109,7 +11109,7 @@
           "tools/content-schema/quest-authoring/quest_completion_matrix.py"
         ],
         "exit": 0,
-        "seconds": 1.079
+        "seconds": 1.154
       },
       {
         "name": "bindings",
@@ -11118,7 +11118,7 @@
           "tools/content-schema/quest-authoring/quest_binding_authoring.py"
         ],
         "exit": 0,
-        "seconds": 52.298
+        "seconds": 34.634
       },
       {
         "name": "raid_catalogue",
@@ -11128,7 +11128,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 2.6
+        "seconds": 1.227
       },
       {
         "name": "craft_authoring",
@@ -11138,7 +11138,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 1.717
+        "seconds": 0.73
       },
       {
         "name": "imbuement_content",
@@ -11148,7 +11148,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 14.004
+        "seconds": 7.823
       },
       {
         "name": "charm_authoring",
@@ -11158,7 +11158,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 0.175
+        "seconds": 0.194
       },
       {
         "name": "proficiency_authoring",
@@ -11168,7 +11168,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 4.977
+        "seconds": 6.222
       },
       {
         "name": "reward_claim_authoring",
@@ -11178,7 +11178,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 4.428
+        "seconds": 5.503
       },
       {
         "name": "starter_kit_authoring",
@@ -11188,7 +11188,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 0.545
+        "seconds": 0.642
       },
       {
         "name": "weapon",
@@ -11197,7 +11197,7 @@
           "tools/content-schema/item-authoring/item_weapon_proficiency.py"
         ],
         "exit": 0,
-        "seconds": 0.59
+        "seconds": 0.667
       },
       {
         "name": "crystal",
@@ -11206,7 +11206,7 @@
           "tools/content-census/g4_item_crystal_binding_generator.py"
         ],
         "exit": 0,
-        "seconds": 2.687
+        "seconds": 3.304
       },
       {
         "name": "pins",
@@ -11222,7 +11222,7 @@
           "."
         ],
         "exit": 0,
-        "seconds": 59.377
+        "seconds": 71.884
       },
       {
         "name": "native-check",
@@ -11232,7 +11232,7 @@
           "--check"
         ],
         "exit": 0,
-        "seconds": 147.329
+        "seconds": 161.57
       },
       {
         "name": "duplicates",
@@ -11241,24 +11241,24 @@
           ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
         ],
         "exit": 0,
-        "seconds": 0.549
+        "seconds": 0.604
       }
     ],
     "publication_gates": [
       {
         "name": "check",
         "exit": 0,
-        "seconds": 405.008
+        "seconds": 457.52
       },
       {
         "name": "fmt",
         "exit": 0,
-        "seconds": 21.364
+        "seconds": 24.68
       },
       {
         "name": "clippy",
         "exit": 0,
-        "seconds": 187.977
+        "seconds": 198.351
       }
     ],
     "first_run_postgres": [
@@ -11330,7 +11330,41 @@
       "scope": "Existing physical admission caller against newly regenerated runtime content; bank helper repair not covered",
       "log": "/tmp/npcfix-evidence/qready-merge-fixed-physical-pg.log"
     },
-    "physical_repair_log_sha256": "f38ab0abe8881c3d16df61bc688eb5d95b054ebd798dafedeed073b5e54bae1f"
+    "physical_repair_log_sha256": "f38ab0abe8881c3d16df61bc688eb5d95b054ebd798dafedeed073b5e54bae1f",
+    "second_postgres_run": [
+      {
+        "name": "physical",
+        "filter": "npcfix_fading_and_retained_placements_postgres",
+        "exit": 0,
+        "seconds": 145.418,
+        "log": "/tmp/npcfix-evidence/qready-bank-pg-physical.log",
+        "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4"
+      },
+      {
+        "name": "rashid-trade",
+        "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+        "exit": 0,
+        "seconds": 110.597,
+        "log": "/tmp/npcfix-evidence/qready-bank-pg-rashid-trade.log",
+        "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4"
+      },
+      {
+        "name": "bank-services",
+        "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+        "exit": 101,
+        "seconds": 326.026,
+        "log": "/tmp/npcfix-evidence/qready-bank-pg-bank-services.log",
+        "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4"
+      }
+    ],
+    "replay_fixture_fix": "Wire serve/command.rs:177 checks resume_npc_bank before fresh NPC_TALK. Mirror that boundary; retain every exact reply, money, operation and audit assertion.",
+    "unit_status": "Client-assets10 passed; dispatch full unit binary de3 continues unchanged after Cargo wrapper detached; do not treat wrapper exit -9 as test outcome.",
+    "unit_progress": {
+      "completed": 727,
+      "failures": [],
+      "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4",
+      "state": "RUNNING independently; no full-pass claim"
+    }
   },
   "qready_main_integration": {
     "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
@@ -11619,5 +11653,227 @@
       "QUALIFIED_OTHER_LANE": 1
     },
     "binary_map_changes_authored": false
+  },
+  "mainred47_integration": {
+    "main": "3209d3d61",
+    "conflict": "One service-model test; preserve own eight NPCs, six services, twelve routes, five generated reply NPCs and exact combined counts. No assertion removed.",
+    "measured_service_model": {
+      "npcs": 1290,
+      "held_npcs": 0,
+      "services": 406,
+      "offers": 12680,
+      "routes": 207,
+      "generated_reply_npcs": 451
+    },
+    "gates": [
+      {
+        "name": "check",
+        "exit": 0,
+        "seconds": 457.52
+      },
+      {
+        "name": "fmt",
+        "exit": 0,
+        "seconds": 24.68
+      },
+      {
+        "name": "clippy",
+        "exit": 0,
+        "seconds": 198.351
+      }
+    ],
+    "generation": [
+      {
+        "name": "stats",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+        ],
+        "exit": 0,
+        "seconds": 7.9
+      },
+      {
+        "name": "stats-pin",
+        "command": [
+          "python3",
+          "tools/contracts/refresh_item_stats_promotion_pin.py"
+        ],
+        "exit": 0,
+        "seconds": 0.134
+      },
+      {
+        "name": "native",
+        "command": [
+          "python3",
+          "tools/content-migration/regenerate_content.py",
+          "--native-only",
+          "--skip-checks"
+        ],
+        "exit": 0,
+        "seconds": 154.616
+      },
+      {
+        "name": "audit",
+        "command": [
+          "python3",
+          "/tmp/npcfix-evidence/preserve-unchanged-output-times.py",
+          "crates/gameplay/durability/src/durability/item_mint_audit.tags",
+          "crates/gameplay/durability/src/durability/item_mint_audit/tests/write_once_wire.hex",
+          "--",
+          "python3",
+          "tools/contracts/update_item_audit_tags.py"
+        ],
+        "exit": 0,
+        "seconds": 0.108
+      },
+      {
+        "name": "matrix",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+        ],
+        "exit": 0,
+        "seconds": 1.154
+      },
+      {
+        "name": "bindings",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+        ],
+        "exit": 0,
+        "seconds": 34.634
+      },
+      {
+        "name": "raid_catalogue",
+        "command": [
+          "python3",
+          "tools/content-migration/raid_catalogue.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 1.227
+      },
+      {
+        "name": "craft_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/craft-authoring/craft_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.73
+      },
+      {
+        "name": "imbuement_content",
+        "command": [
+          "python3",
+          "tools/content-schema/imbuement-authoring/imbuement_content.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 7.823
+      },
+      {
+        "name": "charm_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/charm-authoring/charm_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.194
+      },
+      {
+        "name": "proficiency_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 6.222
+      },
+      {
+        "name": "reward_claim_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 5.503
+      },
+      {
+        "name": "starter_kit_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.642
+      },
+      {
+        "name": "weapon",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+        ],
+        "exit": 0,
+        "seconds": 0.667
+      },
+      {
+        "name": "crystal",
+        "command": [
+          "python3",
+          "tools/content-census/g4_item_crystal_binding_generator.py"
+        ],
+        "exit": 0,
+        "seconds": 3.304
+      },
+      {
+        "name": "pins",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "--release",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "exit": 0,
+        "seconds": 71.884
+      },
+      {
+        "name": "native-check",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 161.57
+      },
+      {
+        "name": "duplicates",
+        "command": [
+          "bash",
+          ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+        ],
+        "exit": 0,
+        "seconds": 0.604
+      }
+    ],
+    "unit_progress": {
+      "completed": 727,
+      "failures": [],
+      "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4",
+      "state": "RUNNING independently; no full-pass claim"
+    },
+    "own_postgres_status": "Prior de3 physical145.418s and Rashid110.597s green; bank326.026s red. Fixture now follows existing wire resume boundary, keeps exact replay and all money/audit assertions. Fresh PG pending after push."
   }
 }
