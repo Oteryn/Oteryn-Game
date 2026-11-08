@@ -28,6 +28,9 @@ and successful reservation removes the entry. The retry interval is two seconds.
 Expired heads cannot block a live waiter, and another channel cannot consume its
 position. A full wait list falls back to the legacy 1115 refusal.
 
-The wire codec, real session reader, runtime FIFO producer and connection writer
-are implemented. The position display remains tracked as T003 PARTIAL until the
-native caller forwards the metadata.
+The native TCP adapter preserves the validated detail through the retry owner to
+the login wait text. Queued retries use the server interval, remain limited to 16
+waits and the existing grant lifetime, and are cancellable per attempt. A legacy
+1115 without queue metadata retains its single retry. No client position estimate
+is substituted when metadata is absent. Runtime reservation, real connection
+writer, real Session reader and the HTTP/Gateway/TLS login caller have tests.

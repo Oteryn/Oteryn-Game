@@ -1,6 +1,6 @@
 //! Routed endpoint resolution, address fallback and one session admission.
 use crate::{TcpConnect, TcpTlsStream, connect};
-use oteryn_session::{Admission, Session, SessionError};
+use oteryn_session::{Admission, AdmissionQueue, Session, SessionError};
 use rustls::pki_types::CertificateDer;
 use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
@@ -17,6 +17,26 @@ pub async fn admit(
     admission: Admission<'_>,
     root: &CertificateDer<'static>,
 ) -> Result<Session<TcpTlsStream>, Option<u32>> {
+    admit_detailed(host, port, server_name, admission, root)
+        .await
+        .map_err(|refusal| refusal.map(|refusal| refusal.code))
+}
+
+/// Validated server refusal; queue metadata never grants admission or extends a grant.
+#[derive(Debug, Clone, Copy)]
+pub struct AdmissionRefusalInfo {
+    pub code: u32,
+    pub queue: Option<AdmissionQueue>,
+}
+
+/// One real TCP/TLS admission preserving authenticated capacity wait metadata.
+pub async fn admit_detailed(
+    host: &str,
+    port: u16,
+    server_name: &str,
+    admission: Admission<'_>,
+    root: &CertificateDer<'static>,
+) -> Result<Session<TcpTlsStream>, Option<AdmissionRefusalInfo>> {
     let addresses = resolve(host, port).await;
     let stream = connect_any(&addresses, server_name, root)
         .await
@@ -24,8 +44,13 @@ pub async fn admit(
     Session::admit(stream, admission)
         .await
         .map_err(|error| match error {
-            SessionError::AdmissionRefused { code }
-            | SessionError::AdmissionQueued { code, .. } => Some(code),
+            SessionError::AdmissionRefused { code } => {
+                Some(AdmissionRefusalInfo { code, queue: None })
+            }
+            SessionError::AdmissionQueued { code, queue } => Some(AdmissionRefusalInfo {
+                code,
+                queue: Some(queue),
+            }),
             _ => None,
         })
 }

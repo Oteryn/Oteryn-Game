@@ -108,6 +108,7 @@ pub(crate) async fn enter_observed(
         .map_err(login_rejected)?;
 
     let mut attempt = NativeAttempt {
+        queue: None,
         progress,
         client,
         ticket,
@@ -123,6 +124,7 @@ pub(crate) async fn enter_observed(
 }
 
 struct NativeAttempt<'a> {
+    queue: Option<oteryn_session::AdmissionQueue>,
     progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
     ticket: NativeTicket,
@@ -139,6 +141,10 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     type Output = AdmittedSession;
     type Error = GameplayEntryError;
 
+    fn queue(&self) -> Option<oteryn_session::AdmissionQueue> {
+        self.queue
+    }
+
     fn waiting(&mut self, wait: AdmissionWait) {
         if let Some(progress) = &self.progress {
             progress.send_replace(Some(wait));
@@ -146,7 +152,8 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     }
 
     async fn admit(&mut self) -> Result<Self::Output, Option<u32>> {
-        let session = oteryn_session_tcp::connection::admit(
+        self.queue = None;
+        let session = oteryn_session_tcp::connection::admit_detailed(
             &self.grant.endpoint.host,
             self.grant.endpoint.port,
             &self.grant.endpoint.tls_server_name,
@@ -161,7 +168,13 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             },
             &self.root,
         )
-        .await?;
+        .await
+        .map_err(|refusal| {
+            refusal.map(|refusal| {
+                self.queue = refusal.queue;
+                refusal.code
+            })
+        })?;
         Ok(AdmittedSession {
             character_id: self.login.character_id.to_owned(),
             character_name: self.character_name.clone(),

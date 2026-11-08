@@ -150,7 +150,10 @@ impl Reentry {
                 .as_ref()
                 .is_none_or(|(held, _)| held.started != wait.started)
             {
-                self.waiting = Some((wait, QueueWait::new(None, wait.started, wait.retry_in)));
+                self.waiting = Some((
+                    wait,
+                    QueueWait::new(wait.queue_position, wait.started, wait.retry_in),
+                ));
             }
             let (_, queue) = self.waiting.as_ref()?;
             if wait.code == 1115 {
@@ -299,6 +302,7 @@ mod tests {
         let now = Instant::now();
         progress.send_replace(Some(AdmissionWait {
             code: 1115,
+            queue_position: None,
             started: now,
             retry_in: std::time::Duration::from_secs(2),
         }));
