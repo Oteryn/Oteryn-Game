@@ -65,9 +65,6 @@ pub fn carried_cooking_conversion_with_quantity(
             target_debit: 1,
         });
     }
-    if let Some(conversion) = quest_recipes::carried(native, used, target) {
-        return Some(conversion);
-    }
     let rows = catalogue_rows()?;
     let used_ref = source_ref(native, used)?;
     let target_ref = source_ref(native, target)?;
