@@ -663,6 +663,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.hot_cuisine_quest",
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
+        "oteryn:quest.the_first_dragon_quest",
         "oteryn:quest.the_hidden_city_of_beregar_quest",
         "oteryn:quest.the_order_of_the_stag_quest",
         "oteryn:quest.tibia_tales",
@@ -743,7 +744,8 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 193), (0, 52)]));
+    // Preserve the incoming baseline plus Tamoril's five source-absent tracks.
+    assert_eq!(defaults, BTreeMap::from([(-1, 198), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()

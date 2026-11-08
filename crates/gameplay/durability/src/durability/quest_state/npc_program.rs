@@ -3,6 +3,7 @@ use super::*;
 use oteryn_gameplay_quests::quest::npc_rules::{
     NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRulePlan, NpcRuleTrigger,
 };
+mod achievements;
 mod equipped;
 mod fathers_burden;
 mod items;
@@ -361,6 +362,7 @@ impl DurabilityRoot {
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
             let experience = rewards::experience(&plan.effects)?;
+            let achievement_keys = achievements::keys(&plan.effects)?;
             if father_items && fathers_burden::experience(&plan)? != experience { return Err(DurabilityError::InvalidStoredState); }
             if experience > 0 {
                 let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=encode($1,'hex')::uuid")
@@ -432,6 +434,7 @@ impl DurabilityRoot {
             }
             sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms,completes) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer,$10)")
                 .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).bind(plan.completes).execute(&mut **tx).await?;
+            achievements::grant(&mut tx, character, &request, &achievement_keys).await?;
             if experience > 0 {
                 insert_xp_obligation(&mut tx, character, &q, experience, &pin).await?;
             }
