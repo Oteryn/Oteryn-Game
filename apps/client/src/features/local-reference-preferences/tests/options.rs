@@ -1,0 +1,159 @@
+use super::*;
+
+#[test]
+fn action_bar_hotkeys_route_every_supported_slot() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::ReferencePreferences;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut preferences = ReferencePreferences::default();
+    let chords = ["F5", "F6", "F7", "F8"];
+    preferences.set_action_bar_hotkeys(&chords)?;
+    let mut router = crate::spell::SpellHotkeys::new()?;
+    for slot in 0..4 {
+        let event = NormalizedInputEvent::Key {
+            code: KeyCode::new(62 + slot)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        let routed = preferences.route_input(&[event])?;
+        assert_eq!(
+            router.route(&routed).first().map(|slot| slot.get()),
+            Some(u32::from(slot + 1))
+        );
+        let release = NormalizedInputEvent::Key {
+            code: KeyCode::new(62 + slot)?,
+            state: ButtonState::Released,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        router.route(&preferences.route_input(&[release])?);
+    }
+    let before = preferences.clone();
+    assert!(
+        preferences
+            .set_action_bar_hotkeys(&["F5", "F5", "F7", "F8"])
+            .is_err()
+    );
+    assert_eq!(preferences, before);
+    Ok(())
+}
+
+#[test]
+fn general_hotkey_presets_route_movement_and_preserve_other_bindings()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{ReferencePreferences, SettingsState};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut preferences = ReferencePreferences::default();
+    preferences.rebind("0009-highscores-open", "ALT+H")?;
+    preferences.general_hotkey_preset(false)?;
+    let mut state = SettingsState::new(None);
+    state.preferences = preferences;
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(26)?,
+        modifiers: Modifiers::NONE,
+        state: ButtonState::Pressed,
+        repeat: false,
+    };
+    assert!(matches!(
+        state.input(&[event]).0.as_slice(),
+        [NormalizedInputEvent::Key {
+            code: KeyCode::ARROW_UP,
+            ..
+        }]
+    ));
+    state.preferences.general_hotkey_preset(true)?;
+    assert_eq!(
+        state
+            .preferences
+            .keybindings
+            .get("0009-highscores-open")
+            .map(String::as_str),
+        Some("ALT+H")
+    );
+    assert!(
+        !state
+            .preferences
+            .keybindings
+            .contains_key("0013-paced-movement-move-north")
+    );
+    Ok(())
+}
+
+#[test]
+fn configured_rotation_modifier_sends_existing_turn_command()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_move_initialize(true);
+    let mut view = view()?;
+    let mut preferences = view.preferences().clone();
+    preferences.rotation_modifier = "ALT".into();
+    view.set_preferences(preferences)?;
+    assert!(view.target_move_input(
+        &link,
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::ARROW_UP,
+            modifiers: Modifiers::one(Modifier::Alt),
+            state: ButtonState::Pressed,
+            repeat: false,
+        }]
+    ));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("missing turn command".into());
+    };
+    assert_eq!(command.payload, [26, 2, 8, 1]);
+    Ok(())
+}
+
+#[test]
+fn mouse_preset_changes_actual_click_routing() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+    use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
+    let mut settings = SettingsState::new(None);
+    settings.preferences.swap_mouse_buttons = true;
+    let press = NormalizedInputEvent::MouseButton {
+        button: MouseButton::SECONDARY,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE,
+    };
+    let (events, _) = settings.input(&[press]);
+    assert!(matches!(
+        events.as_slice(),
+        [NormalizedInputEvent::MouseButton {
+            button: MouseButton::PRIMARY,
+            ..
+        }]
+    ));
+    settings.preferences.keyboard_delay_ms = 1000;
+    let key = NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(82)?,
+        modifiers: Modifiers::NONE,
+        state: ButtonState::Pressed,
+        repeat: false,
+    };
+    assert_eq!(settings.input(std::slice::from_ref(&key)).0.len(), 1);
+    let mut repeat = key.clone();
+    if let NormalizedInputEvent::Key { repeat, .. } = &mut repeat {
+        *repeat = true;
+    }
+    assert!(settings.input(&[repeat]).0.is_empty());
+    settings.input(&[NormalizedInputEvent::FocusChanged { focused: false }]);
+    assert_eq!(settings.input(&[key]).0.len(), 1);
+    settings.preferences.keyboard_delay_ms = 1001;
+    assert!(view()?.set_preferences(settings.preferences).is_err());
+    Ok(())
+}
+
+#[test]
+fn basic_options_navigate_without_changing_preferences() {
+    use crate::play::{SettingsPage, SettingsState};
+    let mut state = SettingsState::new(None);
+    let before = state.preferences.clone();
+    assert_eq!(state.page, SettingsPage::Gameplay);
+    for page in SettingsPage::ALL {
+        state.page = page;
+        assert!(!page.label().is_empty());
+        assert_eq!(state.preferences, before);
+    }
+    assert_eq!(SettingsPage::ALL.len(), 7);
+}
