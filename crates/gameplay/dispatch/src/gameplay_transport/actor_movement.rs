@@ -119,9 +119,11 @@ fn duration_onto(
     source: &impl GroundSpeedSource,
     onto: MovementLocalPosition,
     speed: Option<u16>,
+    direction: CardinalStep,
 ) -> Result<Duration, MovementError> {
     speed
         .and_then(|speed| player_step_duration(source, cell(onto), speed))
+        .and_then(|duration| duration.checked_mul(if direction.is_diagonal() { 3 } else { 1 }))
         .ok_or(MovementError::NotQualified)
 }
 
@@ -321,7 +323,7 @@ fn step_in_channel_inner(
             if blocking.blocks(cell(position)) {
                 return failure(MovementError::Blocked);
             }
-            let duration = duration_onto(&proof, position, speed)?;
+            let duration = duration_onto(&proof, position, speed, direction)?;
             return runtime
                 .commit_source_step(proof)
                 .map(|snapshot| (snapshot, duration))
@@ -384,7 +386,7 @@ fn step_in_channel_inner(
         source_step.is_some(),
     );
     let pos = expected.position();
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     let Some(x) = pos.x.checked_add(dx) else {
         return failure(MovementError::CoordinateOverflow);
     };
@@ -400,8 +402,13 @@ fn step_in_channel_inner(
         return failure(MovementError::Blocked);
     }
     let duration = match &source_step {
-        Some(proof) => duration_onto(proof, actual_destination, speed)?,
-        None => duration_onto(&EngineeringGroundSpeed, actual_destination, speed)?,
+        Some(proof) => duration_onto(proof, actual_destination, speed, direction)?,
+        None => duration_onto(
+            &EngineeringGroundSpeed,
+            actual_destination,
+            speed,
+            direction,
+        )?,
     };
     let selection = MovementEngineeringSelection {
         owner_context: runtime.pinned_movement_context(),
@@ -457,7 +464,7 @@ fn bundle_step(
     if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
-    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
     runtime
         .commit_source_step(proof)
         .map(|snapshot| (snapshot, duration))
@@ -498,14 +505,14 @@ fn baseline_step(
         if blocking.blocks(cell(p)) {
             return Err(MovementError::Blocked);
         }
-        let duration = duration_onto(&proof, p, speed)?;
+        let duration = duration_onto(&proof, p, speed, direction)?;
         return runtime
             .commit_source_step(proof)
             .map(|snapshot| (snapshot, duration))
             .map_err(MovementError::Actor);
     }
     let pos = expected.position();
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     let x = pos
         .x
         .checked_add(dx)
@@ -522,7 +529,7 @@ fn baseline_step(
     if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
-    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
     let selection = MovementEngineeringSelection {
         owner_context,
         content_scope: scope,
@@ -552,6 +559,51 @@ mod tests {
         crate::foundation::{ChannelId, NodeId, WorldId},
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
+    #[test]
+    fn qn6_diagonal_duration_is_tripled_and_fits_the_wire_ceiling() -> Result<(), String> {
+        use oteryn_protocol_oteryn::world_spatial::{
+            MAX_STEP_WAIT_MS, StepDisposition, StepResult, decode_step_result_receipt,
+            encode_step_result_paced,
+        };
+        struct SlowestGround;
+        impl GroundSpeedSource for SlowestGround {
+            fn ground_speed(&self, _: LogicalCell) -> u16 {
+                1000
+            }
+        }
+        let at = MovementLocalPosition {
+            x: 1,
+            y: 1,
+            floor: -1,
+        };
+        let cardinal = duration_onto(&SlowestGround, at, Some(10), CardinalStep::East)
+            .map_err(|e| format!("{e:?}"))?;
+        for direction in [
+            CardinalStep::NorthEast,
+            CardinalStep::SouthEast,
+            CardinalStep::SouthWest,
+            CardinalStep::NorthWest,
+        ] {
+            let diagonal = duration_onto(&SlowestGround, at, Some(10), direction)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                diagonal,
+                cardinal.checked_mul(3).ok_or("duration overflow")?
+            );
+            let receipt = StepResult {
+                disposition: StepDisposition::Moved,
+                step_wait_ms: u32::try_from(diagonal.as_millis()).map_err(|e| e.to_string())?,
+            };
+            assert_eq!(receipt.step_wait_ms, MAX_STEP_WAIT_MS);
+            let bytes = encode_step_result_paced(receipt, true).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                decode_step_result_receipt(&bytes, true).map_err(|e| format!("{e:?}"))?,
+                receipt
+            );
+        }
+        Ok(())
+    }
+
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
     }

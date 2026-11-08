@@ -204,3 +204,109 @@ fn engenc_encounter_roster_rolls_back_late_spawn_and_map_projection_failures() -
     assert_eq!(runtime.visible_entities().creatures.len(), 0);
     Ok(())
 }
+
+#[test]
+fn qm50_platform_displaces_every_occupant_and_rolls_back_failed_projection() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let rider = player(&mut runtime)?;
+    let creatures = checked(runtime.commit_quest_creature_spawn(&[
+        ("creature:rat", 20, position(100)),
+        ("creature:rat", 20, position(100)),
+        ("creature:rat", 20, position(101)),
+    ]))?;
+    let before = runtime.encounter_fixture_snapshot();
+    assert!(
+        runtime
+            .commit_quest_platform_displacement(
+                position(100),
+                position(110),
+                |_, _, _| true,
+                || false,
+            )
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let moved = checked(runtime.commit_quest_platform_displacement(
+        position(100),
+        position(110),
+        |_, _, _| true,
+        || true,
+    ))?;
+    assert_eq!(moved.len(), 3);
+    for actor in [rider.actor, creatures[0], creatures[1]] {
+        assert_eq!(
+            checked(runtime.read_actor_position(actor))?.position(),
+            position(110)
+        );
+    }
+    assert_eq!(
+        checked(runtime.read_actor_position(creatures[2]))?.position(),
+        position(101)
+    );
+    Ok(())
+}
+
+#[test]
+fn qm50_platform_checks_all_destinations_before_projecting_or_moving() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let rider = player(&mut runtime)?;
+    let creatures =
+        checked(runtime.commit_quest_creature_spawn(&[("creature:rat", 20, position(100))]))?;
+    let before = runtime.encounter_fixture_snapshot();
+    let mut projected = false;
+    assert!(
+        runtime
+            .commit_quest_platform_displacement(
+                position(100),
+                position(110),
+                |actor, _, _| actor == rider.actor,
+                || {
+                    projected = true;
+                    true
+                },
+            )
+            .is_err()
+    );
+    assert!(!projected);
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    assert_eq!(
+        checked(runtime.read_actor_position(creatures[0]))?.position(),
+        position(100)
+    );
+    Ok(())
+}
+
+#[test]
+fn engenc_defender_completion_is_exact_participant_fenced_and_idempotent() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let step = player(&mut runtime)?;
+    let defenders = checked(runtime.commit_quest_creature_spawn(&[
+        ("creature:rat", 20, position(111)),
+        ("creature:rat", 20, position(112)),
+        ("creature:rat", 20, position(113)),
+    ]))?;
+    let mut roster = checked(EncounterDefenders::new(&[step.actor], &defenders[..2]))?;
+    assert_eq!(roster.participants(), &[step.actor]);
+    assert!(!roster.complete_for(step.actor));
+    let death = |actor: ExactActorRef| CreatureDeathOccurrenceKey { actor: actor.0 };
+    assert_eq!(roster.record_death(death(defenders[2])), None);
+    assert_eq!(roster.record_death(death(defenders[0])), Some(0));
+    assert_eq!(roster.record_death(death(defenders[0])), None);
+    assert!(!roster.complete_for(step.actor));
+    let mut stale = defenders[1];
+    stale.0.actor_local_generation.0 += 1;
+    assert_eq!(roster.record_death(death(stale)), None);
+    assert_eq!(roster.record_death(death(defenders[1])), Some(1));
+    assert!(roster.complete_for(step.actor));
+    assert!(!roster.complete_for(defenders[2]));
+    assert_eq!(roster.record_death(death(defenders[1])), None);
+    assert!(EncounterDefenders::new(&[step.actor], &[]).is_err());
+    assert!(EncounterDefenders::new(&[step.actor], &[defenders[0], defenders[0]]).is_err());
+    assert!(EncounterDefenders::new(&[step.actor], &[step.actor]).is_err());
+    let mut foreign = defenders[0];
+    foreign
+        .0
+        .set_scope_generation(checked(ScopeOwnershipGeneration::new(2))?);
+    assert!(EncounterDefenders::new(&[step.actor], &[foreign]).is_err());
+    Ok(())
+}
