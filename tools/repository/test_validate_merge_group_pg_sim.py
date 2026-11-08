@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "85704eda08af8381ccb635e3430945a046a187e7"
+APPROVED = "031c88fb778a2d6c0ece625debbf6e5e07d4d16a"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -305,7 +305,9 @@ def main() -> int:
     original = GATE.read_text(encoding="utf-8")
     assert core.git_blob_sha(original.encode()) == APPROVED, "queue protected blob pin drifted"
     assert "  push:\n    branches: [main]\n" in original, "post-merge push to main trigger missing"
-    assert "concurrency:\n  group: game-merge-group-${{ github.event_name == 'push' && format('push-{0}', github.ref) || github.event.merge_group.head_sha }}\n  cancel-in-progress: true\n" in original
+    assert "concurrency:\n  group: game-merge-group-${{ github.event_name == 'push' && format('push-{0}', github.ref) || github.event.merge_group.head_sha }}\n" in original
+    # Post-merge push runs must finish; only merge-group runs supersede each other.
+    assert "  cancel-in-progress: ${{ github.event_name != 'push' }}\n" in original
     assert core.main() == 0, "approved queue workflow must pass full policy"
     _atlas_queue_canaries(original, core)
     _world_bundle_queue_canaries(original, core)
