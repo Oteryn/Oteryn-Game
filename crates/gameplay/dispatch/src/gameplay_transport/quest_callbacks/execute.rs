@@ -734,18 +734,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if oteryn_gameplay_quests::quest::children_puzzle::binding(&callback.key)
-            .is_some_and(|(_, solved)| solved)
-        {
-            let _ = map
-                .facts
-                .emit_movement_speech(crate::map::facts::MovementSpeech {
-                    speaker: actor,
-                    position: native(expected.position()).unwrap_or(pos),
-                    talk_type: 36,
-                    text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH,
-                });
-        }
         if let Some(proof) = teleport {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;

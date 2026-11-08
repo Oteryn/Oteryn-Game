@@ -74,3 +74,23 @@ fn qm46_grease_transition_requires_mission_three_and_preserves_atomic_progress()
     );
     Ok(())
 }
+
+#[test]
+fn qm46_puzzle_speech_binds_only_the_solved_branch() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::children_puzzle;
+    let callbacks = world_callbacks::load()?;
+    let mut count = 0;
+    for callback in callbacks
+        .iter()
+        .filter(|c| children_puzzle::binding(&c.key).is_some())
+    {
+        let (_, solved) = children_puzzle::binding(&callback.key).ok_or("puzzle binding")?;
+        assert_eq!(
+            callback.effects.player_speech.as_deref(),
+            solved.then_some(children_puzzle::SPEECH)
+        );
+        count += 1;
+    }
+    assert_eq!(count, 10);
+    Ok(())
+}

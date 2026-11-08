@@ -228,8 +228,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if effects.player_speech.as_ref().is_some_and(|text| {
         callback.actor_kind != ActorKind::Player
             || text.is_empty()
-            || text.len() > 256
-            || text.contains(['\n', '\r', '\0'])
+            || text.len() > 255
+            || text.trim() != text.as_str()
+            || text.chars().any(char::is_control)
     }) {
         return false;
     }
@@ -477,7 +478,9 @@ mod speech_tests {
         assert!(valid(&original));
         for text in [
             String::new(),
-            "x".repeat(257),
+            "x".repeat(256),
+            " whitespace ".into(),
+            "tab\t".into(),
             "line\nbreak".into(),
             "nul\0".into(),
         ] {
