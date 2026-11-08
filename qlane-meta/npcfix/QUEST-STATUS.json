@@ -10943,5 +10943,321 @@
       }
     ],
     "publication": "Publish six qualifications from pushed all-green d4 snapshot plus clean Main merge. Unit retry1 pending under PREPUSH-2; no full-unit green claim."
+  },
+  "active_bank_postal_work": {
+    "entries": [
+      "Muzir",
+      "Murim",
+      "Lokur",
+      "Wally",
+      "Rashid"
+    ],
+    "state": "COMPILES; current one-job unit and own PostgreSQL cases pending",
+    "source_base": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+    "anchors": 11,
+    "postgres_red": {
+      "exit": 101,
+      "seconds": 67.645,
+      "marker": true,
+      "historical_source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source_head": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+      "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c"
+    },
+    "source_cases": {
+      "state": "SCRATCH_ONLY; current six-entry publication first",
+      "source_sha256": "3aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd",
+      "cases": [
+        {
+          "npc": "oteryn:npc.muzir",
+          "name": "Muzir",
+          "expected": {
+            "x": 33221,
+            "y": 32389,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.murim",
+          "name": "Murim",
+          "expected": {
+            "x": 33013,
+            "y": 31494,
+            "floor": -10
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lokur",
+          "name": "Lokur",
+          "expected": {
+            "x": 32648,
+            "y": 31905,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.wally",
+          "name": "Wally",
+          "expected": {
+            "x": 32566,
+            "y": 32019,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.rashid",
+          "name": "Rashid",
+          "expected": {
+            "x": 32207,
+            "y": 31155,
+            "floor": -7
+          },
+          "before": null,
+          "additional": [
+            {
+              "x": 33235,
+              "y": 32483,
+              "floor": -7
+            },
+            {
+              "x": 32577,
+              "y": 32753,
+              "floor": -7
+            },
+            {
+              "x": 32300,
+              "y": 32837,
+              "floor": -7
+            },
+            {
+              "x": 32328,
+              "y": 31782,
+              "floor": -6
+            },
+            {
+              "x": 33166,
+              "y": 31810,
+              "floor": -6
+            },
+            {
+              "x": 33066,
+              "y": 32879,
+              "floor": -6
+            }
+          ]
+        }
+      ],
+      "total_anchors": 11
+    },
+    "bank_contract": "initial0, deposit10, exact confirmation replay, balance10, withdraw5, exact replay, balance5;2 operations/2 audits; money conserved; exact source greeting",
+    "postal_contract": "Murim/Lokur/Wally reuse unchanged ordinary/discount/stale-price/replay assertions; bank ordinals1..8, postal101..107",
+    "rashid_contract": "all7 frozen weekday destinations; one selected anchor and refusal at stale weekday, existing exact trade/replay caller reused",
+    "unit_retry": "jobs1; fresh build/run follows compiling checkpoint to avoid Git-HEAD provenance rebuild",
+    "generation": [
+      {
+        "name": "stats",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+        ],
+        "exit": 0,
+        "seconds": 4.096
+      },
+      {
+        "name": "stats-pin",
+        "command": [
+          "python3",
+          "tools/contracts/refresh_item_stats_promotion_pin.py"
+        ],
+        "exit": 0,
+        "seconds": 0.107
+      },
+      {
+        "name": "native",
+        "command": [
+          "python3",
+          "tools/content-migration/regenerate_content.py",
+          "--native-only",
+          "--skip-checks"
+        ],
+        "exit": 0,
+        "seconds": 125.066
+      },
+      {
+        "name": "audit",
+        "command": [
+          "python3",
+          "/tmp/npcfix-evidence/preserve-unchanged-output-times.py",
+          "crates/gameplay/durability/src/durability/item_mint_audit.tags",
+          "crates/gameplay/durability/src/durability/item_mint_audit/tests/write_once_wire.hex",
+          "--",
+          "python3",
+          "tools/contracts/update_item_audit_tags.py"
+        ],
+        "exit": 0,
+        "seconds": 0.068
+      },
+      {
+        "name": "matrix",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+        ],
+        "exit": 0,
+        "seconds": 1.046
+      },
+      {
+        "name": "bindings",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+        ],
+        "exit": 0,
+        "seconds": 23.264
+      },
+      {
+        "name": "raid_catalogue",
+        "command": [
+          "python3",
+          "tools/content-migration/raid_catalogue.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 1.003
+      },
+      {
+        "name": "craft_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/craft-authoring/craft_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.777
+      },
+      {
+        "name": "imbuement_content",
+        "command": [
+          "python3",
+          "tools/content-schema/imbuement-authoring/imbuement_content.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 5.67
+      },
+      {
+        "name": "charm_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/charm-authoring/charm_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.197
+      },
+      {
+        "name": "proficiency_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 4.476
+      },
+      {
+        "name": "reward_claim_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 4.69
+      },
+      {
+        "name": "starter_kit_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.609
+      },
+      {
+        "name": "weapon",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+        ],
+        "exit": 0,
+        "seconds": 0.785
+      },
+      {
+        "name": "crystal",
+        "command": [
+          "python3",
+          "tools/content-census/g4_item_crystal_binding_generator.py"
+        ],
+        "exit": 0,
+        "seconds": 2.635
+      },
+      {
+        "name": "pins",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "--release",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "exit": 0,
+        "seconds": 42.69
+      },
+      {
+        "name": "native-check",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 110.933
+      },
+      {
+        "name": "duplicates",
+        "command": [
+          "bash",
+          ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+        ],
+        "exit": 0,
+        "seconds": 0.618
+      }
+    ],
+    "publication_gates": [
+      {
+        "name": "check",
+        "exit": 0,
+        "seconds": 989.18
+      },
+      {
+        "name": "fmt",
+        "exit": 0,
+        "seconds": 23.989
+      },
+      {
+        "name": "clippy",
+        "exit": 0,
+        "seconds": 445.658
+      }
+    ]
   }
 }

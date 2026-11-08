@@ -22,6 +22,22 @@ mod duplicate_store;
 #[path = "npc_postage/exact_shops.rs"]
 mod exact_shops;
 
+#[path = "npc_postage/bank_services.rs"]
+mod bank_services;
+
+#[path = "npc_postage/rashid_weekdays.rs"]
+mod rashid_weekdays;
+
+#[test]
+fn npcfix_postgres_captured_bank_and_postal_services_and_replay() -> TestResult {
+    postgres_services(&["muzir", "murim", "lokur", "wally"])
+}
+
+#[test]
+fn npcfix_postgres_rashid_current_weekday_exact_trade_and_replay() -> TestResult {
+    postgres_services(&["rashid"])
+}
+
 #[test]
 fn npcfix_postgres_dispatch_services_and_replay() -> TestResult {
     postgres_services(&[
@@ -217,6 +233,14 @@ fn scenario(keys: &[&str]) -> TestResult {
                     command_id,
                     item_fence: Some(fence),
                 };
+                if matches!(key, "muzir" | "murim" | "lokur") {
+                    bank_services::run(&h, &owner, deps.actor, npc, command,
+                        "Yes? What may I do for you, Fixture Hero? Bank business, perhaps?").await?;
+                    if key == "muzir" { return Ok(()); }
+                }
+                let command = |ordinal| command(if matches!(key, "murim" | "lokur") {
+                    ordinal + 100
+                } else { ordinal });
                 let mut window = None;
                 for (command_id, text) in [
                     (1, "hi"),

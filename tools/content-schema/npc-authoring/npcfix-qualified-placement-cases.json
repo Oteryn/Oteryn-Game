@@ -3059,6 +3059,95 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "npcfix-bank-postal-anchor-qualification-47",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Frozen retail placements; all five identities absent in historical placement tree. Rashid preserves all seven existing exact UTC weekday destinations. No terrain or service authoring change.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.muzir",
+          "name": "Muzir",
+          "expected": {
+            "x": 33221,
+            "y": 32389,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.murim",
+          "name": "Murim",
+          "expected": {
+            "x": 33013,
+            "y": 31494,
+            "floor": -10
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lokur",
+          "name": "Lokur",
+          "expected": {
+            "x": 32648,
+            "y": 31905,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.wally",
+          "name": "Wally",
+          "expected": {
+            "x": 32566,
+            "y": 32019,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.rashid",
+          "name": "Rashid",
+          "expected": {
+            "x": 32207,
+            "y": 31155,
+            "floor": -7
+          },
+          "before": null,
+          "additional": [
+            {
+              "x": 33235,
+              "y": 32483,
+              "floor": -7
+            },
+            {
+              "x": 32577,
+              "y": 32753,
+              "floor": -7
+            },
+            {
+              "x": 32300,
+              "y": 32837,
+              "floor": -7
+            },
+            {
+              "x": 32328,
+              "y": 31782,
+              "floor": -6
+            },
+            {
+              "x": 33166,
+              "y": 31810,
+              "floor": -6
+            },
+            {
+              "x": 33066,
+              "y": 32879,
+              "floor": -6
+            }
+          ]
+        }
+      ]
     }
   ]
 }
