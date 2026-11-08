@@ -2,7 +2,7 @@
 
 | mechanic | lane | migrations | quests it unblocks | state |
 |---|---|---|---|---|
-| Atomic child-quest completion participant in a native world-reward receipt; preserve parent quest ownership/completion | questpc4 | 1259 (questpc4 range 1250-1269) | Waterskin of Mead Quest (final personal completion) | CLAIMED |
+| Atomic child-quest completion participant in a native world-reward receipt; preserve parent quest ownership/completion | questpc4 | 2060 (coordinator ASSIGN range 2060-2069; replaces unshipped 1259 draft) | Waterskin of Mead Quest (final personal completion) | CLAIMED |
 # QMECH mechanic claims
 
 | mechanic | lane tag | migration numbers | quests it unblocks | state |
