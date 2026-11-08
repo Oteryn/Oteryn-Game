@@ -21,7 +21,7 @@ Molehill PC, merged with main, validated there, and only then marked ready.
 |---|---|---|---|---|
 | outfit / addon grants | engoutfit | 1820-1829 | 47 | open |
 | boss / encounter | engenc, engenc2 | (lane's range) | 27 | ENGENC2: shared native phase foundation; Cults production closure claimed, not DONE; ENGENC: tested private boss loot imported (Soul War/Rotten Blood); native arena reused; MISSING-ENGENC.md PARTIAL |
-| reward / achievement claims | engclaim | 1830-1839 | 14 | open |
+| reward / achievement claims | engclaim | 1830-1839 (unused) | 0 full; 4 reward-binding prerequisites | PARTIAL: native placement / once leaf+container / achievement slice; independent outputs and quest bindings pending |
 | world change | engworldchg | 1840-1859 | 10 | open |
 | NPC quest dialogue | engnpc2 | 1650-1659 | Twenty Miles equipped-head prerequisite | 88d39c9d9 merged; engine PG 4.449471887s, 328 quest tests, 740 durability tests, clippy and pins; other requests in progress |
 | quest items | engitem | 1640-1659 | clock waits; Nomads Land text | imported tested clock/text; MISSING-ENGITEM.md PARTIAL; cycle MINT WIP |
