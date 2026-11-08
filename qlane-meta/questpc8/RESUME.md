@@ -1,3 +1,16 @@
+# Latest checkpoint: mainc77 integrated; native hunt fixture corrected, PG pending
+
+Main QREADY1+2 merge conflicts are resolved and all generators/pins refreshed.
+Workspace all-targets check194.136s, fmt, duplicate migration check, quest units
+355PASS41.48s, matrix8/Pythoncallback17/pin-tool6 tests PASS. Exact equipment
+union3924 and baseline3663 unchanged; eleven keys shift from lane-only toQREADY.
+Native hunt's last red point was StartNotEnterable35.533s. B3/registry probing
+identified plain ground west of Zlak; use33081,31220 while keepingNPC at its exact
+source33082,31220. No collision policy was weakened. Fresh clippy and2PG cases
+continue in the driver; this push uses the owner's pending-step3 cadence rule.
+See main-c77-validation.json. Whole quest count stays21/23; no hunt qualification
+is claimed until native GREEN. Original questpc8 remains frozen.
+
 # Latest checkpoint: Wrath imperial hunt compile green; native fixture RED
 
 Zlak's captured source placement33082,31220,z7 is now scoped. Selected Wrath

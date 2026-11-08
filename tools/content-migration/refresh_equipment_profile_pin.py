@@ -30,7 +30,7 @@ def frozen_union():
     sys.path.insert(0, str(ROOT / "tools/contracts"))
     from refresh_quest_custody_equipment import composition
     own, _ = composition("534ea6b23de451ae1086e0be585d1f75887aa17a")
-    main, _ = composition("83acbdac3720d7fe2df6c44d82623b7307806402")
+    main, _ = composition("c77d436d8be39f348924e66d97928ffd69e61a8c")
     return own | main, len(own - main)
 
 
@@ -42,6 +42,19 @@ def regenerate(source, base, updates, qengine, npc, starting=None, frozen=None):
             source = re.sub(r'    \("QUESTPC8-MERGED", [\d_]+\),', row, source)
         else:
             source = source.replace('    ("QUICKLOOT-1",', row + '\n    ("QUICKLOOT-1",', 1)
+
+    if "    let later_main_profiles =" in source:
+        # QREADY registrations overlap the old lane-only keys, so their ownership
+        # shifts out of that cohort while the immutable baseline stays unchanged.
+        start = source.index("    let later_main_profiles =")
+        end = source.index("    let baseline =", start)
+        later = source[start:end]
+        for name in ("QREADY1", "QREADY2"):
+            if f'"{name}"' not in later:
+                later = later.replace('"QUESTPC8-MERGED"', f'"QUESTPC8-MERGED" | "{name}"')
+        later = re.sub(r"Frozen own-only cohort\d+ plus\d+ post-baseline main registrations\.",
+                       "Frozen published union partitions the same205 post-baseline registrations.", later)
+        source = source[:start] + later + source[end:]
 
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(

@@ -860,3 +860,10 @@ loot becomes a grant and no test count or refusal assertion is relaxed.
   Noble33066,31147 spawns. Credit is restricted to the actual present principal;
   other floors and extra same-type kills cannot fill the other quota. No guardian
   replacement, fabricated creature, new engine type or migration is added.
+- Native hunt fixture correction:33082,31219,z7 contains source item2342 and is
+  not enterable. The unchanged compiler registry/B3 probe shows33081,31220 as
+  plain admitted ground11038. Start and return there, keeping Zlak at his exact
+  captured33082,31220 cell through a test-only NPC installer. The wrong-floor
+  kill uses plain native ground33083/33084,31217, avoiding NPC overlap. The
+  floor3 hunt's33079/33080,31192 cells have admitted walkable ground/borders.
+  No source cell, provisional-entry policy or collision test was weakened.

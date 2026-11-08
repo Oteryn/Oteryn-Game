@@ -158,7 +158,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
-    ("QUESTPC8-MERGED", 161),
+    ("QUESTPC8-MERGED", 150),
     ("QUICKLOOT-1", 9),
     // Skull 3114 (tools/content-migration/quest_callback_profiles.py), from Canary
     // 47dfd51f items.xml and exact Crystal ff7ede59 bindings. speed_bonus=0.
@@ -291,6 +291,15 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("WORLDCHG", 40),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
+    // BEGIN GENERATED QREADY PROFILE ADDITIONS
+    // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
+    // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json
+    // Source-qualified zero speed: 3068, 3323, 3383, 3579, 3734, 4871.
+    ("QREADY1", 6),
+    // tools/content-migration/qready2_native_profiles.py
+    // Source-qualified zero speed: 2822, 2823, 2848, 3310, 21982.
+    ("QREADY2", 5),
+    // END GENERATED QREADY PROFILE ADDITIONS
 ];
 
 #[test]
@@ -381,12 +390,18 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .filter(|(name, _)| {
             matches!(
                 *name,
-                "WORLDCHG" | "SRV9-MARRIAGE" | "QNPCFX" | "QUESTPC4-STAG-ITEMS" | "QUESTPC8-MERGED"
+                "WORLDCHG"
+                    | "SRV9-MARRIAGE"
+                    | "QNPCFX"
+                    | "QUESTPC4-STAG-ITEMS"
+                    | "QUESTPC8-MERGED"
+                    | "QREADY2"
+                    | "QREADY1"
             )
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    // Frozen own-only cohort161 plus44 post-baseline main registrations.
+    // Frozen published union partitions the same205 post-baseline registrations.
     assert_eq!(later_main_profiles, 205);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
