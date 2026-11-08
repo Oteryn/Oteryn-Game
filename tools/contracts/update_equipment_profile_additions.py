@@ -28,7 +28,16 @@ def expected():
         raise ValueError(
             "QREADY1 admission proof must contain unique zero-speed profiles"
         )
-    second = qready2_native_profiles.keys(ROOT)
+    # Shared engine admissions have their own independently pinned count below.
+    shared = json.loads(
+        (
+            ROOT
+            / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
+        ).read_bytes()
+    )["records"]
+    shared_keys = {row["production_definition"]["production_key"] for row in shared}
+    first -= shared_keys
+    second = qready2_native_profiles.keys(ROOT) - shared_keys
     if first & second:
         raise ValueError("ready-lane admission cohorts overlap")
     block = (
