@@ -1,6 +1,8 @@
 //! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
 //! Crystal source references and source-order branches are retained in each program.
 
+#[cfg(test)]
+mod achievement_tests;
 mod admission;
 mod bounds;
 mod equipped_storage;
