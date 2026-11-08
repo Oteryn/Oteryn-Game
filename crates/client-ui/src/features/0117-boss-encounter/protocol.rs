@@ -140,6 +140,7 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
         return false;
     };
     panel.snapshot = Some(snapshot);
+    panel.cooldown_received_at = Some(std::time::Instant::now());
     panel.feedback = None;
     true
 }
