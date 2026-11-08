@@ -191,9 +191,9 @@ def project(root, quest, canonical_ref, recipe, normalization, state=NEW_STATE, 
     }
 
 
-def build(root):
+def build(root, source=None):
     root = pathlib.Path(root)
-    source = json.loads((root / SOURCE_STATE).read_text(encoding="utf-8"))
+    source = source if source is not None else json.loads((root / SOURCE_STATE).read_text(encoding="utf-8"))
     source_by_owner = {quest["quest"]: quest for quest in source["quests"]}
     quests = []
     overlays = []
@@ -258,8 +258,9 @@ def build(root):
     skipped_source_lowered.sort(key=lambda row: row["quest"])
     held.sort(key=lambda row: row["quest"])
 
-    req(len(quests) == 146, "Qualified new chosen source recipe count changed")
-    req(len(overlays) == 90, "Qualified chosen source overlay count changed")
+    hoist_overlay = "oteryn:quest.formogar_mine_hoist" in source_by_owner
+    req(len(quests) == (145 if hoist_overlay else 146), "Qualified new chosen source recipe count changed")
+    req(len(overlays) == (91 if hoist_overlay else 90), "Qualified chosen source overlay count changed")
     req(
         len(skipped_source_lowered) == 6
         and all(row["source_completion_state"] == "LOWERED" for row in skipped_source_lowered),
@@ -350,15 +351,17 @@ def validate_packet(packet):
     overlays = packet.get("overlays") or []
     held = packet.get("held") or []
     skipped = packet.get("skipped_source_lowered") or []
+    hoist_overlay = any(row["quest"] == "oteryn:quest.formogar_mine_hoist" for row in overlays)
+    new_count, overlay_count = (145, 91) if hoist_overlay else (146, 90)
     req(
-        len(quests) == 146 and len({quest["quest"] for quest in quests}) == 146,
-        "All146 unique new owners",
+        len(quests) == new_count and len({quest["quest"] for quest in quests}) == new_count,
+        "Exact unique new owners for source baseline",
     )
     req(
-        len(overlays) == 90
-        and len({quest["quest"] for quest in overlays}) == 90
+        len(overlays) == overlay_count
+        and len({quest["quest"] for quest in overlays}) == overlay_count
         and not ({quest["quest"] for quest in quests} & {quest["quest"] for quest in overlays}),
-        "All90 unique overlay owners",
+        "Exact unique overlay owners for source baseline",
     )
     req(
         len(skipped) == 6

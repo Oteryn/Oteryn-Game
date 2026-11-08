@@ -115,6 +115,29 @@ pub(super) fn validate_closed(
 mod tests {
     use super::*;
     #[test]
+    fn counted_use_admission_includes_the_exact_increment() -> Result<(), String> {
+        let lowered = super::super::super::loader::load_embedded_quest_state("counted-admission")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = load()?;
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/authored-nimmersatt-wall")
+            .ok_or("wall")?;
+        let transition = lowered
+            .catalogue()
+            .transition(&callback.key)
+            .ok_or("transition")?;
+        super::super::super::admission_binding::validate(transition, true)?;
+        let mut stripped = transition.clone();
+        let counter = callback.counted_use.as_ref().ok_or("counter")?;
+        stripped
+            .effects
+            .retain(|effect| effect.track != counter.track);
+        assert!(super::super::super::admission_binding::validate(&stripped, true).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn counted_use_is_inactive_bounded_and_has_closed_writers() -> Result<(), String> {
         let lowered = super::super::super::loader::load_embedded_quest_state("counted-use-test")
             .map_err(|e| format!("{e:?}"))?;

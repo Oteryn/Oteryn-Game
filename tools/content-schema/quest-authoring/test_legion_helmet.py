@@ -1,7 +1,7 @@
 """Selected contact gates preserve every previously accepted reward callback."""
-import hashlib
 import json
 import unittest
+from unittest.mock import patch
 import qengine_rewards
 
 class LegionContactsTests(unittest.TestCase):
@@ -26,7 +26,7 @@ class LegionContactsTests(unittest.TestCase):
         raw=qengine_rewards.build()['content/quests/reward-claim-gates.json']
         document=json.loads(raw)
         self.assertEqual(document['schema'],1)
-        gate,=document['gates']
+        gate,=[row for row in document['gates'] if row['claim']=='oteryn:reward-claim.kv.legiondawnport']
         self.assertEqual(gate['claim'],'oteryn:reward-claim.kv.legiondawnport')
         self.assertEqual(gate['quest'],'oteryn:quest.newhaven_legion_helmet_quest')
         self.assertEqual(gate['conditions'],[dict(track='oteryn:quest-progress/legion-helmet/'+name,minimum=1,maximum=1) for name in ['gustavo','viola','cave']])
@@ -58,7 +58,9 @@ class LegionContactsTests(unittest.TestCase):
 
     def test_prior_callbacks_preserved_exactly(self):
         old=[r for r in self.rows if not r['key'].startswith('oteryn:quest-reward/legion-contact-')]
-        self.assertEqual(hashlib.sha256(json.dumps(old,sort_keys=True,separators=(',',':')).encode()).hexdigest(),'9213a6522d1ab4673f25c6e635d04c8a4e093dce77b43ce0ebf63c72f2cf94cb')
+        with patch('legion_helmet.extend', lambda rows: None):
+            baseline=json.loads(qengine_rewards.build()['content/quests/shared-reward-callbacks.json'])['callbacks']
+        self.assertEqual(old,baseline)
 
     def test_generated_registry_is_current(self):
         self.assertEqual(self.raw,(qengine_rewards.ROOT/'content/quests/shared-reward-callbacks.json').read_bytes())

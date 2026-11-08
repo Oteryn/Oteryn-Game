@@ -221,7 +221,7 @@
     "canonical": "oteryn:quest.newhaven_quest",
     "title": "Newhaven Quest",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "QUALIFIED",
+    "status": "UNFINISHED",
     "from_lanes": [
       "questpc2"
     ],
@@ -273,13 +273,22 @@
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
       "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "current_head_validation": {
+      "tested_head": "5afd5b5e58484dc749e7b28c9479561f8882fe1b",
+      "state": "RED; previously qualified route regression under investigation",
+      "failure": "native Troll corpse admission stale; XP settlement refused",
+      "log": "/tmp/questpc5-finished-readiness-pg.log",
+      "repair": "47-line owned closure producer reuses canonical Item facts and the existing native corpse/yield validators; preserves every table, probability, quantity and unrelated fact.",
+      "rerun": "same19casePG run active; do not restoreQUALIFIED untilGREEN",
+      "proof": "cloud-readiness-regression-proof.json"
     }
   },
   {
     "canonical": "oteryn:quest.authored.nimmersatt_s_lair",
     "title": "Nimmersatt's Lair",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "QUALIFIED",
+    "status": "UNFINISHED",
     "from_lanes": [
       "questpc2"
     ],
@@ -335,6 +344,15 @@
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
       "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "current_head_validation": {
+      "tested_head": "5afd5b5e58484dc749e7b28c9479561f8882fe1b",
+      "state": "RED; previously qualified route regression under investigation",
+      "failure": "first exact snowball callback rejected after premium refusal",
+      "log": "/tmp/questpc5-finished-readiness-pg.log",
+      "repair": "Canonical primary transition includes the exact counter effect; lowering still extends its bounded track once.",
+      "rerun": "same19casePG run active; do not restoreQUALIFIED untilGREEN",
+      "proof": "cloud-readiness-regression-proof.json"
     }
   },
   {
@@ -383,7 +401,7 @@
     "canonical": "oteryn:quest.authored.nomads_mini_world_change",
     "title": "Nomads Mini World Change",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "QUALIFIED",
+    "status": "UNFINISHED",
     "from_lanes": [
       "questpc2"
     ],
@@ -429,6 +447,15 @@
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
       "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "current_head_validation": {
+      "tested_head": "5afd5b5e58484dc749e7b28c9479561f8882fe1b",
+      "state": "RED; previously qualified route regression under investigation",
+      "failure": "terminal cache USE disconnects without a command result",
+      "log": "/tmp/questpc5-finished-readiness-pg.log",
+      "repair": "World reward plan records callback.completes alongside the same source callback.",
+      "rerun": "same19casePG run active; do not restoreQUALIFIED untilGREEN",
+      "proof": "cloud-readiness-regression-proof.json"
     }
   },
   {
@@ -767,9 +794,10 @@
       "identity": 53073,
       "producer_registered": true,
       "source_tests": "3PASS6.531s",
-      "postgres": "RED PostgreSQL18.6 DefinitionNotFound41.858535248s before registration; GREEN pending",
+      "postgres": "PostgreSQL18.6 RED41.858535248s -> GREEN43.439000089s; zero quest progress rows",
       "proof": "cloud-targuna-material-proof.json",
-      "equipment_union": 3882
+      "equipment_union": 3882,
+      "status": "QUALIFIED_PHYSICAL_CUSTODY_ONLY"
     }
   },
   {
@@ -937,7 +965,7 @@
     "canonical": "oteryn:quest.devil_helmet_quest",
     "title": "Devil Helmet Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
-    "status": "QUALIFIED",
+    "status": "UNFINISHED",
     "from_lanes": [
       "questpc",
       "questpc6"
@@ -1014,6 +1042,15 @@
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
       "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "current_head_validation": {
+      "tested_head": "5afd5b5e58484dc749e7b28c9479561f8882fe1b",
+      "state": "RED; previously qualified route regression under investigation",
+      "failure": "native source encounter returns LootItemInadmissible",
+      "log": "/tmp/questpc5-finished-readiness-pg.log",
+      "repair": "47-line owned closure producer reuses canonical Item facts and the existing native corpse/yield validators; preserves every table, probability, quantity and unrelated fact.",
+      "rerun": "same19casePG run active; do not restoreQUALIFIED untilGREEN",
+      "proof": "cloud-readiness-regression-proof.json"
     }
   },
   {

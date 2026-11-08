@@ -684,7 +684,7 @@ fn extend_callbacks(
                 });
             }
         }
-        let counted_effect = counted_use::extend(callback, &mut tracks)?;
+        counted_use::extend(callback, &mut tracks)?;
         // Pure gates must not acquire a generic transition: even ADD(0)
         // creates a Character revision, quest state and receipt.
         if callback.is_read_only() {
@@ -723,9 +723,7 @@ fn extend_callbacks(
                 experience: None,
             });
         }
-        let mut primary = primary_transition(callback)?;
-        primary.effects.extend(counted_effect);
-        transitions.push(primary);
+        transitions.push(primary_transition(callback)?);
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
@@ -775,6 +773,7 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                     },
                 },
             })
+            .chain(counted_use::extend(callback, &mut Vec::new())?)
             .collect(),
         completes: callback.completes,
         experience: callback.experience,

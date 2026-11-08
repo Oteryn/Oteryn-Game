@@ -31,14 +31,23 @@ class QualificationTests(unittest.TestCase):
         self.assertEqual(errors, [])
         # 172 source claims have focused dispatch PG proof; only the
         # two Dawnport claims are excluded. Keep exact denominator detection.
-        self.assertEqual(sum(counts.values()), 162)
+        self.assertEqual(sum(counts.values()), 163)
 
     def test_missing_row_is_rejected(self):
-        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+        for key in [next(iter(self.ledger["claims"])), "oteryn:reward-claim.source.formorgar_hoist_skeleton"]:
             with self.subTest(claim=key):
                 ledger = copy.deepcopy(self.ledger)
                 del ledger["claims"][key]
                 self.assertIn(f"missing claim: {key}", self.check(ledger))
+
+    def test_previous_itemhold_admissions_keep_their_dispatch_proof(self):
+        coverage = json.loads(qualification.COVERAGE.read_text())
+        rows = {chest["claim"]: chest for quest in coverage["quests"] for chest in quest.get("chests", [])}
+        for key in qualification.ITEMHOLD_ADMISSIONS:
+            with self.subTest(claim=key):
+                self.assertEqual(rows[key]["status"], "dispatch_pg_qualified")
+                self.assertTrue(rows[key]["reason"])
+                self.assertNotIn(key, self.ledger["claims"])
 
     def test_invented_test_is_rejected(self):
         record = next(iter(self.ledger["claims"].values()))

@@ -182,7 +182,7 @@ def expected(root):
     source_stages = module(root, SOURCE_STAGES, 'chosen_source_completion_stages')
     refine = module(root, REFINE, 'chosen_completion_refinements')
     choices = stages.build(root)
-    source_choices = source_stages.build(root)
+    source_choices = source_stages.build(root, source=source)
     stages.validate_packet(choices)
     source_stages.validate_packet(source_choices)
     events, event_followup = apply_event_corrections(root, choices, pinned(root, EVENTS, EVENTS_SHA))

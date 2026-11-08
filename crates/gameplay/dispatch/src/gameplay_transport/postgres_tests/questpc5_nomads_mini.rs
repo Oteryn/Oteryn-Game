@@ -59,7 +59,7 @@ async fn open(
         2,
         oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
     )
-    .await?;
+    .await.map_err(|error| format!("nomads cache=({x},{y}) command={command}: {error}"))?;
     oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
 }
 pub(super) async fn exercise(

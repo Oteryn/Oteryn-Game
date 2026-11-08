@@ -1,6 +1,6 @@
 {
   "quest": "oteryn:quest.targuna_quest",
-  "state": "REGISTERED_PG_RED_PROVEN_GREEN_PENDING",
+  "state": "PHYSICAL_CUSTODY_PG_RED_GREEN_WHOLE_QUEST_PENDING",
   "item": 53073,
   "source_identity": "bunch of turnips; exact existing Crystal item binding",
   "known_weight": {
@@ -25,7 +25,12 @@
     "red_server_version": "18.6",
     "red_seconds": 41.858535248,
     "red_error": "DefinitionNotFound",
-    "green": "queued after shipping checks"
+    "green": {
+      "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "duration_seconds": 43.439000089,
+      "log": "/tmp/questpc5-targuna-material-green-pg.log",
+      "assertions": "exact one turnip bunch in native backpack; zero quest progress rows"
+    }
   },
   "whole_quest_qualified": false,
   "generated": {
@@ -34,5 +39,6 @@
     "existing_unchanged": 3846,
     "equipment_union": 3882
   },
-  "shipping_checks": "workspacealltargets/fmt/pinrefresh/pincheck/duplicatesPASS; strictClippy and PGGREEN pending at cadence checkpoint"
+  "shipping_checks": "workspacealltargets/fmt/pinrefresh/pincheck/duplicatesPASS; strictClippy and PGGREEN pending at cadence checkpoint",
+  "strict_clippy": "PASS201s content/dispatch"
 }

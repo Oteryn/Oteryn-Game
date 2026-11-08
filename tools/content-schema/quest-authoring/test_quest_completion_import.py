@@ -32,7 +32,7 @@ class CompletionImportTests(unittest.TestCase):
         state = json.loads(tool.expected(ROOT)[tool.OUTPUT])
         actual = {q['quest']: q for q in state['quests']}
         source_stages = tool.module(ROOT, tool.SOURCE_STAGES, 'chosen_source_test_projection')
-        packet = source_stages.build(ROOT)
+        packet = source_stages.build(ROOT, source=base)
         overlays = {q['quest']: q for q in packet['overlays']}
         changed = []
         for quest in base['quests']:

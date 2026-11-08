@@ -26,8 +26,8 @@ class ChosenSourceProgressTest(unittest.TestCase):
     def test_closed_source_recipe_population(self):
         summary = self.packet["summary"]
         self.assertEqual(236, summary["quests"])
-        self.assertEqual(146, summary["new_quests"])
-        self.assertEqual(90, summary["overlay_quests"])
+        self.assertEqual(145, summary["new_quests"])
+        self.assertEqual(91, summary["overlay_quests"])
         self.assertEqual(6, summary["source_lowered_skipped"])
         self.assertEqual(1471, summary["tracks"])
         self.assertEqual(1471, summary["transitions"])
@@ -35,6 +35,13 @@ class ChosenSourceProgressTest(unittest.TestCase):
         self.assertEqual(0, summary["held_quests"])
         self.assertFalse(self.packet["native_admission"])
         self.assertFalse(self.packet["runtime_enabled"])
+
+    def test_owned_hoist_source_is_preserved_as_an_overlay(self):
+        owner = "oteryn:quest.formogar_mine_hoist"
+        self.assertNotIn(owner, {row["quest"] for row in self.packet["quests"]})
+        overlay, = [row for row in self.packet["overlays"] if row["quest"] == owner]
+        self.assertTrue(overlay["completion"]["source_progress_preserved"])
+        self.assertEqual("NOT_LOWERED_NO_MISSIONS", overlay["completion"]["source_completion_state"])
 
     def test_nine_terminal_count_recipes_are_normalized_only_in_candidate_projection(self):
         expected = {
@@ -109,9 +116,9 @@ class ChosenSourceProgressTest(unittest.TestCase):
         )
         self.assertEqual(
             {
-                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 146,
+                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 145,
                 "LOWERED": 6,
-                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 90,
+                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 91,
             },
             merged["counts"]["completion"],
         )

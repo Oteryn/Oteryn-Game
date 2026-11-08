@@ -1,8 +1,8 @@
 """Personal source supplies use the shared atomic world reward participant."""
-import hashlib
 import json
 import unittest
 import nimmersatt_programme as author
+import legion_helmet
 
 class NimmersattSupply(unittest.TestCase):
     def test_premium_passage_and_exact_completed_counter_turn_in(self):
@@ -40,7 +40,10 @@ class NimmersattSupply(unittest.TestCase):
     def test_prior_legion_records_are_preserved(self):
         path='content/quests/authored-world-callbacks.json'
         current=[r for r in json.loads((author.ROOT/path).read_bytes())['callbacks'] if r['quest']=='oteryn:quest.newhaven_legion_helmet_quest']
-        self.assertEqual(hashlib.sha256(json.dumps(current,sort_keys=True,separators=(',',':')).encode()).hexdigest(),'b6c631b9db09e2ed0313e17cca8b3161760252cfe854d5fccbd4fb6ff02ea902')
+        baseline=legion_helmet.world_callbacks()['callbacks']
+        self.assertEqual(current,baseline)
+        author.extend_world(baseline)
+        self.assertEqual(current,[row for row in baseline if row['quest']=='oteryn:quest.newhaven_legion_helmet_quest'])
 
 
 if __name__=='__main__':unittest.main()

@@ -1,0 +1,70 @@
+{
+  "scope": "Restore current-head validation of previously qualified questpc5 routes; no new whole quest qualification.",
+  "base_head": "78ec61105",
+  "main": "f5b584ef1",
+  "red": {
+    "postgres_version": "18.6",
+    "focused_cases": 19,
+    "passed": 15,
+    "failed": 4,
+    "duration_seconds": 719.41,
+    "log": "/tmp/questpc5-finished-readiness-pg.log",
+    "diagnostic_pg": {
+      "nimmersatt_seconds": 98.826280539,
+      "nomads_seconds": 65.111114968
+    }
+  },
+  "fixes": [
+    {
+      "quests": [
+        "Newhaven Quest",
+        "Devil Helmet Quest"
+      ],
+      "cause": "Published Troll/MinotaurGuard corpse and Dragon loot admission facts were stale.",
+      "change": "47-line owned closure producer reuses canonical Item facts and the existing native corpse/yield validators; preserves every table, probability, quantity and unrelated fact.",
+      "tests": "Freshness RED27 facts then GREEN2.897s; producer2GREEN7.304s."
+    },
+    {
+      "quests": [
+        "Nimmersatt's Lair"
+      ],
+      "cause": "The admission registry used a primary transition missing the counted-use increment appended only during lowering.",
+      "change": "Canonical primary transition includes the exact counter effect; lowering still extends its bounded track once.",
+      "tests": "Existing PG REDInvalidInput98.826s; new admission unitGREEN2.66s also rejects stripped counter."
+    },
+    {
+      "quests": [
+        "Nomads Mini World Change"
+      ],
+      "cause": "World MINT plan omitted completes; migration1254 correctly rejected the terminal receipt with quest reward completion lacks exact owning receipt/state.",
+      "change": "World reward plan records callback.completes alongside the same source callback.",
+      "tests": "PGREDCommitRejected65.111s; same full19-case rerun pending."
+    }
+  ],
+  "authoring_repairs": [
+    "Regenerate RewardClaim manifest and variant packet with repository tools.",
+    "Preserve current Hoist source overlay (145new/91overlays) and frozen completion-import source baseline (146new/90overlays), both236total/1471tracks.",
+    "Preservation tests compare full producer output before/after additions, retaining all nonowned callbacks.",
+    "Retain historical source holds; verify exact Hoist native leaf and four inherited QREADY1 admissions separately from private source classification metadata.",
+    "Regenerate qualification ledger with exact163supported_unqualified denominator and retained dispatch-qualified historical admissions.",
+    "Rename unchanged Cook terrain row into required numeric shard08669; no validator relaxed.",
+    "Regenerate Prey model from current loot admission with actual simulation15cases/776creatures.",
+    "Exclude the separately verified native_source_leaf_v1 format only from pilot-stack approximation lookup; malformed pilot provenance still rejected, new11-test moduleGREEN.",
+    "Refresh retained v2 export, collect/use candidate packets and rollout metadata; actual source lowering stays97quests/1337tracks/3265transitions."
+  ],
+  "validation": {
+    "workspace_all_targets": "PASS356s",
+    "fmt": "PASS",
+    "content_tree": "PASS97/97directories; full Item/Mount equivalencePASS34114Items/252Mounts/479Itembindings/337RewardClaims",
+    "authoring_checks": "PASS exact CIchecks runner --partchecks, including final bundle and canonical tree freshness",
+    "authoring_units": "PASS112modules,1151reportedtests,zero failing modules",
+    "strict_clippy": "PASS238s on content/quests/durability/dispatch all targets with -Dwarnings",
+    "world_pins": "PASS isolated refresh/check: inputs fd07c4f36b0d01447305833f109b5892ab9e316f9aff8e64cd811c145eb8cd61, world fa64b0398214387aefd8acb8881a2286c56d411c6b5e74871b60167ac3dd9c1c",
+    "own_pg": "Running19realPG cases; first4PASS, zero failures so far",
+    "workspace_post_generation": "PASS334s including Cargo lock wait; fmtPASS",
+    "changed_crate_units": "Running2914non-PostgreSQL unit cases across content, quests, durability and dispatch; zero failures so far"
+  },
+  "pr_ready": false,
+  "schema_prerequisite": "Main lacks QUESTPC8 backpack_outputs migration; local PG uses authorized UNTRACKED1300 fixture. Never stage or ship that migration; rerun against main after owning PR merges.",
+  "checkpoint": "Compiling WIP published under explicit PREPUSH-2 step3 cadence exception; remaining focusedPG and Rust unit runs are pending, not claimed GREEN."
+}

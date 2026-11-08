@@ -154,7 +154,8 @@ def build(catalogue, bundle, definitions, source_specs, approximations=None):
 def selected_approximations(root, index, claims):
     """Expose only exact authored stack choices; never infer runtime behavior."""
     selected, paths = {}, []
-    by_source = {(c['provenance']['pilot_key'], c['provenance']['pilot_revision']): c for c in claims}
+    by_source = {(c['provenance']['pilot_key'], c['provenance']['pilot_revision']): c for c in claims
+                 if c.get('definition_profile') != 'native_source_leaf_v1'}
     for check in index.get('variant_source_checks', []):
         if check.get('code') != 'OTERYN_SELECTED_STACK_SERIALIZATION':
             continue

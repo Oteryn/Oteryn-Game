@@ -385,6 +385,9 @@
       "path": "content/interactions/reward_claims/index.json"
     },
     {
+      "path": "content/interactions/reward_claims/reward-claim-source-leaves.json"
+    },
+    {
       "path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
     },
     {

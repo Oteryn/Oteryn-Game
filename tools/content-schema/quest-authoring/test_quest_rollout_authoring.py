@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import unittest
 
+import quest_rollout_authoring as tool
 from quest_rollout_authoring import build
 
 
@@ -27,6 +28,14 @@ class RolloutTests(unittest.TestCase):
     def result(self, row=None, definitions=None):
         return build({'quests': [row or self.row]}, self.bundle,
                      [self.definition] if definitions is None else definitions, self.specs)['records'][0]
+
+    def test_native_source_leaf_is_not_a_pilot_stack_approximation(self):
+        selected, paths = tool.selected_approximations(Path.cwd(), {}, [{
+            'definition_profile': 'native_source_leaf_v1',
+            'provenance': {'generator': 'native_source_leaf.py'}}])
+        self.assertEqual((selected, paths), ({}, []))
+        with self.assertRaises(KeyError):
+            tool.selected_approximations(Path.cwd(), {}, [{'provenance': {}}])
 
     def test_field_ready_never_enables_runtime_or_claims_smoke(self):
         row = self.result()

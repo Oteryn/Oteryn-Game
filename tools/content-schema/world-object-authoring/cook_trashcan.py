@@ -6,7 +6,7 @@ from client_appearance_reader import read_appearances
 ROOT = ground.ROOT
 IDENTIFIER = 44563
 KEY = 'oteryn:terrain.tibia.i44563'
-SHARD = 'content/world/terrain/terrain-questpc5-cook-trashcan.json'
+SHARD = 'content/world/terrain/terrain-08669-08669.json'
 
 def outputs(root=ROOT):
     files = ground.outputs(root)

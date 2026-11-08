@@ -489,7 +489,7 @@ pub(crate) async fn give_world(
     }
     let mut plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
         "storage": callback.storage, "take": [], "present": [], "give": reward,
-        "outfit": null, "world_callback": callback});
+        "outfit": null, "completes": callback.completes, "world_callback": callback});
     if let Some(achievement) = &callback.effects.achievement_reward {
         plan["achievement"] = serde_json::json!(achievement);
     }
