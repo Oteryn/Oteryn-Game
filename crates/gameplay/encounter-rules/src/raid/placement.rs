@@ -83,6 +83,12 @@ impl RaidRandom {
         .map_err(|_| RaidError::Exhausted)
     }
 
+    /// Crystal grimvale.lua replaces a failed stored chance with random(1,10).
+    pub fn feroxa_chance(&self, check_ordinal: u64) -> Result<u8, RaidError> {
+        u8::try_from(self.below("feroxa-chance", check_ordinal, 10)? + 1)
+            .map_err(|_| RaidError::Exhausted)
+    }
+
     /// Crystal a_piece_of_cake_config.lua:394-400: each golem chooses
     /// its own city base uniformly, independently of the coordinate draws.
     pub fn area_choice(&self, wave: u16, entry: u16, count: usize) -> Result<usize, RaidError> {
