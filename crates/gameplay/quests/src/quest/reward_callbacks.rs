@@ -9,6 +9,10 @@ use std::collections::{BTreeMap, BTreeSet};
 #[cfg(test)]
 mod capture_tests;
 mod colours_peer;
+mod corpse;
+pub use corpse::CorpseTarget;
+#[cfg(test)]
+mod corpse_tests;
 #[cfg(test)]
 mod peer_tests;
 #[cfg(test)]
@@ -165,9 +169,12 @@ pub struct RewardCallback {
     /// Read-only condition on the selected other live player, checked atomically.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub peer_requires: Option<TrackRequirement>,
-    /// Exact native live creature selected by a carried quest tool.
+    /// Exact native species; live unless a source corpse predicate is provided.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_target: Option<String>,
+    /// Read-only source corpse sampling retains its native decay and contents.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub corpse_target: Option<CorpseTarget>,
     /// Remove the exact living target only after its tool/progress receipt commits.
     #[serde(default, skip_serializing_if = "is_false")]
     pub capture_creature: bool,
@@ -498,6 +505,9 @@ fn validate_document(document: Document) -> Result<Document, String> {
             .as_ref()
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
             || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || c.corpse_target
+                .as_ref()
+                .is_some_and(|target| !target.valid(c))
             || (c.capture_creature && c.creature_target.is_none())
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
