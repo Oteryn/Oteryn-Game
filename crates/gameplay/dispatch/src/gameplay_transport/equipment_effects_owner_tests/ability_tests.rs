@@ -156,6 +156,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QNPCFX", 1),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
+    ("QUESTPC4-TREASURE-REWARDS", 5),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
@@ -423,7 +424,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 60),
+        ("qengine-reward-item-profiles.json", 62),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

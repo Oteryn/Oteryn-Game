@@ -16,6 +16,8 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 const BONE: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit";
+#[path = "m39_bone_journey/absence.rs"]
+mod absence;
 #[test]
 fn m39_bone_pit_full_player_journey() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m39-bone")
@@ -250,6 +252,8 @@ async fn bone(
     if lost {
         drop_sample(owner, admitted, h).await?;
         assert_eq!(carried(h, 131).await?, 0);
+    } else {
+        absence::reject_stale_advisory_loss(owner, admitted, h, muriel).await?;
     }
     let before = xp(h).await?;
     let branch = if lost {

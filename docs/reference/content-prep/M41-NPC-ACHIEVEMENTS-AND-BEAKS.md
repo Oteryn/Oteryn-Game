@@ -1,0 +1,11 @@
+# M41 source evidence
+
+Checked donor revision: `201189f871d23597b82caf88fd611454a2ddefb8`.
+
+- [Alyxo](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/alyxo.lua): the accepted `yes` branch at topic 13 and Fafnar 301 awards `Sculptor Apprentice`, gives item 31574, and sets Fourteen.Remains to 1. The existing catalogue's exact active key is `oteryn:achievement/sculptor_apprentice`.
+- [Eldoran](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/eldoran_the_ambitious.lua): the news reward gives item 52824, advances Stag to 13, and awards `Bastard`. The existing catalogue's exact active key is `oteryn:achievement/bastard`. The checked-in source programme already carries these three effects.
+- [Hartford](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/guard_captain_hartford.lua): the beak report reads the character's self-skinned count and requires twenty. Bought beaks do not qualify. The response explicitly says **keep the beaks**; this is not inventory consumption.
+- [Stag helper](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/lib/others/order_of_the_stag.lua): `onBeakSkinned` increments only during stage BEAKS (6); the next stage is UPPER_HALL (7).
+- [Skinning](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/tools/skinning.lua): Night Harpy corpse ids 52678–52680 yield beak 52632 and become spent corpse 52677. The donor marks the chance unconfirmed. This checked script does not call `onBeakSkinned`, despite the helper's comment; that missing connection must not be replaced with possession of bought beaks or an invented chance.
+
+The first M41 code slice admits canonical source achievement names through the existing fenced NPC transaction and account achievement owner. Its fixture proves rollback, same-transaction receipts, stale-authority refusal and replay. It does not certify the entire Kilmaresh/Stag journey or claim that the self-skinning connection is finished.

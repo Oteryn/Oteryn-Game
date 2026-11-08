@@ -772,6 +772,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-m39-any-topic" {
+        return m39_any_topic::exercise(owner, admitted, h).await;
+    }
     if name.starts_with("qengine-rewards-m39-bone") {
         return super::m39_bone_journey::exercise(owner, admitted, h, authority, name).await;
     }

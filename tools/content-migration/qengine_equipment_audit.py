@@ -38,6 +38,10 @@ def main():
                          f'QENGINE2 adds exactly the {len(expected)} independently captured physical quest Items.', after)
     if count != 1:
         raise SystemExit('QENGINE_EQUIPMENT_AUDIT_COMMENT')
+    after, count = re.subn(r'(\("qengine-reward-item-profiles\.json", )[0-9]+(\),)',
+                         lambda match: match[1] + str(len(expected)) + match[2], after)
+    if count != 1:
+        raise SystemExit('QENGINE_EQUIPMENT_COHORT_ANCHOR')
     if args.check and after != before:
         raise SystemExit('QENGINE_EQUIPMENT_COUNT_STALE: run tools/content-migration/qengine_equipment_audit.py content')
     if not args.check and after != before:
