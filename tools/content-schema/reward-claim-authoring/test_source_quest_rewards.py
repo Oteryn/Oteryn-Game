@@ -11,7 +11,12 @@ import reward_claim_variant_authoring as variant
 class SourceQuestRewards(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.items = plain.load_items()
+        # Exercise the pre-qualification SOURCE fixture. Main now admits these
+        # four Items independently; using that already-admitted catalogue would
+        # bypass every negative native-profile mutation below.
+        cls.items = copy.deepcopy(plain.load_items())
+        for number in (3082, 3083, 3084, 3085):
+            cls.items[f'oteryn:item.tibia.i{number}']['materializable'] = False
         cls.claims = plain.load_json(plain.ROOT / plain.CLAIMS_REL)['claims']
         cls.manifest = plain.load_json(plain.ROOT / plain.MANIFEST_REL)
 

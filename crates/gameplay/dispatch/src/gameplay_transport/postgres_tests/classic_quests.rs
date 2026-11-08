@@ -573,14 +573,8 @@ pub(super) async fn exercise_step(
             let expected = runtime.read_actor_position(actor).map_err(debug)?;
             let doors = crate::map::floor::BundleDoors(world.facts().doors());
             let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
-                &runtime,
-                owner.movement_cells,
-                actor,
-                admitted.game_session_id,
-                expected,
-                origin,
-                false,
-                &doors,
+                &runtime, owner.movement_cells(), actor, admitted.game_session_id,
+                expected, origin, false, &doors,
                 None,
             )
             .map_err(debug)?;

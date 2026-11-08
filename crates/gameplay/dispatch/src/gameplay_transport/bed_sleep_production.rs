@@ -73,8 +73,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(state) = runtime.house_actor_state(actor, command.game_session_id) else {
                 return Ok(UseOutcome::rejected());
             };
-            if self.movement_cells.scope().world_id != self.world_id
-                || self.movement_cells.scope().generation_digest
+            if self.movement_cells().scope().world_id != self.world_id
+                || self.movement_cells().scope().generation_digest
                     != runtime.content_pin().server_artifact_digest()
                 || state.scope != current.runtime_scope
                 || state.generation != current.scope_ownership_generation
@@ -123,9 +123,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     z: -i32::from(pos.floor),
                 };
                 let Some(placement) = self
-                    .movement_cells
+                    .movement_cells()
                     .house_tiles()
-                    .house_at(self.movement_cells.scope(), cell)
+                    .house_at(self.movement_cells().scope(), cell)
                     .ok()
                     .flatten()
                     .filter(|p| p.house().key == state.house)

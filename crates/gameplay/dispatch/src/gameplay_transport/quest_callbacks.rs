@@ -1362,7 +1362,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             runtime,
-            self.movement_cells,
+            self.movement_cells(),
             actor,
             session,
             entered,

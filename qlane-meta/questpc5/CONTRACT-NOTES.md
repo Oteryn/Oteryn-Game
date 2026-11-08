@@ -313,3 +313,6 @@ The actual USE target44563 at32974,32110,z7 was provisional and omitted by `tool
 ## Exact container source identity and charged-item guard, 2026-11-08
 
 The authoring boundary must compare the canonical claim key with the pinned pilot key, and compare each charge-disposition argument with the exact pinned source entry. A non-stackable charged child whose default differs from the source argument needs the existing ITEMHOLD consensus proof. This rule does not reinterpret stackable rune quantities as charge counts. Keep the original SOURCE dispositions and all sibling quantities. Restored historical221ready/10held coverage by withholding the seven actual charge witnesses, alongside current inventory assertions; no assertion was removed.
+
+
+2026-11-08 Soulpit/main merge decision: retain both exact static-profile provenance branches (Cook44563 and bounded55Soulpit appearances), and run both source producers in repository regeneration. Reward-authoring discovery exposed11 failures from four Items3082/3083/3084/3085 now globally admitted on main. Preserve every existing assertion and all seven negative profile mutations by explicitly constructing the pre-qualification SOURCE fixture with only its local materializable flags false; no production Item facts or admission guards changed. The original broad test run completed79cases before grouped repair.

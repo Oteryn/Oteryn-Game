@@ -111,10 +111,9 @@
       "decision": "Avoid authoring a competing generic reward engine. Preserve main and existing quest semantics together; prepare resolutions offline while stable crate tests execute."
     },
     "latest_main_integration": {
-      "main": "6f61ac15d",
-      "proof": "cloud-main6f-integration-proof.json",
-      "state": "Merged source compiles245s; fmt/pin/duplicate/source-core replay/startup8 green. PostmergePG and strictClippy pending under PREPUSH-2 cadence exception.",
-      "engine_integration_request": "Resolved by reusing both existing implementations with compatibility glue, one shared MINT and source-plan write; no competing reward engine."
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
     }
   },
   {
@@ -141,6 +140,17 @@
       ],
       "reuse": "Existing native_kill_goals.rs and grizzly_kills/native_goals.rs; do not build a second generic kill counter.",
       "decision": "Keep Tutorial owned and Dawnport excluded; only the selected crystal exit may lead to existing Dawnport. Retain original ambiguous source facts and record plain rope/unlit torch as conservative selected bindings."
+    },
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    },
+    "engine_request_2026_11_08": {
+      "feature": "Claimant-fenced progress from actual looting of an Item issued by an exact Creature death",
+      "existing_reuse": "native_kill_goals already supplies bounded once-only kill counters;1005carried-use proof covers tool consumption, not creature-death loot ingress",
+      "where": "gameplay-dispatch quick_loot/corpse settlement and gameplay-quests callback admission",
+      "rule": "Do not substitute an inventory presence check or kill alone for the selected kill-and-loot objective. No generic engine implementation in this lane."
     }
   },
   {
@@ -198,7 +208,12 @@
         "duration_seconds": 101.906296394,
         "proof": "cloud-legion-complete-proof.json"
       }
-    ]
+    ],
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.newhaven_quest",
@@ -251,7 +266,12 @@
         "postgres_marker_seconds": 47.446595503,
         "proof": "cloud-newhaven-complete-proof.json"
       }
-    ]
+    ],
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.authored.nimmersatt_s_lair",
@@ -308,6 +328,11 @@
       "migration_registry_proof": "cloud-migration-registry-proof.json",
       "quest_or_reward_seeds": false,
       "world_digest": "5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b"
+    },
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
     }
   },
   {
@@ -344,7 +369,12 @@
       "case_witness": "Donor7527 alone matches the stolen nomads treasure description; weight170 agrees with Wiki1.70oz.",
       "qualification": false
     },
-    "active_phase": "source facts resolved; prepare owned recipe while text binding is supplied by qengine2"
+    "active_phase": "source facts resolved; prepare owned recipe while text binding is supplied by qengine2",
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.authored.nomads_mini_world_change",
@@ -391,7 +421,12 @@
     ],
     "qualification_proof": "cloud-nomads-mini-whole-proof.json",
     "whole_postgres_seconds": 54.444058006,
-    "world_pin": "639485b04a204b8efe593cbf76c0af353d3ad058d390d7f13bbb863dca3ce97c"
+    "world_pin": "639485b04a204b8efe593cbf76c0af353d3ad058d390d7f13bbb863dca3ce97c",
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
@@ -435,7 +470,12 @@
       ]
     },
     "qualification_proof": "cloud-noodles-whole-proof.json",
-    "whole_postgres_seconds": 94.317145358
+    "whole_postgres_seconds": 94.317145358,
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.opticording_sphere_quest",
@@ -451,6 +491,11 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00100-00199.json",
       "pointer": "/records/78/definition"
+    },
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
     }
   },
   {
@@ -482,6 +527,11 @@
       "premerge_physical_pg_green": true,
       "postmerge_tests": "pending after compiling cadence checkpoint; no whole-quest qualification",
       "shipping_checks": "PASS workspacealltargets4m16s,fmt,regeneration,equivalence,worldmetadata,pinrefresh/check,duplicates; focusedpostmerge tests/Clippy pending cadence exception"
+    },
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
     }
   },
   {
@@ -523,6 +573,11 @@
       "proof": "cloud-container-source-guards-proof.json",
       "state": "GREEN:71 authoring tests,2253 crate units; freshCookPG18.6 155.631002405s; workspace205s/fmt/native48/binding/matrix/equipment/worldpin/duplicate migration checks PASS.",
       "scope": "Shared source admission only. KV6063 full-default bag is distinct from the owned quest6062 route; no whole Ornamented qualification inferred."
+    },
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
     }
   },
   {
@@ -555,7 +610,12 @@
       "evidence": "content/encounters/world-changes/owner-catalogue.json",
       "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
-    "engine_request": "Daily restart/completion for authored NPC/world callback routes, reusing existing storage-time guards; qengine2 a1ea4e48 checked, no authored callback clock binding."
+    "engine_request": "Daily restart/completion for authored NPC/world callback routes, reusing existing storage-time guards; qengine2 a1ea4e48 checked, no authored callback clock binding.",
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.power_ring_quest",
@@ -585,7 +645,12 @@
     ],
     "assumptions": [
       "The explicit native selection repairs source chest6151 item3031/comment power ring using the selected recipe and pinned Wiki item3050; original3031x1 remains visible in native_selection.original_reward. Never grant both."
-    ]
+    ],
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.present_quest",
@@ -612,7 +677,12 @@
         "postgres_marker_seconds": 4.345191309,
         "proof": "cloud-present-complete-proof.json"
       }
-    ]
+    ],
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.targuna_quest",
@@ -645,6 +715,11 @@
       "where": "gameplay-content mount_taming; gameplay-durability item_use/mount_taming.rs",
       "checked_qengine2": "e6bacdda6",
       "decision": "Reuse existing item-target taming; request only missing quest guard/atomic progress. Do not substitute a creature or drop the earned-turnips predicate."
+    },
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
     }
   },
   {
@@ -669,6 +744,11 @@
       "source_duration_ms": 600000,
       "checked_qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
       "state": "requested; continue other own entries"
+    },
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
     }
   },
   {
@@ -722,7 +802,12 @@
     },
     "qualified_at": "2026-11-07",
     "qualification_evidence": "cloud-banshees-whole-proof.json",
-    "integration_note": "Owner-authorized uncommitted QUESTPC8 migration1300 remains a local test prerequisite; collector must compose canonical PC8 PR from main before deployment. No foreign migration is shipped."
+    "integration_note": "Owner-authorized uncommitted QUESTPC8 migration1300 remains a local test prerequisite; collector must compose canonical PC8 PR from main before deployment. No foreign migration is shipped.",
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.demon_helmet_quest",
@@ -790,7 +875,12 @@
     "completion_proof": "cloud-demon-complete-proof.json",
     "taxonomy_serialization": "Compact canonical form restored after source digest refresh; parsed values unchanged.",
     "known_fact_preservation_followup": "Complete: PG54.28s plus full tree/Imbuement/craft replay PASS; accepted canonical/native facts retained.",
-    "dependent_fingerprint_evidence": "cloud-imbuement-fingerprint-proof.json"
+    "dependent_fingerprint_evidence": "cloud-imbuement-fingerprint-proof.json",
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.devil_helmet_quest",
@@ -868,7 +958,12 @@
       "duration_seconds": 58.28,
       "note": "All four native source kills/XP/corpses/replay, complete source route proofs, fmt/check/strict clippy/tree/source/pin checks PASS."
     },
-    "whole_route_evidence": "cloud-devil-complete-proof.json"
+    "whole_route_evidence": "cloud-devil-complete-proof.json",
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.formogar_mine_hoist",
@@ -914,7 +1009,12 @@
     "skeleton_instruction_evidence": "cloud-skeleton-instruction-proof.json",
     "middle_floor_evidence": "cloud-hoist-middle-floor-proof.json",
     "qualified_at": "2026-11-07",
-    "qualification_evidence": "cloud-hoist-complete-proof.json"
+    "qualification_evidence": "cloud-hoist-complete-proof.json",
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.authored.last_creep_standing",
@@ -940,6 +1040,11 @@
       "where": [
         "crates/gameplay/quests/src/quest/world_callbacks.rs"
       ]
+    },
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
     }
   },
   {
@@ -1017,7 +1122,12 @@
       "full_test_log": "/tmp/questpc5-main-dependent-baseline.log"
     },
     "qualification_proof": "qlane-meta/questpc5/cloud-serpentine-whole-proof.json",
-    "integration_note": "Post-QNPCFX regression reached original chest but Rejected when pending QUESTPC8 migration1300 was absent. Restore only owner-approved local uncommitted prerequisite for focused tests; no tracked copy; native route/premium/observation passed before chest."
+    "integration_note": "Post-QNPCFX regression reached original chest but Rejected when pending QUESTPC8 migration1300 was absent. Restore only owner-approved local uncommitted prerequisite for focused tests; no tracked copy; native route/premium/observation passed before chest.",
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   },
   {
     "canonical": "oteryn:quest.thais_lighthouse_quest",
@@ -1072,6 +1182,11 @@
     "startup_binding_evidence": "cloud-startup-bindings-proof.json",
     "occupancy_rule": "Pure paired source projections follow committed living current-scene presence. Dead, retired, reserved and foreign-frame actors do not hold a plate; observations are idempotent. See CONTRACT-NOTES.md.",
     "qualified_at": "2026-11-07",
-    "qualification_evidence": "cloud-thais-complete-proof.json"
+    "qualification_evidence": "cloud-thais-complete-proof.json",
+    "latest_main_integration": {
+      "main": "98d6ae8ce",
+      "proof": "cloud-soulpit-main-integration-proof.json",
+      "state": "checks running; existing qualification unchanged"
+    }
   }
 ]
