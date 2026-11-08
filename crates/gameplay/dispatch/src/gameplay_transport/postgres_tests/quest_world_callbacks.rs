@@ -236,6 +236,11 @@ pub(super) fn world(
             cells.insert((trigger.floor, x, y), Vec::new());
         }
     }
+    if callback.key.starts_with("oteryn:quest-callback/unnatural-selection-dance-") {
+        for (x, y, floor) in oteryn_gameplay_quests::quest::unnatural_selection::TILES {
+            cells.entry((floor, x, y)).or_default();
+        }
+    }
     for position in callback
         .passages
         .iter()

@@ -57,7 +57,10 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if qm48 {
+    let start = if name == "unnatural-selection-dance-2" {
+        let (x, y, floor) = oteryn_gameplay_quests::quest::unnatural_selection::TILES[7];
+        Position { x, y, floor }
+    } else if qm48 {
         Position {
             x: trigger.x,
             y: trigger.y - 1,
