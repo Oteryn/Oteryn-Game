@@ -31,6 +31,7 @@ mod shortcuts;
 mod store;
 #[path = "sync.rs"]
 mod sync;
+pub(crate) use bindings::parse_action_chord;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
@@ -168,6 +169,8 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub hotkey_profiles: HotkeyProfiles,
     #[serde(default)]
+    pub action_keys: crate::play::feature_local_spell_action_bar::view::ActionKeys,
+    #[serde(default)]
     pub bar_layout: crate::play::feature_local_spell_action_bar::view::BarLayout,
     #[serde(default)]
     pub bar_actions: crate::play::feature_local_spell_action_bar::view::BarActions,
@@ -219,6 +222,7 @@ impl Default for ReferencePreferences {
             item_hotkeys: Default::default(),
             bar_actions: Default::default(),
             bar_layout: Default::default(),
+            action_keys: Default::default(),
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),
@@ -230,7 +234,7 @@ impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         self.validate_profiles()?;
-        if !self.bar_actions.valid() || !self.bar_layout.valid() {
+        if !self.bar_actions.valid() || !self.bar_layout.valid() || !self.action_keys.valid(self) {
             return Err(PreferenceError);
         }
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()

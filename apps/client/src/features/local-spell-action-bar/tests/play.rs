@@ -320,3 +320,6 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
 
 #[path = "layout.rs"]
 mod layout;
+
+#[path = "hotkeys.rs"]
+mod hotkeys;

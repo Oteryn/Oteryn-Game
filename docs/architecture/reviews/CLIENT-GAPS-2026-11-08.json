@@ -1334,9 +1334,10 @@
   "src": "OTCAUD1108",
   "area": "Hotkeys",
   "feature": "Skróty klawiszowe i akcje przedmiotów",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje menedżera dowolnych skrótów tekstowych i użycia przedmiotów na self/target/cursor; istnieją przypisania akcji klienta, czarów i formularz equip.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/hotkeys.rs:109 + custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters; apps/client/src/features/local-spell-action-bar/item_actions.rs:21 + item_hotkeys_resolve_live_handles_for_self_target_and_cursor"
  },
  {
   "id": "O030",

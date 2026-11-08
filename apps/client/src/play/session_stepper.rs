@@ -335,6 +335,13 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         self.gated_snapshot(domain)
             .map(|snapshot| snapshot.payload.clone())
     }
+    fn hotkey_own_actor(&self) -> Option<WorldSpatialEntity> {
+        let entities = self.world_entities()?;
+        entities
+            .iter()
+            .find(|entity| entity.entity.identity == *entities.own_identity())
+            .copied()
+    }
     fn hotkey_equip_items(&self) -> Vec<u32> {
         let mut items = Vec::new();
         if let Some(inventory) = self.inventory() {
@@ -411,6 +418,7 @@ pub(super) fn publish<T: Stepper>(
     held: &mut Vec<WorldSpatialEntity>,
 ) {
     outbox.hotkey_equip_items(session.hotkey_equip_items());
+    outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.chat_private_publish(session);
     outbox.targeting_refresh(session);
     outbox.achievement_notices_publish(session);

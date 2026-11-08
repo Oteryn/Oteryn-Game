@@ -1,3 +1,11 @@
+#[path = "hotkeys.rs"]
+mod hotkeys;
+#[path = "item_actions.rs"]
+mod item_actions;
+pub use hotkeys::ActionKeys;
+#[cfg(windows)]
+pub(in crate::play) use hotkeys::bind as bind_custom_key;
+pub use item_actions::ItemUseMode;
 #[path = "amount.rs"]
 mod amount;
 #[path = "layout.rs"]
@@ -84,16 +92,34 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
                 "Server cast index (see live catalogue)",
                 "Carried item definition (equip)",
                 "Text to say",
+                "Keyboard chord (empty clears)",
             ],
             buttons: &[
-                "Spell", "Clear", "Use", "Equip", "Text", "Instinct", "Harmony", "Serene",
+                "Spell",
+                "Clear",
+                "Use",
+                "Equip",
+                "Text",
+                "Instinct",
+                "Harmony",
+                "Serene",
+                "Bind key",
+                "Use self",
+                "Use target",
+                "Use cursor",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.spell_bar;
                 (
                     panel.open,
                     false,
-                    vec!["1".into(), String::new(), String::new(), String::new()],
+                    vec![
+                        "1".into(),
+                        String::new(),
+                        String::new(),
+                        String::new(),
+                        String::new(),
+                    ],
                     format!(
                         "{}\r\n{}\r\n{}",
                         oteryn_client_ui::spell_action_bar::panel_text(
@@ -154,6 +180,11 @@ impl crate::play::PlayLink {
         for (slot, action) in &mailbox.bar_actions.saved.0 {
             if let Some(label) = labels.get_mut(*slot) {
                 *label = format!("{}: {}", slot + 1, assignments::label(&mailbox, action));
+            }
+        }
+        for (slot, key) in &mailbox.bar_actions.keys.0 {
+            if let Some(label) = labels.get_mut(*slot) {
+                label.push_str(&format!("\n{key}"));
             }
         }
         labels

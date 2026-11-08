@@ -118,7 +118,7 @@ Zasady przeciw dublowaniu:
 | O037 | Game window | Główny panel skrótów funkcji | PARTIAL | Brakuje zwijanego głównego panelu ikon funkcji gry z utrwalonym układem; funkcje są otwierane skrótami. |
 | T040 | Hotkeys | Profile, chat on/off, primary/secondary | DONE | evidence: apps/client/src/features/local-reference-preferences/profiles.rs:116 + named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate |
 | T041 | Hotkeys | Object equip / smart equip | DONE | evidence: apps/client/src/features/0179-hotkey-equip/preferences.rs:21 + item_hotkeys_persist_per_character_and_negotiate_smart_sources |
-| O028 | Hotkeys | Skróty klawiszowe i akcje przedmiotów | PARTIAL | Brakuje menedżera dowolnych skrótów tekstowych i użycia przedmiotów na self/target/cursor; istnieją przypisania akcji klienta, czarów i formularz equip. |
+| O028 | Hotkeys | Skróty klawiszowe i akcje przedmiotów | DONE | evidence: apps/client/src/features/local-spell-action-bar/hotkeys.rs:109 + custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters; apps/client/src/features/local-spell-action-bar/item_actions.rs:21 + item_hotkeys_resolve_live_handles_for_self_target_and_cursor |
 | T045 | Options | Basic Options | PARTIAL | Jeden mały Settings zamiast zbiorczej strony Gameplay/Interface/Graphics/Sound. |
 | T046 | Options | Controls / General: mouse preset, movement, rotation, keyboard delay | PARTIAL | Rebinding jest; brak presetów myszy, rotation modifier i keyboard delay. |
 | T047 | Options | Controls / General Hotkeys | PARTIAL | Brak równoważnej strony i presetów chat-on/chat-off. |

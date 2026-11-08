@@ -15,9 +15,19 @@ pub enum PassiveAbility {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", deny_unknown_fields)]
 pub enum BarAction {
-    Equip { definition: NonZeroU32 },
-    Text { text: String },
-    Passive { ability: PassiveAbility },
+    Equip {
+        definition: NonZeroU32,
+    },
+    Text {
+        text: String,
+    },
+    Use {
+        definition: NonZeroU32,
+        mode: super::item_actions::ItemUseMode,
+    },
+    Passive {
+        ability: PassiveAbility,
+    },
 }
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -39,6 +49,12 @@ impl BarActions {
 pub(crate) struct BarActionsState {
     pub saved: BarActions,
     pub layout: super::layout::BarLayout,
+    pub keys: super::hotkeys::ActionKeys,
+    pub reserved: Vec<(
+        oteryn_input_actions::KeyCode,
+        oteryn_input_actions::Modifiers,
+    )>,
+    pub own_actor: Option<oteryn_session::WorldSpatialEntity>,
     pub dirty: bool,
     pub edit: u64,
 }
@@ -81,11 +97,13 @@ impl SettingsState {
     pub fn sync_bar_actions(&mut self, link: &PlayLink) {
         let mut mailbox = lock(&link.mailbox);
         let state = &mut mailbox.bar_actions;
+        state.reserved = super::hotkeys::reservations(&self.preferences);
         if state.dirty && state.edit > self.bar_actions_edit {
             let edit = state.edit;
             let mut preferences = self.preferences.clone();
             preferences.bar_actions = state.saved.clone();
             preferences.bar_layout = state.layout.clone();
+            preferences.action_keys = state.keys.clone();
             state.dirty = false;
             drop(mailbox);
             self.apply(preferences);
@@ -94,6 +112,7 @@ impl SettingsState {
             state.dirty = false;
             state.saved.clone_from(&self.preferences.bar_actions);
             state.layout.clone_from(&self.preferences.bar_layout);
+            state.keys.clone_from(&self.preferences.action_keys);
         }
     }
 }
@@ -119,6 +138,9 @@ pub(in crate::play) fn activate_shared(
         return true;
     }
     match action {
+        BarAction::Use { definition, mode } => {
+            super::item_actions::use_item(mailbox, commands, definition, mode)
+        }
         BarAction::Equip { definition } => {
             mailbox.hotkey_equip.item_definition = definition.get();
             if let Some(command) =
@@ -150,6 +172,12 @@ pub(in crate::play) fn activate_shared(
 
 pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
     match action {
+        BarAction::Use { definition, mode } => format!(
+            "Use {definition} on {}\nVisible: {}",
+            mode.label(),
+            super::amount::visible_count(mailbox, definition.get())
+                .map_or_else(|| "?".into(), |count| count.to_string())
+        ),
         BarAction::Equip { definition } => format!(
             "Equip {definition}\n{}\nVisible: {}",
             if mailbox.hotkey_equip.items.contains(&definition.get()) {

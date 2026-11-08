@@ -125,6 +125,17 @@ pub(in crate::play) fn edit_slot(
         mailbox.spell_bar.feedback = "Select a slot in the row".into();
         return;
     };
+    if action == 8 {
+        mailbox.spell_bar.feedback = if fields
+            .get(4)
+            .is_some_and(|key| super::view::bind_custom_key(mailbox, slot - 1, key))
+        {
+            "Saved hotkey".into()
+        } else {
+            "Choose an unused keyboard chord; reserved and duplicate keys are rejected".into()
+        };
+        return;
+    }
     if action >= 3 {
         use super::view::{BarAction, PassiveAbility};
         let extra = match action {
@@ -144,6 +155,17 @@ pub(in crate::play) fn edit_slot(
             7 => Some(BarAction::Passive {
                 ability: PassiveAbility::Serene,
             }),
+            9..=11 => fields
+                .get(2)
+                .and_then(|text| text.trim().parse().ok())
+                .map(|definition| BarAction::Use {
+                    definition,
+                    mode: match action {
+                        9 => super::view::ItemUseMode::SelfActor,
+                        10 => super::view::ItemUseMode::Target,
+                        _ => super::view::ItemUseMode::Cursor,
+                    },
+                }),
             _ => None,
         };
         mailbox.spell_bar.feedback =
