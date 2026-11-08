@@ -9,6 +9,8 @@ use std::collections::HashMap;
 
 mod dark_trails;
 mod isle_of_evil;
+#[cfg(test)]
+mod questpc5_greetings_tests;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -1107,7 +1109,7 @@ mod tests {
         }
         // Independently admitted reward NPCs retain their baseline entries.
         // The requested native list may change only the exact requested identities.
-        for (reference, _) in model.npcs() {
+        for reference in model.npcs().keys() {
             if !keys.contains(&reference.key.as_str()) {
                 assert_eq!(
                     book.get(&reference.key),

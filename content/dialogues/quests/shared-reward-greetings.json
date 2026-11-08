@@ -350,15 +350,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.king_tibianus",
-      "greet": "Welcome. Ask about Noodles and his collar.",
-      "farewell": "Farewell. Keep my dog safe.",
-      "walkaway": "Return when you have news of Noodles.",
-      "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/22/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a"
-      ]
-    },
-    {
       "npc": "oteryn:npc.legola",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Good bye, |PLAYERNAME|.",

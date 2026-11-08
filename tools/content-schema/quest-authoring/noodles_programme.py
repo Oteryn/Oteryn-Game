@@ -14,7 +14,10 @@ def extend_rewards(callbacks,greetings):
     if len(recipe['stages'])!=4 or recipe['requirements']['premium'] or recipe['repeat']['kind']!='once':
         raise ValueError('NOODLES_SELECTED_RECIPE_DRIFT')
     source=f'oteryn:selected-recipe:{path}:/records/22/definition:sha256:{hashlib.sha256(raw).hexdigest()}'
-    greetings.append(dict(npc='oteryn:npc.king_tibianus',greet='Welcome. Ask about Noodles and his collar.',farewell='Farewell. Keep my dog safe.',walkaway='Return when you have news of Noodles.',sources=[source]))
+    # Reuse the King's existing literal source greeting; duplicate NPC identities
+    # reject the complete shared greeting book at the native boundary.
+    if not any(row['npc'] == 'oteryn:npc.king_tibianus' for row in greetings):
+        greetings.append(dict(npc='oteryn:npc.king_tibianus',greet='Welcome. Ask about Noodles and his collar.',farewell='Farewell. Keep my dog safe.',walkaway='Return when you have news of Noodles.',sources=[source]))
     def add(name,npc,words,before,after,reply,give=None,**extra):
         callbacks.append(dict(key='oteryn:quest-reward/noodles-'+name,quest=QUEST,npc='oteryn:npc.'+npc,keywords=words,topic=0,next_topic=0,
             storage=[dict(track=TRACK,minimum=before,maximum=before,set=after)],take=[],give=give,outfit=None,achievement=None,reply=[reply],sources=[source],**extra))

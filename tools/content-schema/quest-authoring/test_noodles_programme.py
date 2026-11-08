@@ -4,6 +4,15 @@ import unittest
 import noodles_programme as n
 
 class NoodlesProgramme(unittest.TestCase):
+    def test_existing_source_king_greeting_survives_without_duplicate_identity(self):
+        source = dict(npc='oteryn:npc.king_tibianus', greet='Greetings, |PLAYERNAME|.',
+                      farewell='Good bye, |PLAYERNAME|.', walkaway='How rude!',
+                      sources=['retained-king-source'])
+        greetings = [source.copy()]
+        n.extend_rewards([], greetings)
+        self.assertEqual(greetings, [source])
+        self.assertEqual(len({row['npc'] for row in greetings}), len(greetings))
+
     def test_exact_actor_tool_and_atomic_report(self):
         callbacks,greetings,world=[],[],[]
         n.extend_rewards(callbacks,greetings);n.extend_world(world)

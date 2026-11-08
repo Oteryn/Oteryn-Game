@@ -1,6 +1,6 @@
 {
   "main": "98d6ae8ce",
-  "state": "COMPILES_CADENCE_CHECKPOINT_TEST_RERUNS_PENDING",
+  "state": "GREETING_REPAIR_UNIT_GREEN_POSTGRES_RERUN_PENDING",
   "reuse": [
     "Main Soulpit lifecycle, physical map facts and migrations1140-1141 consumed as-is",
     "Both exact Cook44563 and bounded55Soulpit static profiles retained, no widened source admission",
@@ -26,6 +26,18 @@
         "Legacy serialization fixture omitted exact three own selected completion callbacks",
         "Incoming Ice Islands programme changed its canonical hash; refresh with repository Rust-loader tool"
       ]
+    },
+    "post_registry_focused_run": {
+      "total": 7,
+      "passed": 6,
+      "failed": 1,
+      "duration_seconds": 338.019,
+      "failed_case": "Cook contacts",
+      "postgres_duration_seconds": 152.487911103,
+      "exact_failure": "NoConversation != Ok on hi",
+      "cause": "Noodles producer duplicated King Tibianus in shared greetings; main strict uniqueness rejects complete reward greeting book",
+      "repair": "Preserve existing source King greeting; never relax duplicate rejection",
+      "source_regression": "RED then2GREEN0.141s; actual NPC/PG rerun pending"
     }
   },
   "green": {
@@ -51,13 +63,31 @@
     "main47_provisioning_units": 2,
     "passage_repair_workspace_all_targets_seconds": 207,
     "reward_hash_baselines": "3 exact assertions regenerated with canonical Rust-loader repository tool",
-    "final_fmt": "PASS"
+    "final_fmt": "PASS",
+    "quest_library_tests": 331,
+    "quest_library_seconds": 56.067,
+    "quest_library_skipped": 0,
+    "final_strict_clippy_seconds": 68,
+    "fluid_pg_seconds": 45.17147826,
+    "banshees_low_level_pg_seconds": 120.094373777,
+    "banshees_whole_pg_seconds": 164.134394125,
+    "serpentine_whole_pg_seconds": 122.865603158,
+    "thais_pg_nextest_seconds": 65.332,
+    "postgres_version": "18.6 (Debian18.6-1.pgdg13+2)",
+    "greeting_npc_unit_tests": 38,
+    "greeting_npc_unit_seconds": 437.65,
+    "greeting_npc_clippy_seconds": 0.88,
+    "greeting_workspace_all_targets_seconds": 269,
+    "greeting_native_provider_freshness": 48,
+    "greeting_binding_exact_pointers": 6628,
+    "greeting_pin_refresh_check": "PASS unchanged8bd9bf232a781a5eb3fb589677cf18e4df4f17507ed14c885e288f7d3054f452",
+    "greeting_duplicate_migrations": "PASS",
+    "greeting_fmt": "PASS"
   },
   "pending": [
-    "Full331quest-library grouped repair rerun active",
-    "Own7focused PostgreSQL regressions after registry repair",
-    "Remaining changed-crate units",
-    "Final strict Clippy after registry/test repairs (earlier pre-repair run passed; newest run interrupted to prioritize mandatory hash regeneration)"
+    "Cook/Noodles and previous focused PostgreSQL rerun after greeting repair",
+    "Remaining changed-crate unit tests",
+    "Opticording3physical PG RED before any native profile registration; uncommitted tests/hooks kept out of this independent repair checkpoint"
   ],
   "qualification": "No additional whole quest qualified; ledger remains13/23. No foreign migration introduced.",
   "latest_main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",

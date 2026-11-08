@@ -113,7 +113,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -144,7 +144,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     },
     "engine_request_2026_11_08": {
       "feature": "Claimant-fenced progress from actual looting of an Item issued by an exact Creature death",
@@ -212,7 +212,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -270,7 +270,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -332,7 +332,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -373,7 +373,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -425,7 +425,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -474,7 +474,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -495,7 +495,18 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
+    },
+    "physical_material_work": {
+      "identities": [
+        19063,
+        23572,
+        23573
+      ],
+      "source_unit_tests": "3PASS9.580s",
+      "producer_registered": false,
+      "postgres": "3tests authored; RED not run yet",
+      "proof": "cloud-opticording-source-resolution.json"
     }
   },
   {
@@ -531,7 +542,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -577,7 +588,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -614,7 +625,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -649,7 +660,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -681,7 +692,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -719,7 +730,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -748,7 +759,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -806,7 +817,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -879,7 +890,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -962,7 +973,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -1013,7 +1024,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -1044,7 +1055,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -1126,7 +1137,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   },
   {
@@ -1186,7 +1197,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
+      "state": "331questunits and38NPCunits green;6of7priorfocused cases green;Cook greeting duplicate repaired, actualPG rerun pending"
     }
   }
 ]

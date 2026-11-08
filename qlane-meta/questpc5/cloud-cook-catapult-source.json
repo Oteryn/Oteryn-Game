@@ -1,0 +1,28 @@
+{
+  "state": "EXACT_RETAINED_SOURCE_OBJECTS_NOT_RUNTIME_QUALIFICATION",
+  "objects": [
+    {
+      "path": "content/world/placements/region-z06-x126-y123.b3",
+      "sha256": "1d806e1732b6f958c33bf75e8981a730603fda4959c2bea4b0fa9b90a9d9c4ac",
+      "x": 32345,
+      "y": 31601,
+      "z": 6,
+      "ordinal": 3,
+      "item": 44525,
+      "depth": 0,
+      "attrs": null
+    },
+    {
+      "path": "content/world/placements/region-z06-x126-y123.b3",
+      "sha256": "1d806e1732b6f958c33bf75e8981a730603fda4959c2bea4b0fa9b90a9d9c4ac",
+      "x": 32346,
+      "y": 31601,
+      "z": 6,
+      "ordinal": 2,
+      "item": 44562,
+      "depth": 0,
+      "attrs": null
+    }
+  ],
+  "engine_request": "Reuse source USE on exact44525axe/44562adjacent catapult; existing request for fenced live Creature relocation remains. No inferred inventory pickup or substitute scripted reward."
+}
