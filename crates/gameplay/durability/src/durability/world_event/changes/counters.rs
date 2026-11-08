@@ -207,6 +207,10 @@ pub(super) async fn project(
         day.counter_stages[kind.index()] = value.stage;
         day.counter_progress[kind.index()] = value.counts;
         day.counter_generations[kind.index()] = value.credit_generation;
+        day.counter_quest_occurrences[kind.index()] = match kind {
+            CounterKind::HiveBorn | CounterKind::Deeplings => value.occurrence_generation,
+            _ => 0,
+        };
     }
     Ok(())
 }
