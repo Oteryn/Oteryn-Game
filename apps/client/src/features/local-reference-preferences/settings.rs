@@ -16,6 +16,8 @@ mod controls;
 mod help;
 #[path = "profiles.rs"]
 mod profiles;
+#[path = "shortcuts.rs"]
+mod shortcuts;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
@@ -24,6 +26,7 @@ pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
 pub use profiles::HotkeyProfiles;
+pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
 pub use sync::SettingsState;
 
@@ -62,6 +65,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "shortcuts::default_shortcuts")]
+    pub shortcuts: Vec<String>,
     #[serde(default)]
     pub controls: ControlPreferences,
     #[serde(default)]
@@ -88,6 +93,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout::default(),
@@ -106,6 +112,7 @@ impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+            || !shortcuts::valid(&self.shortcuts)
             || !self.controls.valid()
             || !self.skills_layout.valid()
             || self.audio.master_volume > 100

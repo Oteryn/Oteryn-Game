@@ -43,6 +43,14 @@ pub struct ControlPreferences {
     pub keyboard_delay_ms: u16,
 }
 impl ControlPreferences {
+    pub fn drag_button(&self, world_surface: bool) -> MouseButton {
+        if world_surface && self.mouse == MousePreset::LeftHanded {
+            MouseButton::SECONDARY
+        } else {
+            MouseButton::PRIMARY
+        }
+    }
+
     pub(super) fn valid(&self) -> bool {
         self.keyboard_delay_ms <= 1000
     }

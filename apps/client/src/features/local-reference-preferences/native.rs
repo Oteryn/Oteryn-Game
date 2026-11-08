@@ -27,6 +27,8 @@ mod controls_window;
 mod help_window;
 #[path = "profiles_native.rs"]
 mod profile_window;
+#[path = "shortcuts_native.rs"]
+mod shortcuts_window;
 fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
     shared
         .lock()
@@ -186,7 +188,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 120..=122)
+                && matches!(id, 103 | 106 | 110..=113 | 120..=123)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -379,6 +381,14 @@ fn run(shared: Arc<Mutex<Shared>>) {
             [250, 310, 240, 30],
             0,
         );
+        let shortcuts_page = control(
+            hwnd,
+            "BUTTON",
+            "Shortcut buttons...",
+            123,
+            [510, 310, 210, 30],
+            0,
+        );
         let feedback = control(hwnd, "STATIC", "", 0, [10, 350, 710, 120], 0);
         if [
             help,
@@ -393,6 +403,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             profiles,
             help_page,
             controls_page,
+            shortcuts_page,
             feedback,
             transfer_label,
             transfer_path,
@@ -437,6 +448,12 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == 123 {
+                    drop(state);
+                    shortcuts_window::open(Arc::clone(&shared), hwnd);
+                    state = lock(&shared);
+                    continue;
+                }
                 if action == 122 {
                     drop(state);
                     controls_window::open(Arc::clone(&shared), hwnd);

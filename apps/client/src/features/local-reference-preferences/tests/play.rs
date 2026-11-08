@@ -425,6 +425,8 @@ fn general_controls_transform_real_inputs_and_preserve_releases()
     prefs.controls.movement = MovementKeys::ArrowsAndWasd;
     prefs.controls.rotation = RotationModifier::Shift;
     prefs.controls.keyboard_delay_ms = 250;
+    assert_eq!(prefs.controls.drag_button(true), MouseButton::SECONDARY);
+    assert_eq!(prefs.controls.drag_button(false), MouseButton::PRIMARY);
     settings.apply(prefs.clone());
     let key = |code,
                modifiers,
@@ -511,5 +513,54 @@ fn general_controls_transform_real_inputs_and_preserve_releases()
         good.controls
     );
     std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn shortcut_order_persists_and_buttons_open_real_panels() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::{PreferenceStore, ReferencePreferences, SHORTCUTS};
+    let mut prefs = ReferencePreferences::default();
+    let panels = prefs.visible_panels.clone();
+    let before = prefs.clone();
+    assert!(prefs.add_shortcut("unregistered").is_err());
+    assert!(prefs.add_shortcut("battle").is_err());
+    assert!(prefs.move_shortcut(0, usize::MAX).is_err());
+    assert_eq!(prefs, before);
+    prefs.add_shortcut("quest-log")?;
+    let last = prefs.shortcuts.len() - 1;
+    prefs.move_shortcut(last, 0)?;
+    assert_eq!(prefs.shortcuts[0], "quest-log");
+    prefs.remove_shortcut(1)?;
+    assert!(!prefs.shortcuts.iter().any(|id| id == "battle"));
+    assert_eq!(prefs.visible_panels, panels);
+    let path =
+        std::env::temp_dir().join(format!("clientgap-shortcuts-{}.json", std::process::id()));
+    let mut store = PreferenceStore::load(path.clone())?;
+    store.apply(prefs.clone())?;
+    assert_eq!(
+        PreferenceStore::load(path.clone())?.preferences().shortcuts,
+        prefs.shortcuts
+    );
+    std::fs::remove_file(path)?;
+    let (link, _, _) = crate::play::play_channel();
+    assert!(!link.battle_panel().open);
+    assert!(link.activate_shortcut("battle"));
+    assert!(link.battle_panel().open);
+    assert!(link.activate_shortcut("battle"));
+    assert!(!link.battle_panel().open);
+    assert!(!link.activate_shortcut("unregistered"));
+    for &(id, _) in SHORTCUTS {
+        assert!(
+            link.activate_shortcut(id),
+            "shortcut {id} must reach its registered panel entry point"
+        );
+    }
+    let good = prefs.clone();
+    prefs.shortcuts.push("unknown".into());
+    let mut settings = crate::play::SettingsState::new(None);
+    settings.apply(good.clone());
+    settings.apply(prefs);
+    assert_eq!(settings.preferences, good);
     Ok(())
 }

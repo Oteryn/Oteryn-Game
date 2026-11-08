@@ -10,7 +10,12 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use winit::window::Window;
 
-pub(super) struct Hud(HWND);
+#[path = "../local-reference-preferences/shortcut_strip.rs"]
+mod shortcuts;
+pub(super) struct Hud {
+    status: HWND,
+    shortcuts: shortcuts::ShortcutStrip,
+}
 
 fn wide(text: &str) -> Vec<u16> {
     text.encode_utf16().chain(Some(0)).collect()
@@ -39,13 +44,25 @@ impl Hud {
                 std::ptr::null(),
             )
         };
-        (!hwnd.is_null()).then_some(Self(hwnd))
+        if hwnd.is_null() {
+            return None;
+        }
+        let Some(shortcuts) = shortcuts::ShortcutStrip::new(handle.hwnd.get() as HWND) else {
+            unsafe {
+                DestroyWindow(hwnd);
+            }
+            return None;
+        };
+        Some(Self {
+            status: hwnd,
+            shortcuts,
+        })
     }
 
     pub(super) fn update(&self, text: Option<&str>) {
         unsafe {
-            SetWindowTextW(self.0, wide(text.unwrap_or("")).as_ptr());
-            ShowWindow(self.0, if text.is_some() { SW_SHOW } else { SW_HIDE });
+            SetWindowTextW(self.status, wide(text.unwrap_or("")).as_ptr());
+            ShowWindow(self.status, if text.is_some() { SW_SHOW } else { SW_HIDE });
         }
     }
 }
@@ -54,7 +71,7 @@ impl Drop for Hud {
     fn drop(&mut self) {
         // DestroyWindow is also safe if the parent already destroyed its child.
         unsafe {
-            DestroyWindow(self.0);
+            DestroyWindow(self.status);
         }
     }
 }
@@ -69,6 +86,14 @@ impl super::Application {
                 play.view.hud_status(),
                 play.link.movement_feedback().unwrap_or("")
             );
+            if let Some(hud) = &mut self.hud {
+                for id in hud
+                    .shortcuts
+                    .update(Some(&play.view.preferences().shortcuts))
+                {
+                    play.link.activate_shortcut(&id);
+                }
+            }
             if status != play.status {
                 window.set_title(&format!(
                     "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements"
@@ -80,8 +105,9 @@ impl super::Application {
             }
         }
         if self.play.is_none()
-            && let Some(hud) = &self.hud
+            && let Some(hud) = &mut self.hud
         {
+            hud.shortcuts.update(None);
             hud.update(None);
         }
     }
