@@ -86,6 +86,7 @@ pub struct QuestRewardAdmission<'a> {
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
     pub actor_conditions: Option<&'a super::QuestActorConditionProof>,
     pub carried_use: Option<&'a QuestCarriedUse>,
+    pub creature_use: Option<&'a super::quest_creature::QuestCreatureUseProof>,
     pub peer_use: Option<&'a super::quest_peer::QuestPeerUseProof>,
 }
 
@@ -108,15 +109,17 @@ pub(crate) async fn apply(
     let super::super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
-    // A quest tool requires a target receipt, never the ordinary source-only USE path.
-    // Keep these authored contracts closed until the target owner admits that receipt.
-    if callback.quest_tool.is_some()
-        || callback.carried_item.is_some() != admission.carried_use.is_some()
+    if callback.carried_item.is_some() != admission.carried_use.is_some()
         || admission.carried_use.is_some_and(|use_| {
             use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
         })
     {
         return Ok(false);
+    }
+    match (&callback.creature_target, admission.creature_use, admission.carried_use) {
+        (None, None, _) => {}
+        (Some(key), Some(proof), Some(carried)) if proof.permits(fence, request, key, carried) => {}
+        _ => return Ok(false),
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);

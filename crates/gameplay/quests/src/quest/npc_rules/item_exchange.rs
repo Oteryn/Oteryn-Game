@@ -18,6 +18,7 @@ impl NpcRuleCatalog {
             for guard in &rule.guards {
                 match guard {
                     NpcRuleGuard::Storage { .. }
+                    | NpcRuleGuard::StorageTime { .. }
                     | NpcRuleGuard::CalendarMonth { .. }
                     | NpcRuleGuard::CalendarWindow { .. }
                     | NpcRuleGuard::Level { .. }
@@ -38,6 +39,7 @@ impl NpcRuleCatalog {
             for effect in &rule.effects {
                 match effect {
                     NpcRuleEffect::Set { .. }
+                    | NpcRuleEffect::SetNowPlus { .. }
                     | NpcRuleEffect::Add { .. }
                     | NpcRuleEffect::SetTopic { .. }
                     | NpcRuleEffect::EndConversation { .. }
