@@ -2,6 +2,9 @@
 //!
 //! The view projects server-owned positions, overlays and live map tiles.
 
+#[path = "tutorial_overlay.rs"]
+mod tutorial_overlay;
+
 use crate::input::StepDir;
 use crate::map::World;
 use crate::scene::Scene;
@@ -27,6 +30,7 @@ pub struct PlayView {
     battle_instinct_refresh: Option<std::time::Instant>,
     sounds: Vec<SoundCue>,
     visuals: Vec<VisualCue>,
+    pub(crate) tutorial_overlay: tutorial_overlay::Overlay,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
     facing: StepDir,
@@ -81,6 +85,7 @@ impl PlayView {
             battle_instinct_refresh: None,
             sounds: Vec::new(),
             visuals: Vec::new(),
+            tutorial_overlay: Default::default(),
             own,
             facing: StepDir::South,
             floor,

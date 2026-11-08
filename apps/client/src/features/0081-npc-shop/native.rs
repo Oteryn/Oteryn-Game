@@ -133,6 +133,17 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             close(&weak);
             return;
         }
+        let filter = control(hwnd, "EDIT", "", 105, (10, 335, 140, 28), WS_BORDER);
+        SendMessageW(filter, EM_SETLIMITTEXT, 80, 0);
+        let side = control(
+            hwnd,
+            "BUTTON",
+            "All / Buy / Sell",
+            106,
+            (155, 335, 110, 28),
+            0,
+        );
+        let mut side_filter = None;
         let mut rows: Vec<Quote> = Vec::new();
         let mut labels = Vec::new();
         let mut message: MSG = std::mem::zeroed();
@@ -168,7 +179,19 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             let clicked = actions.contains(&102);
             let looked = actions.contains(&103);
             let sold_all = actions.contains(&104);
-            let live_rows = shop.quotes();
+            if actions.contains(&106) {
+                use oteryn_client_ui::npc_shop::NpcTradeSide;
+                side_filter = match side_filter {
+                    None => Some(NpcTradeSide::Buy),
+                    Some(NpcTradeSide::Buy) => Some(NpcTradeSide::Sell),
+                    Some(NpcTradeSide::Sell) => None,
+                };
+                SetWindowTextW(side, wide(&format!("{:?}", side_filter)).as_ptr());
+            }
+            let mut query = [0u16; 81];
+            let query_len = GetWindowTextW(filter, query.as_mut_ptr(), 81).max(0) as usize;
+            let live_rows =
+                shop.filtered_quotes(side_filter, &String::from_utf16_lossy(&query[..query_len]));
             let live_labels: Vec<String> = live_rows.iter().map(|q| shop.quote_text(*q)).collect();
             if live_rows != rows || live_labels != labels {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
