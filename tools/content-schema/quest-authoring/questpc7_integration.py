@@ -48,6 +48,9 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     forgotten_worlds, forgotten_objectives, forgotten_callbacks = forgotten.build(root, inputs, pin)
     formal_worlds.extend(forgotten_worlds)
     lane_callbacks.extend(forgotten_callbacks)
+    smith = load_module('questpc7_smith_programme','tools/content-schema/quest-authoring/questpc7_smith_programme.py')
+    smith_worlds, smith_objectives = smith.build(root)
+    formal_worlds.extend(smith_worlds)
     feaster = load_module('questpc7_feaster_programme','tools/content-schema/quest-authoring/questpc7_feaster_programme.py')
     feaster_worlds, _, feaster_callbacks = feaster.build(root)
     formal_worlds.extend(feaster_worlds)
@@ -57,7 +60,7 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     for row in formal_worlds:
         if row.get('outfit_reward') is not None:
             row.setdefault('effects',{})['outfit_reward']=row.pop('outfit_reward')
-    return formal_worlds, encounters.objectives(root)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives+heart_objectives+forgotten_objectives+stalker_objectives,hoist_bindings
+    return formal_worlds, encounters.objectives(root)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives+heart_objectives+forgotten_objectives+stalker_objectives+smith_objectives,hoist_bindings
 
 def outputs(root, inputs, pin, load_module, lane):
     import json
@@ -66,6 +69,8 @@ def outputs(root, inputs, pin, load_module, lane):
     knowledge=load_module('questpc7_knowledge','tools/content-schema/quest-authoring/questpc7_knowledge.py')
     props=load_module('questpc7_props','tools/content-schema/quest-authoring/questpc7_props.py')
     planned_props=props.outputs(root)
+    smith=load_module('questpc7_smith_programme','tools/content-schema/quest-authoring/questpc7_smith_programme.py')
+    smith.placements(root,planned_props)
     from questpc7_index_witness import rebind
     rebind(root,worlds,planned_props)
     return {

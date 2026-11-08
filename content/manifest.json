@@ -866,6 +866,12 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/questpc7-slug-corpse-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/questpc7-smith-corpse-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/questpc7-smith-item-profile.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1022,7 +1028,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3921,
+          "record_count": 3926,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1030,7 +1036,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "c85e91e7c605d1b7c1a63ce3aeb1f1d6373cdc8cf3ba3b21348ce8da3e3dc929"
+          "sha256": "0545681cf533ca93475e94d3428df14c2d3921ac8ddbfcad9f2823f6ae32c256"
         },
         {
           "creates_canonical_identities": false,

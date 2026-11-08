@@ -86,6 +86,17 @@ def main():
         if row not in equipment.read_text():
             replace(str(equipment.relative_to(ROOT)), anchor, anchor + row)
         text = equipment.read_text()
+    smith_corpses = json.loads((ROOT / 'tools/content-schema/native-gameplay/questpc7-smith-corpse-profiles.json').read_bytes())['records']
+    assert {r['production_definition']['production_key'] for r in smith_corpses} == {f'oteryn:item.tibia.i{i}' for i in (4038,4039,4040,5977)}
+    row = '    ("QUESTPC7-SMITH-CORPSES", 4),\n'
+    if row not in equipment.read_text():
+        replace(str(equipment.relative_to(ROOT)), '    ("QUESTPC7-HOT-FISHBURGER", 1),\n', '    ("QUESTPC7-HOT-FISHBURGER", 1),\n' + row)
+    smith = json.loads((ROOT / 'tools/content-schema/native-gameplay/questpc7-smith-item-profile.json').read_bytes())['records']
+    assert len(smith) == 1 and smith[0]['production_definition']['production_key'] == 'oteryn:item.tibia.i3208'
+    assert smith[0]['semantics']['physical']['value']['weight'] == {'state':'KNOWN','value':6800}
+    row = '    ("QUESTPC7-SMITH", 1),\n'
+    if row not in equipment.read_text():
+        replace(str(equipment.relative_to(ROOT)), '    ("QUESTPC7-HOT-FISHBURGER", 1),\n', '    ("QUESTPC7-HOT-FISHBURGER", 1),\n' + row)
     fish = json.loads((ROOT / 'tools/content-schema/native-gameplay/questpc7-hot-fishburger-profile.json').read_bytes())['records']
     assert len(fish) == 1 and fish[0]['production_definition']['production_key'] == 'oteryn:item.tibia.i9088'
     assert fish[0]['semantics']['physical']['value']['weight'] == {'state':'KNOWN','value':460}
@@ -149,14 +160,16 @@ def main():
         pond_keys = {'oteryn:quest-callback/questpc7-goblin-pond'} & present
         trunk_keys = {f"oteryn:quest-callback/questpc7-goblin-trunk-{i}" for i in range(1, 4)} & present
         assert len(trunk_keys) in (0, 3), "all three source trunks must be registered together"
-        expected = 106 + len(pond_keys) + len(trunk_keys)
+        smith_keys = {'oteryn:quest-callback/authored-smith-cache', 'oteryn:quest-callback/authored-smith-cache-reward'}
+        assert smith_keys <= present
+        expected = 106 + len(pond_keys) + len(trunk_keys) + len(smith_keys)
         assert sign_keys <= present and len(present) == len(callbacks) == expected
-        assert len(present - sign_keys - pond_keys - trunk_keys) == 103, 'review the original closed lane inventory'
+        assert len(present - sign_keys - pond_keys - trunk_keys - smith_keys) == 103, 'review the original closed lane inventory'
         path = ROOT / 'crates/gameplay/quests/src/quest/world_callbacks/outfit_tests.rs'
         text = path.read_text()
         replacement = f'assert_eq!(parse(source)?.len(), {expected});'
         if replacement not in text:
-            old = next(value for value in (103, 106, 107) if f'assert_eq!(parse(source)?.len(), {value});' in text)
+            old = next(value for value in (103, 106, 107, 110) if f'assert_eq!(parse(source)?.len(), {value});' in text)
             replace(str(path.relative_to(ROOT)), f'assert_eq!(parse(source)?.len(), {old});', replacement)
 
     defaults = Counter()

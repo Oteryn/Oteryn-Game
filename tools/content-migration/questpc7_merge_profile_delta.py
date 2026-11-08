@@ -13,6 +13,7 @@ ADDITIONS = {430, 431, 1772, 1791, 1947, 1948, 2772, 2773,
 # Main #3034: thirteen new boss-custody Items and five Primal corpse/pod Items.
 MAIN3034 = {*range(45639, 45644), 48114, 48249, 48250, 48251, 48253, 48254, 48256, 48416, 39176, *range(39527, 39531)}
 
+SMITH_ITEMS = {3208, 4038, 4039, 4040, 5977}
 HOT_REWARDS = {9088}
 
 HOT_CORPSES = {4330, 4331, 4332, 4363, 4364, 4365, 6042, 6053}
@@ -24,6 +25,6 @@ def verify(root, actual):
             ['git', 'show', f'{PARENT}:{path}'], cwd=root))
         previous.update(row['production_definition']['production_key']
                         for row in document['records'])
-    additions = {f'oteryn:item.tibia.i{number}' for number in ADDITIONS | MAIN3034 | HOT_CORPSES | HOT_REWARDS}
-    if len(additions) != 62 or actual != previous | additions or previous & additions:
-        raise ValueError('questpc7 main merge must preserve all profiles and add exactly 62')
+    additions = {f'oteryn:item.tibia.i{number}' for number in ADDITIONS | MAIN3034 | HOT_CORPSES | HOT_REWARDS | SMITH_ITEMS}
+    if len(additions) != 67 or actual != previous | additions or previous & additions:
+        raise ValueError('questpc7 main merge must preserve all profiles and add exactly 67')

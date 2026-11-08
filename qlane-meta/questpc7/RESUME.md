@@ -1,3 +1,59 @@
+# Publish reused Giant Smithhammer whole chosen route — 2026-11-08
+
+Scope is all25 original ACTIVE titles, superseding old four-title ownership map.
+Current25:17complete selected stories,5WAITING-ENGINE,3ACTIVE (Glooth Engineer,
+Festive,Hunter). Local .lane/rows.md stays uncommitted. SMITH-N3-PG-PROOF.json
+records actualPG18.6 RED40.344435849s→GREEN43.167823247s, native exploration,
+one spawned Giant Spider, required lethal credit, exact hammer/talon/100gold,
+durable completion and repeat without duplicates. No subject progress seeds.
+Production chest pinned on clear32777,32254,-8; peer target32776,32253,-8 has
+no chest in current main. Reuse questpc8 commit3b315d18d callbacks/tracks/guardian;
+collector must retain one authored-smith-cache pair if combining both branches.
+Native3961profiles adds exactly3208/4038/4039/4040/5977; prior profiles unchanged.
+Only4loot custody facts change; all tables/bindings/quantities/probabilities stay.
+Prey simulation15cases776creatures PASS; frozen SOURCE cores unchanged. Authoring
+checks and full107module1153case runner PASS(clean retry after SIGKILL);
+contenttree PASS; complete quests crate+equipment inventory354/354 PASS77.072s;
+workspacealltargets PASS8m17s; strict quests+dispatchclippy PASS3m50s; fmt/dups
+and final official pins PASS. Remaining full dispatch unit coverage explicitly
+PENDING under PREPUSH-2 budget; no Node GREEN claimed. Infra OOM/disk attempts
+were not green; completed caches and failed objects cleaned, successful reruns
+retained. No test assertions weakened or skipped. No new migrations.
+NEXT IMMEDIATELY: chosen Glooth Engineer5-stage programme using real Ezebeth
+placement and existing outfit/reward owners; then Festive/Hunter. Do not stop
+while3ACTIVE remain. Shared NPC doc254/256 has room for two more callbacks;
+check registration before extra rules, never relax strict safety bounds.
+
+# Restored25 scope: smith route GREEN, final gates running — 2026-11-08
+
+Owner restores all25 original ACTIVE titles; former four-title map/21 exclusions
+are superseded. .lane/rows.md stays uncommitted. Current provisional states:
+16retained complete stories,5WAITING-ENGINE,4ACTIVE; Giant Smithhammer now has
+actualPG18.6 RED40.344435849s→GREEN43.17s and awaits final publication gates.
+Reused questpc8 commit3b315d18d's two callbacks, tracks and guardian contract;
+added a real/pinned chest on clear32777,32254,-8 because the peer fixture's old
+cell had no production chest. Added3208 and5977→4038→4039→4040 exact source
+profiles; only4 existing loot custody facts change. All tables/bindings/drop
+quantities/probabilities and all previous native Item profiles are unchanged.
+Prey simulation15cases776creatures PASS; native3961closed inventory PASS;
+World pin refresh and SOURCE frozen-core verification PASS. Workspacealltargets
+PASS8m17s with jobs1; final clippy/fmt/dups running. Authoring checks PASS; full
+107module unit run needs clean retry because tree-authoring worker and first
+Rust test compile were SIGKILL under simultaneous memory pressure. No assertion
+failure in that run. Retrying gates serialized after cache/disk cleanup; never
+claim failed/OOM/full-disk attempts green. Full Rust crate units remain pending
+under PREPUSH-2 budget. Do not push until authoring runner/tree pass.
+NEXT after smith push: Glooth Engineer's chosen5-stage programme. Ezebeth exists
+at33677,31884,sourcefloor5 (runtime-5); room clear ground14001 at33676/77,31882/83
+and33676,31885. Existing source outfit proof covers voting, not chosen service
+trials. Reuse current outfit/reward owners; source quests cannot be recertified
+as whole chosen programmes from peer component evidence. Then Festive/Hunter
+chosen-route parity: Main shared NPC callback doc254/256, second source is
+npc-callbacks/l6-stories.json. Prefer minimal registered data reuse, never relax
+strict bounds or overwrite other lane rows. Remaining engines: Feaster phases,
+Goblin actor capture/odour, Formorgar actor tools, Hot guarded cooking, Illuminated
+first-party constructors. Read ENGINE-REQUESTS.json and local rows for evidence.
+
 # n3 loop checkpoint — 2026-11-08
 
 Branch: claude/happy-davinci-ijz3wy-questpc7-n3. Reused earlier tested lane

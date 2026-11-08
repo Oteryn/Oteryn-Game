@@ -159,7 +159,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:27d9110381fd5af000d5aec7d22118afc7deda3fe6be575dbebc4c45baaa20da",
+        "content/world/placements/index.json:1:sha256:5c3e34fce3a136d41a0b7e0eabce2e0c2a93e051f39b43ba970af4084a4d1559",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -229,7 +229,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:27d9110381fd5af000d5aec7d22118afc7deda3fe6be575dbebc4c45baaa20da",
+        "content/world/placements/index.json:1:sha256:5c3e34fce3a136d41a0b7e0eabce2e0c2a93e051f39b43ba970af4084a4d1559",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -299,7 +299,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:27d9110381fd5af000d5aec7d22118afc7deda3fe6be575dbebc4c45baaa20da",
+        "content/world/placements/index.json:1:sha256:5c3e34fce3a136d41a0b7e0eabce2e0c2a93e051f39b43ba970af4084a4d1559",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -6009,6 +6009,119 @@
         "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32776,
+          "y": 32254,
+          "floor": -8
+        },
+        "appearance": null,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32777,
+          "y": 32254,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"
+      ],
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3208",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3034",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 100
+            }
+          ]
+        }
+      }
     },
     {
       "key": "oteryn:quest-callback/questpc7-feaster-entry",

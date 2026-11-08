@@ -81,7 +81,7 @@
     "title": "Feaster of Souls Quest",
     "canonical": "oteryn:quest.feaster_of_souls_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/41/definition",
-    "status": "ACTIVE",
+    "status": "WAITING-ENGINE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -102,8 +102,8 @@
     },
     "owner": "questpc7",
     "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose the quest-owned route using the shared engine requested in ENGINE-REQUESTS.json after qengine2 delivery; do not implement a large new engine in this lane.",
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "Phase-discriminated STEP registration and fenced repeatable world-tool operations",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/41/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -112,7 +112,9 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane."
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane.",
+      "engine_owner": "QENGINE2",
+      "current_evidence": "Actual PG18.6 prefix RED39.777546549s: expected13 callbacks, actual12; runtime excludes duplicate purification-entry selector. world_callbacks.rs validates selectors without phase discrimination."
     },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
@@ -187,7 +189,8 @@
       ],
       "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
       "historical_status_retained": "ACTIVE"
-    }
+    },
+    "scope_decision": "All25 restored to questpc7 by owner; no peer ownership exclusion."
   },
   {
     "title": "Feral Trappers Quest",
@@ -336,7 +339,7 @@
     "title": "Festive Outfits Quest",
     "canonical": "oteryn:quest.festive_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/42/definition",
-    "status": "QUALIFIED",
+    "status": "ACTIVE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -379,7 +382,19 @@
       ],
       "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
       "historical_status_retained": "QUALIFIED"
-    }
+    },
+    "reused_component_evidence": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "scope": "Introduction, base and both addons through real NPC commands; exact consumption and normal appearance selection",
+      "postgres_version": "18.6",
+      "case_seconds": 89.658220585,
+      "batch_result": "3 full stories passed in95.79s",
+      "source": "qlane-meta/qengine2/RESUME.md:44; case marker at:54"
+    },
+    "scope_decision": "2026-11-08 owner restores all25 ACTIVE titles; peer ownership does not exclude this quest. Existing peer component evidence is reused, not treated as a local whole-chosen-route proof."
   },
   {
     "title": "Fiend Slayer Outfits Quest",
@@ -847,7 +862,7 @@
     "title": "Formorgar Mines Quest",
     "canonical": "oteryn:quest.the_ice_islands_quest",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/27/definition",
-    "status": "QUALIFIED",
+    "status": "WAITING-ENGINE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -921,6 +936,31 @@
       ],
       "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
       "historical_status_retained": "QUALIFIED"
+    },
+    "reused_component_evidence": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "0cf799d197e3d09cab984c5d68ad6633f7f96e66",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "evidence": {
+        "batch": "L1-05B",
+        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+        "native_owners": [
+          "oteryn:quest.the_ice_islands_quest",
+          "oteryn:quest.outfit_and_addon_quests"
+        ],
+        "identity_resolution": "Original L1 title identity retained;Norseman source outfit stages use shared General owner,Formorgar progress uses existing IceIslands owner. No fabricated dedicated Norseman quest record.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true"
+      },
+      "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented.",
+      "ownership_decision": "QSPLIT L1 outfit entry is explicitly QUALIFIED at the same canonical/title on qengine2. Skip that entry under current owner rule. Peer proof covers the complete Norseman/Formorgar outfit path with other-parent prerequisites, not a new local certification of every Ice Islands recipe stage."
+    },
+    "scope_decision": "All25 restored to questpc7 by owner; no peer ownership exclusion.",
+    "remaining_work": {
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "Live-creature quest-tool capture/release and three distinct Baby Seal painting operations",
+      "engine_owner": "ENGITEM/ENGNPC",
+      "current_evidence": "Peer Norseman/Formorgar proof covers outfit grants and prerequisite reads, not the chosen nine-stage Ice Islands journey; selected s3/s4 require native actor-bound tool operations."
     }
   },
   {
@@ -1027,6 +1067,52 @@
       }
     },
     "qualification": {
+      "kind": "complete chosen native smith cache programme, minimally reused from questpc8",
+      "proof": "qlane-meta/questpc7/SMITH-N3-PG-PROOF.json",
+      "test": "questpc7_smith_native_guardian_exact_cache_completion",
+      "postgres": "18.6",
+      "red_seconds": 40.344435849,
+      "green_seconds": 43.167823247,
+      "scope": [
+        "fresh subject quest state without quest-progress seeds",
+        "free-account entry without Current Premium authority",
+        "actual native exploration admits exactly one guardian across refresh",
+        "cache refuses before native Giant Spider lethal credit",
+        "one actual native Giant Spider lethal through existing death/corpse/loot owner",
+        "exact carried3208x1,3034x1,3031x100",
+        "durable owned quest completion",
+        "repeat cache use changes no output quantities",
+        "production prop emitted/pinned and selector agrees; all three actual source cells verified clear"
+      ],
+      "reuse": {
+        "lane": "questpc8",
+        "commit": "3b315d18dbb0a3a00149a2a14b9a19fcb42053a1",
+        "retained": [
+          "two callback keys",
+          "owned tracks",
+          "native Giant Spider guardian contract",
+          "exact three reward outputs"
+        ],
+        "adaptation": "Pin a real chest at32777,32254,-8 on verified clear native ground; the peer fixture target32776,32253,-8 has no chest in current main."
+      }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "questpc8"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    },
+    "reused_component_evidence": {
       "kind": "external_branch_qualification; skipped here per owner scope rule",
       "branch": "claude/happy-davinci-ijz3wy-questpc8",
       "sha": "3b315d18dbb0a3a00149a2a14b9a19fcb42053a1",
@@ -1064,28 +1150,13 @@
       },
       "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
-    "latest_main_integration": {
-      "main": "b3864f14a",
-      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
-      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
-      "qualification_change": false,
-      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
-    },
-    "ownership_decision": {
-      "state": "SKIPPED_OTHER_LANE",
-      "owners": [
-        "questpc8"
-      ],
-      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
-      "historical_status_retained": "QUALIFIED"
-    }
+    "scope_decision": "2026-11-08 owner restores all25 ACTIVE titles; peer ownership does not exclude this quest. Existing peer component evidence is reused, not treated as a local whole-chosen-route proof."
   },
   {
     "title": "Glooth Engineer Outfits Quest",
     "canonical": "oteryn:quest.glooth_engineer_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/50/definition",
-    "status": "QUALIFIED",
+    "status": "ACTIVE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1134,13 +1205,25 @@
       ],
       "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
       "historical_status_retained": "QUALIFIED"
-    }
+    },
+    "reused_component_evidence": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "aae647c63b9022860699a5e2d31764881f38c472",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "evidence": {
+        "batch": "L1-03",
+        "scope": "Whole owned L1 outfit-grant mechanism; Dark Trails and Glooth Engineer share exactly one source base grant and both addon order paths. Encounter/exploration/voting objectives retain other lane ownership.",
+        "evidence": "3 full source outfit stories passed PostgreSQL18.6 in93.80s; exact per-case markers, source file:line/SHA and checks in batches[L1-03]."
+      }
+    },
+    "scope_decision": "2026-11-08 owner restores all25 ACTIVE titles; peer ownership does not exclude this quest. Existing peer component evidence is reused, not treated as a local whole-chosen-route proof."
   },
   {
     "title": "Goblin Merchant Quest",
     "canonical": "oteryn:quest.goblin_merchant_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
-    "status": "ACTIVE",
+    "status": "WAITING-ENGINE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1162,8 +1245,8 @@
     },
     "owner": "questpc7",
     "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Finish remaining odour/capture jobs and final reward. Native signs, pond, trunks and five Marsh Stalker kills are PG-qualified; shared live actor/callback convergence remains owner-routed.",
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "Fenced quest-tool use on exact live actors: capture and odour sampling with item transformation",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
         "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
@@ -1172,7 +1255,9 @@
       "attempts": [
         "Read the chosen Guardcatcher/Adventurer and perfume/trunk stages; compared the single-carried-item map callback schema with the required actor capture operation."
       ],
-      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane."
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane.",
+      "engine_owner": "ENGITEM/ENGNPC",
+      "current_evidence": "Native tools and distinct kills already proved. world_callbacks.rs forbids monster-actor callbacks from changing quest storage; normal use-with actor owners do not expose a quest capture/sampling participant."
     },
     "mandatory_validation": {
       "state": "FOCUSED_CHECKS_RUNNING",
@@ -1323,7 +1408,8 @@
       ],
       "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
       "historical_status_retained": "ACTIVE"
-    }
+    },
+    "scope_decision": "All25 restored to questpc7 by owner; no peer ownership exclusion."
   },
   {
     "title": "Golden Outfits Quest",
@@ -2007,7 +2093,7 @@
     "title": "Hunter Outfits Quest",
     "canonical": "oteryn:quest.hunter_outfits_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/44/definition",
-    "status": "QUALIFIED",
+    "status": "ACTIVE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -2074,7 +2160,29 @@
       ],
       "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
       "historical_status_retained": "QUALIFIED"
-    }
+    },
+    "reused_component_evidence": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "82278cf6c6ff1ab092121f1074a0b908f98232ad",
+      "implementation_sha": "21140f8fe",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "status_sha256": "ccebd9e52a6b58012edee949894440b97cc40edb022f124cd525b8de098a5dda",
+      "batch": "L1-08",
+      "scope": "Complete Elane introduction, crossbow, two-leather recipe, enchanted wings, three steels, and Legola premium sniper gloves. Both sex-specific source addon permutations, partial recipes, replay, six immutable grants, intermediate and final normal catalogues. No outfit stage seeded.",
+      "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+      "postgres_version": "18.6",
+      "case_seconds": [
+        91.07388077,
+        84.564699197
+      ],
+      "evidence": [
+        "qlane-meta/qengine2/RESUME.md:L1-08 QUALIFIED and closed follow-ons",
+        "qlane-meta/qengine2/CONTRACT-NOTES.md:86-99"
+      ],
+      "boundary": "External complete source NPC story has native General outfit/addon ownership. This records the peer canonical Hunter ledger qualification and skips duplicate implementation; it does not claim this lane authored a new Hunter cache route or renamed the native owner."
+    },
+    "scope_decision": "2026-11-08 owner restores all25 ACTIVE titles; peer ownership does not exclude this quest. Existing peer component evidence is reused, not treated as a local whole-chosen-route proof."
   },
   {
     "title": "Hunting for Tokens Quest",
@@ -2177,7 +2285,7 @@
     "title": "Illuminated Warrior Outfits Quest",
     "canonical": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
     "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/5/definition",
-    "status": "ACTIVE",
+    "status": "WAITING-ENGINE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -2195,8 +2303,8 @@
     },
     "owner": "questpc7",
     "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose the quest-owned route using the shared engine requested in ENGINE-REQUESTS.json after qengine2 delivery; do not implement a large new engine in this lane.",
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "First-party portable Item and cosmetic constructors for source-unresolved identities",
       "evidence": [
         "content/quests/definitions/quests-00300-00351.json:1#/records/5/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -2205,7 +2313,9 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane."
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane.",
+      "engine_owner": "ENGITEM/QENGINE2",
+      "current_evidence": "Selected 2500/1250/1250 newly collected Scraps of a Radiant Attire require a first-party admitted item and cosmetic, without invented Tibia source IDs. Existing numeric-source qualifiers do not provide that constructor."
     },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
@@ -2254,6 +2364,7 @@
       ],
       "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
       "historical_status_retained": "ACTIVE"
-    }
+    },
+    "scope_decision": "All25 restored to questpc7 by owner; no peer ownership exclusion."
   }
 ]

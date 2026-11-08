@@ -8,10 +8,10 @@ SOURCES = {'chicken': (6042, 5, 4, 'ba8ad97745a1dbf2009ff6ff6cf21bc2ed8913fd13c4
            'bat': (6053, 14, 1, '9b2d9b16634b4aed39d8920f06f33c403de5ea0e70566312363a9890b4308acc')}
 
 
-def apply(root, generated, profile_path, manifest_path, canonical):
+def apply(root, generated, profile_path, manifest_path, canonical, *, sources=None):
     document = json.loads(generated.get(PATH, (root / PATH).read_bytes()))
     profiles = {r['production_definition']['production_key']: r for r in json.loads(generated[profile_path])['records']}
-    for creature, (item, capacity, count, digest) in SOURCES.items():
+    for creature, (item, capacity, count, digest) in (SOURCES if sources is None else sources).items():
         table, = [r for r in document['tables'] if r['identity']['key'] == 'oteryn:loot.creature.' + creature]
         actual = hashlib.sha256(json.dumps(table, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         if actual != digest or len(table['entries']) != count or any(e.get('children') for e in table['entries']):

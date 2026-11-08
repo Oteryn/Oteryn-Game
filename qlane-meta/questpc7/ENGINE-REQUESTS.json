@@ -21,7 +21,9 @@
       },
       "local_draft": "stash: questpc7: unqualified Feaster engine extensions awaiting qengine2 ownership",
       "boundary": "Draft retained, not shipped as a qualified engine. Coordinator routes ownership to qengine2.",
-      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
+      "state": "WAITING-ENGINE",
+      "latest_owner": "QENGINE2",
+      "latest_evidence": "Actual PG18.6 prefix RED39.777546549s: expected13 callbacks, actual12; runtime excludes duplicate purification-entry selector. world_callbacks.rs validates selectors without phase discrimination."
     },
     {
       "id": "goblin-live-capture",
@@ -35,7 +37,7 @@
       ],
       "evidence": "Current carried reward route rejects use-with targets; world Selector admits position/appearance/action/unique, not an exact live Actor. Selected stage s4 requires three Adventurers captured with Guardcatcher17669.",
       "reuse_checked": "QENGINE2 5c01deabb and inherited main1ae39c7fb; no live quest-capture route found.",
-      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "state": "WAITING-ENGINE",
       "quest_owned_binding": {
         "programme_track": "oteryn:quest-progress/questpc7/goblin/programme",
         "active_programme": 0,
@@ -45,7 +47,9 @@
         "track_initial_before_intro": -1,
         "tool": "oteryn:item.tibia.i17669",
         "boundary": "Do not replace owned track initialization or invent a separate quest. Introduction and exact source-priced tools already have native PG proof."
-      }
+      },
+      "latest_owner": "ENGITEM/ENGNPC",
+      "latest_evidence": "Native tools and distinct kills already proved. world_callbacks.rs forbids monster-actor callbacks from changing quest storage; normal use-with actor owners do not expose a quest capture/sampling participant."
     },
     {
       "id": "hot-cuisine-native-eligibility",
@@ -94,7 +98,9 @@
         "parent": "Make Believe Quest"
       },
       "boundary": "No fake source ID or invented official look type. Existing min-level/Premium/parent and state-operation owners can compose the route after constructors land.",
-      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
+      "state": "WAITING-ENGINE",
+      "latest_owner": "ENGITEM/QENGINE2",
+      "latest_evidence": "Selected 2500/1250/1250 newly collected Scraps of a Radiant Attire require a first-party admitted item and cosmetic, without invented Tibia source IDs. Existing numeric-source qualifiers do not provide that constructor."
     },
     {
       "id": "goblin-live-odour-sampling",
@@ -104,13 +110,15 @@
       "where": [
         "crates/gameplay/dispatch/src/gameplay_transport/item_use.rs"
       ],
-      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "state": "WAITING-ENGINE",
       "peer_review": {
         "branch": "origin/claude/happy-davinci-ijz3wy-qengine2",
         "head": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
         "result": "Authored catalogue bindings and carried exchange proofs exist; no exact live-creature USE target sampling owner found."
       },
-      "boundary": "Do not infer a corpse or ground-item target for the live Rotworm sample; continue independent signs, trunks, pond and kill tasks."
+      "boundary": "Do not infer a corpse or ground-item target for the live Rotworm sample; continue independent signs, trunks, pond and kill tasks.",
+      "latest_owner": "ENGITEM/ENGNPC",
+      "latest_evidence": "Native tools and distinct kills already proved. world_callbacks.rs forbids monster-actor callbacks from changing quest storage; normal use-with actor owners do not expose a quest capture/sampling participant."
     },
     {
       "id": "hot-native-recipe-restoration",
@@ -181,8 +189,22 @@
       "source": "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:49-90",
       "facts": "Ordered odours: recently dead Slug, black swamp gas, living Rotworm, mouldy cheese. Do not replace a dynamic Slug corpse with a static map prop.",
       "reuse_checked": "qengine2c7f9d9ba7 shared callback handle route accepts MapAdded only after world_change_item_source; native corpse Entity/Instance handles are not routed here.",
-      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
-      "producer_ready_proof": "qlane-meta/questpc7/SLUG-CORPSE-PG-PROOF.json: actual native Slug death produces one12526Groundcorpse, PG18.6 GREEN72.27338302s; exact Ground corpse USE adapter remains requested."
+      "state": "WAITING-ENGINE",
+      "producer_ready_proof": "qlane-meta/questpc7/SLUG-CORPSE-PG-PROOF.json: actual native Slug death produces one12526Groundcorpse, PG18.6 GREEN72.27338302s; exact Ground corpse USE adapter remains requested.",
+      "latest_owner": "ENGITEM/ENGNPC",
+      "latest_evidence": "Native tools and distinct kills already proved. world_callbacks.rs forbids monster-actor callbacks from changing quest storage; normal use-with actor owners do not expose a quest capture/sampling participant."
+    },
+    {
+      "id": "formorgar-live-quest-tools",
+      "quest": "Formorgar Mines Quest",
+      "feature": "Live-creature quest-tool capture/release and three distinct Baby Seal painting operations",
+      "state": "WAITING-ENGINE",
+      "owner": "ENGITEM/ENGNPC",
+      "evidence": "Peer Norseman/Formorgar proof covers outfit grants and prerequisite reads, not the chosen nine-stage Ice Islands journey; selected s3/s4 require native actor-bound tool operations.",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs"
+      ]
     }
   ],
   "latest_peer_review": {

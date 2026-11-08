@@ -1383,6 +1383,39 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-smith-guardian",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "creature": "oteryn:creature.giant_spider",
+      "stage": "oteryn:quest-progress/chosen/smith-cache/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/smith-cache/kills",
+      "required": 1,
+      "minimum": {
+        "x": 32760,
+        "y": 32240,
+        "floor": -8
+      },
+      "maximum": {
+        "x": 32790,
+        "y": 32270,
+        "floor": -8
+      },
+      "guardian": {
+        "position": {
+          "x": 32775,
+          "y": 32254,
+          "floor": -8
+        },
+        "respawn_ms": 90000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"
+      ]
     }
   ]
 }

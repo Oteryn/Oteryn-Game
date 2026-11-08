@@ -53,7 +53,7 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if native_upper {
+    let start = if name == "qengine-rewards-smith-story" { Position{x:32775,y:32254,floor:-8} } else if native_upper {
         super::super::l6_paradox_upper::start(name)
     } else if native_story {
         super::super::l6_paradox_story::start()
@@ -454,7 +454,9 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if name == "qengine-rewards-hot-corpses" {
+        let world = if name == "qengine-rewards-smith-story" {
+            world_with_native_items(&callback,trigger,&super::super::questpc7_smith::terrain(),generation.native_gameplay().ok_or("native")?,&super::super::questpc7_smith::items())?
+        } else if name == "qengine-rewards-hot-corpses" {
             world_with_objects(&callback,trigger,&super::super::questpc7_hot_corpses::terrain(),&[])?
         } else if matches!(name,"qengine-rewards-goblin-stalkers"|"qengine-rewards-goblin-slug") {
         world_with_objects(&callback,trigger,&super::super::questpc7_goblin::stalker_objects(),&[])?
@@ -976,6 +978,8 @@ fn scenario_case(
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "qengine-rewards-smith-story" {
+            super::super::questpc7_smith::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-hot-corpses" {
             super::super::questpc7_hot_corpses::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-goblin-slug" {
