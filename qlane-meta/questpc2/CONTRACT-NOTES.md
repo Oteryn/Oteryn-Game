@@ -1037,3 +1037,33 @@ program exists on this lane (the real-dispatch RED test confirms it); no transfe
 was received. The qready1 ref disappeared during its bounded refresh, so its
 unavailable head is not claimed as inspected implementation evidence. QENGINE2 was refreshed to
 614d00506, whose tested authored-binding capability will be reused separately.
+
+
+## Next supported work / engine boundaries (2026-11-08 after checkpoint50cf70e7f)
+
+Bounded follow-on reads made no new quest implementation and do not change the
+3whole-qualified/6active/20not-started owned count. QENGINE2 refreshed to
+614d00506, with tested authored kill and native recipe bindings. Do not merge its
+123-file feature bundle speculatively before an owned quest can consume it.
+
+Asura Palace's accepted authored recipe explicitly requires premium and uses
+fixed sequential kill gates. The authored native MapUse/StepIn owner lacks a
+fenced account predicate (RewardCallback premium applies to that separate owner,
+not earlier world admission). Requested that missing predicate rather than
+silently permitting a free account. Source choice remains the accepted recipe,
+not inferred door coordinates or fabricated encounter storage IDs.
+
+Arkulius Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+data-global/npc/arkulius.lua:98-169, SHA256
+3d9f5879d653c522d80b7548e547acd150d43fa1c301feb43ec7a0788af36985,
+requires level80 and distinct sorcerer/druid/paladin/knight offers. The current
+storage owner and QENGINE2 614d00506 both refuse Level/Vocation guards at
+evaluate.rs:327; the plain item owner also refuses these guards. Requested the
+fenced source-plan capability; did not bypass class or level requirements.
+
+Stricken Soul, same revision, data-global/npc/stricken_soul.lua:63-94, SHA256
+506efb1fc93172d5a9fef91360686e1cb080d6830897d44e5cb8dfd86ea8b39c,
+requires the current player's name after two yes confirmations and interpolates
+it in two of eight replies before questline1. Native rule input has no such
+value/keyword. Requested the source dialogue capability; no hardcoded player
+name, substring wildcard or premature progress credit was authored.

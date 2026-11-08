@@ -30,12 +30,27 @@ now accepts rustfmt-wrapped cohort declarations without relaxing the named set.
 Bindings/matrix/equipment/audit/ledger283 regenerated/checked; pins refreshed by
 fresh compiler. Workspace all-targetsPASS3m51s; fmtPASS; dup migrationsPASS.
 
-Cadence checkpoint: post-merge GerimorPG, quest/client-assets units, dispatch
-non-PG units and changed-crate clippy are RUNNING/PENDING. Do not claim their
-success yet. Keep runtime content frozen until these finish; gather all failures
-and fix together. Logs /tmp/questpc2b-gerimor-*. Session source env opaquely from
-/workspace/oteryn-env/env.sh; CARGO_INCREMENTAL=0, jobs2. The restored PG cluster
-was started via its start.sh. PG version180006. No credentials read.
+GREEN after checkpoint50cf70e7f: realPG180006 Gerimor58.553302528s,
+Annihilator61.425231976s, Elvenbane58.352880762s allPASS. Questunits320/320
+PASS28.45s, client-assets10/10PASS0.29s, dispatch1613/1613selected non-PG
+unitsPASS676.383s. The1370unselected cases include PG and were not claimed as
+passed. Clippyquests+dispatchPASS6m47s and client-assetsPASS2m10s including queue
+wait. All five checkpoint runtime artifact digests reproduce unchanged. Logs
+/tmp/questpc2b-gerimor-*. BATCH-gerimor-main-c77-green-2026-11-08.json is the
+completed proof; checkpoint receipt intentionally retains its historical pending
+state. Receipt prepush workspace checkPASS2m08s on50cf; fmt/dup/tool checksPASS.
+No tests currently failing. Full workspace/full PG suites remain CI's job.
+
+Environment source /workspace/oteryn-env/env.sh opaquely, CARGO_INCREMENTAL=0,
+jobs2. PGcluster started via its start.sh, version180006. No credentials read.
+Next supported source slice: owned Forgotten Knowledge NPCAlbinius temple
+hand-in,5heavyoldtomesi23986. Pinned Crystal9f5a72c Lua cached
+/tmp/questpc2b-albinius.lua SHA1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18.
+Source109-136 uses independent ifs; acceptance leaves topic1, repeatedyes reports
+alreadydonated thenresets0. Missingbooks leavesconfirmationopen; no removes
+interaction. Do not substitute setTopic0 on first success. Existing plain
+item/storage owner should cover this slice without a new engine feature. No
+Albinius production code or tests written yet; finish green receipt push first.
 
 Scope35packet,29owned,6excluded;3wholequestsQUALIFIED,6active incomplete
 (Soul War,Rotten Blood,Hero of Rathleton,Demon Oak,Inquisition,Cults),20notstarted.
