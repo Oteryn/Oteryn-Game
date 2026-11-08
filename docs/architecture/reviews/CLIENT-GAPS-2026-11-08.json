@@ -167,8 +167,9 @@
   "src": "TIBAUD-1",
   "area": "Containers",
   "feature": "Managed containers i loot destinations",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Listy/destination/nearby loot są; brak pełnego menu managed containers i przenoszenia całej zawartości.",
+  "evidence": "apps/client/src/features/0014-container-tree/state.rs:13 + managed_container_session_sends_in_order_and_keeps_remaining_items_after_refusal",
   "lane": "cg_analytics"
  },
  {

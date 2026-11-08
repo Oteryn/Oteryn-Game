@@ -43,7 +43,7 @@ Zasady przeciw dublowaniu:
 | T022 | Chat | Tabbed console, chat on/off i filtry | PARTIAL | Transport jest; brak pełnej konsoli z niezależnymi filtrami i kontekstami chat-on/off. |
 | T023 | Chat | Save / append channel log | MISSING | Brak zapisu i dopisywania treści kanału do pliku. |
 | T024 | Chat | Ignore / whitelist / blacklist | MISSING | Brak dedykowanych list komunikacji i wyjątków. |
-| T038 | Containers | Managed containers i loot destinations | PARTIAL | Listy/destination/nearby loot są; brak pełnego menu managed containers i przenoszenia całej zawartości. |
+| T038 | Containers | Managed containers i loot destinations | DONE | Menu ustawień i otwierania kontenerów; przenoszenie całej zawartości do wybranego kontenera, z potwierdzeniami i zatrzymaniem po odmowie. evidence: apps/client/src/features/0014-container-tree/state.rs:13 + managed_container_session_sends_in_order_and_keeps_remaining_items_after_refusal |
 | T139 | NPC | Buy/sell/amount/backpack/capacity/filters | PARTIAL | Sklep istnieje; brak pełnej listy opcji ignore capacity/equipped/backpack i prezentacji. |
 | T029 | Party | Team Finder assemble/join | DONE | Social Join/Assemble, filtrowana lista i operacje na uchwycie widocznego lidera. evidence: crates/client-ui/src/features/0232-team-finder-members/view.rs:10 + social_team_filters_join_the_visible_leader |
 | T026 | Social | Friends, main character, zaproszenia | PARTIAL | Są zgody/status VIP; brak pełnego kontowego Friends i main character. |

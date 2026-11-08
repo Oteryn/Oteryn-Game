@@ -15,6 +15,7 @@ pub(super) fn specs(
                 "Set destination",
                 "Lists / Managed containers",
                 "Reset selected to main",
+                "Open selected inventory container",
             ],
             &[
                 ("Item type", ""),

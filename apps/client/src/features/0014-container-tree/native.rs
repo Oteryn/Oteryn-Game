@@ -28,7 +28,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             let id = (w & 0xffff) as u16;
             let notification = (w >> 16) & 0xffff;
             if ((101..=102).contains(&id) && notification == LBN_SELCHANGE as usize)
-                || ((103..=105).contains(&id) && notification == BN_CLICKED as usize)
+                || ((103..=107).contains(&id) && notification == BN_CLICKED as usize)
             {
                 let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Vec<u16>;
                 if !actions.is_null() {
@@ -73,7 +73,7 @@ pub(in crate::play) fn open_shared(
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
                     520,
-                    480,
+                    530,
                     null_mut(),
                     null_mut(),
                     null_mut(),
@@ -130,15 +130,36 @@ pub(in crate::play) fn open_shared(
                             null(),
                         );
                     }
+                    for (id, label, x) in [
+                        (106_usize, "Use as destination", 10),
+                        (107, "Move all to destination", 255),
+                    ] {
+                        CreateWindowExW(
+                            0,
+                            wide("BUTTON").as_ptr(),
+                            wide(label).as_ptr(),
+                            WS_CHILD | WS_VISIBLE | WS_TABSTOP,
+                            x,
+                            370,
+                            235,
+                            30,
+                            hwnd,
+                            id as _,
+                            null_mut(),
+                            null_mut(),
+                            null(),
+                        );
+                    }
+                    let mut destination = None;
                     let status = CreateWindowExW(
                         0,
                         wide("STATIC").as_ptr(),
                         wide("").as_ptr(),
                         WS_CHILD | WS_VISIBLE,
                         10,
-                        370,
+                        410,
                         480,
-                        60,
+                        65,
                         hwnd,
                         null_mut(),
                         null_mut(),
@@ -167,8 +188,33 @@ pub(in crate::play) fn open_shared(
                         if mailbox.inventory_shutdown {
                             break;
                         }
-                        let panel = &mut mailbox.containers;
+                        let mut destination_changed = false;
                         for action in actions.drain(..) {
+                            match action {
+                                106 => {
+                                    destination = mailbox
+                                        .containers
+                                        .current()
+                                        .filter(|v| v.browse.is_none())
+                                        .map(|v| (v.view_id, v.container_handle));
+                                    destination_changed = true;
+                                    continue;
+                                }
+                                107 => {
+                                    if let Some((id, handle)) = destination
+                                        && mailbox.containers.views.as_ref().is_some_and(|v| {
+                                            v.views.iter().any(|v| {
+                                                v.view_id == id && v.container_handle == handle
+                                            })
+                                        })
+                                    {
+                                        super::super::state::move_all(&mut mailbox, &commands, id);
+                                    }
+                                    continue;
+                                }
+                                _ => {}
+                            }
+                            let panel = &mut mailbox.containers;
                             let intent = match action {
                                 101 => {
                                     let row = SendMessageW(views, LB_GETCURSEL, 0, 0);
@@ -206,7 +252,8 @@ pub(in crate::play) fn open_shared(
                                 panel.end();
                             }
                         }
-                        if held.as_ref() != Some(panel) {
+                        let panel = &mut mailbox.containers;
+                        if held.as_ref() != Some(panel) || destination_changed {
                             SendMessageW(views, LB_RESETCONTENT, 0, 0);
                             if let Some(state) = &panel.views {
                                 for (i, view) in state.views.iter().enumerate() {
@@ -246,11 +293,16 @@ pub(in crate::play) fn open_shared(
                             }
                             SetWindowTextW(
                                 status,
-                                wide(
-                                    &oteryn_client_ui::house_container_capacity::view::panel_text(
-                                        panel,
+                                wide(&format!(
+                                    "{}\r\nDestination: {}",
+                                    oteryn_client_ui::house_container_capacity::view::panel_text(
+                                        panel
                                     ),
-                                )
+                                    destination.map_or_else(
+                                        || "choose an open container".into(),
+                                        |(id, handle)| format!("view {id}, container {handle}")
+                                    )
+                                ))
                                 .as_ptr(),
                             );
                             held = Some(panel.clone());

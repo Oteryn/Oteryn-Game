@@ -21,6 +21,7 @@ pub enum PlayCommand {
     Step(StepDir),
     TargetWalk(oteryn_session::ActorPosition),
     MoveItem(oteryn_client_runtime::inventory::MoveRequest),
+    MoveContents(Vec<oteryn_client_runtime::inventory::MoveRequest>),
     ContainerView(oteryn_client_runtime::container_tree::ContainerViewIntent),
     WorldContext(oteryn_client_runtime::world_interaction::Command),
     Combat(CombatCommand),

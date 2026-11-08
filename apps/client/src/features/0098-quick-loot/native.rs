@@ -322,7 +322,7 @@ unsafe fn window(
             for (i, button) in controls.iter().enumerate() {
                 let enable = if panel == 98 && (1..5).contains(&i) {
                     available && !state.loot.managed
-                } else if panel == 98 && i == 7 {
+                } else if panel == 98 && (7..=8).contains(&i) {
                     available && state.loot.managed
                 } else if panel == 232 && (8..10).contains(&i) {
                     state.teams.applicants && state.leader.selected && !state.leader.pending
