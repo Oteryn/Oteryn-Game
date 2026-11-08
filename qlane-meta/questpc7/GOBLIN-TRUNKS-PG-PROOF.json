@@ -1,0 +1,79 @@
+{
+  "state": "THREE_NATIVE_TRUNKS_PG_QUALIFIED",
+  "whole_quest": "ACTIVE",
+  "test": "questpc7_goblin_three_trunks_retain_the_source_hammer",
+  "postgres": "18.6",
+  "red_seconds": 64.248140561,
+  "red_error": "NothingToUse instead of Rejected for accepted job without purchased hammer",
+  "green_seconds": 192.529618224,
+  "green_marker": "QUESTPC7_GOBLIN_TRUNKS POSTGRES_CASE_COMPLETED duration=192.529618224s success=true",
+  "logs": "/workspace/scratch/questpc7-trunks-{red,green3}.log",
+  "source": {
+    "region": "content/world/placements/region-z10-x129-y125.b3",
+    "sha256": "49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+    "sites": [
+      [
+        33101,
+        32047,
+        -10
+      ],
+      [
+        33143,
+        32051,
+        -10
+      ],
+      [
+        33136,
+        32076,
+        -10
+      ]
+    ],
+    "native_item": 17677
+  },
+  "assertions": [
+    "real NPC intro and exact paid toolkit",
+    "missing hammer rejected before purchase",
+    "one personal credit per exact site",
+    "hammer17676 retained after each use",
+    "exact command replay and fresh duplicate add no effect",
+    "terminal counter capped3",
+    "other tools/jobs and8875gold unchanged"
+  ],
+  "checks": {
+    "green3": "PASS",
+    "check2": "PASS",
+    "clippy2": "PASS",
+    "fmt2": "PASS",
+    "pins": "PASS",
+    "generated-checks": "PASS",
+    "native-freshness": "PASS",
+    "unit": "PASS",
+    "profile-tests": "PASS"
+  },
+  "crate_units": {
+    "content": [
+      "330",
+      "0",
+      "1",
+      "369.74"
+    ],
+    "dispatch": "INTERRUPTED under PREPUSH-2 budget exception; remainder PENDING/CI, not claimed green"
+  },
+  "quests_units": "308passed in20.51s",
+  "main_exception": {
+    "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+    "retry_main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+    "latest_api_review": "Callback and execute conflict APIs unchanged between98d6and47baa; reuse abort exception without mutating live crate-unit inputs.",
+    "retry_conflicts": 68,
+    "exact_error": "CONFLICT (content): Merge conflict in crates/gameplay/quests/src/quest/world_callbacks.rs",
+    "action": "aborted and restored coherent changes under owner15-minute exception; shared convergence request retained"
+  },
+  "diagnostics": {
+    "first_positive_run_seconds": 147.530330502,
+    "fixture_error": "bounded walk; fixed with intermediate waypoint, all assertions retained",
+    "clippy_first_attempt": "No space left on device (os error28); cleared only this lane environment incremental cache and reran"
+  },
+  "assumption": "Personal progress preserves shared trunks for other Characters, without global destruction.",
+  "dispatch_unit_budget_note": "PREPUSH-2 budget exception: dispatch full unit run interrupted after more than15minutes to preserve30minute publication and continue next source-data batch. 708dispatch passes and0reportedfailures at last count; remaining cases PENDING/CI, not claimed green. Content330passed/0failed/1preexistingignored369.74s complete. No test edited, skipped, weakened or deleted.",
+  "retained_pond_pg_seconds": 130.6267863
+}

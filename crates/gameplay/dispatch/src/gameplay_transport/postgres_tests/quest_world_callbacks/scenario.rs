@@ -82,7 +82,9 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if name == "qengine-rewards-goblin-pond" {
+    let world = if name == "qengine-rewards-goblin-trunks" {
+        world_with_objects(&callback,trigger,&super::super::questpc7_goblin::trunk_objects(),&[])?
+    } else if name == "qengine-rewards-goblin-pond" {
         world_with_objects(&callback,trigger,&super::super::questpc7_goblin::pond_objects(),&[])?
     } else if name == "qengine-rewards-goblin-signs" {
         world_with_objects(&callback,trigger,&super::super::questpc7_goblin::sign_objects(),&[])?
@@ -151,7 +153,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if name == "qengine-rewards-goblin-pond" {
+        let world = if name == "qengine-rewards-goblin-trunks" {
+            world_with_native_items(&callback,trigger,&super::super::questpc7_goblin::trunk_objects(),generation.native_gameplay().ok_or("native")?,&super::super::questpc7_goblin::trunk_items())?
+        } else if name == "qengine-rewards-goblin-pond" {
             let p=Position{x:33134,y:32093,floor:-10};
             world_with_native_items(&callback,trigger,&super::super::questpc7_goblin::pond_objects(),generation.native_gameplay().ok_or("native")?,&[(p,9527)])?
         } else if name == "qengine-rewards-goblin-signs" {
@@ -390,6 +394,8 @@ fn scenario_case(
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "qengine-rewards-goblin-trunks" {
+            super::super::questpc7_goblin::exercise_trunks(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-goblin-pond" {
             super::super::questpc7_goblin::exercise_pond(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-goblin-signs" {

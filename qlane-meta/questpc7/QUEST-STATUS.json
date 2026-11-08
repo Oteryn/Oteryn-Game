@@ -1122,7 +1122,7 @@
       "state": "THREE_NATIVE_SIGN_SITES_PG_QUALIFIED",
       "proof": "qlane-meta/questpc7/GOBLIN-SIGNS-PG-PROOF.json",
       "whole_quest": "ACTIVE",
-      "next": "Three native trunk sites, exact pond use and five native Marsh Stalker kills; capture/Rotworm and shared merge convergence remain routed to qengine2.",
+      "next": "Ordinary Marsh Stalker kills; signs, pond and trunks qualified separately.",
       "main_merge": "83acbdac3 merge aborted under owner15-minute conflict exception; resume after coherent checkpoint",
       "postgres": "18.6",
       "green_seconds": 91.409172094
@@ -1133,7 +1133,16 @@
       "red_seconds": 65.860055344,
       "green_seconds": 68.421387159,
       "whole_quest": "ACTIVE",
-      "next": "Three native junk trunks and ordinary Marsh Stalker kills; live actor support remains owner-routed."
+      "next": "Native Marsh Stalker5kill job; source-data drafts ready. Capture/Rotworm and shared API convergence remain owner-routed.",
+      "content_unit": "330passed,0failed,1existingignored in491.72s"
+    },
+    "trunk_progress": {
+      "state": "THREE_NATIVE_TRUNKS_PG_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-TRUNKS-PG-PROOF.json",
+      "red_seconds": 64.248140561,
+      "green_seconds": 192.529618224,
+      "whole_quest": "ACTIVE",
+      "next": "Native Marsh Stalker5kill job; source-data drafts ready. Capture/Rotworm and shared API convergence remain owner-routed."
     }
   },
   {
@@ -1362,7 +1371,7 @@
       "green_seconds": 81.696754812,
       "scope": [
         "source Zao/Farmine entry; fresh Current Premium refusal",
-        "actual8911\u21928912 destabilizer USE and bound travel",
+        "actual8911→8912 destabilizer USE and bound travel",
         "all6 distinct native bosses in retained arenas with duplicate-death safeguards",
         "typed progress and once-only native Yana report",
         "exact5 carried Gold Tokens, Ender of the End, durable completion; repeat unchanged",

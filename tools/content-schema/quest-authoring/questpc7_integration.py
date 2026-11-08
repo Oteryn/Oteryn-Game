@@ -15,6 +15,8 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     formal_worlds.extend(signs.build(root))
     pond = load_module('questpc7_goblin_pond', 'tools/content-schema/quest-authoring/questpc7_goblin_pond.py')
     formal_worlds.extend(pond.build(root))
+    trunks = load_module("questpc7_goblin_trunks", "tools/content-schema/quest-authoring/questpc7_goblin_trunks.py")
+    formal_worlds.extend(trunks.build(root))
     encounters = load_module('questpc7_encounters','tools/content-schema/quest-authoring/questpc7_encounters.py')
     formal_worlds.extend(encounters.worlds(root))
     hoist = load_module('questpc7_hoist_programme','tools/content-schema/quest-authoring/questpc7_hoist_programme.py')

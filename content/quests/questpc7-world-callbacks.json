@@ -356,6 +356,216 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/questpc7-goblin-trunk-1",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33101,
+          "y": 32047,
+          "floor": -10
+        },
+        "appearance": 17677,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i17676",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "You smash one marked junk trunk with the retained trunkhammer.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:a12be07ddc3dd94a32206b735e30f78d80bdafceb757d603b99124e85442ae6e",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-trunk-2",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33143,
+          "y": 32051,
+          "floor": -10
+        },
+        "appearance": 17677,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i17676",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "You smash one marked junk trunk with the retained trunkhammer.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:a12be07ddc3dd94a32206b735e30f78d80bdafceb757d603b99124e85442ae6e",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-trunk-3",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33136,
+          "y": 32076,
+          "floor": -10
+        },
+        "appearance": 17677,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i17676",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "You smash one marked junk trunk with the retained trunkhammer.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:a12be07ddc3dd94a32206b735e30f78d80bdafceb757d603b99124e85442ae6e",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/questpc7-hidden-entry",
       "quest": "oteryn:quest.hidden_threats_quest",
       "trigger": "step_in",

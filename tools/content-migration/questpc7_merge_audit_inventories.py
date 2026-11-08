@@ -98,14 +98,16 @@ def main():
     present = {row['key'] for row in callbacks}
     if present & sign_keys:
         pond_keys = {'oteryn:quest-callback/questpc7-goblin-pond'} & present
-        expected = 106 + len(pond_keys)
+        trunk_keys = {f"oteryn:quest-callback/questpc7-goblin-trunk-{i}" for i in range(1, 4)} & present
+        assert len(trunk_keys) in (0, 3), "all three source trunks must be registered together"
+        expected = 106 + len(pond_keys) + len(trunk_keys)
         assert sign_keys <= present and len(present) == len(callbacks) == expected
-        assert len(present - sign_keys - pond_keys) == 103, 'review the original closed lane inventory'
+        assert len(present - sign_keys - pond_keys - trunk_keys) == 103, 'review the original closed lane inventory'
         path = ROOT / 'crates/gameplay/quests/src/quest/world_callbacks/outfit_tests.rs'
         text = path.read_text()
         replacement = f'assert_eq!(parse(source)?.len(), {expected});'
         if replacement not in text:
-            old = next(value for value in (103, 106) if f'assert_eq!(parse(source)?.len(), {value});' in text)
+            old = next(value for value in (103, 106, 107) if f'assert_eq!(parse(source)?.len(), {value});' in text)
             replace(str(path.relative_to(ROOT)), f'assert_eq!(parse(source)?.len(), {old});', replacement)
 
     defaults = Counter()

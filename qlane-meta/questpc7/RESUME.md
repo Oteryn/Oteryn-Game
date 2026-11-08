@@ -1,3 +1,44 @@
+# Three native trunks PG QUALIFIED — ready to publish
+
+PG18.6 RED64.248140561s -> GREEN192.529618224s. Real introduction/paid toolkit;
+missing hammer refusal, retained hammer, three exact source sites, per-site
+once flags, cached replay/fresh duplicates, capped3 and other jobs/tools/gold
+unchanged. Quests308units20.51s, content330units369.74s PASS; dispatch
+unit state: INTERRUPTED/PENDING under PREPUSH-2 cadence exception. Workspace all-target, strict changed3clippy,
+fmt, source profile tests6, repository generation/freshness/metadata/duplicates
+and official pin refresh all PASS. World digest unchangedac2938bd.
+Main98d6ae8ce retry aborted with68conflictedfiles; newest47baa7bb8 leaves
+those Callback API blobs unchanged. Shared Callback API
+collision routed toqengine2; owner15-minute exception applies. No migration.
+Publish with required author/trailers. Then apply scratchstalkers test49lines
+and scenario wiring; obtain actualPG RED before registering source objective
+and corpse chain. Drafts verified; existing generic native death/decay owners
+are reused. Whole counts21QUALIFIED/4ACTIVE; no full Goblin qualification yet.
+
+# Trunk slice validating — 2026-11-08 05:31 UTC
+
+Last pushed4440fd08a992eebb7c0bc1564242b0e34274ac1e qualified the pond job.
+Actual trunk PG18.6 RED64.248140561s: accepted job without purchased hammer
+returned NothingToUse instead of Rejected. Three exact source-bound callbacks
+and native17677 Ground-only Item now authored via repository tools. Quests308
+units PASS20.51s; six physical-profile tests PASS. First positive run reached
+travel but hit test-only bounded-walk error147.530330502s; added an intermediate
+waypoint without weakening assertions. Corrected PG run and fresh all-target
+check/clippy/fmt are running. Full content/dispatch unit run also running;
+previous pond content run completed330pass/0fail/1existingignored491.72s.
+Clippy first attempt failed disk-full; removed only this lane environment's
+stale incremental cache, recovered24GB, retry running with2build jobs.
+Latest main98d6ae8ce retry produced68conflictedfiles, including existing shared
+Callback API collision. Aborted and restored coherent trunk work under owner
+15-minute exception. qengine2 now2ddd4f9cd: six shared world-delivery PG passes
+on canonical APIs, but lane field convergence still needed before adoption.
+Next: finish green trunk gates, record actual results and push. Then apply
+/workspace/scratch/questpc7-stalkers-test.rs (49lines) and scenario wiring for
+native Marsh Stalker kills. Get actual PG RED before production source changes.
+Data drafts /workspace/scratch/questpc7-{stalkers-producer,marsh-corpse-draft}.py
+verify exact native spawns/decay via existing generic owners; not registered.
+Whole quest counts remain21QUALIFIED/4ACTIVE. No new migration or shared engine.
+
 # Pond green slice ready to publish
 
 PG18.6 RED65.860055344s -> GREEN68.421387159s; quests308units PASS20.69s;

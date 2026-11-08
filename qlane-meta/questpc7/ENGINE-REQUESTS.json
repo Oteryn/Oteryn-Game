@@ -162,9 +162,13 @@
   ],
   "latest_peer_review": {
     "branch": "origin/claude/happy-davinci-ijz3wy-qengine2",
-    "head": "cca7c5790",
-    "reviewed_at_utc": "2026-11-08 01:04",
-    "result": "Collector merged; seven historical PG cases documented. World delivery and generic kill remain explicitly pending; durable NPC input still level0. No matching implementation of this lane's pending requests found. Preserve owned independent Goblin jobs."
+    "head": "2ddd4f9cd",
+    "finding": "Shared authored world item delivery now has six fresh PG passes on canonical main APIs. Activation/read_only and other lane callback field convergence remains required before reuse; no duplicate engine authored.",
+    "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+    "merge_retry": "68 conflicted files; aborted and restored coherent changes under owner15-minute exception.",
+    "conflict": "CONFLICT (content): Merge conflict in crates/gameplay/quests/src/quest/world_callbacks.rs",
+    "latest_main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+    "latest_main_review": "Three shared-API collision files unchanged from98d6retry. Avoid mutating live crate-unit inputs merely to repeat identical conflict."
   },
   "restored_peer_review": {
     "head": "aa85b2500",

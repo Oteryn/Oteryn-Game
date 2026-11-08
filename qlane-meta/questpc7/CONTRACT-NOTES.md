@@ -815,3 +815,12 @@ Retained33134,32093,z10 contains9527water and16299, flags0/house0; region SHA
 consume-only callback records one personal job. Preserve shared water for other
 Characters; no global pollution or new world-change state is claimed. Source
 physical9527 is Ground-only NonStackable.
+
+## Three personal junk trunks (2026-11-08)
+
+The source region SHA49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1
+contains native17677 at33101,32047;33143,32051;33136,32076 on floor10.
+Use requires the carried17676 hammer and retains it. Each exact location credits
+once; three personal credits finish this job. Shared trunks remain available
+for other Characters; no global destruction or world-change ownership is claimed.
+Source: https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277

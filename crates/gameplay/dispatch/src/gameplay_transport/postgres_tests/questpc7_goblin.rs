@@ -67,6 +67,14 @@ pub(super) async fn exercise(
     a: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
+    exercise_with_probes(owner,a,h,&[]).await
+}
+async fn exercise_with_probes(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    a: &mut AdmittedSession,
+    h: &Harness,
+    probes: &[(Position,u16)],
+) -> TestResult {
     let version: String = sqlx::query_scalar("SHOW server_version")
         .fetch_one(&h.pool)
         .await?;
@@ -128,6 +136,12 @@ pub(super) async fn exercise(
     assert_eq!(receipts(h).await?, 1);
     for (item, _) in TOOLS {
         assert_eq!(quantity(h, item).await?, 0);
+    }
+    for &(position,appearance) in probes {
+        assert_eq!(super::questpc7_ferumbras::use_at(owner,a,position,appearance).await?,
+            oteryn_protocol_oteryn::world_object::UseDisposition::Rejected);
+        assert_eq!(receipts(h).await?,1,"accepted job without purchased tool cannot progress");
+        for (item,_) in TOOLS { assert_eq!(quantity(h,item).await?,0); }
     }
     let fence = owner
         .current_quest_fence(a.game_session_id)
@@ -310,5 +324,51 @@ pub(super) async fn exercise_pond(owner: &mut ComposedFreshAdmission<'_, '_, '_>
         assert_eq!(value(owner,a,&format!("{ROOT}{suffix}")).await?,0);
     }
     for (item,count) in TOOLS.into_iter().filter(|(item,_)| *item!=17671) { assert_eq!(quantity(h,item).await?,count); }
+    Ok(())
+}
+
+const TRUNKS: [Position; 3] = [Position{x:33101,y:32047,floor:-10}, Position{x:33143,y:32051,floor:-10}, Position{x:33136,y:32076,floor:-10}];
+#[test]
+fn questpc7_goblin_three_trunks_retain_the_source_hammer() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started=std::time::Instant::now();
+    let result=super::kill_reward_e2e::scenario_thread::run("questpc7-goblin-trunks",||super::quest_world_callbacks::scenario("qengine-rewards-goblin-trunks",Position{x:33101,y:32046,floor:-10},false));
+    eprintln!("QUESTPC7_GOBLIN_TRUNKS POSTGRES_CASE_COMPLETED duration={:?} success={}",started.elapsed(),result.is_ok());
+    result
+}
+pub(super) fn trunk_objects() -> Vec<(Position,u16)> {
+    // Synthetic travel floor; positive target cells and native identities are source-pinned.
+    (33099..=33145).flat_map(|x|(32045..=32078).map(move|y|(Position{x,y,floor:-10},100))).collect()
+}
+pub(super) fn trunk_items() -> Vec<(Position,u32)> { TRUNKS.into_iter().map(|p|(p,17677)).collect() }
+pub(super) async fn exercise_trunks(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mut AdmittedSession,h:&Harness)->TestResult {
+    use super::questpc7_ferumbras::{use_at,value,walk};
+    use oteryn_protocol_oteryn::world_object::{UseDisposition,decode_use_result};
+    let version:String=sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
+    eprintln!("QUESTPC7_GOBLIN_TRUNKS POSTGRES_STARTED version={version}");
+    exercise_with_probes(owner,a,h,&[(TRUNKS[0],17677)]).await?;
+    let approaches=[Position{x:33100,y:32046,floor:-10},Position{x:33142,y:32050,floor:-10},Position{x:33135,y:32075,floor:-10}];
+    for (index,(site,approach)) in TRUNKS.into_iter().zip(approaches).enumerate() {
+        if index==1 { walk(owner,a,Position{x:33128,y:32048,floor:-10}).await?; }
+        if index==2 { walk(owner,a,Position{x:33135,y:32060,floor:-10}).await?; }
+        walk(owner,a,approach).await?;
+        let command=a.continuity.next_command_id;
+        let payload=super::questpc7_hoist_story::target(owner,site,17677)?;
+        assert_eq!(use_at(owner,a,site,17677).await?,UseDisposition::Committed);
+        assert_eq!(quantity(h,17676).await?,1,"hammer is retained");
+        assert_eq!(value(owner,a,&format!("{ROOT}trunks")).await?,i64::try_from(index+1)?);
+        assert_eq!(value(owner,a,&format!("{ROOT}trunk-site-{}",index+1)).await?,1);
+        let expected=3+i64::try_from(index)?;
+        assert_eq!(receipts(h).await?,expected);
+        let replay=super::quest_world_callbacks::wire(owner,a,command,2,payload).await?;
+        assert_eq!(decode_use_result(&replay).map_err(debug)?,UseDisposition::Committed);
+        assert_eq!(use_at(owner,a,site,17677).await?,if index<2 {UseDisposition::Rejected}else{UseDisposition::NothingToUse});
+        assert_eq!(receipts(h).await?,expected);
+    }
+    for (item,count) in TOOLS { assert_eq!(quantity(h,item).await?,count); }
+    assert_eq!(money(h).await?,8875);
+    for suffix in ["programme","signs","odours","captures","urine","stalkers"] { assert_eq!(value(owner,a,&format!("{ROOT}{suffix}")).await?,0); }
+    let finished:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
+    assert!(!finished);
     Ok(())
 }
