@@ -20,6 +20,18 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 200)
         self.assertEqual(record['semantics']['stack']['value']['stack_max']['value'], 100)
 
+    def test_goblin_tools_preserve_their_source_identity_and_portable_facts(self):
+        records = {r['production_binding']['external_id']: r for r in q.capture()['records']}
+        for item in (17669, 17670, 17672, 17673, 17674, 17675):
+            with self.subTest(item=item):
+                self.assertIn(str(item), set(records), 'carried quest tools need native physical admission')
+                record = records[str(item)]
+                self.assertEqual(record['production_definition']['production_key'], f'oteryn:item.tibia.i{item}')
+                self.assertTrue(record['admission']['materializable'])
+                self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+                self.assertEqual(record['semantics']['physical']['state'], 'KNOWN')
+                self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 800 if item == 17669 else 350)
+
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
         new = copy.deepcopy(old)

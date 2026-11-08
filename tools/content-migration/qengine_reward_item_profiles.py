@@ -18,6 +18,8 @@ IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 161
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
+# M13: source-pinned carried Guardcatcher and each Perfume Gatherer stage.
+IDS |= {17669, 17670, 17672, 17673, 17674, 17675}
 # Retain questpc4's qualified native offerings and source tool through this owner.
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'

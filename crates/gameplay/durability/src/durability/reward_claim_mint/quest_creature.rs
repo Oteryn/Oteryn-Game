@@ -5,17 +5,35 @@ use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::UseIntent;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
+/// A live-target proof cannot escape the runtime owner turn that observed it.
+///
+/// ```compile_fail
+/// use oteryn_gameplay_durability::durability::{
+///     reward_claim_mint::quest_creature::QuestCreatureUseProof,
+///     character_progression::CurrentCharacterGameplayFence,
+/// };
+/// use oteryn_gameplay_entities::{ChannelRuntimeV1, ExactActorRef, CommandRef};
+/// use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
+/// use oteryn_protocol_oteryn::world_object::UseIntent;
+/// fn escape(runtime: ChannelRuntimeV1, actor: ExactActorRef,
+///     fence: CurrentCharacterGameplayFence, command: CommandRef,
+///     callback: &RewardCallback, intent: &UseIntent) -> impl std::fmt::Debug + 'static {
+///     QuestCreatureUseProof::read_current(&runtime, actor, fence, command, callback, intent)
+///         .expect("current target")
+/// }
+/// ```
 #[derive(Debug)]
-pub struct QuestCreatureUseProof {
+pub struct QuestCreatureUseProof<'runtime> {
+    _runtime: std::marker::PhantomData<&'runtime ChannelRuntimeV1>,
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     callback: String,
     key: String,
     target: EntityRef,
 }
-impl QuestCreatureUseProof {
+impl<'runtime> QuestCreatureUseProof<'runtime> {
     pub fn read_current(
-        runtime: &ChannelRuntimeV1,
+        runtime: &'runtime ChannelRuntimeV1,
         actor: ExactActorRef,
         fence: CurrentCharacterGameplayFence,
         command: CommandRef,
@@ -49,6 +67,7 @@ impl QuestCreatureUseProof {
             return None;
         }
         Some(Self {
+            _runtime: std::marker::PhantomData,
             fence,
             command,
             callback: callback.key.clone(),
