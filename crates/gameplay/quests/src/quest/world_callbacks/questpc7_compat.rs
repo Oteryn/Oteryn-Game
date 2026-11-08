@@ -14,3 +14,10 @@ impl From<super::effects::CallbackEffects> for super::effects::CallbackEffectSet
         Self::from_shared(shared)
     }
 }
+
+/// Keep the delegated, unqualified second-phase route as authoring evidence.
+/// QENGINE2 owns Feaster and must supply phase-discriminated STEP admission
+/// before this duplicate selector can enter the strict runtime registry.
+pub(super) fn registered(callback: &Callback) -> bool {
+    callback.key != "oteryn:quest-callback/questpc7-feaster-purification-entry"
+}

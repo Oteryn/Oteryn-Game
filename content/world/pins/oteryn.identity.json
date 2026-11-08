@@ -2,11 +2,11 @@
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "e06-market-crystal-parity-20261031-r1",
-  "content_lock_digest": "1ed033a893e46e3b81bacaba282d8df724c2cde0fb059634abb221e4b37f1db3",
+  "content_lock_digest": "8ddd7325fa69666378deaa92494ae5bdf962cd33099e3b4627026d228cebe783",
   "min_runtime_version": "4",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:e06-market-crystal-parity-20261031-r1/d25f65a67ea26fd51b3c14f472794765dffa48efd2e71c981cce53a8a5bbac3e"
+  "provenance_summary": "lock:e06-market-crystal-parity-20261031-r1/4871c4df71aa9a03f9a4a027f32c9d3eaa327225c13ae5113d759da49aa1ecee"
 }

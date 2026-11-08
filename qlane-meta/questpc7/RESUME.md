@@ -1,3 +1,31 @@
+# Final merge repairs and delegated callback decision — 2026-11-08 10:55 UTC
+
+Local commits29cd2eaa1 (main3209 reconciliation) andfc1b22485 (latestmainf5b CI)
+are not yet pushed. Strictclippy all11changedcrates/alltargets/allfeatures passed
+23m42includingqueue. Exactauthoringunit runner106modules/1151cases returned0;
+8preexisting skipped cases remain unchanged. Full content-tree group passes with
+nestedtest_world_project_v2_to_tree rerunPASS251managedfiles. Checkrunnerpassed,
+nowrerunningafterlastgeneration. QENGINE2freshhead0aa80f984stilllevel0:Hoteligibility
+request remains. WorldmetadataPASS; SHAproofsall5unchanged/current.
+RustPGbaseline5cases:6realfluidplacementsPASS63.463s;4startupfailsbeforeDB due
+merge accidentallyloading shared-access twice. Fixedduplicateimport. Registryunit
+41cases then24pass/17fail fromoneexactduplicateSelector: Feasterentryandpurification
+entry. FeasterisQENGINE2-ownedperbindingpacket. Preserveall110authoringcallbacks,
+butdoNOTregistertheunqualifiedsecond-phasepurificationentryuntilitsowninglane
+suppliesphasedSTEPsupport. No selector validation/test is relaxed; theoriginal
+entryremainsactive. Thisisadelegatedunfinishedroute,notafinishedquestremoval.
+Reproducibilityrootcause: qengineproducercreatedcallbackindexwitnessbeforeits
+ownpropsoutputchangedtheindex. Smallquestpc7_index_witnesshelpernowbindstothe
+plannedindexafterprovingeverypalette/regionfactunchanged;3regressionsPASS.
+Workspacecheckretry2haddiskfullwhilecompilingserverexamples;freedonlycompleted
+laneincrementalgenerationsandinactiveoldtestexecutables. Retry3queued. Never
+removeactiveworkingcaches.11Rustcrateunitrunstoppedbeforetestexecutionwhile
+queued;pendingunderPREPUSH2budget. OwnPG6-case rerunqueuedafterregistryrepairs.
+Nodebootall6profilesinvokedwhole;eachDockerfrontendregistryconnectionrefused.
+Explicitfull-manifestwholevariantinvokedbutCargorepositoryexcludepermission
+failedinsidedisposablerunner;investigaterunneruser/HOMEwithoutreadingcredentials.
+Officialdebugworld-bundle-compilerpin-refreshrunningaftercompilation7m39.
+
 # Main merge validation and ownership reconciliation — 2026-11-08 10:24 UTC
 
 Latest pushed parent: 5c39e6be3c934499b27ff01f6c3cc63b8af46581.

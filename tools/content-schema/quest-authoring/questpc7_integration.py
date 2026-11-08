@@ -65,10 +65,13 @@ def outputs(root, inputs, pin, load_module, lane):
     worlds,objectives,bindings=lane
     knowledge=load_module('questpc7_knowledge','tools/content-schema/quest-authoring/questpc7_knowledge.py')
     props=load_module('questpc7_props','tools/content-schema/quest-authoring/questpc7_props.py')
+    planned_props=props.outputs(root)
+    from questpc7_index_witness import rebind
+    rebind(root,worlds,planned_props)
     return {
         'content/quests/questpc7-world-callbacks.json':encoded({'schema':1,'callbacks':worlds}),
         'content/quests/questpc7-death-objectives.json':encoded({'schema':1,'objectives':objectives}),
         'content/quests/native-world-callback-bindings.json':encoded({'schema':1,'bindings':bindings}),
         'content/quests/imbuement-knowledge.json':encoded(knowledge.build(root,inputs,pin)),
-        **props.outputs(root),
+        **planned_props,
     }

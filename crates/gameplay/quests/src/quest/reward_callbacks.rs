@@ -6,6 +6,7 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod questpc7_registry_bounds;
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
@@ -121,7 +122,7 @@ pub struct AchievementProgress {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "is_false")]
     pub completes: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub counter: Option<RewardCounter>,
@@ -257,6 +258,7 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
 }
 
 fn parse_documents(sources: &[&str]) -> Result<Document, String> {
+    let maximum = questpc7_registry_bounds::combined_capacity(sources.len())?;
     let mut combined = Document {
         schema: 1,
         tracks: Vec::new(),
@@ -267,10 +269,15 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
         if document.schema != 1 {
             return Err("reward callback schema".into());
         }
+        if document.callbacks.len() > questpc7_registry_bounds::PER_DOCUMENT
+            || document.tracks.len() > questpc7_registry_bounds::PER_DOCUMENT
+        {
+            return Err("reward callback bounds".into());
+        }
         combined.tracks.extend(document.tracks);
         combined.callbacks.extend(document.callbacks);
     }
-    validate_document(combined)
+    validate_document(combined, maximum)
 }
 
 #[cfg(test)]
@@ -278,7 +285,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     parse_documents(&[text]).map(|document| document.callbacks)
 }
 
-fn validate_document(document: Document) -> Result<Document, String> {
+fn validate_document(document: Document, maximum: usize) -> Result<Document, String> {
     let mut keys = BTreeSet::new();
     let slug = |value: &str, prefix: &str, alphabet: &[u8], maximum: usize| {
         value.len() <= maximum
@@ -291,7 +298,8 @@ fn validate_document(document: Document) -> Result<Document, String> {
     };
     let item =
         |item: &str, count| slug(item, "oteryn:item.", b"._/:-", 256) && (1..=100).contains(&count);
-    if document.schema != 1 || document.callbacks.len() > 256 || document.tracks.len() > 256 {
+    if document.schema != 1 || document.callbacks.len() > maximum || document.tracks.len() > maximum
+    {
         return Err("reward callback bounds".into());
     }
     let mut declarations = BTreeSet::new();
@@ -1247,10 +1255,39 @@ mod tests {
     }
 
     #[test]
+    fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
+        assert_eq!(load()?.len(), 254 + 7);
+        let mut document: serde_json::Value =
+            serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
+        let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
+        let first = callbacks.first().ok_or("first callback")?.clone();
+        while callbacks.len() <= questpc7_registry_bounds::PER_DOCUMENT {
+            callbacks.push(first.clone());
+        }
+        assert_eq!(
+            parse(&document.to_string()).err().as_deref(),
+            Some("reward callback bounds")
+        );
+        assert_eq!(
+            parse_documents(&[DOCUMENTS[0], DOCUMENTS[1], DOCUMENTS[1]])
+                .err()
+                .as_deref(),
+            Some("reward callback document bounds")
+        );
+        Ok(())
+    }
+
+    #[test]
     fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
     -> Result<(), String> {
         let legacy = parse(DOCUMENTS[0])?;
-        for callback in &legacy {
+        let original: Vec<_> = legacy
+            .iter()
+            .filter(|callback| !callback.key.starts_with("oteryn:quest-reward/questpc7-"))
+            .collect();
+        assert_eq!(original.len(), 195);
+        assert_eq!(legacy.len() - original.len(), 59);
+        for callback in original {
             assert!(!callback.completes);
             assert!(
                 serde_json::to_value(callback)

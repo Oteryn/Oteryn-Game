@@ -24,10 +24,15 @@ class AcceptedOverlayTests(unittest.TestCase):
         for entry in self.receipt["files"]:
             self.assertEqual(overlay.digest(adopted[entry["path"]]),entry["output_sha256"])
         actual=bind_definitions(ROOT,adopted)
+        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1870)
+        # Registration adds the separately qualified Thaian after the frozen
+        # monster overlay; replay it before comparing the final provider bytes.
+        import questpc7_thaian_native
+        questpc7_thaian_native.apply(ROOT, actual, producer.canonical_bytes)
         for path in overlay.ALLOWED_PATHS - {"content/creatures/definitions/spell-native-profiles.json", "content/spells.manifest.json"}:
             self.assertEqual(actual[path],(ROOT/path).read_bytes(),path)
         self.assertEqual(before,{k:overlay.digest(v) for k,v in self.base.items()})
-        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1870)
+        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1871)
         looks=json.loads(actual['content/presentations/bindings/spell-appearances.json'])
         self.assertEqual(len(looks['records']),334)
         self.assertEqual(len(looks['item_appearances']),6)
@@ -38,7 +43,9 @@ class AcceptedOverlayTests(unittest.TestCase):
         # registers the pinned item-profile supplement. QENGINE2 adds its
         # source-qualified reward Item proof alongside those 42 outputs.
         # WORLDCHG adds the three admitted source-loot closures as one output.
-        self.assertEqual(len(actual),44)
+        self.assertEqual(len(actual),44 + 2)
+        for cohort in ('marsh', 'slug'):
+            self.assertIn(f'tools/content-schema/native-gameplay/questpc7-{cohort}-corpse-profiles.json', actual)
         self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual.keys())
         self.assertIn('tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)

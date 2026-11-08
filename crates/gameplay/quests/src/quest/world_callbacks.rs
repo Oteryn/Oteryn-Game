@@ -304,14 +304,15 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
-    callbacks.extend(parse(include_str!(
-        "../../../../../content/quests/questpc7-world-callbacks.json"
-    ))?);
+    callbacks.extend(
+        parse(include_str!(
+            "../../../../../content/quests/questpc7-world-callbacks.json"
+        ))?
+        .into_iter()
+        .filter(questpc7_compat::registered),
+    );
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
-    callbacks.extend(parse(include_str!(
-        "../../../../../content/quests/shared-access-callbacks.json"
-    ))?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     bindings::apply(&mut callbacks)?;
     let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
