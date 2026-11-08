@@ -175,8 +175,14 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                         if c < 0 || v < 0 {
                             continue;
                         }
+                        let Some(category_id) = usize::try_from(c)
+                            .ok()
+                            .and_then(highscores::category_for_selection)
+                        else {
+                            continue;
+                        };
                         Action::Filter {
-                            category: c as u32 + 1,
+                            category: category_id,
                             vocation: v as u32,
                         }
                     }
@@ -196,7 +202,9 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                     text,
                     wide(&highscores::panel_text(panel).replace('\n', "\r\n")).as_ptr(),
                 );
-                SendMessageW(category, CB_SETCURSEL, (panel.category - 1) as usize, 0);
+                if let Some(index) = highscores::category_selection(panel.category) {
+                    SendMessageW(category, CB_SETCURSEL, index, 0);
+                }
                 SendMessageW(vocation, CB_SETCURSEL, panel.vocation as usize, 0);
                 let enabled = panel.selected && !panel.pending;
                 for h in [category, vocation, refresh] {

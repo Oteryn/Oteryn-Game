@@ -68,7 +68,7 @@ fn resting_scenario(premium: bool) -> TestResult {
                 crate::spell::cast::v1_spell_book().map_err(debug)?,
             )?;
             let mut owner = deps.owner(&h, &authority);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             deps.initialize(&owner).await;
             let (actor, session) = (deps.actor, deps.admitted.game_session_id);
             deps.runtime

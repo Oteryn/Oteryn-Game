@@ -123,6 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &runtime,
             self.active_generation,
         ))
+        .chain(self.source_volatile_entities(&runtime))
         .collect();
         // CLOCK-1 (§11.4): an actor's light is its brightest current LIGHT condition, from the
         // runtime actor-condition owner (players and creatures) and, for a player, its spell

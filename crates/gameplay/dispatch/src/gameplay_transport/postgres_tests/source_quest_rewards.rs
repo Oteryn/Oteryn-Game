@@ -270,7 +270,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
         {
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.quest_catalogue = catalogue.clone();
             owner.admit_progression_session(&mut admitted).await;
             if catalogue.is_some() {
@@ -299,7 +299,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
         for cold in [false, true] {
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.quest_catalogue = catalogue.clone();
             let mut stream = admitted;
             owner.admit_progression_session(&mut stream).await;

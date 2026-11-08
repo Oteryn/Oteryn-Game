@@ -56,7 +56,10 @@ pub(super) async fn exercise(
         .read_character_quest_state(authority, fence.character_id)
         .await
         .map_err(debug)?;
-    assert_eq!(before.tracks().get(QUESTLINE).copied().unwrap_or(initial), 0);
+    assert_eq!(
+        before.tracks().get(QUESTLINE).copied().unwrap_or(initial),
+        0
+    );
     assert_eq!(counts(h).await?, (0, 0));
     let actor = admitted.runtime_actor.ok_or("Lions actor")?;
     assert_eq!(

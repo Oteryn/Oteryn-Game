@@ -1,9 +1,13 @@
-use super::{CATEGORIES, HighscoresPanel, VOCATIONS};
+use super::{CATEGORIES, CATEGORY_IDS, HighscoresPanel, VOCATIONS};
 use std::fmt::Write;
 pub fn panel_text(p: &HighscoresPanel) -> String {
     let mut text = format!(
         "Highscores — {} / {}",
-        CATEGORIES[(p.category - 1) as usize],
+        CATEGORY_IDS
+            .iter()
+            .position(|id| *id == p.category)
+            .map(|index| CATEGORIES[index])
+            .unwrap_or("Unavailable"),
         VOCATIONS[p.vocation as usize]
     );
     if !p.selected {

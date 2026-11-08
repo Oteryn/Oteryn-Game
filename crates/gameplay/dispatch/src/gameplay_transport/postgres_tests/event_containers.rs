@@ -176,7 +176,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -497,7 +497,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         deps.initialize(&restarted).await;
         let replayed = restarted
             .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
