@@ -67,7 +67,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
-        if !close && !world_requirements_match(map, callback) {
+        if !close
+            && (!world_requirements_match(map, callback)
+                || !self.ground_requirements_match(runtime, map, callback))
+        {
             return UseDisposition::Rejected;
         }
         if close && callback.lever.is_some() && !callback.reversible {
@@ -87,6 +90,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
+        if !close && let Some(delay) = callback.effects.reset_after_ms {
+            let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000) else {
+                return UseDisposition::Exhausted;
+            };
+            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                due,
+                restore: before,
+            });
+        }
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()
@@ -590,6 +602,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::reward_claim_mint::QuestRewardAdmission {
                             actor_conditions: None,
                             carried_use: None,
+                            creature_use: None,
                             peer_use: None,
 
                             native,

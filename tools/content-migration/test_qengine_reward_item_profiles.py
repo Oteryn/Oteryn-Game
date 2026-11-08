@@ -11,6 +11,15 @@ class NativeFactJoin(unittest.TestCase):
                     authoring={'item': 'established'}, attributes={'blocks': None},
                     semantics={'charges': {'state': 'UNKNOWN'}})
 
+    def test_daily_roots_source_profile_is_portable_and_bounded(self):
+        records = q.capture()['records']
+        record = next((r for r in records if r['production_definition']['production_key'] == 'oteryn:item.tibia.i21291'), None)
+        self.assertIsNotNone(record, 'Oramond harvest needs an admitted existing Juicy Roots identity')
+        self.assertEqual(record['production_binding']['external_id'], '21291')
+        self.assertEqual(record['admission'], dict(materializable=True, stack_class='StackCapable', legal_destinations=['CharacterInventory', 'Ground']))
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 200)
+        self.assertEqual(record['semantics']['stack']['value']['stack_max']['value'], 100)
+
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
         new = copy.deepcopy(old)

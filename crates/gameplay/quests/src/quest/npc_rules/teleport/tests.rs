@@ -23,6 +23,7 @@ fn plan(
     let inventory = NpcInventorySnapshot::default();
     let outfits = BTreeMap::new();
     let input = NpcRuleInput {
+        player_name: None,
         npc: "oteryn:npc.riddler",
         trigger: NpcRuleTrigger::Say,
         message: "1",
@@ -31,7 +32,6 @@ fn plan(
         inventory: &inventory,
         now_epoch_seconds: 1_700_000_000,
         calendar_month: 11,
-        premium_current: false,
         level: 100,
         vocation: "oteryn:vocation.knight",
         sex: 0,
