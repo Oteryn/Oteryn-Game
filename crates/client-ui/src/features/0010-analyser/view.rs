@@ -15,10 +15,7 @@ pub fn panel_text(panel: &Panel) -> String {
         super::Tool::Xp => xp_text(panel, panel.clock.seconds()),
         super::Tool::Loot => loot_text(panel, panel.clock.seconds()),
         super::Tool::Supply => supply_text(panel, panel.clock.seconds()),
-        super::Tool::Impact => format!(
-            "Impact Analyser\r\nDamage: {} | Healing: {}",
-            panel.damage, panel.healing
-        ),
+        super::Tool::Impact => impact_text(panel, panel.clock.seconds()),
         super::Tool::Input => format!("Input Analyser\r\nDamage received: {}", panel.received),
         super::Tool::Session => format!("Hunting Session\r\n{}", overview(panel)),
         super::Tool::Party => "Party Hunt\r\nNo party accounting received".into(),
@@ -164,6 +161,62 @@ pub(super) fn supply_text(panel: &Panel, seconds: u64) -> String {
     }
     if let Some(feedback) = panel.feedback {
         text.push_str(feedback);
+    }
+    text
+}
+
+/// Integer hundredths avoid rounding away large confirmed totals.
+fn rate(value: u64, seconds: u64) -> String {
+    let hundredths = u128::from(value) * 100 / u128::from(seconds.max(1));
+    if seconds == 0 {
+        return "0.00".into();
+    }
+    format!("{}.{:02}", hundredths / 100, hundredths % 100)
+}
+fn element_name(code: u32) -> &'static str {
+    match code {
+        1 => "Physical",
+        2 => "Fire",
+        3 => "Earth",
+        4 => "Energy",
+        5 => "Ice",
+        6 => "Holy",
+        7 => "Death",
+        8 => "Life drain",
+        9 => "Mana drain",
+        10 => "Drowning",
+        _ => "Untyped",
+    }
+}
+fn gauge(value: u64, total: u128) -> String {
+    let share = u128::from(value) * 10000 / total.max(1);
+    let bars = "█".repeat((share / 500) as usize);
+    format!("{bars} {}.{:02}%", share / 100, share % 100)
+}
+pub(super) fn impact_text(panel: &Panel, seconds: u64) -> String {
+    use std::fmt::Write;
+    let total = u128::from(panel.damage) + u128::from(panel.healing);
+    let mut text = format!(
+        "Impact Analyser\r\nElapsed: {seconds} seconds\r\nDPS: {} | HPS: {}\r\nDamage dealt: {} {}\r\nHealing given: {} {}\r\nDamage per minute\r\n{}\r\nHealing per minute\r\n{}",
+        rate(panel.damage, seconds),
+        rate(panel.healing, seconds),
+        panel.damage,
+        gauge(panel.damage, total),
+        panel.healing,
+        gauge(panel.healing, total),
+        panel.damage_chart.chart(seconds),
+        panel.healing_chart.chart(seconds)
+    );
+    if total == 0 {
+        text.push_str("\r\nNo impact yet");
+    }
+    for (element, value) in &panel.impact_types {
+        let _ = write!(
+            text,
+            "\r\n{}: {value} {}",
+            element_name(*element),
+            gauge(*value, total)
+        );
     }
     text
 }

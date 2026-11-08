@@ -49,11 +49,17 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                     panel.omitted_supplies = panel.omitted_supplies.saturating_add(count);
                 }
             }
-            AnalyserFact::Impact(AnalyserImpact::Damage { value, .. }) => {
-                panel.damage = panel.damage.saturating_add(u64::from(value.get()))
+            AnalyserFact::Impact(AnalyserImpact::Damage { value, element }) => {
+                let value = u64::from(value.get());
+                panel.damage = panel.damage.saturating_add(value);
+                panel.damage_chart.add(seconds, value);
+                let total = panel.impact_types.entry(element.wire()).or_default();
+                *total = total.saturating_add(value);
             }
             AnalyserFact::Impact(AnalyserImpact::Healing(value)) => {
-                panel.healing = panel.healing.saturating_add(u64::from(value.get()))
+                let value = u64::from(value.get());
+                panel.healing = panel.healing.saturating_add(value);
+                panel.healing_chart.add(seconds, value);
             }
             AnalyserFact::DamageInput { value, .. } => {
                 panel.received = panel.received.saturating_add(u64::from(value.get()))

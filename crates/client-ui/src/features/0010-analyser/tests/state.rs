@@ -308,3 +308,25 @@ fn analyser_recovery_discards_generation_scoped_item_settings() {
         (true, true, Tool::Supply)
     );
 }
+
+#[test]
+fn impact_uses_wire_damage_types_healing_rates_gauges_and_charts() -> Result<(), &'static str> {
+    let facts = oteryn_client_runtime::analyser::decode_analyser_facts(&[
+        10, 8, 34, 6, 8, 1, 16, 120, 24, 2, 10, 6, 34, 4, 8, 2, 16, 60,
+    ])
+    .map_err(|_| "impact wire")?;
+    let mut panel = Panel {
+        selected: true,
+        tool: Tool::Impact,
+        ..Default::default()
+    };
+    apply_at(&mut panel, &facts, 0);
+    let text = super::view::impact_text(&panel, 60);
+    assert!(text.contains("DPS: 2.00 | HPS: 1.00"));
+    assert!(text.contains("Fire: 120"));
+    assert!(text.contains("66.66%"));
+    assert_eq!(panel.damage_chart.values(60), vec![120, 0]);
+    assert_eq!(panel.healing_chart.values(60), vec![60, 0]);
+    assert!(super::view::impact_text(&Panel::default(), 0).contains("No impact yet"));
+    Ok(())
+}
