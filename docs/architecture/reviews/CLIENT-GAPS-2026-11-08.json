@@ -846,9 +846,10 @@
   "src": "TIBAUD-1",
   "area": "Forge",
   "feature": "Dust/slivers/cores/limit i historia",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Odczyt/mutacje/historia są; brak pełnego confirmation/result dialog.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0152-item-forge/resource_native.rs:88 + forge_resource_actual_session_requires_confirm_and_displays_receipt_history; forge_resource_confirmation_postgres_quotes_are_real_and_readonly (50.85s)"
  },
  {
   "id": "T118",

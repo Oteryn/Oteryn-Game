@@ -240,8 +240,15 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                     editable && (!panel.preview.selected || panel.verified_quote()),
                                 ),
                             );
-                            for handle in secondary {
-                                EnableWindow(handle, i32::from(!panel.pending));
+                            for (index, handle) in secondary.into_iter().enumerate() {
+                                EnableWindow(
+                                    handle,
+                                    i32::from(
+                                        !panel.pending
+                                            && !panel.resource_dialog.confirming()
+                                            && (index < 2 || panel.retry.is_none()),
+                                    ),
+                                );
                             }
                             EnableWindow(retry, i32::from(!panel.pending && panel.retry.is_some()));
                             let mut text = oteryn_client_ui::item_forge::selected_pair_text(&panel);

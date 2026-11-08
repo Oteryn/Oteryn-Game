@@ -144,3 +144,94 @@ fn forge_preview_quote_correlates_pair_and_rejects_noncanonical_options() -> Res
     );
     Ok(())
 }
+#[test]
+fn forge_resource_quote_is_additive_strict_and_does_not_change_original_wire()
+-> Result<(), &'static str> {
+    for operation in [
+        Operation::DustToSlivers,
+        Operation::SliversToCores,
+        Operation::DustLimit,
+    ] {
+        let request = Request {
+            nonce: 9,
+            selection: Selection::Resource(operation),
+        };
+        let bytes = request.encode().ok_or("request")?;
+        assert_eq!(bytes.len(), 10);
+        assert_eq!(Request::decode(&bytes), Some(request));
+    }
+    let before = Resources {
+        dust: 100,
+        dust_limit: 100,
+        slivers: 50,
+        cores: 2,
+        ..Default::default()
+    };
+    let quote = ResourceQuote {
+        operation: Operation::DustToSlivers,
+        full_resources: true,
+        before,
+        after_dust: 40,
+        after_limit: 100,
+        after_slivers: 53,
+        after_cores: 2,
+    };
+    let reply = Reply {
+        nonce: 9,
+        payload: Payload::Resource(quote),
+    };
+    let bytes = reply.encode().ok_or("quote")?;
+    assert_eq!(Reply::decode(&bytes), Some(reply));
+    for n in 0..bytes.len() {
+        assert!(Reply::decode(&bytes[..n]).is_none());
+    }
+    let mut extra = bytes;
+    extra.push(0);
+    assert!(Reply::decode(&extra).is_none());
+    let limit = Reply {
+        nonce: 10,
+        payload: Payload::Resource(ResourceQuote {
+            operation: Operation::DustLimit,
+            full_resources: false,
+            before: Resources {
+                dust: 100,
+                dust_limit: 100,
+                ..Default::default()
+            },
+            after_dust: 75,
+            after_limit: 120,
+            after_slivers: 0,
+            after_cores: 0,
+        }),
+    };
+    assert_eq!(Reply::decode(&limit.encode().ok_or("limit")?), Some(limit));
+    let browse = Request {
+        nonce: 9,
+        selection: Selection::Browse { after: 0 },
+    };
+    let mut expected = 9_u64.to_le_bytes().to_vec();
+    expected.push(0);
+    expected.extend(0_u64.to_le_bytes());
+    assert_eq!(browse.encode(), Some(expected));
+    assert!(
+        Request {
+            nonce: 9,
+            selection: Selection::Resource(Operation::Fusion)
+        }
+        .encode()
+        .is_none()
+    );
+    assert!(Request::decode(&[9, 0, 0, 0, 0, 0, 0, 0, 2, 8]).is_none());
+    assert!(
+        Reply {
+            nonce: 9,
+            payload: Payload::Resource(ResourceQuote {
+                after_dust: 100,
+                ..quote
+            })
+        }
+        .encode()
+        .is_none()
+    );
+    Ok(())
+}

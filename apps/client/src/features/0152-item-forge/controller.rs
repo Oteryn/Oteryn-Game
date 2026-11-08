@@ -13,6 +13,8 @@ use tokio::sync::mpsc::UnboundedSender;
 )]
 pub(in crate::play) enum Action {
     CurrentDust,
+    ConfirmResource(u64),
+    DismissResource(u64),
     Legacy(Operation),
     Refresh,
     Next,
@@ -66,8 +68,50 @@ pub(in crate::play) fn activate(
                 panel.feedback = Some("The session has ended".into());
             }
         }
+        Action::DismissResource(serial) => {
+            panel.resource_dialog.dismiss(serial);
+        }
+        Action::ConfirmResource(serial) => {
+            let Some(id) = occurrence() else {
+                panel.feedback = Some("Cannot generate an attempt identity".into());
+                return;
+            };
+            let Some(request) = panel.confirm_resource(serial, id) else {
+                return;
+            };
+            let Some(bytes) = request.encode() else {
+                return;
+            };
+            if let Some(command) = oteryn_client_ui::item_forge::request(
+                panel,
+                oteryn_client_ui::item_forge::command(bytes.to_vec()),
+            ) && commands.send(PlayCommand::ServerMechanic(command)).is_err()
+            {
+                panel.pending = false;
+                panel.resource_dialog.message("The session ended before the result could be confirmed. Check Forge history after reconnecting.");
+            }
+        }
         Action::Legacy(operation) => {
             if operation.requires_pair() || panel.preview.pending.is_some() {
+                return;
+            }
+            if wire::resource_operation(operation) {
+                if !panel.editing() {
+                    return;
+                }
+                panel.resource_dialog.reset();
+                if !panel.preview.selected {
+                    panel.resource_dialog.offer(operation, None);
+                    return;
+                }
+                if let Some(command) = oteryn_client_ui::item_forge::preview_request(
+                    panel,
+                    wire::Selection::Resource(operation),
+                ) && commands.send(PlayCommand::Feature(command)).is_err()
+                {
+                    panel.preview.pending = None;
+                    panel.resource_dialog.message("The session has ended");
+                }
                 return;
             }
             let occurrence = if operation == Operation::QueryHistory {

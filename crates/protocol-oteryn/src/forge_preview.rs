@@ -10,6 +10,7 @@ pub const PAGE_SIZE: usize = 32;
 pub const MAX_NAME_BYTES: usize = 128;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Selection {
+    Resource(Operation),
     Browse {
         after: u64,
     },
@@ -71,8 +72,60 @@ pub struct Quote {
     pub success_percent: u8,
     pub protection_percent: u8,
 }
+/// Advisory exact resource transition calculated by the same pure rules as command181.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ResourceQuote {
+    pub operation: Operation,
+    /// Dust-limit reviews may omit unrelated inventory counts; never display their zero placeholders.
+    pub full_resources: bool,
+    pub before: Resources,
+    pub after_dust: u32,
+    pub after_limit: u32,
+    pub after_slivers: u64,
+    pub after_cores: u64,
+}
+pub fn resource_operation(operation: Operation) -> bool {
+    matches!(
+        operation,
+        Operation::DustToSlivers | Operation::SliversToCores | Operation::DustLimit
+    )
+}
+impl ResourceQuote {
+    fn valid(self) -> bool {
+        (self.full_resources
+            || (self.operation == Operation::DustLimit
+                && self.before.cores == 0
+                && self.before.slivers == 0
+                && self.after_cores == 0
+                && self.after_slivers == 0))
+            && self.before.dust <= self.before.dust_limit
+            && self.after_dust <= self.after_limit
+            && match self.operation {
+                Operation::DustToSlivers => {
+                    self.after_dust < self.before.dust
+                        && self.after_limit == self.before.dust_limit
+                        && self.after_slivers > self.before.slivers
+                        && self.after_cores == self.before.cores
+                }
+                Operation::SliversToCores => {
+                    self.after_dust == self.before.dust
+                        && self.after_limit == self.before.dust_limit
+                        && self.after_slivers < self.before.slivers
+                        && self.after_cores > self.before.cores
+                }
+                Operation::DustLimit => {
+                    self.after_dust < self.before.dust
+                        && self.after_limit > self.before.dust_limit
+                        && self.after_slivers == self.before.slivers
+                        && self.after_cores == self.before.cores
+                }
+                _ => false,
+            }
+    }
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Payload {
+    Resource(ResourceQuote),
     Page(Page),
     Quote(Quote),
     Refused,
@@ -116,6 +169,10 @@ impl Request {
         }
         let mut out = self.nonce.to_le_bytes().to_vec();
         match self.selection {
+            Selection::Resource(operation) if resource_operation(operation) => {
+                out.extend([2, operation as u8]);
+            }
+            Selection::Resource(_) => return None,
             Selection::Browse { after } => {
                 out.push(0);
                 out.extend(after.to_le_bytes());
@@ -136,6 +193,12 @@ impl Request {
             return None;
         }
         let selection = match bytes[8] {
+            2 if bytes.len() == 10 => Selection::Resource(match bytes[9] {
+                5 => Operation::DustToSlivers,
+                6 => Operation::SliversToCores,
+                7 => Operation::DustLimit,
+                _ => return None,
+            }),
             0 if bytes.len() == 17 => Selection::Browse {
                 after: u64::from_le_bytes(bytes[9..].try_into().ok()?),
             },
