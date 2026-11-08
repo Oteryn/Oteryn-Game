@@ -1,0 +1,97 @@
+{
+  "lane": "questpc3",
+  "branch": "claude/happy-davinci-ijz3wy-questpc3b-n3",
+  "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+  "scope_total": 22,
+  "owned_retained": 6,
+  "other_owner_excluded": 16,
+  "done": 0,
+  "waiting_engine": 4,
+  "blocked": 2,
+  "engine_heads": {
+    "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+    "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+    "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+  },
+  "quests": [
+    {
+      "quest": "The Beginning Quest",
+      "canonical": "oteryn:quest.the_beginning_quest",
+      "status": "WAITING-ENGINE",
+      "owner": "ENGITEM / QENGINE2",
+      "feature": "Source ground-branch birth and five physical USE_WITH cart deliveries; retain prior NPC/reward work when collector delivers it.",
+      "evidence": {
+        "path": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+        "line": 15,
+        "git_blob": "49038832a891e330bbbebd02896251739959df31"
+      },
+      "next_action": "After engine delivery and collector merge, use delivered contracts and previous lane implementation, then test the complete journey."
+    },
+    {
+      "quest": "The First Dragon Quest",
+      "canonical": "oteryn:quest.the_first_dragon_quest",
+      "status": "WAITING-ENGINE",
+      "owner": "ENGNPC / ENGENC",
+      "feature": "Recurring Jan14-Feb12 NPC date guard and named per-player boss cooldown/room cleanup; current delayed-spawn timing is value-free and excludes players.",
+      "evidence": {
+        "path": "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "line": 149,
+        "git_blob": "cfe8c60e63b5c2e6ec742025e395cef367a0b3b1"
+      },
+      "next_action": "After engine delivery and collector merge, use delivered contracts and previous lane implementation, then test the complete journey."
+    },
+    {
+      "quest": "The Tainted Souls Quest",
+      "canonical": "oteryn:quest.the_tainted_soul",
+      "status": "WAITING-ENGINE",
+      "owner": "ENGITEM / ENGENC",
+      "feature": "Atomic whole-target-stack talisman conversion, live-creature cleansing including summons, 100-soul gate and20h Ekatrix reset. Never replace cleansing with kills.",
+      "evidence": {
+        "path": "crates/gameplay/items/src/item_craft.rs",
+        "line": 152,
+        "git_blob": "3e9b96808760f1e8a26bfe3e1ac12998e7570cd7"
+      },
+      "next_action": "After engine delivery and collector merge, use delivered contracts and previous lane implementation, then test the complete journey."
+    },
+    {
+      "quest": "Threatened Dreams Quest",
+      "canonical": "oteryn:quest.threatened_dreams_quest",
+      "status": "WAITING-ENGINE",
+      "owner": "QENGINE2 / ENGNPC",
+      "feature": "Fenced repeating world callback transaction clocks for harvest/cooldown, plus scheduled NPC appearances. QENGINE2 branch adds state_operations/has_repeating_clock; main has neither.",
+      "evidence": {
+        "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+        "line": 158,
+        "git_blob": "bb62e90f7be3dc38d7d67e35288554f092827c64"
+      },
+      "next_action": "After engine delivery and collector merge, use delivered contracts and previous lane implementation, then test the complete journey."
+    },
+    {
+      "quest": "Pilgrimage of Ashes Quest",
+      "canonical": "oteryn:quest.pilgrimage_of_ashes",
+      "status": "BLOCKED",
+      "reason": "Previous qualified implementation is not yet on main; coordinator is packaging earlier lane branches. Do not duplicate or drop that work.",
+      "prior_qualified_branch": "claude/happy-davinci-ijz3wy-questpc3b",
+      "prior_head": "dc9e763c856503bfd897e50238b99002f5791005",
+      "next_action": "Merge collector delivery, then re-run the end-to-end PG journey on this branch before marking DONE."
+    },
+    {
+      "quest": "Stampede Mini World Change",
+      "canonical": "oteryn:quest.stampede_mini_world_change",
+      "status": "BLOCKED",
+      "reason": "Previous qualified implementation is not yet on main; coordinator is packaging earlier lane branches. Do not duplicate or drop that work.",
+      "prior_qualified_branch": "claude/happy-davinci-ijz3wy-questpc3b",
+      "prior_head": "dc9e763c856503bfd897e50238b99002f5791005",
+      "next_action": "Merge collector delivery, then re-run the end-to-end PG journey on this branch before marking DONE."
+    }
+  ],
+  "validation": {
+    "scope_audit": "PASS; exact6 retained packet identities; no NOT STARTED/IN_PROGRESS rows remain",
+    "gameplay": "No new gameplay qualification claimed. Earlier PG proofs belong to previous branch only.",
+    "generated_files": "No content, runtime, schema, generator inputs, migration, or pin changed; no derived artifact requires regeneration.",
+    "workspace_check": "PASS cargo check --workspace --all-targets;7m31s; /tmp/questpc3-n3-workspace.log",
+    "fmt": "PASS cargo fmt --all --check; /tmp/questpc3-n3-fmt.log",
+    "duplicate_migrations": "PASS .claude/skills/oteryn-dev/scripts/dup-migrations.sh; no migration changed",
+    "final_main_sync": "PASS; origin/main unchanged; already up to date"
+  }
+}
