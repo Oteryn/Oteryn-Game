@@ -37,7 +37,7 @@ impl ItemLoopContent for Content {
 }
 
 #[test]
-fn questpc2_live_eligibility_head_admission_is_fenced_atomic_and_replay_bound() -> fixture::TestResult {
+fn questpc2_live_level_vocation_premium_are_fenced_atomic_and_replay_bound() -> fixture::TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -67,6 +67,8 @@ fn questpc2_live_eligibility_head_admission_is_fenced_atomic_and_replay_bound() 
 }
 
 async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+    let version: String = sqlx::query_scalar("SHOW server_version_num").fetch_one(&h.pool).await?;
+    eprintln!("M08_POSTGRES_VERSION={version}");
     let reference = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13";
     let text = serde_json::json!({"schema":1,"quest":QUEST,
         "tracks":[{"key":TRACK,"quest":QUEST,"initial":0,"min":0,"max":1,"sources":[reference]}],
