@@ -86,6 +86,14 @@
         "Gated USE of captured ominous trashcan44563; no final quest completion"
       ],
       "tests": "Dispatch1604 and catalogue672 tests in progress, nofailfast. Also found collectible collision negative-test failure and starter-input expected13/actual10 failure; collect all and repair together."
+    },
+    "contacts_live_target_repair": {
+      "cause": "Non-production World compilation skips provisional palette entry44563; ordinal1 is absent from the live source tile, so USE returns NothingToUse.",
+      "decision": "Admit only exact44563 as immovable common Terrain from pinned official client unmove flag, with no Item alias or portable grant. Preserve raw B3 source bytes; regenerate the palette and World pins with repository tools.",
+      "pg_red": "PostgreSQL18.6, cook_native_contacts, 200.312729627s, NothingToUse at questpc5_oramond_roots.rs:197",
+      "green": "pending realPG after pin regeneration",
+      "main_merge": "83acbdac3 attempted twice; 69 conflicting files across overlapping reward APIs/startup converters; aborted under owner15-minute exception, no conflict markers retained. Main b3864f14a remains merged.",
+      "checkpoint_checks": "PASS workspacealltargets246s; fmt; PythonCook3,Grizzly3,mtime3,orchestrator13; equipment pin; complete content equivalence; duplicate migration stagedtree; world pinrefresh/check90bc36d6943638a13d0083c9d24d10e04e524c649db738f95ebbb6d046689151. FreshCookPG and crate-unit repairs pending under PREPUSH-2 cadence exception. StrictClippy in progress."
     }
   },
   {

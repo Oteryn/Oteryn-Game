@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.authored.nomads_land_quest",
+  "classification": "SOURCE_GEOMETRY_CAPTURE_NOT_RUNTIME_QUALIFICATION",
+  "source_url": "https://www.tibiawiki.com.br/wiki/Arito%27s_Task_Quest",
+  "source_sha256": "a5996f49a2db4e5965cb7867fe0e15916bec672becc15b0791f7db7b3eb81b1c",
+  "pillar": [
+    33185,
+    32844,
+    7
+  ],
+  "lever_cells": [
+    [
+      33194,
+      32855,
+      9
+    ],
+    [
+      33194,
+      32861,
+      9
+    ],
+    [
+      33218,
+      32848,
+      9
+    ]
+  ],
+  "lever_item": 2772,
+  "tapestry": {
+    "cell": [
+      33218,
+      32849,
+      9
+    ],
+    "item": 2645
+  },
+  "window": {
+    "cell": [
+      33216,
+      32855,
+      9
+    ],
+    "item": 1744
+  },
+  "cabinet": {
+    "cell": [
+      33220,
+      32858,
+      9
+    ],
+    "item": 2434
+  },
+  "source_exit_destination": [
+    33228,
+    32865,
+    7
+  ],
+  "selected_window_rule": "Two adjacent stacks, each two crates2471 and one large amphora2904, as Wiki option2; do not replace physical movement with seeded progress.",
+  "missing_engine": [
+    "ItemReward readable text forwarding via existing root_text",
+    "MapBase-to-Ground movement; item_move.rs explicitly supports Base-to-backpack but refuses Base-to-Ground"
+  ],
+  "existing_engine_to_reuse": "QENGINE2 188ab6f79 completed-parent predicate; fresh head e6bacdda6",
+  "region_sha256": {
+    "content/world/placements/region-z07-x129-y128.b3": "7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+    "content/world/placements/region-z09-x129-y128.b3": "5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc"
+  }
+}

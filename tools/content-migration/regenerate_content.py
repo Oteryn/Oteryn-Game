@@ -80,6 +80,7 @@ PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
 SPELLS_MANIFEST = "content/spells.manifest.json"
 
 AUTHORING_TOOLS = (
+    "tools/content-schema/world-object-authoring/cook_trashcan.py",
     "tools/content-migration/raid_catalogue.py",
     "tools/content-schema/craft-authoring/craft_authoring.py",
     "tools/content-schema/imbuement-authoring/imbuement_content.py",

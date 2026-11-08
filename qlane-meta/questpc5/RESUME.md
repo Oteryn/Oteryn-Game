@@ -1,3 +1,11 @@
+## Compiling static-target checkpoint — 2026-11-08 03:57 UTC
+
+WorkspacealltargetsPASS246s;fmtPASS; generated native/central/evidence outputs current; equipment/equivalencePASS; dupmigrationsPASS; worldpinrefresh/checkPASS90bc36d6943638a13d0083c9d24d10e04e524c649db738f95ebbb6d046689151. Cook/Grizzly/mtimePython3each andorchestrator13PASS. StrictClippyfinishing; freshCookPG plus compiled-target unit and exact-native-inventory test queued. Publishing compilingWIP underPREPUSH-2cadenceexception; no newqualification. Keep source stable duringtests; prepare main83acmerge resolutions in/tmp only.
+
+## Cook live-target repair — 2026-11-08 03:52 UTC
+
+Main83acbdac3 merge conflicts69files; aborted within owner15-minute budget because startup converters and shared reward APIs need careful integration. Previous mainb3864f14a remains merged. Full changed-crate unit run2279:2231PASS48FAIL1094.133s;47manifest failures occurred while merge-mutated provisioning data was present, plus stale exact native-callback inventory. Keep all assertions; regenerate and rerun full failure group. Exact-set fixture now includes pre-existing native registry producers. CookPGRED200.312729627s traced to provisional44563 skipped by Worldcompiler. New finite official-client Terrain admission (unmove only, common, walkabletrue, no portable Item) Python3RED→GREEN; pinrefresh/check and actualUSE PG next. Wholecounts13qualified10remaining unchanged. Do not stage localforeign1300.
+
 ## Main3031 checkpoint gates PASS — 2026-11-08 03:17 UTC
 
 Mergedmainb3864f14a no conflicts. Pinrefresh/checkPASSunchanged82de459c8fb4c61828fe4561464d8d405b292c65eb1a069446223dfcaa25b9d7; alltargetworkspacecheckPASS3m57s, fmtPASS, strictcontent/dispatch/worldcompilerClippyPASS3m38s. PostmergePythonmtime3/NPCfacts3/orchestrator13PASS. DupmigrationstagedtreePASS. Pushcompiledcheckpointimmediately; ownCookactor-offsetfreshPGstillpending underPREPUSH-2budgetexception, andfourcratefullunitrerunmustfollow. Do not addqualification. Next: cachedfreshfocusedCookPG thenfullfourcrateunitrerun, keepinggenerateddataunchanged.

@@ -507,6 +507,14 @@ mod tests {
                 }
             }
         }
+        expected.extend(
+            crate::quest::fire_feathered_native::callbacks()
+                .into_iter()
+                .chain(crate::quest::shared_world_progress::callbacks())
+                .chain(crate::quest::hive_access::callbacks())
+                .chain(crate::quest::deepling_boss_access::callbacks(&callbacks)?)
+                .map(|callback| callback.key),
+        );
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
         expected.insert(crate::quest::schrodinger_island::callback().key);
         assert_eq!(

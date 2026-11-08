@@ -390,6 +390,9 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+    if include_qualified:
+        import cook_trashcan
+        files[cook_trashcan.SHARD] = cook_trashcan.outputs()[cook_trashcan.SHARD]
     return files, world_objects.census_document_bytes(result)
 
 

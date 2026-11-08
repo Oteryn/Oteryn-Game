@@ -504,10 +504,12 @@ def validate_record(record):
     if errors:
         return errors
     if "item_pointer" not in record["provenance"]:
+        import cook_trashcan
         import grizzly_ground
         import summer_ground
 
         ground = (
+            cook_trashcan if record["provenance"]["source_item_id"] == cook_trashcan.IDENTIFIER else
             grizzly_ground
             if record["provenance"]["source_item_id"] == grizzly_ground.IDENTIFIER
             else summer_ground
