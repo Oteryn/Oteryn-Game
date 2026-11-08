@@ -10202,6 +10202,18 @@
           "result": "compile failed No space left on device before tests; stale cache cleanup recovered3.3GiB"
         }
       ]
+    },
+    "next_owned_slice": {
+      "quest": "The First Dragon Quest",
+      "mechanisms": 4,
+      "phase": "READY_FOR_NATIVE_PG_RED_AFTER_MAIN_PUBLICATION",
+      "action": "Restore exact TeleportUnique35005-35008 with existing startup overlay, then four unconditional STEP exits with arrivalcue11; no new engine needed",
+      "source": "data-global/startup/tables/teleport.lua:535-553 blob2d798951e1d46b7198dacad57d792971d0045899 SHA256462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+      "placements": "All4 matching8646-8649 objects exist in native region-z08-x125-y126.b3 withoutUIDs",
+      "test_draft": "/tmp/questpc3-first-dragon-real-exits.rs; uses real native B3 source/destination crops; not yet compiled",
+      "startup_source": "/tmp/questpc3-first-dragon-startup-source;5files individually Git-blob verified from retained corpus",
+      "authoring_draft": "/tmp/questpc3_first_dragon_exits.py; add teleport_effect11, source startup facts; do not use unchanged",
+      "warning": "Old synthetic /tmp/questpc3_first_dragon_exits.rs has wrong unrelatedUID35009 negative and lacks source placement proof. Do not restore stash metadata or redo lostcoat/source nativebosses."
     }
   },
   "counts": {
@@ -11061,7 +11073,20 @@
     "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
     "result": "clean merge; all incoming Soulpit/NPC-service/WP3 fixes retained",
     "conflicts": 0,
-    "validation": "pending on merged candidate",
-    "migrations": "unchanged; own1220-1229; no out-of-range forward cause migration"
+    "validation": "PASS: final workspacealltargets11m58s including build-lock wait; fulltarget/allfeature Clippy6m06s; fmt; native/allcentral42byteidentical; duplicate migrationsCLEAR",
+    "migrations": "unchanged; own1220-1229; no out-of-range forward cause migration",
+    "focused_units": "4/4 actual WP3 error-classification tests PASS from fresh durability binary; initial filename filter selected0 and is not proof",
+    "own_pg": {
+      "postgres": "18.6",
+      "passed": 2,
+      "failed": 0,
+      "duration_seconds": 66.908,
+      "cases": {
+        "tainted_talisman_custody_ms": 66590,
+        "first_dragon_life_sites_ms": 66835
+      },
+      "log": "/tmp/questpc3b-main3209-own-two-pg.log"
+    },
+    "broad_units": "INCOMPLETE; interrupted118PASS/2SIGINT, then NoSpace before restart; pending CI under owner cadence exception"
   }
 }

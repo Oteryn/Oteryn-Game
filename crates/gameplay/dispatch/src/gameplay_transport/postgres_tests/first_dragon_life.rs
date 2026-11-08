@@ -38,12 +38,10 @@ fn fixture_catalogue() -> TestResult<QuestStateCatalogue> {
     let source = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
         .map_err(debug)?;
     let mut tracks = BTreeMap::new();
-    for key in [COUNTER] {
-        tracks.insert(
-            key.into(),
-            source.catalogue().track(key).ok_or("source track")?.clone(),
-        );
-    }
+    tracks.insert(
+        COUNTER.into(),
+        source.catalogue().track(COUNTER).ok_or("source track")?.clone(),
+    );
     for flag in FLAGS {
         let key = format!("{BASE}{flag}");
         tracks.insert(
