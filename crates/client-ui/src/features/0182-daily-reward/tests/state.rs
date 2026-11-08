@@ -143,3 +143,29 @@ fn reward_calendar_records_only_server_confirmed_claims() {
     assert!(after.contains("05: claimed"));
     assert!(after.contains("Confirmed this session: day 5, streak 12"));
 }
+
+#[test]
+fn returner_reward_notification_never_infers_entitlement_from_daily_streak() {
+    let mut panel = ReturnerRewardPanel::default();
+    assert!(panel.claim(100).is_none());
+    panel.offer = Some(ReturnerOffer {
+        id: [7; 16],
+        expires_epoch: 200,
+        description: "Welcome back pack".into(),
+    });
+    assert!(panel.notification().contains("Welcome back pack"));
+    assert_eq!(panel.claim(100), Some([7; 16]));
+    assert!(panel.claim(100).is_none());
+    assert!(!panel.finish([8; 16], true));
+    assert!(panel.pending);
+    assert!(panel.finish([7; 16], false));
+    assert_eq!(panel.claim(100), Some([7; 16]));
+    assert!(panel.finish([7; 16], true));
+    assert!(panel.claim(100).is_none());
+    panel.offer = Some(ReturnerOffer {
+        id: [9; 16],
+        expires_epoch: 100,
+        description: "Expired".into(),
+    });
+    assert!(panel.claim(100).is_none());
+}
