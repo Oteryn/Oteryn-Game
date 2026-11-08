@@ -14,11 +14,14 @@ Repeats invoked that build's libtest binary directly with the same arguments.
 | qready1 `be06eca24`, repeat | observer join failed | 164.94 s |
 | clean main `83acbdac3` | passed | 94.28 s |
 | clean main `83acbdac3`, repeat | observer join failed | 115.03 s |
+| clean main `83acbdac3`, third run | observer join failed | 95.71 s |
 
 The passing main case printed `CLCAST S17 case 2 real-dispatch PostgreSQL: 92.185s`.
-Both failed candidates logged `next_command_id=5 server_sequence=4`, followed by
+Both branch failures and the first main failure logged
+`next_command_id=5 server_sequence=4`; the third main run logged
+`next_command_id=5 server_sequence=5`. All failures reported
 `session is unusable after an earlier failed command exchange`.
-The main worktree remained clean after both runs.
+The main worktree remained clean after all three runs.
 
 This establishes an intermittent failure of S17b on main as well as the branch.
 These local failures happen before the CI failure's Stop command; they do not
