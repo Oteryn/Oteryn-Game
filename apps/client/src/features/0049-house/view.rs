@@ -17,7 +17,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "House row (1 onwards)",
                 "Bid / notice Unix time",
                 "Member UUIDs (space separated)",
-                "Door: x y floor revision",
+                "Door: x y floor (uses current house ACL revision)",
                 "Type CONFIRM for changes",
             ],
             buttons: super::input::controller::BUTTONS,

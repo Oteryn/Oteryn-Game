@@ -3,6 +3,7 @@ use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent, request};
 
 pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
+    let badges = oteryn_client_ui::cyclopedia_character::badge_text(p);
     format!(
         "{}\r\n{}\r\n{}",
         if p.pending {
@@ -13,7 +14,11 @@ pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
             "Ready"
         },
         p.feedback.unwrap_or(""),
-        p.result.as_deref().unwrap_or("")
+        if p.command_kind == 387 && p.badges.is_some() {
+            badges.as_str()
+        } else {
+            p.result.as_deref().unwrap_or("")
+        }
     )
 }
 
@@ -31,6 +36,16 @@ pub(in crate::play) fn submit(
             115 => Some(KillStatus::Unjustified),
             116 => Some(KillStatus::GuildWar),
             _ => None,
+        };
+        return None;
+    }
+    if matches!(id, 145..=148) {
+        use oteryn_client_ui::cyclopedia_character::BadgeFilter;
+        p.badge_filter = match id {
+            146 => BadgeFilter::Earned,
+            147 => BadgeFilter::Locked,
+            148 => BadgeFilter::Hidden,
+            _ => BadgeFilter::All,
         };
         return None;
     }
@@ -96,6 +111,7 @@ pub(in crate::play) use window::open_window;
 mod window {
     // HWND operations stay on the creating thread, following the daily reward panel.
     #![allow(unsafe_code)]
+    use super::controls::{control, read_text, wide};
     use super::*;
     use crate::combat_input::PlayCommand;
     use crate::play::{PlayLink, mailbox::lock};
@@ -109,6 +125,7 @@ mod window {
             ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx, PBM_SETPOS,
             PBM_SETRANGE32,
         },
+        Input::KeyboardAndMouse::EnableWindow,
         WindowsAndMessaging::*,
     };
     type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
@@ -122,7 +139,7 @@ mod window {
                 let note = (w >> 16) & 0xffff;
                 if !actions.is_null()
                     && (*actions).0.len() < 32
-                    && matches!(id, 101..=116)
+                    && matches!(id, 101..=116 | 140)
                     && note == BN_CLICKED as usize
                 {
                     (*actions).0.push(id);
@@ -131,12 +148,6 @@ mod window {
             }
             DefWindowProcW(hwnd, msg, w, l)
         }
-    }
-    fn wide(text: &str) -> Vec<u16> {
-        text.replace('\0', "\u{fffd}")
-            .encode_utf16()
-            .chain(Some(0))
-            .collect()
     }
     pub(in crate::play) fn open_window(link: &PlayLink) {
         {
@@ -168,7 +179,7 @@ mod window {
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
                 740,
-                650,
+                740,
                 null_mut(),
                 null_mut(),
                 null_mut(),
@@ -251,6 +262,14 @@ mod window {
             ] {
                 control(hwnd, "BUTTON", label, id, [x, 155, 165, 28], WS_TABSTOP);
             }
+            let achievement_browser = control(
+                hwnd,
+                "BUTTON",
+                "Browse achievements",
+                140,
+                [545, 155, 165, 28],
+                WS_TABSTOP,
+            );
             let heading = control(hwnd, "STATIC", "", 401, [10, 355, 690, 22], 0);
             let history = control(
                 hwnd,
@@ -296,6 +315,31 @@ mod window {
                 .collect();
             let stamina_bar = control(hwnd, "msctls_progress32", "", 470, [10, 575, 335, 18], 0);
             let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
+            for (id, label, x) in [
+                (145, "All badges", 10),
+                (146, "Earned badges", 185),
+                (147, "Locked badges", 360),
+                (148, "Hidden locally", 535),
+            ] {
+                control(hwnd, "BUTTON", label, id, [x, 615, 165, 28], WS_TABSTOP);
+            }
+            control(hwnd, "STATIC", "Badge ID", 151, [10, 655, 90, 25], 0);
+            let badge_id = control(
+                hwnd,
+                "EDIT",
+                "",
+                149,
+                [105, 655, 90, 25],
+                WS_BORDER | WS_TABSTOP,
+            );
+            control(
+                hwnd,
+                "BUTTON",
+                "Hide / show locally",
+                150,
+                [210, 655, 200, 25],
+                WS_TABSTOP,
+            );
             let mut held_history = Vec::new();
             let mut held_combat = Vec::new();
             let mut held_store = String::new();
@@ -314,7 +358,26 @@ mod window {
                 if mailbox.cyclopedia_character_shutdown {
                     break;
                 }
+                let mut browse_achievements = false;
                 for action in std::mem::take(&mut actions.0) {
+                    if action == 150 {
+                        if let Ok(id) = read_text(badge_id).parse::<u8>()
+                            && mailbox
+                                .cyclopedia_character
+                                .badges
+                                .as_ref()
+                                .is_some_and(|ids| ids.contains(&id))
+                        {
+                            if !mailbox.cyclopedia_character.hidden_badges.remove(&id) {
+                                mailbox.cyclopedia_character.hidden_badges.insert(id);
+                            }
+                        }
+                        continue;
+                    }
+                    if action == 140 {
+                        browse_achievements = true;
+                        continue;
+                    }
                     let values = edits.map(read_text);
                     if let Some(command) = submit(
                         &mut mailbox.cyclopedia_character,
@@ -344,27 +407,44 @@ mod window {
                     p.feedback = Some("The session has ended");
                 }
                 let panel = &mailbox.cyclopedia_character;
+                EnableWindow(
+                    achievement_browser,
+                    i32::from(panel.selected && !panel.pending),
+                );
+                ShowWindow(
+                    achievement_browser,
+                    if panel.tab
+                        == oteryn_client_runtime::cyclopedia_character::CharacterTab::Achievements
+                    {
+                        SW_SHOW
+                    } else {
+                        SW_HIDE
+                    },
+                );
                 let status = if panel.pending {
                     "Waiting for the server"
                 } else {
                     panel.feedback.unwrap_or("")
                 };
                 SetWindowTextW(status_label, wide(status).as_ptr());
-                let table = panel.history_tab == Some(panel.tab);
+                let badges = panel.command_kind == 387;
+                let table = !badges && panel.history_tab == Some(panel.tab);
                 let pvp = panel.tab
                     == oteryn_client_runtime::cyclopedia_character::CharacterTab::RecentPvpKills;
                 for id in 114..=116 {
                     ShowWindow(GetDlgItem(hwnd, id), if pvp { SW_SHOW } else { SW_HIDE });
                 }
-                let overview = panel.general.is_some()
+                let overview = !badges
+                    && panel.general.is_some()
                     && panel.tab
                         == oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats;
-                let combat = panel.combat.as_ref().is_some_and(|s| s.tab() == panel.tab);
-                let store = panel.store.is_some()
+                let combat = !badges && panel.combat.as_ref().is_some_and(|s| s.tab() == panel.tab);
+                let store = !badges
+                    && panel.store.is_some()
                     && panel.tab
                         == oteryn_client_runtime::cyclopedia_character::CharacterTab::StoreSummary;
-                let misc =
-                    panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc;
+                let misc = !badges
+                    && panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc;
                 super::misc_layout::layout(
                     &cards,
                     [stamina_bar, training_bar],
@@ -527,6 +607,12 @@ mod window {
                     }
                 }
                 drop(mailbox);
+                if browse_achievements {
+                    crate::play::feature_local_account_achievements::view::open_character(
+                        weak.clone(),
+                        commands.clone(),
+                    );
+                }
                 std::thread::sleep(Duration::from_millis(25));
             }
             DestroyWindow(hwnd);
@@ -534,47 +620,16 @@ mod window {
             drop(actions);
         }
     }
-    fn control(
-        parent: HWND,
-        class: &str,
-        label: &str,
-        id: usize,
-        rect: [i32; 4],
-        style: u32,
-    ) -> HWND {
-        unsafe {
-            CreateWindowExW(
-                0,
-                wide(class).as_ptr(),
-                wide(label).as_ptr(),
-                WS_CHILD | WS_VISIBLE | style,
-                rect[0],
-                rect[1],
-                rect[2],
-                rect[3],
-                parent,
-                id as *mut _,
-                null_mut(),
-                null(),
-            )
-        }
-    }
     fn close(weak: &WeakMailbox) {
         if let Some(shared) = weak.upgrade() {
             lock(&shared).cyclopedia_character.open = false;
         }
     }
-
-    fn read_text(hwnd: HWND) -> String {
-        // SAFETY: hwnd is an edit owned by this thread; the buffer includes its terminator.
-        unsafe {
-            let len = GetWindowTextLengthW(hwnd).max(0);
-            let mut buffer = vec![0; len as usize + 1];
-            let read = GetWindowTextW(hwnd, buffer.as_mut_ptr(), len + 1).max(0);
-            String::from_utf16_lossy(&buffer[..read as usize])
-        }
-    }
 }
+
+#[cfg(windows)]
+#[path = "view/controls.rs"]
+mod controls;
 
 #[cfg(windows)]
 #[path = "view/misc_layout.rs"]

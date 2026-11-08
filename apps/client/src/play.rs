@@ -21,6 +21,7 @@ pub struct PlayView {
     served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
     world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
+    party_icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
     vitals: Option<oteryn_session::ActorVitals>,
     battle_instinct: Option<oteryn_client_ui::battle_instinct_status::BattleInstinctStatus>,
     battle_instinct_refresh: Option<std::time::Instant>,
@@ -74,6 +75,7 @@ impl PlayView {
             world_clock: None,
             served_channel: None,
             world_weather: None,
+            party_icons: Vec::new(),
             vitals: None,
             battle_instinct: None,
             battle_instinct_refresh: None,
@@ -124,8 +126,8 @@ include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 #[cfg(windows)]
 pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 pub use feature_local_reference_preferences::settings::{
-    PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences, SettingsState,
-    preference_bindings,
+    PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences, SettingsPage,
+    SettingsState, WINDOW_ACTIONS, preference_bindings,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;

@@ -109,3 +109,22 @@ fn hireling_management_gates_requests_and_handles_refused_and_malformed_results(
     assert!(request(&mut p, Intent::List).is_none());
     Ok(())
 }
+
+#[test]
+fn hireling_configuration_displays_owned_jobs_and_pending_outfit_preview() {
+    let e = entry();
+    let p = Panel {
+        selected: true,
+        identity: Some(e.hireling),
+        entries: vec![e.clone()],
+        pending: Some(wire::Request::Outfit {
+            hireling: e.hireling,
+            look_type: 1109,
+            colors: [5, 6, 7, 8],
+        }),
+        ..Panel::default()
+    };
+    let text = panel_text(&p);
+    assert!(text.contains("Jobs: Banker, Cook, Steward, Trader"));
+    assert!(text.contains("Preview: Alice (female), outfit 1109, colors [5, 6, 7, 8]"));
+}

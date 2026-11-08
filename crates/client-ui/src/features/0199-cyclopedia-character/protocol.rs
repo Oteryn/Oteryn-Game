@@ -8,6 +8,7 @@ use oteryn_client_runtime::{
 };
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    Achievements,
     Badges,
     MiscResources,
     Tab,
@@ -23,6 +24,10 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     if p.pending {
         p.feedback = Some("Waiting for the server");
         return None;
+    }
+    if matches!(intent, Intent::Achievements) {
+        p.tab = cyclopedia_character::CharacterTab::Achievements;
+        return super::achievements::request(p, crate::account_achievements::Intent::Refresh);
     }
     let auxiliary = matches!(intent, Intent::MiscResources);
     if auxiliary && (p.tab != cyclopedia_character::CharacterTab::Misc || !p.misc_resources_due) {
@@ -44,6 +49,7 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         _ => {}
     }
     let (kind, payload) = match intent {
+        Intent::Achievements => return None,
         Intent::Badges => (387, Vec::new()),
         Intent::Tab
         | Intent::SelectTab(_)
@@ -95,6 +101,9 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     })
 }
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
+    if p.achievement_pending {
+        return super::achievements::apply(p, r);
+    }
     let pending = p.pending;
     p.pending = false;
     let tab = p.requested_tab.take();
@@ -119,7 +128,11 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         return true;
     }
     let text = if p.command_kind == 387 {
-        decode_badges(&r.payload)
+        let decoded = decode_badges(&r.payload);
+        if decoded.is_some() {
+            p.badges = Some(r.payload[1..].to_vec());
+        }
+        decoded
     } else {
         tab.and_then(|tab| decode_tab(&r.payload, tab, p.limit))
     };
@@ -276,6 +289,15 @@ fn decode_tab(
         }
         Tab::StoreSummary => {
             let count = r.u8()?;
+            rows.push("Blessings / death protection".into());
+            rows.push(format!("Owned blessings: {count}"));
+            if count == 0 {
+                rows.push("No blessings owned".into());
+            }
+            rows.push(
+                "Loss percentages are unavailable; ownership does not imply full protection."
+                    .into(),
+            );
             for _ in 0..count {
                 rows.push(format!("Blessing: {}", r.text()?));
             }

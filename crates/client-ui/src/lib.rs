@@ -1,5 +1,8 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+pub mod bulletin;
+pub mod login_queue;
+
 #[path = "features/0025-appearance/mod.rs"]
 pub mod appearance;
 #[path = "features/0291-cast-chat/mod.rs"]
@@ -307,3 +310,7 @@ pub mod rest_status;
 pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;
+
+pub mod modal_dialogs;
+
+pub mod notifications;

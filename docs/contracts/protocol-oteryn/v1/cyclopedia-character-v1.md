@@ -72,7 +72,7 @@ and 5 page by key. Tabs 1, 6, 7, 8, 9 and 10 ignore the page.
 ## Character tab reply
 
 `tab:u8`, then the tab body. Integers are little-endian; text is `len:u8` and
-UTF-8 unless noted. At most 16384 bytes.
+UTF-8 unless noted. Legacy tab replies are at most 16384 bytes.
 
 | Tab | Body |
 |---|---|
@@ -200,3 +200,9 @@ No native owner currently records these facts:
   skill percentages: live state.
 - The outfit/mount split of appearance unlocks: the keys are opaque.
 - Store summary XP boosts, house items and purchase history: no owner.
+
+### Rich Character achievement pages
+
+Command 388 also accepts opt-in selector 128: `128:u8, page:u8`, optionally followed by the 16-byte target Character. Pages are zero-based, 64 rows each, with a maximum complete list of 16,384 earned facts. Legacy tab request/reply grammars and their bounds are unchanged.
+
+The rich reply is `128:u8, character:[u8;16], name_bytes:u8, name:UTF-8`, followed by the existing AccountAchievementsResult codec. The name is 2–29 bytes. Metadata and earned timestamps come from the activated catalogue and immutable grant-request provenance. The same recovery/session-generation fence and foreign-target VIP consent apply. The total command result budget is 32,836 bytes; legacy replies remain bounded at 16,384 bytes. Unsupported, over-limit or unreadable target data is refused without an invented empty list.

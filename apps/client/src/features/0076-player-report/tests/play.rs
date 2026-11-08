@@ -434,3 +434,35 @@ fn guided_bug_report_requires_review_and_sends_only_opted_in_diagnostics()
     assert!(!request.comment.contains("100,200,7"));
     Ok(())
 }
+
+#[test]
+fn bug_categories_show_specific_reproduction_guidance() {
+    use crate::play::feature_0076_player_report::view::bug::activate;
+    let (link, _receiver, _) = play_channel();
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    mailbox.properties.player_report.selected = true;
+    for (category, expected) in [(0, "Coordinates"), (1, "original text"), (2, "operating system"), (3, "expected result")] {
+        activate(&mut mailbox, &link.commands, category);
+        assert!(mailbox.properties.player_report.bug.preview.contains(expected));
+    }
+}
+
+#[test]
+fn violation_review_is_invalidated_by_edits() -> Result<(), Error> {
+    use crate::play::feature_0076_player_report::view::violation::activate;
+    let (link, mut receiver, _) = play_channel();
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    let panel = &mut mailbox.properties.player_report;
+    panel.selected = true;
+    panel.fields = ["0".into(), "1".into(), "Other Player".into(), String::new(), "Original statement".into()];
+    activate(&mut mailbox, &link.commands, false);
+    assert!(receiver.try_recv().is_err());
+    activate(&mut mailbox, &link.commands, true);
+    mailbox.properties.player_report.fields[4].push('!');
+    activate(&mut mailbox, &link.commands, false);
+    assert!(receiver.try_recv().is_err());
+    activate(&mut mailbox, &link.commands, true);
+    activate(&mut mailbox, &link.commands, false);
+    assert!(receiver.try_recv().is_ok());
+    Ok(())
+}

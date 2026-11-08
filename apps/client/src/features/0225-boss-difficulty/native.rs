@@ -154,7 +154,7 @@ mod platform {
             control(
                 hwnd,
                 "STATIC",
-                "Context (32 hex digits)",
+                "Server context (automatic)",
                 111,
                 [10, 45, 190, 24],
                 0,
@@ -165,7 +165,7 @@ mod platform {
                 "",
                 CONTEXT,
                 [205, 45, 400, 24],
-                WS_BORDER | WS_TABSTOP,
+                WS_BORDER | ES_READONLY as u32,
             );
             control(
                 hwnd,
@@ -177,12 +177,21 @@ mod platform {
             );
             let difficulty = control(
                 hwnd,
-                "EDIT",
-                "0",
+                "COMBOBOX",
+                "",
                 DIFFICULTY,
-                [205, 80, 80, 24],
-                ES_NUMBER as u32 | WS_BORDER | WS_TABSTOP,
+                [205, 80, 160, 240],
+                CBS_DROPDOWNLIST as u32 | WS_VSCROLL | WS_TABSTOP,
             );
+            for level in 0..=25 {
+                SendMessageW(
+                    difficulty,
+                    CB_ADDSTRING,
+                    0,
+                    wide(&level.to_string()).as_ptr() as isize,
+                );
+            }
+            SendMessageW(difficulty, CB_SETCURSEL, 0, 0);
             let buttons = [
                 ("Open", OPEN, Intent::Open),
                 ("Preview", PREVIEW, Intent::Preview),
@@ -260,7 +269,7 @@ mod platform {
                     }
                     if held.is_none() {
                         SetWindowTextW(boss, wide(&panel.boss_key).as_ptr());
-                        SetWindowTextW(difficulty, wide(&panel.difficulty.to_string()).as_ptr());
+                        SendMessageW(difficulty, CB_SETCURSEL, usize::from(panel.difficulty), 0);
                     }
                     if let Some(oteryn_client_runtime::boss_difficulty::Reply::Window {
                         selected_difficulty,
@@ -268,12 +277,20 @@ mod platform {
                     }) = &panel.reply
                         && held.as_ref().and_then(|p| p.reply.as_ref()) != panel.reply.as_ref()
                     {
-                        SetWindowTextW(difficulty, wide(&selected_difficulty.to_string()).as_ptr());
+                        SendMessageW(
+                            difficulty,
+                            CB_SETCURSEL,
+                            usize::from(*selected_difficulty),
+                            0,
+                        );
                     }
-                    for (button, _) in &buttons {
+                    for (button, intent) in &buttons {
                         windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
                             *button,
-                            i32::from(enabled(panel)),
+                            i32::from(
+                                enabled(panel)
+                                    && (matches!(intent, Intent::Open) || panel.context.is_some()),
+                            ),
                         );
                     }
                     for edit in [boss, context, difficulty] {

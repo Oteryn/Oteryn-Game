@@ -24,6 +24,7 @@ pub enum Intent {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct VipPanel {
+    pub friends_filter: FriendsFilter,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -174,4 +175,56 @@ mod tests {
         assert!(panel_text(&panel).contains("VIP list is full"));
         assert_eq!(panel.revision, 3);
     }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum FriendsFilter {
+    #[default]
+    All,
+    Confirmed,
+    Invitations,
+}
+/// Account/world consent view from the existing VIP owner, without inferring main characters.
+pub fn friends_text(panel: &VipPanel) -> String {
+    if !panel.selected {
+        return "Friends unavailable in this session".into();
+    }
+    let Some(raw) = panel.view.as_deref() else {
+        return "Loading Friends…".into();
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(raw) else {
+        return "Friends reply is invalid; refresh".into();
+    };
+    let mut text = String::from("Friends and invitations (current page)\r\n");
+    if panel.friends_filter != FriendsFilter::Invitations {
+        for row in value["entries"].as_array().into_iter().flatten() {
+            let confirmed = row["confirmed"] == true;
+            if panel.friends_filter == FriendsFilter::Confirmed && !confirmed {
+                continue;
+            }
+            if let Some(name) = row["name"].as_str() {
+                text.push_str(&format!(
+                    "{name} — {}\r\n",
+                    if confirmed {
+                        "friend"
+                    } else {
+                        "invitation sent"
+                    }
+                ));
+            }
+        }
+    }
+    if panel.friends_filter != FriendsFilter::Confirmed {
+        for row in value["consents"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|row| row["accepted"] != true)
+        {
+            if let Some(name) = row["name"].as_str() {
+                text.push_str(&format!("{name} — invitation received\r\n"));
+            }
+        }
+    }
+    text
 }

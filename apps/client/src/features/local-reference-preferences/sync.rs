@@ -7,16 +7,74 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SettingsPage {
+    #[default]
+    Gameplay,
+    Interface,
+    Graphics,
+    Sound,
+    Help,
+}
+
+impl SettingsPage {
+    pub const ALL: [Self; 5] = [
+        Self::Gameplay,
+        Self::Interface,
+        Self::Graphics,
+        Self::Sound,
+        Self::Help,
+    ];
+
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Gameplay => "Gameplay",
+            Self::Interface => "Interface",
+            Self::Graphics => "Graphics",
+            Self::Sound => "Sound",
+            Self::Help => "Help / settings transfer",
+        }
+    }
+}
+
+pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
+    ("0199-cyclopedia-character-open", "Cyclopedia"),
+    ("0287-actor-spell-catalog-open", "Spellbook"),
+    ("local-spell-action-bar-open", "Spell action bar"),
+    ("0279-skill-progress-open", "Skills"),
+    ("0276-condition-status-open", "Conditions"),
+    ("0277-rest-status-open", "Rest and stamina"),
+    ("0016-quest-log-open", "Quest log"),
+    ("0007-chat-keybindings", "Chat"),
+];
+
 pub struct SettingsState {
+    window_action: Option<&'static str>,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
     pub preferences: ReferencePreferences,
     pub feedback: String,
     pub open: bool,
     pub shutdown: bool,
+    pub page: SettingsPage,
+    last_key: std::collections::BTreeMap<oteryn_input_actions::KeyCode, std::time::Instant>,
 }
 
 impl SettingsState {
+    pub fn queue_window(&mut self, id: &str) -> bool {
+        let Some((id, _)) = WINDOW_ACTIONS.iter().find(|(key, _)| *key == id) else {
+            return false;
+        };
+        self.window_action = Some(id);
+        true
+    }
+
+    pub fn take_window_events(&mut self) -> Vec<NormalizedInputEvent> {
+        self.window_action.take().map_or_else(Vec::new, |id| {
+            super::bindings::window_events(&self.preferences, id)
+        })
+    }
+
     pub fn export_to(&self, path: &Path) -> io::Result<()> {
         PreferenceStore::export_to(&self.preferences, path)
     }
@@ -66,12 +124,15 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            window_action: None,
             store,
             preferences,
             feedback,
             open: false,
             shutdown: false,
             input: PreferenceInput::default(),
+            page: SettingsPage::default(),
+            last_key: Default::default(),
         }
     }
 
@@ -84,10 +145,33 @@ impl SettingsState {
     }
 
     pub fn input(&mut self, events: &[NormalizedInputEvent]) -> (Vec<NormalizedInputEvent>, bool) {
-        let routed = self
+        let mut routed = self
             .input
             .route(&self.preferences, events)
             .unwrap_or_default();
+        use oteryn_input_actions::{ButtonState, MouseButton};
+        let now = std::time::Instant::now();
+        routed.retain_mut(|event| {
+            match event {
+                NormalizedInputEvent::MouseButton { button, .. } if self.preferences.swap_mouse_buttons => {
+                    *button = match *button {
+                        MouseButton::PRIMARY => MouseButton::SECONDARY,
+                        MouseButton::SECONDARY => MouseButton::PRIMARY,
+                        other => other,
+                    };
+                }
+                NormalizedInputEvent::Key { code, state: ButtonState::Pressed, repeat, .. } => {
+                    if *repeat && self.last_key.get(code).is_some_and(|last| now.duration_since(*last).as_millis() < u128::from(self.preferences.keyboard_delay_ms)) {
+                        return false;
+                    }
+                    self.last_key.insert(*code, now);
+                }
+                NormalizedInputEvent::Key { code, state: ButtonState::Released, .. } => { self.last_key.remove(code); }
+                NormalizedInputEvent::FocusChanged { focused: false } | NormalizedInputEvent::DeviceLost => self.last_key.clear(),
+                _ => {}
+            }
+            true
+        });
         if oteryn_client_ui::reference_preferences::open_key(&routed) {
             (Vec::new(), self.request_open())
         } else {

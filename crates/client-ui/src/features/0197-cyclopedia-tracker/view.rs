@@ -68,11 +68,26 @@ pub fn tracker_rows(
         let order = match sort {
             TrackerSort::Name => std::cmp::Ordering::Equal,
             TrackerSort::Kills => b.kill_count.cmp(&a.kill_count),
-            TrackerSort::Remaining => a.thresholds[2]
-                .saturating_sub(a.kill_count)
-                .cmp(&b.thresholds[2].saturating_sub(b.kill_count)),
+            TrackerSort::Remaining => remaining_to_stage(a).cmp(&remaining_to_stage(b)),
         };
         order.then_with(|| a.creature_key.cmp(&b.creature_key))
     });
     rows
+}
+
+fn remaining_to_stage(entry: &oteryn_client_runtime::cyclopedia_tracker::TrackerEntry) -> u32 {
+    entry
+        .thresholds
+        .iter()
+        .copied()
+        .find(|goal| *goal > entry.kill_count)
+        .unwrap_or(entry.kill_count)
+        .saturating_sub(entry.kill_count)
+}
+
+/// Keep selection attached to the creature when widget configuration changes.
+pub fn tracker_selection(panel: &CyclopediaTrackerPanel, boss: bool, key: &str) -> Option<usize> {
+    tracker_rows(panel, boss)
+        .iter()
+        .position(|entry| entry.creature_key == key)
 }

@@ -3,7 +3,7 @@
 use super::{ctl, text, w};
 use crate::combat_input::PlayCommand;
 use crate::play::mailbox::{Mailbox, lock};
-use oteryn_client_ui::cyclopedia_tracker::{Intent, TrackerSort, tracker_rows};
+use oteryn_client_ui::cyclopedia_tracker::{Intent, TrackerSort, tracker_rows, tracker_selection};
 use std::ptr::{null, null_mut};
 use std::sync::{Mutex, Weak};
 use tokio::sync::mpsc::UnboundedSender;
@@ -215,17 +215,16 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
             let hide_completed = SendMessageW(hide, BM_GETCHECK, 0, 0) != 0;
             let selected = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).ok();
             let key_text = text(key);
+            let selected_key = held.as_ref().and_then(|old| {
+                selected.and_then(|i| {
+                    tracker_rows(old, boss)
+                        .get(i)
+                        .map(|e| e.creature_key.clone())
+                })
+            });
             let panel = {
                 let mut m = lock(&shared);
                 let p = &mut m.cyclopedia_tracker;
-                // Resolve selection against exactly the rows currently displayed.
-                let selected_key = held.as_ref().and_then(|old| {
-                    selected.and_then(|i| {
-                        tracker_rows(old, boss)
-                            .get(i)
-                            .map(|e| e.creature_key.clone())
-                    })
-                });
                 if boss {
                     p.boss_search = search_text;
                     p.boss_sort = chosen_sort;
@@ -283,7 +282,10 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
                     );
                     SendMessageW(list, LB_ADDSTRING, 0, w(&label).as_ptr() as isize);
                 }
-                if let Some(i) = selected {
+                if let Some(i) = selected_key
+                    .as_deref()
+                    .and_then(|key| tracker_selection(&panel, boss, key))
+                {
                     SendMessageW(list, LB_SETCURSEL, i, 0);
                 }
                 let message = if !panel.selected {
