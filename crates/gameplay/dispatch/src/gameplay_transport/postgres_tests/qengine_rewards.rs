@@ -154,6 +154,7 @@ async fn talk(
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
         "knight-sword" => &["forge"],
+        "qnpcfx-koshei-start" => &["amulet"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
         "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
@@ -281,6 +282,13 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "deepling-helmet" => &[
             "flou", "explain", "yes", "no", "yes", "yes", "yes", "helmet",
         ],
+        "qnpcfx-oldrak-begin" => &["demon oak"],
+        "qnpcfx-oldrak-hallowed-axe" => &["axe"],
+        "qnpcfx-inquisition-join" => &["join"],
+        "qnpcfx-inquisition-report" => &["mission"],
+        "qnpcfx-inquisition-kulag_guard" | "qnpcfx-inquisition-grof_guard" => &["trouble"],
+        "qnpcfx-inquisition-tim_guard" | "qnpcfx-inquisition-walter_guard" => &["trouble", "authorities", "avoided"],
+        "qnpcfx-inquisition-miles_guard" => &["trouble", "foresight of the authorities", "also for the gods"],
         _ => &[],
     }
 }
@@ -765,6 +773,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-qnpcfx-m10-") {
+        return super::qnpcfx_m10::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-qnpcfx-koshei") {
+        return super::qnpcfx_koshei::exercise(owner, admitted, h, authority, name.ends_with("-bank")).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
     }

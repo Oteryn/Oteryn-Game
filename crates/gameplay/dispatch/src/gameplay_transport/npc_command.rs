@@ -53,6 +53,7 @@ pub(super) mod hireling_services;
 mod hive_shared;
 mod isle_of_evil;
 mod liquid_black;
+mod magic_effects;
 mod marriage;
 mod monk;
 mod planegazer_finale;

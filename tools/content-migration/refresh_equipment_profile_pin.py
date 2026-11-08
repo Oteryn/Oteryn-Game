@@ -85,13 +85,14 @@ def main():
         "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json",
         "content/items/definitions/starting-loadout-profiles.json",
     )
-    source = TEST.read_text()
+    from qnpcfx_item_profiles import cohort_receipt
+    source = cohort_receipt(TEST.read_text(), json.loads((ROOT / paths[3]).read_text()))
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths)
     )
-    if args.check and generated != source:
+    if args.check and generated != TEST.read_text():
         raise SystemExit("equipment cohort pin is stale")
-    if not args.check and generated != source:
+    if not args.check and generated != TEST.read_text():
         with tempfile.NamedTemporaryFile("w", dir=TEST.parent, delete=False) as output:
             output.write(generated)
             temporary = output.name

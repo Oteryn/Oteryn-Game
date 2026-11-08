@@ -151,9 +151,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // P11: mechanical rod 9306 from Crystal 201189f items.xml:25156-25159
     // (tools/content-migration/gathering_item_profiles.py). It has speed_bonus=0.
     ("P11-MECHANICAL-FISHING", 1),
-    // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
-    // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
-    ("QNPCFX", 1),
+    // QNPCFX: generated from qnpcfx_item_profiles.py KEYS and pinned source proofs.
+    // Koshei pieces/amulet, Hallowed Axe and tender venison; existing equipment owner.
+    ("QNPCFX", 7),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).

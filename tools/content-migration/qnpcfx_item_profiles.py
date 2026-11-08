@@ -5,6 +5,7 @@ Qualification belongs to the existing batch-three importer and native merger.
 """
 import argparse
 import json
+import re
 from pathlib import Path
 
 import quest_batch3_item_profiles as batch
@@ -12,19 +13,50 @@ import qengine_reward_item_profiles as shared
 
 PATH = 'tools/content-schema/native-gameplay/qnpcfx-item-profiles.json'
 SCHEMA = 'OTERYN_QNPCFX_ITEM_PROFILES/v1'
-KEYS = {'oteryn:item.tibia.i52636'}
+KEYS = {'oteryn:item.tibia.i52636'} | {f'oteryn:item.tibia.i{i}' for i in range(7528, 7533)} | {'oteryn:item.tibia.i919'}
 
 
 def capture(source_root):
-    packet = batch.capture(source_root)
+    packet = batch.capture(source_root, additional_inputs=(
+        'content/quests/npc-callbacks/qnpcfx-koshei.json',
+        'content/quests/npc-callbacks/qnpcfx-m10.json',
+    ))
     packet['records'] = [r for r in packet['records']
                          if r['production_definition']['production_key'] in KEYS]
     packet['classification'] = [r for r in packet['classification'] if r['key'] in KEYS]
+    # The amulet's resistance attributes belong to the existing equipment
+    # importer, not the plain-portable whitelist. Keep that owner's full facts.
+    equipment_keys = {'oteryn:item.tibia.i7532', 'oteryn:item.tibia.i919'}
+    equipment = shared.capture(item_ids={7532, 919})
+    packet['records'] = [r for r in packet['records']
+                         if r['production_definition']['production_key'] not in equipment_keys]
+    packet['records'].extend(equipment['records'])
+    packet['records'].sort(key=lambda r: int(r['production_definition']['production_key'].rsplit('i', 1)[1]))
+    for row in packet['classification']:
+        if row['key'] in equipment_keys:
+            row.update(classification='QUALIFIED_NATIVE_EQUIPMENT', reason=None,
+                       profile_source=equipment['sources'])
+    packet['sources'].extend(equipment['sources'])
     packet.update(schema=SCHEMA, producer='tools/content-migration/qnpcfx_item_profiles.py',
                   runtime_enabled=True,
                   decision='QNPCFX: production NPC effect qualification',
                   purpose='Physical custody for source-authored NPC hand-ins; no custom use effects.')
     return packet
+
+
+def cohort_receipt(source, packet):
+    """The explicit source key set is independent of the generated native union."""
+    keys = {r['production_definition']['production_key'] for r in packet['records']}
+    if keys != KEYS or len(packet['records']) != len(KEYS):
+        raise ValueError('QNPCFX_COHORT_IDENTITY_SET')
+    pattern = r'    // QNPCFX:[^\n]*\n(?:    //[^\n]*\n)*    \("QNPCFX", [0-9_]+\),'
+    block = ('    // QNPCFX: generated from qnpcfx_item_profiles.py KEYS and pinned source proofs.\n'
+             '    // Koshei pieces/amulet, Hallowed Axe and tender venison; existing equipment owner.\n'
+             f'    ("QNPCFX", {len(KEYS)}),')
+    result, count = re.subn(pattern, lambda _: block, source)
+    if count != 1:
+        raise ValueError('QNPCFX_COHORT_RECEIPT_SHAPE')
+    return result
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
@@ -34,7 +66,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or {r['production_definition']['production_key'] for r in records} != KEYS
             or len(packet['classification']) != len(KEYS)
             or {r['key'] for r in packet['classification']} != KEYS
-            or any(r['classification'] not in ('QUALIFIED_PLAIN_PORTABLE', 'EXISTING_NATIVE')
+            or any(r['classification'] not in ('QUALIFIED_PLAIN_PORTABLE', 'EXISTING_NATIVE', 'QUALIFIED_NATIVE_EQUIPMENT')
                    for r in packet['classification'])):
         raise ValueError('QNPCFX_ITEM_QUALIFICATION')
     shared.admit_records(root, generated, profile_path, manifest_path, order, canonical, records)

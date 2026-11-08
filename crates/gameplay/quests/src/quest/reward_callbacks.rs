@@ -191,6 +191,8 @@ pub struct RewardCallback {
     pub achievement: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub achievement_progress: Vec<AchievementProgress>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub magic_effects: Vec<super::npc_magic::Cue>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
 }
@@ -266,6 +268,8 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
 ];
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
@@ -437,6 +441,8 @@ fn validate_document(document: Document) -> Result<Document, String> {
                 .iter()
                 .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
             || (c.storage.is_empty() && c.state_ops.is_empty() && !c.value_only_guarded())
+            || c.magic_effects.len() > 8
+            || c.magic_effects.iter().any(|cue| cue.effect_id().is_none())
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || c.minimum_level == Some(0)
             || tracks.len() != c.storage.len()
@@ -1242,6 +1248,12 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod qnpcfx_tests;
+
+#[cfg(test)]
+mod m10_magic_tests;
 
 #[cfg(test)]
 #[path = "reward_callbacks/readable_text_tests.rs"]

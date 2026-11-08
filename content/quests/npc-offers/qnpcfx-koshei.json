@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "amulet"
+      ],
+      "topic": 0,
+      "next_topic": 12,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qnpcfx/koshei/amulet",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Me can do unbroken but Big Ben want gold 5000 and all four pieces. Yes?"
+      ]
+    }
+  ]
+}
