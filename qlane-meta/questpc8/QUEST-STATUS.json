@@ -1432,8 +1432,8 @@
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
         "main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
-        "qengine2": "dd35529b6f1c61042e798723f71768109f9573f8",
-        "result": "Qualified selected-instance exchanges reused; live-player colour predicate remains queued."
+        "qengine2": "e6bacdda606c65290d6c2df64473cd2b75cdbaf1",
+        "result": "Live21-head audit found no required feature implementation; both requests remain explicitly QUEUED."
       }
     },
     "collector_handoff": {
@@ -1454,6 +1454,11 @@
       "green_marker": "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
       "proof": "colours-opening-validation.json",
       "merged_main": "b3864f14a0035a582ef80f1da7d2a931691dd035"
+    },
+    "continuation_validation": {
+      "proof": "unit-completion-validation.json",
+      "unit_run": "RUNNING",
+      "qualification_unchanged": true
     }
   },
   {
@@ -1708,8 +1713,8 @@
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
         "main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
-        "qengine2": "dd35529b6f1c61042e798723f71768109f9573f8",
-        "result": "Source item-look disguise/restoration remains explicitly QUEUED upstream; no bypass authored."
+        "qengine2": "e6bacdda606c65290d6c2df64473cd2b75cdbaf1",
+        "result": "Live21-head audit found no required feature implementation; both requests remain explicitly QUEUED."
       }
     },
     "active_validation": {
@@ -1734,6 +1739,11 @@
       "continuation_branch": "claude/happy-davinci-ijz3wy-questpc8b",
       "proof": "collector-main-validation.json",
       "whole_quest_qualification_unchanged": true
+    },
+    "continuation_validation": {
+      "proof": "unit-completion-validation.json",
+      "unit_run": "RUNNING",
+      "qualification_unchanged": true
     }
   },
   {

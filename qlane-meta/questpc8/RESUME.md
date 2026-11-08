@@ -1,3 +1,22 @@
+# Active checkpoint: full changed-crate units running
+
+Continuation questpc8b; original questpc8 remains frozen. Product source is
+unchanged from534ea6b23. Full three-crate non-PG units now run without a tree
+change:2560selected,810PASS so far,0failures; not a complete green run.
+Previously interrupted equipment cases have passed. Continue the same process
+and collect every failure before changing source. Log:
+/tmp/questpc8b-complete-units.log . No full workspace/PG suite was requested.
+Fresh own Colours PG PASS105.90s with execution marker, workspace all-targets
+PASS, three-crate clippy -Dwarnings PASS5m21s, fmt/duplicate migrations PASS.
+Repository generator read-only checks match46native outputs,310binding
+identities/6628pointers and current32,840,502-byte bundle pin. This evidence-only
+checkpoint does not change product inputs; check mode avoids rewriting files
+under the active unit run. See unit-completion-validation.json.
+Live peer audit found QENGINE2e6bacdda6, with qualified native kill counters
+and both required features still QUEUED. Fresh fetches must use explicit
+remote-tracking refspecs. No required implementation found on21live heads.
+Whole quest counts unchanged; do not promote Colours/Wrath from these checks.
+
 # Latest checkpoint: mainb3864f14a synchronized and focused GREEN
 
 Original questpc8 remains FROZEN at8639b16b158d39e36bf08d98f2a4dd998a4e2c5e.
