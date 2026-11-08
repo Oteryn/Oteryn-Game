@@ -104,7 +104,13 @@ mod window {
     use std::time::Duration;
     use tokio::sync::mpsc::UnboundedSender;
     use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
-    use windows_sys::Win32::UI::WindowsAndMessaging::*;
+    use windows_sys::Win32::UI::{
+        Controls::{
+            ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx, PBM_SETPOS,
+            PBM_SETRANGE32,
+        },
+        WindowsAndMessaging::*,
+    };
     type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
     #[derive(Default)]
     struct Actions(Vec<usize>);
@@ -265,6 +271,31 @@ mod window {
             let tabs: [i32; 2] = [100, 180];
             SendMessageW(history, LB_SETTABSTOPS, tabs.len(), tabs.as_ptr() as isize);
             SendMessageW(history, LB_SETHORIZONTALEXTENT, 1800, 0);
+            let status_label = control(hwnd, "STATIC", "", 472, [10, 192, 690, 34], 0);
+            let common = INITCOMMONCONTROLSEX {
+                dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
+                dwICC: ICC_PROGRESS_CLASS,
+            };
+            InitCommonControlsEx(&common);
+            let cards: Vec<_> = (0..14)
+                .map(|i| {
+                    control(
+                        hwnd,
+                        "STATIC",
+                        "",
+                        450 + i,
+                        [
+                            10 + (i % 4) as i32 * 175,
+                            355 + (i / 4) as i32 * 52,
+                            165,
+                            48,
+                        ],
+                        WS_BORDER,
+                    )
+                })
+                .collect();
+            let stamina_bar = control(hwnd, "msctls_progress32", "", 470, [10, 575, 335, 18], 0);
+            let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
             let mut held_history = Vec::new();
             let mut message: MSG = std::mem::zeroed();
             loop {
@@ -301,13 +332,45 @@ mod window {
                     wide(&display(&mailbox.cyclopedia_character)).as_ptr(),
                 );
                 let panel = &mailbox.cyclopedia_character;
+                let status = if panel.pending {
+                    "Waiting for the server"
+                } else {
+                    panel.feedback.unwrap_or("")
+                };
+                SetWindowTextW(status_label, wide(status).as_ptr());
                 let table = panel.history_tab == Some(panel.tab);
                 let pvp = panel.tab
                     == oteryn_client_runtime::cyclopedia_character::CharacterTab::RecentPvpKills;
                 for id in 114..=116 {
                     ShowWindow(GetDlgItem(hwnd, id), if pvp { SW_SHOW } else { SW_HIDE });
                 }
-                ShowWindow(output, if table { SW_HIDE } else { SW_SHOW });
+                let overview = panel.general.is_some()
+                    && panel.tab
+                        == oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats;
+                ShowWindow(output, if table || overview { SW_HIDE } else { SW_SHOW });
+                for handle in cards.iter().copied().chain([stamina_bar, training_bar]) {
+                    ShowWindow(handle, if overview { SW_SHOW } else { SW_HIDE });
+                }
+                if overview {
+                    for (handle, (label, value)) in
+                        cards
+                            .iter()
+                            .zip(oteryn_client_ui::cyclopedia_character::overview_cards(
+                                panel,
+                            ))
+                    {
+                        SetWindowTextW(*handle, wide(&format!("{label}\r\n{value}")).as_ptr());
+                    }
+                    if let Some(bars) = oteryn_client_ui::cyclopedia_character::overview_bars(panel)
+                    {
+                        for (handle, (value, max)) in
+                            [stamina_bar, training_bar].into_iter().zip(bars)
+                        {
+                            SendMessageW(handle, PBM_SETRANGE32, 0, max as isize);
+                            SendMessageW(handle, PBM_SETPOS, usize::from(value), 0);
+                        }
+                    }
+                }
                 for handle in [heading, history, detail] {
                     ShowWindow(handle, if table { SW_SHOW } else { SW_HIDE });
                 }

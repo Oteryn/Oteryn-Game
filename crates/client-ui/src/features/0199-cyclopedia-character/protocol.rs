@@ -87,6 +87,16 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
     };
     match text {
         Some(v) => {
+            let general = if tab == Some(cyclopedia_character::CharacterTab::GeneralStats) {
+                let Some(stats) = decode_general(&r.payload) else {
+                    p.feedback = Some("The server returned invalid general statistics");
+                    return false;
+                };
+                Some(stats)
+            } else {
+                None
+            };
+            p.general = general;
             if let Some(tab) = tab.filter(|t| {
                 matches!(
                     t,
@@ -326,4 +336,37 @@ fn decode_history(
         });
     }
     r.0.is_empty().then_some(rows)
+}
+
+fn decode_general(b: &[u8]) -> Option<cyclopedia_character::GeneralStats> {
+    if b.first() != Some(&(cyclopedia_character::CharacterTab::GeneralStats as u8)) {
+        return None;
+    }
+    let mut r = Reader(&b[1..]);
+    let experience = r.u64()?;
+    let level = r.u32()?;
+    let magic_level = r.u16()?;
+    let mut skills = [0; 7];
+    for skill in &mut skills {
+        *skill = r.u16()?;
+    }
+    let stamina_minutes = r.u16()?;
+    let offline_training_minutes = r.u16()?;
+    let known = r.u8()?;
+    let (health, mana) = (r.u32()?, r.u32()?);
+    let last_vitals = match known {
+        0 if health == 0 && mana == 0 => None,
+        1 => Some((health, mana)),
+        _ => return None,
+    };
+    r.0.is_empty()
+        .then_some(cyclopedia_character::GeneralStats {
+            experience,
+            level,
+            magic_level,
+            skills,
+            stamina_minutes,
+            offline_training_minutes,
+            last_vitals,
+        })
 }

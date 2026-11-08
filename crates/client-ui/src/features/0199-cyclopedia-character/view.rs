@@ -27,3 +27,67 @@ pub fn history_rows(p: &CyclopediaCharacterPanel) -> Vec<&super::HistoryRow> {
         })
         .collect()
 }
+
+pub fn overview_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String)> {
+    let Some(stats) = p.general.filter(|_| {
+        p.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats
+    }) else {
+        return Vec::new();
+    };
+    let mut cards = vec![
+        ("Level", stats.level.to_string()),
+        ("Experience", stats.experience.to_string()),
+        ("Magic level", stats.magic_level.to_string()),
+        (
+            "Health (last saved)",
+            stats
+                .last_vitals
+                .map_or_else(|| "Unavailable".into(), |(v, _)| v.to_string()),
+        ),
+        (
+            "Mana (last saved)",
+            stats
+                .last_vitals
+                .map_or_else(|| "Unavailable".into(), |(_, v)| v.to_string()),
+        ),
+    ];
+    for (label, level) in [
+        "Fist",
+        "Club",
+        "Sword",
+        "Axe",
+        "Distance",
+        "Shielding",
+        "Fishing",
+    ]
+    .into_iter()
+    .zip(stats.skills)
+    {
+        cards.push((label, level.to_string()));
+    }
+    cards.push((
+        "Stamina",
+        format!(
+            "{}:{:02}",
+            stats.stamina_minutes / 60,
+            stats.stamina_minutes % 60
+        ),
+    ));
+    cards.push((
+        "Offline training",
+        format!(
+            "{}:{:02}",
+            stats.offline_training_minutes / 60,
+            stats.offline_training_minutes % 60
+        ),
+    ));
+    cards
+}
+/// Native owners cap stamina at 2520 minutes and the offline training pool at 43200 seconds.
+pub fn overview_bars(p: &CyclopediaCharacterPanel) -> Option<[(u16, u16); 2]> {
+    let stats = p.general?;
+    Some([
+        (stats.stamina_minutes.min(2520), 2520),
+        (stats.offline_training_minutes.min(720), 720),
+    ])
+}
