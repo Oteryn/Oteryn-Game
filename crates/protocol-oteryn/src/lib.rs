@@ -20,6 +20,8 @@ pub mod actor_spell_catalog;
 pub mod actor_spell_item_v2;
 pub mod actor_spell_v2;
 pub mod analyser;
+pub mod analyser_catalogue;
+pub mod analyser_party;
 pub mod animus_mastery;
 pub mod appearance;
 pub mod arena;

@@ -10,6 +10,10 @@ pub fn panel_text(panel: &Panel) -> String {
     for action in &panel.confirmed {
         text.push_str(&format!("\r\n{action:?}"));
     }
+    text.push_str("\r\nManaged destinations (confirmed in this session):");
+    for destination in &panel.destinations {
+        text.push_str(&format!("\r\n{destination:?}"));
+    }
     if let Some(result) = &panel.result {
         text.push_str(&format!(
             "\r\nLooted {} of {} items",
