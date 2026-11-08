@@ -781,3 +781,15 @@ a real mechanic RED; its pure source/recipe/price validation already passes.
   arbitrary detected insertion sites.
 - Additional live Rotworm odour sampling belongs to qengine2, like Guardcatcher
   live captures. Do not substitute a ground object or corpse for a live actor.
+
+## Goblin sign slice (2026-11-08)
+
+The three native rock witnesses are33055,32091,z7;33026,32091,z7;
+33032,32083,z7. Region SHA256d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f
+and the placement palette resolve all three to17679. Source item XML:35733
+identifies cracked stone. Chosen conservative presentation: each Character
+records each exact site once and spends one carried sign17668; shared rocks
+remain available to other Characters. Do not introduce a shared respawn lock
+or claim source ground-sign decay. The synthetic fixture corridor and adjacent
+NPC are test travel geometry; only targets and their native identities are
+asserted source placements. Whole six-job quest remains ACTIVE.

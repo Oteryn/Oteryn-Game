@@ -329,7 +329,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         };
         assert_eq!(profile.attributes.speed_bonus, expected, "{key}");
     }
-    assert_eq!(added_keys.len(), 95);
+    assert_eq!(added_keys.len(), 96);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"

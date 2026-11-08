@@ -1,0 +1,80 @@
+{
+  "state": "AUTHORED_COMPILE_CHECKPOINT_GREEN_PG_PENDING",
+  "whole_quest": "ACTIVE",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "test": "questpc7_goblin_three_personal_sign_sites",
+  "red": {
+    "baseline": "c7d67c4fc95e29b9e4651ea069fd441810b40e4d plus the new regression and corrected native-only fixture",
+    "seconds": 34.668652794,
+    "expected": "Rejected before introduction",
+    "actual": "NothingToUse",
+    "log": "/tmp/questpc7-signs-red2.log"
+  },
+  "fixture_diagnostic": {
+    "seconds": 35.171147329,
+    "error": "physical target must be unique",
+    "resolution": "Keep native Items; remove their duplicate terrain representations. Not counted as a mechanic RED."
+  },
+  "green": "PENDING; no sign-stage or whole-quest qualification claimed",
+  "sites": [
+    [
+      33055,
+      32091,
+      -7
+    ],
+    [
+      33026,
+      32091,
+      -7
+    ],
+    [
+      33032,
+      32083,
+      -7
+    ]
+  ],
+  "native_region": {
+    "path": "content/world/placements/region-z07-x129-y125.b3",
+    "sha256": "d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f"
+  },
+  "item_source": "imports/canary/items-xml/items.xml:35733; sha256:1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+  "source_page": "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277",
+  "rule": "Each exact native site consumes one carried sign17668 and sets one personal flag. Preserve shared rocks so another Character is not locked out. No new mint or generic engine.",
+  "assertions": [
+    "pre-intro refusal",
+    "same-appearance decoy does not spend",
+    "three distinct exact source sites",
+    "one sign per site",
+    "command replay has no new effect",
+    "fresh repeat visit has no new effect",
+    "other five jobs and kit preserved",
+    "whole quest remains incomplete"
+  ],
+  "python_tests": {
+    "authoring": "24 passed in68.108s",
+    "physical_admission": "6 passed in0.003s (unit mocks, not PG)"
+  },
+  "pending_tests": [
+    "post-change sign PG case",
+    "content, dispatch, quests Rust unit crates"
+  ],
+  "owner_exception": "PREPUSH-2: publish passes1,2,4 when step3 exceeds cadence; explicitly record pending tests.",
+  "checkpoint_checks": {
+    "callback-generation": "CALLBACK_GENERATION_EXIT=0",
+    "native-generation": "NATIVE_GENERATION_EXIT=0",
+    "audit": "AUDIT_EXIT=0",
+    "central-generation": "CENTRAL_GENERATION_EXIT=0",
+    "callback-freshness": "CALLBACK_FRESHNESS_EXIT=0",
+    "world-metadata": "WORLD_METADATA_EXIT=0",
+    "migrations": "MIGRATIONS_EXIT=0",
+    "fmt": "FMT_EXIT=0",
+    "check": "CHECK_EXIT=0",
+    "clippy": "CLIPPY_EXIT=0",
+    "pins": "PINS_EXIT=0",
+    "coverage": "COVERAGE_EXIT=0",
+    "authoring-tests": "AUTHORING_TESTS_EXIT=0",
+    "profile-tests": "PROFILE_TESTS_EXIT=0"
+  },
+  "check_duration": "3m25s",
+  "clippy_duration": "3m14s"
+}

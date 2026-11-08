@@ -94,6 +94,201 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/questpc7-goblin-sign-1",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33055,
+          "y": 32091,
+          "floor": -7
+        },
+        "appearance": 17679,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/sign-site-1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17668",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:a12be07ddc3dd94a32206b735e30f78d80bdafceb757d603b99124e85442ae6e",
+        "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
+        "content/world/placements/index.json:1:sha256:e0bd79d555cdd4b2c950d357d482e642598018b6e1bfd972891b7432c4f9b546",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-sign-2",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33026,
+          "y": 32091,
+          "floor": -7
+        },
+        "appearance": 17679,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/sign-site-2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17668",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:a12be07ddc3dd94a32206b735e30f78d80bdafceb757d603b99124e85442ae6e",
+        "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
+        "content/world/placements/index.json:1:sha256:e0bd79d555cdd4b2c950d357d482e642598018b6e1bfd972891b7432c4f9b546",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-sign-3",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33032,
+          "y": 32083,
+          "floor": -7
+        },
+        "appearance": 17679,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/sign-site-3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17668",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "success_message": "You put up one advertisement sign for Rafzan at this marked site.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:a12be07ddc3dd94a32206b735e30f78d80bdafceb757d603b99124e85442ae6e",
+        "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
+        "content/world/placements/index.json:1:sha256:e0bd79d555cdd4b2c950d357d482e642598018b6e1bfd972891b7432c4f9b546",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/questpc7-hidden-entry",
       "quest": "oteryn:quest.hidden_threats_quest",
       "trigger": "step_in",

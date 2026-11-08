@@ -11,6 +11,8 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     selected.append_eligibility_starts(root, lane_callbacks, inputs, pin)
     programmes.append(root, lane_callbacks, inputs, pin)
     formal_worlds = programmes.append_formal(root, lane_callbacks, inputs, pin)
+    signs = load_module('questpc7_goblin_signs', 'tools/content-schema/quest-authoring/questpc7_goblin_signs.py')
+    formal_worlds.extend(signs.build(root))
     encounters = load_module('questpc7_encounters','tools/content-schema/quest-authoring/questpc7_encounters.py')
     formal_worlds.extend(encounters.worlds(root))
     hoist = load_module('questpc7_hoist_programme','tools/content-schema/quest-authoring/questpc7_hoist_programme.py')

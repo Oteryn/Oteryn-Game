@@ -1043,7 +1043,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Compose the quest-owned route using the shared engine requested in ENGINE-REQUESTS.json after qengine2 delivery; do not implement a large new engine in this lane.",
+      "missing_piece": "Finish quest-owned physical jobs and final reward; reuse qengine2 live capture and live Rotworm odour support when delivered. Independent physical jobs continue now.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
         "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
@@ -1104,6 +1104,12 @@
       "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
       "qualification_change": false,
       "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "sign_progress": {
+      "state": "AUTHORED_COMPILE_CHECKPOINT_GREEN_PG_PENDING",
+      "proof": "qlane-meta/questpc7/GOBLIN-SIGNS-PG-PROOF.json",
+      "whole_quest": "ACTIVE",
+      "next": "Run the authored route on PG; only after GREEN qualify the sign stage, then continue native trunk and urine jobs."
     }
   },
   {
