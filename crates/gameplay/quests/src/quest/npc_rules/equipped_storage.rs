@@ -106,6 +106,7 @@ mod tests {
                 npc: "oteryn:npc.fixture",
                 trigger: NpcRuleTrigger::Say,
                 message: "mission",
+                player_name: None,
                 topic: 0,
                 tracks: &tracks,
                 inventory: &inventory,

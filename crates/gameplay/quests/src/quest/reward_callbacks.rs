@@ -133,19 +133,7 @@ pub enum ActorConditionRequirement {
     Drunk,
 }
 
-/// A personal source-authored destination; it carries no shared world mutation.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct QuestMapMark {
-    pub position: super::world_callbacks::Position,
-    pub icon: QuestMapMarkIcon,
-    pub text: String,
-}
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum QuestMapMarkIcon {
-    Cross,
-}
+pub use super::map_marks::{MapMarkKind as QuestMapMarkIcon, QuestMapMark};
 
 /// One paid source occurrence advances the existing Character achievement owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -158,6 +146,9 @@ pub struct AchievementProgress {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
+    /// Personal display fact created atomically with this dialogue progress receipt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub map_mark: Option<super::map_marks::QuestMapMark>,
     pub key: String,
     pub quest: String,
     pub npc: String,
@@ -170,8 +161,6 @@ pub struct RewardCallback {
     /// Exact native live creature selected by a carried quest tool.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_target: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub map_mark: Option<QuestMapMark>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -293,6 +282,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
+    include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -467,16 +458,10 @@ fn validate_document(document: Document) -> Result<Document, String> {
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         let requires: BTreeSet<_> = c.requires.iter().map(|s| &s.track).collect();
-        if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
-            || c.map_mark.as_ref().is_some_and(|mark| {
-                !(0..=65535).contains(&mark.position.x)
-                    || !(0..=65535).contains(&mark.position.y)
-                    || !(-15..=0).contains(&mark.position.floor)
-                    || mark.text.is_empty()
-                    || mark.text.len() > 128
-                    || mark.text.chars().any(char::is_control)
-                    || c.storage.iter().all(|state| state.preserve)
-            })
+        if c.map_mark
+            .as_ref()
+            .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
+            || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()
@@ -1327,6 +1312,10 @@ mod tests {
 #[cfg(test)]
 #[path = "reward_callbacks/readable_text_tests.rs"]
 mod readable_text_tests;
+
+#[cfg(test)]
+#[path = "reward_callbacks/map_mark_tests.rs"]
+mod map_mark_tests;
 
 #[cfg(test)]
 mod multiple_rewards_tests;

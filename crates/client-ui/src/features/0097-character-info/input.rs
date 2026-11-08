@@ -7,3 +7,8 @@ pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
         if code.get() == 13 && *modifiers == chord)
     })
 }
+
+pub fn titles_key(events: &[NormalizedInputEvent]) -> bool {
+    events.iter().any(|e| matches!(e, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false }
+        if code.get() == 28 && modifiers.contains(Modifier::Control) && modifiers.contains(Modifier::Alt) && modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
+}

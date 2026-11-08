@@ -14,6 +14,14 @@ impl PlayLink {
         enqueue(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn boss_encounter_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::boss_encounter::cooldowns_key(events) {
+            self.boss_encounter_request(Intent::Refresh);
+            #[cfg(windows)]
+            super::view::cooldown_window(self);
+            #[cfg(not(windows))]
+            { lock(&self.mailbox).boss_encounter.cooldowns_open = true; }
+            return true;
+        }
         if !oteryn_client_ui::boss_encounter::open_key(events) {
             return false;
         }

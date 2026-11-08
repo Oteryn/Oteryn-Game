@@ -44,8 +44,8 @@
           "y": 31924,
           "floor": -7
         },
-        "icon": "cross",
-        "text": "Treasure"
+        "text": "Treasure",
+        "kind": "cross"
       },
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sterling.lua:62,142-157:sha256:3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9"

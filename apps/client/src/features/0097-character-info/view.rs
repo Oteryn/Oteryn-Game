@@ -49,3 +49,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+
+#[cfg(windows)]
+#[path = "view/titles.rs"]
+mod titles;
+#[cfg(windows)]
+pub(in crate::play) use titles::open_titles;

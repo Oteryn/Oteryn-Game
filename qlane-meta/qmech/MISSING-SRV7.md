@@ -10,4 +10,4 @@ Checked package head: `7792b6fb31f8855bfdea4b10b56f3f375906df8d`. This is a boun
 
 The retained SRV7 head `6a90fa094b91940cb341ad416ad1530f3b255030` is explicitly WIP: its commit names red Simon payment and corpse custody. It is not one of the four excluded open PR branches. No mixed WIP snapshot is represented as finished/tested work or copied into this package. Qualification and transfer of individual historical slices remains pending; this report does not declare SRV7 complete.
 
-The original SRV7 migration allocation remains **0992–0993**. No migration is allocated by this report or the initial taming claim; already merged migrations will not be edited.
+The initial historical SRV7 packet used 0992–0993. The coordinator’s M14 assignment now reserves **2160–2169**; this mechanic needs no migration and no merged migration is edited.

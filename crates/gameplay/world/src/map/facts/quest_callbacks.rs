@@ -1098,3 +1098,40 @@ mod primal_pod_removal_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod lifecycle_tests {
+    use super::*;
+
+    #[test]
+    fn source_reset_deadline_cannot_overwrite_a_newer_transform() {
+        let facts = BundleFacts::default();
+        let original = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 10186,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let active = EntryFacts {
+            appearance_id: 10187,
+            ..original
+        };
+        let reset = QuestCallbackProjection::TimedTransform {
+            due: 10_000_000,
+            restore: original,
+        };
+        assert!(facts.apply_quest_callback(1, 0, active, &[], &[], false, Some(&reset)));
+        assert_eq!(facts.expire_movement_items(9_999_999), 0);
+        assert_eq!(facts.object_revision(1), 1);
+        assert_eq!(facts.expire_movement_items(10_000_000), 1);
+        assert_eq!(facts.object_revision(1), 2);
+        assert!(facts.apply_quest_callback(1, 2, active, &[], &[], false, Some(&reset)));
+        assert!(facts.apply_quest_callback(1, 3, active, &[], &[], false, None));
+        assert_eq!(facts.expire_movement_items(10_000_001), 0);
+        assert_eq!(facts.object_revision(1), 4);
+    }
+}

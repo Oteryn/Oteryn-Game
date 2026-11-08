@@ -34,6 +34,11 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod source_container_capacity;
+pub use source_container_capacity::captured_source_capacity;
+mod source_containers;
+pub use source_containers::CapturedMapItem;
+
 mod quest_callbacks;
 mod world_change_phases;
 use quest_callbacks::CallbackStates;
@@ -119,6 +124,9 @@ pub struct BundleFacts {
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
     placements: Vec<(u64, Placement)>,
+    map_source_items: BTreeMap<u64, CapturedMapItem>,
+    map_source_children: BTreeMap<u64, Vec<u64>>,
+    unsupported_source_containers: BTreeSet<u64>,
     /// Ascending `(tile, source House id)`, retained from the bundle's tile fact.
     houses: Vec<(TilePos, u32)>,
     house_doors: Vec<(TilePos, u32, u8)>,
@@ -207,6 +215,24 @@ impl BundleFacts {
             movement_definitions: self.movement_definitions.clone(),
             ids: self.ids.clone(),
             placements,
+            map_source_items: self
+                .map_source_items
+                .iter()
+                .filter(|(key, _)| view::placement_of(**key).is_some_and(|(pos, _)| inside(pos)))
+                .map(|(key, node)| (*key, node.clone()))
+                .collect(),
+            map_source_children: self
+                .map_source_children
+                .iter()
+                .filter(|(key, _)| view::placement_of(**key).is_some_and(|(pos, _)| inside(pos)))
+                .map(|(key, children)| (*key, children.clone()))
+                .collect(),
+            unsupported_source_containers: self
+                .unsupported_source_containers
+                .iter()
+                .filter(|key| view::placement_of(**key).is_some_and(|(pos, _)| inside(pos)))
+                .copied()
+                .collect(),
             houses: self
                 .houses
                 .iter()
@@ -307,6 +333,9 @@ impl BundleFacts {
             movement_definitions,
             ids: unique,
             placements: Vec::new(),
+            map_source_items: BTreeMap::new(),
+            map_source_children: BTreeMap::new(),
+            unsupported_source_containers: BTreeSet::new(),
             houses: Vec::new(),
             house_doors: Vec::new(),
             doors: DoorBook::default(),
@@ -361,6 +390,7 @@ impl BundleFacts {
             if tile.house != 0 {
                 self.houses.push((pos, tile.house));
             }
+            self.capture_nested_sources(pos, tile);
             let top = tile.items.iter().filter(|item| item.depth == 0);
             let mut blocks = false;
             for (ordinal, item) in top.enumerate() {
