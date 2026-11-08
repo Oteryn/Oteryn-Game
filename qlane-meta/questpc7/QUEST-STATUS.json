@@ -1056,7 +1056,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Finish quest-owned physical jobs and final reward; reuse qengine2 live capture and live Rotworm odour support when delivered. Independent physical jobs continue now.",
+      "missing_piece": "Finish remaining odour/capture jobs and final reward. Native signs, pond, trunks and five Marsh Stalker kills are PG-qualified; shared live actor/callback convergence remains owner-routed.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
         "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
@@ -1142,7 +1142,15 @@
       "red_seconds": 64.248140561,
       "green_seconds": 192.529618224,
       "whole_quest": "ACTIVE",
-      "next": "Native Marsh Stalker5kill job; source-data drafts ready. Capture/Rotworm and shared API convergence remain owner-routed."
+      "next": "Source-bound remaining odours/captures and final reward; reuse qengine2 live actor and canonical callback convergence deliveries."
+    },
+    "stalker_progress": {
+      "state": "FIVE_NATIVE_MARSH_STALKER_KILLS_PG_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-STALKERS-PG-PROOF.json",
+      "red_seconds": 64.581898601,
+      "green_seconds": 267.722714383,
+      "whole_quest": "ACTIVE",
+      "next": "Source-bound remaining odours/captures and final reward; reuse qengine2 live actor and canonical callback convergence deliveries."
     }
   },
   {

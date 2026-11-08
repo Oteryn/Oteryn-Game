@@ -63,6 +63,16 @@ def main():
     # lane's Newhaven/recipe/source-custody overlays and overlap the pick.
     equipment = ROOT / dispatch / 'equipment_effects_owner_tests/ability_tests.rs'
     text = equipment.read_text()
+    marsh_proof = ROOT / 'tools/content-schema/native-gameplay/questpc7-marsh-corpse-profiles.json'
+    if marsh_proof.exists():
+        marsh = json.loads(marsh_proof.read_bytes())['records']
+        assert {r['production_definition']['production_key'] for r in marsh} == {
+            f'oteryn:item.tibia.i{i}' for i in (17428, 17439, 17440, 17441)}
+        assert len(marsh) == 4 and all(r['semantics']['temporal']['state'] == 'KNOWN' for r in marsh)
+        row = '    ("QUESTPC7-MARSH-CORPSES", 4),\n'
+        anchor = '    ("SRV9-MARRIAGE", 2),\n'
+        replace(str(equipment.relative_to(ROOT)), anchor, anchor + row)
+        text = equipment.read_text()
     body = text.split('const PROFILE_ADDITIONS:')[1].split('];')[0]
     other = sum(int(count) for name, count in re.findall(r'\("([^"\n]+)", (\d+)\)', body)
                 if name != 'QUESTPC7-REGISTERED-UNION')

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "50a1fda787c1dd66464780ea5304dc25a6341085fd0ca03f4ed459bbc8b253b7",
+  "input_sha256": "d0a975a250b95d9455a4e3b932f8e702406bacdfde4fb90f0dec1cce93a70481",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2303,7 +2303,6 @@
     "oteryn:creature.mantosaurus",
     "oteryn:creature.many_faces",
     "oteryn:creature.marid",
-    "oteryn:creature.marsh_stalker",
     "oteryn:creature.massive_earth_elemental",
     "oteryn:creature.massive_energy_elemental",
     "oteryn:creature.massive_fire_elemental",
@@ -3073,7 +3072,6 @@
     "oteryn:creature.mantosaurus",
     "oteryn:creature.many_faces",
     "oteryn:creature.marid",
-    "oteryn:creature.marsh_stalker",
     "oteryn:creature.massive_earth_elemental",
     "oteryn:creature.massive_energy_elemental",
     "oteryn:creature.massive_fire_elemental",

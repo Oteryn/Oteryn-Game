@@ -162,8 +162,8 @@
   ],
   "latest_peer_review": {
     "branch": "origin/claude/happy-davinci-ijz3wy-qengine2",
-    "head": "2ddd4f9cd",
-    "finding": "Shared authored world item delivery now has six fresh PG passes on canonical main APIs. Activation/read_only and other lane callback field convergence remains required before reuse; no duplicate engine authored.",
+    "head": "c7f9d9ba7",
+    "finding": "Reviewed newer native binding admission checkpoint:326quest units green; own PG GREEN still pending. Existing canonical callback-field convergence request remains before consuming this API; no duplicate engine authored.",
     "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
     "merge_retry": "68 conflicted files; aborted and restored coherent changes under owner15-minute exception.",
     "conflict": "CONFLICT (content): Merge conflict in crates/gameplay/quests/src/quest/world_callbacks.rs",

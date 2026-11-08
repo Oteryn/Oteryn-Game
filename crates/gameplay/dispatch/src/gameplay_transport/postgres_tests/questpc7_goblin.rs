@@ -372,3 +372,55 @@ pub(super) async fn exercise_trunks(owner:&mut ComposedFreshAdmission<'_, '_, '_
     assert!(!finished);
     Ok(())
 }
+
+#[test]
+fn questpc7_goblin_five_native_stalkers_credit_exact_deaths() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started=std::time::Instant::now();
+    let result=super::kill_reward_e2e::scenario_thread::run("questpc7-goblin-stalkers",||super::quest_world_callbacks::scenario("qengine-rewards-goblin-stalkers",Position{x:33075,y:32109,floor:-7},false));
+    eprintln!("QUESTPC7_GOBLIN_STALKERS POSTGRES_CASE_COMPLETED duration={:?} success={}",started.elapsed(),result.is_ok());result
+}
+pub(super) fn stalker_objects() -> Vec<(Position,u16)> {
+    // Travel-only test terrain; the five positive spawn positions are source-pinned.
+    (33010..=33077).flat_map(|x|(32106..=32162).map(move|y|(Position{x,y,floor:-7},100))).collect()
+}
+async fn stalker_death(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mut AdmittedSession,key:&str,at:Position,command:u64)->TestResult {
+    let target={
+        let mut runtime=owner.runtime.lock().await;
+        let policy=runtime.companion_policy(key).map_err(debug)?;
+        let actor=runtime.admit_encounter_actor(key,policy.maximum_health,super::quest_world_callbacks::local(at)).map_err(debug)?;
+        runtime.install_creature_policy(actor,key).map_err(debug)?;actor
+    };
+    super::questpc7_native_deaths::lethal_creature(owner,a,target,command,key).await?;
+    let mut runtime=owner.runtime.lock().await;
+    assert!(!runtime.corpse_projection_pinned(target),"settlement must release the actor before fixture retirement");
+    runtime.remove_encounter_actor(target).map_err(debug)?;
+    Ok(())
+}
+pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mut AdmittedSession,h:&Harness)->TestResult {
+    use super::questpc7_ferumbras::{value,walk};
+    let version:String=sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
+    eprintln!("QUESTPC7_GOBLIN_STALKERS POSTGRES_STARTED version={version}");
+    exercise(owner,a,h).await?;
+    super::questpc7_native_deaths::prepare_native_hunter(owner,a).await?;
+    let creature="oteryn:creature.marsh_stalker";
+    // Wrong region and wrong species produce ordinary kills without quest credit.
+    stalker_death(owner,a,creature,Position{x:33075,y:32110,floor:-7},10000).await?;
+    assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?,0);
+    stalker_death(owner,a,"oteryn:creature.rat",Position{x:33074,y:32108,floor:-7},10001).await?;
+    assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?,0);
+    let sites=[(33057,32109),(33052,32119),(33043,32136),(33054,32149),(33026,32155)];
+    for (index,(x,y)) in sites.into_iter().enumerate() {
+        if index==4 {walk(owner,a,Position{x:33038,y:32150,floor:-7}).await?;}
+        walk(owner,a,Position{x:x-1,y:y-1,floor:-7}).await?;
+        stalker_death(owner,a,creature,Position{x,y,floor:-7},10002+u64::try_from(index)?).await?;
+        assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?,i64::try_from(index+1)?,"duplicate lethal notifications/drains credit once");
+    }
+    walk(owner,a,Position{x:33045,y:32159,floor:-7}).await?;
+    stalker_death(owner,a,creature,Position{x:33046,y:32160,floor:-7},10007).await?;
+    assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?,5,"terminal objective is capped");
+    assert_eq!(receipts(h).await?,7);
+    for (item,count) in TOOLS {assert_eq!(quantity(h,item).await?,count);}
+    for suffix in ["programme","signs","odours","captures","urine","trunks"] {assert_eq!(value(owner,a,&format!("{ROOT}{suffix}")).await?,0);}
+    Ok(())
+}

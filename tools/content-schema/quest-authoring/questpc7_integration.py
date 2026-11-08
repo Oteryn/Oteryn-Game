@@ -17,6 +17,8 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     formal_worlds.extend(pond.build(root))
     trunks = load_module("questpc7_goblin_trunks", "tools/content-schema/quest-authoring/questpc7_goblin_trunks.py")
     formal_worlds.extend(trunks.build(root))
+    stalkers = load_module("questpc7_goblin_stalkers", "tools/content-schema/quest-authoring/questpc7_goblin_stalkers.py")
+    stalker_objectives = stalkers.build(root)
     encounters = load_module('questpc7_encounters','tools/content-schema/quest-authoring/questpc7_encounters.py')
     formal_worlds.extend(encounters.worlds(root))
     hoist = load_module('questpc7_hoist_programme','tools/content-schema/quest-authoring/questpc7_hoist_programme.py')
@@ -55,7 +57,7 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     for row in formal_worlds:
         if row.get('outfit_reward') is not None:
             row.setdefault('effects',{})['outfit_reward']=row.pop('outfit_reward')
-    return formal_worlds, encounters.objectives(root)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives+heart_objectives+forgotten_objectives,hoist_bindings
+    return formal_worlds, encounters.objectives(root)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives+heart_objectives+forgotten_objectives+stalker_objectives,hoist_bindings
 
 def outputs(root, inputs, pin, load_module, lane):
     import json

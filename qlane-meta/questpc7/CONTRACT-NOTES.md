@@ -824,3 +824,27 @@ Use requires the carried17676 hammer and retains it. Each exact location credits
 once; three personal credits finish this job. Shared trunks remain available
 for other Characters; no global destruction or world-change ownership is claimed.
 Source: https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277
+
+## Marsh Stalker ordinary deaths and source corpse admission
+
+Native spawn witnesses: content/world/spawns/spawns-10000-11999.json:1,
+SHAa74b7da322bba5ebea20c772dae368d1337ec4caf9cd146f89b1bb9b8419b051.
+Selected local job bounds33010..33074,32100..32164,floor7 contain all five
+positive native spawn positions; this deliberately claims a finite local job,
+not a global species kill task. Exact native deaths retain ordinary rewards;
+wrong species/region and terminal kills add no quest credit. No guardians added.
+Source corpse chain: imports/canary/items-xml/items.xml:35365 (17428),35419
+(17439),35424 (17440),35429 (17441), SHA
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+Durations10/300/300/60seconds, targets17439/17440/17441/removal, capacities
+15/15/5/none. Reuse existing source Item importer, binding and absolute decay
+owners. Preserve the separate WorldObject slime fluid-source authority.
+
+Loot generation uses the existing native_corpse_capacity/native_loot_yield_facts
+constructors, restricted to the pinned Marsh Stalker table SHA
+ac5ccfd4c0b6b40e9d28293c0e599ff10e0311815bff75abe2bd5a7ef1131fde.
+Only admission facts17428/17461/17462/647 change. The first broad loot refresh
+would have changed unrelated existing admissions; discarded that output and
+preserved all other facts, source tables and Creature bindings. The normal
+prey_difficulty.py --simulate tool refreshed its dependent model (15cases,
+776creatures); no simulation output or pin was edited by hand.

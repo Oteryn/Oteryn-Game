@@ -1359,6 +1359,30 @@
         "content/world/placements/region-z14-x124-y128.b3:1:sha256:2a5e9f0f36729af80ae8a40c92d07ebde9b20410966aefc248512247cb73e791",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-goblin-stalkers",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "creature": "oteryn:creature.marsh_stalker",
+      "stage": "oteryn:quest-progress/questpc7/goblin/programme",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/questpc7/goblin/stalkers",
+      "required": 5,
+      "minimum": {
+        "x": 33010,
+        "y": 32100,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 33074,
+        "y": 32164,
+        "floor": -7
+      },
+      "sources": [
+        "content/world/spawns/spawns-10000-11999.json:1:sha256:a74b7da322bba5ebea20c772dae368d1337ec4caf9cd146f89b1bb9b8419b051",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:a12be07ddc3dd94a32206b735e30f78d80bdafceb757d603b99124e85442ae6e",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
     }
   ]
 }
