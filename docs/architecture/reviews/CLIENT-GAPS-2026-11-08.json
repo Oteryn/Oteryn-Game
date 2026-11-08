@@ -1005,6 +1005,7 @@
   "feature": "Offline / exercise / multi-character dialog",
   "status": "PARTIAL",
   "gap": "Komendy offline/exercise są; brak pełnego multi-character wyboru treningu.",
+  "evidence": "apps/client/src/features/local-character-selection/native.rs:145 + training_selection_enters_the_owned_character_and_opens_training; remaining: bulk multi-character offline training",
   "lane": "cg_analytics"
  },
  {
