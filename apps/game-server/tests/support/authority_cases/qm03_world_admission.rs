@@ -7,7 +7,7 @@ use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{CommandId, CommandRef, GameSessionId};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, QuestTrack,
-    world_callbacks::{self, Admission, Storage},
+    world_callbacks::{self},
 };
 use std::sync::{
     Arc,
@@ -65,42 +65,24 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .bind(f::id(f::WORLD).as_slice()).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'world-policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'qm03-owned-purchase-fixture')")
         .bind(f::id(f::WORLD).as_slice()).execute(&h.pool).await?;
-    let mut callback = world_callbacks::load()?
+    // Use the retained production quest binding unchanged, including level and storage gates.
+    let callback = world_callbacks::load()?
         .into_iter()
-        .find(|c| !c.storage.is_empty() && !c.reversible && c.effects.is_empty())
-        .ok_or("fixture callback")?;
-    callback.key = "oteryn:quest-callback/qm03-admission".into();
-    callback.quest = "oteryn:quest.qm03_admission".into();
-    callback.trigger = world_callbacks::Trigger::StepIn;
-    callback.admission = Some(Admission {
-        regular_blessings: true,
-        promotion: true,
-        premium: true,
-    });
-    callback.minimum_level = None;
-    callback.world_change = None;
-    callback.requires_world_admission = false;
-    callback.native_rule = None;
-    callback.state_ops.clear();
-    callback.offerings.clear();
-    callback.item_on_target = None;
-    callback.storage = vec![Storage {
-        track: "oteryn:quest-progress/qm03-admission/stage".into(),
-        minimum: 0,
-        maximum: 0,
-        set: 1,
-        preserve: false,
-        increment: false,
-        at_least: false,
-    }];
+        .find(|c| c.key == "oteryn:quest-callback/qm03/anniversary")
+        .ok_or("anniversary production callback")?;
+    assert_eq!(callback.quest, "oteryn:quest.25_years_of_tibia_quest");
+    assert!(callback.requires_world_admission);
+    assert_eq!(callback.minimum_level, Some(20));
+    let admission = callback.admission.as_ref().ok_or("production admission")?;
+    assert!(admission.regular_blessings && admission.promotion && admission.premium);
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             "content-1",
             vec![QuestTrack {
                 key: callback.storage[0].track.clone(),
                 quest: callback.quest.clone(),
-                initial: 0,
-                min: 0,
+                initial: -1,
+                min: -1,
                 max: 1,
             }],
             vec![world_callbacks::primary_transition(&callback).map_err(f::debug)?],
@@ -162,13 +144,13 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     let session = GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?;
     let request = QuestTransitionRequest {
         transition_key: callback.key.clone(),
-        cause: QuestCause::Step(CommandRef::new(
+        cause: QuestCause::Use(CommandRef::new(
             session,
             CommandId::new(9810).map_err(f::debug)?,
         )),
     };
     let attempt = |revision| -> f::TestResult<_> {
-        Ok(h.root.commit_fixture_world_admission(
+        Ok(h.root.commit_character_world_callback_with_items(
             &authority,
             &h.node,
             f::fence(revision)?,
@@ -176,8 +158,9 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             Arc::clone(&catalogue),
             &lane,
             context.clone(),
+            None,
+            None,
             &gate,
-            callback.clone(),
         ))
     };
     let before = snapshot(h).await?;

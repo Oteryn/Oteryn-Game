@@ -37,3 +37,15 @@ The two `test_qm03_world_admission.py` tests passed in 0.692 seconds and verify
 both production entry bindings and their selectors against the retained native
 map. This qualifies the admission mechanic and initial entry bindings; it does
 not assert completion of either quest's later storyline.
+
+## Production-binding follow-up
+
+The same focused PG case now selects the unmodified
+`oteryn:quest-callback/qm03/anniversary` binding and calls
+`commit_character_world_callback_with_items`, rather than the fixture-only
+callback resolver. Its actual USE cause, level 20 requirement, live admission
+predicates and chosen-source storage track remain intact. The complete case
+passed in **41.632022735 seconds**, including refusals, guarded promotion and
+blessing purchases, death consumption and receipt replay. This is durable-owner
+coverage of the production entry binding, not a claim that the later quest
+story or map teleport was dispatched by this case.
