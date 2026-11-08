@@ -102,13 +102,21 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             },
             self.result["summary"]["implementation_state"],
         )
+        # Native Item qualification can resolve a live claim without rewriting
+        # its historical SOURCE witness or declaring the whole quest playable.
+        draconia = by_title["Draconia Quest"]
+        self.assertEqual(draconia["reward_claim_owner"]["state"],
+                         "REWARD_CLAIM_IMPLEMENTATION_PENDING")
+        self.assertIn("claim_item_semantics_missing",
+                      draconia["canonical"][0]["missing_data_codes"])
+        self.assertEqual(draconia["playable_verification"], "NOT_ASSESSED")
         # ITEMHOLD-Q adds Power Ring's full-charge amulet to W15b's ready claims.
         self.assertEqual(128, self.result["summary"]["reward_claim_ready_refs"])
         self.assertEqual(132, self.result["summary"]["reward_claim_placements"])
         self.assertEqual(
             {
-                "REWARD_CLAIM_DATA_PENDING": 10,
-                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 42,
+                "REWARD_CLAIM_DATA_PENDING": 9,
+                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 43,
                 "REWARD_CLAIM_USE_PENDING": 53 - enabled - verified,
                 "REWARD_CLAIM_USE_ENABLED": enabled,
                 "REWARD_CLAIM_USE_VERIFIED": verified,

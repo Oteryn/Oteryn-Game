@@ -34,8 +34,22 @@ class QualificationTests(unittest.TestCase):
         self.assertEqual(sum(counts.values()), 283)
         coverage = qualification.read_json(qualification.COVERAGE)
         self.assertEqual(coverage['counts'], {
-            'dispatch_pg_qualified': 28, 'not_playable': 25, 'supported_unqualified': 283})
+            'dispatch_pg_qualified': 33, 'not_playable': 20, 'supported_unqualified': 283})
         self.assertEqual(sum(coverage['counts'].values()), 336)
+        selected = {
+            'oteryn:reward-claim.kv.nightmare_teddy_quest',
+            'oteryn:reward-claim.kv.purpletome1',
+            'oteryn:reward-claim.kv.purpletome2',
+            'oteryn:reward-claim.kv.purpletome3',
+            'oteryn:reward-claim.quest.key.id4055',
+        }
+        claims = {c['claim']: c for q in coverage['quests'] for c in q['chests']}
+        for key in selected:
+            self.assertEqual(claims[key]['status'], 'dispatch_pg_qualified')
+            self.assertTrue(claims[key]['reason'])
+            self.assertTrue(all(source['reward_matches_current_source']
+                                for placement in claims[key]['placements']
+                                for source in placement['sources']))
         ledger = qualification.read_json(qualification.LEDGER)
         for key in qualification.ITEMHOLD_ADMISSIONS:
             record = ledger["claims"][key]

@@ -1143,3 +1143,32 @@ Albinius combined four-portal confirmation immediately after tome donation must
 also retain the donor's earlier already-donated reply (topic1 survives success):
 nine replies total, not eight. The source independent if ordering explains this;
 no test expectation is derived from an invented cancel/reset transition.
+
+## Night-retro full authoring validation (2026-11-08)
+
+Fresh mainf5b584ef1 is CI-only and merged cleanly. The new mandatory full checks
+found one frozen SOURCE discrepancy: live shared Item admission makes Draconia1
+native_contents available, but SOURCE compilation had dropped its historical
+claim_item_semantics_missing witness. Extend only claim_catalogue's private
+historical hold view; do not change Draconia gameplay or canonical reward data.
+The existing amendment tool proves every frozen SOURCE core unchanged, then
+refreshes compiler pins. Its accepted prior compiler SHA2de10695b57d2d95cbf012df84b9a8086539e2d43866b53c18f3e1e75ba5c694
+is exactly the previously pinned compiler; the older f8ed snapshot stays accepted.
+No manual proof SHA edits, new approved source pairs or changed immutable inputs.
+
+Variant test keeps the two stack normalizations and exact previous37 held count,
+while explicitly accounting for all three native projections (Ornamented Shield,
+Triangle Tower, Draconia1). Draconia source UID6023 has exactlyi3284x1+i3297x1;
+new assertions bind that payload. Current native-lowering error total34 reflects
+that existing projection, not deleted evidence. The completion matrix still
+asserts Draconia SOURCE holds and NOT_ASSESSED wholequest playability.
+
+Coverage33qualified/20notplayable/283supported keeps the full336inventory and
+283denominator. Five already-qualified selected keys (Nightmare Teddy, Purple
+Tome1-3, Panpipe key4055) are additionally asserted individually with source
+reward matching. No status was promoted by changing the test. Full unit runner
+collected all failures: quest_tree_authoring (five errors and one failure),
+quest_claim_qualification and quest_completion_matrix; checks also found the
+related old variant total. Fix these together, regenerate the documented complete
+quest dependency pipeline, rerun both exact CI authoring commands and content
+validation before push. Own6realPG remain GREEN; no wholequest count increase.

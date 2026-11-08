@@ -2212,7 +2212,7 @@
   },
   "current_validation": {
     "source_base": "5dd600a26f00530797109358ea7bbbdcfdcca333",
-    "latest_main": "3209d3d61 included; fetch again before push",
+    "latest_main": "f5b584ef1 clean merge; CI-only changes",
     "postgres_version_num": 180006,
     "own_pg": {
       "questpc2-albinius-five-tomes": 56.813418026,
@@ -2224,20 +2224,30 @@
     },
     "quest_units": {
       "passed": 324,
-      "seconds": 24.86
+      "seconds": 25.12
     },
     "authorer_units": {
       "albinius": 3,
       "gnomus": 3
     },
-    "workspace_all_targets": "PASS2m26s",
-    "clippy": "quests+dispatch alltargets/allfeatures -Dwarnings PASS2m30s",
-    "fmt_generation_pins_duplicates": "PASS; refreshed main CI-only merge follows",
+    "workspace_all_targets": "Final regenerated tree PASS4m48s",
+    "clippy": "quests+dispatch alltargets/allfeatures-Dwarnings PASS2m30s; production Rust unchanged by subsequent metadata/source-view fixes",
+    "fmt_generation_pins_duplicates": "Final full documented quest/reward packet regeneration and worldpins PASS; final fmt/duplicate check before commit",
     "previous_dispatch_units": {
       "passed": 1613,
       "seconds": 995.337,
       "context": "Published initial Gnomus content before portal/confirmation extension; production content frozen during run."
-    }
+    },
+    "post_main_workspace_all_targets": "PASS3m48s",
+    "night_retro_checks": "PASS: exact CI checks and unit-tests runners, content-tree validation; no checks/tests weakened or disabled",
+    "content_tree": "PASS34111Items/252Mounts/336RewardClaims",
+    "quest_authoring_unit_runner": {
+      "modules_passed": 114,
+      "reported_tests": 1142,
+      "existing_skips": 8,
+      "quest_tree_seconds": 289.147
+    },
+    "dispatch_units": "Published-content1613PASS995.337s; fresh expanded-content selection compiling/running --no-fail-fast, not claimed passed"
   },
   "engine_requests": [
     {
@@ -2424,7 +2434,7 @@
   },
   "last_pushed_sha": "5dd600a26f00530797109358ea7bbbdcfdcca333",
   "prepush_pending_tests": [
-    "Fresh dispatch non-PG unit selection for portal/confirmation content is queued/running with --no-fail-fast; not claimed passed."
+    "Fresh dispatch non-PG unit selection compiling/running on final regenerated content; owner cadence exception. No remaining mandatory quest-authoring or content-tree failures."
   ],
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",

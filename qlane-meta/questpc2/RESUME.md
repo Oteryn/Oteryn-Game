@@ -1,44 +1,47 @@
-# questpc2b: four Albinius offerings and Gnomus confirmation fix GREEN
+# questpc2b: Albinius offerings and Gnomus confirmation fix, all authoring gates GREEN
 
-Active branch claude/happy-davinci-ijz3wy-questpc2b. Frozen parent questpc2
-remains0a6d6e208. Main3209d3d61 included; previous push5dd600a26f00530797109358ea7bbbdcfdcca333.
-No PR, force, rebase or main push. Coordinator collects this continuation.
+Branch claude/happy-davinci-ijz3wy-questpc2b. Frozen parent questpc2 remains0a6d6e208.
+Feature commit2fb941edd is local; previous push5dd600a26f00530797109358ea7bbbdcfdcca333.
+Mainf5b584ef1 clean active merge (CI-only). No PR open as of latest check.
 
-This batch extends pinned Albinius source program to holy/energy/earth/death
-offerings: exact50items before the corresponding access flag1, in the existing
-item/quest transaction.31rules/5tracks. No ice prerequisite, physical portal
-traversal, rune, bosses or wholequest qualification. Source no retains topic;
-combined four-portalyes after donation yields9replies including alreadydonated.
-Source crystal9f5a72c data-global/npc/albinius.lua:194-280, SHA
-1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18.
-
-Gnomus unimplemented task keywords now clear local confirmation with no reply,
+New mechanic: four exact50-item Albinius offerings grant corresponding access
+flags using existing item/quest transaction.31rules/5tracks. Source independent
+ifs and retained topics preserved. No ice/rune/boss/physical portal traversal or
+wholequest claim. Source9f data-global/npc/albinius.lua:194-280 SHA1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18.
+Gnomus local confirmation clears on unsupported task keywords, with no reply,
 progress or reward. Explicit Oteryn admission policy, not donor setTopic0 claim.
-RED demonstrated measurements thenyes incorrectly started old ordnance offer.
-Source same9f data-global/npc/gnomus.lua:63-307, SHA
-04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1.
+RED proved measurements thenyes wrongly started previous ordnance offer. Source
+9f data-global/npc/gnomus.lua:63-307 SHA04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1.
 
-RealPG180006 RED: portals113.939089504/117.430764882s; Gnomus67.749949589s.
-GREEN6/6total159.635s: original tome56.813/58.389/50.097s, portalcombined50.314s,
-portalexact52.270s, Gnomus50.806s. Questunits324PASS24.86s; authorer3+3PASS.
-WorkspacealltargetsPASS2m26s. Finalgeneration/equipment3827/audit/binding/matrix/
-qualification ledger283/worldpinsPASS; worlddigest2f5895585a unchanged.
-Clippy/fmt final verdict in status and BATCH-albinius-portals-gnomus-boundary-2026-11-08.json.
+OwnPG RED portal113.939089504/117.430764882s; Gnomus67.749949589s on180006.
+GREEN6/6total159.635s: tome56.813/58.389/50.097, portalcombined50.314, exact52.270,
+Gnomus50.806. Test files unchanged since this real execution. No central pinned
+PG test file changed; qready proof source SHAs unchanged.
 
-Prior published Gnomus content dispatch units1613/1613PASS995.337s. FRESH dispatch
-nonPG selection for expanded content queued/running with no-fail-fast; no pass
-claimed until full summary. Log /tmp/questpc2b-portals-dispatch-units.log. Keep
-runtime content frozen until it completes; collect all failures and fix together.
-Own6PG /tmp/questpc2b-portals-green-pg.log. Envsource /workspace/oteryn-env/env.sh
-opaquely; CARGO_BUILD_JOBS2,CARGO_INCREMENTAL0. Never read credentials.
+Night-retro exactCI checks/unit-tests runners nowPASS;114modules (existing skips
+retained, none added). ContenttreePASS34111Items/252Mounts/336RewardClaims. Final
+questunits324PASS25.12s, workspacealltargetsPASS4m48s, fmtPASS; changedcrates
+clippyPASS2m30s. Full README regeneration including variant packet, source receipt,
+quest packets/links/matrix/pins completed last; worlddigest2f5895585a unchanged.
+Source compatibility fix preserves Draconia's frozen historical hold while live
+existing native bag stays unchanged. Tool proves all frozen SOURCE cores exact.
+Updated finite tests assert exact payload/claim sets; no test weakening or skips.
+
+Fresh dispatch nonPG1613selection is compiling/running with no-fail-fast after
+final generation: /tmp/questpc2b-portals-final-dispatch-units.log. NOT claimedpass.
+Prior published-content selection1613PASS995.337s. Keep runtime content frozen
+until fresh selection completes; collect all failures and fix together. An earlier
+queued build was cancelled before any cases started so final packet regeneration
+could complete; it provides no proof. All authoring/content gates are now green.
 
 Scope35packet/29owned/6excluded:3wholequests qualified (Annihilator, Desert Dungeon,
-Elvenbane),8active incomplete,18notstarted. All other wholequests remain open.
-Own migrations1240-1244 unchanged. Big engine features belongQENGINE2, last
-checked64b3597c1. Requests in status/CONTRACT-NOTES, including Gnomus9/10-track
-atomic admissions and item+timestamp cooldown reports. Do not split Father11tracks.
+Elvenbane),8active incomplete,18notstarted. No new wholequest qualification.
+Own migrations1240-1244 unchanged. Shared big engine belongsQENGINE2, lastchecked
+64b3597c1; requests in status/contract, including Gnomus9/10-track admission and
+item+timestamp reports. Never split Father11tracks.
 
-Before push fetch main and explicit questpc2b ref; merge movement; regenerate
-applicable files with repo tools; ownPG/changedunits/checkworkspace/fmt. Owner
-cadence permits pending bulk units with explicit disclosure. Use blakinio identity
-and required Claude coauthor/session trailers. Continue after pushes.
+Envsource /workspace/oteryn-env/env.sh opaquely; jobs2,incremental0. Beforepush
+fetchmain and explicit questpc2b, merge movement, generate required files last,
+fullauthoring checks+unitrunner/contenttree when relevant, checkworkspace/fmt.
+Owner cadence allows pending bulkRust units only. blakinio identity and required
+Claude coauthor/session trailers. No force/rebase/mainpush/PR. Continue afterpush.

@@ -36,12 +36,20 @@ class VariantStackSerializationTests(unittest.TestCase):
                 self.assertEqual(d['data_holds'], [])
         self.assertEqual(len(changed), 2)
         # W15b's 67 recipes include these stack normalizations (PR2770 Q4/A).
-        # ITEMHOLD-Q qualifies two more without changing their raw source witnesses.
+        # ITEMHOLD-Q qualifies two more; shared encounter Item admission also
+        # qualifies Draconia's exact one-charge rapier bag. Raw witnesses stay exact.
         errors = variants.native_lowering_errors(self.records)
-        self.assertEqual(len(errors), 35)
+        self.assertEqual(len(errors), 34)
         qualified = {'oteryn:reward-claim.kv.ornamentedshield',
-                     'oteryn:reward-claim.kv.triangletower'}
+                     'oteryn:reward-claim.kv.triangletower',
+                     'oteryn:reward-claim.kv.draconia1'}
         self.assertTrue(qualified.isdisjoint(error['claim'] for error in errors))
+        draconia = next(r['definition'] for r in self.records
+                        if r['definition']['identity']['key'].endswith('.draconia1'))
+        self.assertEqual(draconia['native_contents']['placements'][0]['unique_id'], 6023)
+        self.assertEqual([(q['item']['key'], q['count'])
+                          for q in draconia['native_contents']['placements'][0]['contents']],
+                         [('oteryn:item.tibia.i3284', 1), ('oteryn:item.tibia.i3297', 1)])
         without_itemhold = copy.deepcopy(self.records)
         for row in without_itemhold:
             if row['definition']['identity']['key'] in qualified:
