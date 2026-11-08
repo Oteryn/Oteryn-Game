@@ -37,6 +37,7 @@ fn resolved(key: &str) -> Option<(Family, u32, Option<Terrain>)> {
             kind,
             walkable: ground.then_some(true),
             ground_speed: ground.then_some(150),
+            blocks_projectile: None,
         })
     };
     Some(match key {

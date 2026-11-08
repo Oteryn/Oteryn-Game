@@ -11,7 +11,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         id: 1,
         key: "oteryn:terrain.tibia.i3230".into(),
         family: bundle::Family::Terrain,
-        terrain: Some(bundle::Terrain {
+        terrain: Some(bundle::Terrain { blocks_projectile: None,
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,

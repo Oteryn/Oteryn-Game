@@ -1,6 +1,6 @@
 //! A source-qualified ordinary creature used as the isolated room's primary
 //! boss. Its committed death drives W02 independently of personal reward groups
-//! and the explicitly unavailable ordinary Instance corpse-MINT descendant.
+//! and the exact-scoped physical corpse and source-race MINT descendants.
 use super::*;
 use crate::durability::activity_handoff::ActivityReturnReason;
 use crate::foundation::runtime_actor_spell_types::{
@@ -138,6 +138,51 @@ pub(super) async fn assert_defeat_and_return(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
     );
+    // Crystal creature.cpp:711-721,777-782: ordinary deaths also retain the
+    // physical corpse, including exact source race provenance for shared bodies.
+    let RuntimeScopeRefV1::Instance { instance_id, .. } = fence.runtime_scope else {
+        return Err("actual Instance corpse custody required".into());
+    };
+    let corpse: (i64, String, bool, Vec<u8>) = sqlx::query_as(
+        "SELECT count(*) OVER (), s.race_key, g.channel_id IS NULL, uuid_send(g.instance_id) FROM game_corpse_source_races s JOIN game_item_mint_receipts r ON r.transaction_id=s.mint_transaction_id JOIN game_item_ground_locations g ON g.item_instance_id=s.item_instance_id WHERE r.loot_purpose_key='CORPSE_MATERIALIZATION'",
+    ).fetch_one(&h.pool).await?;
+    let rewards = native
+        .reward_table()
+        .row(&policy.definition_key)
+        .map_err(debug)?;
+    let race = rewards.race.as_ref().ok_or("ordinary source race")?;
+    assert_eq!(
+        (corpse.0, corpse.1.as_str(), corpse.2, corpse.3.as_slice()),
+        (1, race.key(), true, instance_id.as_slice())
+    );
+    let physical = owner.runtime.lock().await.visible_corpses();
+    assert_eq!(
+        physical.len(),
+        1,
+        "ordinary Instance body is natively visible"
+    );
+    let physical_id: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(g.item_instance_id) FROM game_item_ground_locations g JOIN game_corpse_source_races s USING(item_instance_id) WHERE g.instance_id=encode($1,'hex')::uuid",
+    ).bind(instance_id.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        physical[0].item.item_instance_id.as_slice(),
+        physical_id.as_slice()
+    );
+    // The fixed native rat occurrence exercises ordinary loot, not only its
+    // receipt: each child must be live and actually placed under this body.
+    // MINT initializes minted_transaction_id (0010); last_transaction_id is
+    // nullable until a later mutation (0011), so a fresh child has no transfer.
+    let ordinary: (i64, bool) = sqlx::query_as(
+        "SELECT count(*), coalesce(bool_and(coalesce(e.parent_item_instance_id=g.item_instance_id AND e.parent_item_instance_id=encode($2,'hex')::uuid AND e.parent_item_instance_id=r.destination_parent_item_instance_id AND e.placement_ordinal=r.destination_ordinal AND e.placed_transaction_id=r.transaction_id AND g.scope_kind=2 AND g.channel_id IS NULL AND g.instance_id=r.death_instance_id AND g.world_id=r.death_world_id AND i.world_id=r.death_world_id AND i.lifecycle=1 AND i.state_revision=1 AND i.minted_transaction_id=r.transaction_id AND i.last_transaction_id IS NULL,false)),false) FROM game_item_mint_receipts r JOIN game_item_instances i USING(item_instance_id) LEFT JOIN game_item_corpse_container_entries e USING(item_instance_id) LEFT JOIN game_item_ground_locations g ON g.item_instance_id=e.parent_item_instance_id WHERE r.death_instance_id=encode($1,'hex')::uuid AND r.loot_purpose_key<>'CORPSE_MATERIALIZATION'",
+    ).bind(instance_id.as_slice()).bind(physical_id.as_slice()).fetch_one(&h.pool).await?;
+    assert!(
+        ordinary.0 > 0,
+        "fixed ordinary rat occurrence materializes native loot"
+    );
+    assert!(
+        ordinary.1,
+        "every ordinary loot MINT has exact live physical corpse custody"
+    );
     type DefeatRow = (i16, Vec<u8>, i64, i64);
     let recorded: DefeatRow = sqlx::query_as(
         "SELECT state,uuid_send(defeat_id),terminal_at,exit_deadline FROM game_boss_room_activities",
@@ -181,6 +226,7 @@ pub(super) async fn assert_defeat_and_return(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
     );
+    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'").fetch_one(&h.pool).await?, 1);
     let replayed: DefeatRow = sqlx::query_as(
         "SELECT state,uuid_send(defeat_id),terminal_at,exit_deadline FROM game_boss_room_activities",
     ).fetch_one(&h.pool).await?;

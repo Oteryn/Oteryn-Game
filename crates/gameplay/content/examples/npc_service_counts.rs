@@ -1,9 +1,9 @@
 //! Read-only production catalogue census for tools/contracts/refresh_npc_service_counts.py.
-use oteryn_game_server::content::*;
+use oteryn_gameplay_content::content::*;
 use std::{ffi::OsStr, path::PathBuf};
 
 fn main() -> Result<(), String> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../content");
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../content");
     let project = capture_world_project(
         &root,
         OsStr::new("world"),

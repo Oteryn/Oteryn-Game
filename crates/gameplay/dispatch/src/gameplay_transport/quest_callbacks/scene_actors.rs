@@ -49,8 +49,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(UseDisposition::Rejected);
         }
-        let proof = prepare_source_scene(runtime, self.movement_cells, sources, map.facts.doors())
-            .map_err(|_| UseDisposition::NotPossible)?;
+        let proof =
+            prepare_source_scene(runtime, self.movement_cells(), sources, map.facts.doors())
+                .map_err(|_| UseDisposition::NotPossible)?;
         if proof.observations().iter().any(|(actor, session, _)| {
             session.is_some_and(|session| {
                 states.is_dead(*actor) || !states.spell_idle(runtime, *actor, session)

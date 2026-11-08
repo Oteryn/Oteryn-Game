@@ -23,7 +23,7 @@ pub(super) fn torch_world() -> TestResult<crate::map::boot::BundleWorld> {
             .ok_or("native ground")?
             .get()
             - 1,
-        terrain: Some(bundle::Terrain {
+        terrain: Some(bundle::Terrain { blocks_projectile: None,
             kind: bundle::TerrainKind::Ground,
             walkable: Some(true),
             ground_speed: Some(130),
@@ -45,7 +45,7 @@ pub(super) fn torch_world() -> TestResult<crate::map::boot::BundleWorld> {
                 .get()
                 - 1,
             terrain: if ground {
-                Some(bundle::Terrain {
+                Some(bundle::Terrain { blocks_projectile: None,
                     kind: bundle::TerrainKind::Ground,
                     walkable: Some(*appearance != 4611),
                     ground_speed: Some(match appearance {
@@ -55,7 +55,7 @@ pub(super) fn torch_world() -> TestResult<crate::map::boot::BundleWorld> {
                     }),
                 })
             } else if matches!(appearance, 4634 | 4636) {
-                Some(bundle::Terrain {
+                Some(bundle::Terrain { blocks_projectile: None,
                     kind: bundle::TerrainKind::Border,
                     walkable: None,
                     ground_speed: None,

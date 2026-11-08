@@ -28,7 +28,7 @@ pub(super) fn world(
             key: format!("oteryn:terrain.tibia.i{appearance}"),
             family: bundle::Family::Terrain,
             id: u32::try_from(index + 1)?,
-            terrain: Some(bundle::Terrain {
+            terrain: Some(bundle::Terrain { blocks_projectile: None,
                 kind: if *appearance == 432 {
                     bundle::TerrainKind::Ground
                 } else {

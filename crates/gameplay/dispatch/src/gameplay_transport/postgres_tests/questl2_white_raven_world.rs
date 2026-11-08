@@ -9,7 +9,7 @@ let reference=|key:&str|index.definition_ref("Item",key,"definition-r1");
 let(bytes,mut pins)=crate::map::boot::tests::bundle();
 let mut data=bundle::read(&bytes)?;
 data.manifest.palette.truncate(1);
-data.manifest.palette.push(bundle::PaletteEntry{id:1,key:"oteryn:terrain.tibia.i2476".into(),family:bundle::Family::Terrain,terrain:Some(bundle::Terrain{kind:bundle::TerrainKind::Common,walkable:None,ground_speed:None})});
+data.manifest.palette.push(bundle::PaletteEntry{id:1,key:"oteryn:terrain.tibia.i2476".into(),family:bundle::Family::Terrain,terrain:Some(bundle::Terrain{ blocks_projectile: None,kind:bundle::TerrainKind::Common,walkable:None,ground_speed:None})});
 let mut cells=BTreeMap::new();
 for (z,x0,x1,y0,y1) in [(-8,32245,32251,31864,31869),(-6,32188,32194,31955,31961)] {
  for y in y0..=y1 {for x in x0..=x1 {cells.insert((z,x,y),vec![sector::Item{palette:0,depth:0,attrs:Default::default()}]);}}

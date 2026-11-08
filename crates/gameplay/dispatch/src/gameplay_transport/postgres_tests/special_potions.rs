@@ -302,7 +302,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         super::item_look::seed_main_backpack(&h, &[(&key, 5)]).await?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&deps.room));
         owner.clock_origin = std::time::Instant::now()
             .checked_sub(Duration::from_secs(60))

@@ -105,7 +105,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -163,7 +163,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             // but the existing item-loop receipt still answers without moving anything twice.
             let mut restarted = deps.owner(&harness, &authority);
             restarted.active_generation = Some(generation);
-            restarted.movement_cells = &cells;
+            restarted.movement_cells = (&cells).into();
             deps.initialize(&restarted).await;
             admitted.continuity.item_view.handle_counter = 1000;
             admitted.continuity.next_command_id = 1;

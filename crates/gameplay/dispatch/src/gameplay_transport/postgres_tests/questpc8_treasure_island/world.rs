@@ -26,7 +26,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
                 - 1,
             key,
             family: bundle::Family::Item,
-            terrain: Some(bundle::Terrain {
+            terrain: Some(bundle::Terrain { blocks_projectile: None,
                 kind: bundle::TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),

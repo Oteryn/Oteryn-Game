@@ -362,7 +362,7 @@ pub(super) fn world(route: Route) -> TestResult<crate::map::boot::BundleWorld> {
                     key: format!("oteryn:terrain.tibia.i{appearance}"),
                     family: bundle::Family::Terrain,
                     id,
-                    terrain: Some(bundle::Terrain {
+                    terrain: Some(bundle::Terrain { blocks_projectile: None,
                         kind: bundle::TerrainKind::Common,
                         walkable: None,
                         ground_speed: None,

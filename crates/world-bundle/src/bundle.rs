@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v7`: the byte layout and the fail-closed reader. The writer lives in
+//! `OTERYN_WORLD_BUNDLE/v8`: the byte layout and the fail-closed reader. The writer lives in
 //! the compiler and applies the same `validate_*` functions.
 //!
 //! Layout (little endian), specified in `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`:
@@ -14,8 +14,8 @@ use crate::Error;
 use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
 use crate::{npc, spawn};
 
-pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v7";
-pub const VERSION: u16 = 7;
+pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v8";
+pub const VERSION: u16 = 8;
 pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
@@ -137,6 +137,9 @@ pub struct Terrain {
     pub walkable: Option<bool>,
     #[serde(deserialize_with = "required")]
     pub ground_speed: Option<u16>,
+    /// Exact source projectile fact; absent preserves legacy wall interpretation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blocks_projectile: Option<bool>,
 }
 
 impl Terrain {
@@ -634,7 +637,7 @@ pub fn visit_budgeted(
     )?;
     check(
         &data[..4] == MAGIC && le16(data, 4) == VERSION,
-        "not an OTERYN_WORLD_BUNDLE/v7",
+        "not an OTERYN_WORLD_BUNDLE/v8",
     )?;
     check(le16(data, 6) == 0, "reserved header bytes are not zero")?;
     let (body, trailer) = data.split_at(data.len() - DIGEST);

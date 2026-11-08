@@ -279,6 +279,103 @@ impl<'a> TileView<'a> {
 }
 
 impl WorldBase {
+    /// Crystal data/libs/functions/boss_lever.lua:54-81 defines a private bounded
+    /// room. Copy only existing source cells, preserving the bundle identity.
+    pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Option<Self> {
+        let [x0, y0, x1, y1, z0, z1] = bounds;
+        let count = (i64::from(x1) - i64::from(x0) + 1)
+            .checked_mul(i64::from(y1) - i64::from(y0) + 1)?
+            .checked_mul(i64::from(z1) - i64::from(z0) + 1)?;
+        if x0 < 0
+            || y0 < 0
+            || x1 > i32::from(u16::MAX)
+            || y1 > i32::from(u16::MAX)
+            || x0 > x1
+            || y0 > y1
+            || z0 < 0
+            || z1 > 15
+            || z0 > z1
+            || !(1..=4096).contains(&count)
+        {
+            return None;
+        }
+        let mut selected =
+            std::collections::BTreeMap::<u32, std::collections::BTreeMap<usize, usize>>::new();
+        for z in z0..=z1 {
+            let floor = i8::try_from(-z).ok()?;
+            for y in y0..=y1 {
+                let y = u16::try_from(y).ok()?;
+                for x in x0..=x1 {
+                    let x = u16::try_from(x).ok()?;
+                    if let Some(index) = self.tile_index(x, y, floor) {
+                        let key = sector_key(floor, x / SECTOR_SIZE, y / SECTOR_SIZE)?;
+                        let local = usize::from(y % SECTOR_SIZE) * usize::from(SECTOR_SIZE)
+                            + usize::from(x % SECTOR_SIZE);
+                        selected.entry(key).or_default().insert(local, index);
+                    }
+                }
+            }
+        }
+        let mut keys = Vec::new();
+        let mut sectors = Vec::new();
+        let mut tiles = Vec::new();
+        let mut ids = Vec::new();
+        let mut depths = Vec::new();
+        let mut uniques = Vec::new();
+        for (key, positions) in selected {
+            let mut sector = SectorTiles {
+                occupied: [0; SECTOR_TILES / 64],
+                rank: [0; SECTOR_TILES / 64],
+                first_tile: u32::try_from(tiles.len()).ok()?,
+            };
+            for (local, old_index) in positions {
+                let mut tile = *self.tiles.get(old_index)?;
+                let old_start = tile.first_entry;
+                let old_end = old_start.checked_add(u32::from(tile.entries))?;
+                tile.first_entry = u32::try_from(ids.len()).ok()?;
+                ids.extend_from_slice(self.ids.get(old_start as usize..old_end as usize)?);
+                depths.extend_from_slice(self.depths.get(old_start as usize..old_end as usize)?);
+                let start = self
+                    .uniques
+                    .partition_point(|(entry, ..)| *entry < old_start);
+                for &(entry, unique, appearance) in &self.uniques[start..] {
+                    if entry >= old_end {
+                        break;
+                    }
+                    uniques.push((tile.first_entry + (entry - old_start), unique, appearance));
+                }
+                sector.occupied[local / 64] |= 1 << (local % 64);
+                tiles.push(tile);
+            }
+            let mut rank = 0;
+            for (word, occupied) in sector.occupied.iter().enumerate() {
+                sector.rank[word] = rank;
+                rank += occupied.count_ones() as u16;
+            }
+            keys.push(key);
+            sectors.push(sector);
+        }
+        let rows = (0..=SECTOR_ROWS)
+            .map(|row| keys.partition_point(|key| ((key >> 11) as usize) < row) as u32)
+            .collect();
+        Some(Self {
+            active_layers: self.active_layers.clone(),
+            layer_epoch: self.layer_epoch,
+            exit_layers: self.exit_layers.clone(),
+            admitted_layers: self.admitted_layers.clone(),
+            subareas: self.subareas.clone(),
+            digest: self.digest,
+            content_revision: self.content_revision.clone(),
+            appearances: self.appearances.clone(),
+            keys,
+            rows,
+            sectors,
+            tiles,
+            ids,
+            depths,
+            uniques,
+        })
+    }
     /// Rebuild a pinned base with its admitted immutable epoch composition.
     pub(super) fn composed(
         bundle: &bundle::Bundle,
@@ -423,6 +520,16 @@ impl WorldBase {
                     })
             })
     }
+}
+
+pub(super) fn activity_contains(
+    [x0, y0, x1, y1, z0, z1]: [i32; 6],
+    pos: crate::domain::map_position::TilePos,
+) -> bool {
+    let z = -i32::from(pos.floor);
+    (x0..=x1).contains(&i32::from(pos.x))
+        && (y0..=y1).contains(&i32::from(pos.y))
+        && (z0..=z1).contains(&z)
 }
 
 /// Loads a World's base map from the bundle bytes alone (§1.1): refuses a bundle whose digest,

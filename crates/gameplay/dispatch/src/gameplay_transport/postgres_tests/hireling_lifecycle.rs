@@ -240,7 +240,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     } else {None};
     let mut owner = deps.owner(h, &authority);
     owner.premium_coordinator = bed_premium.as_ref();
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(generation);
     let house_store = matches!(case, Case::Store).then(||
@@ -412,7 +412,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             h.node.fact().registration_revision(), 1, 1, "runtime-scope-assignment:1", 2, pin,
         ).map_err(debug)?;
         let mut restarted = deps.owner(h, &authority);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         restarted.evidence = &evidence.evidence;
         restarted.active_generation = Some(generation);
         restarted.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
@@ -433,7 +433,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         let replay = wire::scenario(h, &authority, &owner, admitted, deps.actor).await?;
         drop(owner);
         let mut restarted = deps.owner(h, &authority);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         restarted.evidence = &evidence.evidence;
         restarted.active_generation = Some(generation);
         restarted.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
@@ -445,7 +445,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         let replay = legacy_wire::scenario(h, &authority, &owner, admitted, deps.actor).await?;
         drop(owner);
         let mut restarted = deps.owner(h, &authority);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         restarted.evidence = &evidence.evidence;
         restarted.active_generation = Some(generation);
         restarted.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
@@ -454,7 +454,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         let replay = legacy_wire::replay_after_ingress_loss(h, &restarted, replay).await?;
         drop(restarted);
         let mut final_owner = deps.owner(h, &authority);
-        final_owner.movement_cells = &cells;
+        final_owner.movement_cells = (&cells).into();
         final_owner.evidence = &evidence.evidence;
         final_owner.active_generation = Some(generation);
         final_owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(

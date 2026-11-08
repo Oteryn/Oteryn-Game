@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--check', action='store_true')
 args = parser.parse_args()
 env = os.environ.copy()
-result = subprocess.run(['cargo', 'run', '--locked', '-p', 'oteryn-game-server',
+result = subprocess.run(['cargo', 'run', '--locked', '-p', 'oteryn-gameplay-content',
     '--example', 'npc_service_counts'], cwd=ROOT, env=env,
     text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 if result.returncode:

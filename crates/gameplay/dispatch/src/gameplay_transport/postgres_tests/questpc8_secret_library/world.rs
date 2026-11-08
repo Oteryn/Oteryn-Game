@@ -12,7 +12,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
             key: format!("oteryn:terrain.tibia.i{appearance}"),
             family: bundle::Family::Terrain,
             id: u32::try_from(index)?,
-            terrain: Some(bundle::Terrain {
+            terrain: Some(bundle::Terrain { blocks_projectile: None,
                 kind: if ground {
                     bundle::TerrainKind::Ground
                 } else {

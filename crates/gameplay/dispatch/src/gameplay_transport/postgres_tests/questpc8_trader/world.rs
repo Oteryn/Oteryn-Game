@@ -20,7 +20,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
             .ok_or("ground")?
             .get()
             - 1,
-        terrain: Some(bundle::Terrain {
+        terrain: Some(bundle::Terrain { blocks_projectile: None,
             kind: bundle::TerrainKind::Ground,
             walkable: Some(true),
             ground_speed: Some(130),
@@ -30,7 +30,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         key: "oteryn:terrain.tibia.i2472".into(),
         family: bundle::Family::Terrain,
         id: 1,
-        terrain: Some(bundle::Terrain {
+        terrain: Some(bundle::Terrain { blocks_projectile: None,
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,

@@ -414,6 +414,7 @@ pub struct NativeGameplayState {
     catalog: Arc<executable_catalog::CompiledCatalog>,
     policies: CompiledCreaturePolicies,
     creatures: CreatureProfilesDocument,
+    creature_profile_fingerprints: BTreeMap<String, [u8; 32]>,
     presentations: PresentationProfilesDocument,
     items: Option<ItemProfilesDocument>,
     market_catalogue: Option<market_catalogue::MarketCatalogue>,
@@ -515,6 +516,10 @@ impl NativeGameplayState {
     }
     pub fn creature_profiles(&self) -> &CreatureProfilesDocument {
         &self.creatures
+    }
+    /// Canonical identity of the original admitted record, retaining explicit null facts.
+    pub fn creature_profile_fingerprint(&self, creature: &str) -> Option<[u8; 32]> {
+        self.creature_profile_fingerprints.get(creature).copied()
     }
     pub fn presentation_profiles(&self) -> &PresentationProfilesDocument {
         &self.presentations
@@ -1129,6 +1134,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         return Err(invalid("native gameplay profile discriminator or bounds"));
     }
     let records = creature_policies(&creatures, &presentations)?;
+    let creature_profile_fingerprints = raw_creature_profile_fingerprints(sections[3], &creatures)?;
     let items = if is_v2 {
         let items: ItemProfilesDocument = serde_json::from_slice(sections[5])
             .map_err(|_| invalid("native gameplay item profiles"))?;
@@ -1170,6 +1176,23 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             .is_some()
         {
             return Err(invalid("ITEMHOLD-Q Wiki identity collision"));
+        }
+        // W02: Crystal201189f items.cpp:163-174 indexes ItemType by the exact
+        // appearance.id. Appearance48416 is independently captured by
+        // boss_reward_item_profiles.py; the existing canonical identity is reused.
+        // Its absent XML override retains Canary47df items.hpp:282,307 defaults.
+        let sugar_corpse_binding = serde_json::from_value(serde_json::json!({
+            "source_key": "oteryn:source.crystalserver",
+            "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "identity_namespace": "ots/item_server_id", "external_id": "48416",
+            "target": {"family": "Item", "key": "oteryn:item.tibia.i48416", "revision": "definition-r1"},
+            "disposition": "EXACT"
+        })).map_err(|_| invalid("W02 Sugar corpse exact identity"))?;
+        if admitted
+            .insert("48416".to_owned(), sugar_corpse_binding)
+            .is_some()
+        {
+            return Err(invalid("W02 Sugar corpse identity collision"));
         }
         let candidate_bytes = include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/candidate-bindings/spell-items-candidate.json"
@@ -1216,6 +1239,34 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 || !production_identities.insert(binding.target.clone())
             {
                 return Err(invalid("native gameplay item production binding"));
+            }
+            if binding.external_id == "48416" {
+                use super::{ReferenceItemField as F, ReferenceItemType as Type};
+                let semantics = &record.semantics;
+                let attributes = &record.attributes;
+                if !record.admission.materializable
+                    || record.admission.stack_class != NativeItemStackClass::NonStackable
+                    || record.admission.legal_destinations != [NativeItemDestination::Ground]
+                    || !matches!(&semantics.physical, F::Known(p) if p.weight == F::Known(0)
+                        && p.movable == F::Known(true) && p.pickupable == F::Known(false))
+                    || !matches!(&semantics.classification, F::Known(c) if c.item_type == F::Known(Type::Container))
+                    || !matches!(&semantics.stack, F::Known(s) if s.stackable == F::Known(false) && s.stack_max == F::NotApplicable)
+                    || !matches!(&semantics.container, F::Known(c) if c.capacity == F::Known(8))
+                    || semantics.temporal != F::NotApplicable
+                    || semantics.charges != F::NotApplicable
+                    || record.production_binding_qualification.is_some()
+                    || attributes.speed_bonus != Some(0)
+                    || attributes.blocks_movement != Some(false)
+                    || attributes.blocks_projectile != Some(false)
+                    || attributes.immovable_block_solid != Some(false)
+                    || attributes.has_height != Some(false)
+                    || attributes.field_condition.is_some()
+                    || attributes.field_replaceable.is_some()
+                    || attributes.rune_consumption.is_some()
+                    || !attributes.spell_augments.is_empty()
+                {
+                    return Err(invalid("W02 Sugar corpse source policy"));
+                }
             }
             if binding.external_id == "44179" {
                 use super::ReferenceItemField as F;
@@ -1561,6 +1612,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             catalog: Arc::new(catalog),
             policies,
             creatures,
+            creature_profile_fingerprints,
             presentations,
             items,
             market_catalogue,
@@ -1608,6 +1660,34 @@ fn condition(text: &str) -> Result<Option<ConditionType>, ContentError> {
         _ => return Err(invalid("native gameplay unsupported condition immunity")),
     }))
 }
+// tools/content-schema/encounters/import_boss_levers.py:68-69,135 hashes canonical original records,
+// including explicit nulls. Typed serialization may omit those facts. Keep the
+// original-byte typed validation above: decoding Value alone loses duplicate fields.
+fn raw_creature_profile_fingerprints(
+    bytes: &[u8],
+    creatures: &CreatureProfilesDocument,
+) -> Result<BTreeMap<String, [u8; 32]>, ContentError> {
+    let document: serde_json::Value = serde_json::from_slice(bytes)
+        .map_err(|_| invalid("native gameplay creature source identity"))?;
+    let records = document
+        .get("records")
+        .and_then(serde_json::Value::as_array)
+        .filter(|records| records.len() == creatures.records.len() && records.len() <= MAX_RECORDS)
+        .ok_or_else(|| invalid("native gameplay creature source identity"))?;
+    let mut fingerprints = BTreeMap::new();
+    for (raw, typed) in records.iter().zip(&creatures.records) {
+        let canonical = serde_json::to_vec(raw)
+            .map_err(|_| invalid("native gameplay creature source identity"))?;
+        if fingerprints
+            .insert(typed.profile.target.key.clone(), sha256(&canonical))
+            .is_some()
+        {
+            return Err(invalid("native gameplay duplicate creature"));
+        }
+    }
+    Ok(fingerprints)
+}
+
 fn creature_policies(
     creatures: &CreatureProfilesDocument,
     presentations: &PresentationProfilesDocument,
@@ -1948,6 +2028,70 @@ mod tests {
     };
     use serde_json::Value;
     #[test]
+    fn creature_source_identity_preserves_nulls_and_rejects_changed_pinned_bytes() {
+        let baseline = qualify_native_entry_room(test_source(1).unwrap().world_id).unwrap();
+        let mut supplied = input();
+        let mut raw: Value = serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+        let key = raw["records"][0]["profile"]["target"]["key"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        raw["records"][0]["profile"]["data"]["profile"]["details"]["reference_level"] = Value::Null;
+        supplied.creature_profiles = pinned(&serde_json::to_vec(&raw).unwrap());
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let admitted = decode(&artifact.server_artifact).unwrap();
+        let expected = sha256(&serde_json::to_vec(&raw["records"][0]).unwrap());
+        assert_eq!(
+            admitted.state.creature_profile_fingerprint(&key),
+            Some(expected)
+        );
+        let typed = serde_json::to_value(&admitted.state.creature_profiles().records[0]).unwrap();
+        assert_ne!(sha256(&serde_json::to_vec(&typed).unwrap()), expected);
+
+        raw["records"][0]["profile"]["data"]["profile"]["details"]
+            .as_object_mut()
+            .unwrap()
+            .remove("reference_level");
+        supplied.creature_profiles.bytes = serde_json::to_vec(&raw).unwrap();
+        // Even a semantically identical typed profile cannot change the admitted source bytes.
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+        supplied.creature_profiles = pinned(&supplied.creature_profiles.bytes);
+        let changed = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let changed = decode(&changed.server_artifact).unwrap();
+        assert_ne!(
+            changed.state.creature_profile_fingerprint(&key),
+            Some(expected)
+        );
+        assert_eq!(
+            changed.state.creature_profiles(),
+            admitted.state.creature_profiles()
+        );
+    }
+
+    #[test]
+    fn creature_source_identity_keeps_duplicate_record_and_field_rejection() {
+        let baseline = qualify_native_entry_room(test_source(1).unwrap().world_id).unwrap();
+        let mut supplied = input();
+        let mut raw: Value = serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+        let first = raw["records"][0].clone();
+        raw["records"].as_array_mut().unwrap().push(first);
+        supplied.creature_profiles = pinned(&serde_json::to_vec(&raw).unwrap());
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+
+        let original = String::from_utf8(input().creature_profiles.bytes).unwrap();
+        let original_value: Value = serde_json::from_str(&original).unwrap();
+        let profile = serde_json::to_string(&original_value["records"][0]["profile"]).unwrap();
+        let duplicate = original.replacen(
+            "\"profile\":",
+            &format!("\"profile\":{profile},\"profile\":"),
+            1,
+        );
+        supplied.creature_profiles = pinned(duplicate.as_bytes());
+        // Value parsing would collapse duplicate fields; admission must still parse original bytes.
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+    }
+
+    #[test]
     fn itemhold_q_resolved_catalogue_materializes_and_remaining_holds_reject() {
         use super::super::ReferenceItemField as F;
         use crate::domain::timed_item::TimedValues;
@@ -2050,6 +2194,68 @@ mod tests {
             } else {
                 bottle["production_binding"]["source_revision"] = "unqualified".into();
             }
+            let mut bad = supplied.clone();
+            bad.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+            assert!(matches!(compile_native_gameplay(baseline.compiled(), &bad),
+                Err(ContentError::InvalidArtifact(found)) if found == reason));
+        }
+    }
+
+    #[test]
+    fn sugar_corpse_source_binding_and_ground_policy_are_closed() {
+        // Canary47df sugar_daddy.lua:24; Crystal201189f items.cpp:163-174.
+        // The source DAT-only body keeps the actual loader's capacity8, and
+        // its physical corpse admission never grants carried Item custody.
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        let raw =
+            include_bytes!("../../../../../content/items/definitions/spell-native-profiles.json");
+        supplied.item_profiles = Some(pinned(raw));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let body = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i48416", "definition-r1")
+            .unwrap()
+            .record();
+        assert_eq!(
+            body.admission.legal_destinations,
+            [NativeItemDestination::Ground]
+        );
+        let original: Value = serde_json::from_slice(raw).unwrap();
+        for (field, value, reason) in [
+            (
+                "/semantics/container/value/capacity/value",
+                serde_json::json!(9),
+                "W02 Sugar corpse source policy",
+            ),
+            (
+                "/admission/legal_destinations",
+                serde_json::json!(["CharacterInventory", "Ground"]),
+                "W02 Sugar corpse source policy",
+            ),
+            (
+                "/semantics/physical/value/pickupable/value",
+                serde_json::json!(true),
+                "W02 Sugar corpse source policy",
+            ),
+            (
+                "/production_binding/source_revision",
+                serde_json::json!("unqualified"),
+                "native gameplay item production binding",
+            ),
+        ] {
+            let mut profiles = original.clone();
+            let body = profiles["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|row| {
+                    row["production_definition"]["production_key"] == "oteryn:item.tibia.i48416"
+                })
+                .unwrap();
+            *body.pointer_mut(field).unwrap() = value;
             let mut bad = supplied.clone();
             bad.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
             assert!(matches!(compile_native_gameplay(baseline.compiled(), &bad),

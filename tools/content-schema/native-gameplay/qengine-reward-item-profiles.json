@@ -6354,10 +6354,6 @@
     },
     {
       "authoring": {
-        "forge": {
-          "classification": 3,
-          "max_tier": 3
-        },
         "item": {
           "family": "Item",
           "key": "candidate:item/6101",

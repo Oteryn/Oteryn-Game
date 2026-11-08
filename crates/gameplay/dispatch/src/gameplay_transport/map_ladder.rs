@@ -129,7 +129,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let blocked = super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
         let proof = crate::map::floor::prepare_bundle_ladder(
             &runtime,
-            self.movement_cells,
+            &self.movement_cells,
             map,
             actor,
             session,
