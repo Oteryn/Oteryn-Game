@@ -54,10 +54,10 @@ Zasady przeciw dublowaniu:
 
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
-| T148 | Achievements | Account list/points/notices | PARTIAL | Odczyt/notices są; brak pełnego filter/sort regular/secret i wizualnej listy. |
+| T148 | Achievements | Account list/points/notices | DONE | evidence: crates/client-ui/src/features/local-account-achievements/state/catalog.rs:40 + achievement_browser_filters_regular_secret_and_sorts_server_rows; apps/client/src/features/local-account-achievements/tests/browser.rs:5 |
 | T163 | Boss | Difficulty selection / preview/start/cancel | PARTIAL | Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora. |
-| T164 | Boss | Hazard level i encounter entry | PARTIAL | Query/select/entry są; brak pełnego wizualnego panelu zagrożenia i prowadzenia wejścia. |
-| O074 | Boss | Cyklopedia: bosstiariusz | PARTIAL | Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu. |
+| T164 | Boss | Hazard level i encounter entry | DONE | evidence: crates/client-ui/src/features/0117-boss-encounter/protocol/auxiliary.rs:63 + pc05_boss_activity_refusal_and_reconnect_scenario; apps/client/src/features/0117-boss-encounter/tests/hazard.rs:8 + hazard_confirmation_updates_entry_guide_and_next_selection |
+| O074 | Boss | Cyklopedia: bosstiariusz | DONE | evidence: apps/client/src/features/0117-boss-encounter/input.rs:11 + bosstiary_browser_actions_select_details_and_enter_confirmed_record; apps/client/src/features/0117-boss-encounter/tests/browser.rs:8 |
 | T077 | Cyclopedia | Wspólne okno i nawigacja | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
 | T078 | Cyclopedia | Items: kategorie/search/statystyki/źródła | PARTIAL | Inspect/catalogue/market są; brak kompletnej encyklopedii Items i jej filtrów. |
 | T079 | Cyclopedia | Map: areas/subareas/passages/PoI/NPC | PARTIAL | Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC. |
@@ -89,8 +89,8 @@ Zasady przeciw dublowaniu:
 | T114 | Hunting tasks | Soul Seals fight dialog | PARTIAL | Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia. |
 | T076 | Minimap | Exploration/markers/labels, floor/zoom/pan | DONE | evidence: apps/client/src/features/local-minimap/state.rs:79 + minimap_world_switch_reanchors_camera_without_losing_same_world_pan |
 | O039 | Minimap | Minimapa i nawigacja | DONE | evidence: apps/client/src/features/local-minimap/input.rs:6 + minimap_edge_clicks_never_queue_out_of_world_navigation |
-| T142 | Quest | Tracker auto-add/remove i filters | PARTIAL | Track quest jest; brak pełnego osobnego trackera, auto-reguł i hide/completed filters. |
-| O050 | Quest | Dziennik zadań i śledzenie | PARTIAL | Brakuje wyszukiwania i sortowania dziennika; istnieją wybór zadania/misji, opis i przełączanie śledzenia. |
+| T142 | Quest | Tracker auto-add/remove i filters | DONE | evidence: crates/client-ui/src/features/0016-quest-log/view.rs:89 + tracker_hides_completed_missions_and_removes_quests_only_after_server_confirmation; apps/client/src/features/0016-quest-log/tests/play.rs:15 + tracker_read_only_reply_preserves_the_current_quest_and_revision |
+| O050 | Quest | Dziennik zadań i śledzenie | DONE | evidence: crates/client-ui/src/features/0016-quest-log/state.rs:15 + journal_search_and_sort_use_confirmed_mission_text_and_keep_server_cursor; apps/client/src/features/0016-quest-log/tests/list_options.rs:77 |
 | T098 | Trackers | Bestiary tracker | DONE | evidence: apps/client/src/features/0197-cyclopedia-tracker/input.rs:6 + tracker_widgets_round_trip_admitted_commands_and_keep_independent_state |
 | T099 | Trackers | Bosstiary tracker | DONE | evidence: apps/client/src/features/0197-cyclopedia-tracker/input.rs:6 + tracker_widgets_round_trip_admitted_commands_and_keep_independent_state |
 | T100 | Trackers | Boss cooldowns | DONE | evidence: apps/client/src/features/0117-boss-encounter/input.rs:17 + cooldown_shortcut_opens_only_the_tracker_and_queries_real_command |
