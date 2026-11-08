@@ -184,7 +184,7 @@ fn scenario(drive_native: bool, capacity: usize) -> TestResult {
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             owner.active_generation = Some(active);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.rooms = SeamRooms::new(None, Some(&room));
             deps.initialize(&owner).await;
             owner

@@ -156,7 +156,7 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
     deps.combat_room = Some(room);
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.reset_epoch = 1;
     seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;

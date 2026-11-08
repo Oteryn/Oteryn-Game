@@ -51,6 +51,7 @@ struct BatchRecord {
 pub struct ActorCombatState {
     pub tibiadrome: bool,
     pub(super) tibiadrome_scale: u64,
+    pub(super) tibiadrome_escalation: bool,
     pub(super) tibiadrome_origin: Option<MovementLocalPosition>,
     /// Actual same-session recovery window, set only after committed reentry.
     pub(super) reentry: Option<(u64, u64)>,

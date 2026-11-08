@@ -124,7 +124,7 @@ async fn field_scenario(harness: &Harness, case: AttackCase) -> TestResult {
     let (deps, monster) = dependencies(active, &pin, case)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = deps.room.movement_cells();
+    owner.movement_cells = (deps.room.movement_cells()).into();
     // The source keeps all three canonical attacks. A larger test player pool survives
     // their real damage while the field's original schedule gets its first cast.
     let initial_health = crate::gameplay_transport::actor_spell::tests::FACTS.max_health
@@ -278,7 +278,7 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
     let (deps, monster) = dependencies(active, &pin, case)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = deps.room.movement_cells();
+    owner.movement_cells = (deps.room.movement_cells()).into();
     let maximum = maximum_source_damage(active, case)?;
     let area_case = matches!(case, AttackCase::FireDevil | AttackCase::FireDevilInvisibleBystander);
     let invisible_bystander = case == AttackCase::FireDevilInvisibleBystander;

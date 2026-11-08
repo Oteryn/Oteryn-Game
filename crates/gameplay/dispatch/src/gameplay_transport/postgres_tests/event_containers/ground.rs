@@ -162,7 +162,7 @@ fn scenario(case: Case) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&bundle_room));
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
@@ -322,7 +322,7 @@ fn scenario(case: Case) -> TestResult {
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&bundle_room));
         deps.initialize(&restarted).await;
         let request = UseCommand {

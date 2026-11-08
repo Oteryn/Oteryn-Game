@@ -134,7 +134,7 @@ fn scenario() -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -430,7 +430,7 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),

@@ -12,10 +12,40 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+#[path = "tibiadrome/modifiers.rs"]
+mod modifiers;
+use modifiers::Modifier;
+pub(super) use modifiers::somersault;
+
 #[derive(Default)]
 pub(super) struct Drome {
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, Live>>,
+}
+#[cfg(test)]
+impl Drome {
+    pub(in crate::gameplay_transport) fn test_exploding_corpses(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(), &'static str> {
+        self.test_modifier(session, Modifier::ExplodingCorpses)
+    }
+    pub(in crate::gameplay_transport) fn test_somersault(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(), &'static str> {
+        self.test_modifier(session, Modifier::Somersault)
+    }
+    fn test_modifier(
+        &self,
+        session: GameSessionId,
+        modifier: Modifier,
+    ) -> Result<(), &'static str> {
+        let live = self.live.lock().map_err(|_| "Drome registry")?;
+        let current = live.get(&session).ok_or("Drome participant")?;
+        current.battle.lock().map_err(|_| "Drome battle")?.modifier = modifier;
+        Ok(())
+    }
 }
 struct Live {
     actor: ExactActorRef,
@@ -28,6 +58,12 @@ struct Live {
     mana: u32,
 }
 struct Battle {
+    modifier: Modifier,
+    mark: Option<modifiers::Mark>,
+    next_modifier: Instant,
+    effect_sequence: u64,
+    exploded: Vec<(ExactActorRef, GameSessionId)>,
+    somersaults: Vec<(ExactActorRef, u64)>,
     center: MovementLocalPosition,
     opponents: Vec<ExactActorRef>,
     wave: u32,
@@ -35,6 +71,7 @@ struct Battle {
     clears: u32,
     preparing: bool,
     deadline: Instant,
+    wave_deadline_ms: u64,
     ended: bool,
 }
 
@@ -152,6 +189,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if after == Record::default() {
             after.progress.rotation = rotation;
         }
+        if !read.rotation_points_eligible {
+            after.progress.waves = 0;
+        }
         after.progress.rotate(rotation);
         let mut disposition = 1;
         let premium = self
@@ -177,9 +217,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if after.progress.rotation == before.progress.rotation
                         && battle.clears > after.completed
                     {
-                        for _ in after.completed + 1..=battle.clears {
-                            after.progress.wave(battle.completed);
-                        }
+                        // Manual combat.md:264: each missed clear adds one
+                        // starting level; the latest wave level is a single floor.
+                        // Match the durable server-cadence settlement calculation.
+                        let count = battle.clears - after.completed;
+                        after.progress.level = after.progress.level.max(battle.completed);
+                        after.progress.start = after
+                            .progress
+                            .start
+                            .saturating_add(count)
+                            .max(battle.completed);
+                        after.progress.waves = after.progress.waves.saturating_add(count);
                         after.completed = battle.clears;
                     }
                     after.wave = battle.wave;
@@ -242,6 +290,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 (
                                     crate::durability::arena_match::identity(command, b"drome"),
                                     Arc::new(Mutex::new(Battle {
+                                        modifier: Modifier::Somersault,
+                                        mark: None,
+                                        next_modifier: Instant::now(),
+                                        effect_sequence: 0,
+                                        exploded: Vec::new(),
+                                        somersaults: Vec::new(),
                                         center: at,
                                         opponents: Vec::new(),
                                         wave: after.progress.start.saturating_add(1),
@@ -252,6 +306,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                             + Duration::from_secs(u64::from(
                                                 rules::PREPARATION_SECONDS,
                                             )),
+                                        wave_deadline_ms: 0,
                                         ended: false,
                                     })),
                                 )
@@ -383,7 +438,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         if runtime
-            .relocate_arena_player(actor, session, at, current.origin)
+            .return_tibiadrome_player(actor, session, at, current.origin)
             .is_err()
         {
             return false;
@@ -463,25 +518,68 @@ fn entry_ready(
     runtime: &ChannelRuntimeV1,
     at: MovementLocalPosition,
 ) -> bool {
-    // oteryn-choice: the existing admitted arena entrance is the Drome lever until native
-    // Drome teleporters are authored. Reserve a qualified walkable ring around the entrant.
-    at_hall(at)
-        && positions(at)
-            .iter()
-            .all(|at| walkable(owner, runtime, *at) && runtime.native_summon_cell_free(*at))
-}
-fn positions(at: MovementLocalPosition) -> Vec<MovementLocalPosition> {
-    (-4i32..=4)
-        .flat_map(|dy| {
-            (-4i32..=4).filter_map(move |dx| {
-                (dx.abs().max(dy.abs()) == 4).then_some(MovementLocalPosition {
-                    x: at.x + dx,
-                    y: at.y + dy,
-                    floor: at.floor,
-                })
-            })
+    // Oteryn's current gathering area remains in the admitted Svargrond hall.
+    // Manual combat.md:267,274-276 requires space for17 opponents and100
+    // warned tiles; an artificial square ring refuses the genuine irregular map.
+    if !at_hall(at) {
+        return false;
+    }
+    let cells = battle_cells(owner, runtime, at);
+    cells.len() >= 100
+        && rules::monster_count(5).is_some_and(|maximum| {
+            cells
+                .iter()
+                .filter(|cell| runtime.native_summon_cell_free(**cell))
+                .take(maximum)
+                .count()
+                == maximum
         })
-        .collect()
+}
+
+/// At most169 cells. Every candidate has a qualified same-floor route from the
+/// gathering cell; a walkable island behind source walls is not a spawn point.
+fn battle_cells(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+    center: MovementLocalPosition,
+) -> Vec<MovementLocalPosition> {
+    use std::collections::{BTreeSet, VecDeque};
+    if !walkable(owner, runtime, center) {
+        return Vec::new();
+    }
+    let mut seen = BTreeSet::from([(center.x, center.y)]);
+    let mut pending = VecDeque::from([center]);
+    let mut cells = Vec::new();
+    while let Some(at) = pending.pop_front() {
+        cells.push(at);
+        for (dx, dy) in [(0_i32, -1_i32), (-1, 0), (0, 1), (1, 0)] {
+            let (Some(x), Some(y)) = (at.x.checked_add(dx), at.y.checked_add(dy)) else {
+                continue;
+            };
+            if x.abs_diff(center.x) > 6 || y.abs_diff(center.y) > 6 || seen.contains(&(x, y)) {
+                continue;
+            }
+            let next = MovementLocalPosition {
+                x,
+                y,
+                floor: center.floor,
+            };
+            if walkable(owner, runtime, next) {
+                seen.insert((x, y));
+                pending.push_back(next);
+            }
+        }
+    }
+    // The manual leaves exact spawn offsets to room content. Prefer distant
+    // qualified cells, with stable coordinates breaking ties, rather than walls.
+    cells.sort_by_key(|cell| {
+        (
+            std::cmp::Reverse(cell.x.abs_diff(center.x).max(cell.y.abs_diff(center.y))),
+            cell.y,
+            cell.x,
+        )
+    });
+    cells
 }
 
 pub(super) fn tick(owner: &ComposedFreshAdmission<'_, '_, '_>, runtime: &mut ChannelRuntimeV1) {
@@ -502,10 +600,17 @@ pub(in crate::gameplay_transport) fn tick_at(
         let present = runtime
             .player_control_facts(current.actor, *session)
             .is_ok();
+        let center = match current.battle.lock() {
+            Ok(battle) => battle.center,
+            Err(_) => {
+                current.ended = true;
+                continue;
+            }
+        };
         let inside = runtime.read_actor_position(current.actor).is_ok_and(|p| {
-            p.position().floor == current.origin.floor
-                && p.position().x.abs_diff(current.origin.x) <= 6
-                && p.position().y.abs_diff(current.origin.y) <= 6
+            p.position().floor == center.floor
+                && p.position().x.abs_diff(center.x) <= 6
+                && p.position().y.abs_diff(center.y) <= 6
         });
         if !present || !inside {
             current.ended = true;
@@ -526,38 +631,70 @@ pub(in crate::gameplay_transport) fn tick_at(
         if battle.ended {
             continue;
         }
-        if players == 0 || (!battle.preparing && now >= battle.deadline) {
+        // Manual combat.md:255,279: the committed native kills, rather
+        // than the later observer cadence, decide the 120-second wave result.
+        let defeated_in_time = !battle.preparing
+            && !battle.opponents.is_empty()
+            && battle.opponents.iter().all(|target| {
+                let deaths = runtime.borrow_combat_death();
+                deaths.projected_death(*target).is_ok()
+                    && deaths
+                        .projected_death_at_ms(*target)
+                        .is_ok_and(|at| at.is_some_and(|at| at <= battle.wave_deadline_ms))
+            });
+        // Manual combat.md:255,264: native victory earns one clear immediately.
+        // Corpse effects may await their HP owner, and participant exit must not
+        // erase an already completed wave. Keep physical advancement below gated.
+        if defeated_in_time && battle.completed < battle.wave {
+            battle.completed = battle.wave;
+            battle.clears = battle.clears.saturating_add(1);
+        }
+        if players == 0 || (!battle.preparing && now >= battle.deadline && !defeated_in_time) {
             battle.ended = true;
             for target in battle.opponents.drain(..) {
                 let _ = runtime.remove_arena_opponent(target);
             }
             continue;
         }
-        if !battle.preparing
-            && !battle.opponents.is_empty()
-            && battle.opponents.iter().all(|target| {
-                runtime
-                    .borrow_combat_death()
-                    .projected_death(*target)
-                    .is_ok()
-            })
-        {
-            battle.completed = battle.wave;
-            battle.clears = battle.clears.saturating_add(1);
+        let bursts_complete = modifiers::deaths(owner, runtime, &live, &mut battle, current.run);
+        if defeated_in_time && bursts_complete {
             battle.wave = battle.wave.saturating_add(1);
             for target in battle.opponents.drain(..) {
                 let _ = runtime.remove_arena_opponent(target);
             }
             battle.preparing = true;
+            battle.mark = None;
             battle.deadline = now + Duration::from_secs(u64::from(rules::PREPARATION_SECONDS));
+        }
+        if !battle.preparing {
+            modifiers::timed(owner, runtime, &live, &mut battle, current.run, now);
         }
         if battle.preparing && now >= battle.deadline {
             // oteryn-choice: use qualified native arena profiles; the pinned donors provide
             // neither Drome creature profiles nor a numeric difficulty curve.
-            // oteryn-choice: retain those profiles' existing attacks/conditions as the
-            // combat modifiers, rather than inventing unqualified Drome spell profiles.
+            // Manual combat.md:269-278 supplies all nine modifiers independently
+            // of the still-missing Drome-exclusive base profiles.
+            battle.modifier = Modifier::draw(current.run, battle.wave);
+            battle.mark = None;
+            battle.exploded.clear();
+            battle.somersaults.clear();
+            battle.effect_sequence = 0;
+            let interval = if matches!(battle.modifier, Modifier::SownSorrow | Modifier::BadRoots) {
+                [20, 17, 14, 11, 8]
+                    .get(players.saturating_sub(1))
+                    .copied()
+                    .unwrap_or(20)
+            } else {
+                15
+            };
+            battle.next_modifier = now + Duration::from_secs(interval);
             let count = rules::monster_count(players).unwrap_or(0);
-            for (index, at) in positions(battle.center).into_iter().take(count).enumerate() {
+            let placements: Vec<_> = battle_cells(owner, runtime, battle.center)
+                .into_iter()
+                .filter(|at| runtime.native_summon_cell_free(*at))
+                .take(count)
+                .collect();
+            for (index, at) in placements.into_iter().enumerate() {
                 let key = format!(
                     "oteryn:creature.{}",
                     crate::durability::arena_match::donor::OPPONENTS[0][index % 5]
@@ -567,6 +704,13 @@ pub(in crate::gameplay_transport) fn tick_at(
                 }) {
                     if runtime
                         .scale_tibiadrome_opponent(target, battle.wave)
+                        .is_err()
+                    {
+                        let _ = runtime.remove_arena_opponent(target);
+                        break;
+                    }
+                    if runtime
+                        .set_tibiadrome_escalation(target, battle.modifier == Modifier::Escalated)
                         .is_err()
                     {
                         let _ = runtime.remove_arena_opponent(target);
@@ -583,6 +727,15 @@ pub(in crate::gameplay_transport) fn tick_at(
             } else {
                 battle.preparing = false;
                 battle.deadline = now + Duration::from_secs(u64::from(rules::WAVE_SECONDS));
+                // The projection's ms clock is the same runtime clock_origin;
+                // this remains exact when observation is delayed or retried.
+                battle.wave_deadline_ms = u64::try_from(
+                    battle
+                        .deadline
+                        .saturating_duration_since(owner.clock_origin)
+                        .as_millis(),
+                )
+                .unwrap_or(u64::MAX);
             }
         }
     }

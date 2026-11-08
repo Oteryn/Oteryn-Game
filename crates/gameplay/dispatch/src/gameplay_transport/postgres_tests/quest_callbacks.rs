@@ -59,6 +59,7 @@ pub(super) fn source_world_positions(
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
     let ground = || sector::Item {
@@ -571,7 +572,7 @@ pub(super) fn scenario_with_definition_ready_claim(
             ] {
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
-                owner.movement_cells = &cells;
+                owner.movement_cells = (&cells).into();
                 owner.quest_catalogue = catalogue;
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
@@ -610,7 +611,7 @@ pub(super) fn scenario_with_definition_ready_claim(
         ] {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             if quest {

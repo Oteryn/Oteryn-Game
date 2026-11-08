@@ -91,6 +91,7 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         }],
         draft_areas: vec![],
@@ -216,7 +217,7 @@ fn case(protected: bool, stale: bool) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &character);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         std::sync::Arc::get_mut(&mut owner.states)
             .expect("W02: isolated fixture state")
             .gameplay_idle_policy = GameplayIdlePolicy {

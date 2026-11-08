@@ -160,8 +160,8 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
-        owner.quest_catalogue = Some(std::sync::Arc::new(
+        owner.movement_cells=(&cells).into();
+        owner.quest_catalogue=Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
                 .catalogue()

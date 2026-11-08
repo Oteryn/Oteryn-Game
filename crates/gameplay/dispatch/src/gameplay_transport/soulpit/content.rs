@@ -1,5 +1,5 @@
 //! Qualify a private Soulpit child of the activated full World bundle.
-use super::super::activity_runtime::{ActivityRuntimeAssets, ActivityTemplateKey};
+use super::super::activity_runtime::{ActivityRuntimeAssets, ActivityTemplateKey, SharedOwner};
 use super::super::{AdmissionRetryBudget, ComposedFreshAdmission, SeamRooms};
 use super::handoff_owner::read_with_budget;
 use crate::content::soulpit_activity::{
@@ -170,9 +170,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     runtime,
                     door,
                     ActivityRuntimeAssets {
-                        activity_room: Some(private_room),
-                        movement_cells: room.movement_cells(),
-                        rooms: SeamRooms::new(None, Some(room)),
+                        movement_cells: SharedOwner::Owned(Arc::new(
+                            private_room.movement_cells().clone(),
+                        )),
+                        rooms: SeamRooms::owned(private_room, false),
                     },
                 )
                 .await

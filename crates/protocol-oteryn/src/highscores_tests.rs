@@ -594,3 +594,25 @@ fn the_registries_bind_the_highscores_constants() {
 #[cfg(test)]
 #[path = "highscores_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[test]
+fn drome_allocated_categories_preserve_native_query_and_ranked_result_grammar() {
+    for category in [14, 17] {
+        let query = decode_highscores_query(&[0x08, category, 0x18, 1])
+            .expect("independent Drome query wire fixture");
+        assert_eq!(query.category, u32::from(category));
+        assert_eq!(
+            encode_highscores_query(query).expect("Drome query"),
+            [0x08, category, 0x18, 1]
+        );
+        let mut result = page();
+        result.category = u32::from(category);
+        result.rows = vec![row()];
+        result.own_row = Some(row());
+        let encoded = encode_highscores_result(&result).expect("Drome ranked result");
+        assert_eq!(
+            decode_highscores_result(&encoded).expect("Drome result decode"),
+            result
+        );
+    }
+}
