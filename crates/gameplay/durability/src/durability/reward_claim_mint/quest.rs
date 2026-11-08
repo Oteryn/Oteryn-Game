@@ -180,9 +180,11 @@ pub(crate) async fn apply(
             .carried_use
             .and_then(|use_| use_.corpse.as_ref())
             .is_none_or(|observed| observed.content_revision != content_revision)
+            // A ground corpse needs native Item admission, not a spell-use policy.
             || admission
                 .native
-                .item_policy(&target.item, &target.revision)
+                .item_index()
+                .and_then(|index| index.definition_ref("Item", &target.item, &target.revision))
                 .is_none()
             || !admission.native.policies().policies().iter().any(|policy| {
                 policy.definition_key == target.creature

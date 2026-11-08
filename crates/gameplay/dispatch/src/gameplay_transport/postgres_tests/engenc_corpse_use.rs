@@ -193,9 +193,22 @@ pub(super) async fn exercise(
         "SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-reward/engine-corpse-fixture'",
     ).fetch_one(&h.pool).await?;
     assert_eq!(refused, 0, "refusals leave no partial consumption proof");
+    let disposition = use_target(owner, admitted, selected, valid, 5010, 2).await?;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let admitted_corpse = native
+        .item_index()
+        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i5964", "definition-r1"))
+        .is_some();
+    let spell_policy = native
+        .item_policy("oteryn:item.tibia.i5964", "definition-r1")
+        .is_some();
     assert_eq!(
-        use_target(owner, admitted, selected, valid, 5010, 2).await?,
-        UseDisposition::Committed
+        disposition,
+        UseDisposition::Committed,
+        "corpse Item admission={admitted_corpse}; optional spell-use policy={spell_policy}"
     );
     let quantity: i64 =
         sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=$1")
