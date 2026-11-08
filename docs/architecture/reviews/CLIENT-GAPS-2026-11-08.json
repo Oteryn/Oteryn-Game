@@ -4,18 +4,20 @@
   "src": "TIBAUD-1",
   "area": "Login",
   "feature": "Połączenie, re-entry i logout",
-  "status": "PARTIAL",
-  "gap": "Obsługa sesji jest; brak pełnego zestawu okien kolejki i ponawiania jak w referencji.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Widoczna ponowna próba, odliczanie admission i anulowanie pojedynczej próby bez zatrzymania runtime (`68169ce25`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/native_entry/tests/queue_progress.rs:11 + capacity_progress_and_cancel_cross_real_gateway_and_tls_admission; apps/client/src/reentry.rs:324 + cancel_before_poll_overrides_an_already_queued_admission_result"
  },
  {
   "id": "T003",
   "src": "TIBAUD-1",
   "area": "Login",
   "feature": "Pozycja kolejki i odliczanie",
-  "status": "MISSING",
-  "gap": "Brak ekranu kolejki i ponownej próby po jej odliczeniu.",
-  "lane": "cg_ui"
+  "status": "PARTIAL",
+  "gap": "Odliczanie, automatyczne ponowienie i anulowanie są podłączone do istniejącej odmowy capacity; brak autorytatywnej pozycji kolejki oraz jej producenta/protokołu na serwerze (`68169ce25`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/native_entry/tests/queue_progress.rs:11 + capacity_progress_and_cancel_cross_real_gateway_and_tls_admission; apps/client/src/native_entry/tests.rs:213 + capacity_exceeded_retries_once; Pozostaje: autorytatywna pozycja kolejki i producent/protokół serwera."
  },
  {
   "id": "T004",
@@ -1119,18 +1121,20 @@
   "src": "TIBAUD-1",
   "area": "Support",
   "feature": "Bug report map/technical/typo/other",
-  "status": "PARTIAL",
-  "gap": "Komenda bug i pozycja są; brak pełnego prowadzenia po kategoriach/diagnostyce.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Istniejący formularz kategorii/preview/zgody na build rozszerzono o wskazówki map/typo/technical/other; używa istniejącej komendy raportu (`a8040346e`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0076-player-report/tests/play/guided.rs:4 + guided_bug_report_requires_review_and_sends_only_opted_in_diagnostics; apps/client/src/features/0076-player-report/tests/play.rs:116 + pc02_player_report_scenario"
  },
  {
   "id": "T152",
   "src": "TIBAUD-1",
   "area": "Support",
   "feature": "Violation name/statement/bot/reasons",
-  "status": "PARTIAL",
-  "gap": "Komenda jest; brak pełnego wyboru powodów/examples/translation/confirmation.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Są wybór name/statement/bot, nazwany selektor 21 powodów ze wskazówkami dowodowymi, opcjonalna oznaczona translacja i confirmation wiązane z dokładnym payloadem (`55eddb04c`, `6433921fb`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0076-player-report/tests/play/guided.rs:99 + violation_review_is_invalidated_by_edits; apps/client/src/features/0076-player-report/tests/play.rs:116 + pc02_player_report_scenario"
  },
  {
   "id": "T153",
@@ -1156,9 +1160,10 @@
   "src": "TIBAUD-1",
   "area": "Tutorial",
   "feature": "Hints/markers/mouse trail i server-save notice",
-  "status": "PARTIAL",
-  "gap": "Notice panel jest; brak kontekstowego overlay, markerów i mouse trail.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Ctrl+Alt+Shift+N włącza renderowane wskazówki kontekstowe, marker kursora i ograniczony czasem/rozmiarem mouse trail; server-save notice jest dostępny (`d2241ea6c`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0023-presentation/view/tutorial.rs:4 + tutorial_toggle_projects_context_marker_and_mouse_trail"
  },
  {
   "id": "T156",
