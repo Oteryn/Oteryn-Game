@@ -1,6 +1,8 @@
 //! Transient combat overlays use server positions, including the own actor and hidden attackers.
 //! Item effects retain their donor colours; fireworks expand into eight emissive sparks.
 //! Other magic effects retain the existing hit pulse until official sprites are resolved.
+#[path = "resources.rs"]
+mod resources;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileCoord, TileView};
@@ -36,115 +38,11 @@ impl PlayView {
         // Palette pixels remain emissive: overlays must be legible in dark areas.
         let atlas = self.local.world();
         let atlas = atlas.atlas();
-        let bars = self.preferences().hud_bars;
+        let resource_options = resources::Options::from(self.preferences());
         let effects = self.preferences().show_effects;
-        let health_circle = self.preferences().health_circle;
         let creature_bars = self.preferences().creature_bars;
-        let harmony = self.preferences().show_harmony;
-        let serene = self.preferences().show_serene;
         let (view, batch) = self.scene.presentation_base()?;
-        if bars && let Some(vitals) = &self.vitals {
-            for (row, value, max, color) in [
-                (
-                    0.0,
-                    vitals.health,
-                    vitals.max_health,
-                    PresentationColor::Red,
-                ),
-                (1.0, vitals.mana, vitals.max_mana, PresentationColor::Blue),
-            ] {
-                let at = [8.0, 56.0 + row * 14.0];
-                pixel(
-                    batch,
-                    view,
-                    atlas,
-                    at,
-                    [120.0, 10.0],
-                    PresentationColor::LightGrey,
-                )?;
-                pixel(
-                    batch,
-                    view,
-                    atlas,
-                    at,
-                    [
-                        oteryn_client_ui::spell_action_bar::fill_px(value, max),
-                        10.0,
-                    ],
-                    color,
-                )?;
-            }
-        }
-        if let Some(vitals) = &self.vitals {
-            if harmony {
-                for segment in 0..5_u32 {
-                    pixel(
-                        batch,
-                        view,
-                        atlas,
-                        [8.0 + segment as f32 * 24.0, 86.0],
-                        [20.0, 8.0],
-                        if segment < vitals.harmony.min(5) {
-                            PresentationColor::Yellow
-                        } else {
-                            PresentationColor::LightGrey
-                        },
-                    )?;
-                }
-            }
-            if serene {
-                pixel(
-                    batch,
-                    view,
-                    atlas,
-                    [8.0, 100.0],
-                    [120.0, 8.0],
-                    if vitals.serene {
-                        PresentationColor::LightGreen
-                    } else {
-                        PresentationColor::LightGrey
-                    },
-                )?;
-            }
-        }
-        if health_circle && let Some(vitals) = &self.vitals {
-            let [x, y] = view.tile_to_screen(self.own);
-            let half = view.tile_px() as f32 / 2.0;
-            let radius = half + 8.0;
-            for (side, value, max, color) in [
-                (
-                    1.0,
-                    vitals.health,
-                    vitals.max_health,
-                    PresentationColor::Red,
-                ),
-                (-1.0, vitals.mana, vitals.max_mana, PresentationColor::Blue),
-            ] {
-                let filled = if max == 0 {
-                    0
-                } else {
-                    (u64::from(value.min(max)) * 16 / u64::from(max)) as u32
-                };
-                for segment in 0..16_u32 {
-                    let angle = (segment as f32 + 0.5) * std::f32::consts::PI / 16.0;
-                    pixel(
-                        batch,
-                        view,
-                        atlas,
-                        [
-                            x + half + side * radius * angle.sin() - 1.5,
-                            y + half - radius * angle.cos() - 1.5,
-                        ],
-                        [3.0, 3.0],
-                        if segment < filled {
-                            color
-                        } else {
-                            PresentationColor::LightGrey
-                        },
-                    )?;
-                }
-            }
-        }
+        resources::draw(batch, view, atlas, self.vitals.as_ref(), self.own, resource_options)?;
         if creature_bars {
             for entity in &self.entities {
                 let oteryn_session::EntityDetail::Actor { health_percent, .. } = entity.detail

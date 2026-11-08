@@ -151,3 +151,38 @@ fn rejected_new_quest_additions_retry_after_refresh_without_a_busy_loop() {
     p.tracker.observe(&[entry(1, false)]);
     assert_eq!(tracker_query(&mut p, now + Duration::from_secs(5)), None);
 }
+
+#[test]
+fn independent_tracker_renders_only_matching_confirmed_quests() {
+    let mut p = QuestPanel::default();
+    p.state.selected = true;
+    p.state.log.tracked = vec![line(1, false), line(2, true)];
+    p.tracker.filter = TrackerFilter::Active;
+    p.tracker.search = " TOWER ".into();
+    let text = tracker_text(&p);
+    assert!(text.contains("Quest 1"));
+    assert!(text.contains("Tower key"));
+    assert!(!text.contains("Quest 2"));
+    assert_eq!(p.state.log.tracked.len(), 2);
+}
+
+#[test]
+fn tracker_windows_do_not_overwrite_each_others_search() {
+    let mut p = QuestPanel::default();
+    p.tracker.search = "saved".into();
+    let mut previous = None;
+    assert_eq!(
+        sync_tracker_search(&mut p, &mut previous, "".into()),
+        Some("saved".into())
+    );
+    p.tracker.search = "other window".into();
+    assert_eq!(
+        sync_tracker_search(&mut p, &mut previous, "saved".into()),
+        Some("other window".into())
+    );
+    assert_eq!(
+        sync_tracker_search(&mut p, &mut previous, "typed".into()),
+        None
+    );
+    assert_eq!(p.tracker.search, "typed");
+}
