@@ -152,9 +152,11 @@ fn scenario(final_recipe: bool) -> TestResult {
                 .iter()
                 .map(reward_callbacks::primary_transition)
                 .collect::<Result<Vec<_>, _>>()?;
+            let content_revision: String = sqlx::query_scalar("SELECT content_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 QuestStateCatalogue::new(
-                    "m20-cursed",
+                    content_revision,
                     vec![QuestTrack {
                         key: "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline"
                             .into(),
