@@ -943,6 +943,25 @@ The actual unchanged Rust NativeGameplayInput and RewardClaim binder were re-exe
 
 Consequently questpc4b's C delta is **0/0/0/0/0** for both title and definition vectors under this audit's programme/binding/proof criteria. This is not a claim of a fresh passing branch build or that its 42 usable items lack gameplay value. They improve item coverage within existing programmes without adding a binding or accepted full-programme proof. With E2E rows, two vectors are resolved; **22 other heads need conflict decisions and eight clean heads still need changed native/content admission and quest-proof validation**. These are the explicit remaining evidence limits; main's counts remain unchanged.
 
+### Exact-head CI evidence and remaining limits
+
+A fresh native GitHub API read of check runs on the eight remaining clean-tree heads found **six heads with no check runs**, SEASON with **61** check runs including one failed quest-authoring unit-test check, and SRVENC with **58** check runs including a failed heavy gate and two failed durability PostgreSQL harness checks. A cancelled Item+Mount equivalence check exists on each of SEASON/SRVENC. These are exact-head observations, not an inference from PR labels or another generation. Full check IDs/statuses/URLs and failure annotations: `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:1`.
+
+| Head suffix | Exact-head check observation | Evidence |
+|---|---|---|
+| questl2b | No check runs on pinned head | `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:8` |
+| questpc-pc2 | No check runs on pinned head | `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:15` |
+| questpc2b | No check runs on pinned head | `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:22` |
+| questpc3b | No check runs on pinned head | `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:29` |
+| questpc5 | No check runs on pinned head | `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:36` |
+| questpc8b | No check runs on pinned head | `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:43` |
+| season | 61 check runs; failures: quest-authoring (unit-tests) | `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:50` |
+| srvenc | 58 check runs; failures: heavy-gate, PR early signal / Durability PostgreSQL harness (11), PR early signal / Durability PostgreSQL harness (10) | `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:687` |
+
+All four failure annotations only say that a process exited: SEASON quest-authoring and SRVENC heavy-gate exit 1; SRVENC harnesses 10/11 exit 100. Their raw log requests returned **HTTP 403 Forbidden** at the Actions log redirect. Root causes therefore remain **unknown**; this is not evidence of a quest-code defect, an infrastructure defect or successful native admission. Signed redirect URLs are omitted from retained diagnostics. No workflow rerun, permission change, code repair or PR mutation was made.
+
+The audit's remaining unknowns are now enumerated: 22 conflict-dependent compositions, eight clean heads without verified changed-generation admission/full-quest effects (six have no CI checks; two have failed checks whose logs could not be read), generic source-language completion coverage identified in B, and deployed/public-spawn availability. The request to decide open questions is applied to audit method and reporting; it is not treated as authorization to repair or merge game code. Full per-title merge deltas and deployed counts stay unknown until evidence actually establishes them.
+
 ## Validation, evidence custody and closeout
 
 - Quest crate: **307 unit tests passed**, plus its integration targets; no game source changed. PG dispatch: **24 outfit scenarios +10 additional story scenarios +1 Doublet reward scenario passed**, all with actual PostgreSQL completion markers; Source fixture limitations are retained, not hidden by those green results. Two qready map tests and two proof-packet tests passed. Test summaries and full-log SHA256 values are retained in `QUEST_REALITY_AUDIT_2026-11-08.evidence/validation.json:1`; raw logs remain under /tmp/quest-audit-*.log in this workspace.
@@ -952,11 +971,12 @@ Consequently questpc4b's C delta is **0/0/0/0/0** for both title and definition 
 
 Evidence files (all root-relative and pinned to the audited implementation):
 
-- `QUEST_REALITY_AUDIT_2026-11-08.evidence/branch-assessments.json:1` — sha256 `2bfae98847ebc4f6cc1a42006cda03ec99e4c65d8b9df6d47f4c9fd9a135e515`.
+- `QUEST_REALITY_AUDIT_2026-11-08.evidence/branch-assessments.json:1` — sha256 `13aab11bef2982876d4a6f6ff081d978241f5af4aa6d0d07dc80a6248334c6fe`.
 - `QUEST_REALITY_AUDIT_2026-11-08.evidence/classification.json:1` — sha256 `58032bd84ec76dffa27c160e1c96d3298041c47af4962864c329b61cfa674873`.
 - `QUEST_REALITY_AUDIT_2026-11-08.evidence/item-outfit-bindings.json:1` — sha256 `ef23c152b6ea2fdd5613f4dd35c6ab63cff6457a799d4c09084cf36c75e6b5a0`.
 - `QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:1` — sha256 `0d8bb2f8f782defe07090397fb70d37f4a73c2af66c9d49a606d9f8b07fd884c`.
 - `QUEST_REALITY_AUDIT_2026-11-08.evidence/npc-bindings.json:1` — sha256 `0b800c0e6aec6ffa25ccc59b17001e80c18f1361b4cdad52d1f247fa87a78f89`.
+- `QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json:1` — sha256 `cbc45a0d26333d85f6fcf31aee85dd034816d6c516726df299c28609d7d7d3a3`.
 - `QUEST_REALITY_AUDIT_2026-11-08.evidence/questpc4b-admission.json:1` — sha256 `da171cc771dc667675bf7f02a905a669a77b4e35db32bd761fc2f43d92a2f344`.
 - `QUEST_REALITY_AUDIT_2026-11-08.evidence/reward-bindings.json:1` — sha256 `33c7fee8f42c4beb9afe2ce4abece8241e1ef153d47504feb581f6cef397c84c`.
 - `QUEST_REALITY_AUDIT_2026-11-08.evidence/runtime-loader.json:1` — sha256 `d9a6f25f05f228688fa8d9a5dcc9dbf989200efd2f6ae3662ced6c4387c125b7`.

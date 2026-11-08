@@ -1,0 +1,1332 @@
+{
+  "schema": "QUEST_AUDIT_PINNED_HEAD_CHECKS/v1",
+  "audited_main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+  "observed_date": "2026-11-08",
+  "decision": "Read native exact-head CI checks to distinguish missing CI evidence from missing quest-specific evidence. Do not equate green aggregate checks with individual complete-quest proofs. Do not rerun workflows or publish code.",
+  "heads": [
+    {
+      "suffix": "questl2b",
+      "head": "be6626b49508c33b062c097480ed173472a8bdba",
+      "total_count": 0,
+      "checks": [],
+      "scope": "Native GitHub check state for this exact pinned head; names/conclusions are CI metadata, not proof of a particular quest start-to-finish test or deployed availability."
+    },
+    {
+      "suffix": "questpc-pc2",
+      "head": "ca32e1a335d48bd54ff286f881c84b77c2433920",
+      "total_count": 0,
+      "checks": [],
+      "scope": "Native GitHub check state for this exact pinned head; names/conclusions are CI metadata, not proof of a particular quest start-to-finish test or deployed availability."
+    },
+    {
+      "suffix": "questpc2b",
+      "head": "3886f31acd21f3a2ee5ca26530109bbcc5911f81",
+      "total_count": 0,
+      "checks": [],
+      "scope": "Native GitHub check state for this exact pinned head; names/conclusions are CI metadata, not proof of a particular quest start-to-finish test or deployed availability."
+    },
+    {
+      "suffix": "questpc3b",
+      "head": "27d2708c3a71858ab3838f5d28d9101db2932f24",
+      "total_count": 0,
+      "checks": [],
+      "scope": "Native GitHub check state for this exact pinned head; names/conclusions are CI metadata, not proof of a particular quest start-to-finish test or deployed availability."
+    },
+    {
+      "suffix": "questpc5",
+      "head": "51a476805fe543f912bde3bf7eaf476de837669e",
+      "total_count": 0,
+      "checks": [],
+      "scope": "Native GitHub check state for this exact pinned head; names/conclusions are CI metadata, not proof of a particular quest start-to-finish test or deployed availability."
+    },
+    {
+      "suffix": "questpc8b",
+      "head": "393380ba2654388bb87b50a3c2f506e4010cdb4a",
+      "total_count": 0,
+      "checks": [],
+      "scope": "Native GitHub check state for this exact pinned head; names/conclusions are CI metadata, not proof of a particular quest start-to-finish test or deployed availability."
+    },
+    {
+      "suffix": "season",
+      "head": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+      "total_count": 61,
+      "checks": [
+        {
+          "name": "heavy-gate",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128681749034",
+          "started_at": "2026-11-08T08:53:17Z",
+          "completed_at": "2026-11-08T08:53:19Z",
+          "id": 128681749034
+        },
+        {
+          "name": "game-gate",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128679386913",
+          "started_at": "2026-11-08T08:42:29Z",
+          "completed_at": "2026-11-08T08:42:33Z",
+          "id": 128679386913
+        },
+        {
+          "name": "Merge gate / validate",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128679366482",
+          "started_at": "2026-11-08T08:42:23Z",
+          "completed_at": "2026-11-08T08:42:27Z",
+          "id": 128679366482
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (10)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674035044",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:34:39Z",
+          "id": 128674035044
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (7)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674035040",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:38:23Z",
+          "id": 128674035040
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (9)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674035028",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:40:01Z",
+          "id": 128674035028
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (1)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034999",
+          "started_at": "2026-11-08T08:17:45Z",
+          "completed_at": "2026-11-08T08:48:46Z",
+          "id": 128674034999
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (24)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034997",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:39:51Z",
+          "id": 128674034997
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (4)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034986",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:44:33Z",
+          "id": 128674034986
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (19)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034969",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:47:22Z",
+          "id": 128674034969
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (23)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034967",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:45:06Z",
+          "id": 128674034967
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (21)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034957",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:33:52Z",
+          "id": 128674034957
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (22)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034944",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:49:10Z",
+          "id": 128674034944
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (18)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034937",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:38:57Z",
+          "id": 128674034937
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (17)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034923",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:53:15Z",
+          "id": 128674034923
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (5)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034909",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:42:15Z",
+          "id": 128674034909
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (16)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034905",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:36:27Z",
+          "id": 128674034905
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (15)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034904",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:48:56Z",
+          "id": 128674034904
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (20)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034897",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:43:05Z",
+          "id": 128674034897
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (6)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034887",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:40:29Z",
+          "id": 128674034887
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (8)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034873",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:42:45Z",
+          "id": 128674034873
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (2)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034870",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:41:10Z",
+          "id": 128674034870
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (11)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034849",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:37:06Z",
+          "id": 128674034849
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (12)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034846",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:45:17Z",
+          "id": 128674034846
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (14)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034840",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:36:26Z",
+          "id": 128674034840
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (13)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034835",
+          "started_at": "2026-11-08T08:17:49Z",
+          "completed_at": "2026-11-08T08:48:19Z",
+          "id": 128674034835
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (3)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128674034834",
+          "started_at": "2026-11-08T08:17:44Z",
+          "completed_at": "2026-11-08T08:44:58Z",
+          "id": 128674034834
+        },
+        {
+          "name": "Merge gate / Rust supply chain",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672610602",
+          "started_at": "2026-11-08T08:11:20Z",
+          "completed_at": "2026-11-08T08:12:56Z",
+          "id": 128672610602
+        },
+        {
+          "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 3/3)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672610575",
+          "started_at": "2026-11-08T08:11:20Z",
+          "completed_at": "2026-11-08T08:41:29Z",
+          "id": 128672610575
+        },
+        {
+          "name": "Merge gate / Rust policy and metadata",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672610574",
+          "started_at": "2026-11-08T08:11:20Z",
+          "completed_at": "2026-11-08T08:12:07Z",
+          "id": 128672610574
+        },
+        {
+          "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 1/3)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672610565",
+          "started_at": "2026-11-08T08:11:20Z",
+          "completed_at": "2026-11-08T08:42:21Z",
+          "id": 128672610565
+        },
+        {
+          "name": "Merge gate / Rust changed-crate Clippy and unit tests (clippy)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672610555",
+          "started_at": "2026-11-08T08:11:19Z",
+          "completed_at": "2026-11-08T08:19:14Z",
+          "id": 128672610555
+        },
+        {
+          "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 2/3)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672610543",
+          "started_at": "2026-11-08T08:11:20Z",
+          "completed_at": "2026-11-08T08:34:27Z",
+          "id": 128672610543
+        },
+        {
+          "name": "Merge gate / World bundle",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672610453",
+          "started_at": "2026-11-08T08:11:20Z",
+          "completed_at": "2026-11-08T08:13:01Z",
+          "id": 128672610453
+        },
+        {
+          "name": "Merge gate / dependency review",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672338276",
+          "started_at": "2026-11-08T08:10:07Z",
+          "completed_at": "2026-11-08T08:10:12Z",
+          "id": 128672338276
+        },
+        {
+          "name": "Merge gate / routing contract",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672338268",
+          "started_at": "2026-11-08T08:10:12Z",
+          "completed_at": "2026-11-08T08:11:29Z",
+          "id": 128672338268
+        },
+        {
+          "name": "Merge gate / trusted-base risk lanes",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672338258",
+          "started_at": "2026-11-08T08:10:06Z",
+          "completed_at": "2026-11-08T08:11:18Z",
+          "id": 128672338258
+        },
+        {
+          "name": "Merge gate / governance",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672338238",
+          "started_at": "2026-11-08T08:10:07Z",
+          "completed_at": "2026-11-08T08:11:22Z",
+          "id": 128672338238
+        },
+        {
+          "name": "Merge gate / Molehill runner routing",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672308518",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:10:01Z",
+          "id": 128672308518
+        },
+        {
+          "name": "Merge gate / scope",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742359/job/128672308381",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:10:04Z",
+          "id": 128672308381
+        },
+        {
+          "name": "Agent governance / validate",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742374/job/128672308372",
+          "started_at": "2026-11-08T08:09:59Z",
+          "completed_at": "2026-11-08T08:10:46Z",
+          "id": 128672308372
+        },
+        {
+          "name": "Spell authoring / schema and validator",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742380/job/128672308369",
+          "started_at": "2026-11-08T08:09:59Z",
+          "completed_at": "2026-11-08T08:10:59Z",
+          "id": 128672308369
+        },
+        {
+          "name": "Spell authoring / conversion reproduces committed outputs",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742380/job/128672308343",
+          "started_at": "2026-11-08T08:09:59Z",
+          "completed_at": "2026-11-08T08:10:55Z",
+          "id": 128672308343
+        },
+        {
+          "name": "Spell authoring / TibiaWiki BR capture",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742380/job/128672308323",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:13:24Z",
+          "id": 128672308323
+        },
+        {
+          "name": "house-authoring",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742434/job/128672308276",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:10:57Z",
+          "id": 128672308276
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness build (e2e)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128672308275",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:15:59Z",
+          "id": 128672308275
+        },
+        {
+          "name": "Architecture semantic audit / validate",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742394/job/128672308217",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:10:58Z",
+          "id": 128672308217
+        },
+        {
+          "name": "quest-authoring (unit-tests)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "failure",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742373/job/128672308171",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:15:25Z",
+          "id": 128672308171,
+          "annotations": [
+            {
+              "path": ".github",
+              "start_line": 154,
+              "end_line": 154,
+              "annotation_level": "failure",
+              "title": "",
+              "message": "Process completed with exit code 1."
+            }
+          ],
+          "output_title": null,
+          "output_summary": null,
+          "log_read": {
+            "exit_code": 1,
+            "job_id": "128672308171",
+            "sha256": "7a3de338a5e289cff33bfa6ac6c0734d3bf0c68e98c2ced7ab12432bb98b7d5f",
+            "workspace_log": "/tmp/quest-audit-ci-128672308171.log",
+            "error": "HTTP 403 Forbidden retrieving the GitHub Actions redirected log; signed redirect URL omitted."
+          }
+        },
+        {
+          "name": "quest-authoring (checks)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742373/job/128672308153",
+          "started_at": "2026-11-08T08:09:59Z",
+          "completed_at": "2026-11-08T08:14:29Z",
+          "id": 128672308153
+        },
+        {
+          "name": "proficiency-authoring",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742428/job/128672308124",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:11:45Z",
+          "id": 128672308124
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness build (lib)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742375/job/128672308121",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:17:42Z",
+          "id": 128672308121
+        },
+        {
+          "name": "item-authoring",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742416/job/128672308110",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:18:07Z",
+          "id": 128672308110
+        },
+        {
+          "name": "world-metadata",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742397/job/128672308106",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:11:32Z",
+          "id": 128672308106
+        },
+        {
+          "name": "craft-authoring",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742411/job/128672308105",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:10:41Z",
+          "id": 128672308105
+        },
+        {
+          "name": "reward-claim-authoring",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742429/job/128672308090",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:11:03Z",
+          "id": 128672308090
+        },
+        {
+          "name": "Content tree / Item+Mount equivalence",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742384/job/128672308039",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:25:14Z",
+          "id": 128672308039
+        },
+        {
+          "name": "G4 Item Crystal identity bindings",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742363/job/128672308007",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:11:19Z",
+          "id": 128672308007
+        },
+        {
+          "name": "Native entry room / Platform-issued WorldId",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742372/job/128672307980",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:15:05Z",
+          "id": 128672307980
+        },
+        {
+          "name": "quest-authoring (donor)",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742373/job/128672307955",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:22:26Z",
+          "id": 128672307955
+        },
+        {
+          "name": "area-authoring",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461742368/job/128672307842",
+          "started_at": "2026-11-08T08:09:58Z",
+          "completed_at": "2026-11-08T08:10:37Z",
+          "id": 128672307842
+        },
+        {
+          "name": "Merge authority audit / protected-base validate",
+          "head_sha": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42461740199/job/128672301953",
+          "started_at": "2026-11-08T08:09:56Z",
+          "completed_at": "2026-11-08T08:10:05Z",
+          "id": 128672301953
+        }
+      ],
+      "scope": "Native GitHub check state for this exact pinned head; names/conclusions are CI metadata, not proof of a particular quest start-to-finish test or deployed availability."
+    },
+    {
+      "suffix": "srvenc",
+      "head": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+      "total_count": 58,
+      "checks": [
+        {
+          "name": "heavy-gate",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "failure",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128684342417",
+          "started_at": "2026-11-08T09:04:47Z",
+          "completed_at": "2026-11-08T09:04:50Z",
+          "id": 128684342417,
+          "annotations": [
+            {
+              "path": ".github",
+              "start_line": 45,
+              "end_line": 45,
+              "annotation_level": "failure",
+              "title": "",
+              "message": "Process completed with exit code 1."
+            }
+          ],
+          "output_title": null,
+          "output_summary": null,
+          "log_read": {
+            "exit_code": 1,
+            "job_id": "128684342417",
+            "sha256": "7a3de338a5e289cff33bfa6ac6c0734d3bf0c68e98c2ced7ab12432bb98b7d5f",
+            "workspace_log": "/tmp/quest-audit-ci-128684342417.log",
+            "error": "HTTP 403 Forbidden retrieving the GitHub Actions redirected log; signed redirect URL omitted."
+          }
+        },
+        {
+          "name": "game-gate",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128682549259",
+          "started_at": "2026-11-08T08:57:00Z",
+          "completed_at": "2026-11-08T08:57:03Z",
+          "id": 128682549259
+        },
+        {
+          "name": "Merge gate / validate",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128682531471",
+          "started_at": "2026-11-08T08:56:56Z",
+          "completed_at": "2026-11-08T08:56:58Z",
+          "id": 128682531471
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (18)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676758006",
+          "started_at": "2026-11-08T08:36:28Z",
+          "completed_at": "2026-11-08T09:00:52Z",
+          "id": 128676758006
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (21)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757527",
+          "started_at": "2026-11-08T08:33:53Z",
+          "completed_at": "2026-11-08T08:56:30Z",
+          "id": 128676757527
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (11)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "failure",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757518",
+          "started_at": "2026-11-08T08:34:17Z",
+          "completed_at": "2026-11-08T08:53:49Z",
+          "id": 128676757518,
+          "annotations": [
+            {
+              "path": ".github",
+              "start_line": 278,
+              "end_line": 278,
+              "annotation_level": "failure",
+              "title": "",
+              "message": "Process completed with exit code 100."
+            }
+          ],
+          "output_title": null,
+          "output_summary": null,
+          "log_read": {
+            "exit_code": 1,
+            "job_id": "128676757518",
+            "sha256": "7a3de338a5e289cff33bfa6ac6c0734d3bf0c68e98c2ced7ab12432bb98b7d5f",
+            "workspace_log": "/tmp/quest-audit-ci-128676757518.log",
+            "error": "HTTP 403 Forbidden retrieving the GitHub Actions redirected log; signed redirect URL omitted."
+          }
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (19)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757508",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:51:49Z",
+          "id": 128676757508
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (5)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757505",
+          "started_at": "2026-11-08T08:34:41Z",
+          "completed_at": "2026-11-08T08:50:00Z",
+          "id": 128676757505
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (6)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757504",
+          "started_at": "2026-11-08T08:34:29Z",
+          "completed_at": "2026-11-08T09:03:24Z",
+          "id": 128676757504
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (24)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757501",
+          "started_at": "2026-11-08T08:33:53Z",
+          "completed_at": "2026-11-08T08:53:02Z",
+          "id": 128676757501
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (7)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757447",
+          "started_at": "2026-11-08T08:33:43Z",
+          "completed_at": "2026-11-08T08:58:45Z",
+          "id": 128676757447
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (23)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757443",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:52:46Z",
+          "id": 128676757443
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (20)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757440",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:58:50Z",
+          "id": 128676757440
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (12)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757438",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:55:05Z",
+          "id": 128676757438
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (22)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757435",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:52:20Z",
+          "id": 128676757435
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (13)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757431",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:57:42Z",
+          "id": 128676757431
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (3)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757425",
+          "started_at": "2026-11-08T08:31:22Z",
+          "completed_at": "2026-11-08T09:02:15Z",
+          "id": 128676757425
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (2)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757423",
+          "started_at": "2026-11-08T08:31:22Z",
+          "completed_at": "2026-11-08T09:01:56Z",
+          "id": 128676757423
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (14)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757422",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T09:00:36Z",
+          "id": 128676757422
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (10)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "failure",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757421",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:56:17Z",
+          "id": 128676757421,
+          "annotations": [
+            {
+              "path": ".github",
+              "start_line": 279,
+              "end_line": 279,
+              "annotation_level": "failure",
+              "title": "",
+              "message": "Process completed with exit code 100."
+            }
+          ],
+          "output_title": null,
+          "output_summary": null,
+          "log_read": {
+            "exit_code": 1,
+            "job_id": "128676757421",
+            "sha256": "7a3de338a5e289cff33bfa6ac6c0734d3bf0c68e98c2ced7ab12432bb98b7d5f",
+            "workspace_log": "/tmp/quest-audit-ci-128676757421.log",
+            "error": "HTTP 403 Forbidden retrieving the GitHub Actions redirected log; signed redirect URL omitted."
+          }
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (16)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757413",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T09:04:45Z",
+          "id": 128676757413
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (17)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757412",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:56:54Z",
+          "id": 128676757412
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (1)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757408",
+          "started_at": "2026-11-08T08:32:49Z",
+          "completed_at": "2026-11-08T08:58:23Z",
+          "id": 128676757408
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (9)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757395",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:53:52Z",
+          "id": 128676757395
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (15)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757386",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:57:04Z",
+          "id": 128676757386
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (8)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757380",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:50:02Z",
+          "id": 128676757380
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness (4)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128676757354",
+          "started_at": "2026-11-08T08:30:16Z",
+          "completed_at": "2026-11-08T08:49:49Z",
+          "id": 128676757354
+        },
+        {
+          "name": "Merge gate / Rust changed-crate Clippy and unit tests (clippy)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128675344067",
+          "started_at": "2026-11-08T08:23:38Z",
+          "completed_at": "2026-11-08T08:32:47Z",
+          "id": 128675344067
+        },
+        {
+          "name": "Merge gate / Rust policy and metadata",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128675344060",
+          "started_at": "2026-11-08T08:23:37Z",
+          "completed_at": "2026-11-08T08:24:43Z",
+          "id": 128675344060
+        },
+        {
+          "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 1/3)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128675344058",
+          "started_at": "2026-11-08T08:23:38Z",
+          "completed_at": "2026-11-08T08:56:53Z",
+          "id": 128675344058
+        },
+        {
+          "name": "Merge gate / Rust supply chain",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128675344056",
+          "started_at": "2026-11-08T08:23:38Z",
+          "completed_at": "2026-11-08T08:25:10Z",
+          "id": 128675344056
+        },
+        {
+          "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 3/3)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128675344042",
+          "started_at": "2026-11-08T08:23:37Z",
+          "completed_at": "2026-11-08T08:43:51Z",
+          "id": 128675344042
+        },
+        {
+          "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 2/3)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128675344036",
+          "started_at": "2026-11-08T08:23:37Z",
+          "completed_at": "2026-11-08T08:49:20Z",
+          "id": 128675344036
+        },
+        {
+          "name": "Merge gate / World bundle",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128675344032",
+          "started_at": "2026-11-08T08:23:38Z",
+          "completed_at": "2026-11-08T08:25:35Z",
+          "id": 128675344032
+        },
+        {
+          "name": "Merge gate / trusted-base risk lanes",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128674882633",
+          "started_at": "2026-11-08T08:22:14Z",
+          "completed_at": "2026-11-08T08:23:35Z",
+          "id": 128674882633
+        },
+        {
+          "name": "Merge gate / dependency review",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128674882609",
+          "started_at": "2026-11-08T08:22:21Z",
+          "completed_at": "2026-11-08T08:22:27Z",
+          "id": 128674882609
+        },
+        {
+          "name": "Merge gate / governance",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128674882571",
+          "started_at": "2026-11-08T08:22:13Z",
+          "completed_at": "2026-11-08T08:23:19Z",
+          "id": 128674882571
+        },
+        {
+          "name": "Merge gate / routing contract",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128674882561",
+          "started_at": "2026-11-08T08:22:14Z",
+          "completed_at": "2026-11-08T08:23:13Z",
+          "id": 128674882561
+        },
+        {
+          "name": "Merge gate / Molehill runner routing",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128674854940",
+          "started_at": "2026-11-08T08:22:09Z",
+          "completed_at": "2026-11-08T08:22:12Z",
+          "id": 128674854940
+        },
+        {
+          "name": "Agent governance / validate",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581658/job/128674854887",
+          "started_at": "2026-11-08T08:21:32Z",
+          "completed_at": "2026-11-08T08:22:12Z",
+          "id": 128674854887
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness build (e2e)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128674854886",
+          "started_at": "2026-11-08T08:21:27Z",
+          "completed_at": "2026-11-08T08:28:39Z",
+          "id": 128674854886
+        },
+        {
+          "name": "Architecture semantic audit / validate",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581745/job/128674854836",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:22:19Z",
+          "id": 128674854836
+        },
+        {
+          "name": "quest-authoring (donor)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581739/job/128674854755",
+          "started_at": "2026-11-08T08:21:27Z",
+          "completed_at": "2026-11-08T08:33:52Z",
+          "id": 128674854755
+        },
+        {
+          "name": "Merge gate / scope",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581681/job/128674854739",
+          "started_at": "2026-11-08T08:21:27Z",
+          "completed_at": "2026-11-08T08:21:31Z",
+          "id": 128674854739
+        },
+        {
+          "name": "quest-authoring (checks)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581739/job/128674854732",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:26:58Z",
+          "id": 128674854732
+        },
+        {
+          "name": "PR early signal / Durability PostgreSQL harness build (lib)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581777/job/128674854724",
+          "started_at": "2026-11-08T08:21:27Z",
+          "completed_at": "2026-11-08T08:30:13Z",
+          "id": 128674854724
+        },
+        {
+          "name": "item-authoring",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581684/job/128674854723",
+          "started_at": "2026-11-08T08:21:33Z",
+          "completed_at": "2026-11-08T08:29:51Z",
+          "id": 128674854723
+        },
+        {
+          "name": "quest-authoring (unit-tests)",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581739/job/128674854551",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:27:50Z",
+          "id": 128674854551
+        },
+        {
+          "name": "Content tree / Item+Mount equivalence",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581725/job/128674854496",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:36:41Z",
+          "id": 128674854496
+        },
+        {
+          "name": "G4 Item Crystal identity bindings",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581713/job/128674854494",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:22:44Z",
+          "id": 128674854494
+        },
+        {
+          "name": "craft-authoring",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581716/job/128674854473",
+          "started_at": "2026-11-08T08:21:27Z",
+          "completed_at": "2026-11-08T08:22:12Z",
+          "id": 128674854473
+        },
+        {
+          "name": "Native entry room / Platform-issued WorldId",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581677/job/128674854433",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:25:52Z",
+          "id": 128674854433
+        },
+        {
+          "name": "proficiency-authoring",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581709/job/128674854426",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:22:51Z",
+          "id": 128674854426
+        },
+        {
+          "name": "world-metadata",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581762/job/128674854422",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:23:22Z",
+          "id": 128674854422
+        },
+        {
+          "name": "area-authoring",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581680/job/128674854364",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:22:08Z",
+          "id": 128674854364
+        },
+        {
+          "name": "wheel-authoring",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581620/job/128674854213",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:24:47Z",
+          "id": 128674854213
+        },
+        {
+          "name": "reward-claim-authoring",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462581650/job/128674854203",
+          "started_at": "2026-11-08T08:21:26Z",
+          "completed_at": "2026-11-08T08:22:23Z",
+          "id": 128674854203
+        },
+        {
+          "name": "Merge authority audit / protected-base validate",
+          "head_sha": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42462579527/job/128674847493",
+          "started_at": "2026-11-08T08:21:24Z",
+          "completed_at": "2026-11-08T08:21:30Z",
+          "id": 128674847493
+        }
+      ],
+      "scope": "Native GitHub check state for this exact pinned head; names/conclusions are CI metadata, not proof of a particular quest start-to-finish test or deployed availability."
+    }
+  ]
+}

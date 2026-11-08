@@ -3,8 +3,8 @@
   "files": [
     {
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/branch-assessments.json",
-      "sha256": "2bfae98847ebc4f6cc1a42006cda03ec99e4c65d8b9df6d47f4c9fd9a135e515",
-      "bytes": 153661
+      "sha256": "13aab11bef2982876d4a6f6ff081d978241f5af4aa6d0d07dc80a6248334c6fe",
+      "bytes": 155295
     },
     {
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/classification.json",
@@ -25,6 +25,11 @@
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/npc-bindings.json",
       "sha256": "0b800c0e6aec6ffa25ccc59b17001e80c18f1361b4cdad52d1f247fa87a78f89",
       "bytes": 286604
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/pinned-head-checks.json",
+      "sha256": "cbc45a0d26333d85f6fcf31aee85dd034816d6c516726df299c28609d7d7d3a3",
+      "bytes": 59499
     },
     {
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/questpc4b-admission.json",
