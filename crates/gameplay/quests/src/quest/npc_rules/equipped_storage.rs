@@ -19,7 +19,9 @@ impl NpcRuleCatalog {
                     | NpcRuleGuard::Level { .. }
                     | NpcRuleGuard::Vocation { .. }
                     | NpcRuleGuard::Premium { .. } => {}
-                    NpcRuleGuard::Equipped { slot, item } if slot == "head" => {
+                    NpcRuleGuard::Equipped { slot, item }
+                        if matches!(slot.as_str(), "head" | "necklace") =>
+                    {
                         if required
                             .insert(slot.clone(), item.clone())
                             .is_some_and(|old| old != *item)
