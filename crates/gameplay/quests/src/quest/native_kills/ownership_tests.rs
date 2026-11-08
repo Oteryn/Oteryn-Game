@@ -39,3 +39,31 @@ fn authored_native_counter_rejects_changed_and_renamed_operations() -> Result<()
     }
     Ok(())
 }
+
+#[test]
+fn native_counter_guard_history_excludes_same_value_reactivation() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let first = COUNTERS.first().ok_or("native counters")?;
+    let siblings: Vec<_> = COUNTERS.iter().filter(|c| c.gate == first.gate).collect();
+    assert_eq!(siblings.len(), 2);
+    for sibling in &siblings {
+        assert!(guarding_transitions_for(catalogue, first.gate).contains(&sibling.transition));
+    }
+    let mut reactivation = catalogue.clone();
+    let transition = reactivation
+        .transitions
+        .get_mut(first.transition)
+        .ok_or("transition")?;
+    let guard = transition
+        .effects
+        .iter_mut()
+        .find(|effect| effect.track == first.gate)
+        .ok_or("gate")?;
+    // Even Set(1) -> 1 starts another activation; it is not a native read-only guard.
+    guard.effect = crate::quest::QuestEffectKind::Set(1);
+    assert!(!guarding_transitions_for(&reactivation, first.gate).contains(&first.transition));
+    assert!(guarding_transitions_for(&reactivation, first.gate).contains(&siblings[1].transition));
+    Ok(())
+}

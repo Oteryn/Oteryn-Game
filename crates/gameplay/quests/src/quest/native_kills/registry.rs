@@ -48,6 +48,76 @@ pub fn counter_for<'a>(catalogue: &'a QuestStateCatalogue, key: &str) -> Option<
     None
 }
 
+/// Native deaths may preserve a captured activation only when their receipt leaves its gate unchanged.
+/// Callers must independently check the persisted before/after values; conditional goal advances
+/// are included here, but their terminal receipts are never read-only guards.
+pub fn guarding_transitions_for<'a>(
+    catalogue: &'a QuestStateCatalogue,
+    gate: &str,
+) -> Vec<&'a str> {
+    use crate::quest::{QuestComparison, QuestEffectKind};
+    let mut keys = Vec::new();
+    let mut consider = |counter: CounterRef<'a>| {
+        if counter.gate != gate {
+            return;
+        }
+        let Some(transition) = catalogue.transition(counter.transition) else {
+            return;
+        };
+        if transition.quest != counter.quest {
+            return;
+        }
+        let mut effects = transition
+            .effects
+            .iter()
+            .filter(|effect| effect.track == gate);
+        let Some(guard) = effects.next() else {
+            return;
+        };
+        if effects.next().is_some() || guard.from != QuestComparison::Eq(counter.gate_value) {
+            return;
+        }
+        let read_only = match &guard.effect {
+            QuestEffectKind::Add(0) => true,
+            QuestEffectKind::SetWhenAtLeast {
+                other_effect,
+                minimum,
+                ..
+            } => {
+                counter.maximum.checked_sub(1) == Some(*minimum)
+                    && transition
+                        .effects
+                        .get(usize::from(*other_effect))
+                        .is_some_and(|effect| {
+                            effect.track == counter.track
+                                && matches!(&effect.effect, QuestEffectKind::Add(1))
+                        })
+            }
+            _ => false,
+        };
+        if read_only {
+            keys.push(transition.key.as_str());
+        }
+    };
+    for counter in super::counters() {
+        if counter.gate == gate
+            && catalogue.transition(counter.transition) == Some(&counter.transition())
+        {
+            consider(counter.view());
+        }
+    }
+    if let Some(bindings) = catalogue.authored_bindings() {
+        for quest in &bindings.quests {
+            for stage in &quest.stages {
+                if let Trigger::Kill { counter } = &stage.trigger {
+                    consider(counter.counter(&quest.quest));
+                }
+            }
+        }
+    }
+    keys
+}
+
 pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64>) -> Vec<String> {
     let mut active: Vec<_> = super::active(tracks)
         .into_iter()
