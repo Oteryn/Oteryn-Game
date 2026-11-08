@@ -13,7 +13,6 @@ pub struct CapturedMapItem {
     pub children: Vec<u64>,
 }
 
-
 impl BundleFacts {
     pub(super) fn capture_nested_sources(&mut self, pos: TilePos, tile: &Tile) {
         let top_count = tile.items.iter().filter(|item| item.depth == 0).count();
