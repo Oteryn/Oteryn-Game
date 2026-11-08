@@ -16,3 +16,5 @@
 | cults_boss_phase_closures: wire shared native phase owner into production admission/deaths and durable settlement | ENGENC2 | none; reserved range 1800–1819 | Cults of Tibia | CLAIMED |
 | Fugue native combat profile source missing from checked native catalogue | ENGENC2 | none | The Order of the Lion | OWNER: need an authoritative creature profile; do not invent combat data |
 | Literal readable text on NPC/World quest Item rewards through the existing MINT owner | questpc5 | none planned; own range 1270–1279 retained | Nomads Land Quest (book reward step only; window puzzle remains) | CLAIMED |
+
+| Quest-guarded object taming with atomic quest progress | SRV7 | none planned; retained own range 0992–0993 only | Targuna Quest (Reliable Ram step; preceding stages remain separate) | CLAIMED |
