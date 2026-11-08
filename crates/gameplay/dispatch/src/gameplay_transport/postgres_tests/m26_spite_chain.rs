@@ -133,17 +133,35 @@ async fn scenario(admin: String) -> TestResult {
     )
     .ok_or("boss capability")?;
     let current = crate::gameplay_transport::character_gameplay_fence::current(
-        &owner, admitted.game_session_id, false).await.ok_or("current source task fence")?;
+        &owner,
+        admitted.game_session_id,
+        false,
+    )
+    .await
+    .ok_or("current source task fence")?;
     let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
-    let grant = owner.root.commit_soul_war_command(owner.character, owner.holder, current,
-        CommandRef::new(admitted.game_session_id, CommandId::new(1).map_err(debug)?),
-        crate::durability::quest_state::soul_war::SoulWarCommand::Start).await?;
+    let grant = owner
+        .root
+        .commit_soul_war_command(
+            owner.character,
+            owner.holder,
+            current,
+            CommandRef::new(admitted.game_session_id, CommandId::new(1).map_err(debug)?),
+            crate::durability::quest_state::soul_war::SoulWarCommand::Start,
+        )
+        .await?;
     assert_eq!(grant.result, Ok(()));
-    admitted.continuity.next_command_id = 2;
+    // This fenced owner call prepares the persisted task precondition; it did
+    // not consume a transport envelope. Keep the real connection's fresh
+    // command-ingress position, which the production resume gate verifies.
     slot.observe_endgame_progression();
     drop(slot);
-    admitted.item_fence = item_fence_of(FreshAdmissionStore::from_root(h.root.clone())
-        .current_session_at(admitted.game_session_id).await?.0);
+    admitted.item_fence = item_fence_of(
+        FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(admitted.game_session_id)
+            .await?
+            .0,
+    );
     let fence = admitted.item_fence.ok_or("origin fence")?;
     {
         let mut runtime = owner.runtime.lock().await;
@@ -250,20 +268,46 @@ async fn scenario(admin: String) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("Instance player")?;
     let boss = {
         let runtime = destination.runtime.lock().await;
-        runtime.positioned_melee_census().map_err(debug)?.into_iter()
-            .find(|(target, _, _)| runtime.companion_snapshot(*target)
-                .is_ok_and(|row| row.state.policy.definition_key == SPITE_KEY))
-            .map(|row| row.0).ok_or("source boss")?
+        runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|(target, _, _)| {
+                runtime
+                    .companion_snapshot(*target)
+                    .is_ok_and(|row| row.state.policy.definition_key == SPITE_KEY)
+            })
+            .map(|row| row.0)
+            .ok_or("source boss")?
     };
-    let before = destination.runtime.lock().await.read_actor_position(boss).map_err(debug)?.position();
+    let before = destination
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(boss)
+        .map_err(debug)?
+        .position();
     let now = destination.owner_now();
     for tick in 0..=8 {
-        destination.drain_monster_melee_at(
-            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get() + tick * 1_000_000)
-        ).await;
+        destination
+            .drain_monster_melee_at(
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                    now.get() + tick * 1_000_000,
+                ),
+            )
+            .await;
     }
-    let after = destination.runtime.lock().await.read_actor_position(boss).map_err(debug)?.position();
-    assert_ne!(before, after, "the source boss pursues the actual admitted participant");
+    let after = destination
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(boss)
+        .map_err(debug)?
+        .position();
+    assert_ne!(
+        before, after,
+        "the source boss pursues the actual admitted participant"
+    );
     destination.clock_origin -= Duration::from_millis(8_002);
     let now = destination.owner_now();
     let boss_policy = native
@@ -272,11 +316,11 @@ async fn scenario(admin: String) -> TestResult {
         .iter()
         .find(|row| row.definition_key == SPITE_KEY)
         .ok_or("source boss policy")?;
-    let rewards = native
-        .reward_table()
-        .row(SPITE_KEY)
-        .map_err(debug)?;
-    assert!(!rewards.loot_table.entries.is_empty(), "source personal loot table");
+    let rewards = native.reward_table().row(SPITE_KEY).map_err(debug)?;
+    assert!(
+        !rewards.loot_table.entries.is_empty(),
+        "source personal loot table"
+    );
     {
         let mut runtime = destination.runtime.lock().await;
         let target = runtime
@@ -348,11 +392,24 @@ async fn scenario(admin: String) -> TestResult {
     let state: (bool, i16, bool) = sqlx::query_as(
         "SELECT teleport_access,defeated_bosses,first_taint_at IS NOT NULL FROM game_character_soul_war WHERE character_id=encode($1,'hex')::uuid"
     ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!(state, (true, 4, true), "actual native death awards Spite's first taint");
-    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_boss_reward_contributors")
-        .fetch_one(&h.pool).await?, 1);
-    assert!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_boss_reward_items")
-        .fetch_one(&h.pool).await? > 0, "actual source personal loot is retained");
+    assert_eq!(
+        state,
+        (true, 4, true),
+        "actual native death awards Spite's first taint"
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_boss_reward_contributors")
+            .fetch_one(&h.pool)
+            .await?,
+        1
+    );
+    assert!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_boss_reward_items")
+            .fetch_one(&h.pool)
+            .await?
+            > 0,
+        "actual source personal loot is retained"
+    );
     eprintln!("M26_SPITE_STAGE native_death_and_soul_war_quest_settlement");
     let activity: (i16, i64, i64) =
         sqlx::query_as("SELECT state,terminal_at,exit_deadline FROM game_boss_room_activities")
