@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "scope": "Exact collector-native callback inventory repair; no exclusion or equality weakened",
+  "red": "Quest unit run307PASS/2FAIL97.422s; exact inventory lacked65 main native callback keys",
+  "green": "Exact inventoryPASS6.753s; full quest rerun308PASS/1historicalNPC13FAIL90.772s",
+  "checks": {
+    "workspace_all_targets": "PASS7m30s",
+    "clippy_quests_all_targets_test_support": "PASS11.46s",
+    "fmt_all": "PASS",
+    "native_and_central_generation": "PASS; no runtime content delta",
+    "world_pin_refresh": "PASS; unchanged26bf812c23df",
+    "duplicate_migrations": "PASS",
+    "quest_units": "308PASS/1historicalNPC13FAIL90.772s; exact65-native-key inventory repaired",
+    "focused_dispatch_and_own_pg": "8PASS366.844s",
+    "dispatch_units": "1597 selected excluding Postgres names; running, no complete-green claim",
+    "qualification_change": false
+  },
+  "logs": {
+    "workspace-check": {
+      "sha256": "2a52454fd69b77b610be4167750bd7830ac94b47a9ece1c09b63969076c30231",
+      "bytes": 3119
+    },
+    "clippy": {
+      "sha256": "c8652a5e7074bf77681a27d9ae6e0ce96ec12b751562f91a5f8d8570f85d7355",
+      "bytes": 164
+    },
+    "fmt-check": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "pin-refresh": {
+      "sha256": "6a11a1ea6c96984c2e3ddcda8fb00703e44497b82f9f11dab963c563d9451604",
+      "bytes": 404
+    },
+    "source-receipt-check": {
+      "sha256": "5b5e2de3c6b59eaf512cfbae9d845215a90c4c6ab6754e224aea9218394e6560",
+      "bytes": 72
+    },
+    "equipment-check": {
+      "sha256": "bb852e2446ad682ef1b82c53d0c48a31f323a4eaac8fea2d33225522c1fc1ef3",
+      "bytes": 78
+    },
+    "dup": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  }
+}

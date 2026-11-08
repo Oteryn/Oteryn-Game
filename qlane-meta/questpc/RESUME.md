@@ -1,3 +1,28 @@
+## Inventory repair/evidence push gates
+Workspace all-targets PASS7m30s; changed quest crate Clippy PASS11.46s; fmt PASS.
+Native/central generation and duplicate migration check PASS. World pin refresh
+PASS, unchanged26bf812c23df. No runtime content changed in this batch. Own focused
+8/8 and component PG proofs are complete. Full dispatch1597-case unit selection
+is still running; collect all failures together. Keep NPC13 historical assertion
+and exact65-key inventory unchanged. No whole-quest qualification promoted.
+Next prepare four Bigfoot simple read-only teleports: single storage refusal can
+be lowered losslessly to existing callback-level failure text. Eight rank gates
+need ordered failure branches; do not change thresholds or publish partial ones.
+Do not change runtime content until current unit run completes.
+
+## Component GREEN and strict inventory repair
+Grouped focused dispatch8/8 PASS366.844s. Yalahar mechanism PG18.6 passes
+202.798s: unset59.008788147s and stage20/47.289014027s refuse; stage21/45.628851509s
+and72/46.457025949s allow. Every case preserves tracks, receipts and revision.
+Citizen female91.77011814s/male92.300620365s, Jorge95.184599429s pass; equipment
+source regression64.677s and mana159.369s pass. Clippy component PASS7m33s.
+Full quest unit retry308/309 PASS90.772s; exact inventory65-main-addition repair
+passes6.753s. Only unchanged historical NPC13 definition mismatch remains; expected
+8c649465... is retained. No whole-quest promotion from these components.
+Full dispatch unit selection excluding Postgres names is now running; do not
+change runtime content underneath it. Next batch is inventory repair/evidence;
+regenerate tooling and rerun workspace/fmt/quest Clippy before cadence push.
+
 Cadence push: strict clippy and grouped dispatch/PG still running. Exact
 known reds: NPC13 predecessor and missing65-native-callback inventory; neither
 assertion changed. Main fetch still78294c081; workspace/fmt/generation pass.

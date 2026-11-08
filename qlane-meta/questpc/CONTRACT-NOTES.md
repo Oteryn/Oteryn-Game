@@ -708,3 +708,33 @@ raw ability equivalence and source facts to pass. Other unknown profiles remain
 unchanged. Source: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml
 
 Verified zero default at https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/items/items.hpp#L29 (Abilities::speed=0).
+
+## Children source follow-up; no partial oil/puzzle publication
+Pinned source grease action has Lua precedence bug `not target.actionid ==8013`.
+Owner exact-match charge rule takes precedence: a future implementation must
+match the original five startup LeverUnique8013 objects (item9125 at33349,
+31123..31127,z5), never accept arbitrary targets. This is a documented conservative
+source correction, not an inferred coordinate fallback. Source success is public
+TALKTYPE_MONSTER_SAY; current callback success_message is private. Request public
+speech rather than silently changing the audience. The subsequent lever puzzle
+needs conditional multi-object toggles plus exact5s reset; no partial flag-only
+callback is published. Sources:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/lever.lua#L94
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/children_of_the_revolution/actions_mission4_grease_oil.lua
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/children_of_the_revolution/actions_mission4_levers_puzzle.lua
+
+## Kissing a Pig source review
+Keep the approved authored recipe's explicit linear lesson order, deterministic
+Zebron practice and deferred five coins; do not import source gambling. Fandom
+request returned402; public https://www.tibiawiki.com.br/wiki/Kissing_a_Pig_Quest
+confirms Hoggle's garden dialogue and the completion message "You advanced in
+lawn mowing" but supplies no numeric cut threshold. Pinned Crystal Hoggle has
+greetings only. Its shared onUseMachete transforms jungle grass3696→3695 and
+calls decay. A native-map survey found38 existing grass roots in a rectangle
+east of the house; this is not claimed as the quest's required count or complete
+garden boundary. Hoggle is upstairs (z6), garden ground isz7; do not invent a
+basement placement from the Wiki map-link floor. Request fenced successful-tool
+objective receipts preserving native decay before adding quest progress; never
+replace normal machete behavior with a permanent transform or charge failures.
+Sources: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/hoggle.lua
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/lib/register_actions.lua#L864

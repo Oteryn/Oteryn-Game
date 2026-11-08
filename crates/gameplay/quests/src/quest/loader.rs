@@ -526,6 +526,34 @@ mod tests {
                 }
             }
         }
+        // Main78294 adds these finite native-source cohorts. Keep an independent
+        // key inventory rather than deriving the expectation from load().
+        let before_native = expected.len();
+        for gate in 0..48 {
+            expected.insert(format!("oteryn:quest-callback/hive-native-gate-{gate}"));
+        }
+        for suffix in [
+            "deeplings-native-boss-28574",
+            "deeplings-native-boss-28575",
+            "deeplings-native-boss-28576",
+            "deeplings-native-coral",
+            "deeplings-native-heart",
+            "deeplings-native-soul-net",
+            "deeplings-native-stair",
+            "fire-feathered-native-darkness",
+            "fire-feathered-native-life",
+            "fire-feathered-native-light",
+            "hive-native-fluid-preparation",
+            "hive-native-hatchlings",
+            "hive-native-objective-0",
+            "hive-native-objective-1",
+            "hive-native-objective-2",
+            "hive-native-objective-3",
+            "hive-native-objective-5",
+        ] {
+            expected.insert(format!("oteryn:quest-callback/{suffix}"));
+        }
+        assert_eq!(expected.len(), before_native + 65);
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
         expected.insert(crate::quest::schrodinger_island::callback().key);
         assert_eq!(

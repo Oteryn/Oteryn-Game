@@ -18,6 +18,10 @@ Source URLs and immutable hashes are in CONTRACT-NOTES.md and QUEST-STATUS.json.
 
 | Carried-tool callback composes counter increment, temporary outfit and replay-bound random spawn | In Service of Yalahar Quest | Original sewer UIDs3071–3074: crowbar3304/9598, four once-only flags, Mission01 increment; Skeleton3s/BogRaider5s outfits and rat spawn branch. Never publish four flag writes with missing coupled effects. |
 
+| Source player public speech and fenced multi-object conditional toggles with delayed lever reset | Children of the Revolution Quest | Oil10189 success uses TALKTYPE_MONSTER_SAY; puzzle toggles four existing cells from five source levers and resets9126→9125 after5s. Private success text or fixed transforms would change the source. |
+
+| Quest objective receipt after a successful native item-tool action, preserving its transformation and decay | Kissing a Pig Quest | Native machete3696→3695 calls decay; Hoggle garden completion must share the successful tool fence. Do not replace the native action with a permanent callback transform or count refused/replayed cuts. |
+
 Resolved requests: main QNPCFX supplies actual UTC calendar month and delayed
 conversation end. Citizen uses that existing programme planner through a small
 local adapter; both mainland source stories pass on PostgreSQL18.6.

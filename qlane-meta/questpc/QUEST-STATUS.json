@@ -11124,7 +11124,7 @@
     }
   },
   "yalahar_mechanism_component": {
-    "state": "Native import and source publication implemented; PG GREEN and prepush checks running",
+    "state": "Own mechanism component PG GREEN; full quest still requires remaining source branches",
     "startup_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
     "startup_git_blob": "5d5323401d243df8416a38aba33c3d6e738b2d1a",
     "startup_bindings": 18,
@@ -11143,7 +11143,7 @@
     "prepush": {
       "workspace_all_targets": "PASS3m40s final source",
       "fmt_all": "PASS",
-      "strict_clippy": "RUNNING; pending at cadence push",
+      "strict_clippy": "PASS7m33s on component; inventory repair pending next check",
       "world_pin_refresh": "PASS; compiler builds twice",
       "world_digest": "26bf812c23dfc7c2a451cf671c762bfe927f8d572252d2b6b53b00d7ec252961",
       "python_profile_tests": "22PASS327.277s",
@@ -11151,18 +11151,49 @@
       "native_binding_tests": "3PASS0.867s",
       "quest_units": {
         "run": 309,
-        "passed": 307,
-        "failed": 2,
+        "passed": 308,
+        "failed": 1,
+        "duration_seconds": 90.772,
         "failures": [
-          "source_layers_preserve_the_actual_npc13_tibia_tales_definition",
-          "owner_scope_excludes_dawnport_from_runtime_state_and_callbacks"
+          "source_layers_preserve_the_actual_npc13_tibia_tales_definition"
         ],
-        "details": "Historical NPC13 predecessor mismatch remains; exact native callback inventory lacks65 main additions. No assertions weakened.",
-        "duration_seconds": 97.422
+        "inventory_repair": "PASS6.753s; preserve independent65-native-key inventory and strict set equality"
       },
-      "focused_dispatch_pg": "running; no GREEN claim yet",
+      "focused_dispatch_pg": "8PASS366.844s including Citizen both, Jorge and mana regression",
       "cadence": "PREPUSH-2 compiling-state exception; known failures and pending tests explicit",
       "qengine_reuse_check": "dd35529b6f1c61042e798723f71768109f9573f8; no loader/catalogue_history fix differs from main"
+    },
+    "pg_green": {
+      "server_version": "18.6",
+      "focused_suite": "8PASS366.844s",
+      "mechanism_duration_seconds": 202.798,
+      "cases": [
+        {
+          "stage": "None",
+          "allowed": false,
+          "duration_seconds": 59.008788147,
+          "tracks_receipts_revision_unchanged": true
+        },
+        {
+          "stage": "Some(20)",
+          "allowed": false,
+          "duration_seconds": 47.289014027,
+          "tracks_receipts_revision_unchanged": true
+        },
+        {
+          "stage": "Some(21)",
+          "allowed": true,
+          "duration_seconds": 45.628851509,
+          "tracks_receipts_revision_unchanged": true
+        },
+        {
+          "stage": "Some(72)",
+          "allowed": true,
+          "duration_seconds": 46.457025949,
+          "tracks_receipts_revision_unchanged": true
+        }
+      ],
+      "log_sha256": "0e39f5791c0665090eb9f8cde417402e8523ffe74d229b7fee4b8d41f80e51a0"
     }
   },
   "jade_replica_speed_fix": {
@@ -11173,9 +11204,27 @@
     "rule": "XML omits speed; pinned Canary Abilities::speed initializes to0",
     "other_unknown_equipment": "9215/9216/9217/9221 remain unknown and unmaterializable",
     "python_unit": "RED None !=0; GREEN 1test0.256s",
-    "rust_equipment_retry": "pending",
+    "rust_equipment_retry": "PASS64.677s",
     "generated_pin_cohorts": 6,
     "generated_pin_profiles": 166,
     "new_record_count": 0
+  },
+  "children_source_followup": {
+    "source": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "decision": "Exact original LeverUnique8013 required by owner charge rule; do not reproduce Lua not/actionid precedence bug",
+    "next_engine_request": "Public player speech plus conditional multi-object toggles and5s lever reset",
+    "publication": "No partial callback published"
+  },
+  "inventory_repair_batch": {
+    "workspace_all_targets": "PASS7m30s",
+    "clippy_quests_all_targets_test_support": "PASS11.46s",
+    "fmt_all": "PASS",
+    "native_and_central_generation": "PASS; no runtime content delta",
+    "world_pin_refresh": "PASS; unchanged26bf812c23df",
+    "duplicate_migrations": "PASS",
+    "quest_units": "308PASS/1historicalNPC13FAIL90.772s; exact65-native-key inventory repaired",
+    "focused_dispatch_and_own_pg": "8PASS366.844s",
+    "dispatch_units": "1597 selected excluding Postgres names; running, no complete-green claim",
+    "qualification_change": false
   }
 }

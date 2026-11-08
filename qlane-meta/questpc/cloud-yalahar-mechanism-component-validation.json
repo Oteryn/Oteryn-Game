@@ -9,16 +9,47 @@
     "duration_seconds": 0.119,
     "error": "callback"
   },
-  "pg_green": "PENDING; grouped focused dispatch run in progress",
+  "pg_green": {
+    "server_version": "18.6",
+    "focused_suite": "8PASS366.844s",
+    "mechanism_duration_seconds": 202.798,
+    "cases": [
+      {
+        "stage": "None",
+        "allowed": false,
+        "duration_seconds": 59.008788147,
+        "tracks_receipts_revision_unchanged": true
+      },
+      {
+        "stage": "Some(20)",
+        "allowed": false,
+        "duration_seconds": 47.289014027,
+        "tracks_receipts_revision_unchanged": true
+      },
+      {
+        "stage": "Some(21)",
+        "allowed": true,
+        "duration_seconds": 45.628851509,
+        "tracks_receipts_revision_unchanged": true
+      },
+      {
+        "stage": "Some(72)",
+        "allowed": true,
+        "duration_seconds": 46.457025949,
+        "tracks_receipts_revision_unchanged": true
+      }
+    ],
+    "log_sha256": "0e39f5791c0665090eb9f8cde417402e8523ffe74d229b7fee4b8d41f80e51a0"
+  },
   "quest_units": {
     "run": 309,
-    "passed": 307,
-    "failed": 2,
+    "passed": 308,
+    "failed": 1,
+    "duration_seconds": 90.772,
     "failures": [
-      "source_layers_preserve_the_actual_npc13_tibia_tales_definition",
-      "owner_scope_excludes_dawnport_from_runtime_state_and_callbacks"
+      "source_layers_preserve_the_actual_npc13_tibia_tales_definition"
     ],
-    "details": "Historical NPC13 predecessor mismatch remains; exact native callback inventory lacks65 main additions. No assertions weakened."
+    "inventory_repair": "PASS6.753s; preserve independent65-native-key inventory and strict set equality"
   },
   "world_digest": "26bf812c23dfc7c2a451cf671c762bfe927f8d572252d2b6b53b00d7ec252961",
   "source_profile_counts": {
@@ -55,5 +86,6 @@
       "sha256": "ab55f454c0c45e9f46cbd162e0adca4582bd59ab442589176538587e6c5a126f",
       "bytes": 4325
     }
-  }
+  },
+  "strict_clippy": "PASS7m33s for pushed component; test-only inventory repair checked next"
 }
