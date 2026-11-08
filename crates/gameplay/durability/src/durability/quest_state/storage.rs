@@ -148,6 +148,22 @@ impl DurabilityRoot {
                     .bind(bound(QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES)))
                     .fetch_all(&mut *tx)
                     .await?;
+                    // A current cycle spans multiple saves. Read latest values per
+                    // track through the existing counter-qualified receipt view,
+                    // independently matching the Character's current World.
+                    let counter_progress = sqlx::query(
+                        "SELECT DISTINCT ON (p.quest_key,t.track_key) p.quest_key, \
+                                p.occurrence_generation::text AS occurrence_generation, t.track_key,t.value \
+                           FROM game_current_counter_quest_progress p \
+                           JOIN game_character_roots c ON c.character_id=p.character_id AND c.world_id=p.world_id \
+                           CROSS JOIN LATERAL unnest(p.track_keys,p.values_after) AS t(track_key,value) \
+                          WHERE p.character_id=encode($1,'hex')::uuid \
+                          ORDER BY p.quest_key,t.track_key,p.committed_character_revision DESC LIMIT $2",
+                    )
+                    .bind(id)
+                    .bind(bound(QUESTSTATE0_RL_08_TRACKS))
+                    .fetch_all(&mut *tx)
+                    .await?;
                     let obligations = sqlx::query(
                         "SELECT claim_game_session_id::text, claim_command_id::text, \
                                 transition_key, state \
@@ -183,6 +199,7 @@ impl DurabilityRoot {
                     commit_semantic_transaction(tx, deadline).await?;
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
+                        || over(&counter_progress, QUESTSTATE0_RL_08_TRACKS)
                         || over(&obligations, QUESTSTATE0_RL_07)
                         || over(&xp_obligations, QUESTGATE0_RL_10)
                     {
@@ -201,6 +218,22 @@ impl DurabilityRoot {
                     for row in &tracks {
                         copy.tracks
                             .insert(row.try_get("track_key")?, row.try_get("value")?);
+                    }
+                    for row in &counter_progress {
+                        let quest: String = row.try_get("quest_key")?;
+                        let track: String = row.try_get("track_key")?;
+                        if !oteryn_gameplay_quests::quest::shared_world_progress::counter_progress_track(&quest, &track) {
+                            continue;
+                        }
+                        let generation = numeric_u64(row, "occurrence_generation")?;
+                        let progress = copy.counter_quests.entry(quest).or_insert_with(|| CounterQuestProgress {
+                            occurrence_generation: generation,
+                            tracks: BTreeMap::new(),
+                        });
+                        if generation == 0 || progress.occurrence_generation != generation {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
+                        progress.tracks.insert(track, row.try_get("value")?);
                     }
                     oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut copy.tracks);
                     if primal_completed {

@@ -229,6 +229,16 @@ pub struct QuestObligationRecord {
     pub waiting_migration: bool,
 }
 
+/// Current source-cycle progress read with the Character root at admission.
+/// These facts are a snapshot, not authority for a later write.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CounterQuestProgress {
+    /// The counter owner's lifecycle generation, independent of save epochs.
+    pub occurrence_generation: u64,
+    /// Latest mission values in this cycle; excludes persistent private balances.
+    pub tracks: BTreeMap<String, i64>,
+}
+
 /// The session copy of one Character's quest progress (§7): loaded at admission and advanced by
 /// each committed receipt. Predicates read it; the writer re-checks under lock.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -238,9 +248,18 @@ pub struct QuestStateCopy {
     states: BTreeMap<String, QuestStateRecord>,
     obligations: Vec<QuestObligationRecord>,
     xp_obligations: Vec<QuestXpObligation>,
+    counter_quests: BTreeMap<String, CounterQuestProgress>,
 }
 
 impl QuestStateCopy {
+    /// Source-cycle snapshot from admission. Any applied receipt invalidates it:
+    /// a receipt delta cannot establish current World lifecycle authority. Reload
+    /// the copy to observe a new cycle or newly committed mission progress.
+    #[must_use]
+    pub fn counter_quest_progress(&self, quest: &str) -> Option<&CounterQuestProgress> {
+        self.counter_quests.get(quest)
+    }
+
     /// Revision read with these tracks under the Character root lock. Kill owners
     /// freeze it with a death so a later task restart cannot receive an older kill.
     #[must_use]
@@ -350,6 +369,7 @@ impl QuestStateCopy {
             return false;
         }
         self.xp_obligations.extend(new_xp);
+        self.counter_quests.clear();
         // A partial delta does not establish a coherent predecessor across a gap or
         // out-of-order replay. Reload before using such a copy as a frozen death fact.
         self.character_revision = self

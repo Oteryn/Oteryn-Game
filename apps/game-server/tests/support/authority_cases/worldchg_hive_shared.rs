@@ -187,6 +187,29 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         ))
     };
     assert_eq!(counts().await?, (1, 1));
+    let copy = h
+        .root
+        .read_character_quest_state(&authority, fixture::fence(1)?.character_id)
+        .await?;
+    let progress = copy
+        .counter_quest_progress(shared_world_progress::HIVE_QUEST)
+        .ok_or("admission lost mission cycle")?;
+    assert_eq!(progress.occurrence_generation, 1);
+    assert_eq!(
+        progress.tracks.get(binding.track),
+        Some(&0),
+        "latest turn-in resets earlier objective progress"
+    );
+    assert_eq!(
+        progress.tracks.get(shared_world_progress::ACTIVE_TRACKS[0]),
+        Some(&0)
+    );
+    assert!(
+        !progress.tracks.contains_key(access::FAVOUR),
+        "persistent balance is not occurrence progress"
+    );
+    assert_eq!(copy.tracks().get(access::FAVOUR), Some(&50));
+
     let occurrence: (String, String, Vec<i64>) = sqlx::query_as("SELECT reset_epoch::text,quest_key,values_after FROM game_character_event_quest_progress WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2")
         .bind(fixture::id(fixture::CHARACTER).as_slice()).bind(binding.key).fetch_one(&h.pool).await?;
     assert_eq!(occurrence.0, "1");

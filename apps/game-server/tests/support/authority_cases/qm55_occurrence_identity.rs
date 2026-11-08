@@ -177,6 +177,29 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
         matches!(outcome, QuestTransitionOutcome::Committed(_)),
         "native acceptance: {outcome:?}"
     );
+    let character = f::fence(1)?.character_id;
+    let copy = h
+        .root
+        .read_character_quest_state(&authority, character)
+        .await?;
+    let progress = copy
+        .counter_quest_progress(shared_world_progress::HIVE_QUEST)
+        .ok_or("current cycle missing from admission")?;
+    assert_eq!(progress.occurrence_generation, 1);
+    assert_eq!(
+        progress.tracks.get(shared_world_progress::ACTIVE_TRACKS[0]),
+        Some(&1)
+    );
+    if let QuestTransitionOutcome::Committed(receipt) = &outcome {
+        let mut delta = copy.clone();
+        assert!(delta.apply(receipt));
+        assert!(
+            delta
+                .counter_quest_progress(shared_world_progress::HIVE_QUEST)
+                .is_none(),
+            "an unqualified delta cannot refresh cycle evidence"
+        );
+    }
     let history: (String, String) = sqlx::query_as("SELECT change_key,occurrence_generation::text FROM game_character_counter_quest_scopes LIMIT 2").fetch_one(&h.pool).await?;
     assert_eq!(history, ("hive_born".into(), "1".into()));
     sqlx::query("UPDATE game_world_change_counters SET state=jsonb_set(jsonb_set(state,'{stage}','3'),'{entered_epoch}','1') WHERE world_id=encode($1,'hex')::uuid AND change_key='hive_born'").bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
@@ -190,6 +213,15 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
             stale, 0,
             "a stale counter cannot authorize current progress"
         );
+        let stale_copy = h
+            .root
+            .read_character_quest_state(&authority, character)
+            .await?;
+        assert!(
+            stale_copy
+                .counter_quest_progress(shared_world_progress::HIVE_QUEST)
+                .is_none()
+        );
         h.root
             .world_changes(world, epoch as u64)
             .await?
@@ -202,6 +234,20 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
             count,
             i64::from(epoch < 6),
             "same source cycle survives saves; reset hides old personal progress"
+        );
+        let copy = h
+            .root
+            .read_character_quest_state(&authority, character)
+            .await?;
+        let progress = copy.counter_quest_progress(shared_world_progress::HIVE_QUEST);
+        assert_eq!(
+            progress.map(|progress| progress.occurrence_generation),
+            (epoch < 6).then_some(1)
+        );
+        assert_eq!(
+            copy.tracks().get(shared_world_progress::ACTIVE_TRACKS[0]),
+            Some(&1),
+            "cycle projection does not rewrite canonical receipt history"
         );
     }
     assert!(matches!(

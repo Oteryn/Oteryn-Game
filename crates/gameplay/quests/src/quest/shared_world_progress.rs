@@ -193,15 +193,31 @@ pub const HIVE_QUEST: &str = "oteryn:quest.hive_native_shared";
 pub const DEEPLING_QUEST: &str = "oteryn:quest.deeplings_native_shared";
 pub const HIVE_OBJECTIVE_PREFIX: &str = "oteryn:quest-callback/hive-native-objective-";
 
-/// Retain every mission progress receipt in its counter cycle, including native
-/// object and kill objectives. Private Favour and scent purchases stay persistent.
+/// Mission tracks scoped to the counter cycle. Private Favour and scent
+/// timestamps remain persistent across cycles.
+pub fn counter_progress_track(quest: &str, track: &str) -> bool {
+    match quest {
+        HIVE_QUEST => {
+            ACTIVE_TRACKS.contains(&track)
+                || track == HATCHLINGS_TRACK
+                || BINDINGS.iter().any(|binding| {
+                    matches!(binding.action, SharedAction::HiveTask(_)) && binding.track == track
+                })
+        }
+        DEEPLING_QUEST => BINDINGS.iter().any(|binding| {
+            !matches!(binding.action, SharedAction::HiveTask(_)) && binding.track == track
+        }),
+        _ => false,
+    }
+}
+
+/// Retain native object, kill, acceptance and completion progress receipts in
+/// their counter cycle without classifying private-only purchases as missions.
 pub fn records_counter_progress(transition: &super::QuestTransition) -> bool {
-    matches!(transition.quest.as_str(), HIVE_QUEST | DEEPLING_QUEST)
-        && transition.effects.iter().any(|effect| {
-            BINDINGS.iter().any(|binding| binding.track == effect.track)
-                || ACTIVE_TRACKS.contains(&effect.track.as_str())
-                || effect.track == HATCHLINGS_TRACK
-        })
+    transition
+        .effects
+        .iter()
+        .any(|effect| counter_progress_track(&transition.quest, &effect.track))
 }
 
 /// Existing object USE owner supplies real handle, range, position and revision.
