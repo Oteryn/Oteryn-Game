@@ -45,3 +45,5 @@
 
 | Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | CLAIMED |
 | Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
+
+| M38: conditional NPC presence, stationary/water admission, returns/tickets and Mistrock binding | npcfix | 2140–2149 reserved by coordinator; none allocated yet | Five checked rows in MISSING-npcfix.md, including The Hidden City of Beregar — Way to Beregar | CLAIMED |
