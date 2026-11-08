@@ -68,12 +68,68 @@
       "result": "PASS strict all-target/all-feature durability and dispatch; 8m11s including lock wait",
       "log": "/tmp/questpc-main-latest-clippy.log",
       "sha256": "a763be447f97fbe8d89d6e7d03466c950159a2010703f81a2433e82a79312d52"
+    },
+    "pin_check": {
+      "result": "PASS deterministic World 32867505 bytes, matching 6e61347f digest",
+      "log": "/tmp/questpc-main-integrated-pin-check.log",
+      "sha256": "fff974c8a61ac34ef2f06d82712293da077b4efa9f540395df793a063e2f2407"
+    },
+    "checkpoint_regeneration": {
+      "result": "PASS; native outputs, equipment cohorts, module registration and 33 mint-audit sites",
+      "log": "/tmp/questpc-pg-red-checkpoint-regeneration.log",
+      "sha256": "6012c3f04d7b71f587dc99f91606b3c3f51aa4dcba345e40810d0d63e90b5745"
+    },
+    "checkpoint_workspace": {
+      "result": "PASS 5m17s",
+      "log": "/tmp/questpc-pg-red-checkpoint-workspace.log",
+      "sha256": "f9fc14b03677ebead73a4c97cb96ac924f2c7d1e89e23d5fa6b4b8d45c950f42"
+    },
+    "checkpoint_fmt": {
+      "result": "PASS",
+      "log": "/tmp/questpc-pg-red-checkpoint-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "checkpoint_duplicate_migrations": {
+      "result": "PASS",
+      "log": "/tmp/questpc-pg-red-checkpoint-dup.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "checkpoint_pin_serialized_retry": {
+      "result": "PASS; unchanged 6e61347f digest",
+      "log": "/tmp/questpc-pg-red-checkpoint-pin-retry.log",
+      "sha256": "a4fd9aa7ba6be8a8929f85832a21a5c47a7e53a756c7f451e5836c413efb789b"
     }
   },
   "pending": [
-    "six focused merged-tree PG cases (building now)",
-    "unit tests in dispatch, durability, quests, npc, world and client-assets",
-    "pin-check gate after regeneration"
+    "reuse existing QENGINE completion normalization after collecting all unit failures",
+    "rerun all six selected PG cases after repair",
+    "finish and rerun affected six-crate units after repair"
   ],
-  "publication_rule": "Owner PREPUSH-2 cadence exception: publish after main, regeneration, workspace all-targets and fmt; list pending tests explicitly"
+  "publication_rule": "Owner PREPUSH-2 cadence exception: publish after main, regeneration, workspace all-targets and fmt; list pending tests explicitly",
+  "pg_red": {
+    "head": "a59e67db9ea73c2c30c8720f8ecdc24f9163a337",
+    "selected": 6,
+    "passed": 5,
+    "failed": 1,
+    "run_seconds": 316.916,
+    "log": "/tmp/questpc-main-integrated-pg.log",
+    "sha256": "744f6da7e817b8f605dc14488c579730e52d06a6d3a685759b212702d14cff4d",
+    "failure": "Kingsday: Unavailable(CommitRejected), early eof",
+    "postgres_error": "quest reward completion lacks exact owning receipt/state",
+    "guard": "1254_quest_reward_completion.sql: game_quest_reward_completion_exact",
+    "cause": "Stage.completes=true is not copied into its NPC RewardCallback.completes, which defaults false",
+    "reuse": "Qualified QENGINE2 614d00506 already normalizes callback completion before attachment; exact 15-line hunk prepared at /tmp/questpc-reuse-qengine-completion.patch",
+    "current_units": "2875 tests across six crates running; collect full failure list before applying fixes"
+  },
+  "pin_memory_recovery": "First release pin refresh was killed under concurrent compile/test memory pressure (exit137); serialized retry passed. No source or assertions changed.",
+  "units_in_progress": {
+    "selected": 2875,
+    "binaries": 6,
+    "passed_so_far": 2259,
+    "failures_so_far": 0,
+    "complete": false,
+    "runtime_source_head": "a59e67db9ea73c2c30c8720f8ecdc24f9163a337",
+    "log": "/tmp/questpc-main-integrated-units.log"
+  },
+  "publication_scope": "Proof-only compiling checkpoint; all runtime and generated content bytes unchanged. Current PG result remains five passed/one failed, explicitly not fully qualified."
 }

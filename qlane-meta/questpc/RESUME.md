@@ -1,3 +1,37 @@
+## Proof checkpoint: source unchanged, one exact PG regression remains
+Own six PG run: five PASS, Kingsday RED (completion plan false versus owning
+receipt true; deferred main1254 guard). Exact existing QENGINE normalization
+hunk prepared in/tmp/questpc-reuse-qengine-completion.patch; reuse it after the
+full unit failure list is collected. Unit run2875 is nearing completion in
+session56788; no failures reported at this checkpoint. Read the full log.
+Fresh regeneration, equipment166/3911 proofs,33 mint sites, fmt, duplicates and
+workspace all-targets PASS5m17s. Pin-check PASS; serialized release pin-refresh
+retry PASS, unchanged6e61347f after first concurrent attempt was killed by memory
+pressure. Avoid pin refresh during a compiler build. Release compiler is now
+cached and faster. No runtime, generated-data or assertion changes in this push.
+After full unit collection, apply the exact existing QENGINE repair plus any
+other collected failures, run changed-crate units and all six own PG cases,
+check/clippy/fmt/regenerate, then push the repaired source. Keep all RED proof.
+Counts retain prior scoped qualification; do not claim current Kingsday GREEN.
+
+## Current RED: reuse existing QENGINE completion normalization
+Full merged-tree PG6 run finished:5PASS/1FAIL316.916s. Four retained-key cases
+and L6 filled-fluid MINT pass with real PG18.6 markers. Kingsday fails207.392s:
+Unavailable(CommitRejected), early eof. Server error: quest reward completion
+lacks exact owning receipt/state (main1254 deferred guard).
+Cause: authored Stage.completes=true is not reflected in its reward callback,
+whose new main field defaults false. QENGINE2 qualified614d00506 already fixes
+this by normalization before attach. Exact15-line hunk is prepared at
+/tmp/questpc-reuse-qengine-completion.patch; live source is unchanged.
+Unit run2875 across six crates is active session56788. Collect its full failures,
+then apply/reuse the normalization plus all other root-cause repairs together.
+Rerun the full selected six PG and six-crate unit sets; do not weaken the SQL
+guard, expected assertions, timeouts or replay behavior. King prior qualification
+is historical; this main checkpoint is not fully qualified until repaired.
+World pin-check is running session41150, log/tmp/questpc-main-integrated-pin-check.log.
+Last pusha59e67db9 at08:05UTC; next checkpoint due by08:35 per owner cadence,
+with exact pending/red points if full unit collection has not completed.
+
 ## Publish latest-main compiling checkpoint now
 Main3209d3d61 is integrated cleanly after c77 conflict reconciliation855c8dca6.
 FINAL workspace all-targets PASS4m40s after all generation/latest main; strict
