@@ -1174,9 +1174,10 @@
   "src": "TIBAUD-1",
   "area": "Game window",
   "feature": "Monk harmony/serene/combo i HUD controls",
-  "status": "PARTIAL",
-  "gap": "Harmony/serene tekstowo są; brak pełnych pasków/combo i niezależnych ustawień HUD mnicha.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Harmony i Serene mają niezależną prezentację; opcjonalny wskaźnik combo przy postaci pokazuje pięć autorytatywnych ładunków Harmony i zmienia się wyłącznie po ActorVitals.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/resources.rs:149 + t162_monk_combo_tracks_server_harmony_and_has_independent_controls"
  },
  {
   "id": "T163",

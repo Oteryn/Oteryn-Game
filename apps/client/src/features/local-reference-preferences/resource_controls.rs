@@ -1,17 +1,18 @@
 //! Independent resource/condition presentation controls on the Interface settings page.
 use super::*;
 use oteryn_client::play::ResourceHudOptions;
-pub(crate) struct ResourceControls([HWND; 5]);
+pub(crate) struct ResourceControls([HWND; 6]);
 impl ResourceControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
-            let mut handles = [null_mut(); 5];
+            let mut handles = [null_mut(); 6];
             for (index, label) in [
                 "HP / MP values",
                 "Soul",
                 "Stamina",
                 "Conditions",
                 "Rest icons",
+                "Harmony combo",
             ]
             .into_iter()
             .enumerate()
@@ -47,6 +48,7 @@ impl ResourceControls {
                 stamina: values[2],
                 conditions: values[3],
                 rest: values[4],
+                combo: values[5],
             };
         }
     }
@@ -58,6 +60,7 @@ impl ResourceControls {
                 options.stamina,
                 options.conditions,
                 options.rest,
+                options.combo,
             ]) {
                 SendMessageW(*handle, BM_SETCHECK, usize::from(checked), 0);
             }

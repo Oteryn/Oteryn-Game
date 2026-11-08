@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ResourceHudOptions {
+    pub combo: bool,
     pub values: bool,
     pub soul: bool,
     pub stamina: bool,
@@ -16,6 +17,7 @@ pub struct ResourceHudOptions {
 impl Default for ResourceHudOptions {
     fn default() -> Self {
         Self {
+            combo: false,
             values: true,
             soul: true,
             stamina: true,
@@ -170,6 +172,12 @@ impl PlayView {
             parts.push(self.vitals.as_ref().map_or_else(
                 || "Harmony: —".into(),
                 |v| format!("Harmony: {}/5", v.harmony),
+            ));
+        }
+        if options.combo {
+            parts.push(self.vitals.as_ref().map_or_else(
+                || "Combo charges: —".into(),
+                |v| format!("Combo charges: {}/5", v.harmony),
             ));
         }
         if self.preferences().show_serene {
