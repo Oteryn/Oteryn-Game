@@ -66,3 +66,23 @@ The Inquisition is now IN_PROGRESS (5active owned entries,21notstarted;
 completion are not yet qualified. Other lane refs checked05:10: qdata1-8 and
 qbind1-2 still1ae39c7f; qready1b39a47f16e/qready2a9f723152 contain chest work,
 not Henricus recruitment. Respect exact packet/QSPLIT ownership.
+
+Main advanced at prepush to98d6ae8ce (Soulpit#3036), so7fc9c35cf WIP commit
+was NOT pushed yet. A merge is currently in progress. Nine conflicts resolved
+in under3minutes: both XP sources survive (Soulpit > ordinary row > encounter),
+Soulpit skips unrelated quest/Grizzly capture, world index/capture fields merge
+without guessed counts. New pin compiler rebuilt14.23s; central/overlay/promotion/
+pin tools regenerated. Prepin workspace3m36sPASS; clippy dispatch/compiler
+alltargets/allfeatures4m00sPASS. Compiler terrain tests and postpin workspace
+are running. Commit+push this merge after those pass (fetch main/lane again).
+Then IMPLEMENT HENRICUS IMMEDIATELY; no more feature investigation is needed.
+Henricus RED65.812s was before Soulpit, not a merged GREEN claim. Current own
+migrations1240-1244 stay; main's1140-1141 belongSoulpit. No renumbering of main.
+
+Soulpit merge final gates PASS: postpin workspace4m20s, compiler terrain6/6
+(0ignored,0.02s), clippy4m00s, fmt, dupmigrations and applicablegeneration.
+PUSH this merge now; then apply /tmp/questpc2b-henricus-authorer.py to the
+repo quest-authoring directory, generate its source JSON, add the narrow
+41line custody helper patterned after Oldrak, wire runtime+both custody guards,
+update finite admitted-set assertion and run quest units + Henricus PG GREEN.
+No extra investigation needed; source bytes/pins/tracks are already known.

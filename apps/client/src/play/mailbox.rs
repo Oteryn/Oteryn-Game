@@ -11,6 +11,8 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
+mod activity_scope;
+
 /// What the session task reports to the shell.
 #[derive(Debug)]
 pub enum PlayEvent {
@@ -31,6 +33,8 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    /// A committed activity switch invalidates the source view's queued actions.
+    pub scope_changed: bool,
     pub served_channel: Option<Option<oteryn_client_runtime::channel_list::ServedChannel>>,
     pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
@@ -61,6 +65,7 @@ pub struct Pushed {
 impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
+        self.scope_changed |= newer.scope_changed;
         super::feature_0023_presentation::protocol::absorb_visuals(
             &mut self.visuals,
             newer.visuals,
@@ -132,6 +137,7 @@ pub(super) struct Mailbox {
     pub(super) battle: oteryn_client_ui::battle::BattlePanel,
     pub(super) death: super::feature_local_death_respawn::protocol::DeathState,
     pub(super) death_reset_commands: bool,
+    pub(super) activity_reset_commands: bool,
     pub(super) depot: oteryn_client_ui::depot::DepotPanel,
     pub(super) depot_shutdown: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
@@ -279,6 +285,7 @@ impl Outbox {
 
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, events: Vec<SessionEvent>) {
+        self.activity_scope_events(&events);
         self.channel_list_events(&events);
         self.appearance_events(&events);
         self.pvp_expert_events(&events);

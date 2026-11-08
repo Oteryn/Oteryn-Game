@@ -14,7 +14,10 @@ impl<S: SessionStream> Session<S> {
         &mut self,
         outcome: Result<T, SessionError>,
     ) -> Result<T, SessionError> {
-        if outcome.is_err() {
+        if outcome
+            .as_ref()
+            .is_err_and(|error| !matches!(error, SessionError::ActivityScopeChanged))
+        {
             self.unusable = true;
         }
         outcome
@@ -342,7 +345,11 @@ impl<S: SessionStream> Session<S> {
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
             if envelope.message_type() == MessageType::SnapshotBegin {
+                let source = self.join_snapshot.game_session_id;
                 self.replace_snapshot(envelope.payload()).await?;
+                if self.join_snapshot.game_session_id != source {
+                    return Err(SessionError::ActivityScopeChanged);
+                }
                 continue;
             }
             if envelope.message_type() != MessageType::LivenessProbe {

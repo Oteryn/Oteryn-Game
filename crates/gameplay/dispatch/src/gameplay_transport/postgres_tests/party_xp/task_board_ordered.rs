@@ -35,7 +35,7 @@ async fn hit(
         assert_eq!(
             attack.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 session,
                 owner.owner_now(),
@@ -60,7 +60,7 @@ async fn hit(
         if (lethal && remaining == 0) || (!lethal && remaining < initial.unsigned_abs()) {
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 session,
                 owner.owner_now(),

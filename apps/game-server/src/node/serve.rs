@@ -3167,6 +3167,7 @@ async fn boot_and_serve(
     };
     let channel_boot::PreparedChannel {
         activity_templates,
+        soulpit_template,
         active_content,
         qualified_room,
         movement_cells,
@@ -3276,6 +3277,7 @@ async fn boot_and_serve(
         )
         .map_err(|_| BootError::Serve)?,
         activity_templates: &activity_templates,
+        soulpit_template: soulpit_template.as_ref(),
         gameplay_idle_policy: config.gameplay_idle,
         store_purchases: config.store_purchases,
         store: Some(crate::native_admission_source::store::StoreClient::new(

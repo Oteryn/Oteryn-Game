@@ -2219,7 +2219,18 @@
     "clippy": "PASS8m17s dispatch alltargets/allfeatures -Dwarnings; includes queue wait",
     "runtime_gameplay_source": "unchanged from last pushed b33d0c985; only test scaffold and task notes added",
     "generated": "PASS applicable central lists/pins, unchanged runtime content",
-    "publication": "compiling WIP red regression; implement source program immediately next"
+    "publication": "WIP scaffold and composed Soulpit main compile; Henricus source recruitment remains RED, implement next",
+    "main_integration": {
+      "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+      "conflicts": 9,
+      "resolved": "XP source composition and quest-capture exclusion; strict semantic JSON union; derived pins regenerated",
+      "workspace_pre_pin": "PASS3m36s",
+      "clippy_dispatch_and_compiler": "PASS4m00s",
+      "compiler_build": "PASS14.23s",
+      "terrain_units": "PASS6/6,0ignored,0.02s",
+      "workspace_post_pin": "PASS4m20s",
+      "red_pg_scope": "Henricus65.812s RED is pre-Soulpit; no postmerge GREEN claimed"
+    }
   },
   "engine_requests": [
     {

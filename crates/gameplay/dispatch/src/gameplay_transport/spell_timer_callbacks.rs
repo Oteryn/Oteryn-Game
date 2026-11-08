@@ -550,7 +550,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(TimerPayload::Strike(_) | TimerPayload::OrdinaryCombat(_))
         ) {
             Some(
-                self.rooms
+                self.rooms()
                     .gate_combat_timer_continuation()
                     .ok_or(Error::StaleOwner)?,
             )

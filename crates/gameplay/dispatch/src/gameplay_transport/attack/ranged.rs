@@ -909,7 +909,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|a| a.native_gameplay())
             .ok_or("content")?;
-        let room = self.rooms.gate_auto_attack().ok_or("room")?;
+        let room = self.rooms().gate_auto_attack().ok_or("room")?;
         let constants = AttackConstants::checked_in().ok_or("constants")?;
         let selected = super::drain::select_swing(
             entry,

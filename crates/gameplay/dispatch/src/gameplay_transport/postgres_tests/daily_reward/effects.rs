@@ -138,7 +138,7 @@ pub(super) async fn kills_before_and_at_expiry(
             assert_eq!(
                 owner.states.attack.lock().await.set_target(
                     &runtime,
-                    owner.rooms.gate_auto_attack(),
+                    owner.rooms().gate_auto_attack(),
                     actor,
                     session,
                     owner.owner_now(),

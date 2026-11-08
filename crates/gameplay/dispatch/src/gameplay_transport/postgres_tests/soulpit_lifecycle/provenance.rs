@@ -13,7 +13,7 @@ pub(super) async fn transaction(h: &Harness) -> TestResult<Type2Transaction<'_>>
 }
 
 pub(super) async fn save_entry(h: &Harness, source: GameSessionId) -> TestResult {
-    sqlx::query("INSERT INTO game_character_last_positions(character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence) SELECT character_id,world_id,32375,31158,-8,decode(repeat('11',32),'hex'),decode(repeat('22',32),'hex'),decode(repeat('33',32),'hex'),character_lease_generation,1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
+    sqlx::query("INSERT INTO game_character_last_positions(character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence) SELECT character_id,world_id,32375,31158,8,decode(repeat('11',32),'hex'),decode(repeat('22',32),'hex'),decode(repeat('33',32),'hex'),character_lease_generation,1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(source.as_bytes().as_slice()).execute(&h.pool).await?;
     Ok(())
 }

@@ -390,6 +390,16 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+    if include_qualified:
+        import soulpit_static
+
+        files[soulpit_static.SHARD] = soulpit_static.outputs()[soulpit_static.SHARD]
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += soulpit_static.NOTE
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
     return files, world_objects.census_document_bytes(result)
 
 
@@ -442,6 +452,7 @@ def qualified_shards():
             "content/world/terrain/terrain-08578-08611.json",
             "content/world/terrain/terrain-08612-08612.json",
             "content/world/terrain/terrain-08613-08613.json",
+            "content/world/terrain/terrain-08614-08668.json",
             "content/world/objects/objects-12917-12931.json",
         )
         if (path := ROOT / relative).exists()

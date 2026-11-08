@@ -181,7 +181,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             return Err(DurabilityError::Unavailable);
         }
         let room = self
-            .rooms
+            .rooms()
             .gate_periodic_damage()
             .ok_or(DurabilityError::Unavailable)?;
         let objects = self.door.lock().await;
