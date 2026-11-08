@@ -491,6 +491,7 @@ impl NpcRuleCatalog {
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
                                 | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.dangerous_depths_quest"
                                 | "oteryn:quest.elemental_spheres_quest"
                                 | "oteryn:quest.bigfoot_s_burden_quest"
                                 | "oteryn:quest.hero_of_rathleton_quest"
