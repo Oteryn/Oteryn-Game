@@ -2,6 +2,12 @@ use super::*;
 
 #[path = "options.rs"]
 mod options;
+#[path = "contexts.rs"]
+mod contexts;
+#[path = "hud_options.rs"]
+mod hud_options;
+#[path = "interface.rs"]
+mod interface;
 
 #[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>

@@ -234,20 +234,20 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / General: mouse preset, movement, rotation, keyboard delay",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Rebinding jest; brak presetów myszy, rotation modifier i keyboard delay.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/sync.rs:160 + mouse_preset_changes_actual_click_routing; Reference classic/smart mouse preset semantics remain; swap, rotation and repeat delay are wired."
+  "evidence": "apps/client/src/features/local-reference-preferences/dialog.rs:230 + mouse_presets_validate_route_and_survive_restart + configured_rotation_modifier_sends_existing_turn_command + mouse_preset_changes_actual_click_routing; Right/left-handed presets, movement rebinding, rotation modifier and keyboard repeat delay reach the live input paths."
  },
  {
   "id": "T047",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / General Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak równoważnej strony i presetów chat-on/chat-off.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/bindings.rs:92 + general_hotkey_presets_route_movement_and_preserve_other_bindings; Automatic selection from chat composer mode remains."
+  "evidence": "apps/client/src/features/local-reference-preferences/chat_context.rs:6 + chat_hotkey_presets_follow_the_live_composer_context; General hotkey editing and saved on/off presets follow on, off and temporary composer modes; manual bindings can opt out."
  },
  {
   "id": "T048",
@@ -274,30 +274,30 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / General: language/scale, cursor i tooltips",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Skala mapy i pole języka są; brak pełnej skali UI, kursora i tooltip controls.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/interface_controls.rs:15 + interface_scale_changes_hud_geometry_and_rejects_invalid_values; Full panel scaling and tooltip controls remain."
+  "evidence": "apps/client/src/features/local-reference-preferences/native_ui_scale.rs:175 + interface_scale_projects_panels_and_live_labels_without_zooming_the_map + tooltips_use_visible_server_names_delay_and_generation; UI scale reaches native panels, common typography, tooltips and scene HUD labels without changing map zoom; panels fit the monitor and cursor shape is configurable."
  },
  {
   "id": "T051",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / HUD: player/creature names, HP/mana, marks, NPC icons",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak osobnych przełączników dla owner i pozostałych aktorów.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/interface_controls.rs:17 + hud_name_controls_separate_owner_players_and_creatures; Independent HP/mana, marks and NPC icon controls remain."
+  "evidence": "apps/client/src/features/0023-presentation/actor_hud.rs:25 + hud_marks_and_npc_badges_are_independent_and_generation_fenced + own_health_and_mana_visibility_are_independent + hud_name_controls_separate_owner_players_and_creatures; Native HUD controls independently project owner/other names and resources, party/PvP/forge marks and NPC icons using confirmed server identities and generations."
  },
  {
   "id": "T052",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / HUD: arcs/distance/size/opacity",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak konfigurowalnych łuków HP/mana.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/arc_controls.rs:10 + hud_arc_geometry_uses_configured_distance_and_size; Arc opacity remains."
+  "evidence": "apps/client/src/features/0023-presentation/resources.rs:110 + hud_arc_opacity_reaches_renderer_upload_without_dimming_other_quads + hud_arc_geometry_uses_configured_distance_and_size; Native arc enable, distance, size and opacity controls reach confirmed-vitals geometry and alpha-blended GPU upload."
  },
  {
   "id": "T053",

@@ -16,6 +16,12 @@ mod profiles;
 mod store;
 #[path = "sync.rs"]
 mod sync;
+#[path = "tooltips.rs"]
+mod tooltips;
+#[path = "ui_geometry.rs"]
+mod ui_geometry;
+pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
+pub use tooltips::{HoverTooltip, TooltipTarget};
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
@@ -43,6 +49,10 @@ const PANEL_IDS: &[&str] = &[
 fn enabled() -> bool {
     true
 }
+
+fn default_tooltip_delay() -> u16 { 500 }
+
+fn default_arc_opacity() -> u8 { 100 }
 
 fn default_console_font() -> u16 { 14 }
 
@@ -87,6 +97,26 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "enabled")]
+    pub tooltips_enabled: bool,
+    #[serde(default = "default_tooltip_delay")]
+    pub tooltip_delay_ms: u16,
+    #[serde(default = "enabled")]
+    pub hud_health: bool,
+    #[serde(default = "enabled")]
+    pub hud_mana: bool,
+    #[serde(default = "enabled")]
+    pub hud_marks_own: bool,
+    #[serde(default = "enabled")]
+    pub hud_marks_other: bool,
+    #[serde(default)]
+    pub hud_npc_icons: bool,
+    #[serde(default)]
+    pub hud_npc_names: Option<bool>,
+    #[serde(default = "default_arc_opacity")]
+    pub arc_opacity: u8,
+    #[serde(default)]
+    pub chat_context_hotkeys: bool,
     #[serde(default = "default_console_font")]
     pub console_font_px: u16,
     #[serde(default)]
@@ -149,6 +179,16 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            tooltips_enabled: true,
+            tooltip_delay_ms: 500,
+            hud_health: true,
+            hud_mana: true,
+            hud_marks_own: true,
+            hud_marks_other: true,
+            hud_npc_icons: false,
+            hud_npc_names: None,
+            arc_opacity: 100,
+            chat_context_hotkeys: false,
             console_font_px: 14,
             compact_status: false,
             arc_distance: 8,
@@ -181,6 +221,14 @@ impl Default for ReferencePreferences {
 }
 
 impl ReferencePreferences {
+    pub const MOUSE_PRESETS: [&'static str; 2] = ["Right-handed", "Left-handed"];
+
+    pub fn set_mouse_preset(&mut self, index: usize) -> Result<(), PreferenceError> {
+        if index >= Self::MOUSE_PRESETS.len() { return Err(PreferenceError); }
+        self.swap_mouse_buttons = index == 1;
+        Ok(())
+    }
+
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         self.validate_profiles()?;
@@ -192,7 +240,8 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
-        if !(10..=32).contains(&self.console_font_px)
+        if self.tooltip_delay_ms > 3000 || self.arc_opacity > 100
+            || !(10..=32).contains(&self.console_font_px)
             || !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || self.arc_distance > 80
             || !(1..=8).contains(&self.arc_size)
@@ -270,6 +319,7 @@ impl PlayView {
         let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
             .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
             .max(1);
+        self.scene.set_label_scale(self.preferences().interface_scale);
         self.scene.set_tile_px(pixels.min(fit))
     }
 

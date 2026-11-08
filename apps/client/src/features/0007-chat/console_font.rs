@@ -14,6 +14,8 @@ impl ConsoleFont {
             let next = CreateFontIndirectW(&description);
             if next.is_null() { return; }
             SendMessageW(transcript, WM_SETFONT, next as usize, 1);
+            // T050: the explicit pixel-sized transcript font overrides common UI typography.
+            SetPropW(transcript, wide(crate::play::FIXED_PIXEL_FONT_PROPERTY).as_ptr(), 1usize as *mut _);
             if !self.handle.is_null() { DeleteObject(self.handle); }
             self.handle = next;
             self.pixels = pixels;

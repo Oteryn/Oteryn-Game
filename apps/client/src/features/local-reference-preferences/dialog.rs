@@ -34,6 +34,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            actor_hud,
+            manual,
             console,
             layout,
             arcs,
@@ -125,6 +127,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            actor_hud.show(state.page == SettingsPage::ActorHud);
             console.show(state.page == SettingsPage::Console);
             layout.show(state.page == SettingsPage::Status);
             arcs.show(state.page == SettingsPage::Arcs);
@@ -134,7 +137,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     &[profile_name, profile_save, profile_load, profile_delete][..],
                     SettingsPage::CustomHotkeys,
                 ),
-                (&[chat_on, chat_off][..], SettingsPage::Hotkeys),
+                (&[chat_on, chat_off, manual][..], SettingsPage::Hotkeys),
                 (
                     &[
                         mouse_preset,
@@ -180,6 +183,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         | SettingsPage::Sound
                         | SettingsPage::Graphics
                         | SettingsPage::Arcs
+                        | SettingsPage::ActorHud
                 ) {
                     SW_SHOW
                 } else {
@@ -219,21 +223,26 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         Err(error) => state.feedback = error.to_string(),
                     }
                 } else if matches!(action, 225 | 226) {
-                    match preferences.general_hotkey_preset(action == 225) {
-                        Ok(()) => state.apply(preferences),
-                        Err(error) => {
-                            state.feedback =
-                                format!("Preset conflicts with a custom binding: {error}")
-                        }
+                    if let Err(error) = state.apply_chat_preset(action == 225) {
+                        state.feedback = error.to_string();
                     }
+                } else if action == 227 {
+                    state.manual_hotkeys();
                 } else if action == 223 {
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
                             preferences.rotation_modifier =
                                 text(rotation).trim().to_ascii_uppercase();
                             preferences.keyboard_delay_ms = value;
-                            preferences.swap_mouse_buttons =
-                                SendMessageW(mouse_preset, BM_GETCHECK, 0, 0) == 1;
+                            let preset = SendMessageW(mouse_preset, CB_GETCURSEL, 0, 0);
+                            if usize::try_from(preset)
+                                .ok()
+                                .and_then(|index| preferences.set_mouse_preset(index).ok())
+                                .is_none()
+                            {
+                                state.feedback = "Select a mouse preset".into();
+                                continue;
+                            }
                             state.apply(preferences);
                         }
                         Err(_) => {
@@ -250,22 +259,6 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
-                    if let Err(error) = console.read(&mut preferences) {
-                        state.feedback = error;
-                        continue;
-                    }
-                    if let Err(error) = layout.read(&mut preferences) {
-                        state.feedback = error;
-                        continue;
-                    }
-                    if let Err(error) = arcs.read(&mut preferences) {
-                        state.feedback = error;
-                        continue;
-                    }
-                    if let Err(error) = interface.read(&mut preferences) {
-                        state.feedback = error;
-                        continue;
-                    }
                     match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
                         (Ok(scale), Ok(volume)) => {
                             preferences.ui_scale = scale;
@@ -285,6 +278,21 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                                 SendMessageW(hud_checks[5], BM_GETCHECK, 0, 0) == 1;
                             preferences.health_circle =
                                 SendMessageW(hud_checks[6], BM_GETCHECK, 0, 0) == 1;
+                            let result = match state.page {
+                                SettingsPage::Interface => interface.read(&mut preferences),
+                                SettingsPage::Arcs => arcs.read(&mut preferences),
+                                SettingsPage::Status => layout.read(&mut preferences),
+                                SettingsPage::Console => console.read(&mut preferences),
+                                SettingsPage::ActorHud => {
+                                    actor_hud.read(&mut preferences);
+                                    Ok(())
+                                }
+                                _ => Ok(()),
+                            };
+                            if let Err(error) = result {
+                                state.feedback = error;
+                                continue;
+                            }
                             state.apply(preferences);
                         }
                         _ => state.feedback = "Enter valid zoom and volume percentages".into(),
@@ -292,6 +300,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                actor_hud.refresh(&state.preferences);
                 console.refresh(&state.preferences);
                 layout.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
@@ -334,7 +343,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
                 SendMessageW(
                     mouse_preset,
-                    BM_SETCHECK,
+                    CB_SETCURSEL,
                     usize::from(state.preferences.swap_mouse_buttons),
                     0,
                 );
@@ -351,7 +360,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             }
             let page_help = match state.page {
                 SettingsPage::CustomHotkeys => {
-                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Object, text and passive action assignment is not available yet."
+                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Object, text and passive action assignment is not available yet."
                 }
                 SettingsPage::BarHotkeys => {
                     "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."

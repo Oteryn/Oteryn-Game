@@ -15,6 +15,7 @@ pub enum SettingsPage {
     BarHotkeys,
     CustomHotkeys,
     Arcs,
+    ActorHud,
     Status,
     Console,
     Interface,
@@ -24,12 +25,13 @@ pub enum SettingsPage {
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 11] = [
+    pub const ALL: [Self; 12] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
         Self::CustomHotkeys,
         Self::Arcs,
+        Self::ActorHud,
         Self::Status,
         Self::Console,
         Self::Interface,
@@ -45,6 +47,7 @@ impl SettingsPage {
             Self::BarHotkeys => "Controls / Action Bar Hotkeys",
             Self::Console => "Interface / Console",
             Self::Status => "Interface / Status Panel",
+            Self::ActorHud => "Interface / HUD",
             Self::Arcs => "Interface / HUD Arcs",
             Self::CustomHotkeys => "Controls / Custom Hotkey Profiles",
             Self::Interface => "Interface",
@@ -67,6 +70,8 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 ];
 
 pub struct SettingsState {
+    pending_chat_mode: Option<bool>,
+    chat_context: Option<bool>,
     window_action: Option<&'static str>,
     battle_edit: u64,
     store: Option<PreferenceStore>,
@@ -156,6 +161,8 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            pending_chat_mode: None,
+            chat_context: None,
             window_action: None,
             battle_edit: 0,
             store,
@@ -245,6 +252,10 @@ impl SettingsState {
         if self.preferences.battle_lists != preferences.battle_lists {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
+        if !preferences.chat_context_hotkeys {
+            self.pending_chat_mode = None;
+            self.chat_context = None;
+        }
         self.preferences = preferences;
         self.feedback = match result {
             Ok(()) => "Applied and saved".into(),
@@ -286,3 +297,6 @@ impl SettingsState {
         Ok(())
     }
 }
+
+#[path = "chat_context.rs"]
+mod chat_context;
