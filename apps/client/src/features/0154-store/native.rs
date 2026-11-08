@@ -63,21 +63,26 @@ pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     if panel.pending {
         return "Pending store action…".into();
     }
-    if let Some(feedback) = &panel.feedback {
-        return feedback.clone();
+    let mut status = if let Some(feedback) = &panel.feedback {
+        feedback.clone()
+    } else if let Some(result) = &panel.purchase {
+        format!("Purchase: {:?}", result.code)
+    } else {
+        panel.catalogue.as_ref().map_or_else(
+            || "Load the server catalogue".into(),
+            |page| {
+                format!(
+                    "Balance: {} coins; transferable: {}",
+                    page.total_coins, page.transferable_coins
+                )
+            },
+        )
+    };
+    if let Some(preview) = store::offer_preview(panel) {
+        status.push_str("\r\n");
+        status.push_str(&preview);
     }
-    if let Some(result) = &panel.purchase {
-        return format!("Purchase: {:?}", result.code);
-    }
-    panel.catalogue.as_ref().map_or_else(
-        || "Load the server catalogue".into(),
-        |page| {
-            format!(
-                "Balance: {} coins; transferable: {}",
-                page.total_coins, page.transferable_coins
-            )
-        },
-    )
+    status
 }
 
 #[cfg(windows)]
@@ -166,7 +171,7 @@ mod windows {
                         CW_USEDEFAULT,
                         CW_USEDEFAULT,
                         480,
-                        630,
+                        750,
                         null_mut(),
                         null_mut(),
                         null_mut(),
@@ -203,6 +208,10 @@ mod windows {
                         let name = control(hwnd, "EDIT", "", 6, 350, 25, WS_BORDER);
                         let sex = control(hwnd, "EDIT", "1", 7, 380, 25, WS_BORDER);
                         let identity = control(hwnd, "EDIT", "", 8, 410, 25, WS_BORDER);
+                        let search = control(hwnd, "EDIT", "", 10, 590, 25, WS_BORDER | ES_AUTOHSCROLL as u32);
+                        control(hwnd, "BUTTON", "Search this category page", 11, 620, 30, 0);
+                        control(hwnd, "BUTTON", "Sort: catalogue / title / price", 12, 655, 30, 0);
+                        let mut displayed_rows = Vec::new();
                         let mut displayed = None;
                         let status = control(hwnd, "STATIC", "", 0, 450, 100, 0);
                         let mut message: MSG = std::mem::zeroed();
@@ -222,6 +231,24 @@ mod windows {
                                 let panel = &mut mailbox.store;
                                 let command = {
                                     match action {
+                                        11 if !panel.pending => {
+                                            let mut text = [0u16; 257];
+                                            let n = GetWindowTextW(search, text.as_mut_ptr(), 257);
+                                            panel.search = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                                            None
+                                        }
+                                        12 if !panel.pending => {
+                                            use store::StoreSort;
+                                            panel.sort = match panel.sort { StoreSort::Catalogue => StoreSort::Title, StoreSort::Title => StoreSort::Price, StoreSort::Price => StoreSort::Catalogue };
+                                            None
+                                        }
+                                        3 if !panel.pending => {
+                                            if displayed == panel.catalogue && displayed_rows == store::visible_offers(panel) {
+                                                panel.selected_offer = usize::try_from(SendMessageW(offers, LB_GETCURSEL, 0, 0)).ok()
+                                                    .and_then(|index| displayed_rows.get(index).copied()).unwrap_or(usize::MAX);
+                                            }
+                                            None
+                                        }
                                         9 => { if let Some(launcher) = &coin_shop { launcher.start(); } None }
                                         2 | 5 if !panel.pending => {
                                             let mut text = [0u16; 256];
@@ -237,15 +264,17 @@ mod windows {
                                             }
                                             store::catalogue(panel)
                                         }
-                                        4 if !panel.pending && panel.selected => {
+                                        4 if !panel.pending && panel.selected
+                                            && displayed == panel.catalogue && displayed_rows == store::visible_offers(panel) => {
                                             let read = |hwnd| {
                                                 let mut text = [0u16; 64];
                                                 let len = GetWindowTextW(hwnd, text.as_mut_ptr(), 64);
                                                 String::from_utf16_lossy(&text[..len.max(0) as usize])
                                             };
                                             customization(panel, &read(name), &read(sex), &read(identity));
-                                            let index = SendMessageW(offers, LB_GETCURSEL, 0, 0);
-                                            if let Ok(index) = usize::try_from(index)
+                                            let index = usize::try_from(SendMessageW(offers, LB_GETCURSEL, 0, 0)).ok()
+                                                .and_then(|index| displayed_rows.get(index).copied());
+                                            if let Some(index) = index
                                                 && let Some(offer) = panel
                                                     .catalogue
                                                     .as_ref()
@@ -302,10 +331,12 @@ mod windows {
                                 }
                             }
                             let panel = &mut mailbox.store;
-                            if displayed != panel.catalogue {
+                            let visible = store::visible_offers(panel);
+                            if displayed != panel.catalogue || displayed_rows != visible {
                                 SendMessageW(offers, LB_RESETCONTENT, 0, 0);
                                 if let Some(page) = &panel.catalogue {
-                                    for offer in &page.offers {
+                                    for index in &visible {
+                                        let offer = &page.offers[*index];
                                         let text = format!(
                                             "{} — {} {}",
                                             offer.title, offer.price, offer.currency
@@ -318,6 +349,8 @@ mod windows {
                                         );
                                     }
                                 }
+                                displayed_rows = visible;
+                                panel.selected_offer = usize::MAX;
                                 displayed = panel.catalogue.clone();
                             }
                             EnableWindow(next, i32::from(panel.selected && !panel.pending && panel.catalogue.as_ref().is_some_and(|p| !p.next_page_cursor.is_empty())));
