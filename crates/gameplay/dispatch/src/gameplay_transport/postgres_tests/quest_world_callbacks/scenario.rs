@@ -334,6 +334,7 @@ fn scenario_case(
                 generation
                     .native_gameplay()
                     .ok_or("native explore policies")?,
+                name,
             )?
         } else if native_upper {
             super::super::l6_paradox_upper::world(

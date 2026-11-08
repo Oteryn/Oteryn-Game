@@ -22,6 +22,8 @@ IDS |= {21291}
 IDS |= {17669, 17670, 17672, 17673, 17674, 17675}
 # Retain questpc4's qualified native offerings and source tool through this owner.
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
+# QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
+IDS |= {21504, 21505}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
