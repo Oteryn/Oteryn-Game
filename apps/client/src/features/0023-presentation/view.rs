@@ -38,6 +38,8 @@ impl PlayView {
         let atlas = atlas.atlas();
         let bars = self.preferences().hud_bars;
         let effects = self.preferences().show_effects;
+        let harmony = self.preferences().show_harmony;
+        let serene = self.preferences().show_serene;
         let (view, batch) = self.scene.presentation_base()?;
         if bars && let Some(vitals) = &self.vitals {
             for (row, value, max, color) in [
@@ -68,6 +70,38 @@ impl PlayView {
                         10.0,
                     ],
                     color,
+                )?;
+            }
+        }
+        if let Some(vitals) = &self.vitals {
+            if harmony {
+                for segment in 0..5_u32 {
+                    pixel(
+                        batch,
+                        view,
+                        atlas,
+                        [8.0 + segment as f32 * 24.0, 86.0],
+                        [20.0, 8.0],
+                        if segment < vitals.harmony.min(5) {
+                            PresentationColor::Yellow
+                        } else {
+                            PresentationColor::LightGrey
+                        },
+                    )?;
+                }
+            }
+            if serene {
+                pixel(
+                    batch,
+                    view,
+                    atlas,
+                    [8.0, 100.0],
+                    [120.0, 8.0],
+                    if vitals.serene {
+                        PresentationColor::LightGreen
+                    } else {
+                        PresentationColor::LightGrey
+                    },
                 )?;
             }
         }

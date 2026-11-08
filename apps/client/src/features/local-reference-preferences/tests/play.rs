@@ -318,3 +318,23 @@ fn t012_visual_preferences_control_live_effect_projection() -> Result<(), Box<dy
     assert!(play.scene().sprites().lighting.sources.is_empty());
     Ok(())
 }
+
+#[test]
+fn t162_monk_hud_has_independent_visibility() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.vitals = Some(oteryn_session::ActorVitals {
+        harmony: 3,
+        serene: true,
+        ..Default::default()
+    });
+    play.rebuild()?;
+    let shown = play.scene().sprites().len();
+    let mut json = serde_json::to_value(play.preferences())?;
+    json["show_harmony"] = serde_json::json!(false);
+    play.set_preferences(serde_json::from_value(json.clone())?)?;
+    assert_eq!(play.scene().sprites().len() + 5, shown);
+    json["show_serene"] = serde_json::json!(false);
+    play.set_preferences(serde_json::from_value(json)?)?;
+    assert_eq!(play.scene().sprites().len() + 6, shown);
+    Ok(())
+}
