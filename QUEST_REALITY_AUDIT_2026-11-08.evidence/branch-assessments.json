@@ -1900,12 +1900,25 @@
       "dawnport_scope_effect": null,
       "exact_slice_delta": null,
       "C_merge_delta": {
-        "status": "UNKNOWN",
-        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
-        "dependencies": [
-          "Clean composed tree ed8e7475f4144562fd8a0f3c3e3fefd37d0cf189 is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
-          "New profile admission can activate pre-existing callback rewards; evaluate real binder and retained source map on a composed tree rather than counting new callback keys (zero)."
-        ]
+        "status": "EXACT_ZERO_FOR_AUDITED_CLASSIFICATION",
+        "wiki_titles": {
+          "PLAYABLE_PROVEN": 0,
+          "LIVE_UNPROVEN": 0,
+          "REWARD_ONLY_LIVE": 0,
+          "BINDING_MISSING": 0,
+          "MECHANIC_MISSING": 0
+        },
+        "canonical_definitions": {
+          "PLAYABLE_PROVEN": 0,
+          "LIVE_UNPROVEN": 0,
+          "REWARD_ONLY_LIVE": 0,
+          "BINDING_MISSING": 0,
+          "MECHANIC_MISSING": 0
+        },
+        "limitation": "Static programme/binding/proof classification, not a fresh passing branch build or claim that profile work has no gameplay value. Existing profile records unchanged, no new programme/NPC/world placements or reward bindings, same qualified item cosmetic routes, no new complete quest proofs.",
+        "disposition": "CLOSED_EXACT_CLASSIFICATION_DELTA",
+        "dependencies": [],
+        "evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/questpc4b-admission.json:1"
       },
       "new_native_owner_files": [],
       "literal_registry_sha256": "4c6d404bb6ac3c1d6d0ef3e6c59bc77d6d2c76a7cca86ec1c70a2e1b252d1f47",

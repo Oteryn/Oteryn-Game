@@ -1,0 +1,2778 @@
+{
+  "schema": "QUEST_AUDIT_PC4_ADMISSION/v1",
+  "audited_main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+  "head": "9ee8b80795135a87841ea835cb426cd08ab23c66",
+  "method": "Clean merged tree equals exact head. Temporary file overlay copies exact changed blobs and symlinks unchanged main inputs; no source or branch checkout edited. Actual unchanged production NativeGameplayInput and Rust RewardClaim binder executed with branch manifest over exact main/branch-identical retained source B3 tiles. Native whole-rule cosmetic qualification replayed with merged branch Item profiles.",
+  "C_delta": {
+    "status": "EXACT_ZERO_FOR_AUDITED_CLASSIFICATION",
+    "wiki_titles": {
+      "PLAYABLE_PROVEN": 0,
+      "LIVE_UNPROVEN": 0,
+      "REWARD_ONLY_LIVE": 0,
+      "BINDING_MISSING": 0,
+      "MECHANIC_MISSING": 0
+    },
+    "canonical_definitions": {
+      "PLAYABLE_PROVEN": 0,
+      "LIVE_UNPROVEN": 0,
+      "REWARD_ONLY_LIVE": 0,
+      "BINDING_MISSING": 0,
+      "MECHANIC_MISSING": 0
+    },
+    "limitation": "Static programme/binding/proof classification, not a fresh passing branch build or claim that profile work has no gameplay value. Existing profile records unchanged, no new programme/NPC/world placements or reward bindings, same qualified item cosmetic routes, no new complete quest proofs."
+  },
+  "item_profiles": {
+    "main": 3774,
+    "head": 3816,
+    "added": [
+      {
+        "key": "oteryn:item.tibia.i12674",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1689",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i14682",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1770",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i21389",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1975",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i21466",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1978",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i21504",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1980",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i21506",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1981",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i21507",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1982",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i21554",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1983",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i21572",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1984",
+        "materializable": true,
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i24382",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/2077",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i3398",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/679",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i3454",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/714",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i36543",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/2454",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i36544",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/2455",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i52586",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/3698",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i52632",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/3699",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i52635",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/3701",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i52743",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/3713",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i52758",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/3714",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i52759",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/3715",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i5467",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/883",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i5552",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/891",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i5949",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/977",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i7785",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1234",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8758",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1297",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8759",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1298",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8760",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1299",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8761",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1300",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8762",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1301",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8763",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1302",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8774",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1303",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8777",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1305",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8818",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1307",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8819",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1308",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8820",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1309",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8822",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1310",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8827",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1311",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i8862",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1313",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i9106",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1338",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i9171",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1341",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i9185",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1343",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      {
+        "key": "oteryn:item.tibia.i9205",
+        "evidence": "9ee8b80795135a87841ea835cb426cd08ab23c66:content/items/definitions/spell-native-profiles.json:1 /records/1344",
+        "materializable": true,
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      }
+    ],
+    "removed": 0,
+    "changed_existing": 0
+  },
+  "unchanged_native_and_binding_paths": [
+    "crates/gameplay/content/",
+    "crates/gameplay/quests/",
+    "content/quests/definitions/",
+    "content/quests/missions/",
+    "content/interactions/reward_claims/",
+    "content/world/placements/",
+    "content/world/npc-placements/",
+    "content/npcs/",
+    "content/dialogues/",
+    "tools/content-schema/native-gameplay/item-cosmetic-actions.json"
+  ],
+  "changed_gameplay_files": [
+    "crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_beregar_items.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_recipe_items.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_special_items.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_stag_item.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_typed_items.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_yalahar_items.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs"
+  ],
+  "grizzly_room_effects_unchanged": true,
+  "reward_binder": {
+    "main_counts": {
+      "served": 47,
+      "unbound": 226,
+      "left_out": 78
+    },
+    "branch_counts": {
+      "served": 47,
+      "unbound": 226,
+      "left_out": 78
+    },
+    "served_unbound_exclusions_all_identical": true,
+    "production_handler": "crates/gameplay/content/src/content/world_reward_claims.rs:180",
+    "production_caller": "crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:48",
+    "retained_b3_witnesses": "QUEST_REALITY_AUDIT_2026-11-08.evidence/reward-bindings.json:1",
+    "raw_result": {
+      "admitted_profile_count": 3816,
+      "left_out": [
+        {
+          "key": "oteryn:reward-claim.halls_of_hope.reward1",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.halls_of_hope.reward2",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.halls_of_hope.reward3",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.halls_of_hope.reward4",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.halls_of_hope.reward5",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.deeperfibula4",
+          "reason": "NotReady"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.edrongoblin1",
+          "reason": "NotReady"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.fanfare",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.ghoulroom1",
+          "reason": "NotReady"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.imbuing_crystal_quest",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.madmageroom1",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.madmageroom2",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.painting_of_agirl_quest",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.silveramulet",
+          "reason": "NotReady"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.stealhring1",
+          "reason": "NotReady"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u10_55.dawnport.torn_log_book",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.black_skull",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.ebony_piece",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.eye_key",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.lotus_key",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.peacock_ballad",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.scribbled_notes",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.silver_chimes",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.skeleton_notes",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.strand_hair",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.mo_ta.bony_rod",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.mo_ta.broken_compass",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.hawser",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.parchment",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet",
+          "reason": "NotReady"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.ahx17_l89",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.building_plans",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.family_signet_ring",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.intelligence_reports",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.magic_spellbook",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.poem_scroll",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.rotten_heart_of_tree",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.suspicious_documents",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.flask_of_extra_greasy_oil",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.bloodkiss_flower",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.dark_essence",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.deep_crystal",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.golem_blueprint",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.golem_head",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.golem_wrench",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.old_power_core",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.shadow_orb",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.stabilizer",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.worm_queen_tooth",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u15_24.targuna.silver_amulet_chest",
+          "reason": "NotReady"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.draconia1",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.fireaxe1",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.goblintemple2",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.lifering",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.kv.present_box",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.key.id0010",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.key.id3520",
+          "reason": "ItemNotAdmitted"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.coast",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.island",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.lower_bastion",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.shortcut",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.throne_hall",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.underground_bastion",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u7_3.the_medusa_quest",
+          "reason": "Variant"
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
+          "reason": "Variant"
+        }
+      ],
+      "served": [
+        {
+          "key": "oteryn:reward-claim.kv.adoreduh",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i11603"
+                }
+              ],
+              "placement_key": 142320107327233,
+              "quest_transition": null,
+              "x": 33136,
+              "y": 31601
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.bananafree",
+          "placements": [
+            {
+              "floor": -7,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3587"
+                }
+              ],
+              "placement_key": 138179796076290,
+              "quest_transition": null,
+              "x": 32172,
+              "y": 32169
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.bananapremium",
+          "placements": [
+            {
+              "floor": -5,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3587"
+                }
+              ],
+              "placement_key": 137368048829698,
+              "quest_transition": null,
+              "x": 31983,
+              "y": 32193
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.barbarianaxe1",
+          "placements": [
+            {
+              "floor": -11,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3317"
+                }
+              ],
+              "placement_key": 142526288300801,
+              "quest_transition": null,
+              "x": 33184,
+              "y": 31945
+            },
+            {
+              "floor": -11,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3307"
+                }
+              ],
+              "placement_key": 142530583268097,
+              "quest_transition": null,
+              "x": 33185,
+              "y": 31945
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.battleaxe",
+          "placements": [
+            {
+              "floor": -9,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3266"
+                }
+              ],
+              "placement_key": 138751032297729,
+              "quest_transition": null,
+              "x": 32305,
+              "y": 32254
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.bloodherb",
+          "placements": [
+            {
+              "floor": -7,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3734"
+                }
+              ],
+              "placement_key": 140743878379265,
+              "quest_transition": null,
+              "x": 32769,
+              "y": 31968
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.captain_iglues",
+          "placements": [
+            {
+              "floor": -13,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3579"
+                }
+              ],
+              "placement_key": 137608562281729,
+              "quest_transition": null,
+              "x": 32039,
+              "y": 32121
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.circleroom1",
+          "placements": [
+            {
+              "floor": -14,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3279"
+                }
+              ],
+              "placement_key": 139567058914817,
+              "quest_transition": null,
+              "x": 32495,
+              "y": 31992
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.circleroom2",
+          "placements": [
+            {
+              "floor": -14,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3323"
+                }
+              ],
+              "placement_key": 139575648849409,
+              "quest_transition": null,
+              "x": 32497,
+              "y": 31992
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.combatknife",
+          "placements": [
+            {
+              "floor": -8,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3292"
+                }
+              ],
+              "placement_key": 137879152691201,
+              "quest_transition": null,
+              "x": 32102,
+              "y": 32235
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.crusaderhelmet",
+          "placements": [
+            {
+              "floor": -14,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3391"
+                }
+              ],
+              "placement_key": 139274997927425,
+              "quest_transition": null,
+              "x": 32427,
+              "y": 31943
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.crystalwand1",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3068"
+                }
+              ],
+              "placement_key": 139498314469121,
+              "quest_transition": null,
+              "x": 32479,
+              "y": 31611
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.crystalwand2",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i11609"
+                }
+              ],
+              "placement_key": 139506904403713,
+              "quest_transition": null,
+              "x": 32481,
+              "y": 31611
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.darkarmor",
+          "placements": [
+            {
+              "floor": -12,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3383"
+                }
+              ],
+              "placement_key": 142500513582081,
+              "quest_transition": null,
+              "x": 33178,
+              "y": 31870
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.demonaring1",
+          "placements": [
+            {
+              "floor": -14,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3049"
+                }
+              ],
+              "placement_key": 139605687668225,
+              "quest_transition": null,
+              "x": 32504,
+              "y": 31596
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.demonaring2",
+          "placements": [
+            {
+              "floor": -14,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3051"
+                }
+              ],
+              "placement_key": 139652932308481,
+              "quest_transition": null,
+              "x": 32515,
+              "y": 31596
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.doublehero1",
+          "placements": [
+            {
+              "floor": -13,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3039"
+                }
+              ],
+              "placement_key": 142204148321537,
+              "quest_transition": null,
+              "x": 33109,
+              "y": 31679
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.doublehero2",
+          "placements": [
+            {
+              "floor": -13,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3093"
+                }
+              ],
+              "placement_key": 142208443288833,
+              "quest_transition": null,
+              "x": 33110,
+              "y": 31679
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.doublet",
+          "placements": [
+            {
+              "floor": -8,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3379"
+                }
+              ],
+              "placement_key": 137801839740928,
+              "quest_transition": null,
+              "x": 32084,
+              "y": 32181
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.explorerbrooch",
+          "placements": [
+            {
+              "floor": -10,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i4871"
+                }
+              ],
+              "placement_key": 140172641503745,
+              "quest_transition": null,
+              "x": 32636,
+              "y": 31873
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.griffinshield1",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3433"
+                }
+              ],
+              "placement_key": 139579926056705,
+              "quest_transition": null,
+              "x": 32498,
+              "y": 31721
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.griffinshield2",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3313"
+                }
+              ],
+              "placement_key": 139588515991297,
+              "quest_transition": null,
+              "x": 32500,
+              "y": 31721
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.griffinshield3",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3323"
+                }
+              ],
+              "placement_key": 139601401089793,
+              "quest_transition": null,
+              "x": 32503,
+              "y": 31724
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.heavenblossom",
+          "placements": [
+            {
+              "floor": -8,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i5921"
+                }
+              ],
+              "placement_key": 142182704613377,
+              "quest_transition": null,
+              "x": 33104,
+              "y": 32154
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.honeyflower",
+          "placements": [
+            {
+              "floor": -3,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i2984"
+                }
+              ],
+              "placement_key": 137462534570754,
+              "quest_transition": null,
+              "x": 32005,
+              "y": 32139
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.ironhamer",
+          "placements": [
+            {
+              "floor": -8,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3310"
+                }
+              ],
+              "placement_key": 139305062369281,
+              "quest_transition": null,
+              "x": 32434,
+              "y": 31938
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.ironore",
+          "placements": [
+            {
+              "floor": -8,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i5880"
+                }
+              ],
+              "placement_key": 139725964904449,
+              "quest_transition": null,
+              "x": 32532,
+              "y": 31873
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.isleofthemists",
+          "placements": [
+            {
+              "floor": -7,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3032"
+                }
+              ],
+              "placement_key": 141100384519938,
+              "quest_transition": null,
+              "x": 32852,
+              "y": 32332
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.minotaurleatherquest",
+          "placements": [
+            {
+              "floor": -7,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i5878"
+                }
+              ],
+              "placement_key": 138738157946625,
+              "quest_transition": null,
+              "x": 32302,
+              "y": 32415
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.mintwallincyclops",
+          "placements": [
+            {
+              "floor": -14,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3028"
+                }
+              ],
+              "placement_key": 139979382656513,
+              "quest_transition": null,
+              "x": 32591,
+              "y": 32097
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.naginata",
+          "placements": [
+            {
+              "floor": -12,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3314"
+                }
+              ],
+              "placement_key": 138927113440257,
+              "quest_transition": null,
+              "x": 32346,
+              "y": 32063
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.nightmare_teddy_quest",
+          "placements": [
+            {
+              "floor": -11,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i21982"
+                }
+              ],
+              "placement_key": 143643023051522,
+              "quest_transition": null,
+              "x": 33444,
+              "y": 32605
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.noblearmor1",
+          "placements": [
+            {
+              "floor": -8,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3380"
+                }
+              ],
+              "placement_key": 139378084022273,
+              "quest_transition": null,
+              "x": 32451,
+              "y": 32048
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.noblearmor2",
+          "placements": [
+            {
+              "floor": -8,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3385"
+                }
+              ],
+              "placement_key": 139395263891457,
+              "quest_transition": null,
+              "x": 32455,
+              "y": 32048
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.orcfortress1",
+          "placements": [
+            {
+              "floor": -9,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3318"
+                }
+              ],
+              "placement_key": 141650100685057,
+              "quest_transition": null,
+              "x": 32980,
+              "y": 31727
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.orcfortress2",
+          "placements": [
+            {
+              "floor": -9,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3370"
+                }
+              ],
+              "placement_key": 141654395652353,
+              "quest_transition": null,
+              "x": 32981,
+              "y": 31727
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.orcfortress3",
+          "placements": [
+            {
+              "floor": -9,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3280"
+                }
+              ],
+              "placement_key": 141671575521537,
+              "quest_transition": null,
+              "x": 32985,
+              "y": 31727
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.platearmor",
+          "placements": [
+            {
+              "floor": -7,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3357"
+                }
+              ],
+              "placement_key": 143140484155137,
+              "quest_transition": null,
+              "x": 33327,
+              "y": 32182
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.purpletome1",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i2822"
+                }
+              ],
+              "placement_key": 139262089957121,
+              "quest_transition": null,
+              "x": 32424,
+              "y": 31591
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.purpletome2",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i2823"
+                }
+              ],
+              "placement_key": 139274974859009,
+              "quest_transition": null,
+              "x": 32427,
+              "y": 31591
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.purpletome3",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i2848"
+                }
+              ],
+              "placement_key": 139249205251841,
+              "quest_transition": null,
+              "x": 32421,
+              "y": 31594
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.sixrubies",
+          "placements": [
+            {
+              "floor": -12,
+              "items": [
+                {
+                  "count": 6,
+                  "key": "oteryn:item.tibia.i3030"
+                }
+              ],
+              "placement_key": 139034500664320,
+              "quest_transition": null,
+              "x": 32371,
+              "y": 32262
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.spikesword",
+          "placements": [
+            {
+              "floor": -12,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3271"
+                }
+              ],
+              "placement_key": 139880597621761,
+              "quest_transition": null,
+              "x": 32568,
+              "y": 32085
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.kv.throwingstar",
+          "placements": [
+            {
+              "floor": -15,
+              "items": [
+                {
+                  "count": 10,
+                  "key": "oteryn:item.tibia.i3287"
+                }
+              ],
+              "placement_key": 139683030830849,
+              "quest_transition": null,
+              "x": 32522,
+              "y": 32111
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u7_5.elephant_tusk",
+          "placements": [
+            {
+              "floor": -7,
+              "items": [
+                {
+                  "count": 2,
+                  "key": "oteryn:item.tibia.i3044"
+                }
+              ],
+              "placement_key": 141401059952385,
+              "quest_transition": null,
+              "x": 32922,
+              "y": 32755
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_5.darashia_dragon",
+          "placements": [
+            {
+              "floor": -12,
+              "items": [
+                {
+                  "count": 1,
+                  "key": "oteryn:item.tibia.i3052"
+                }
+              ],
+              "placement_key": 142736763653121,
+              "quest_transition": null,
+              "x": 33233,
+              "y": 32280
+            }
+          ]
+        },
+        {
+          "key": "oteryn:reward-claim.quest.u8_5.lone_medusa",
+          "placements": [
+            {
+              "floor": -1,
+              "items": [
+                {
+                  "count": 4,
+                  "key": "oteryn:item.tibia.i3027"
+                }
+              ],
+              "placement_key": 139184857415937,
+              "quest_transition": null,
+              "x": 32406,
+              "y": 32764
+            }
+          ]
+        }
+      ],
+      "unbound": [
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.alawars_vault1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.alawars_vault2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.bear_chest2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.bear_chest3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.behemothquest2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.behemothquest3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.behemothquest4",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.blackknight1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.blackknight2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.deeperfibula1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.deeperfibula2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.deeperfibula3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.deeperfibula5",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.desert1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.devilhemet1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.devilhemet2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.devilhemet3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.edrongoblin2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.fireaxe2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.ghoulroom2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.katanacorpse1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.katanacorpse2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.legiondawnport",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.lighthouse1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.lighthouse2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.longsword1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.longsword2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.madmageroom3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.minohell1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.minohell3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.petrified_scream_quest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.powerring1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.powerring2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.ringquest1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.ringquest2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.rookgaard05_brown_mushrooms",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.stealhring2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.steelhelmet1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.steelhelmet2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.steelhelmet3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.timering1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.timering2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.timering3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.trollcave1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 1,
+          "key": "oteryn:reward-claim.kv.trollcave1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.vampireshield2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.vampireshield3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.weddingring1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.weddingring2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission01.poacher_chest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission02.dark_moon_mirror",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.mo_ta.sample_blood",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.fishing",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.sapphire",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.shovel",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.boots_of_haste",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.giant_sword",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.platinum_coin",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.stealth_ring",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.tower_shield",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_24.family_brooch.brooch",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.egg",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.gold",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.talon",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.wand",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_6.explorer_society.books.cyclops",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_6.old_parchment",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_6.whisper_moss",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_8.druid_outfits.wolf_tooth_chain",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_8.oriental_outfits.coral_comb",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_frozen_starlight",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_platinum_coins",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_soft_boots",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 1,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 2,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_stuffed",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 1,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 2,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 1,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 2,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 1,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 2,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.book",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.to_outfox_afox_quest.mining_helmet",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.magical_watch",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.witches_grimoire",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.compromising_letter",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.golden_goblet",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 1,
+          "key": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 2,
+          "key": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_2.vampire_hunter_quest.blood_skull",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_gold_ingot",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_rusted_armor",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_small_topazes",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.prison_cell_key",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.gold_ingot",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.pig_bank",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge4",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.top_tower",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest100_platinum_coins",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u15_24.targuna.mana_potions_chest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.bear_chest1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.behemothquest1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.deadarcher",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.desert2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.draconia2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.dragoncorpse",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.geomancer",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.goblintemple",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.ironhelmet",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.longsword3",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.minohell2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.orcshaman",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.ornamentedshield",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.panpipe",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.poisondaggers",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.powerbolt1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.powerbolt2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.scalearmor",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.shamantreasure",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.shortswordbook",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.silverbrooch",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.steelhelmet4",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.triangletower",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.vampireshield1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.kv.witch_house_quest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id0909",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3002",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3008",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3301",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3302",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3303",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3304",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3600",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3610",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3620",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3667",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3700",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3800",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3802",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3899",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id3980",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id4055",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id4502",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id4601",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id4603",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.key.id5010",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 1,
+          "key": "oteryn:reward-claim.quest.key.id5010",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_2.parchment_room.bag",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 1,
+          "key": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 2,
+          "key": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 3,
+          "key": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_6.explorer_society.books.hengis",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_book",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_pirate_bp",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_bp",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.fishing_box",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.tyrsung",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.strong_potions.reward",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.waterfall_quest",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.bag_book_knife",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_book",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.potions",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_bag",
+          "reason": "NoEntry"
+        },
+        {
+          "index": 0,
+          "key": "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.reward_room_text",
+          "reason": "NoEntry"
+        }
+      ]
+    }
+  },
+  "qualified_item_outfits": {
+    "count": 36,
+    "outfit_count": 13,
+    "same_exact_routes_as_main": true,
+    "evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/item-outfit-bindings.json:1"
+  },
+  "test_scope_witnesses": [
+    {
+      "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_stag_item.rs",
+      "line": 174,
+      "scope": "exercise_custody checks native item policy, inventory/custody/replay, not start-to-finish quest progression"
+    },
+    {
+      "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs",
+      "line": 109,
+      "scope": "floor_profiles selects item-only scenarios"
+    }
+  ],
+  "verification": "actual binder run completed; JSON profile superset + claim/exclusion/unbound equality + exact cosmetic route equality + source diff invariants asserted; new branch PG scenarios not run and not used as completion proofs"
+}

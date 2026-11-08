@@ -3,8 +3,8 @@
   "files": [
     {
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/branch-assessments.json",
-      "sha256": "525d61ed6b367d443ce0f12918c64dba0ac10eda1cb2e68674ce21f52489eb8d",
-      "bytes": 153289
+      "sha256": "2bfae98847ebc4f6cc1a42006cda03ec99e4c65d8b9df6d47f4c9fd9a135e515",
+      "bytes": 153661
     },
     {
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/classification.json",
@@ -25,6 +25,11 @@
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/npc-bindings.json",
       "sha256": "0b800c0e6aec6ffa25ccc59b17001e80c18f1361b4cdad52d1f247fa87a78f89",
       "bytes": 286604
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/questpc4b-admission.json",
+      "sha256": "da171cc771dc667675bf7f02a905a669a77b4e35db32bd761fc2f43d92a2f344",
+      "bytes": 83870
     },
     {
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/reward-bindings.json",
