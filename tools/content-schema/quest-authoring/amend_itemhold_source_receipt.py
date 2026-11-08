@@ -10,6 +10,8 @@ import source_fix_guard as guard
 
 COMPILER = 'tools/content-schema/quest-authoring/quest_tree_authoring.py'
 PREVIOUS = {
+    # Questpc5 7d65839b1: previously qualified source-preserving compiler.
+    'c403a07e915d216fcea242cafb2877707ee692f40d5754805709f72fae61720a',
     'f8ed16d80fe61c295989d796a41d86a9e520944bb39651fd60cc79c55005c2ac',
     # Accepted main ITEMHOLD compiler before this source-preserving merge.
     '7d6c0470aad6ea2df973a4c8e0092950af83109105793e92ae3717cab5429663',

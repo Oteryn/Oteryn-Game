@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Source-derived profiles for the M06 key-door and level-door playable path.
 
-Crystal 201189f data/libs/tables/doors.lua:4,9,265 supplies the identities.
+Crystal 201189f data/libs/tables/doors.lua:4,9,265,273 supplies the identities.
+The Vampire Shield level70 placements are startup/tables/door_level.lua:152-158.
 The existing pinned importer supplies physics and classifications without overrides.
 """
 import argparse

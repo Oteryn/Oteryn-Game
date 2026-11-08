@@ -16,10 +16,13 @@
 //!
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
+pub mod admission_binding;
+
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
 #[cfg(test)]
 pub mod batch3_a;
+pub mod carried_step;
 pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
@@ -46,11 +49,13 @@ pub mod reward_callbacks;
 pub mod reward_claim_gates;
 pub mod rotten_blood;
 pub mod schrodinger_island;
+pub mod shared_switches;
 pub mod shared_world_progress;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod task_board;
 pub mod threatened_dreams;
+pub mod timers;
 pub mod unnatural_selection;
 pub mod world_callbacks;
 pub mod wrath_sleeping_dragon;
@@ -174,8 +179,25 @@ impl QuestComparison {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuestEffectKind {
     Set(i64),
+    /// Raise a locked value to this floor, preserving already higher progress.
+    RaiseTo(i64),
+    /// The same monotone operation pinned to its physical admission terms.
+    RaiseToWithBinding {
+        value: i64,
+        binding: [u8; 32],
+    },
+    /// Set a value while pinning cross-owner admission terms (PC3 f673adfeb).
+    SetWithBinding {
+        value: i64,
+        binding: [u8; 32],
+    },
     /// Checked `i64` addition.
     Add(i64),
+    /// Checked addition while pinning physical admission terms.
+    AddWithBinding {
+        delta: i64,
+        binding: [u8; 32],
+    },
     /// The database transaction time, in Unix seconds.
     SetNow,
     /// A source `computed: expression` effect with no closed kind yet: its transition is
@@ -192,9 +214,28 @@ impl QuestEffectKind {
                 out.push(1);
                 out.extend_from_slice(&value.to_be_bytes());
             }
+            Self::RaiseTo(value) => {
+                out.push(9);
+                out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::RaiseToWithBinding { value, binding } => {
+                out.push(10);
+                out.extend_from_slice(&value.to_be_bytes());
+                out.extend_from_slice(&binding);
+            }
+            Self::SetWithBinding { value, binding } => {
+                out.push(7);
+                out.extend_from_slice(&value.to_be_bytes());
+                out.extend_from_slice(&binding);
+            }
             Self::Add(value) => {
                 out.push(2);
                 out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::AddWithBinding { delta, binding } => {
+                out.push(8);
+                out.extend_from_slice(&delta.to_be_bytes());
+                out.extend_from_slice(&binding);
             }
             Self::SetNow => out.push(3),
             Self::Computed => out.push(4),
@@ -383,7 +424,12 @@ impl QuestStateCatalogue {
                     _ => true,
                 };
                 let effect_ok = match effect.effect {
-                    QuestEffectKind::Set(value) => (track.min..=track.max).contains(&value),
+                    QuestEffectKind::Set(value)
+                    | QuestEffectKind::SetWithBinding { value, .. }
+                    | QuestEffectKind::RaiseTo(value)
+                    | QuestEffectKind::RaiseToWithBinding { value, .. } => {
+                        (track.min..=track.max).contains(&value)
+                    }
                     _ => true,
                 };
                 if !comparison_ok || !effect_ok {
@@ -527,8 +573,14 @@ impl QuestStateCatalogue {
             .zip(current)
             .map(|(effect, (track, before))| {
                 let after = match effect.effect {
-                    QuestEffectKind::Set(value) => Some(value),
-                    QuestEffectKind::Add(delta) => before.checked_add(delta),
+                    QuestEffectKind::RaiseTo(value)
+                    | QuestEffectKind::RaiseToWithBinding { value, .. } => Some(before.max(value)),
+                    QuestEffectKind::Set(value) | QuestEffectKind::SetWithBinding { value, .. } => {
+                        Some(value)
+                    }
+                    QuestEffectKind::Add(delta) | QuestEffectKind::AddWithBinding { delta, .. } => {
+                        before.checked_add(delta)
+                    }
                     QuestEffectKind::SetNow => Some(now),
                     QuestEffectKind::Computed => None,
                     QuestEffectKind::Native(_) => native_after

@@ -110,6 +110,19 @@ impl EquipmentMoveContent for NativeItemWeights<'_> {
     }
     /// Refuse timed forms the owner cannot host. Supported carried/equipped budgets
     /// are checkpointed by the production move path below.
+    fn supports_absolute_deadline(&self, key: &str, revision: &str) -> bool {
+        let Some(policy) = self.0.item_policy(key, revision) else {
+            return false;
+        };
+        policy.record().semantics.charges == ReferenceItemField::NotApplicable
+            && matches!(&policy.record().semantics.temporal, ReferenceItemField::Known(temporal)
+                if temporal.consumption_mode == ReferenceItemField::Known(crate::content::ReferenceTemporalMode::DurableAbsoluteDeadline))
+            && crate::durability::spell_items_abi::QualifiedItemDefinition::from_native_policy(
+                policy,
+            )
+            .is_ok()
+    }
+
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool {
         if super::timed_item_content::unhosted_equipment_effect(production_key) {
             return true;

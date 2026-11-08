@@ -325,7 +325,7 @@
         "You have recorded the six seals. Enter the final chamber, claim your boots and platinum, then leave through the magic portal. This chosen trial takes no soul pact."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:e92dca70ca00e273e74531b29c4d1356de4a8c177cc7b1920220a8f2a15296d8",
         "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
       ]
     },
@@ -355,7 +355,7 @@
         "The Draccoon needs your help. Meet him at his Venore lair."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/84/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/84/definition:sha256:e92dca70ca00e273e74531b29c4d1356de4a8c177cc7b1920220a8f2a15296d8"
       ]
     },
     {
@@ -388,7 +388,7 @@
         "Find the Rest of Ratha in Kazordoon. This empty spirit container is for the three essences of the selected rescue."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/84/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/84/definition:sha256:e92dca70ca00e273e74531b29c4d1356de4a8c177cc7b1920220a8f2a15296d8"
       ]
     },
     {
@@ -8272,7 +8272,7 @@
         "The helmet route leads through the training cave. Speak to both of us, descend to the equipment room, search the dead human, then return through the magic forcefield."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:7afd8ef3a73530580d5997a0b7492a8be286ec9332f8734c1c69ce40cefd362b"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:214007f4862fdda99d6160a2d2d5e08b28f2cc591c6a3b25b8f146616478600b"
       ]
     },
     {
@@ -8301,7 +8301,7 @@
         "The helmet route leads through the training cave. Speak to both of us, descend to the equipment room, search the dead human, then return through the magic forcefield."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:7afd8ef3a73530580d5997a0b7492a8be286ec9332f8734c1c69ce40cefd362b"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:214007f4862fdda99d6160a2d2d5e08b28f2cc591c6a3b25b8f146616478600b"
       ]
     },
     {
@@ -8346,7 +8346,7 @@
         "The village is safer. Take this guardian ring. Recover the Book of Wisdom and bring it to me."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:e92dca70ca00e273e74531b29c4d1356de4a8c177cc7b1920220a8f2a15296d8"
       ],
       "minimum_level": 2,
       "experience": 800
@@ -8397,7 +8397,7 @@
         "Your tour is complete. Defeat ten Trolls on the training route, then report back."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:e92dca70ca00e273e74531b29c4d1356de4a8c177cc7b1920220a8f2a15296d8"
       ],
       "minimum_level": 2
     },
@@ -8428,7 +8428,7 @@
         "Welcome to Newhaven. Visit the training school and the village supply point, then return for your defence task."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:e92dca70ca00e273e74531b29c4d1356de4a8c177cc7b1920220a8f2a15296d8"
       ],
       "minimum_level": 2
     },
@@ -8466,7 +8466,7 @@
         "Thank you for the Book of Wisdom. Take this scarf and the rest of your training experience."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:e92dca70ca00e273e74531b29c4d1356de4a8c177cc7b1920220a8f2a15296d8"
       ],
       "minimum_level": 2,
       "experience": 800,

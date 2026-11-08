@@ -2474,6 +2474,7 @@ dependencies = [
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",
  "oteryn-world-bundle-compiler",
+ "prost",
  "rcgen",
  "rustls",
  "serde",

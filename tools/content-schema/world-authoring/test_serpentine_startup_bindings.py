@@ -1,6 +1,6 @@
 """Exact retained source selectors; no guessed quest object positions."""
 import unittest
-import quest_startup_bindings
+import questpc5_startup_projection as quest_startup_bindings
 
 
 class SerpentineStartupBindings(unittest.TestCase):

@@ -419,11 +419,15 @@ fn scenario_in_world(
                 occupancy_driven: false,
                 occupancy_requirement: None,
                 occupancy_items: Vec::new(),
+                actor_kind: Default::default(),
+                opening_only: false,
+                requires_world_admission: false,
                 world_change: None,
-        key: "fixture:underwater-callback".into(),
+                key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
                 selector: Selector {
+                    native: None,
                     position: Some(position(trigger)),
                     unique: None,
                     action: None,
@@ -433,6 +437,9 @@ fn scenario_in_world(
                 reversible: false,
                 passages: vec![],
                 teleport: Some(position(destination)),
+                facing: None,
+                effects: Default::default(),
+                world_requirements: vec![],
                 remote_teleport: None,
                 storage: if refused {
                     vec![Storage {
@@ -441,6 +448,8 @@ fn scenario_in_world(
                         maximum: 0,
                         set: 1,
                         preserve: false,
+                        increment: false,
+                        at_least: false,
                         read_only: false,
                     }]
                 } else {
@@ -460,7 +469,6 @@ fn scenario_in_world(
                 failure_message: None,
                 success_message: None,
                 native_rule: None,
-                effects: Default::default(),
                 sources: vec![],
             };
             install(&owner, actor, session, false).await?;

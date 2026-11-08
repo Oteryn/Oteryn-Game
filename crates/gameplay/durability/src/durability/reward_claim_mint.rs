@@ -124,10 +124,10 @@ mod fluid;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
-mod quest_participants;
 mod quest_actor_conditions;
-pub use quest_actor_conditions::QuestActorConditionProof;
+mod quest_participants;
 pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
+pub use quest_actor_conditions::QuestActorConditionProof;
 mod quest_gates;
 mod soul_war;
 mod tibiadrome;
@@ -1630,6 +1630,19 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
             }
         }
     }
+    if request
+        .contents
+        .iter()
+        .any(|child| child.fluid_subtype.is_some())
+    {
+        canonical.push(0x46);
+        for (index, child) in request.contents.iter().enumerate() {
+            if let Some(fluid) = child.fluid_subtype {
+                canonical.extend_from_slice(&(index as u32 + 1).to_be_bytes());
+                canonical.push(fluid);
+            }
+        }
+    }
     if request.backpack_outputs {
         canonical.push(0x42);
     }
@@ -2049,6 +2062,42 @@ mod tests {
     }
 
     #[test]
+    fn reward_fluid_is_bound_and_rejects_non_vessel_shapes() {
+        let mut filled = request(None);
+        filled.item = backpack_facts(8);
+        filled.quantity = 1;
+        filled.contents = vec![RewardClaimMintContent {
+            charges_remaining: None,
+            item: facts("fixture:waterskin", ItemStackClass::NonStackable),
+            quantity: 1,
+            key_number: None,
+            text: None,
+            fluid_subtype: Some(16),
+        }];
+        assert!(validate_request(&filled).is_ok());
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let bound = intent_binding(&filled, character).expect("filled intent");
+        for fluid in [None, Some(17)] {
+            let mut changed = filled.clone();
+            changed.contents[0].fluid_subtype = fluid;
+            assert_ne!(intent_binding(&changed, character).expect("intent"), bound);
+        }
+        for shape in ["zero", "quantity", "stack", "container", "key", "text"] {
+            let mut changed = filled.clone();
+            let child = &mut changed.contents[0];
+            match shape {
+                "zero" => child.fluid_subtype = Some(0),
+                "quantity" => child.quantity = 2,
+                "stack" => child.item.stack = COIN,
+                "container" => child.item.container_capacity = Some(8),
+                "key" => child.key_number = Some(3801),
+                _ => child.text = Some("source text".into()),
+            }
+            assert!(validate_request(&changed).is_err(), "{shape}");
+        }
+    }
+
+    #[test]
     fn filled_fluid_rewards_bind_subtypes_and_refuse_ambiguous_shapes() {
         let character = CharacterId::from_bytes(id(41)).expect("character");
         let mut empty = request(None);
@@ -2332,6 +2381,6 @@ mod tests {
     }
 }
 
-pub(super) mod npc_program;
 pub(super) mod fathers_burden;
 pub(super) mod marlin_trophy;
+pub(super) mod npc_program;

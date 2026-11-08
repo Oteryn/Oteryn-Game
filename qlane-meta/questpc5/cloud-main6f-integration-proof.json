@@ -1,0 +1,31 @@
+{
+  "main": "6f61ac15d",
+  "state": "COMPILES_POSTMERGE_TESTS_PENDING",
+  "conflicts": "71 files; all markers resolved within the merge budget. No merge abort needed for this final integration.",
+  "reuse": [
+    "Main QUESTPC4 source mechanics and migrations1250-1258",
+    "Main physical NPC item lane; obsolete NpcItemPermit replaced with its SpellLanePermit",
+    "Existing world reward wrapper and main MINT signature; one MINT/source-plan write per callback",
+    "Both existing startup implementations retained under distinct module names with all tests",
+    "Existing fluid initialization consolidated so source fluids initialize once with reward-MINT proof"
+  ],
+  "checks": {
+    "workspace_all_targets_seconds": 245,
+    "fmt": "PASS",
+    "source_core_replay": "PASS all frozen SOURCE cores unchanged",
+    "startup_tests": 8,
+    "native_regeneration": 48,
+    "equipment_union": 3876,
+    "lane_only_equipment_delta": 112,
+    "main_baseline_commit": "6f61ac15d",
+    "world_pin": "780beb0d3e24f9afdab87d84bc98b301b0b299c607f08ce9584f3a8164fffd39",
+    "world_pin_refresh_check": "PASS",
+    "duplicate_migrations": "PASS"
+  },
+  "pending": [
+    "Strict Clippy on ten changed crates",
+    "Focused own PG regressions and main fluid/NPC permit tests",
+    "Changed-crate unit tests; no full workspace or reverse-dependency suite"
+  ],
+  "qualification": "No whole quest newly qualified. Previous2253unit/71authoring/CookPG155.631s results were premerge; do not present them as postmerge."
+}

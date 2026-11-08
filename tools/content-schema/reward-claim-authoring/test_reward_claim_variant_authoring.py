@@ -73,6 +73,21 @@ class CanonicalVariantTests(unittest.TestCase):
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
 
+    def test_plain_231_definition_records_remain_exact_and_readiness_224_7(self):
+        omitted = {'canary:reward-claim/kv/' + key for key in (
+            'edrongoblin1', 'ghoulroom1', 'silveramulet', 'stealhring1')}
+        claims = plain.load_json(self.root / plain.CLAIMS_REL)
+        claims = claims.get('claims', claims) if isinstance(claims, dict) else claims
+        records, _ = plain.build_records(
+            claims, plain.load_json(self.root / plain.MANIFEST_REL), self.items,
+            charge_evidence=[r for r in plain.load_source_charge_evidence()
+                             if r['pilot_key'] not in omitted])
+        self.assertEqual(len(records), 231)
+        self.assertEqual(sum(r['definition']['readiness'] == 'ready' for r in records), 224)
+        self.assertEqual(sum(r['definition']['readiness'] == 'waiting_item_semantics'
+                             for r in records), 7)
+        self.assertEqual(len(records) + len(self.records), 336)
+
     def test_source_complete_is_not_native_or_item_complete(self):
         self.assertTrue(any(r['definition']['readiness'] == 'waiting_implementation' for r in self.records))
         # Every current Item is resolved. Losing a bound Item must still be

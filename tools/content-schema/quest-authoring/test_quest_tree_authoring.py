@@ -59,7 +59,15 @@ class QuestTreeTests(unittest.TestCase):
         self.assertEqual({k for k, d in source.items() if '_source_hold_categories' in d}, set(expected))
         for key, categories in expected.items():
             self.assertEqual(live[key]['data_holds'], [])
-            self.assertEqual(source[key]['data_holds'], live[key]['data_holds'])
+            if key.endswith('.triangletower'):
+                # Native container lowering retains its original SOURCE necklace hold.
+                self.assertEqual(source[key]['data_holds'], [{
+                    'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+                    'item': 'oteryn:item.tibia.i3083', 'placement_index': 0,
+                    'reason': 'waiting', 'reward_field': 'items', 'reward_index': 0,
+                }])
+            else:
+                self.assertEqual(source[key]['data_holds'], live[key]['data_holds'])
             self.assertEqual(source[key].get('native_contents'), live[key].get('native_contents'))
             self.assertEqual(source[key]['_source_hold_categories'], categories)
             self.assertNotIn('_source_hold_categories', live[key])

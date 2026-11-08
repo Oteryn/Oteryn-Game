@@ -3,7 +3,7 @@ use super::{DurabilityError, Input};
 
 pub(super) async fn apply(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    _permit: &crate::durability::quest_state::npc_program::NpcItemPermit,
+    _permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     fence: super::CurrentCharacterGameplayFence,
     input: &Input,
     transaction: &str,

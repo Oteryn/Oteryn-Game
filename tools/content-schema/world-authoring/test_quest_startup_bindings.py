@@ -1,61 +1,118 @@
-"""Pinned startup tables must agree with physical World objects, before compilation."""
-import json
-import unittest
+"""Native selectors must exist on exact source Items, not just PG fixture tiles."""
 
-import quest_startup_bindings as author
+import hashlib
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+import quest_startup_bindings as startup
 import world_region_codec as codec
 
-
-class QuestStartupBindings(unittest.TestCase):
-    def test_source_projection_is_reproducible_and_uses_the_global_donor(self):
-        doc = author.document()
-        self.assertEqual(json.loads(author.OUTPUT.read_text()), doc)
-        self.assertTrue(all(row['source'].startswith('data-global/startup/tables/')
-                            for row in doc['bindings']))
-        skeleton, = [row for row in doc['bindings'] if row['value'] == 20003]
-        self.assertEqual((skeleton['position'], skeleton['item'], skeleton['attribute']),
-                         ([32211, 31273, 10], 4285, 'unique'))
-        hoists = [row for row in doc['bindings'] if row['value'] in (3059, 3060, 3061)]
-        self.assertEqual([(row['position'], row['item'], row['value']) for row in hoists],
-                         [([32157, 31126, z], 1949, 3050 + z) for z in (9, 10, 11)])
-
-    def test_every_selector_has_one_exact_unhoused_top_level_source_object(self):
-        doc = author.document()
-        root = author.ROOT / 'content/world/placements'
-        palette = json.loads((root / 'index.json').read_text())['palette']
-        regions = {}
-        for row in doc['bindings']:
-            x, y, z = row['position']
-            key = (z, x // 256, y // 256)
-            if key not in regions:
-                path = root / codec.region_name(*key)
-                regions[key] = codec.decode_region(path.read_bytes())[3]
-            tiles = [tile for _, sector in regions[key] for tile in sector
-                     if tile[:2] == (x, y)]
-            self.assertEqual(len(tiles), 1, row)
-            self.assertEqual(tiles[0][3], 0, row)
-            objects = [(depth, attrs) for index, depth, attrs in tiles[0][5]
-                       if depth == 0 and palette[index]['source_item_id'] == row['item']]
-            self.assertEqual(len(objects), 1, row)
-            value = (objects[0][1] or {}).get(row['attribute'])
-            self.assertIn(value, (None, row['value']), row)
-
-    def test_legion_helmet_retains_the_exact_donor_corpse_selector(self):
-        row,=[r for r in author.document()['bindings'] if r['attribute']=='unique' and r['value']==6006]
-        self.assertEqual((row['position'],row['item']),([32143,31910,8],4240))
-        self.assertEqual(row['source'],'data-global/startup/tables/chest.lua')
-        self.assertGreater(row['line'],0)
-
-    def test_hoist_direction_lever_is_the_real_upper_floor_default(self):
-        root = author.ROOT / 'content/world/placements'
-        palette = json.loads((root / 'index.json').read_text())['palette']
-        x, y, z = 32156, 31125, 10
-        sectors = codec.decode_region((root / codec.region_name(z, x // 256, y // 256)).read_bytes())[3]
-        tile, = [tile for _, sector in sectors for tile in sector if tile[:2] == (x, y)]
-        self.assertEqual(tile[3], 0)
-        top = [(palette[index]['source_item_id'], attrs) for index, depth, attrs in tile[5] if depth == 0]
-        self.assertEqual(top, [(5770, None), (5772, None), (2773, None)])
+ROOT = Path(__file__).resolve().parents[3]
+EXPECTED = (
+    ((32966, 32626, 5), 4634, "action", 50022),
+    ((32968, 32630, 7), 1720, "action", 50022),
+    ((32968, 32629, 7), 1949, "action", 50022),
+    ((32967, 32630, 8), 1949, "action", 50022),
+    ((33190, 31684, 14), 5102, "action", 1070),
+    ((33195, 31684, 14), 5102, "action", 1070),
+    ((32573, 32121, 7), 2772, "unique", 30034),
+)
 
 
-if __name__ == '__main__':
+class QuestStartupBindingsTests(unittest.TestCase):
+    def outputs(self):
+        index = json.loads((ROOT / startup.doors.INDEX).read_bytes())
+        document = json.loads((ROOT / startup.CAPTURE).read_bytes())
+        paths = [
+            startup.doors.INDEX.as_posix(),
+            startup.SUMMARY,
+            *(r["path"] for r in startup.affected(index, document)),
+        ]
+        return {p: (ROOT / p).read_bytes() for p in paths}
+
+    def test_startup_overlay_is_idempotent_and_rejects_ambiguous_items(self):
+        outputs = self.outputs()
+        before = outputs.copy()
+        startup.overlay_outputs(outputs, require_all=True)
+        self.assertEqual(outputs, before)
+        name = "content/world/placements/region-z07-x127-y125.b3"
+        z, rx, ry, sectors = codec.decode_region(outputs[name])
+        for _, tiles in sectors:
+            for x, y, _, _, _, items in tiles:
+                if (x, y) == (32573, 32121):
+                    items.extend(
+                        [
+                            entry
+                            for entry in items
+                            if (entry[2] or {}).get("unique") == 30034
+                        ]
+                    )
+        outputs[name] = codec.encode_region(
+            z,
+            rx,
+            ry,
+            {
+                local: codec.encode_sector_tiles(
+                    rx * 8 + local % 8, ry * 8 + local // 8, tiles
+                )
+                for local, tiles in sectors
+            },
+        )
+        with self.assertRaisesRegex(ValueError, "missing or ambiguous"):
+            startup.overlay_outputs(outputs, require_all=True)
+
+    def test_capture_parses_pinned_source_shapes_and_hashes_inputs(self):
+        # Literal source shapes; CI must not depend on a worker's local donor cache.
+        sources = {
+            "data-global/startup/tables/tile.lua": "TileAction = {[50022] = {itemId=4634, itemPos={{x=32966,y=32626,z=5}}}}",
+            "data-global/startup/tables/teleport.lua": "TeleportAction = {[50022] = {{itemId=1720,itemPos={{x=32968,y=32630,z=7}}},{itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}}}}",
+            "data-global/startup/tables/door_level.lua": "LevelDoorAction = {[1070] = {itemId=false,itemPos={{x=33190,y=31684,z=14},{x=33195,y=31684,z=14}}}}",
+            "data-global/startup/tables/lever.lua": "LeverUnique = {[30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
+            "data/libs/tables/doors.lua": "LevelDoorTable = {{closedDoor=5102,openDoor=5103}}",
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for name, text in sources.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(text)
+            capture = startup.capture(root)
+        actual = [
+            (tuple(r["position"]), r["item"], r["attribute"], r["action"])
+            for r in capture["bindings"]
+        ]
+        self.assertEqual(sorted(actual), sorted(EXPECTED))
+        self.assertEqual(
+            capture["sources"],
+            [
+                {"path": name, "sha256": hashlib.sha256(text.encode()).hexdigest()}
+                for name, text in sources.items()
+            ],
+        )
+
+    def test_native_startup_selectors_match_exact_source_items(self):
+        index = json.loads((ROOT / "content/world/placements/index.json").read_bytes())
+        for (x, y, z), appearance, attribute, expected in EXPECTED:
+            with self.subTest(position=(x, y, z)):
+                raw = (
+                    ROOT
+                    / f"content/world/placements/region-z{z:02}-x{x // 256:03}-y{y // 256:03}.b3"
+                ).read_bytes()
+                _, _, _, sectors = codec.decode_region(raw)
+                tiles = [t for _, tiles in sectors for t in tiles if t[:2] == (x, y)]
+                self.assertEqual(len(tiles), 1)
+                self.assertEqual(tiles[0][3], 0)
+                items = [
+                    attrs
+                    for palette, depth, attrs in tiles[0][5]
+                    if depth == 0
+                    and index["palette"][palette]["source_item_id"] == appearance
+                ]
+                self.assertEqual(len(items), 1)
+                self.assertEqual((items[0] or {}).get(attribute), expected)
+
+
+if __name__ == "__main__":
     unittest.main()

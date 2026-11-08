@@ -1,3 +1,11 @@
+## Main6f integration compiles — 2026-11-08 05:16 UTC
+
+Resolved the71-file main merge and verified all frozen SOURCE cores unchanged. Workspace all-target check passed in245seconds; formatting, duplicate migrations, startup8tests, binding/matrix/world metadata, and pinrefresh/check passed. New World pin:780beb0d3e24f9afdab87d84bc98b301b0b299c607f08ce9584f3a8164fffd39. Main's24 overlapping equipment keys are excluded from the lane delta by the repo tool using immutable baseline6f61ac15d; lane-only delta112, total union3876.
+
+Main's NPC physical item lane is preserved. The two world-reward implementations share one MINT/source-plan write; fluid state initializes once with its reward-MINT proof. Both startup converters and test groups survive under separate names. New script name for the compiler projection:tools/content-schema/world-authoring/questpc5_startup_projection.py.
+
+StrictClippy on ten changed crates is running. Focused own PG regressions and main fluid/NPC permit tests are queued in `/tmp/questpc5-main6f-focused-pg.log`. Publish compiling merge checkpoint under PREPUSH-2 cadence exception; then collect every failure and fix together. Do not label prior2253unit/71authoring/Cook155.631s evidence as postmerge. Whole qualifications remain13/23. Do not stage localforeign1300.
+
 ## Stable unit run and source guards green — 2026-11-08 04:46 UTC
 
 All 2253 selected crate units passed in 1706.639 seconds. The earlier provisioning failures came from my merge attempt changing live test data; they did not recur with stable inputs. Keep future test inputs stable.

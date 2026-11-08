@@ -109,6 +109,12 @@
         "gameplay-durability reward_claim_mint/quest.rs"
       ],
       "decision": "Avoid authoring a competing generic reward engine. Preserve main and existing quest semantics together; prepare resolutions offline while stable crate tests execute."
+    },
+    "latest_main_integration": {
+      "main": "6f61ac15d",
+      "proof": "cloud-main6f-integration-proof.json",
+      "state": "Merged source compiles245s; fmt/pin/duplicate/source-core replay/startup8 green. PostmergePG and strictClippy pending under PREPUSH-2 cadence exception.",
+      "engine_integration_request": "Resolved by reusing both existing implementations with compatibility glue, one shared MINT and source-plan write; no competing reward engine."
     }
   },
   {
