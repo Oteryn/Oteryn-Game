@@ -1,5 +1,6 @@
 //! Native client process and component composition.
 
+pub mod about;
 #[path = "features/local-account-services/mod.rs"]
 pub mod account_services;
 pub mod bulletin;
@@ -9,6 +10,7 @@ pub mod character_selection;
 #[path = "features/local-coin-shop/mod.rs"]
 pub mod coin_shop;
 pub mod combat_input;
+pub mod crash_report;
 pub mod cyclopedia;
 pub mod input;
 pub mod map;
@@ -19,9 +21,11 @@ pub mod play;
 pub mod premium;
 pub mod reentry;
 pub mod scene;
+pub mod screenshots;
 pub mod spell;
 #[cfg(windows)]
 pub mod win_mutex;
+pub mod window_layout;
 #[deprecated(note = "use map")]
 pub mod world;
 

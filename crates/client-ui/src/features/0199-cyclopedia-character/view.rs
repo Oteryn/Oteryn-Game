@@ -251,3 +251,39 @@ pub fn misc_bars(p: &CyclopediaCharacterPanel) -> Option<[(u16, u16); 2]> {
         (stats.offline_training_minutes.min(720), 720),
     ])
 }
+
+/// Full catalogue only after the server has confirmed the account's earned badges.
+pub fn badge_rows(p: &CyclopediaCharacterPanel) -> Vec<super::BadgeRow> {
+    let Some(earned) = &p.badges else {
+        return Vec::new();
+    };
+    use super::BadgeFilter;
+    oteryn_client_runtime::cyclopedia_character::Badge::ALL
+        .into_iter()
+        .map(|badge| super::BadgeRow {
+            id: badge.id(),
+            name: badge.name(),
+            earned: earned.contains(&badge.id()),
+            hidden: p.hidden_badges.contains(&badge.id()),
+        })
+        .filter(|row| match p.badge_filter {
+            BadgeFilter::All => true,
+            BadgeFilter::Earned => row.earned,
+            BadgeFilter::Locked => !row.earned,
+            BadgeFilter::Hidden => row.hidden,
+        })
+        .collect()
+}
+pub fn badge_text(p: &CyclopediaCharacterPanel) -> String {
+    let mut text = String::from("Badges — local display preferences\r\n");
+    for row in badge_rows(p) {
+        text.push_str(&format!(
+            "#{} {} — {}{}\r\n",
+            row.id,
+            row.name,
+            if row.earned { "earned" } else { "locked" },
+            if row.hidden { "; hidden locally" } else { "" }
+        ));
+    }
+    text
+}
