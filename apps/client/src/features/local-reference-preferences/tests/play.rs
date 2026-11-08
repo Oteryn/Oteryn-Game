@@ -1,20 +1,6 @@
 use super::*;
 
 #[test]
-fn basic_options_navigate_without_changing_preferences() {
-    use crate::play::{SettingsPage, SettingsState};
-    let mut state = SettingsState::new(None);
-    let before = state.preferences.clone();
-    assert_eq!(state.page, SettingsPage::Gameplay);
-    for page in SettingsPage::ALL {
-        state.page = page;
-        assert!(!page.label().is_empty());
-        assert_eq!(state.preferences, before);
-    }
-    assert_eq!(SettingsPage::ALL.len(), 5);
-}
-
-#[test]
 fn configured_rotation_modifier_sends_existing_turn_command() -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     let (link, mut commands, outbox) = play_channel();

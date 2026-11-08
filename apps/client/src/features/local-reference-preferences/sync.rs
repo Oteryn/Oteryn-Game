@@ -39,7 +39,6 @@ pub struct SettingsState {
     pub open: bool,
     pub shutdown: bool,
     pub page: SettingsPage,
-    pub page: SettingsPage,
     last_key: std::collections::BTreeMap<oteryn_input_actions::KeyCode, std::time::Instant>,
 }
 
@@ -99,7 +98,6 @@ impl SettingsState {
             open: false,
             shutdown: false,
             input: PreferenceInput::default(),
-            page: SettingsPage::default(),
             page: SettingsPage::default(),
             last_key: Default::default(),
         }
