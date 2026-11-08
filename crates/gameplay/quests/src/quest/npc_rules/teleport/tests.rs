@@ -23,6 +23,8 @@ fn plan(
     let inventory = NpcInventorySnapshot::default();
     let outfits = BTreeMap::new();
     let input = NpcRuleInput {
+        player_name: None,
+        premium_current: false,
         npc: "oteryn:npc.riddler",
         trigger: NpcRuleTrigger::Say,
         message: "1",
