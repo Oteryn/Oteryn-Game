@@ -29,7 +29,7 @@ fn scenario(victory: bool) -> TestResult {
         let started = std::time::Instant::now();
         reset();
         let h =
-            Harness::create_with_admission_seed(admin, if victory { "season_first_dragon_win" } else { "season_first_dragon_timeout" }, true, false).await?;
+            Harness::create_with_admission_seed(admin, if victory { "season_first_dragon_win" } else { "season_first_dragon_timeout" }, false, false).await?;
         let evidence = super::house_transfer::RecoverySource::start(&h).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let expected = fixture::fence(1)?;
@@ -41,9 +41,7 @@ fn scenario(victory: bool) -> TestResult {
             return Err("source Channel".into());
         };
         let (controller, activation) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
-                world_id, None,
-            );
+            super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?;
         let generation = controller.active().ok_or("active gameplay")?;
         let native = generation.native_gameplay().ok_or("native gameplay")?;
         let source_room = activation.qualified_room().clone();
@@ -175,7 +173,11 @@ fn scenario(victory: bool) -> TestResult {
         }
         deps.initialize(&owner).await;
         owner.admit_premium(fixture::id(40), admitted.game_session_id);
+        // Use the same pinned Character interpretation as the real source session;
+        // the historical seeded level50/profile-policy fixture is not this policy.
         owner.admit_progression_session(&mut admitted).await;
+        assert!(owner.progression_binding(admitted.game_session_id).is_some(),
+                "the source session must bind the native content-1 progression policy");
         super::qengine_outfit_stories::earn_level(&owner, &admitted, &authority, 40).await?;
         // Prior personal trials are historical input to this encounter, not a synthetic death.
         let canonical = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
