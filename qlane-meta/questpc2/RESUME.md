@@ -1,62 +1,46 @@
-# questpc2b: Henricus recruitment/first mission GREEN, publish final gates
+# questpc2b: Gerimor assignments and main c77 integration checkpoint
 
-Branch claude/happy-davinci-ijz3wy-questpc2b. Last actual push
-ccb004b0c6dbfc514c6f46f669e7d0f698a597c5 contains the Henricus RED scaffold
-plus main98d6ae8ce(Soulpit#3036) and47baa7bb8(floor lane proof#3038).
-Parent questpc2 remains frozen at0a6d6e208. No force/rebase/mainpush/PR.
+Active branch claude/happy-davinci-ijz3wy-questpc2b. Prior actual push
+36d3a545137769b5c62a7349a789a586ae9fec0a qualified Henricus recruitment/first
+mission. Original questpc2 remains frozen at0a6d6e208. No PR/force/rebase/main push.
 
-Current uncommitted change implements Henricus source recruitment and first
-mission via the EXISTING storage/topic owner. Generator:
-tools/content-schema/quest-authoring/questpc2_henricus_rules.py. Output:
-content/dialogues/quest-rules-supplemental/questpc2-henricus.json.
-Narrow41-line Rust custody helper pins only this quest/NPC/file/revision/hash;
-shared validation checks both references and file custody. Runtime explicitly
-admits this program. Five negative custody mutations are tested. Finite admitted
-quest set gains exactly Inquisition; rollback/hash/default checks stay intact.
+This merge preserves main c77d436d8 QREADY1+2 reward work and lane logic.
+Gerimor producer questpc2_gerimor_rules.py creates36source rules using nine
+EXISTING tracks and the existing storage/topic owner. Private topics300-306
+retain the volatile selected cult; case-insensitive whole-message selection
+is exact. Confirmation commits only the selected mission and initial shared
+questline. No boss completion, XP, final access or item reward is qualified.
 
-RED real PostgreSQL180006:65.812208608s, missing recruitment offer: [].
-GREEN Henricus:89.768422s. New case earns recruitment and first mission through
-NPC talk, covers no/bye/hi resets, atomic Questline2+Mission01=1, and refuses
-an unearned interrogation report. No quest SQL seeds. Full quest not qualified.
-Fresh seven-case run allPASS:5realPG+2unit,215.776216s total. Oldrak68.481945s,
-Annihilator native combat91.741754s, Rotten native death61.451878s,
-Soulpit native wave/timeout33.111613s. Cap371 and equipment raw-attribute
-assertions pass. Runtime content stayed frozen while these cases ran.
-Receipt BATCH-henricus-green-2026-11-08.json includes markers/binary/artifact hashes.
+RealPG180006 RED44.791193812s: missing source cult menu: []. Pre-main GREEN
+45.519532968s earns all seven assignments, refuses substring/declined/stale
+confirmation, and proves exactly seven receipts. Quest units320/320PASS17.26s,
+authorer2/2PASS. Source Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+data-global/npc/gerimor.lua:255-343,355-425,449-452,
+SHAbf0fba86d07bb8a70d6242c2cc748fbb137cc7b583b47f0886530b6b5c584b2f.
 
-Quest crate318/318PASS,0ignored,49.65s. Authorer2/2PASS1.473s. Workspace
-alltargetsPASS8m06s including queue wait. Final central/equipment/audit/binding/
-completion/coverage/ledger/pin tools finished; fmtPASS. Clippy quests+dispatch alltargets/allfeatures PASS11m25s (includes queue wait);
-commit+push immediately,
-with final fetch+merge movement, dupmigrations and fmt. Full crate suites CI pending.
+Merge source conflicts composed both callback profile cohorts and all world
+overlays. Replayed main QREADY1+2 on the preserved own World; source chest/access
+check59PASS. Native45files regenerated. Equipment union3827 agrees with declared
+cohorts:9named main overlaps, all62own raw-key assertions retained. Strict
+outside-six Rotten fingerprints rebound only via repo tool during exact main
+merge; canonicalunchanged, Native a64f6741e8bf27700dab39a0545dbe0b524b34f65542bf8b58a4ce63dd44a3bc.
+Completion-matrix mixed evidence bug RED then GREEN6tests: exact pinned Panpipe
+door evidence grants no reward bindings; unknown formats still fail. Tool parser
+now accepts rustfmt-wrapped cohort declarations without relaxing the named set.
+Bindings/matrix/equipment/audit/ledger283 regenerated/checked; pins refreshed by
+fresh compiler. Workspace all-targetsPASS3m51s; fmtPASS; dup migrationsPASS.
 
-Pinned source Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
-data-global/npc/henricus.lua:65-102,204-225,286-290, SHA256
-1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d.
-The unconditional blessing-price helper is read-only for Player state; exact
-blessing.lua source/hash is retained in CONTRACT-NOTES.
+Cadence checkpoint: post-merge GerimorPG, quest/client-assets units, dispatch
+non-PG units and changed-crate clippy are RUNNING/PENDING. Do not claim their
+success yet. Keep runtime content frozen until these finish; gather all failures
+and fix together. Logs /tmp/questpc2b-gerimor-*. Session source env opaquely from
+/workspace/oteryn-env/env.sh; CARGO_INCREMENTAL=0, jobs2. The restored PG cluster
+was started via its start.sh. PG version180006. No credentials read.
 
-Interrogation report-success data requires ALL FIVE flags. Positive guard-credit
-acquisition/report completion is NOT PG-qualified in this slice. Five guard
-scripts were inspected (walter/kulag/grof/miles/tim_the_guard.lua); each terminal
-credit also emits HolyArea magic. Source NPC MagicEffect remains unowned/refused
-by evaluate.rs:356; request sent to QENGINE2. Do not omit the known effect just
-to grant flags. Cached exact donor text is /tmp/questpc2b-inquisition-*.lua.
-Oldrak paid axe also needs source NPC item+bank-money effects under one topic;
-separate reward_callback/topic owner would permit stale confirmations. Halvar
-needs source money/fallback-topic semantics. Requests and exact traces are in notes.
-
-Scope35packet entries,29owned,6excluded;3wholequestsQUALIFIED,5active incomplete
-(Soul War,Rotten Blood,Hero of Rathleton,Demon Oak,Inquisition),21notstarted.
-Only own packet/QSPLIT; no named transfers received. Big engine features belong
-QENGINE2. Latest checked aa85b2500; authored-kill feature is qualified at e0255349a
-with receipt e6bacdda6, latest head also contains WIP World gift/port work; reuse
-compatible tested work when integrated, never rewrite a generic feature here.
-
-Own migrations1240-1244 unchanged; main0999-1008,1140-1141,1250-1258 retained.
-No1200-1205copies. Environment source /workspace/oteryn-env/env.sh opaquely;
-CARGO_INCREMENTAL=0, jobs2. Retire only inactive lane artifacts if needed.
-Current native binary f89a081bc5464778 includes this working change and ccb build
-metadata; /tmp/questpc2b-run-henricus-green.py drove exact cases. Logs
-/tmp/questpc2b-henricus-*. No agents. Required blakinio author/committer and
-Claude coauthor/session trailers on every commit.
+Scope35packet,29owned,6excluded;3wholequestsQUALIFIED,6active incomplete
+(Soul War,Rotten Blood,Hero of Rathleton,Demon Oak,Inquisition,Cults),20notstarted.
+Reuse qualified QENGINE2 authored bindings at614d00506 after current tests finish;
+no big shared engine work here. Existing requests: source NPC money/magic effects,
+participant-bound multi-wave lifecycle, live capture and source endgame mechanics.
+Own migrations1240-1244 unchanged; no new migrations in this batch. Required
+blakinio author/committer plus Claude coauthor/session trailers. No agents.

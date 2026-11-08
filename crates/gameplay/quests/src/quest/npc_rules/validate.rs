@@ -25,6 +25,7 @@ fn sources(sources: &[String], quest: &str) -> bool {
                 })
                 .or_else(|| super::hidden_threats::reference(quest, source))
                 .or_else(|| super::questpc2_oldrak_source::reference(quest, source))
+                .or_else(|| super::questpc2_gerimor_source::reference(quest, source))
                 .or_else(|| super::questpc2_henricus_source::reference(quest, source))
                 .is_some_and(|reference| {
                     reference
@@ -55,6 +56,11 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
     let mut keys = BTreeSet::new();
     for program in &catalogue.programs {
         let document = &program.document;
+        if document.quest == super::questpc2_gerimor_source::QUEST
+            && !super::questpc2_gerimor_source::custody(document)
+        {
+            return Err(invalid("Gerimor source custody"));
+        }
         if document.quest == super::questpc2_henricus_source::QUEST
             && !super::questpc2_henricus_source::custody(document)
         {
@@ -118,6 +124,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             if file.path.is_empty()
                 || (file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
                     && !super::questpc2_oldrak_source::custody(document)
+                    && !super::questpc2_gerimor_source::custody(document)
                     && !super::questpc2_henricus_source::custody(document)
                     && !super::hidden_threats::file_is_pinned(
                         &document.quest,

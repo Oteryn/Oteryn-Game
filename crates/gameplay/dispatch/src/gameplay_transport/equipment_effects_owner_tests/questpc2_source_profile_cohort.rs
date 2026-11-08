@@ -16,5 +16,7 @@ pub(super) const IDS: &[u16] = &[
     2822, 2823, 2848, 21982,
 ];
 
-// Main floor/tool/quest reward cohorts already count these five source keys.
-pub(super) const SHARED_WITH_MAIN: &[u16] = &[1791, 1948, 3593, 5102, 5103];
+// Main floor/tool/reward cohorts count the first five; c77d436d8 QREADY
+// also owns Purple Tome 2822/2823/2848 and Nightmare Teddy 21982.
+pub(super) const SHARED_WITH_MAIN: &[u16] =
+    &[1791, 1948, 2822, 2823, 2848, 3593, 5102, 5103, 21982];

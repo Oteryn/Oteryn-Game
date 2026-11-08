@@ -165,9 +165,8 @@ def grant_semantics(root, definition):
     return semantics
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical):
-    # Map selection and native reward admission must use the same bounded key
-    # proof; the existing runtime key lowering owns the actual atomic mint.
+def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
+    # Keep the selected startup cohort and main's explicit native reward keys.
     sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
     from quest_chest_bindings import panpipe_key_claim
     sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
@@ -189,6 +188,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         for path in sorted((root / 'tools/content-schema/world-authoring/samples/quest-chest-bindings').glob('*.json'))
         for row in json.loads(path.read_bytes())['bindings']
     }
+    keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:

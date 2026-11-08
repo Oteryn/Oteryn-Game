@@ -1176,6 +1176,12 @@ def build(
     quest_access_bindings.overlay_outputs(
         out, capture_bytes=blobs.get(quest_access_bindings.CAPTURE)
     )
+    import qready1_chest_bindings
+    qready1_chest_bindings.overlay_outputs(out)
+    import qready2_chest_bindings
+    qready2_chest_bindings.overlay_outputs(
+        out, capture_bytes=blobs.get(qready2_chest_bindings.CAPTURE)
+    )
     import quest_chest_bindings
     quest_chest_bindings.overlay_outputs(out)
     if quest_access_bindings.CAPTURE not in blobs:

@@ -1007,3 +1007,33 @@ Questline3 and Mission01=7; the positive report path is authored but NOT yet
 PG-qualified because guard acquisition is not implemented in this slice.
 The current PG case earns recruitment and first mission through NPC talk,
 then proves an unearned report refuses. Whole-quest counts stay unchanged.
+
+
+## Gerimor assignment slice (2026-11-08, questpc2b)
+
+Decision: preserve the source's volatile selected cult by compiling Lua
+`storage[playerId]` plus topic 3 into distinct private conversation topics
+300-306. They carry no durable progress; only a live `yes` writes the selected
+mission to 1 and, when still unset, the shared questline to 1 in one existing
+storage-owner transaction. Topic 2 uses exact, case-insensitive whole-message
+cult selection. It ignores `yes` and `no`, as the table lookup precedes those
+branches. Greeting/farewell resets must discard the selected confirmation.
+
+Custody: Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+`data-global/npc/gerimor.lua:255-343,355-425,449-452`, SHA256
+bf0fba86d07bb8a70d6242c2cc748fbb137cc7b583b47f0886530b6b5c584b2f.
+The producer verifies retained corpus bytes against this exact hash before
+extracting text. Source table keys and per-cult goals remain distinct. No
+boss progress, experience, item rewards, or final access are granted by this
+initial-assignment slice. Reports at their goal are deliberately outside this
+slice's executable branch set; do not certify the whole quest from these tests.
+The retained Minotaurs mission domain ends at 5 although this source's report
+increments 5 to 6 (lines 266,397-399); that later report requires an explicit,
+source-backed authoring correction, not a hidden test seed or relaxed bound.
+
+Ownership checked against qbind1-2/qdata1-8 (all 1ae39c7f), qready1
+(a588ad232), qready1b (39a47f16e) and qready2 (a9f723152); no Cults assignment
+program exists on this lane (the real-dispatch RED test confirms it); no transfer
+was received. The qready1 ref disappeared during its bounded refresh, so its
+unavailable head is not claimed as inspected implementation evidence. QENGINE2 was refreshed to
+614d00506, whose tested authored-binding capability will be reused separately.

@@ -168,7 +168,7 @@
       "canonical": "oteryn:quest.cults_of_tibia_quest",
       "title": "Cults of Tibia Quest",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
+      "status": "IN_PROGRESS",
       "blocker": "Cult room participants, boss summons, cleanup and Essence of Malice completion lack a composed encounter path.",
       "source_lane_checks": [
         {
@@ -186,8 +186,9 @@
           ]
         }
       ],
-      "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "qualification_scope": "Initial seven Gerimor assignments only; whole quest not qualified.",
+      "external_owner_blocker": false,
+      "slice_evidence": "Real PG RED44.791193812s then GREEN45.519532968s before main c77 merge; post-merge validation pending."
     },
     {
       "canonical": "oteryn:quest.dangerous_depths_quest",
@@ -1759,7 +1760,7 @@
       "zero_test_results_accepted": false
     }
   },
-  "current_batch": "henricus-source-program-green-attempt",
+  "current_batch": "gerimor-assignments-main-c77-integration",
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
@@ -1795,7 +1796,7 @@
     "BATCH-main-6f-postgres-green-2026-11-08.json",
     "BATCH-henricus-green-2026-11-08.json"
   ],
-  "next_batch": "Finish merge tooling/checks and push integration; then run remaining focused PG and continue owned supported quests.",
+  "next_batch": "Finish c77 main integration checks and publish Gerimor assignments; then reuse QENGINE2 614d00506 tested authored bindings for owned source quests.",
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",
     "records": [
@@ -2028,7 +2029,7 @@
       "version": 180006,
       "seconds": 76.98,
       "log": "/tmp/questpc2-elvenbane-complete-exploration-pg.log",
-      "finding": "Basement, native ladder ascent/stale refusal/full-position replay passed. Courtyard diagonal step requires OTERY\u039d_STEP_WAIT_RECEIPTS=1 (ASCII env name documented RESUME); invocation omitted receipt flag used by original Desert driver. Assertion unchanged; rerun with flag."
+      "finding": "Basement, native ladder ascent/stale refusal/full-position replay passed. Courtyard diagonal step requires OTERYΝ_STEP_WAIT_RECEIPTS=1 (ASCII env name documented RESUME); invocation omitted receipt flag used by original Desert driver. Assertion unchanged; rerun with flag."
     },
     "batch": "BATCH-elvenbane-exploration-ladder-2026-11-07.json",
     "postgres_green": {
@@ -2209,19 +2210,9 @@
     "unit_and_pg": "pending current merge build; prior pushed receipts remain valid for prior source only"
   },
   "current_validation": {
-    "authorer_tests": "PASS2/2,1.473s",
-    "quest_units_initial": "317PASS/1expected admitted-set update; exact finite set amended to include only Inquisition, rollback/hash/default assertions retained",
-    "quest_units_final": "PASS318/318,0ignored,49.65s",
-    "fresh_pg": {
-      "passed": 5,
-      "total_focused": 7,
-      "all_passed": true,
-      "server_version": 180006,
-      "total_seconds": 215.776216
-    },
-    "workspace": "PASS8m06s including queue wait",
-    "clippy_quests_dispatch": "PASS11m25s including queue wait",
-    "generated": "PASS applicable final outputs/pins"
+    "workspace_all_targets": "PASS 3m51s on merged working tree",
+    "fmt": "PASS",
+    "post_merge_tests": "RUNNING; no post-merge test pass claimed"
   },
   "engine_requests": [
     {
@@ -2336,11 +2327,13 @@
       "Rotten Blood Quest",
       "Soul War Quest",
       "Hero of Rathleton Quest",
-      "The Demon Oak Quest"
+      "The Demon Oak Quest",
+      "The Inquisition Quest",
+      "Cults of Tibia Quest"
     ],
     "done_pushed": 3,
-    "in_progress": 4,
-    "not_started_owned": 22,
+    "in_progress": 6,
+    "not_started_owned": 20,
     "excluded_other_lane": 6,
     "packet_total": 35
   },
@@ -2355,9 +2348,12 @@
       "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "ccb004b0c6dbfc514c6f46f669e7d0f698a597c5",
+  "last_pushed_sha": "36d3a545137769b5c62a7349a789a586ae9fec0a",
   "prepush_pending_tests": [
-    "Full crate suites remain CI pending; own5PG+2unit focused cases and318quest units allPASS."
+    "post-merge Gerimor PostgreSQL",
+    "post-merge quest and client-assets units",
+    "dispatch non-PostgreSQL unit run",
+    "changed-crate clippy"
   ],
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",
@@ -2381,9 +2377,19 @@
     "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
     "source": "data-global/npc/henricus.lua:65-102,204-225,286-290",
     "source_sha256": "1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d",
-    "next": "Author bounded source program using existing storage/topic owner; add exact custody helper and focused guards, then PG GREEN. Do not SQL-seed quest progress.",
+    "next": "Guard interviews require source magic-effect ownership requested from QENGINE2; source recruitment/first mission already pushed in36d3a5451.",
     "implementation": "Generated pinned recruitment/first-mission/report branches, exact41-line source custody helper, narrow runtime admission; existing storage/topic owner reused unchanged.",
     "qualification_boundary": "Recruitment, mission start and unearned-report refusal only. Guard interview acquisition and positive report completion are not yet PG qualified; no whole-quest qualification.",
     "slice_status": "OWN MECHANIC PG GREEN; this commit publishes the qualified recruitment/first-mission slice"
+  },
+  "active_gerimor": {
+    "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "source": "data-global/npc/gerimor.lua:255-343,355-425,449-452",
+    "source_sha256": "bf0fba86d07bb8a70d6242c2cc748fbb137cc7b583b47f0886530b6b5c584b2f",
+    "implementation": "Existing storage/topic owner, 36 source rules, nine existing tracks; only confirmed assignment progress is committed. Exact whole-message choice, decline, stale confirmation, and repeat guards are exercised.",
+    "qualification_boundary": "Initial assignment progress only. Bosses, reports, experience, final access and item rewards are not qualified.",
+    "pre_merge_postgres_version": 180006,
+    "pre_merge_postgres_green_seconds": 45.519532968,
+    "post_merge_validation": "PENDING"
   }
 }
