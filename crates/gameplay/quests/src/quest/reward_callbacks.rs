@@ -257,10 +257,9 @@ impl RewardCallback {
     pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
         self.outfit.iter().chain(&self.outfits)
     }
-    /// Storage-free paid exchanges can repeat under distinct CommandRefs.
+    /// Paid exchanges and exact carried recipes repeat under distinct CommandRefs.
     pub fn is_paid_exchange(&self) -> bool {
-        self.storage.is_empty()
-            && self.state_ops.is_empty()
+        ((self.storage.is_empty() && self.state_ops.is_empty()) || self.carried_target.is_some())
             && self.participants.is_empty()
             && !self.take.is_empty()
             && self.give.is_some()
