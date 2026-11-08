@@ -23,7 +23,7 @@ Zasady przeciw dublowaniu:
 
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
-| T165 | Account | Premium status/features i expiry | PARTIAL | Dane account/store są; brak dedykowanego Premium Panel z feature list i expiry; real-money zakup wykluczony. |
+| T165 | Account | Premium status/features i expiry | PARTIAL | Native Premium panel, typed client and real-caller mock tests exist; remaining: existing Platform Premium read model needs the authenticated native projection and live qualification. Real-money purchase excluded.<br>evidence: apps/client/src/features/local-premium/mod.rs:133 + premium_panel_opens_from_real_services_selection_and_refreshes_without_payment; apps/client/src/features/local-premium/tests.rs:131 + premium_panel_reports_missing_service_and_never_confirms_cached_benefits. PARTIAL: authenticated native Premium status/features/expiry producer remains unqualified; see docs/contracts/OTERYN_PREMIUM_PANEL_V1.md. |
 
 ## cg_analytics
 
@@ -39,11 +39,11 @@ Zasady przeciw dublowaniu:
 | T109 | Analytics | Loot Tracker | PARTIAL | Brak listy śledzonych itemów i historii dropów/config. |
 | T110 | Analytics | Kill / Hunting Task Tracker | PARTIAL | Brak samodzielnego trackera; postęp pozostaje w Task Board. |
 | O012 | Analytics | Analizery polowania, XP, łupu, zapasów, obrażeń i drużyny | PARTIAL | Brakuje osobnych analizatorów z wykresami/stawkami w czasie, party hunt i boss cooldown/drop tracker; istnieje jeden panel sum kill/XP/loot/supply/damage/heal. |
-| O036 | Analytics | Kalkulator podziału łupu drużyny | MISSING | Brakuje kalkulatora importującego podsumowanie sesji i wyliczającego przelewy wyrównujące bilans członków drużyny. |
+| O036 | Analytics | Kalkulator podziału łupu drużyny | DONE | evidence: apps/client/src/features/0010-analyser/input/party_import.rs:11 + party_summary_file_io_is_bounded_advisory_and_keeps_live_members_untouched (apps/client/src/features/0010-analyser/tests/party_import.rs) |
 | T022 | Chat | Tabbed console, chat on/off i filtry | DONE | Transport jest; brak pełnej konsoli z niezależnymi filtrami i kontekstami chat-on/off. evidence: apps/client/src/features/0007-chat/console.rs:9 + console_controls_preserve_tab_filters_and_temporary_mode_reaches_session_once |
 | T023 | Chat | Save / append channel log | DONE | Brak zapisu i dopisywania treści kanału do pliku. evidence: apps/client/src/features/0007-chat/console.rs:26 + channel_log_control_saves_appends_replaces_and_reports_io_errors |
 | T024 | Chat | Ignore / whitelist / blacklist | DONE | Brak dedykowanych list komunikacji i wyjątków. evidence: apps/client/src/features/0007-chat/console.rs:18 + communication_control_filters_live_lines_and_propagates_whitelist_exceptions |
-| T038 | Containers | Managed containers i loot destinations | PARTIAL | Listy/destination/nearby loot są; brak pełnego menu managed containers i przenoszenia całej zawartości. evidence: apps/client/src/features/0014-container-tree/input/bulk.rs:14 + move_all_moves_every_displayed_stack_when_the_server_accepts + move_all_uses_live_container_handles_and_stops_at_first_server_refusal; managed_container_reset_uses_the_selected_category_and_existing_wire; remaining: persistent destination settings readback for the managed menu |
+| T038 | Containers | Managed containers i loot destinations | PARTIAL | Listy/destination/nearby loot są; brak pełnego menu managed containers i przenoszenia całej zawartości. |
 | T139 | NPC | Buy/sell/amount/backpack/capacity/filters | PARTIAL | Sklep istnieje; brak pełnej listy opcji ignore capacity/equipped/backpack i prezentacji. |
 | T029 | Party | Team Finder assemble/join | PARTIAL | Ogłoszenia i operacje członka są; brak pełnej kompozycji Social, filtrów i listy zespołów. |
 | T026 | Social | Friends, main character, zaproszenia | PARTIAL | Są zgody/status VIP; brak pełnego kontowego Friends i main character. |
@@ -58,7 +58,7 @@ Zasady przeciw dublowaniu:
 | T163 | Boss | Difficulty selection / preview/start/cancel | PARTIAL | Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora. |
 | T164 | Boss | Hazard level i encounter entry | PARTIAL | Query/select/entry są; brak pełnego wizualnego panelu zagrożenia i prowadzenia wejścia. |
 | O074 | Boss | Cyklopedia: bosstiariusz | PARTIAL | Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu. |
-| T077 | Cyclopedia | Wspólne okno i nawigacja | PARTIAL | Fasada i osobne panele nie tworzą zintegrowanego CyclopediaDialog. |
+| T077 | Cyclopedia | Wspólne okno i nawigacja | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
 | T078 | Cyclopedia | Items: kategorie/search/statystyki/źródła | PARTIAL | Inspect/catalogue/market są; brak kompletnej encyklopedii Items i jej filtrów. |
 | T079 | Cyclopedia | Map: areas/subareas/passages/PoI/NPC | PARTIAL | Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC. |
 | T080 | Cyclopedia | Bestiary: katalog/filter/combat/loot | PARTIAL | Są kills/stage/thresholds; brak pełnego katalogu, ilustracji i danych resistance/loot. |
@@ -67,7 +67,7 @@ Zasady przeciw dublowaniu:
 | T083 | Cyclopedia | Boss Slots: equip/remove/bonus | PARTIAL | Komendy są; brak pełnego selektora bossów i prezentacji bonusów. |
 | T084 | Cyclopedia | Houses: browse/details/auction/map | PARTIAL | Są wire/state i osobny transfer; house/controller.rs jest montowany tylko w teście, bez play.json i produkcyjnego okna Houses/mapy. |
 | T085 | Cyclopedia | Analytics selector | PARTIAL | Jeden panel zbiorczy zamiast selektora i osobnych narzędzi. |
-| O022 | Cyclopedia | Cyklopedia: nawigacja między działami | PARTIAL | Brakuje wspólnego okna Cyklopedii łączącego działy; Oteryn otwiera oddzielne formularze postaci, bestiariusza, mapy i inspekcji. |
+| O022 | Cyclopedia | Cyklopedia: nawigacja między działami | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
 | O072 | Cyclopedia | Cyklopedia: bestiariusz i charmy | PARTIAL | Brakuje przeglądarki kategorii i kart potworów ze statystykami, odpornościami i łupem; formularz pokazuje indeksy ras, zabicia i progi. |
 | O077 | Cyclopedia | Cyklopedia: katalog przedmiotów | PARTIAL | Brakuje katalogu przedmiotów z kategoriami i wyszukiwaniem oraz powiązanych ofert/dropów; istnieje inspekcja wybranego przedmiotu i osobny rynek. |
 | O078 | Cyclopedia | Cyklopedia: mapa i odkrywanie | PARTIAL | Brakuje graficznej mapy Cyklopedii z warstwami, regionami i filtrami; formularz pokazuje tekstowy stan odkrywania oraz POI/donacji. |
@@ -87,7 +87,7 @@ Zasady przeciw dublowaniu:
 | T143 | Highscores | Kategorie/world/vocation, paging/show-me | PARTIAL | Są category/vocation/refresh/previous/next; brak world selector i show-me; BattlEye wykluczone. |
 | T113 | Hunting tasks | Bounty, rewards, shop i talisman | PARTIAL | Główne operacje są; brak pełnej prezentacji sklepu/drzewa ulepszeń i odbioru wszystkich nagród jak w referencji. |
 | T114 | Hunting tasks | Soul Seals fight dialog | PARTIAL | Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia. |
-| T076 | Minimap | Exploration/markers/labels, floor/zoom/pan | PARTIAL | Bieżący server window zamiast pełnej trwałej mapy i edytora markerów. |
+| T076 | Minimap | Exploration/markers/labels, floor/zoom/pan | DONE | evidence: apps/client/src/features/local-minimap/state.rs:79 + minimap_world_switch_reanchors_camera_without_losing_same_world_pan |
 | O039 | Minimap | Minimapa i nawigacja | PARTIAL | Brakuje trwałej mapy odkrytych terenów, edytowanych znaczników, przewijania i zmiany pięter/zoomu minimapy; nakładka pokazuje bieżące okno świata. |
 | T142 | Quest | Tracker auto-add/remove i filters | PARTIAL | Track quest jest; brak pełnego osobnego trackera, auto-reguł i hide/completed filters. |
 | O050 | Quest | Dziennik zadań i śledzenie | PARTIAL | Brakuje wyszukiwania i sortowania dziennika; istnieją wybór zadania/misji, opis i przełączanie śledzenia. |
@@ -147,7 +147,7 @@ Zasady przeciw dublowaniu:
 | T070 | Options | Miscellaneous / Screenshots: folder, game-only i manual capture | MISSING | Brak systemu zrzutów i strony wyboru katalogu/zakresu. |
 | T071 | Options | Miscellaneous / Screenshots: backlog i event triggers | MISSING | Brak bufora wstecznego i automatycznych screenshotów zdarzeń. |
 | T072 | Options | Miscellaneous / Help: FAQ/manual/client help/reports | PARTIAL | Raportowanie jest osobno; brak kompletnej strony pomocy/nawigacji. |
-| T073 | Options | Help: settings import/export/backup/reset/defaults | PARTIAL | Jest zapis i walidacja preferencji; brak UI import/export, backup i pełnego reset/defaults. |
+| T073 | Options | Help: settings import/export/backup/reset/defaults | PARTIAL | Jest zapis i walidacja preferencji; brak UI import/export, backup i pełnego reset/defaults. evidence: `apps/client/src/features/local-reference-preferences/store.rs:64` + `active_settings_use_transfer_size_limit`; transfer/defaults caller covered by `settings_transfer_backup_and_defaults_survive_restart`. Remaining: workspace architecture gate blocked by unowned cyclopedia native file (648 lines). |
 | T074 | Options | Help: minimap import/export | MISSING | Brak narzędzia wymiany trwałych map/markerów. |
 | O005 | Options | Lokalizacja interfejsu | PARTIAL | Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN. |
 | O006 | Options | Opcje i ustawienia | PARTIAL | Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji. |
@@ -176,7 +176,7 @@ Zasady przeciw dublowaniu:
 | T137 | House | Hireling jobs/name/sex/outfit config | PARTIAL | Podgląd nazwy/płci, jobów i oczekującego outfitu jest; brak wspólnego pełnego edytora name/sex/jobs/outfit. |
 | O079 | House | Cyklopedia: katalog domów i aukcje | DONE | Sesja i natywne okno są już zamontowane w cgmech; uzupełniono własność, typ, termin aukcji, własny max bid i paginację. |
 | O083 | House | Edycja list gości, współwłaścicieli i drzwi | DONE | Natywny edytor i HouseResult są zamontowane; door ACL korzysta z rewizji wybranego domu bez ręcznego wpisywania rewizji. |
-| T115 | Imbuing | Shrine: apply/clear, sloty i materiały/szansa | PARTIAL | Komendy/lista są; brak pełnego interaktywnego widoku slotów i szczegółów koszt/szansa. |
+| T115 | Imbuing | Shrine: apply/clear, sloty i materiały/szansa | DONE | Evidence: apps/client/src/features/0068-imbue/input.rs:12 + imbuement_live_picker_and_material_reply_reach_run_session |
 | T002 | Login | Połączenie, re-entry i logout | DONE | Widoczna ponowna próba, odliczanie admission i anulowanie pojedynczej próby bez zatrzymania runtime (`68169ce25`). |
 | T003 | Login | Pozycja kolejki i odliczanie | PARTIAL | Odliczanie, automatyczne ponowienie i anulowanie są podłączone do istniejącej odmowy capacity; brak autorytatywnej pozycji kolejki oraz jej producenta/protokołu na serwerze (`68169ce25`). |
 | T004 | Login | News i kalendarz zdarzeń | PARTIAL | Jest ograniczony rozmiarem feed pakietu `bulletin.json`, news i kalendarz z opisami; brak żywego feedu i publikacji przyszłych wydarzeń przez usługę operatora (`8ba0c9983`, `f86998757`). |
@@ -189,7 +189,7 @@ Zasady przeciw dublowaniu:
 | T160 | Modal dialogs | Blessings / death protection overview | PARTIAL | Stan i death notices są; brak pełnego dedykowanego Blessings dialog. |
 | T166 | Modal dialogs | Nagging / balancing / generic notices | PARTIAL | Wiadomości serwera są; brak dedykowanych interaktywnych dialogów i dont-show-again. |
 | O040 | Modal dialogs | Ogólne dialogi modalne serwera | MISSING | Brakuje ogólnego handlera dialogu z identyfikatorem, listą wyborów i przyciskami oraz odpowiedzią wyboru do serwera. |
-| T123 | Proficiency | Weapon perks/rank i shape/reshape | PARTIAL | Operacje/katalog są; ręczne id/perk index/slot/revision zamiast pełnego wyboru wizualnego. |
+| T123 | Proficiency | Weapon perks/rank i shape/reshape | DONE | Evidence: apps/client/src/features/0195-weapon-proficiency/input.rs:6 + proficiency_session_routes_state_from_native_selection_into_exact_paid_revision |
 | T017 | PvP | Unjustified points i skull timer | PARTIAL | Są stany PvP/warunki; brak pełnego Unjustified Points widget. |
 | O066 | PvP | Unjustified points i limity fragów | PARTIAL | Brakuje liczników dziennych/tygodniowych/miesięcznych fragów, czasu czaszki i otwartych sytuacji PvP; obecny panel pokazuje tylko tarcze i czaszki. |
 | T144 | Rewards | Daily wall/streak/jokers/claim/pick items | PARTIAL | 30-day wall/claim są; brak pełnego kalendarza, historii i pick-items dialog. |
@@ -208,7 +208,7 @@ Zasady przeciw dublowaniu:
 | T156 | Tutorial | Player Guide / compendium / recommendations | DONE | Zakładki Player Guide i Recommendations są w oknie Ctrl+Shift+N, obok komunikatów samouczka i server-save (`0ef49c5a8`). |
 | O017 | Tutorial | Kompendium: poradnik, aktualizacje i pomoc | DONE | Kompendium ma kategorie Guide, Recommendations, Updates (feed pakietu), Features i Help z informacjami o raportach i zgodzie (`dc3a78120`). |
 | T119 | Wheel | Punkty, slots/perks i reset | PARTIAL | Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków. |
-| T120 | Wheel | Presets i copy/import code/URL | PARTIAL | Save allocation jest; brak nazwanych presetów i wymiany buildów code/URL. |
+| T120 | Wheel | Presets i copy/import code/URL | DONE | Evidence: apps/client/src/features/0148-wheel-allocation/presets.rs:57 + wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views |
 
 ## OWNER
 
