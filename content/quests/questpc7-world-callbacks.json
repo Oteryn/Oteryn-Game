@@ -133,6 +133,11 @@
           "set": 1
         }
       ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/signs",
+        "minimum": 0,
+        "maximum": 2
+      },
       "minimum_level": null,
       "experience": null,
       "monk_reward": null,
@@ -198,6 +203,11 @@
           "set": 1
         }
       ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/signs",
+        "minimum": 0,
+        "maximum": 2
+      },
       "minimum_level": null,
       "experience": null,
       "monk_reward": null,
@@ -263,6 +273,11 @@
           "set": 1
         }
       ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/signs",
+        "minimum": 0,
+        "maximum": 2
+      },
       "minimum_level": null,
       "experience": null,
       "monk_reward": null,

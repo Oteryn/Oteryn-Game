@@ -1106,7 +1106,7 @@
       "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     },
     "sign_progress": {
-      "state": "AUTHORED_COMPILE_CHECKPOINT_GREEN_PG_PENDING",
+      "state": "ACTIVATION_FIXED_QUESTS_308_GREEN_SIGN_PG_PENDING",
       "proof": "qlane-meta/questpc7/GOBLIN-SIGNS-PG-PROOF.json",
       "whole_quest": "ACTIVE",
       "next": "Run the authored route on PG; only after GREEN qualify the sign stage, then continue native trunk and urine jobs."

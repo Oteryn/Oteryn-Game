@@ -231,7 +231,7 @@ pub(super) async fn exercise_signs(
     use super::questpc7_ferumbras::{use_at, value, walk};
     let version: String = sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
     eprintln!("QUESTPC7_GOBLIN_SIGNS POSTGRES_STARTED version={version}");
-    assert_eq!(use_at(owner, admitted, SIGN_SITES[0], 17679).await?, UseDisposition::Rejected);
+    assert_eq!(use_at(owner, admitted, SIGN_SITES[0], 17679).await?, UseDisposition::NothingToUse);
     assert_eq!(receipts(h).await?, 0);
     exercise(owner, admitted, h).await?;
     assert_eq!(use_at(owner, admitted, SIGN_DECOY, 17679).await?, UseDisposition::NothingToUse);
@@ -255,7 +255,7 @@ pub(super) async fn exercise_signs(
         let replay = super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
         assert_eq!(decode_use_result(&replay).map_err(debug)?, UseDisposition::Committed);
         assert_eq!(receipts(h).await?, expected_receipts, "exact command replay has no new effect");
-        assert_eq!(use_at(owner, admitted, site, 17679).await?, UseDisposition::Rejected);
+        assert_eq!(use_at(owner, admitted, site, 17679).await?, if index < 2 { UseDisposition::Rejected } else { UseDisposition::NothingToUse });
         assert_eq!(quantity(h, 17668).await?, 2 - i64::try_from(index)?);
         assert_eq!(receipts(h).await?, expected_receipts, "fresh duplicate visit cannot spend another sign");
     }

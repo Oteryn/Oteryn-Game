@@ -1,14 +1,16 @@
 {
-  "state": "AUTHORED_COMPILE_CHECKPOINT_GREEN_PG_PENDING",
+  "state": "ACTIVATION_FIXED_QUESTS_308_GREEN_SIGN_PG_PENDING",
   "whole_quest": "ACTIVE",
   "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
   "test": "questpc7_goblin_three_personal_sign_sites",
   "red": {
-    "baseline": "c7d67c4fc95e29b9e4651ea069fd441810b40e4d plus the new regression and corrected native-only fixture",
-    "seconds": 34.668652794,
-    "expected": "Rejected before introduction",
+    "baseline": "a4e9f1080 with the three new integration bindings temporarily omitted by the repository generator; corrected inactive-state test expectations retained",
+    "seconds": 67.994534856,
+    "expected": "Committed at the first exact placement after actual NPC introduction and source-priced tool purchase",
     "actual": "NothingToUse",
-    "log": "/tmp/questpc7-signs-red2.log"
+    "log": "/tmp/questpc7-signs-contract-red.log",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "temporary_baseline_published": false
   },
   "fixture_diagnostic": {
     "seconds": 35.171147329,
@@ -41,7 +43,7 @@
   "source_page": "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277",
   "rule": "Each exact native site consumes one carried sign17668 and sets one personal flag. Preserve shared rocks so another Character is not locked out. No new mint or generic engine.",
   "assertions": [
-    "pre-intro refusal",
+    "pre-intro inactive no-op without receipts",
     "same-appearance decoy does not spend",
     "three distinct exact source sites",
     "one sign per site",
@@ -56,7 +58,7 @@
   },
   "pending_tests": [
     "post-change sign PG case",
-    "content, dispatch, quests Rust unit crates"
+    "content and dispatch Rust unit crates"
   ],
   "owner_exception": "PREPUSH-2: publish passes1,2,4 when step3 exceeds cadence; explicitly record pending tests.",
   "checkpoint_checks": {
@@ -76,5 +78,26 @@
     "profile-tests": "PROFILE_TESTS_EXIT=0"
   },
   "check_duration": "3m25s",
-  "clippy_duration": "3m14s"
+  "clippy_duration": "3m14s",
+  "superseded_preintro_red": {
+    "baseline": "c7d67c4fc95e29b9e4651ea069fd441810b40e4d plus the new regression and corrected native-only fixture",
+    "seconds": 34.668652794,
+    "expected": "Rejected before introduction",
+    "actual": "NothingToUse",
+    "log": "/tmp/questpc7-signs-red2.log",
+    "reason": "Initial and terminal inactive candidates correctly yield NothingToUse under the required bounded-counter activation contract. Superseded by a post-intro placement RED."
+  },
+  "schema_diagnostic_not_pg": {
+    "seconds": 0.009341513,
+    "error": "invalid callback oteryn:quest-callback/questpc7-goblin-sign-1",
+    "root_cause": "ADD counter requires activation with identical track and range",
+    "fix": "activation(signs,0..2); inactive pre-intro and terminal uses are exactly NothingToUse; repeated active site remains exactly Rejected",
+    "assertion_strength": "All exact receipt, quantity, remaining-job, replay and duplicate invariants retained."
+  },
+  "quests_unit": {
+    "baseline": "307 passed, 1 stale callback inventory count failed in21.95s",
+    "fix": "Repo audit derives exact106=103 original +3 reviewed sign keys; four negative authority mutations unchanged",
+    "green": "308 passed,0failed,0ignored in21.27s",
+    "log": "/tmp/questpc7-signs-activation-quests-unit2.log"
+  }
 }

@@ -1,3 +1,46 @@
+# Activation/schema gate GREEN — 2026-11-08 03:40 UTC
+
+Full quests unit suite308/308 PASS21.27s. Initial307/1 failure was only closed
+lane callback inventory103vs106; audit tooling now proves original103 plus
+exact3 new sign keys, preserving four negative authority mutations. All callback
+activation validation passes. Genuine post-intro PG RED67.994534856s retained.
+Workspace check and strict changed3 clippy are running. Refresh/check derived
+outputs and pins, publish the compiling activation fix with explicit PG pending,
+then run focused sign PG GREEN. Latest pusheda4e9f1080; no new qualification.
+
+# CURRENT: native sign activation restored — 2026-11-08 03:37 UTC
+
+The corrected-contract PG18.6 RED is67.994534856s: after real introduction,
+paid tools and decoy no-op, first exact placement returned NothingToUse rather
+than Committed. Temporary binding omission was NOT published. Integration hook
+RESTORED from /tmp/questpc7-signs-integration-enabled.py; callbacks regenerated
+with exact activation(signs,0..2). Initial/terminal inactive USE expects
+NothingToUse; intermediate duplicate still Rejected. No effect assertion lost.
+Running full quests unit crate FIRST: /tmp/questpc7-signs-activation-quests-unit.log;
+then workspace check, strict changed3 clippy and fmt via same running script.
+After these, refresh pins and publish compiling activation-fix checkpoint under
+PREPUSH-2; sign GREEN PG and content/dispatch units remain pending. Then run
+focused sign PG with success-output immediate on published source.
+Newest pushed HEAD remainsa4e9f10809f4dfe020e65b2e063b483fcb982c0f.
+
+# CURRENT: corrected sign activation contract RED — 2026-11-08 03:28 UTC
+
+PUSHED WIPa4e9f10809f4dfe020e65b2e063b483fcb982c0f. Its first attempted
+GREEN failed in9.34ms BEFORE PG: invalid callback because ADD requires exact
+activation window. This is a schema failure, NOT PG evidence. Producer now
+adds activation(signs,0..2); initial and terminal inactive USE correctly expects
+NothingToUse. All receipt, quantity, duplicate and replay assertions retained.
+To get a genuine RED for that corrected contract, the integration hook is
+TEMPORARILY removed and callbacks regenerated without three new bindings.
+Do NOT publish that baseline. Running /tmp/questpc7-signs-contract-red.log.
+After actualPG RED at the first post-intro committed placement, restore
+/tmp/questpc7-signs-integration-enabled.py to questpc7_integration.py and run
+qengine_rewards.py. Run full quests unit crate FIRST to validate the schema,
+then the focused sign PG GREEN. The queued check/unit pipeline was stopped
+before unit execution after the invalid callback was diagnosed.
+Both next physical targets17677 and9527 capture as source-backed Ground-only
+NonStackable with existing qualifier; facts retained only in /tmp.
+
 # Goblin three-sign checkpoint — 2026-11-08 03:12 UTC
 
 Three exact-source sign callbacks authored using the existing consume-only world

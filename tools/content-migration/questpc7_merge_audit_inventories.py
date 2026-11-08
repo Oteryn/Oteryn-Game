@@ -92,6 +92,17 @@ def main():
         replace(str(equipment.relative_to(ROOT)), anchor, anchor +
                 '    // Merged source/custody cohorts, refreshed by questpc7_merge_audit_inventories.py.\n' + row)
 
+    # Three reviewed native sign sites extend the lane's closed callback inventory.
+    callbacks = json.loads((ROOT / 'content/quests/questpc7-world-callbacks.json').read_text())['callbacks']
+    sign_keys = {f'oteryn:quest-callback/questpc7-goblin-sign-{i}' for i in range(1, 4)}
+    present = {row['key'] for row in callbacks}
+    if present & sign_keys:
+        assert sign_keys <= present and len(present) == len(callbacks) == 106
+        assert len(present - sign_keys) == 103, 'review the original closed lane inventory'
+        replace('crates/gameplay/quests/src/quest/world_callbacks/outfit_tests.rs',
+                'assert_eq!(parse(source)?.len(), 103);',
+                'assert_eq!(parse(source)?.len(), 106);')
+
     defaults = Counter()
     for path in sorted((ROOT / 'content/dialogues/quest-rules').glob('quest-batch3-*.json')):
         for track in json.loads(path.read_bytes())['tracks']:
