@@ -64,6 +64,7 @@ PUBLISHED_AUTHORING = tuple(
     for relative in paths
 )
 EXTRA_INPUTS = (
+    'content/dialogues/quest-rules/quest-batch3-qn3-dangerous_depths.json',
     'content/dialogues/quest-source/quest-batch3-a-bigfoot-burden.json',
     'content/dialogues/quest-source/quest-batch3-a-the_cursed_crystal.json',
     'content/dialogues/quest-source/quest-batch3-a-the_way_of_the_monk.json',
