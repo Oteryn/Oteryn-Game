@@ -184,13 +184,12 @@ mod soul_war_world;
 mod soul_war_world_raid;
 mod soulpit;
 mod source_death;
+mod source_item_cycle;
 mod source_names;
-mod spite_global;
 pub use soulpit::runtime as soulpit_runtime;
 pub use soulpit::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
 };
-mod source_item_cycle;
 mod source_pvp_expiry;
 pub mod spectate_session;
 mod spell_access_facts;
@@ -200,6 +199,7 @@ mod spell_magnitude_facts;
 mod spell_parameter_cast;
 pub mod spell_premium_coordinator;
 mod spell_presentation_publisher;
+mod spite_global;
 mod stash;
 mod tcp_tls;
 #[cfg(test)]

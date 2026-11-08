@@ -55,6 +55,14 @@ impl DeferredCallbacks {
         }
         Ok(None)
     }
+    /// Read-only observation of source work that the real native Think enqueued.
+    #[cfg(test)]
+    pub(super) fn original_deadlines_for_test(&self) -> Vec<(u64, u64)> {
+        self.0
+            .iter()
+            .map(|work| (work.id, work.original_due_ms))
+            .collect()
+    }
     #[cfg(test)]
     pub(super) fn retry(&mut self, occurrence: DeferredOccurrence) -> Result<(), ()> {
         if self.0.len() >= 128 || occurrence.id == 0 || occurrence.id > self.1 {

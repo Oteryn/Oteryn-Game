@@ -196,7 +196,7 @@ impl ChannelRuntimeV1 {
         self.owner_fence()?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
-            companion: Some(companion),
+            companion,
             spell_combat,
             ..
         } = &self.carrier.slots[index]
@@ -205,6 +205,9 @@ impl ChannelRuntimeV1 {
         };
         let Some(policy) = spell_combat.soul_war_health.as_deref() else {
             return Ok(None);
+        };
+        let Some(companion) = companion else {
+            return Err(CarrierError::NotCreature);
         };
         if !policy.matches(
             self.content_pin().server_artifact_digest(),

@@ -420,14 +420,17 @@ impl PlayerBatchPreflight {
             for (amount, element) in parts {
                 let key = element_key(element);
                 let amount = u64::try_from(amount).map_err(|_| SpellCastDisposition::Rejected)?;
-                let lua_percent = runtime
-                    .soul_war_health_callback(effect.target)
-                    .map_err(|_| SpellCastDisposition::Rejected)?
-                    // CreatureEvent forwards signed health components to Lua:
-                    // ordinary damage is negative and fails the source's > 0
-                    // guard. Positive healing reaches the literal Cage branch.
-                    .filter(|_| player_caster && healing)
-                    .map_or(0, |policy| policy.lua_reflection_percent(key));
+                // CreatureEvent forwards signed health components to Lua:
+                // ordinary damage is negative and fails the source's > 0
+                // guard. Only Player healing reaches this literal Cage branch.
+                let lua_percent = if player_caster && healing {
+                    runtime
+                        .soul_war_health_callback(effect.target)
+                        .map_err(|_| SpellCastDisposition::Rejected)?
+                        .map_or(0, |policy| policy.lua_reflection_percent(key))
+                } else {
+                    0
+                };
                 if lua_percent > 0 && amount > 0 {
                     let direct = amount
                         .checked_mul(u64::from(lua_percent))

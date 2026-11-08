@@ -300,9 +300,26 @@ fn precise_spawn_and_source_global_clearance_have_independent_deadlines() -> Tes
     drive_soulpit_deadlines(&mut owner,4_750_000).await.map_err(debug)?;
     assert_eq!(owner.calls.len(),calls,"a precise wake after the4.5s gate cannot run wave clearance");
     assert_eq!(owner.stored.encounter.snapshot().wave,1);
-    assert_eq!(drive_soulpit_activity(&mut owner,5_000_000).await.map_err(debug)?,Some(9_000_000));
+    assert_eq!(drive_soulpit_activity(&mut owner,5_000_000).await.map_err(debug)?,Some(6_000_000));
     assert_eq!(owner.stored.encounter.snapshot().wave,2);
     assert_eq!(owner.stored.encounter.snapshot().phase,EncounterPhase::Preparing);
+    let prior_cues=owner.scene.effects.lock().map_err(debug)?.len();
+    for (at,next,burst) in [(6_000_000,7_000_000,1),(7_000_000,8_000_000,2),(8_000_000,9_000_000,3)] {
+        assert_eq!(drive_soulpit_deadlines(&mut owner,at).await.map_err(debug)?,Some(next));
+        assert_eq!(owner.stored.encounter.snapshot().wave,2);
+        assert_eq!(owner.stored.encounter.snapshot().phase,EncounterPhase::Preparing);
+        assert_eq!(owner.scene.effects.lock().map_err(debug)?.len(),prior_cues,
+            "no eligible source position means no fabricated visual");
+        assert_eq!(owner.carrier.next_soulpit_wave_cue(&owner.continuity,owner.binding.handoff_id,2).map_err(debug)?,Some(burst*7));
+        assert_eq!(owner.stored.encounter.snapshot().monsters_alive,0);
+    }
+    assert_eq!(drive_soulpit_deadlines(&mut owner,9_000_000).await.map_err(debug)?,Some(600_250_000));
+    assert_eq!(owner.scene.effects.lock().map_err(debug)?.len(),prior_cues);
+    assert_eq!(owner.carrier.next_soulpit_wave_cue(&owner.continuity,owner.binding.handoff_id,2).map_err(debug)?,None);
+    assert_eq!(owner.stored.encounter.snapshot().phase,EncounterPhase::Fighting);
+    assert_eq!(owner.stored.encounter.snapshot().wave,2);
+    assert_eq!(owner.stored.encounter.snapshot().monsters_alive,0);
+    assert!(owner.calls.iter().any(|(now,action)|*now==9_000_000 && matches!(action,SoulpitAction::Spawned{wave:2,monster_ids} if monster_ids.iter().all(Option::is_none))));
     Ok(())
     })
 }

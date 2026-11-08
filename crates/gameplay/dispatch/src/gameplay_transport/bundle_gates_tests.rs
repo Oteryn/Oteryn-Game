@@ -55,7 +55,16 @@ const INVENTORY: &[Entry] = &[
         accessor: "gate_wire_position",
         key: "",
         state: Gate::AllocatedOpen { task: "SRX-3" },
-        calls: &[("gameplay_transport/wire_position.rs", 1)],
+        calls: &[
+            ("gameplay_transport/wire_position.rs", 1)
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            ("gameplay_transport/native_cue_offer.rs", 1),
+            ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
+            (
+                "gameplay_transport/rotten_blood_callbacks/advanced/footprints.rs",
+                1,
+            ),
+        ],
     },
     Entry {
         gate: "attack target",
@@ -116,15 +125,12 @@ const INVENTORY: &[Entry] = &[
         // Activity registration validates its combat room against the active content pin.
         calls: &[
             ("gameplay_transport/activity_runtime.rs", 1),
-            (
-                "gameplay_transport/postgres_tests/srx3_soulpit_native.rs",
-                1,
-            ),
             ("gameplay_transport/native_combat_cast.rs", 2),
             ("gameplay_transport/rune_use_bridge/revision.rs", 1),
             // SRX-3: install the same source-qualified combat room and read Soulpit terrain.
             ("gameplay_transport/serving.rs", 1),
-            ("gameplay_transport/soulpit/scene.rs", 1),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            ("gameplay_transport/soulpit/owner_runtime.rs", 1),
         ],
     },
     Entry {
@@ -166,6 +172,20 @@ const INVENTORY: &[Entry] = &[
                 "gameplay_transport/postgres_tests/reaudit_arena_lifecycle.rs",
                 1,
             ),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            (
+                "gameplay_transport/monster_profile_cycle/native_callbacks/death_items.rs",
+                1,
+            ),
+            ("gameplay_transport/native_activity.rs", 1),
+            ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
+            ("gameplay_transport/postgres_tests/srx3_rotten_portal.rs", 1),
+            ("gameplay_transport/soul_war_callbacks/entry.rs", 1),
+            ("gameplay_transport/soul_war_callbacks/taint_five.rs", 1),
+            ("gameplay_transport/soul_war_world.rs", 1),
+            ("gameplay_transport/soul_war_world_raid.rs", 1),
+            ("gameplay_transport/source_death.rs", 1),
+            ("gameplay_transport/spite_global.rs", 1),
         ],
     },
     Entry {
@@ -249,6 +269,16 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/postgres_tests/field_runes.rs", 2),
             // SRX-3: source-owned Primal Pod creation and expiry use the existing Ground gate.
             ("gameplay_transport/primal_callbacks.rs", 2),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            ("gameplay_transport/boss_activity/source_extra.rs", 1),
+            ("gameplay_transport/outburst_entry.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/srx3_rotten_callbacks.rs",
+                1,
+            ),
+            ("gameplay_transport/primal_entry.rs", 1),
+            ("gameplay_transport/rotten_blood_entry.rs", 1),
+            ("gameplay_transport/soul_war_entry.rs", 1),
         ],
     },
     Entry {
@@ -878,6 +908,33 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),
     ("node/serve.rs", 1),
     ("qualification.rs", 1),
+    // SRX-3 fixture room bindings; production Bundle closure is asserted separately.
+    ("gameplay_transport/postgres_tests/hireling_lifecycle.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/srx3_activity_source_fixture.rs",
+        2,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_claustrophobic.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_rotten_area_think.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_rotten_callbacks.rs",
+        2,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_soul_war_world_entrance.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_soulpit_native.rs",
+        1,
+    ),
+    ("gameplay_transport/postgres_tests/srx3_spite_global.rs", 1),
 ];
 
 #[test]

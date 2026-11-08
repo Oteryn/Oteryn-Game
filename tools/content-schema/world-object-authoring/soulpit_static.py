@@ -228,7 +228,7 @@ def records(root=ROOT):
         if source is None:
             continue
         shared += 1
-        for field in row.keys() | source.keys():
+        for field in sorted(row.keys() | source.keys()):
             if field == 'provenance' or row.get(field) == source.get(field):
                 continue
             if field not in ('blocks_projectile', 'blocks_sight') or row[field] != {'state': 'UNKNOWN'} or source[field].get('state') != 'KNOWN':

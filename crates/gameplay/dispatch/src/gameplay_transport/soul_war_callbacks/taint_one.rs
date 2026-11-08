@@ -41,7 +41,23 @@ impl TaintOne {
             )
             .min()
     }
-    fn id(&mut self, actor: ExactActorRef, session: Option<GameSessionId>) -> Option<u64> {
+    fn current_metadata_actor(
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: Option<GameSessionId>,
+    ) -> bool {
+        runtime.read_actor_position(actor).is_ok()
+            && session.is_none_or(|session| runtime.player_control_facts(actor, session).is_ok())
+    }
+    fn id(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: Option<GameSessionId>,
+    ) -> Option<u64> {
+        if !Self::current_metadata_actor(runtime, actor, session) {
+            return None;
+        }
         if let Some((id, _, _)) = self
             .actors
             .iter()
@@ -49,11 +65,18 @@ impl TaintOne {
         {
             return Some(*id);
         }
-        // Actual room capacity is bounded. Retaining retired exact references
-        // prevents a reused slot from inheriting a pending move or cooldown.
-        if self.actors.len() >= 8192 {
+        // Metadata follows actual physical ownership. Original timer/cooldown IDs
+        // remain in their owner; removing a retired reference cannot rebind them.
+        let capacity = runtime.actor_slot_capacity();
+        if self.actors.len() >= capacity {
+            self.actors.retain(|(_, actor, session)| {
+                Self::current_metadata_actor(runtime, *actor, *session)
+            });
+        }
+        if self.actors.len() >= capacity {
             return None;
         }
+        self.actors.try_reserve(1).ok()?;
         self.sequence = self.sequence.checked_add(1)?;
         let id = (u64::from(actor.actor_local_id()) << 32) | u64::from(self.sequence);
         self.actors.push((id, actor, session));
@@ -161,7 +184,7 @@ async fn drive_current(
         if !geometry.contains(at.position()) {
             continue;
         }
-        let Some(id) = owner.id(player.actor, Some(player.session)) else {
+        let Some(id) = owner.id(runtime, player.actor, Some(player.session)) else {
             continue;
         };
         candidates.push(TeleportCandidate {
@@ -252,12 +275,8 @@ async fn drive_current(
             |_| true,
         );
         emit(room, geometry, &effects);
-        owner.actors.retain(|(id, actor, session)| {
-            let current = match session {
-                Some(session) => runtime.player_control_facts(*actor, *session).is_ok(),
-                None => runtime.contains_live_creature(*actor),
-            };
-            current || owner.owner.cooldown_active(*id)
+        owner.actors.retain(|(_, actor, session)| {
+            TaintOne::current_metadata_actor(runtime, *actor, *session)
         });
     }
     let Ok(census) = runtime.positioned_actor_census() else {
@@ -294,7 +313,7 @@ async fn drive_current(
         let Ok(at) = runtime.read_actor_position(actor) else {
             continue;
         };
-        let Some(id) = owner.id(actor, None) else {
+        let Some(id) = owner.id(runtime, actor, None) else {
             continue;
         };
         let occurrence = format!("taint-one:{due}");
@@ -391,11 +410,89 @@ mod metadata_capacity_tests {
                 floor: 7,
             })?;
             assert!(
-                owner.id(actor, None).is_some(),
+                owner.id(&runtime, actor, None).is_some(),
                 "current physical capacity is the bound; an unrelated8192 history cap cannot disable actor{ordinal}"
             );
         }
         assert_eq!(runtime.positioned_actor_census()?.len(), 8193);
+        Ok(())
+    }
+    fn metadata_runtime(
+        capacity: usize,
+        tag: u8,
+    ) -> Result<ChannelRuntimeV1, Box<dyn std::error::Error>> {
+        let world = crate::foundation::WorldId::decode(&id(tag)).map_err(|e| format!("{e:?}"))?;
+        Ok(ChannelRuntimeV1::from_committed_assignment(
+            world,
+            crate::foundation::ChannelId::decode(&id(2)).map_err(|e| format!("{e:?}"))?,
+            crate::foundation::NodeId::decode(&id(3)).map_err(|e| format!("{e:?}"))?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            capacity,
+            crate::content::channel_content_pin::ChannelContentPin::test(world),
+        )?)
+    }
+    #[test]
+    fn srx3_taint_metadata_keeps_registered_hp0_but_never_rebinds_retired_generation() -> TestResult
+    {
+        let mut runtime = metadata_runtime(1, 21)?;
+        let at = MovementLocalPosition {
+            x: 1,
+            y: 2,
+            floor: 7,
+        };
+        let first = runtime.admit_pinned_test_creature(at)?;
+        let mut owner = TaintOne::default();
+        let original = owner
+            .id(&runtime, first, None)
+            .ok_or("owned actor metadata")?;
+        runtime.set_test_creature_health(first, 0)?;
+        assert!(!runtime.contains_live_creature(first));
+        assert_eq!(owner.id(&runtime, first, None), Some(original));
+        runtime.remove_test_actor(first)?;
+        assert_eq!(owner.id(&runtime, first, None), None);
+        let replacement = runtime.admit_pinned_test_creature(at)?;
+        assert_ne!(replacement, first);
+        let next = owner
+            .id(&runtime, replacement, None)
+            .ok_or("replacement metadata")?;
+        assert_ne!(
+            next, original,
+            "original timer IDs must not identify a reused slot"
+        );
+        assert_eq!(owner.actors.len(), runtime.actor_slot_capacity());
+        assert_eq!(owner.actors[0].1, replacement);
+        assert_eq!(owner.id(&runtime, first, None), None);
+        let other = metadata_runtime(1, 22)?;
+        assert_eq!(owner.id(&other, replacement, None), None);
+        assert_eq!(owner.actors.len(), 1);
+        Ok(())
+    }
+    #[test]
+    fn srx3_taint_metadata_requires_current_player_session() -> TestResult {
+        let (mut runtime, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(91);
+        runtime.initialize_movement_test_position(
+            actor,
+            MovementLocalPosition {
+                x: 1,
+                y: 2,
+                floor: 7,
+            },
+        )?;
+        let mut owner = TaintOne::default();
+        let original = owner
+            .id(&runtime, actor, Some(session))
+            .ok_or("current Player metadata")?;
+        let wrong = GameSessionId::decode(&id(92)).map_err(|e| format!("{e:?}"))?;
+        assert_ne!(wrong, session);
+        assert_eq!(owner.id(&runtime, actor, Some(wrong)), None);
+        assert_eq!(owner.id(&runtime, actor, Some(session)), Some(original));
+        assert_eq!(owner.actors.len(), 1);
+        runtime.remove_test_actor(actor)?;
+        assert_eq!(owner.id(&runtime, actor, Some(session)), None);
         Ok(())
     }
 }

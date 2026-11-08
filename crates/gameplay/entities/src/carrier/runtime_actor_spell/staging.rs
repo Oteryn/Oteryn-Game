@@ -288,14 +288,16 @@ impl ChannelRuntimeV1 {
         deferred: bool,
     ) -> Result<Option<OwnerDamageResult>, Error> {
         let mut health_receipt = None;
-        let source = self.carrier.soul_war_health_context(
-            &self.continuity,
-            Some(batch.caster),
-            Some(batch.command),
-            Some(batch.now_ms),
-            super::super::soul_war_player_source::SoulWarPlayerSourceOrigin::Combat,
-            &self.content,
-        )?;
+        let health_source = || {
+            self.carrier.soul_war_health_context(
+                &self.continuity,
+                Some(batch.caster),
+                Some(batch.command),
+                Some(batch.now_ms),
+                super::super::soul_war_player_source::SoulWarPlayerSourceOrigin::Combat,
+                &self.content,
+            )
+        };
         match &effect.change {
             OwnerCombatChange::CompanionMaster(assignment) => {
                 if assignment.actor() != effect.target
@@ -351,6 +353,7 @@ impl ChannelRuntimeV1 {
                 target_atom,
                 magnitude,
             } => {
+                let source = health_source()?;
                 let mut hit_binding = digest.to_vec();
                 hit_binding.extend_from_slice(&effect.sub_ordinal.to_be_bytes());
                 health_receipt = Some(next.commit_creature_damage_inner_limited_source(
@@ -381,6 +384,7 @@ impl ChannelRuntimeV1 {
                 damage,
                 healing,
             } => {
+                let source = health_source()?;
                 if *damage < 0 || *healing <= 0 {
                     return Err(Error::InvalidMagnitude);
                 }
@@ -447,6 +451,7 @@ impl ChannelRuntimeV1 {
                 target_atom,
                 magnitude,
             } => {
+                let source = health_source()?;
                 let Slot::CreatureOccupied {
                     target_identity,
                     health,

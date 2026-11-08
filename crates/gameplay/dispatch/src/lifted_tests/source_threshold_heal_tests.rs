@@ -605,6 +605,19 @@ fn private_marker_reinjured_native_hp_blocks_then_exact_source_expiry_reopens() 
             .expect("qualified fixture"),
         1
     );
+    // The stored Lua condition remains visible until the canonical postattack
+    // housekeeping phase, even at its exact expiry deadline.
+    let at = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(s.cooldown_us);
+    let expiry = r
+        .prepare_actor_condition_expiry(
+            a,
+            None,
+            oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([0x53; 16]),
+            at,
+        )
+        .expect("actual condition housekeeping at original source expiry");
+    r.commit_actor_condition(&expiry, at)
+        .expect("commit canonical marker expiry");
     let reopened = owner
         .cast(&mut r, &f, stamp, &s, &proposal(a, &s, 2), s.cooldown_us)
         .expect("qualified fixture");

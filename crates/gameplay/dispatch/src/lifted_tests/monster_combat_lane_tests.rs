@@ -914,6 +914,20 @@ mod tests {
         runtime
             .initialize_first_entry_position(target)
             .expect("monster_combat_lane.rs:tests:2762: qualified fixture operation must succeed");
+        runtime
+            .bind_attacker_lease(
+                target,
+                session,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(&[
+                        1, 0x90, 0, 0, 0, 5, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 5,
+                    ])
+                    .expect("current DOT source character"),
+                    1,
+                )
+                .expect("current DOT source lease"),
+            )
+            .expect("bind actual admitted DOT source session");
         let inputs = TrustedMonsterConditionTickInputs::from_test_native_room(
             &runtime,
             &room,

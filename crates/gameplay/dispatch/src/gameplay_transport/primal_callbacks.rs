@@ -451,6 +451,12 @@ impl PrimalCallbacks {
     fn retained_owner(&self) -> std::sync::Arc<tokio::sync::Mutex<PrimalCallbackState>> {
         std::sync::Arc::clone(&self.owner)
     }
+    /// Test DATA only: no constructor, scheduling operation or callback authority.
+    #[cfg(test)]
+    pub(super) fn deferred_original_deadlines_for_test(&self) -> Result<Vec<(u64, u64)>, ()> {
+        let owner = self.owner.try_lock().map_err(|_| ())?;
+        Ok(owner.deferred.original_deadlines_for_test())
+    }
     pub(super) fn has_pending_step(
         &self,
         actor: ExactActorRef,
