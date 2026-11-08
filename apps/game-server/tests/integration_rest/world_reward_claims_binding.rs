@@ -662,13 +662,13 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
         &base, &admitted,
     )?;
     // The fixture map holds none of the real chests: every ready claim is a candidate that
-    // does not bind, and the 10 waiting plain records are left out. KEY-1 adds the 21 key
-    // variants with a `canary:door-key/` binding. W15b adds 67 native container/text/key recipes and one fully charged
-    // plain leaf through the same binder.
+    // does not bind, and the 7 waiting plain records are left out. KEY-1 adds 21 key
+    // variants; W15b adds 67 native recipes. Questpc4 admits three full-charge
+    // plain leaves and the complete Triangle Tower/Desert bags through the same binder.
     let candidates = report.unbound_claims_by_reason().values().sum::<usize>();
     // ITEMHOLD-Q (#3017) admits two native containers and the full-charge Power Ring leaf.
     // These are source-backed candidates even though this tiny map has none of their chests.
-    assert_eq!(candidates, 311);
+    assert_eq!(candidates, 315);
     for key in [
         "oteryn:reward-claim.kv.ornamentedshield",
         "oteryn:reward-claim.kv.triangletower",
@@ -691,7 +691,7 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
             .iter()
             .filter(|(_, why)| *why == LeftOut::NotReady)
             .count(),
-        10
+        7
     );
     Ok(())
 }

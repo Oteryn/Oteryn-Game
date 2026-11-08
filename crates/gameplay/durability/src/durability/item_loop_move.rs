@@ -18,6 +18,10 @@
 //! (immediate line admission, deferred line and receipt proofs) decide the same facts again.
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
+mod floor_assembly;
+pub(in crate::durability) mod floor_transform;
+pub use floor_assembly::FloorAssemblyTarget;
+
 mod seed_drop;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
 
@@ -149,6 +153,8 @@ pub struct LoopMoveReceipt {
     /// 1 move, 2 merge, 3 split, 4 drop, 5 pickup.
     pub operation: i16,
     pub replayed: bool,
+    /// Fresh committed floor consequence only; historical replay has no presentation.
+    pub floor_effect: Option<u16>,
 }
 
 /// An observed container: its item, parent (`None` for the main backpack or a Ground root)
@@ -340,6 +346,7 @@ async fn committed_loop_move(
             event_id: uuid_text(row.try_get("event_id")?)?,
             operation: row.try_get("operation")?,
             replayed: true,
+            floor_effect: None,
         })));
     }
     let equipment: bool = sqlx::query_scalar(
@@ -1466,6 +1473,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
         event_id,
         operation,
         replayed: false,
+        floor_effect: None,
     })
 }
 

@@ -23,6 +23,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        if encounter.timing.is_some() {
+            return self.schedule_timed_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+            );
+        }
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };

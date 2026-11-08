@@ -203,7 +203,7 @@ async fn teleport(
     let mut runtime = owner.runtime.lock().await;
     let before = runtime.read_actor_position(actor).map_err(debug)?;
     let doors = crate::map::floor::BundleDoors(map.facts.doors());
-    let proof = crate::map::floor::prepare_quest_callback_teleport(
+    let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
         &runtime,
         &owner.movement_cells,
         actor,
@@ -212,6 +212,7 @@ async fn teleport(
         destination,
         false,
         &doors,
+        None,
     )
     .map_err(debug)?;
     runtime.commit_source_step(proof).map_err(debug)?;

@@ -128,7 +128,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cells: &self.movement_cells,
             blocked: super::pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
         };
-        let blocking: &dyn crate::map::floor::CellBlocker = &pvp_blocking;
+        let callback_portals = super::quest_callbacks::CallbackPortals {
+            inner: &pvp_blocking,
+            map: self.bundle_map(),
+            callbacks: self.callback_content(),
+        };
+        let blocking: &dyn crate::map::floor::CellBlocker = &callback_portals;
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
