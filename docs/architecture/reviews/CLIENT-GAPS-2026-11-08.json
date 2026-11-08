@@ -1126,9 +1126,10 @@
   "src": "TIBAUD-1",
   "area": "Support",
   "feature": "Crash report i zgoda",
-  "status": "MISSING",
-  "gap": "Brak lokalnego workflow raportu awarii; nie wymaga kontaktu z CipSoft.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Lokalny hook, preview i zgoda na eksport; odmowa usuwa raport, błąd eksportu zachowuje go do ponownej próby.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/crash_report.rs:81 + pending_crash_review_declines_discards_and_retains_on_failed_export"
  },
  {
   "id": "T154",
