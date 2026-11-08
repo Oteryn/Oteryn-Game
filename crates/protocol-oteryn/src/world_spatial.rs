@@ -875,6 +875,18 @@ mod tests {
         // VIS-2 re-decided MOVE-RL-11 (D87): 256 entities per snapshot or delta.
         assert_eq!(limit("MOVE-RL-11"), Some(256));
     }
+    #[test]
+    fn qn6_diagonal_step_values_round_trip() {
+        for value in 5..=8 {
+            let bytes = [8, value];
+            let direction = decode_step_intent(&bytes);
+            assert!(direction.is_ok(), "diagonal {value} must be admitted");
+            if let Ok(direction) = direction {
+                assert_eq!(encode_step_intent(direction), bytes);
+            }
+        }
+        assert!(decode_step_intent(&[8, 9]).is_err());
+    }
 }
 
 #[cfg(test)]
@@ -887,18 +899,4 @@ mod count_bounds_tests {
     fn f26_borrowed_length_bounds() {
         crate::count_bounds_tests::borrowed_length_bounds(super::read_bytes);
     }
-}
-
-#[cfg(test)]
-#[test]
-fn qn6_diagonal_step_values_round_trip() {
-    for value in 5..=8 {
-        let bytes = [8, value];
-        let direction = decode_step_intent(&bytes);
-        assert!(direction.is_ok(), "diagonal {value} must be admitted");
-        if let Ok(direction) = direction {
-            assert_eq!(encode_step_intent(direction), bytes);
-        }
-    }
-    assert!(decode_step_intent(&[8, 9]).is_err());
 }
