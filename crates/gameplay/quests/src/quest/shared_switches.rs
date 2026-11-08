@@ -40,12 +40,7 @@ pub fn recipe(key: &str) -> Option<&'static Recipe> {
 }
 fn activation_callbacks() -> impl Iterator<Item = Callback> {
     RECIPES.iter().map(|r| Callback {
- use_range: 1,
- disguise: None,
- completes: false,
- premium_required: false,
- present: vec![],
- required_travel: vec![],
+        use_range: 1, disguise: None, completes: false, premium_required: false, present: Vec::new(), required_travel: Vec::new(),
 
         state_operations: Vec::new(),
 world_change: None,
@@ -168,12 +163,7 @@ pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
     activation_callbacks().chain(GATES.iter().map(|gate| {
         let mut effects=CallbackEffectSet::default();effects.magic=Some(MagicEffect {position:gate.destination,effect:gate.effect});
         Callback {
- use_range: 1,
- disguise: None,
- completes: false,
- premium_required: false,
- present: vec![],
- required_travel: vec![],
+        use_range: 1, disguise: None, completes: false, premium_required: false, present: Vec::new(), required_travel: Vec::new(),
 
         state_operations: Vec::new(),
 world_change: None,

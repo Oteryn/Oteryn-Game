@@ -33,12 +33,20 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
         self.assertEqual(native[desert]['data_holds'], [])
         self.assertIn('native_contents', native[desert])
         self.assertEqual(source[desert]['data_holds'][0]['item'], 'oteryn:item.tibia.i3084')
+        # These two private SOURCE compiler annotations are not native claim
+        # definition fields. Check their exact historical values separately.
+        for suffix, categories in {
+            'ornamentedshield': ['item', 'source'],
+            'present_box': ['item'], 'triangletower': ['item'],
+        }.items():
+            self.assertEqual(source['oteryn:reward-claim.kv.' + suffix]['_source_hold_categories'], categories)
         # Explicit false compiler annotations do not change a SOURCE witness.
         # Retain every true hold and every other field in the exact comparison.
         source_witnesses = {}
         for key, record in source.items():
             self.assertIs(type(record['_source_baseline_item_hold']), bool)
             witness = dict(record)
+            witness.pop('_source_hold_categories', None)
             if witness['_source_baseline_item_hold'] is False:
                 del witness['_source_baseline_item_hold']
             source_witnesses[key] = witness
@@ -46,7 +54,10 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
         self.assertEqual(changed, {
             'oteryn:reward-claim.kv.madmageroom3', triangle, desert,
             'oteryn:reward-claim.kv.ornamentedshield',
-            'oteryn:reward-claim.kv.present_box', 'oteryn:reward-claim.kv.powerring2',
+            'oteryn:reward-claim.kv.present_box',
+            'oteryn:reward-claim.kv.edrongoblin1', 'oteryn:reward-claim.kv.ghoulroom1',
+            'oteryn:reward-claim.kv.silveramulet', 'oteryn:reward-claim.kv.stealhring1',
+            'oteryn:reward-claim.kv.powerring2',
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',
             'oteryn:reward-claim.kv.weddingring1',
             'oteryn:reward-claim.kv.draconia1',

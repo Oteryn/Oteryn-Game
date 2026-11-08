@@ -1,0 +1,132 @@
+{
+  "state": "NATIVE_POSTGRES_GREEN",
+  "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+  "red": {
+    "postgres_seconds": 4.003721107,
+    "marker": "POSTGRES_CASE_STARTED questpc8_wrath_crystals after PostgreSQL fixture initialization",
+    "failure": "WRATH_CRYSTALS_RED: missing four native crystal callbacks",
+    "log": "/tmp/questpc8b-crystals-red.log"
+  },
+  "quest_units": {
+    "passed": 355,
+    "failed": 0,
+    "seconds": 37.99,
+    "initial_failure_root_cause": "87 callback-dependent failures from authored namespace/provenance validation; corrected authored data, no validation relaxed"
+  },
+  "profile_tools": {
+    "pin_tests": 7,
+    "recipe_identity_tests": 3,
+    "source_admission_tests": 17,
+    "source_admission_seconds": 119.994,
+    "completion_matrix_tests": 8
+  },
+  "regeneration": {
+    "placement-check": {
+      "exit": 0,
+      "seconds": 0.3375752019928768
+    },
+    "proof": {
+      "exit": 0,
+      "seconds": 0.4070409900014056
+    },
+    "tree": {
+      "exit": 0,
+      "seconds": 36.27110789201106
+    },
+    "claims": {
+      "exit": 0,
+      "seconds": 2.8721522619889583
+    },
+    "bindings": {
+      "exit": 0,
+      "seconds": 15.065857205001521
+    },
+    "completion": {
+      "exit": 0,
+      "seconds": 5.214626567991218
+    },
+    "matrix": {
+      "exit": 0,
+      "seconds": 0.5137224240024807
+    },
+    "native": {
+      "exit": 0,
+      "seconds": 355.87921836999885
+    },
+    "audit": {
+      "exit": 0,
+      "seconds": 0.021701749006751925
+    },
+    "pins": {
+      "exit": 0,
+      "seconds": 119.29021663499589
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.32277309300843626
+    },
+    "chosen": {
+      "exit": 0,
+      "seconds": 0.36395036200701725
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.709355956001673
+    }
+  },
+  "scope": "Selected s8 native four-crystal world USE with exact retained carried11371, clockwise order and per-character receipts; no inventory UseWithMapItem, donor boss graph, global transformation or whole-quest completion claimed",
+  "qengine2_checked": "0aa80f984",
+  "shared_requests": "live-player predicate and item-look disguise remain queued",
+  "whole_quests_qualified": 21,
+  "packet_quests": 23,
+  "checks": {
+    "pg": {
+      "exit": 0,
+      "seconds": 351.8414616120135
+    },
+    "workspace": {
+      "exit": 0,
+      "seconds": 121.39616280699556
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.71321694299695
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.2937963799922727
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 180.98534404899692
+    }
+  },
+  "pending": [
+    "CI heavy suites"
+  ],
+  "review": "Two read-only reviews found no issues; reviewers did not build or test",
+  "green": {
+    "postgres_seconds": 71.744319386,
+    "nextest_seconds": 71.786,
+    "marker": "POSTGRES_WRATH_FOUR_NATIVE_CRYSTALS_EXACT_TOOL_ORDER_COLD_REPLAY_PASS",
+    "dream_nextest_seconds": 104.027,
+    "equipment_unit_seconds": 42.983,
+    "selected_cases_passed": 3,
+    "selected_cases_failed": 0,
+    "log": "/tmp/questpc8b-crystals-final-pg.log"
+  },
+  "test_repairs": [
+    {
+      "seconds": 71.043811312,
+      "error": "CommandSequenceGap from fixture command3 to10",
+      "fix": "Contiguous wire command IDs; all assertions retained"
+    },
+    {
+      "seconds": 68.687909522,
+      "error": "StaleState observed for a new command with an old object revision",
+      "fix": "Assert old revision is stale; fetch current revision and retain new-command Rejected plus unchanged counter assertions"
+    }
+  ],
+  "finished_components_ready_for_coordinator": true,
+  "whole_quest_complete": false
+}

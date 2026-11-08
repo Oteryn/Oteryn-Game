@@ -228,8 +228,8 @@ use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],
         hatchling.selector.appearance = Some(14255);
         hatchling.storage[0].track = HATCHLINGS_TRACK.into();
         hatchling.item_on_target = Some(ItemOnTarget {
-            alternatives: Vec::new(),
             reusable: false,
+            alternatives: Vec::new(),
             item: "oteryn:item.tibia.i14255".into(),
             count: 1,
             replacement: Some("oteryn:item.tibia.i14255".into()),
@@ -260,8 +260,8 @@ use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],
             read_only: false,
         };
         fluid.item_on_target = Some(ItemOnTarget {
-            alternatives: Vec::new(),
             reusable: false,
+            alternatives: Vec::new(),
             item: "oteryn:item.tibia.i14054".into(),
             count: 1,
             replacement: Some("oteryn:item.tibia.i14055".into()),

@@ -29,8 +29,8 @@ class QualificationTests(unittest.TestCase):
     def test_checked_in_ledger_is_valid(self):
         errors, counts = qualification.validate()
         self.assertEqual(errors, [])
-        # 172 source claims have focused dispatch PG proof; only the
-        # two Dawnport claims are excluded. Keep exact denominator detection.
+        # Keep the exact outstanding denominator; qualified and not-playable
+        # source claims remain in their separate coverage categories.
         self.assertEqual(sum(counts.values()), 162)
 
     def test_missing_row_is_rejected(self):

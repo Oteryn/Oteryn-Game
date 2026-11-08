@@ -45,7 +45,8 @@ pub(super) fn source_world_positions(
     choices: &[(u16, u16, u16)],
     appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    source_world_position_rows(chest, choices, appearance, 1, 2, &[], &[(chest.1, appearance)])
+    let rows: Vec<_> = choices.iter().map(|(_, y, _)| (*y, appearance)).collect();
+    source_world_rectangle_positions(chest, choices, appearance, 1, 2, &[], &rows)
 }
 
 pub(super) fn source_world_rectangle(
@@ -66,7 +67,15 @@ pub(super) fn source_world_rectangle_with_prefix(
     west: u16,
     prefix: &[u16],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    source_world_rectangle_with_prefix_rows(chest, choices, appearance, height, west, prefix, &[(chest.1, appearance)])
+    source_world_rectangle_with_prefix_rows(
+        chest,
+        choices,
+        appearance,
+        height,
+        west,
+        prefix,
+        &[(chest.1, appearance)],
+    )
 }
 
 /// Several native cache rows may share the same appearance and column.
@@ -79,8 +88,23 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
     prefix: &[u16],
     rows: &[(u16, u16)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    let positioned: Vec<_> = choices.iter().flat_map(|(x, unique)| rows.iter().map(move |(y, _)| (*x, *y, *unique))).collect();
-    source_world_position_rows(chest, &positioned, appearance, height, west, prefix, rows)
+    let positions: Vec<_> = choices
+        .iter()
+        .flat_map(|(x, unique)| rows.iter().map(move |(y, _)| (*x, *y, *unique)))
+        .collect();
+    source_world_rectangle_positions(chest, &positions, appearance, height, west, prefix, rows)
+}
+
+fn source_world_rectangle_positions(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_position_rows(chest, choices, appearance, height, west, prefix, rows)
 }
 
 fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], appearance: u16, height:u16, west:u16, prefix:&[u16], rows:&[(u16,u16)]) -> TestResult<crate::map::boot::BundleWorld> {
@@ -117,7 +141,12 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
     let mut row_palettes = Vec::new();
     for (row, row_appearance) in rows {
         let key = format!("oteryn:terrain.tibia.i{row_appearance}");
-        let palette = if let Some(index) = data.manifest.palette.iter().position(|entry| entry.key == key) {
+        let palette = if let Some(index) = data
+            .manifest
+            .palette
+            .iter()
+            .position(|entry| entry.key == key)
+        {
             u32::try_from(index).map_err(debug)?
         } else {
             let id = u32::try_from(data.manifest.palette.len()).map_err(debug)?;
@@ -162,10 +191,10 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
         min_x,
         min_y,
         max_x: max_x + 1,
-        max_y: max_y + 1,
+        max_y: (max_y + 1).max(chest.1 + height),
         floors: vec![chest.2],
     };
-    let tiles = (min_y..=max_y)
+    let tiles = (min_y..(max_y + 1).max(chest.1 + height))
         .flat_map(|y| {
             (min_x..=max_x).map(move |x| sector::Tile {
                 x,

@@ -158,6 +158,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
+    ("QUESTPC8-MERGED", 151),
     ("QUICKLOOT-1", 9),
     // Skull 3114 (tools/content-migration/quest_callback_profiles.py), from Canary
     // 47dfd51f items.xml and exact Crystal ff7ede59 bindings. speed_bonus=0.
@@ -330,7 +331,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 67 independently captured physical quest Items.
+    // QENGINE2 adds exactly the 71 independently captured physical quest Items.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -357,7 +358,10 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
-    assert_eq!(added_keys.len(), 67);
+    assert_eq!(added_keys.len(), 71);
+    for id in [3029, 3035, 3205, 3212, 3234, 3607] {
+        assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
+    }
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -422,21 +426,23 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                     | "SRVENC-W02"
                     | "SEASON-W18-HOUSE"
                     | "QENGINE-REWARDS"
+                    | "QUESTPC8-MERGED"
                     | "SEASON-W05D"
             )
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2_119);
+    assert_eq!(later_main_profiles, 2_270);
     // BASE1ae39c7f has53 QENGINE2 records. Main's seven QUESTPC4 records
     // are already enumerated in the generated custody delta, not in that base.
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 7);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 18);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
         - npc_additions.len()
         - later_main_profiles; // Post-baseline main cohorts are already in the generated delta.
+    assert_eq!(baseline, 3663);
     let custody: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json"
@@ -483,6 +489,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "missing custody identity {key}"
         );
     }
+    // Main's QUESTPC4 floor/callback cohorts add 26 + 23 keys.
+    // They join the same exact regenerated post-base census and are counted once.
     assert_eq!(profiles.records.len(), baseline + custody_keys.len());
     // Independently replay the closed source packets' zero-speed facts;
     // the unchanged per-row raw-ability and unknown-speed checks below still
@@ -490,7 +498,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 60),
+        ("qengine-reward-item-profiles.json", 71),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -591,6 +599,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     }
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
+    let diary = profiles
+        .records
+        .iter()
+        .find(|r| r.production_definition.production_key == "oteryn:item.tibia.i3212")
+        .ok_or("source-qualified White Raven diary")?;
+    assert_eq!(diary.attributes.speed_bonus, Some(0));
+    assert!(added_keys.contains("oteryn:item.tibia.i3212"));
     for record in profiles.records {
         let abilities = item_ability_profile(&record.semantics)?;
         let sum = abilities.abilities.iter().try_fold(0_i32, |sum, ability| {
@@ -646,6 +661,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             record.production_definition.production_key
         );
     }
+
     assert_eq!(
         unknown_speed,
         [
@@ -674,7 +690,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         .chain(
             [
-                347, 401, 635, 636, 2815, 2821, 2827, 2833, 2835, 2842, 3212, 3505, 3507, 4100,
+                347, 401, 635, 636, 2815, 2821, 2827, 2833, 2835, 2842, 3505, 3507, 4100,
                 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 8150, 8151, 8155, 8156, 8737, 9206,
                 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214, 9215, 9216, 9217, 9218, 9219, 9220,
                 9221, 9222, 9223, 9224, 9538, 9614, 15276, 15633, 19072, 19073, 19074, 21445,

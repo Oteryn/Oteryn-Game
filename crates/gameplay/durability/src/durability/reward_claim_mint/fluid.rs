@@ -1,4 +1,5 @@
-//! Initial fluid belongs to the existing complete reward MINT transaction.
+//! Source-resolved fluids initialize the existing fluid owner within the complete
+//! once-claim MINT transaction. Empty rewards retain their legacy intent bytes.
 use super::*;
 use sqlx::{Postgres, Transaction};
 

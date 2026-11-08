@@ -376,6 +376,17 @@ pub fn build(
                 .map(|(reference, declaration)| (reference, declaration)),
         )
         .collect();
+    let quest_shops = super::quest_shops::declarations(&records);
+    let records: Vec<_> = records
+        .iter()
+        .copied()
+        .filter(|(reference, _)| !quest_shops.iter().any(|(added, _)| added == *reference))
+        .chain(
+            quest_shops
+                .iter()
+                .map(|(reference, declaration)| (reference, declaration)),
+        )
+        .collect();
     let records = records.as_slice();
     // Pass 1: per-offer rules. Pass 2: arbitrage over the offers still admitted.
     let mut services: BTreeMap<ProjectV2DefinitionRef, NpcServiceEntry> = BTreeMap::new();

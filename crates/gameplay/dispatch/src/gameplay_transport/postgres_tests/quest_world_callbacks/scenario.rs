@@ -125,6 +125,9 @@ fn scenario_case(
                 | "authored-venore-supplies"
                 | "authored-winterlight"
                 | "authored-wrath-opening"
+                | "authored-wrath-hunt"
+                | "authored-wrath-crystals"
+                | "authored-colours-opening"
                 | "catalogue-npc-father"
                 | "fathers-burden-handins"
                 | "catalogue-npc-hero"
@@ -304,7 +307,16 @@ fn scenario_case(
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
-    let world = if name == "authored-wrath-opening" {
+    if name == "authored-wrath-hunt" { super::super::questpc8_wrath_hunt::require_bindings()?; }
+    if name == "nx6-wayfarer" { super::super::questpc8_wrath_source_dragon::require_bindings()?; }
+    if name == "authored-wrath-crystals" { super::super::questpc8_wrath_crystals::require_bindings()?; }
+    let world = if name == "authored-wrath-crystals" {
+        super::super::questpc8_wrath_crystals::world()?
+    } else if name == "nx6-wayfarer" {
+        super::super::questpc8_wrath_source_dragon::world()?
+    } else if name == "authored-wrath-hunt" {
+        super::super::questpc8_wrath_hunt::world()?
+    } else if matches!(name, "authored-wrath-opening" | "authored-colours-opening") {
         super::super::questpc8_wrath_opening::world()?
     } else if name == "authored-winterlight" {
         super::super::questpc8_winterlight::world()?
@@ -491,6 +503,11 @@ fn scenario_case(
         } else {
             world
         };
+        let world = if name.starts_with("qengine-rewards-l2-djinn-") {
+            super::super::questl2_djinn_world::world()?
+        } else if name == "qengine-rewards-l2-white-raven" {
+            super::super::questl2_white_raven_world::world(generation.native_gameplay().ok_or("White Raven policies")?)?
+        } else { world };
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -559,6 +576,8 @@ fn scenario_case(
                 12
             } else if name == "authored-torch" {
                 3
+            } else if name.starts_with("qengine-rewards-l2-djinn-") {
+                13
             } else if classic_npc {
                 5
             } else if monk {
@@ -581,6 +600,7 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let premium = if name.starts_with("authored-")
+            || name == "nx6-wayfarer"
             || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")
@@ -716,7 +736,7 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead {
+        if mead || name == "nx6-wayfarer" {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
@@ -1056,6 +1076,10 @@ fn scenario_case(
                 origin,
             )
             .await?;
+        } else if name == "authored-wrath-crystals" {
+            super::super::questpc8_wrath_crystals::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "authored-wrath-hunt" {
+            super::super::questpc8_wrath_hunt::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "nx6-wayfarer" {
             super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if matches!(
@@ -1096,6 +1120,8 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if name == "authored-colours-opening" {
+            super::super::questpc8_colours_opening::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-wrath-opening" {
             super::super::questpc8_wrath_opening::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-winterlight" {

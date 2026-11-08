@@ -68,6 +68,44 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
         self.assertIn('(additions.len() - 1)', fixed)
         with self.assertRaisesRegex(ValueError, 'registered QENGINE cohort'):
             self.generate(source.replace('additions.len() - 1', 'additions.len() - 2'))
+    def test_merged_census_uses_frozen_keys_and_inserts_only_declared_cohort(self):
+        source = self.SOURCE.replace(
+            '[("QNPCFX", 1)];',
+            '[\n    ("QNPCFX", 1),\n    ("QUICKLOOT-1", 0),\n];',
+        ).replace(
+            "    assert_eq!(\n        profiles.records.len(),\n"
+            "        ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()\n"
+            "            + npc_additions.len()\n    );",
+            "    assert_eq!(profiles.records.len(), baseline + custody_keys.len());",
+        )
+        frozen = ({str(i) for i in range(7)}, 2)
+        fixed, count = regenerate(source, document(0, 1, 2, 3, 4, 5), document(6),
+                                  document(0), document(1), frozen=frozen)
+        self.assertEqual(count, 7)
+        self.assertIn('("QUESTPC8-MERGED", 2)', fixed)
+        self.assertIn('baseline + custody_keys.len()', fixed)
+        self.assertIn('assert_eq!(venison.attributes.speed_bonus, Some(0))', fixed)
+        self.assertEqual(regenerate(fixed, document(0, 1, 2, 3, 4, 5), document(6),
+                                    document(0), document(1), frozen=frozen), (fixed, 7))
+        with self.assertRaisesRegex(ValueError, "frozen published union"):
+            regenerate(source, document(0, 1, 2, 3, 4, 8), document(6),
+                       document(0), document(1), frozen=frozen)
+
+    def test_declared_new_recipe_profile_preserves_baseline_partition(self):
+        source = self.SOURCE.replace(
+            '[("QNPCFX", 1)];',
+            '[\n    ("QNPCFX", 1),\n    ("QUICKLOOT-1", 0),\n];',
+        ) + """
+    let later_main_profiles = PROFILE_ADDITIONS.iter().filter(|(name, _)| matches!(*name, "QUESTPC8-MERGED")).count();
+    assert_eq!(later_main_profiles, 999);
+    let baseline = 3663;
+    assert_eq!(baseline, 3663);
+"""
+        fixed, count = regenerate(source, document(0, 1, 2, 3, 4, 5), document(6),
+                                  document(0), document(1), frozen=({str(i) for i in range(7)}, 2))
+        self.assertEqual(count, 7)
+        self.assertIn('assert_eq!(later_main_profiles, 3);', fixed)
+        self.assertIn('assert_eq!(baseline, 3663);', fixed)
 
     def test_duplicate_profile_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate production key"):

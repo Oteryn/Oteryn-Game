@@ -90,6 +90,70 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
         "oteryn-authored:chosen-recipe:wrath-opening:authored-r1"
       ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/colours/stage",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/colours/colour",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/wrath/magistrati",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 4,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/wrath/nobles",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 6,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/wrath/crystals",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ]
     }
   ],
   "callbacks": [
@@ -944,6 +1008,44 @@
       "per_occurrence_mint": true
     },
     {
+      "key": "oteryn:quest-reward/chosen/wrath/dream-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "dream journey"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "required_receipts": [
+        {
+          "transition": "oteryn:quest-transition/wrath-of-the-emperor/dragon-dream-complete",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "value": 28
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Your journey through the dream is recorded. The four imperial crystal influences remain."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sleeping_dragon.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen Wrath recipe s7 report after the source Sleeping Dragon finale; exact durable questline28 receipt is required, no second achievement and no whole-quest completion."
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/chosen/wrath/start",
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "npc": "oteryn:npc.zalamon",
@@ -1038,6 +1140,210 @@
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
         "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/colours/envelope",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "npc": "oteryn:npc.nathaniel",
+      "keywords": [
+        "colours envelope"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/colours/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12204",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12208",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i12205",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": false,
+      "reply": [
+        "The envelope contains blue powder and a letter."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ],
+      "carried_item": "oteryn:item.tibia.i12204",
+      "carried_exchange": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/colours/mark-blue",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "npc": "oteryn:npc.nathaniel",
+      "keywords": [
+        "colours mark-blue"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/colours/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/colours/colour",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12208",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12228",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": false,
+      "reply": [
+        "You are marked blue; retain the remaining powder for a differently marked participant."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ],
+      "carried_item": "oteryn:item.tibia.i12208",
+      "carried_exchange": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/imperial-hunt",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "imperial hunt"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/magistrati",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/nobles",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Eliminate four magistrati and six imperial nobles, then report your imperial hunt."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/imperial-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "imperial report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/magistrati",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/nobles",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 27,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission09",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/interdimensional_potion",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Your imperial hunt is recorded. Free the sleeping dragon from its dream. The dream-opening word is SOLOSARASATIQUARIUM."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
       ]
     }
   ]

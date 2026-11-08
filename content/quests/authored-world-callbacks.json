@@ -4253,6 +4253,210 @@
         "https://www.tibiawiki.com.br/Winterlight_Solstice",
         "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
       ]
+    },
+    {
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:wrath-crystals:authored-r1",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ],
+      "key": "oteryn:quest-callback/authored-wrath-crystal-1",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33049,
+          "y": 31089,
+          "floor": -15
+        },
+        "appearance": 11427,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/crystals",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11371",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You have dispelled imperial influence 1 of 4."
+    },
+    {
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:wrath-crystals:authored-r1",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ],
+      "key": "oteryn:quest-callback/authored-wrath-crystal-2",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33095,
+          "y": 31091,
+          "floor": -15
+        },
+        "appearance": 11427,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/crystals",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11371",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You have dispelled imperial influence 2 of 4."
+    },
+    {
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:wrath-crystals:authored-r1",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ],
+      "key": "oteryn:quest-callback/authored-wrath-crystal-3",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33096,
+          "y": 31114,
+          "floor": -15
+        },
+        "appearance": 11427,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/crystals",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11371",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You have dispelled imperial influence 3 of 4."
+    },
+    {
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:wrath-crystals:authored-r1",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ],
+      "key": "oteryn:quest-callback/authored-wrath-crystal-4",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33049,
+          "y": 31115,
+          "floor": -15
+        },
+        "appearance": 11427,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/crystals",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11371",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You have dispelled imperial influence 4 of 4."
     }
   ]
 }

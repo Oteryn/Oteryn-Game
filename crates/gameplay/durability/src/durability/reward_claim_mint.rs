@@ -2061,12 +2061,12 @@ mod tests {
         filled.item = backpack_facts(8);
         filled.quantity = 1;
         filled.contents = vec![RewardClaimMintContent {
-            charges_remaining: None,
             item: facts("fixture:waterskin", ItemStackClass::NonStackable),
             quantity: 1,
             key_number: None,
             text: None,
             fluid_subtype: Some(16),
+            charges_remaining: None,
         }];
         assert!(validate_request(&filled).is_ok());
         let character = CharacterId::from_bytes(id(41)).expect("character");
@@ -2218,7 +2218,7 @@ mod tests {
         container.item = backpack_facts(20);
         container.quantity = 1;
         container.contents = vec![RewardClaimMintContent {
-            fluid_subtype: None,
+                fluid_subtype: None,
             item: facts("fixture:book", ItemStackClass::NonStackable),
             quantity: 1,
             key_number: None,

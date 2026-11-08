@@ -139,3 +139,35 @@ pub(super) fn prepare(
         },
     )
 }
+
+/// A recognized reward confirmation may not fall through to ordinary dialogue
+/// when every native quest owner declined it. Greeting words retain their owner.
+pub(super) fn unhandled_confirmation(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> bool {
+    let text = intent.text.trim().to_ascii_lowercase();
+    if matches!(text.as_str(), "hi" | "hello" | "bye" | "farewell") {
+        return false;
+    }
+    let Some(context) = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    ) else {
+        return false;
+    };
+    if admission.has_pending_paid_confirmation(command, intent, &context) {
+        return false;
+    }
+    reward_callbacks::load().is_ok_and(|callbacks| {
+        callbacks
+            .iter()
+            .any(|callback| callback.npc == context.2 && callback.keywords.contains(&text))
+    })
+}

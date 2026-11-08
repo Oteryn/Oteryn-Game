@@ -2851,5 +2851,19 @@
     "postman": true,
     "held": false,
     "carpet": true
+  },
+  {
+    "key": "oteryn:service.travel.dalbrect/isle_of_kings",
+    "keyword": "passage",
+    "price": 10,
+    "premium": false,
+    "x": 32190,
+    "y": 31957,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_gate": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log"
   }
 ]

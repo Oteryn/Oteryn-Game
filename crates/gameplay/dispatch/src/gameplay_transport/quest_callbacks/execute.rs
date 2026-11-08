@@ -687,19 +687,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Rejected;
                     }
                     self.states.loop_ground.invalidate();
-                    // Shrine bonuses must see the committed flag before the next swing;
-                    // the cadence still reloads the durable copy for recovery and XP.
-                    if callback.quest == "oteryn:quest.the_way_of_the_monk_quest"
-                        && let Ok(mut sessions) = self.states.quest_sessions.lock()
-                        && let Some(entry) = sessions.get_mut(&session)
-                    {
-                        entry.copy = entry.copy.take().and_then(|mut copy| {
-                            let next = entry.version.checked_add(1)?;
-                            if !copy.apply(committed) { return None; }
-                            entry.version = next;
-                            Some(copy)
-                        });
-                    }
+                    self.apply_committed_quest_copy(session, fresh, committed);
                     self.schedule_quest_refresh(session);
                 }
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {

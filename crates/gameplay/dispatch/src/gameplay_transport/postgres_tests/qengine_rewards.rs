@@ -23,7 +23,9 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
+            if name == "qengine-rewards-l2-white-raven" {
+                Position { x:32248,y:31866,floor:-8 }
+            } else if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
                 super::l6_paradox_upper::start(name)
             } else if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
                 super::l6_paradox_story::start()
@@ -152,6 +154,21 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.contains("/l2-efreet-") || key.contains("/l2-marid-") {
+        return match key.rsplit('/').next().unwrap_or(key) {
+            "l2-efreet-thief-report" => &["mission", "yes"],
+            "l2-marid-cookbook" => &["cookbook"],
+            "l2-marid-spy-report-issue" => &["spyreport"],
+            "l2-efreet-lamp-issue" | "l2-marid-lamp-issue" => &["lamp"],
+            "l2-efreet-supplies" | "l2-marid-spy-mission" | "l2-marid-cheese-request" => &[],
+            _ => &["mission"],
+        };
+    }
+
+    if key.ends_with("/l2-white-raven-brooch") { return &["brooch", "yes"]; }
+    if key.ends_with("/l2-white-raven-catacombs") { return &["fugio"]; }
+    if key.ends_with("/l2-white-raven-diary") { return &["diary"]; }
+
     match key.rsplit('/').next().unwrap_or(key) {
         "l13-rift-first" | "l13-rift-second" => &["addon"],
         "knight-sword" => &["forge"],
@@ -759,6 +776,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-l2-white-raven" {
+        return questl2_passages::white_raven(owner, admitted, h).await;
+    }
+    if name.starts_with("qengine-rewards-l2-djinn-") {
+        return questl2_djinn_journeys::exercise(owner, admitted, h, name).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
     }
@@ -865,7 +888,6 @@ pub(super) async fn exercise(
                 read_only: false,
                 at_least: false,
                 increment: false,
-
                 track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision"
                     .into(),
                 minimum: 2,
@@ -1380,3 +1402,10 @@ async fn legacy_decaying(
     );
     Ok(())
 }
+
+#[path = "qengine_rewards/questl2_djinn_journeys.rs"]
+mod questl2_djinn_journeys;
+#[path = "qengine_rewards/questl2_journeys.rs"]
+mod questl2_journeys;
+#[path = "qengine_rewards/questl2_passages.rs"]
+mod questl2_passages;

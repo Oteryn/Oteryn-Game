@@ -8,8 +8,12 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 mod carried;
+mod carried_bounds;
 #[cfg(test)]
 mod carried_exchange_tests;
+mod published_markers;
+#[cfg(test)]
+mod questpc8_exchange_tests;
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
@@ -140,7 +144,7 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
-    /// Explicit selected-instance exchange; legacy carried tools keep their no-item-grant contract.
+    /// Explicit selected-instance exchange; legacy tools retain their no-grant contract.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub carried_exchange: bool,
     pub keywords: Vec<String>,
@@ -269,6 +273,7 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
 ];
@@ -521,6 +526,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
             || !c.valid_carried_use()
+            || !carried_bounds::valid(c)
             || c.forbids_outfits.len() > 8
             || c.forbids_outfits.iter().collect::<BTreeSet<_>>().len() != c.forbids_outfits.len()
             || c.forbids_outfits
@@ -751,6 +757,7 @@ fn extend_callbacks(
     declarations: Vec<TrackDeclaration>,
 ) -> Result<QuestStateCatalogue, String> {
     let npc_legacy = catalogue.npc_legacy.clone();
+    let published = published_markers::keys()?;
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     let explicit: BTreeSet<_> = declarations.iter().map(|d| d.key.clone()).collect();
@@ -870,7 +877,9 @@ fn extend_callbacks(
             .iter()
             .map(|b| format!("{b:02x}"))
             .collect();
-        if !callback.storage.is_empty() || !callback.state_ops.is_empty() {
+        if (!callback.storage.is_empty() || !callback.state_ops.is_empty())
+            && published_markers::needs_marker(callback, &published)
+        {
             transitions.push(QuestTransition {
                 world_change: None,
                 key: format!("oteryn:quest-reward-rule/{digest}"),
@@ -1477,6 +1486,9 @@ mod tests {
 }
 
 #[cfg(test)]
+mod receipt_test_base;
+
+#[cfg(test)]
 mod lane_tests {
     use super::*;
     #[test]
@@ -1501,11 +1513,7 @@ mod lane_tests {
             .and_then(|c| c.give.as_mut())
             .ok_or("reward")?
             .count = 51;
-        let empty = || {
-            super::super::grizzly_adams::extend(
-                QuestStateCatalogue::empty("content-1").ok_or("empty")?,
-            )
-        };
+        let empty = receipt_test_base::catalogue;
         let before = extend_callbacks(
             empty()?,
             before,
@@ -1532,11 +1540,9 @@ mod lane_tests {
 
     #[test]
     fn reward_receipt_predicates_require_the_same_quest_and_declared_value() -> Result<(), String> {
-        let empty =
-            QuestStateCatalogue::empty("receipt-predicate-test").ok_or("empty catalogue")?;
-        let base = super::super::grizzly_adams::extend(empty)?;
-        // Isolate the actual receipt-gated campaign; unrelated main callbacks
-        // have their own participant prerequisites and are covered separately.
+        let base = receipt_test_base::catalogue()?;
+        // Include every receipt-gated callback and its production receipt owner;
+        // unrelated participant prerequisites are covered separately.
         let callbacks: Vec<_> = load()?
             .into_iter()
             .filter(|callback| !callback.required_receipts.is_empty())
@@ -1638,7 +1644,8 @@ mod lane_tests {
         let valid = serde_json::json!({"item":"oteryn:item.tibia.i2853","count":1,
             "contents":[],"backpack_outputs":[{"item":"oteryn:item.tibia.i3034","count":1}]});
         document["callbacks"][0]["give"] = valid.clone();
-        assert!(parse(&document.to_string()).is_ok());
+        let parsed = parse(&document.to_string());
+        assert!(parsed.is_ok(), "bounded backpack delivery: {parsed:?}");
         let mut mixed = valid.clone();
         mixed["contents"] = serde_json::json!([{"item":"oteryn:item.tibia.i3031","count":1}]);
         let mut excessive = valid.clone();
@@ -1823,6 +1830,55 @@ mod lane_tests {
         );
         Ok(())
     }
+    #[test]
+    fn published_marker_compatibility_keeps_new_value_terms_bound() -> Result<(), String> {
+        let published = published_markers::keys()?;
+        let callback = parse(DOCUMENTS[0])?
+            .into_iter()
+            .find(|callback| !callback.storage.is_empty() && callback.give.is_some())
+            .ok_or("published item callback")?;
+        assert!(!published_markers::needs_marker(&callback, &published));
+        let before = callback_hash(callback.clone(), Vec::new())?;
+        let mut occurrence = callback.clone();
+        occurrence.per_occurrence_mint = true;
+        assert!(published_markers::needs_marker(&occurrence, &published));
+        assert_ne!(callback_hash(occurrence, Vec::new())?, before);
+        let mut carried = callback.clone();
+        carried.carried_exchange = true;
+        assert!(published_markers::needs_marker(&carried, &published));
+        let mut outputs = callback.clone();
+        outputs
+            .give
+            .as_mut()
+            .ok_or("give")?
+            .backpack_outputs
+            .push(ItemAmount {
+                item: "oteryn:item.tibia.i3031".into(),
+                count: 1,
+                fluid_subtype: None,
+            });
+        assert!(published_markers::needs_marker(&outputs, &published));
+        let mut receipt = callback;
+        receipt.required_receipts.push(ReceiptPredicate {
+            transition: "oteryn:quest-reward/fixture".into(),
+            track: "oteryn:quest-progress/fixture/stage".into(),
+            value: 1,
+        });
+        assert!(published_markers::needs_marker(&receipt, &published));
+        let chosen = parse(include_str!(
+            "../../../../../content/quests/chosen-reward-callbacks.json"
+        ))?
+        .into_iter()
+        .next()
+        .ok_or("chosen")?;
+        assert!(published_markers::needs_marker(&chosen, &published));
+        assert!(published_markers::needs_marker(
+            &state_ops_callback()?,
+            &published
+        ));
+        Ok(())
+    }
+
     #[test]
     fn occurrence_mint_is_explicit_portable_and_part_of_the_value_hash() -> Result<(), String> {
         let mut callback = load()?

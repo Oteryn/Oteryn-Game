@@ -798,3 +798,95 @@ of the three new corpse roots. The fixture now explicitly preserves their
 LootItemInadmissible refusal and verifies all eight unsupported source items;
 it retains the original totals and exact five shared-body bosses. No forbidden
 loot becomes a grant and no test count or refusal assertion is relaxed.
+
+- Continuation branch questpc8b reuses QENGINE2 dd35529b6's explicit carried
+  exchanges, selected-definition input rule, and migration1552 without changing
+  the upstream migration or its number. The original questpc8 head8639b16b1
+  remains frozen. This is consumption of qualified shared code, not a new engine.
+- Colours opening uses the packet's fixed blue route: envelope12204 yields one
+  blue powder12208 and letter12205. The source event randomises powder colour;
+  the chosen authored route deterministically selects blue. Source identities
+  are the pinned Canary items XML, and walkthrough obligations are documented at
+  https://tibia.fandom.com/index.php?curid=50851&oldid=844647 and
+  https://tibia.fandom.com/index.php?curid=50860&oldid=1128664 .
+  Conservative binding decision:12208 is initial blue powder and12228 its
+  remainder, based on the pinned source's duplicate-name initial/remainder
+  groups and the walkthrough's two uses. This is an explicit authored binding,
+  not a claim that a donor action script was found. Ordinary carried USE means
+  self-marking; the durable colour track records blue and does not change outfit.
+  No peer actor, green pairing, Nathaniel report or whole-quest completion is
+  fabricated by this opening. The live-player predicate remains qengine2-owned.
+- Independent review found upstream's carried-exchange loader accepts more than
+  migration1552's eight definitions / quantities1..100. A small new local
+  carried_bounds.rs helper aligns admission with that unchanged SQL proof.
+  Regression RED accepted nine inputs; rejection coverage also checks cost101.
+  This integration fix leaves the reused upstream helper/migration unchanged.
+
+- Wrath chosen stage s7 reuses the existing NX6 source Sleeping Dragon dialogue,
+  final transaction and Wayfarer achievement. Add an authored `dream journey`
+  report to that same NPC after the actual dream finale. It advances chosen
+  stage6 to7 only with the exact dragon-dream-complete receipt's Questline28
+  result, using existing required_receipts support. It grants no extra item or
+  achievement and does not complete the whole Wrath quest. The source finale is
+  https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sleeping_dragon.lua
+  and the accepted chosen route is recipe s7 in the canonical Wrath definition.
+  The fixture seeds only prerequisites through with_fixture_transition, keeping
+  the complete production catalogue and all old rollback/fence/replay checks.
+- Running the owning chosen-campaign generator exposed four prior opening rows,
+  three chosen tracks and Zalamon's greeting missing from its authored input.
+  Restore those exact already-published rows to chosen-route-rewards.json before
+  regeneration; do not hand-patch generated outputs or lose the earlier openings.
+  Revalidate both opening PG cases alongside the new dream-report regression.
+- The NX6 donor dream fixture originally had no Premium coordinator. Preserve
+  the chosen report's Premium requirement and explicitly provision its current,
+  latched Premium authority through the existing scenario setup. The new test
+  asserts that authority is present before testing the missing-receipt refusal;
+  it does not turn a Premium refusal into evidence of receipt enforcement.
+
+- Selected Wrath s6 retains exact quotas of four Lizard Magistratus and six
+  Lizard Noble native deaths in one stage, rather than allowing any ten kills.
+  Counters start only through the stage5 Zlak callback, saturate independently,
+  and report atomically to stage6. The chosen recipe explicitly omits potion
+  minigames: this report readies Questline27/Mission09=1/Potion=1 for the existing
+  source Sleeping Dragon adapter, without minting a potion or another reward.
+  Source stores may not regress from an already-later source phase.
+  https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua
+- Zlak uses the existing captured placement candidate33082,31220,z7. Independently
+  verified in pinned Crystal world-npc.xml (sha256
+  db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029):
+  https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-npc.xml
+  Native objectives conservatively bind the existing floor3 imperial quarter
+  x33055..33090/y31140..31200, including captured Magistratus33080,31192 and
+  Noble33066,31147 spawns. Credit is restricted to the actual present principal;
+  other floors and extra same-type kills cannot fill the other quota. No guardian
+  replacement, fabricated creature, new engine type or migration is added.
+- Native hunt fixture correction:33082,31219,z7 contains source item2342 and is
+  not enterable. The unchanged compiler registry/B3 probe shows33081,31220 as
+  plain admitted ground11038. Start and return there, keeping Zlak at his exact
+  captured33082,31220 cell through a test-only NPC installer. The wrong-floor
+  kill uses plain native ground33083/33084,31217, avoiding NPC overlap. The
+  floor3 hunt's33079/33080,31192 cells have admitted walkable ground/borders.
+  No source cell, provisional-entry policy or collision test was weakened.
+
+- Scope the actual Sleeping Dragon NPC in the native World. The committed
+  promotion candidate has only an older Wiki hypothesis33243,31219,z10. Pinned
+  Crystal201189f world-npc.xml instead places center33243,31213 with offsetx=-1:
+  exact source33242,31213,z10. The existing explicit placement-override mechanism
+  records that XML URL/revision/sha256 and replaces only the old position. XML
+  supplies no facing: choose the engine default NORTH, not a recovered direction.
+  Native B3/compiler probing identifies33242,31214 as admitted ground/border for
+  the player's approach; the NPC stays at its actual source cell. The existing
+  NX6 dialogue/rollback/fence/replay and chosen report test now uses these real
+  source cells and obtains the NPC position from the generated placement index.
+  No provisional tile is made passable and no source binding is fabricated.
+
+
+### Wrath chosen s8: four imperial influences
+The selected packet explicitly resolves Snake Sceptre to item11371. The pinned Crystal mission10 script instead uses replica11362; this slice follows the selected recipe and does not claim donor-equivalent boss progression. Native B3 retains appearance11427 at four imperial-room corners but no donor UIDs3193–3196. Bind literal positions NW33049,31089; NE33095,31091; SE33096,31114; SW33049,31115 (all z15, ordinals1,1,2,1), clockwise, with a per-character counter0–4. World USE requires an exactly matching carried11371 and preserves its instance; this does not claim the separate inventory UseWithMapItem protocol. No global crystal transformation, boss summon, boss kill, reward or quest completion is inferred. The fourth influence advances only chosen stage7→8. RED: native PostgreSQL fixture executed4.003721107s and failed at WRATH_CRYSTALS_RED before these callbacks were added.
+Source: https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor ; accepted identity in chosen-source-events-rewards/packet.json, Wrath s8. Existing live-player predicate and item-look disguise requests remain with qengine2; neither whole quest is newly qualified.
+
+
+### Coordinator batch exclusion: new Wrath terminal slice
+The unpublished terminal outfit/jade reward slice was removed under the20-minute red-item rule. Native late-journey regression reached the grant/rollback checks but failed the live appearance join: `early eof`, with `join_prepare_failed phase=appearances` and `phase=items`,107.911672992s. No whole-quest qualification was claimed. Existing published Wrath opening, hunt, dream and crystal components remain. Local preservation: /tmp/questpc8-wrath-finale-dropped.rs and /tmp/questpc8b-wrath-terminal-dropped.patch. No existing test was deleted or weakened: the affected helpers and chosen callbacks were restored exactly to the published green version.
+
+Night-retro audit repairs retain the exact299 supported claim denominator and regenerate all299 qualification rows (135 missing rows were stale), preserving existing blocked dispositions. Missing-row rejection now covers every row. SOURCE-only annotations are checked separately from exact public native/source differences; frozen historical categories remain explicit. Lowered runtime quest graphs are unchanged; only source-hash metadata and derived audit packets were refreshed with repository tools.

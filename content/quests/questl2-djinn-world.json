@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/l2-djinn-efreet-lamp",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 2285,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3231",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i3243",
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {},
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/actions/other/others/quest_system2.lua:2-484:sha256:04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-djinn-marid-lamp",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3024,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3231",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i3243",
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {},
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/actions/other/others/quest_system2.lua:2-484:sha256:04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-djinn-tear-fountain",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 12105,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3233",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua:3-13:sha256:c259ac14a543bd5cc1fd3c84c2540b4b09c2fcd4055fe588a9abc85cacbbbc4c"
+      ]
+    }
+  ]
+}

@@ -56,11 +56,17 @@ CHARGE_SOURCE_SHA256 = 'b1c6603253e04042c113a8e5c69bff2b58b4f61f94f03ffdf4df6a07
 
 def native_charge_item(item, profile):
     """Use existing native custody only when canonical physical/custody facts agree."""
-    if item is None or profile is None:
+    if item is None:
         return item
     identity = item['identity']
     key = identity['key']
     charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200}.get(item_id(identity))
+    if charges is None:
+        return item
+    held = copy.deepcopy(item)
+    held['materializable'] = False
+    if profile is None:
+        return held
     semantics = profile['semantics']
     binding = profile['production_binding']
     if (charges is None or profile['production_definition'] != {
@@ -73,7 +79,7 @@ def native_charge_item(item, profile):
             or fact({'semantics': semantics}, 'charges', 'count') != charges
             or semantics['container'] != {'state': 'NOT_APPLICABLE'}
             or semantics['temporal'] != {'state': 'NOT_APPLICABLE'}):
-        return item
+        return held
 
     def agrees(accepted, observed):
         if isinstance(accepted, dict):
@@ -86,7 +92,7 @@ def native_charge_item(item, profile):
             or any(fact({'semantics': semantics}, 'physical', field) is not True
                    for field in ('movable', 'pickupable'))
             or type(fact({'semantics': semantics}, 'physical', 'weight')) is not int):
-        return item
+        return held
     qualified = copy.deepcopy(item)
     qualified['materializable'] = True
     return qualified
@@ -165,6 +171,8 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
     if binding is None:
         return True
     unique, source_id, charges = binding
+    if key != f'oteryn:item.tibia.i{source_id}' or raw_count != charges:
+        return False
     if unique == 6082:
         _, entries = source()
     else:

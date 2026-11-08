@@ -496,6 +496,14 @@ mod tests {
         );
         let registries = [
             crate::quest::world_callbacks::EMBEDDED,
+            // Accepted main83acbdac3 source cohorts remain independently enumerated.
+            include_str!(
+                "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
+            ),
+            include_str!("../../../../../content/quests/world-callbacks/l6-item-rewards.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tools.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-world-puzzles.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tomb-rooms.json"),
             include_str!("../../../../../content/quests/shared-access-callbacks.json"),
             include_str!("../../../../../content/quests/native-scene-callbacks.json"),
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
@@ -541,6 +549,24 @@ mod tests {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
         assert_eq!(expected.len() - before_native, 65);
+        // Crystal source carried tomb keys and shared switch/gate identities
+        // are fixed independently of the runtime callback constructors.
+        let before_main_native = expected.len();
+        for unique in 3950..=3956 {
+            assert!(expected.insert(format!("oteryn:quest-callback/ancient-tombs-key-{unique}")));
+        }
+        for suffix in [
+            "thalas-switch",
+            "diprath-switch",
+            "ashmunrah-switch",
+            "thalas-switch-gate",
+            "diprath-switch-gate",
+            "ashmunrah-switch-gate",
+            "diprath-room",
+        ] {
+            assert!(expected.insert(format!("oteryn:quest-callback/ancient-tombs-{suffix}")));
+        }
+        assert_eq!(expected.len() - before_main_native, 14);
         assert_eq!(
             callbacks
                 .into_iter()

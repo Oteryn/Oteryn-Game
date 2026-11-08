@@ -17,18 +17,18 @@ fn explicit_carried_exchange_keeps_exact_selection_and_bounded_costs() -> Result
     exchange.outfit = None;
     exchange.outfits.clear();
     exchange.give = Some(ItemReward {
-        backpack_outputs: vec![],
         premium: false,
         item: "oteryn:item.tibia.i3031".into(),
         count: 5,
         contents: vec![],
+        backpack_outputs: vec![],
     });
     exchange.take.push(ItemAmount {
+        fluid_subtype: None,
         item: "oteryn:item.tibia.i5901".into(),
         count: 1,
-        fluid_subtype: None,
     });
-    validate_callbacks(std::slice::from_ref(&exchange))?;
+    super::parse(&serde_json::json!({"schema":1,"callbacks":[exchange.clone()]}).to_string())?;
     for mutation in 0..6 {
         let mut invalid = exchange.clone();
         match mutation {
@@ -40,7 +40,8 @@ fn explicit_carried_exchange_keeps_exact_selection_and_bounded_costs() -> Result
             _ => invalid.take.push(invalid.take[1].clone()),
         }
         assert!(
-            validate_callbacks(&[invalid]).is_err(),
+            super::parse(&serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string())
+                .is_err(),
             "invalid exchange mutation {mutation}"
         );
     }

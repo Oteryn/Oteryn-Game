@@ -204,7 +204,7 @@ pub(super) async fn exercise(
                 owner
                     .movement_cells
                     .index()
-                    .lookup(owner.movement_cells.scope(), LogicalCell { x, y, z: 10 }),
+                    .lookup(owner.movement_cells().scope(), LogicalCell { x, y, z: 10 }),
                 Ok(CollisionClass::Blocked)
             );
         }

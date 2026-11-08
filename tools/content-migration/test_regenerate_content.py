@@ -313,6 +313,8 @@ def test_callback_proof_refresh_preserves_reviewed_snapshots() -> None:
             assert first == [path.read_bytes() for path in paths]
         approval["proof_inputs"][0]["sha256"] = hashlib.sha256((root / callback).read_bytes()).hexdigest()
         compiler_inputs[0]["sha256"] = sha(root, compiler)
+        assert approval["proof_inputs"] == proof
+        assert receipt["proof_inputs"] == proof
         receipt["approval"]["sha256"] = hashlib.sha256(first[0]).hexdigest()
         assert json.loads(first[0]) == approval
         assert json.loads(first[1]) == receipt

@@ -1,0 +1,1809 @@
+[
+  {
+    "title": "Illuminator Outfit Quest",
+    "canonical": "oteryn:quest.illuminator_outfit_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/76/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing durable outfit/addon grant owner for Illuminator base outfit from the archive display. QuestOutfitGrant currently admits only Revenant and DecayingDefender; the generic NPC durable executor uses plan_storage and refuses outfit effects. The owner expressly reserves outfit/addon grants to qengine2; a lane NPC module cannot modify that account-entitlement transaction or introduce a second grant owner.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00200-00299.json:1#/records/76/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Claim the basic Illuminator outfit qualification from the archive display.",
+      "targets": [
+        "Illuminator archive display"
+      ]
+    }
+  },
+  {
+    "title": "Illuminator Outfits Quest",
+    "canonical": "oteryn:quest.illuminator_outfits_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/77/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing durable outfit/addon grant owner for Illuminator addons from Scallop Shell and Sand-Filled Horn. QuestOutfitGrant currently admits only Revenant and DecayingDefender; the generic NPC durable executor uses plan_storage and refuses outfit effects. The owner expressly reserves outfit/addon grants to qengine2; a lane NPC module cannot modify that account-entitlement transaction or introduce a second grant owner.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00200-00299.json:1#/records/77/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "collect",
+      "objective": "Recover a Scallop Shell from the chosen Tropical Desolator encounter.",
+      "targets": [
+        "Scallop Shell"
+      ]
+    }
+  },
+  {
+    "title": "In Service of Yalahar Quest",
+    "canonical": "oteryn:quest.in_service_of_yalahar_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/63/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Clearing the four sewer pipes applies a reusable Crowbar without consuming or replacing its item identity. ItemOnTarget requires count>0 and the current durable source-tool path consumes/transforms that item; a count0 callback is rejected. Reusable-tool proof plus target mutation needs the common callback transaction, not an NPC routing hook. Later Azerus encounter access is also reserved to qengine.",
+      "owner": "shared-world-callback-owner",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/63/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:228"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when shared-world-callback-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Clear the four marked sewer pipes with a crowbar.",
+      "targets": [
+        "Crowbar",
+        "Yalahar blocked sewer pipe"
+      ]
+    }
+  },
+  {
+    "title": "Insectoid Invasion World Change",
+    "canonical": "oteryn:quest.authored.insectoid_invasion_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/6/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "W14 owner exclusion: no executable W1 world-change layer/activation/reset bindings. The selection-source compiler cannot produce them: require_w1_bindings returns WorldChangeBindingsUnavailable for validated candidates. A personal quest flag must not impersonate the world-wide activation/geometry/NPC/spawn owner. W14 is explicitly an allowed owner exclusion in the current task.",
+      "owner": "W14 owner exclusion",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/6/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:307"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when W14 owner exclusion supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the Rotworm hole across the bridge west of Greenshore.",
+      "targets": [
+        "Greenshore",
+        "western Rotworm hole"
+      ]
+    }
+  },
+  {
+    "title": "Insectoid Outfits Quest",
+    "canonical": "oteryn:quest.authored.insectoid_outfits_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/7/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing durable outfit/addon grant owner for Insectoid base/addons at cumulative War Exp 300/500/1000. QuestOutfitGrant currently admits only Revenant and DecayingDefender; the generic NPC durable executor uses plan_storage and refuses outfit effects. The owner expressly reserves outfit/addon grants to qengine2; a lane NPC module cannot modify that account-entitlement transaction or introduce a second grant owner.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/7/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Verify cumulative War Exp of at least 300; this is a threshold, not a consumption.",
+      "targets": [
+        "cumulative War Exp threshold 300"
+      ]
+    }
+  },
+  {
+    "title": "Into The Bone Pit Quest",
+    "canonical": "oteryn:quest.tibia_tales",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s4",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing atomic item hand-in/output plus quest-progress owner: Muriel must consume the recovered bone and commit the Bone Pit quest/XP outcome atomically. Generic NPC source execution is storage-only; its one native item exception is the closed Tereban/Fathers Burden handler, not a general exchange. This shared engine is expressly reserved to qengine2; separate item and progress writes would break rollback/replay invariants.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:74"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s4",
+      "kind": "collect",
+      "objective": "Dig a preserved human bone from the cursed pit for Muriel.",
+      "targets": [
+        "Cursed Bone Pit",
+        "Desecrated Bone"
+      ]
+    }
+  },
+  {
+    "title": "Jack to the Future Quest",
+    "canonical": "oteryn:quest.tibia_tales",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s6",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Placing five used furniture kits must change carried kits into world objects, retain each placement and support the source pickup/reset path. Callback can consume one applied source item and transform its clicked target, but has no inventory-to-world furniture placement/pickup transaction. Pickup/reset is expressly reserved to qengine.",
+      "owner": "qengine",
+      "evidence": [
+        "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:228"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s6",
+      "kind": "use",
+      "objective": "Place Jack's five used furniture kits in his home.",
+      "targets": [
+        "Used Red Chair Kit",
+        "Used Globe Kit",
+        "Used Telescope Kit",
+        "Large Used Amphora Kit",
+        "Used Rocking Horse Kit"
+      ]
+    }
+  },
+  {
+    "title": "Jungle Camp Mini World Change",
+    "canonical": "oteryn:quest.authored.jungle_camp_mini_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/8/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "W14 owner exclusion: no executable W1 world-change layer/activation/reset bindings. The selection-source compiler cannot produce them: require_w1_bindings returns WorldChangeBindingsUnavailable for validated candidates. A personal quest flag must not impersonate the world-wide activation/geometry/NPC/spawn owner. W14 is explicitly an allowed owner exclusion in the current task.",
+      "owner": "W14 owner exclusion",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/8/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:307"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when W14 owner exclusion supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Locate the Hunter Camp in Tiquanda and survey its perimeter.",
+      "targets": [
+        "Tiquanda Hunter Camp"
+      ]
+    }
+  },
+  {
+    "title": "Killing in the Name of... Quest",
+    "canonical": "oteryn:quest.killing_in_the_name_of_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s11",
+      "native_dispatch_binding": "oteryn:quest-reward/chosen/hunting-campaign",
+      "runtime_enabled": true
+    },
+    "blocker": null,
+    "source_path_evidence": {
+      "pg_qualified": true,
+      "scope": "Historical source-only proof; superseded by the complete chosen-program qualification below.",
+      "test": "questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
+      "command": "CARGO_BUILD_JOBS=3 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --lib questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards -- --nocapture --test-threads=1",
+      "log": ".questpc8/lane-hunting-qualified-pg.log",
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards duration=334.924269088s",
+      "duration_seconds": 334.924269088,
+      "native_deaths": 2003,
+      "ordinary_deaths": 2000,
+      "bosses": [
+        "Snapper",
+        "Deathbine",
+        "The Many"
+      ],
+      "source_task_xp": 39900,
+      "source_task_points": 18,
+      "proof": [
+        "three allowed Crocodile/Carniphila repetitions earn12points without seeded quest state",
+        "explicit promotion keyword earns native next rank",
+        "native XP owner establishes external level130 eligibility and live refresh reloads facts",
+        "650Hydras and three real source boss portals/deaths/reports",
+        "live journal counters and exact per-report XP",
+        "duplicate native death notification/drain and NPC command replay do not duplicate credit",
+        "exact three achievements and no additional reward on a subsequent report"
+      ]
+    },
+    "disposition": "qualified-current-lane",
+    "qualified_elsewhere": [],
+    "mechanism": "native ordered task/rank/boss/report programme, exact once-only10000XP/5000gold completion, compiled Grizzly placement and real NPC join/task/replay",
+    "round": "L7",
+    "qualification": {
+      "scope": "complete chosen eleven-stage programme plus retained native source task/rank/portal/report obligations",
+      "test": "questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
+      "duration_seconds": 116.451671655,
+      "red_duration_seconds": 113.73,
+      "native_deaths": 2003,
+      "ordinary_deaths": 2000,
+      "reward_experience": 10000,
+      "reward_gold_value": 5000,
+      "native_currency_delivery": {
+        "value_gold": 5000,
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "gold_per_item": 100,
+        "basis": "native denomination normalization; economy/src/npc_trade.rs:42 and economy/src/coin_exchange.rs:26"
+      },
+      "progress_tracks": [
+        "oteryn:quest-progress/chosen/killing_in_the_name_of/phase",
+        "oteryn:quest-progress/chosen/killing_in_the_name_of/count",
+        "oteryn:quest-progress/chosen/killing_in_the_name_of/reported"
+      ],
+      "binding": "oteryn:quest-reward/chosen/hunting-campaign",
+      "evidence": "qlane-meta/questpc8/campaign-validation.json",
+      "proof": [
+        "ordered chosen kill counters observe successful source actions in the existing locked writer",
+        "three task/boss pairs, native portals, promotion and final report",
+        "late captured deaths cannot enter a later chosen phase",
+        "missing backpack refuses payout without completing or awarding XP",
+        "50 platinum coins and completed quest share the transaction; XP obligation pays exactly 10000",
+        "command replay and fresh claim retry mint/pay nothing twice",
+        "reward quantity and grant conditions participate in definition hash",
+        "Father start remains a single eleven-track transaction",
+        "immutable successful report receipts for Snapper, Deathbine and The Many are required by the same fenced transaction",
+        "premature claim leaves ordered progress at phase 7",
+        "quest session reload retains exactly one final payout"
+      ],
+      "native_placement_proof": "npc-placement-validation.json"
+    },
+    "qualified_components": [
+      {
+        "scope": "incoming source task/boss reports and atomic final payout, before ordered-phase reconciliation",
+        "duration_seconds": 179.886708384,
+        "proof": "qlane-meta/questpc8/cloud-hunting-campaign-proof.json"
+      },
+      {
+        "scope": "Production placement/native NPC join/task/replay",
+        "proof": "npc-placement-validation.json",
+        "test": "questpc8_grizzly_production_placement_native_join_and_task",
+        "duration_seconds": 47.402370339,
+        "red_duration_seconds": 2.01
+      }
+    ],
+    "native_placement_probe": {
+      "artifact_digest": "dd0a866904036a1823db30d042fcfd9eb4db89b21ad7ea93b1916cdc52265a04",
+      "compiled_npc_count": 29,
+      "grizzly_adams_present": false,
+      "log_sha256": "145bb737d8f88ea6d1ece1a51c5f0743d6b0e97ba4e9149594350852c1086a03"
+    }
+  },
+  {
+    "title": "Kilmaresh Quest",
+    "canonical": "oteryn:quest.kilmaresh_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/65/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing atomic item hand-in/output plus quest-progress owner: Yonan must consume the four Regalia of Suon pieces and mint the assembled regalia atomically with quest progress. Generic NPC source execution is storage-only; its one native item exception is the closed Tereban/Fathers Burden handler, not a general exchange. This shared engine is expressly reserved to qengine2; separate item and progress writes would break rollback/replay invariants.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/65/definition",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:74"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "explore",
+      "objective": "Investigate the ambassador's house for evidence.",
+      "targets": [
+        "Kilmaresh ambassador house"
+      ]
+    }
+  },
+  {
+    "title": "Kingdom of Kormarak Quest",
+    "canonical": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/9/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "blocker": null,
+    "disposition": "qualified-here",
+    "qualified_elsewhere": [],
+    "mechanism": "ordered exploration, actual shared guardian, native ordinal body cache and atomic four-item backpack outputs",
+    "round": "L7",
+    "proof": "kormarak-consolidation-validation.json",
+    "qualification_scope": "Complete chosen Oteryn recipe only; conservative native route/body restoration documented in CONTRACT-NOTES.md.",
+    "qualified_components": [
+      {
+        "scope": "Complete chosen exploration, captured native death, cache grant, completion and replay programme",
+        "test": "questpc8_kormarak_native_guardian_body_and_four_outputs",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_kormarak_native_guardian_body_and_four_outputs",
+        "duration_seconds": 36.476644642,
+        "red_duration_seconds": 2.52,
+        "proof": "cloud-kormarak-proof.json"
+      },
+      {
+        "scope": "Merged conditional guardian and cold quest-session repeat refusal",
+        "tests": [
+          "questpc8_kormarak_native_guardian_body_and_four_outputs",
+          "questpc8_retrieval_kormarak_native_guardian_body_outputs_once"
+        ],
+        "case_seconds": [
+          26.280744943,
+          25.648903113
+        ],
+        "proof": "kormarak-consolidation-validation.json"
+      }
+    ]
+  },
+  {
+    "title": "Kingsday Mini World Change",
+    "canonical": "oteryn:quest.authored.kingsday_mini_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/10/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "W14 owner exclusion: no executable W1 world-change layer/activation/reset bindings. The selection-source compiler cannot produce them: require_w1_bindings returns WorldChangeBindingsUnavailable for validated candidates. A personal quest flag must not impersonate the world-wide activation/geometry/NPC/spawn owner. W14 is explicitly an allowed owner exclusion in the current task.",
+      "owner": "W14 owner exclusion",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/10/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:307"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when W14 owner exclusion supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Visit decorated Thais and the celebration outside the royal castle.",
+      "targets": [
+        "Thais Kingsday celebration"
+      ]
+    }
+  },
+  {
+    "title": "Kissing a Pig Quest",
+    "canonical": "oteryn:quest.authored.kissing_a_pig_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/11/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing atomic item hand-in/output plus quest-progress owner: Budrik consumes five picks for tunnel access; Elvith/Lynda also consume the poem/ice cream before lesson progress. Generic NPC source execution is storage-only; its one native item exception is the closed Tereban/Fathers Burden handler, not a general exchange. This shared engine is expressly reserved to qengine2; separate item and progress writes would break rollback/replay invariants.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/11/definition",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:74"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Trim Hoggle's jungle grass with a machete and report the completed garden.",
+      "targets": [
+        "Hoggle",
+        "Jungle Grass",
+        "Machete"
+      ]
+    }
+  },
+  {
+    "title": "Knight Outfits Quest",
+    "canonical": "oteryn:quest.knight_outfits_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/51/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal"
+      }
+    ],
+    "blocker": {
+      "missing_piece": "Missing durable outfit/addon grant owner for Knight outfit/addon ownership beyond the Ramsay helmet reward. QuestOutfitGrant currently admits only Revenant and DecayingDefender; the generic NPC durable executor uses plan_storage and refuses outfit effects. The owner expressly reserves outfit/addon grants to qengine2; a lane NPC module cannot modify that account-entitlement transaction or introduce a second grant owner.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00000-00099.json:1#/records/51/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    }
+  },
+  {
+    "title": "Koshei the Deathless Quest",
+    "canonical": "oteryn:quest.koshei_the_deathless_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/52/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing atomic item hand-in/output plus quest-progress owner: four separately claimed amulet fragments must be consumed together and yield the assembled amulet before the timed Koshei seal. Generic NPC source execution is storage-only; its one native item exception is the closed Tereban/Fathers Burden handler, not a general exchange. This shared engine is expressly reserved to qengine2; separate item and progress writes would break rollback/replay invariants.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00000-00099.json:1#/records/52/definition",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:74"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the four amulet fragments along the chosen Darashia routes.",
+      "targets": [
+        "Koshei's Ancient Amulet fragments"
+      ]
+    }
+  },
+  {
+    "title": "Krailos Quest",
+    "canonical": "oteryn:quest.krailos_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/66/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing atomic item hand-in/output plus quest-progress owner: the camp menu hand-ins consume food/teeth/Onyx Chip while advancing the matching quest tracks. Generic NPC source execution is storage-only; its one native item exception is the closed Tereban/Fathers Burden handler, not a general exchange. This shared engine is expressly reserved to qengine2; separate item and progress writes would break rollback/replay invariants.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/66/definition",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:74"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Bring one batch each of Cookies, Roasted Meat and Decorated Cake.",
+      "targets": [
+        "Cookies",
+        "Roasted Meat",
+        "Decorated Cake"
+      ]
+    }
+  },
+  {
+    "title": "Last Creep Standing",
+    "canonical": "oteryn:quest.authored.last_creep_standing",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/12/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Eight Shapechanger forms must grant only their matching portal admission and clear/restore temporary disguise on leaving the trial. Callback has no observed temporary-disguise predicate or paired encounter-return state. NPC storage transitions and permanent outfit unlocks cannot supply those facts. Paired portals and encounter access are expressly reserved to qengine.",
+      "owner": "qengine",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/12/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Use the Shapechanger for the Lost Soul disguise and enter its matching portal.",
+      "targets": [
+        "Lost Soul disguise",
+        "Lost Soul matching portal"
+      ]
+    }
+  },
+  {
+    "title": "Life Ring Quest",
+    "canonical": "oteryn:quest.life_ring_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/67/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.kv.lifering",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s1..s4",
+      "native_dispatch_binding": [
+        "authored-life-ring-entry",
+        "authored-life-ring-pick",
+        "authored-life-ring-cache"
+      ],
+      "runtime_enabled": true
+    },
+    "blocker": null,
+    "first_unqualified_stage": null,
+    "disposition": "qualified-here",
+    "qualified_elsewhere": [],
+    "mechanism": "native bridge evacuation and chosen reusable-pick descent/cache programme",
+    "round": "L7",
+    "qualified_components": [
+      "Native reversible six-cell bridge with atomic player/creature evacuation; cloud-life-ring-bridge-proof.json",
+      {
+        "scope": "Full chosen exploration/reusable-pick/native-descent/cache/reward/completion/replay programme",
+        "test": "questpc8_life_ring_pick_descent_exact_rewards_and_replay",
+        "duration_seconds": 41.012305888,
+        "red_duration_seconds": 2.53,
+        "proof": "cloud-life-ring-programme-proof.json"
+      }
+    ],
+    "qualification_scope": "Complete chosen finite Oteryn recipe and retained source bridge component; original source holds and claims remain unchanged."
+  },
+  {
+    "title": "Lion's Rock Quest",
+    "canonical": "oteryn:quest.lions_rock",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/68/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "The source treasure route has timed/resettable trial objects and the Lion Heart cache. Existing entry-refusal test proves refusal at Questline0 only. Callback has no reset/pickup epoch owner, and a native authored reward cannot borrow a Crystal UID. Reset/pickup is expressly reserved to qengine; the native placement binder also needs a shared contract.",
+      "owner": "qengine",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/68/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+        "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/lions_rock.rs:1"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach Lion's Rock west of Darashia and inspect the trial entrance.",
+      "targets": [
+        "Lion's Rock"
+      ]
+    }
+  },
+  {
+    "title": "Liquid Black Quest",
+    "canonical": "oteryn:quest.liquid_black_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/69/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing durable outfit/addon grant owner for Deepling outfit at the memorial after presenting Lagatos book. QuestOutfitGrant currently admits only Revenant and DecayingDefender; the generic NPC durable executor uses plan_storage and refuses outfit effects. The owner expressly reserves outfit/addon grants to qengine2; a lane NPC module cannot modify that account-entitlement transaction or introduce a second grant owner.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/69/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "explore",
+      "objective": "Cross the chosen underwater route to Fiehonja.",
+      "targets": [
+        "Fiehonja"
+      ]
+    }
+  },
+  {
+    "title": "Lone Medusa Quest",
+    "canonical": "oteryn:quest.lone_medusa_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/54/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned standalone source contract: all claims and source placements, real framed USE, once-only grant, refusal and cold-owner replay; no separate quest door exists in this pinned source",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_5.lone_medusa",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_phase_a_10_use_replay_and_refusal"
+      }
+    ],
+    "qualification": {
+      "test": "questpc8_lone_medusa_claim_use_replay_and_refusal",
+      "command": "CARGO_BUILD_JOBS=3 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --lib questpc8_lone_medusa_claim_use_replay_and_refusal -- --nocapture",
+      "log": ".questpc8/lane-medusa-pg.log",
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_lone_medusa_claim_use_replay_and_refusal duration=46.032445154s",
+      "duration_seconds": 46.032445154,
+      "native_source_marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_5.lone_medusa (32406, 32764, -1) native_source=true duration=5.087234109s",
+      "source_correction": "Inherited blocker cited research/medusa.md for Medusa Shield Quest, a different quest. The strict source-contract cohort requires reward_only, no gates, no journal, and exactly reward_claim+trigger_use; fresh Lone Medusa spoiler has no quest-door condition."
+    }
+  },
+  {
+    "title": "Loose Ends Quest",
+    "canonical": "oteryn:quest.tibia_tales",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s9",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing atomic item hand-in/output plus quest-progress owner: the pinned chosen Tibia Tales anthology includes Muriel bone hand-in, holy-water supply and Boozer ale exchange before final6500XP. Generic NPC source execution is storage-only; its one native item exception is the closed Tereban/Fathers Burden handler, not a general exchange. This shared engine is expressly reserved to qengine2; separate item and progress writes would break rollback/replay invariants.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:74"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s9",
+      "kind": "talk",
+      "objective": "Visit the five Loose Ends contacts in the chosen order.",
+      "targets": [
+        "Ahmet",
+        "Spectulus",
+        "Rottin Wood",
+        "Eclesius",
+        "Boozer"
+      ]
+    }
+  },
+  {
+    "title": "Lumberjack Mini World Change",
+    "canonical": "oteryn:quest.authored.lumberjack_mini_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/13/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "W14 owner exclusion: no executable W1 world-change layer/activation/reset bindings. The selection-source compiler cannot produce them: require_w1_bindings returns WorldChangeBindingsUnavailable for validated candidates. A personal quest flag must not impersonate the world-wide activation/geometry/NPC/spawn owner. W14 is explicitly an allowed owner exclusion in the current task.",
+      "owner": "W14 owner exclusion",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/13/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:307"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when W14 owner exclusion supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find Chip's clearing in the Fields of Glory north of Carlin.",
+      "targets": [
+        "Fields of Glory lumberjack clearing"
+      ]
+    }
+  },
+  {
+    "title": "Machinery of War Quest",
+    "canonical": "oteryn:quest.machinery_of_war_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/70/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Burning the ballistae/catapults/siege wheels with the reusable Fire Bug requires resetting world-object state and non-consuming tool application. Current ItemOnTarget requires positive consumption and Callback has no reset epoch/timer; count0 is rejected. Reset/pickup world owner is expressly reserved to qengine.",
+      "owner": "qengine",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/70/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:228"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Obtain forty-four Bricklayers' Kits for the chosen repair budget.",
+      "targets": [
+        "Bricklayers' Kit"
+      ]
+    }
+  },
+  {
+    "title": "Mage Outfits Quest",
+    "canonical": "oteryn:quest.outfit_and_addon_quests",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/82/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s10",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing durable outfit/addon grant owner for Mage potion-belt addon, including the Winning Lottery Ticket hand-in. QuestOutfitGrant currently admits only Revenant and DecayingDefender; the generic NPC durable executor uses plan_storage and refuses outfit effects. The owner expressly reserves outfit/addon grants to qengine2; a lane NPC module cannot modify that account-entitlement transaction or introduce a second grant owner.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/82/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s10",
+      "kind": "collect",
+      "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
+      "targets": [
+        "Winning Lottery Ticket"
+      ]
+    }
+  },
+  {
+    "title": "Magic Sword Quest",
+    "canonical": "oteryn:quest.authored.magic_sword_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/14/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": "gameplay_transport::quest_callbacks and native quest death objectives",
+      "runtime_enabled": true
+    },
+    "blocker": null,
+    "first_unqualified_stage": null,
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Native level100 admission, two/four conditional Demon groups, hole/passage and ordered exact dual-cache rewards",
+    "round": "L7",
+    "qualification_scope": "Complete finite chosen Oteryn recipe with retained native selectors and documented conservative source mappings; see magic-sword-validation.json",
+    "qualified_components": [
+      "Native level100 admission, two/four conditional Demon groups, hole/passage and ordered exact dual-cache rewards",
+      "Real PostgreSQL RED/GREEN; strict checks, generated content and pin reproducibility pass"
+    ]
+  },
+  {
+    "title": "Make Believe Quest",
+    "canonical": "oteryn:quest.authored.make_believe_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/15/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Mimar Haffar needs short-lived crystal/cannon charge cycles and shield windows; Maior Domus needs vocation-specific charge windows; Phosphorus requires eight simultaneous petrified adds and persistent arena hazards. Current callback effects have neither encounter lifecycle nor timed multi-actor state authority. Encounter/party access is expressly reserved to qengine; no boss-victory storage is fabricated.",
+      "owner": "qengine",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/15/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Use the cargo-crate disguise to cross the guarded Venore storehouse while Powerless, avoiding guards, noisy grates and sneeze-triggering webs before entering the loading teleport.",
+      "targets": [
+        "cargo crate",
+        "storehouse guards",
+        "noisy grates",
+        "sneeze-triggering webs",
+        "Venore supply storehouse portal"
+      ]
+    }
+  },
+  {
+    "title": "Makeshift Warrior Outfits Quest",
+    "canonical": "oteryn:quest.makeshift_warrior_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/71/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing durable outfit/addon grant owner for Makeshift Warrior base/addons from planks and Tinged Pot. QuestOutfitGrant currently admits only Revenant and DecayingDefender; the generic NPC durable executor uses plan_storage and refuses outfit effects. The owner expressly reserves outfit/addon grants to qengine2; a lane NPC module cannot modify that account-entitlement transaction or introduce a second grant owner.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/71/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the Gnome Deep Hub and the chosen salvage qualification desk.",
+      "targets": [
+        "Gnome Deep Hub"
+      ]
+    }
+  },
+  {
+    "title": "Marlin Trophy Quest",
+    "canonical": "oteryn:quest.marlin_trophy_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/72/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing atomic item hand-in/output plus quest-progress owner: Pemaret must consume one Marlin and mint its trophy atomically through the retained NPC source dialogue; the chosen Goroma stand is not that NPC source obligation. Generic NPC source execution is storage-only; its one native item exception is the closed Tereban/Fathers Burden handler, not a general exchange. This shared engine is expressly reserved to qengine2; separate item and progress writes would break rollback/replay invariants.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/72/definition",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:74"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the Island Troll fishing route on Goroma.",
+      "targets": [
+        "Goroma Island Troll fishing route"
+      ]
+    }
+  },
+  {
+    "title": "Mastermind Potion Quest",
+    "canonical": "oteryn:quest.authored.mastermind_potion_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/16/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "disposition": "qualified-here",
+    "qualified_elsewhere": [],
+    "mechanism": "ordered native two-cache programme, live Premium gates and exact final201-gold atomic payout",
+    "round": "L7",
+    "qualified_components": [
+      {
+        "batch": "native-authored-placement-prerequisite",
+        "scope": "reusable placement binding only; does not qualify this quest programme",
+        "test": "quest_authored_placement_without_legacy_uid_mints_once_and_replays",
+        "marker": "QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CASE_COMPLETED",
+        "duration": "26.170233947s",
+        "red_duration_seconds": 23.62,
+        "red_failure": "authored selector without a source UID was not served",
+        "qengine2_checked": "5a6de28c1",
+        "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
+        "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      },
+      {
+        "scope": "Premium refusal/admission, both native route anchors and cache ordinals, exact7440x2/gold201/7159x1/7158x2, legal gold stacks and no extra bag, replay and cold quest copy.",
+        "test": "questpc8_retrieval_mastermind_two_routes_exact_outputs_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_mastermind",
+        "duration_seconds": 168.413264571,
+        "proof": "retrieval-routes-validation.json"
+      },
+      {
+        "scope": "Merged two-cache programme, final Premium refusal, no early gold, cold-cache replay; concurrent NPC work retained",
+        "test": "questpc8_mastermind_two_native_caches_premium_and_exact_201_gold",
+        "duration_seconds": 40.769679054,
+        "proof": "cloud-mastermind-merge-proof.json"
+      }
+    ],
+    "qualification_scope": "Complete selected once-only Oteryn programme at the documented native counterparts; canonical Source remains unchanged.",
+    "local_merge_validation": "cloud-mastermind-merge-proof.json",
+    "blocker": null,
+    "proof": "cloud-mastermind-proof.json"
+  },
+  {
+    "title": "Measuring Tibia Quest",
+    "canonical": "oteryn:quest.authored.measuring_tibia_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/17/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Missing durable outfit/addon grant owner for Discoverer base/addons after 10/15/20 distinct regional surveys. QuestOutfitGrant currently admits only Revenant and DecayingDefender; the generic NPC durable executor uses plan_storage and refuses outfit effects. The owner expressly reserves outfit/addon grants to qengine2; a lane NPC module cannot modify that account-entitlement transaction or introduce a second grant owner.",
+      "owner": "qengine2",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/17/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:130",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:132"
+      ],
+      "attempts": [
+        "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+        "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+        "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine2 supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification."
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "explore",
+      "objective": "Survey one authored landmark in each of the first ten atlas regions. Require ten distinct regions cumulatively.",
+      "targets": [
+        "Ab'Dendriel",
+        "Carlin",
+        "Edron",
+        "Feyrist",
+        "Hrodmir",
+        "Kazordoon",
+        "Kilmaresh",
+        "Krailos",
+        "Marapur",
+        "Northern Darama"
+      ]
+    }
+  },
+  {
+    "title": "Mintwallin Cyclops Quest",
+    "canonical": "oteryn:quest.mintwallin_cyclops_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/60/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.kv.mintwallincyclops",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_phase_a_11_use_replay_and_refusal"
+      }
+    ],
+    "disposition": "qualified-current-lane",
+    "qualified_elsewhere": [],
+    "mechanism": "asymmetric_map_effects_multi_actor_moves",
+    "round": "L7",
+    "qualified_components": [
+      {
+        "scope": "native source lever, eleven wall edits, collision, self-removal, replay and source-floor reconstruction",
+        "test": "questpc8_mintwallin_lever_edits_all_walls_once_and_restores_with_floor",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mintwallin_scene",
+        "duration_seconds": 25.397996587,
+        "proof": "native-scenes-validation.json"
+      },
+      {
+        "scope": "Actual untagged native Ruby cache, existing source claim and once-only mint/replay",
+        "test": "questpc8_mintwallin_native_cache_without_uid_mints_ruby_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mintwallin_native_cache",
+        "duration_seconds": 25.495190726,
+        "proof": "native-alias-validation.json"
+      }
+    ],
+    "qualification_scope": "Complete selected native source scene and original once-only Ruby cache; no additional authored recipe is present."
+  },
+  {
+    "title": "Mystery of the Valley Quest",
+    "canonical": "oteryn:quest.authored.mystery_of_the_valley_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/18/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": null,
+      "native_dispatch_binding": "authored-mystery-inukaya/muggy-plains/kilmaresh/crystal/assembly",
+      "runtime_enabled": true
+    },
+    "blocker": null,
+    "first_unqualified_stage": null,
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Receipt-backed Lai access, native landmark collections/exploration and atomic three-fragment contextual crafting",
+    "round": "L7",
+    "qualified_components": [
+      {
+        "batch": "native-authored-placement-prerequisite",
+        "scope": "reusable placement binding only; does not qualify this quest programme",
+        "test": "quest_authored_placement_without_legacy_uid_mints_once_and_replays",
+        "marker": "QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CASE_COMPLETED",
+        "duration": "26.170233947s",
+        "red_duration_seconds": 23.62,
+        "red_failure": "authored selector without a source UID was not served",
+        "qengine2_checked": "5a6de28c1",
+        "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
+        "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      },
+      {
+        "scope": "Mandatory Lai introduction and production native placement only; full quest remains active authoring",
+        "test": "questpc8_mystery_lai_introduction_requires_access_and_is_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mystery_lai_introduction_requires_access_and_is_once duration=69.175308851s",
+        "duration_seconds": 69.175308851,
+        "red_duration_seconds": 69.96,
+        "proof": "mystery-introduction-validation.json"
+      },
+      {
+        "scope": "Plain constructor MINT/carried custody for statue and all three fragments; quest collection/assembly still active authoring",
+        "test": "questpc8_static_constructors_mint_and_carry_four_plain_items_without_timers",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_static_constructors_mint_and_carry_four_plain_items_without_timers duration=38.512744657s",
+        "duration_seconds": 38.512744657,
+        "red_duration_seconds": 37.85,
+        "proof": "static-constructor-validation.json"
+      },
+      {
+        "scope": "Regression coverage for existing first-party constructor reuse only; no new gameplay qualification",
+        "proof": "constructor-reuse-validation.json",
+        "python_tests": 3
+      },
+      {
+        "scope": "Complete native chosen programme and corrected Cure the Dogs access gate",
+        "proof": "mystery-route-validation.json",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mystery_assembly_consumes_all_three_or_none duration=111.881352291s",
+        "duration_seconds": 111.881352291
+      }
+    ],
+    "qualification_scope": "Complete finite chosen Oteryn recipe with explicit native landmark bindings; mystery-route-validation.json"
+  },
+  {
+    "canonical": "oteryn:quest.giant_smithhammer_quest",
+    "title": "Giant Smithhammer Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": [],
+    "mechanism": "native chosen exploration, captured Giant Spider death, exact central chest and atomic three-item backpack MINT",
+    "round": "L7",
+    "qualified_components": [
+      {
+        "scope": "source lever mechanism only; not the chosen quest programme",
+        "test": "quest_l7_giant_smithhammer_four_source_states",
+        "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib quest_l7_giant_smithhammer_four_source_states -- --nocapture",
+        "marker": "POSTGRES_CASE_COMPLETED L7 giant-smithhammer four source states via USE",
+        "duration_seconds": 30.16,
+        "log": ".questpc8/l7-smithhammer-final.log",
+        "log_sha256": "fb8e46d5fa3c56c288cb9197df965c03d7ed83b10f86d3afd7592dd68b536fc9",
+        "red_duration_seconds": 27.97,
+        "red_failure": "open+absent lever revision advanced from 1 to 2"
+      },
+      {
+        "scope": "Native guardian, capacity refusal, exact direct backpack outputs, completion and replay",
+        "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+        "duration_seconds": 26.27184565,
+        "proof": "native-alias-smith-merge-validation.json"
+      },
+      {
+        "scope": "Production guardian activation from active native exploration; exact actor reused across refresh; captured native death plus atomic output programme",
+        "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+        "duration_seconds": 37.615971969,
+        "proof": "cloud-smith-cache-proof.json"
+      }
+    ],
+    "proof": "cloud-smith-cache-proof.json",
+    "qualification_scope": "Complete chosen exploration/Giant Spider/cache programme with exact hammer1, Talon1 and gold100 atomic outputs; retained source four-state lever is separately PG-qualified.",
+    "blocker": null
+  },
+  {
+    "canonical": "oteryn:quest.triangle_tower_quest",
+    "title": "Triangle Tower Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-elsewhere",
+    "qualified_elsewhere": [
+      "questpc4"
+    ],
+    "mechanism": "asymmetric_map_effects_multi_actor_moves",
+    "blocker": null,
+    "round": "L7"
+  },
+  {
+    "canonical": "oteryn:quest.waterfall_quest",
+    "title": "Waterfall Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-elsewhere",
+    "qualified_elsewhere": [
+      "questpc4"
+    ],
+    "mechanism": "asymmetric_map_effects_multi_actor_moves",
+    "blocker": null,
+    "round": "L7"
+  },
+  {
+    "canonical": "oteryn:quest.authored.the_colours_of_magic",
+    "title": "The Colours of Magic",
+    "status": "IN_PROGRESS",
+    "disposition": "authoring",
+    "qualified_elsewhere": [],
+    "mechanism": "chosen fixed-blue native envelope exchange and self-marking; live-player pairing queued",
+    "blocker": {
+      "kind": "active_implementation",
+      "owner": "questpc8",
+      "missing_piece": "Opening slice PG green; live-player differently-coloured pairing remains queued with qengine2 under current owner rule.",
+      "evidence": [
+        "qlane-meta/questpc8/RESUME.md",
+        "qlane-meta/questpc8/continuation-validation.json"
+      ]
+    },
+    "round": "L7",
+    "engine_request": {
+      "owner": "qengine2",
+      "state": "sent",
+      "feature": "Exact carried USE item replacement/reward plus fenced live-player quest-state predicate",
+      "where": [
+        "crates/gameplay/quests",
+        "crates/gameplay/dispatch",
+        "crates/gameplay/durability"
+      ],
+      "proof": "ENGINE-REQUESTS.md",
+      "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
+      "last_upstream_check": {
+        "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "qengine2": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
+        "result": "Both requested capabilities stillQUEUED; quest-specific work continues without duplicate engine."
+      }
+    },
+    "collector_handoff": {
+      "branch_frozen_after_push": true,
+      "continuation_branch": "claude/happy-davinci-ijz3wy-questpc8b",
+      "proof": "collector-main-validation.json",
+      "whole_quest_qualification_unchanged": true
+    },
+    "opening_slice": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc8b",
+      "state": "POSTGRES_GREEN_ON_MERGED_MAIN",
+      "red_seconds": 64.054450351,
+      "red_marker": "POSTGRES_CASE_STARTED authored-colours-opening after PostgreSQL fixture initialization",
+      "red_error": "source envelope binding missing",
+      "shared_reuse": "QENGINE2 dd35529b6; exact carried helper and migration1552",
+      "whole_quest_qualification_unchanged": true,
+      "green_seconds": 83.822630302,
+      "green_marker": "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
+      "proof": "colours-opening-validation.json",
+      "merged_main": "b3864f14a0035a582ef80f1da7d2a931691dd035"
+    },
+    "continuation_validation": {
+      "proof": "unit-completion-validation.json",
+      "unit_run": "INTERRUPTED_FOR_MAIN_MERGE;6affected cases PASS after abort",
+      "qualification_unchanged": true
+    },
+    "main_sync": {
+      "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+      "state": "NATIVE_POSTGRES_GREEN",
+      "proof": "wrath-source-dragon-validation.json"
+    },
+    "authoring_round_trip": "Published envelope/self-mark rows restored to canonical author input; opening PG revalidation included in wrath-dream-validation.json"
+  },
+  {
+    "canonical": "oteryn:quest.the_secret_library_quest",
+    "title": "The Secret Library Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Native NPC investigations, owned hawser and Bone Fiddle components, actual Oberon death and read-only library access gate",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with canonical adaptations and documented conservative source mappings; see continuation-validation.json and CONTRACT-NOTES.md",
+    "qualified_components": [
+      "Native NPC investigations, owned hawser and Bone Fiddle components, actual Oberon death and read-only library access gate",
+      "Real PostgreSQL RED/GREEN, full chosen route 54.515229036s; fees/inputs/replay/cold checks as applicable",
+      "Strict checks, native generation and world pin reproducibility pass"
+    ],
+    "queued_stage_binding": {
+      "stage": "complete",
+      "native_dispatch_binding": "native NPC/world callbacks, Quest writer, native Item/loot/travel/access owners",
+      "runtime_enabled": true
+    }
+  },
+  {
+    "canonical": "oteryn:quest.the_travelling_trader_quest",
+    "title": "The Travelling Trader Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Native six-object NPC delivery route, exact source fees/input BURN, once-only Rashid recognition and fenced retained shop offers",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with canonical adaptations and documented conservative source mappings; see continuation-validation.json and CONTRACT-NOTES.md",
+    "qualified_components": [
+      "Native six-object NPC delivery route, exact source fees/input BURN, once-only Rashid recognition and fenced retained shop offers",
+      "Real PostgreSQL RED/GREEN, full chosen route 70.169371517s; fees/inputs/replay/cold checks as applicable",
+      "Strict checks, native generation and world pin reproducibility pass"
+    ],
+    "queued_stage_binding": {
+      "stage": "complete",
+      "native_dispatch_binding": "native NPC/world callbacks, Quest writer, native Item/loot/travel/access owners",
+      "runtime_enabled": true
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.tibia_anniversary",
+    "title": "Tibia Anniversary",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Thirty native conditional corpse drops, exact rag hand-in, five native Pinata Dragon deaths and once-only Festive Backpack",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with canonical adaptations and documented conservative source mappings; see continuation-validation.json and CONTRACT-NOTES.md",
+    "qualified_components": [
+      "Thirty native conditional corpse drops, exact rag hand-in, five native Pinata Dragon deaths and once-only Festive Backpack",
+      "Real PostgreSQL RED/GREEN, full chosen route 55.296868003s; fees/inputs/replay/cold checks as applicable",
+      "Strict checks, native generation and world pin reproducibility pass"
+    ],
+    "queued_stage_binding": {
+      "stage": "complete",
+      "native_dispatch_binding": "native NPC/world callbacks, Quest writer, native Item/loot/travel/access owners",
+      "runtime_enabled": true
+    }
+  },
+  {
+    "canonical": "oteryn:quest.tinder_box_quest_chyllfroest",
+    "title": "Tinder Box Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-current-lane",
+    "qualified_elsewhere": [],
+    "mechanism": "Premium summit exploration, native exact bone-pile ordinal, once-only world MINT",
+    "round": "L7",
+    "proof": "cloud-tinder-box-proof.json"
+  },
+  {
+    "canonical": "oteryn:quest.treasure_island_quest",
+    "title": "Treasure Island Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Actual paid ship travel, owned map/shovel/rope, selected native cave sand/rope and causally fresh paid return",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with canonical adaptations and documented conservative source mappings; see continuation-validation.json and CONTRACT-NOTES.md",
+    "qualified_components": [
+      "Actual paid ship travel, owned map/shovel/rope, selected native cave sand/rope and causally fresh paid return",
+      "Real PostgreSQL RED/GREEN, full chosen route 96.693820757s; fees/inputs/replay/cold checks as applicable",
+      "Strict checks, native generation and world pin reproducibility pass"
+    ],
+    "queued_stage_binding": {
+      "stage": "complete",
+      "native_dispatch_binding": "native NPC/world callbacks, Quest writer, native Item/loot/travel/access owners",
+      "runtime_enabled": true
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.venore_daily_tasks_quest",
+    "title": "Venore Daily Tasks Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": [],
+    "mechanism": "Native daily construction circuit, captured corym death credit and ordinary rewards, occurrence MINT and exact72000-second repeat",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "proof": "venore-route-validation.json",
+    "qualification_scope": "Complete finite chosen Oteryn recipe; CONTRACT-NOTES.md records selected ordering and native bindings",
+    "qualified_components": [
+      "Owned rope/shovel, actual native Norman/Scott/Frank, three real uncharged supplies",
+      "Nine source-geometry machine USEs, strict reach/order and replay rejection",
+      "Both exact tool hand-ins burn their physical inputs; oil remains uncharged and retained",
+      "Five native corym captured deaths each commit ordinary XP and capped quest credit",
+      "Report gives exactly1000XP and1000gold, completes once, retains cooldown state",
+      "Original callback source key retained; occurrence MINT claim differs by nonce through shared SQL owner",
+      "Immediate/cold refusal, exact72000-second boundary, rejected no-op occurrence effects"
+    ],
+    "merged_revalidation": {
+      "proof": "collector-main-validation.json",
+      "result": "PASS on PostgreSQL18.6 after collector78294c081; prior qualification retained"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.winterlight_solstice",
+    "title": "Winterlight Solstice",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "calendar_repeatable_random_rewards",
+    "blocker": null,
+    "round": "L7",
+    "active_validation": {
+      "main_merge": "1ae39c7f",
+      "native_pg": "PASS88.598050216s",
+      "workspace_all_targets": "PASS3m58s",
+      "fmt": "PASS",
+      "pin_digest": "25c580be19940724badfea7e9ac681e8ee0f8bebe7fc1306d6f4b72b9bbbd300",
+      "proof": "winterlight-route-validation.json"
+    },
+    "qualification_scope": "Complete chosen finite Premium recipe over native source geometry, physical components, disguise/cold, four fires, captured Queen death and once-only base Percht Raider outfit.",
+    "qualified_components": [
+      {
+        "scope": "Complete chosen finite Premium recipe over native source geometry, physical components, disguise/cold, four fires, captured Queen death and once-only base Percht Raider outfit.",
+        "proof": "winterlight-route-validation.json",
+        "duration_seconds": 88.598050216
+      }
+    ],
+    "merged_revalidation": {
+      "proof": "collector-main-validation.json",
+      "result": "PASS on PostgreSQL18.6 after collector78294c081; prior qualification retained"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.torch_quest",
+    "title": "Torch Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Native academy levers, atomic phase-specific actor/NPC evacuation, source item relocation, Rat death and once-only unlit Torch",
+    "blocker": null,
+    "round": "L7",
+    "qualified_components": [
+      "Native academy levers, atomic phase-specific actor/NPC evacuation, source item relocation, Rat death and once-only unlit Torch",
+      "Real PostgreSQL RED/GREEN; strict checks, generated content and pin reproducibility pass",
+      {
+        "scope": "Production guardian default-build regression and native Torch PG revalidation",
+        "proof": "default-build-validation.json",
+        "duration_seconds": 86.680714483
+      }
+    ],
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with retained native selectors and documented conservative source mappings; see bridge-routes-validation.json"
+  },
+  {
+    "canonical": "oteryn:quest.vampire_shield_quest",
+    "title": "Vampire Shield Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-elsewhere",
+    "qualified_elsewhere": [
+      "questpc4"
+    ],
+    "mechanism": "native_reward_source_placement",
+    "blocker": null,
+    "round": "L7"
+  },
+  {
+    "canonical": "oteryn:quest.authored.voodoo_doll_quest",
+    "title": "Voodoo Doll Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-current-lane",
+    "qualified_elsewhere": [],
+    "mechanism": "native chosen stage graph, current-owner events and existing atomic reward owner",
+    "round": "L7",
+    "qualified_components": [
+      {
+        "batch": "native-authored-placement-prerequisite",
+        "scope": "reusable placement binding only; does not qualify this quest programme",
+        "test": "quest_authored_placement_without_legacy_uid_mints_once_and_replays",
+        "marker": "QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CASE_COMPLETED",
+        "duration": "26.170233947s",
+        "red_duration_seconds": 23.62,
+        "red_failure": "authored selector without a source UID was not served",
+        "qengine2_checked": "5a6de28c1",
+        "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
+        "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      },
+      {
+        "scope": "Three native chamber Witch deaths, both exact native boxes, King doll3209 and inactive wand3046, fresh/replayed claims and cold quest copy.",
+        "test": "questpc8_retrieval_voodoo_three_witches_both_boxes_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_voodoo",
+        "duration_seconds": 40.260110753,
+        "proof": "retrieval-routes-validation.json"
+      }
+    ],
+    "qualification_scope": "Complete selected once-only Oteryn programme at the documented native counterparts; canonical Source remains unchanged."
+  },
+  {
+    "canonical": "oteryn:quest.wrath_of_the_emperor_quest",
+    "title": "Wrath of the Emperor Quest",
+    "status": "IN_PROGRESS",
+    "disposition": "authoring",
+    "qualified_elsewhere": [],
+    "mechanism": "native exact-material opening; native imperial4/6 quotas and source Zlak; source Sleeping Dragon finale/receipt bound to chosen stage7",
+    "blocker": {
+      "kind": "active_implementation",
+      "owner": "qengine2 (shared disguise); questpc8 (quest graph)",
+      "missing_piece": "Chosen graph work continues; opening and source dream are reused. Item-look disguise remains queued with qengine2.",
+      "evidence": [
+        "qlane-meta/questpc8/RESUME.md",
+        "qlane-meta/questpc8/continuation-validation.json"
+      ]
+    },
+    "round": "L7",
+    "engine_request": {
+      "owner": "qengine2",
+      "state": "sent",
+      "feature": "Source item-look disguises (lookTypeEx) with appearance restoration",
+      "where": [
+        "crates/gameplay/quests",
+        "crates/gameplay/dispatch"
+      ],
+      "proof": "ENGINE-REQUESTS.md",
+      "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
+      "last_upstream_check": "qengine2 0aa80f984: both requested capabilities remain QUEUED"
+    },
+    "active_validation": {
+      "scope": "Opening hand-in native qualification in progress; no whole-quest qualification",
+      "proof": "wrath-opening-validation.json",
+      "red": "Prior PG99.213s hi rejection; resolved by negotiating NPC capability3",
+      "engine_boundary": "Item-look disguise remains assigned to qengine2; no generic feature implemented locally",
+      "green": {
+        "postgres_seconds": 217.555976812,
+        "marker": "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+        "scope": "Opening exact-material hand-in and replay only"
+      },
+      "post_main_revalidation": {
+        "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+        "result": "8/8 own native PG PASS; opening101.707s",
+        "proof": "collector-main-validation.json",
+        "whole_quest_complete": false
+      }
+    },
+    "collector_handoff": {
+      "branch_frozen_after_push": true,
+      "continuation_branch": "claude/happy-davinci-ijz3wy-questpc8b",
+      "proof": "collector-main-validation.json",
+      "whole_quest_qualification_unchanged": true
+    },
+    "continuation_validation": {
+      "proof": "unit-completion-validation.json",
+      "unit_run": "INTERRUPTED_FOR_MAIN_MERGE;6affected cases PASS after abort",
+      "qualification_unchanged": true
+    },
+    "main_sync": {
+      "main": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+      "state": "GREEN_REMAINDER_TERMINAL_SLICE_DROPPED",
+      "proof": "night-retro-validation.json"
+    },
+    "dream_slice": {
+      "state": "NATIVE_POSTGRES_GREEN",
+      "proof": "wrath-dream-validation.json",
+      "scope": "Chosen Wrath s7 report advances stage6 to7 after exact dream receipt; no item/achievement reward and no whole-quest completion"
+    },
+    "imperial_slice": {
+      "state": "NATIVE_POSTGRES_GREEN",
+      "proof": "wrath-imperial-validation.json",
+      "scope": "Wrath selected s6: exact four magistrati and six nobles, counter activation, bounded native source floor, saturation, cold reload, once-only Zlak report; stage5 to6 and existing source dream readiness",
+      "green_cases_seconds": {
+        "hunt": 100.044,
+        "dream": 69.897
+      }
+    },
+    "source_dragon_placement": {
+      "state": "NATIVE_POSTGRES_GREEN",
+      "proof": "wrath-source-dragon-validation.json",
+      "cell": [
+        33242,
+        31213,
+        10
+      ]
+    },
+    "crystal_slice": {
+      "state": "NATIVE_POSTGRES_GREEN",
+      "proof": "wrath-crystals-validation.json",
+      "scope": "Chosen s8 four literal native11427 corners, exact retained carried11371, clockwise per-character counter; no donor boss graph or whole completion",
+      "red_postgres_seconds": 4.003721107,
+      "postgres_seconds": 71.744319386
+    },
+    "collector_batch_exclusion": {
+      "scope": "New terminal outfit/jade reward slice only; previously green opening/hunt/dream/crystal work retained",
+      "state": "DROPPED_FROM_BATCH_BY_COORDINATOR_RULE",
+      "command": "cargo nextest run -p oteryn-gameplay-dispatch --lib --config-file /tmp/questpc8-focused-nextest.toml --profile questpc8_focus --success-output immediate -E 'test(questpc8_wrath_late_journey_final_reward_atomic_outfit_and_jade) or test(questpc8_wrath_four_native_crystals_require_tool_order_and_replay) or test(nx6_wayfarer_real_npc_atomic_finale_replay_and_fences) or test(fathers_burden_eight_handins_cape_experience_and_replay) or test(questpc8_winterlight_native_disguise_four_fires_queen_and_base_outfit) or test(questpc8_venore_native_daily_circuit_and_exact_repeat_boundary)'",
+      "error": "early eof; join_prepare_failed phase=appearances; join_prepare_failed phase=items",
+      "postgres_seconds": 107.911672992,
+      "local_note": "/tmp/questpc8-wrath-finale-dropped.rs; /tmp/questpc8b-wrath-terminal-dropped.patch"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.braindeath_quest",
+    "title": "Braindeath Quest",
+    "status": "QUALIFIED",
+    "disposition": "qualified-current-lane",
+    "qualified_elsewhere": [],
+    "mechanism": "native exploration, frozen principal death objective, exact coffin ordinal, atomic world MINT",
+    "round": "L7",
+    "proof": "cloud-braindeath-proof.json",
+    "merged_revalidation": {
+      "proof": "cloud-braindeath-proof.json",
+      "duration_seconds": 25.801730527,
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_braindeath_exploration_native_death_coffin_and_replay"
+    }
+  }
+]

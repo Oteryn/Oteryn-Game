@@ -34,7 +34,7 @@ def main():
                          f'assert_eq!(added_keys.len(), {len(expected)});', before)
     if count != 1:
         raise SystemExit('QENGINE_EQUIPMENT_AUDIT_ANCHOR')
-    after, count = re.subn(r'QENGINE2 adds exactly the [0-9]+ independently captured physical quest Items\.',
+    after, count = re.subn(r'QENGINE2 (?:captures 53 shared Items plus seven portable QUESTPC4 Items|adds exactly the [0-9]+ independently captured physical quest Items)\.',
                          f'QENGINE2 adds exactly the {len(expected)} independently captured physical quest Items.', after)
     if count != 1:
         raise SystemExit('QENGINE_EQUIPMENT_AUDIT_COMMENT')

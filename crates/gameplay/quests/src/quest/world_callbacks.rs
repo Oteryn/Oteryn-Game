@@ -5,7 +5,10 @@ use super::{
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+
+mod published_markers;
+mod selector_partitions;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
 // Static callbacks and the dynamic altar share the same boot bound.
@@ -444,6 +447,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     if callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds including native access".into());
     }
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/questl2-djinn-world.json"
+    ))?);
     counterparts::apply(&mut callbacks)?;
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
@@ -454,7 +460,7 @@ mod selector_gates;
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
-    let mut selectors = std::collections::BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
+    let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
@@ -462,10 +468,10 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         let selector = serde_json::to_vec(&(callback.trigger, &callback.selector))
             .map_err(|error| error.to_string())?;
         let same_selector = selectors.entry(selector).or_default();
-        if same_selector
-            .iter()
-            .any(|other| !selector_gates::disjoint(other, callback))
-        {
+        if same_selector.iter().any(|other| {
+            !selector_gates::disjoint(other, callback)
+                || !selector_partitions::disjoint(other, callback)
+        }) {
             return Err("duplicate callback selector across registries".into());
         }
         same_selector.push(callback);
@@ -607,7 +613,10 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
-                    || callback.storage.iter().any(|storage| storage.preserve)))
+                    || callback
+                        .storage
+                        .iter()
+                        .any(|storage| storage.preserve || storage.increment || storage.at_least)))
             || callback.passages.len() > MAX_EFFECTS
             || callback.passages.iter().any(|p| {
                 p.create_on_close.is_some_and(|id| {
@@ -774,6 +783,7 @@ fn extend_callbacks(
 ) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
+    let published = published_markers::keys()?;
     for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
         for storage in &callback.storage {
             let maximum = if storage.increment {
@@ -814,8 +824,7 @@ fn extend_callbacks(
         if callback.is_read_only() {
             continue;
         }
-        if callback.effects.item_reward.is_some() || callback.completes || callback.premium_required
-        {
+        if published_markers::needs_marker(callback, &published) {
             let digest: String =
                 Sha256::digest(serde_json::to_vec(&callback).map_err(|e| e.to_string())?)
                     .iter()
@@ -1106,6 +1115,45 @@ mod tests {
         parse(&wire(&callback))?;
         callback.experience = Some(1);
         assert!(parse(&wire(&callback)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn registry_accepts_only_disjoint_phases_of_one_quest() -> Result<(), String> {
+        let mut phase_zero = load()?.into_iter().next().ok_or("callback")?;
+        phase_zero.storage = vec![Storage {
+            track: "oteryn:quest-progress/fixture/phase".into(),
+            minimum: 0,
+            maximum: 0,
+            set: 1,
+            preserve: false,
+            increment: false,
+            at_least: false,
+            read_only: false,
+        }];
+        let mut phase_one = phase_zero.clone();
+        phase_one.key.push_str("-phase-one");
+        phase_one.storage[0].minimum = 1;
+        phase_one.storage[0].maximum = 1;
+        validate_registry(&[phase_zero.clone(), phase_one.clone()])?;
+        let mut repeated_zero = phase_zero.clone();
+        repeated_zero.key.push_str("-repeated-zero");
+        assert!(
+            validate_registry(&[phase_zero.clone(), phase_one.clone(), repeated_zero,]).is_err()
+        );
+        for case in 0..5 {
+            let mut invalid = phase_one.clone();
+            match case {
+                0 => invalid.storage[0].minimum = 0,
+                1 => invalid.quest.push_str("-other"),
+                2 => invalid.storage[0].at_least = true,
+                3 => invalid.storage.clear(),
+                _ => invalid.actor_kind = ActorKind::Monster,
+            }
+            assert!(validate_registry(&[phase_zero.clone(), invalid]).is_err());
+        }
+        phase_zero.storage[0].at_least = true;
+        assert!(validate_registry(&[phase_zero, phase_one]).is_err());
         Ok(())
     }
 

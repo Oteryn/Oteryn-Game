@@ -142,12 +142,7 @@ pub fn recipe(key: &str) -> Option<&'static Recipe> {
 
 pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
     RECIPES.iter().map(|recipe| Callback {
- use_range: 1,
- disguise: None,
- completes: false,
- premium_required: false,
- present: vec![],
- required_travel: vec![],
+        use_range: 1, disguise: None, completes: false, premium_required: false, present: Vec::new(), required_travel: Vec::new(),
 
         state_operations: Vec::new(),
 world_change: None,

@@ -90,8 +90,8 @@ pub(super) async fn exercise(
     let chamber = (33005..=33035)
         .flat_map(|x| (32130..=32160).map(move |y| (x, y)))
         .filter(|(x, y)| {
-            owner.movement_cells.index().lookup(
-                owner.movement_cells.scope(),
+            owner.movement_cells().index().lookup(
+                owner.movement_cells().scope(),
                 crate::content::LogicalCell { x: *x, y: *y, z: 8 },
             ) == Ok(crate::content::CollisionClass::Walkable)
         })

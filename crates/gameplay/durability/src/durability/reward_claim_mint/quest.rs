@@ -503,7 +503,7 @@ pub(crate) async fn give_world(
     take.sort_by(|left, right| left.item.cmp(&right.item));
     let mut plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
         "storage": callback.storage, "take": take, "present": [], "give": reward,
-        "outfit": null, "world_callback": callback});
+        "outfit": null, "completes": callback.completes, "world_callback": callback});
     if !callback.state_operations.is_empty() {
         plan["state_ops"] = serde_json::to_value(&callback.state_operations)
             .map_err(|_| DurabilityError::InvalidStoredState)?;

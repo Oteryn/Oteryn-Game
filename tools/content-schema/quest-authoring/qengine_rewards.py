@@ -13,6 +13,7 @@ from pathlib import Path
 import sys
 import tarfile
 import xml.etree.ElementTree as ET
+import questl2_ready
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -32,11 +33,13 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
-              'data-global/startup/tables/item.lua']
+              'data-global/startup/tables/item.lua',
+              'data-global/scripts/actions/other/others/quest_system2.lua',
+              'data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua']
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -956,6 +959,11 @@ def build():
             forbids_addons=[{'outfit':'oteryn:outfit.rift_warrior','addons':bit}])
         if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.rift_warrior','addons':1}]
     source_offer('cledwyn',['addon'],0,3,[])
+    questl2_ready.append(add, storage, callbacks, offers, inputs, PIN)
+    ready_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith(
+        ('l2-white-raven-', 'l2-efreet-', 'l2-marid-'))]
+    callbacks = [c for c in callbacks if c not in ready_callbacks]
+    ready_callbacks.sort(key=lambda c:c['key'])
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -971,6 +979,8 @@ def build():
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
+    generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
+        'schema':1,'tracks':[],'callbacks':ready_callbacks})
     # Preserve the source's complete contiguous 1..10001 supply-package table.
     random_path='data-global/scripts/actions/valuables/random_items.lua'
     parser=load_module('qengine_literal_item_tables','tools/content-migration/event_item_actions.py')
@@ -989,7 +999,7 @@ def build():
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
     greetings=[]
-    for npc in sorted({c['npc'] for c in callbacks}):
+    for npc in sorted({c['npc'] for c in callbacks + ready_callbacks} | {'oteryn:npc.'+npc for npc in ('alesar','yaman','haroun','nah_bob')}):
         path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
         messages={}
         citations=[]
@@ -1007,6 +1017,8 @@ def build():
             citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
         greetings.append({'npc':npc,**messages,'sources':citations})
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
+    generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
+    generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
     worlds=[]
     for name,quest,path,at,appearance,states,outfit in [
