@@ -25,7 +25,8 @@ pub const MAX_STEP_RESULT_BYTES: usize = 4;
 /// the disposition (2 B) and `step_wait_ms` (tag 1 B, varint at most 3 B), with slack.
 pub const MAX_PACED_STEP_RESULT_BYTES: usize = 8;
 /// The largest `step_wait_ms`: the step-speed table maximum (speed 10, ground speed 1000).
-pub const MAX_STEP_WAIT_MS: u32 = 111_150;
+pub const MAX_STEP_WAIT_MS: u32 = 333_450;
+/// Diagonal steps use three times the cardinal duration.
 /// A `MOVED` step duration is a whole number of server beats.
 pub const STEP_WAIT_BEAT_MS: u32 = 50;
 pub const MAX_WORLD_SPATIAL_PAYLOAD_BYTES: usize = 64;
@@ -43,6 +44,10 @@ pub enum StepDirection {
     East = 2,
     South = 3,
     West = 4,
+    NorthEast = 5,
+    SouthEast = 6,
+    SouthWest = 7,
+    NorthWest = 8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -152,6 +157,10 @@ pub fn decode_step_intent(payload: &[u8]) -> Result<StepDirection, WorldSpatialE
         2 => Ok(StepDirection::East),
         3 => Ok(StepDirection::South),
         4 => Ok(StepDirection::West),
+        5 => Ok(StepDirection::NorthEast),
+        6 => Ok(StepDirection::SouthEast),
+        7 => Ok(StepDirection::SouthWest),
+        8 => Ok(StepDirection::NorthWest),
         _ => Err(WorldSpatialError::Malformed),
     }
 }
@@ -465,7 +474,7 @@ mod tests {
             (
                 StepDisposition::Moved,
                 MAX_STEP_WAIT_MS,
-                &[0x08, 0x01, 0x10, 0xae, 0xe4, 0x06],
+                &[0x08, 0x01, 0x10, 0x8a, 0xad, 0x14],
                 &[0x08, 0x01],
             ),
             (StepDisposition::Moved, 0, &[0x08, 0x01], &[0x08, 0x01]),
@@ -547,7 +556,7 @@ mod tests {
         for bad in [
             &[][..],                       // missing direction
             &[0x08, 0x00][..],             // zero enum
-            &[0x08, 0x05][..],             // unknown enum
+            &[0x08, 0x09][..],             // unknown enum
             &[0x08, 0x01, 0x08, 0x02][..], // repeated field
             &[0x10, 0x01][..],             // unknown field
             &[0x08][..],                   // truncated
@@ -661,7 +670,7 @@ mod tests {
         // The largest receipt is 6 bytes (tag, disposition, tag, 3-byte varint).
         assert_eq!(
             encode_step_result_paced(paced(StepDisposition::Moved, MAX_STEP_WAIT_MS), true),
-            Ok(vec![0x08, 0x01, 0x10, 0xae, 0xe4, 0x06])
+            Ok(vec![0x08, 0x01, 0x10, 0x8a, 0xad, 0x14])
         );
         // Field order is free on the wire.
         assert_eq!(
@@ -878,4 +887,18 @@ mod count_bounds_tests {
     fn f26_borrowed_length_bounds() {
         crate::count_bounds_tests::borrowed_length_bounds(super::read_bytes);
     }
+}
+
+#[cfg(test)]
+#[test]
+fn qn6_diagonal_step_values_round_trip() {
+    for value in 5..=8 {
+        let bytes = [8, value];
+        let direction = decode_step_intent(&bytes);
+        assert!(direction.is_ok(), "diagonal {value} must be admitted");
+        if let Ok(direction) = direction {
+            assert_eq!(encode_step_intent(direction), bytes);
+        }
+    }
+    assert!(decode_step_intent(&[8, 9]).is_err());
 }

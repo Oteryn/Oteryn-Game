@@ -2,9 +2,10 @@
 //! Unsupported operand, fluid, timed and random shapes fail closed.
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_content::content::{
-    ProjectV2ConversionEffect, ProjectV2ConversionLifecycle, ProjectV2ConversionOutputs,
-    ProjectV2ConversionRole, ProjectV2ConversionTarget, ProjectV2ConversionTool,
-    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Family, ReferenceItemTarget,
+    ProjectV2ConversionEffect, ProjectV2ConversionLifecycle, ProjectV2ConversionOperand,
+    ProjectV2ConversionOutputs, ProjectV2ConversionRole, ProjectV2ConversionTarget,
+    ProjectV2ConversionTool, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Family,
+    ReferenceItemTarget,
 };
 use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
 use oteryn_gameplay_domain::domain::timed_item_host::resolve_timed_definition;
@@ -17,6 +18,13 @@ mod quest_recipes;
 pub struct CookingConversion {
     pub recipe: String,
     pub outputs: Vec<(TypedDefinitionRef, u32)>,
+}
+
+/// A conversion resolved against the exact locked carried target stack.
+#[derive(Debug)]
+pub struct CarriedCookingConversion {
+    pub conversion: CookingConversion,
+    pub target_debit: u32,
 }
 
 /// Resolve Crystal's two-carried-item food preparation rows. Both operands are consumed by the
@@ -36,15 +44,43 @@ pub fn carried_cooking_conversion_with_sub_type(
     target: &TypedDefinitionRef,
     target_sub_type: Option<u32>,
 ) -> Option<CookingConversion> {
+    carried_cooking_conversion_with_quantity(native, used, target, target_sub_type, 1)
+        .map(|resolved| resolved.conversion)
+}
+
+/// Resolve capture from the durable owner's locked quantity, never a client count.
+pub fn carried_cooking_conversion_with_quantity(
+    native: &NativeGameplayState,
+    used: &TypedDefinitionRef,
+    target: &TypedDefinitionRef,
+    target_sub_type: Option<u32>,
+    target_quantity: u32,
+) -> Option<CarriedCookingConversion> {
+    if !(1..=100).contains(&target_quantity) {
+        return None;
+    }
+    if let Some(conversion) = quest_recipes::carried(native, used, target) {
+        return Some(CarriedCookingConversion {
+            conversion,
+            target_debit: 1,
+        });
+    }
     if let Some(conversion) = quest_recipes::carried(native, used, target) {
         return Some(conversion);
     }
     let rows = catalogue_rows()?;
     let used_ref = source_ref(native, used)?;
     let target_ref = source_ref(native, target)?;
-    let mut matches = rows
-        .iter()
-        .filter_map(|row| carried_row(native, row, &used_ref, &target_ref, target_sub_type));
+    let mut matches = rows.iter().filter_map(|row| {
+        carried_row(
+            native,
+            row,
+            &used_ref,
+            &target_ref,
+            target_sub_type,
+            target_quantity,
+        )
+    });
     let found = matches.next()?;
     matches.next().is_none().then_some(found)
 }
@@ -137,7 +173,8 @@ fn carried_row(
     used: &ProjectV2DefinitionRef,
     target: &ProjectV2DefinitionRef,
     target_sub_type: Option<u32>,
-) -> Option<CookingConversion> {
+    target_quantity: u32,
+) -> Option<CarriedCookingConversion> {
     let ProjectV2Declaration::ItemConversion {
         identity, recipe, ..
     } = row
@@ -177,13 +214,29 @@ fn carried_row(
     ) {
         return None;
     }
+    let target_debit = carried_target_debit(target_operand, target_quantity)?;
     let mut outputs = Vec::new();
     for operand in [used_operand, target_operand] {
         if operand.effect == ProjectV2ConversionEffect::TransformTo {
-            outputs.push((
-                output_definition(native, operand.output_item_id.as_ref()?)?,
-                1,
-            ));
+            let definition = output_definition(native, operand.output_item_id.as_ref()?)?;
+            let count = if operand.capture_target_stack {
+                // A nonstacking definition represents one transformed object. Stackable
+                // replacements retain the captured count; unknown stack policy fails closed.
+                use oteryn_gameplay_domain::domain::item_definition::ItemStackClass;
+                match crate::item_ref_admission::generation_item_facts(native, &definition)
+                    .ok()?
+                    .stack
+                {
+                    ItemStackClass::NonStackable => 1,
+                    ItemStackClass::Stackable {
+                        proven_maximum: Some(maximum),
+                    } if target_debit <= maximum => target_debit,
+                    _ => return None,
+                }
+            } else {
+                1
+            };
+            outputs.push((definition, count));
         }
     }
     let ProjectV2ConversionOutputs::Fixed { entries } = &recipe.outputs else {
@@ -195,10 +248,23 @@ fn carried_row(
             u32::from(output.count),
         ));
     }
-    (!outputs.is_empty() && outputs.len() <= 3).then(|| CookingConversion {
-        recipe: identity.key.clone(),
-        outputs,
+    (!outputs.is_empty() && outputs.len() <= 3).then(|| CarriedCookingConversion {
+        conversion: CookingConversion {
+            recipe: identity.key.clone(),
+            outputs,
+        },
+        target_debit,
     })
+}
+
+fn carried_target_debit(operand: &ProjectV2ConversionOperand, quantity: u32) -> Option<u32> {
+    (operand.role == ProjectV2ConversionRole::Target && (1..=100).contains(&quantity)).then_some(
+        if operand.capture_target_stack {
+            quantity
+        } else {
+            1
+        },
+    )
 }
 
 fn cooking_row(
@@ -299,4 +365,28 @@ pub fn output_definition(
         production_key: production.production_key.clone(),
         revision_ref: production.revision_ref.clone(),
     })
+}
+
+#[cfg(test)]
+mod target_stack_tests {
+    use super::*;
+    use oteryn_gameplay_content::content::ProjectV2ConversionOperand;
+
+    #[test]
+    fn m22_captured_target_debit_uses_exact_bounded_stack() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut operand: ProjectV2ConversionOperand = serde_json::from_value(serde_json::json!({
+            "role": "TARGET", "item_id": {"family":"Item", "key":"oteryn:item.tibia.i10297", "revision":"definition-r1"},
+            "count":1, "effect":"CONSUME", "capture_target_stack":true
+        }))?;
+        for quantity in [1, 7, 100] {
+            assert_eq!(carried_target_debit(&operand, quantity), Some(quantity));
+        }
+        for quantity in [0, 101, u32::MAX] {
+            assert_eq!(carried_target_debit(&operand, quantity), None);
+        }
+        operand.capture_target_stack = false;
+        assert_eq!(carried_target_debit(&operand, 7), Some(1));
+        Ok(())
+    }
 }

@@ -135,6 +135,8 @@ pub enum ActorConditionRequirement {
     Drunk,
 }
 
+pub use super::map_marks::{MapMarkKind as QuestMapMarkIcon, QuestMapMark};
+
 /// One paid source occurrence advances the existing Character achievement owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -308,8 +310,9 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
-    // Appended: tests index the shared document as DOCUMENTS[0].
+    // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
 ];
 
@@ -652,6 +655,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     if callback.minimum_level.is_none()
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
+        && callback.map_mark.is_none()
         && callback.carried_target.is_none()
     {
         return Ok(None);
@@ -836,7 +840,12 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 mod tests {
     #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
-        let mut callback = super::load()?.into_iter().next().ok_or("callback")?;
+        let mut callback = super::parse(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))?
+        .into_iter()
+        .next()
+        .ok_or("callback")?;
         callback.storage = (0..16)
             .map(|i| super::Storage {
                 track: format!("oteryn:quest-progress/atomic/{i}"),
