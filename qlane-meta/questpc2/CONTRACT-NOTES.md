@@ -1088,3 +1088,24 @@ use existing fenced mint/transfer owners to carry individual books; no quest
 progress is SQL-seeded. The first fixture attempt duplicated an already-present
 backpack and is NOT a mechanic RED proof. Coordinate conversion uses explicit
 checked u16/u16/i8 conversion from movement's i32/i32/i16 types.
+
+
+## Gnomus initial ordnance admission (2026-11-08)
+
+Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+data-global/npc/gnomus.lua:119-176 SHA256
+04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1.
+Initial offer requires Ordnance<1 and sets topic22. The following yes is an
+elseif: combined ordnanceyes only offers, unlike Albinius's independentifs.
+Acceptance conditionally sets shared questline1, sets Ordnance1, resets both
+GnomesCount/CrawlersCount0 and sets topic1, all through the existing storage
+owner's ordinary limit. A pending mission says come back; repeatyes cannot
+restart it. Literal cooldown predicates remain >0 versus <=0, not an invented
+UTC comparison. Other task/status/conversion phrases are excluded from this
+partial program so their effects are not silently omitted from combined input.
+
+The PG fixture earns acceptance through ordinary NPC talk with no quest SQL
+seed. Initial counter defaults are0, so that case does not prove resetting an
+earned nonzero escort count; the data test independently requires both source
+reset effects. No escort events, points, rewards, or warzone completion are
+qualified. No new generic engine or transaction limit was introduced.

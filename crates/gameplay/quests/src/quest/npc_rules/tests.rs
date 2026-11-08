@@ -588,6 +588,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.bigfoot_s_burden_quest",
         "oteryn:quest.demon_oak",
         "oteryn:quest.cults_of_tibia_quest",
+        "oteryn:quest.dangerous_depths_quest",
         "oteryn:quest.draconia_quest",
         "oteryn:quest.forgotten_knowledge_quest",
         "oteryn:quest.hero_of_rathleton_quest",

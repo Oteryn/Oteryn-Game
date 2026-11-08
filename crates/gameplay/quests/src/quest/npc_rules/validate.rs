@@ -27,6 +27,7 @@ fn sources(sources: &[String], quest: &str) -> bool {
                 .or_else(|| super::questpc2_albinius_source::reference(quest, source))
                 .or_else(|| super::questpc2_oldrak_source::reference(quest, source))
                 .or_else(|| super::questpc2_gerimor_source::reference(quest, source))
+                .or_else(|| super::questpc2_gnomus_source::reference(quest, source))
                 .or_else(|| super::questpc2_henricus_source::reference(quest, source))
                 .is_some_and(|reference| {
                     reference
@@ -66,6 +67,11 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             && !super::questpc2_gerimor_source::custody(document)
         {
             return Err(invalid("Gerimor source custody"));
+        }
+        if document.quest == super::questpc2_gnomus_source::QUEST
+            && !super::questpc2_gnomus_source::custody(document)
+        {
+            return Err(invalid("Gnomus source custody"));
         }
         if document.quest == super::questpc2_henricus_source::QUEST
             && !super::questpc2_henricus_source::custody(document)
@@ -132,6 +138,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     && !super::questpc2_oldrak_source::custody(document)
                     && !super::questpc2_albinius_source::custody(document)
                     && !super::questpc2_gerimor_source::custody(document)
+                    && !super::questpc2_gnomus_source::custody(document)
                     && !super::questpc2_henricus_source::custody(document)
                     && !super::hidden_threats::file_is_pinned(
                         &document.quest,

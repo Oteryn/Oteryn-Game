@@ -10,6 +10,7 @@ mod keyword;
 mod marlin_trophy;
 mod questpc2_albinius_source;
 mod questpc2_gerimor_source;
+mod questpc2_gnomus_source;
 mod questpc2_henricus_source;
 mod questpc2_oldrak_source;
 mod validate;
@@ -445,7 +446,7 @@ impl NpcRuleCatalog {
                 let mut catalogue = Self::load_embedded()?;
                 let supplemental = Self::from_json_documents(&[include_str!(
                     "../../../../../content/dialogues/quest-rules-supplemental/draconia.json"
-                ), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json")])?;
+                ), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gnomus.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json")])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
@@ -453,6 +454,7 @@ impl NpcRuleCatalog {
                         || p.document.program_key.as_deref() == Some(questpc2_oldrak_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_albinius_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_gerimor_source::PROGRAM)
+                        || p.document.program_key.as_deref() == Some(questpc2_gnomus_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_henricus_source::PROGRAM)
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")

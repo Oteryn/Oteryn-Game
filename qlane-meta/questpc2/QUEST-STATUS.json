@@ -194,7 +194,7 @@
       "canonical": "oteryn:quest.dangerous_depths_quest",
       "title": "Dangerous Depths Quest",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
+      "status": "IN_PROGRESS",
       "blocker": "Warzone IV/V/VI group admission, boss summon/cleanup and successful-room completion lack encounter ownership.",
       "source_lane_checks": [
         {
@@ -212,7 +212,7 @@
           ]
         }
       ],
-      "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
+      "qualification_scope": "Initial Gnomus ordnance assignment under test; escorts and warzones remain unqualified.",
       "external_owner_blocker": false
     },
     {
@@ -1760,7 +1760,7 @@
       "zero_test_results_accepted": false
     }
   },
-  "current_batch": "albinius-source-contribution-main3209-green",
+  "current_batch": "gnomus-ordnance-admission-green",
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
@@ -2029,7 +2029,7 @@
       "version": 180006,
       "seconds": 76.98,
       "log": "/tmp/questpc2-elvenbane-complete-exploration-pg.log",
-      "finding": "Basement, native ladder ascent/stale refusal/full-position replay passed. Courtyard diagonal step requires OTERYΝ_STEP_WAIT_RECEIPTS=1 (ASCII env name documented RESUME); invocation omitted receipt flag used by original Desert driver. Assertion unchanged; rerun with flag."
+      "finding": "Basement, native ladder ascent/stale refusal/full-position replay passed. Courtyard diagonal step requires OTERY\u039d_STEP_WAIT_RECEIPTS=1 (ASCII env name documented RESUME); invocation omitted receipt flag used by original Desert driver. Assertion unchanged; rerun with flag."
     },
     "batch": "BATCH-elvenbane-exploration-ladder-2026-11-07.json",
     "postgres_green": {
@@ -2210,13 +2210,13 @@
     "unit_and_pg": "pending current merge build; prior pushed receipts remain valid for prior source only"
   },
   "current_validation": {
-    "source_head": "42a707818866a6c76cca48bac03008d5de643ed2",
+    "source_head": "working tree after3886f31ac",
     "latest_main": "3209d3d61 included",
-    "post_main_pg": "3/3PASS on180006,63.050/66.816/48.274s",
-    "units": "quest322+dispatch1613+durability635+classification4+service1+freshSoulpit1PASS; contexts in receipt",
-    "workspace_all_targets": "PASS2m13s final repeat",
-    "clippy": "quests+dispatch+durability alltargets/allfeatures-DwarningsPASS",
-    "fmt_generation_pins_duplicates": "PASS"
+    "own_pg": "1/1PASS on180006;60.63736262s; RED48.837227127s",
+    "units": "quest324/324PASS32.51s; authorer2/2PASS0.928s",
+    "workspace_all_targets": "PASS5m55s",
+    "clippy": "quests+dispatch alltargets/allfeatures -Dwarnings PASS2m31s",
+    "fmt_generation_pins_duplicates": "PASS: final fmt, duplicate migration check, authoring lists/equipment/audit/qualification and world pins; world digest unchanged2f5895585a"
   },
   "engine_requests": [
     {
@@ -2361,11 +2361,12 @@
       "The Demon Oak Quest",
       "The Inquisition Quest",
       "Cults of Tibia Quest",
-      "Forgotten Knowledge Quest"
+      "Forgotten Knowledge Quest",
+      "Dangerous Depths Quest"
     ],
     "done_pushed": 3,
-    "in_progress": 7,
-    "not_started_owned": 19,
+    "in_progress": 8,
+    "not_started_owned": 18,
     "excluded_other_lane": 6,
     "packet_total": 35
   },
@@ -2380,8 +2381,10 @@
       "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "42a707818866a6c76cca48bac03008d5de643ed2",
-  "prepush_pending_tests": [],
+  "last_pushed_sha": "3886f31acd21f3a2ee5ca26530109bbcc5911f81",
+  "prepush_pending_tests": [
+    "Dispatch non-PostgreSQL unit selection running with --no-fail-fast; no result claimed."
+  ],
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",
     "parent_frozen_branch": "claude/happy-davinci-ijz3wy-questpc2",
@@ -2434,5 +2437,23 @@
       46.231552174
     ],
     "post_main_proof": "BATCH-albinius-main3209-green-2026-11-08.json"
+  },
+  "active_gnomus": {
+    "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "source": "data-global/npc/gnomus.lua:119-176",
+    "source_sha256": "04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1",
+    "red_pg_version": 180006,
+    "red_seconds": 48.837227127,
+    "red_error": "source ordnance briefing missing:[];0lines instead of5",
+    "state": "QUALIFIED_INITIAL_ORDNANCE_ADMISSION_SLICE; whole quest IN_PROGRESS",
+    "scope": "Initial ordnance admission only; no escort, points, reward or warzone qualification.",
+    "green_pg_version": 180006,
+    "green_seconds": 60.63736262,
+    "quest_units": {
+      "passed": 324,
+      "seconds": 32.51
+    },
+    "proof": "BATCH-gnomus-ordnance-2026-11-08.json",
+    "checked_qengine2": "64b3597c1; validation/main integration only, no newly required NPC capability"
   }
 }

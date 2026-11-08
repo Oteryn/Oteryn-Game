@@ -1,64 +1,31 @@
-# questpc2b: Albinius contribution own-PG GREEN; dispatch units running
+# questpc2b: Gnomus initial ordnance admission GREEN
 
-Active branch claude/happy-davinci-ijz3wy-questpc2b. Prior actual push
- d1feaafe625281215acc71ed334dce651b706506 published completed Gerimor validation.
-Main3209d3d61 clean-merged after the publication guard caught new main; parent questpc2 frozen0a6d6e208. No PR/force/rebase/mainpush.
+Active branch claude/happy-davinci-ijz3wy-questpc2b; frozen parent questpc2 must not change.
+Main3209d3d61 included. Prior push3886f31acd21f3a2ee5ca26530109bbcc5911f81.
 
-Albinius new program uses existing plain item/storage owner. Producer
-questpc2_albinius_rules.py; runtime supplemental questpc2-albinius.json. Exact
-41line custody helper admits only Forgotten Knowledge/Albinius/retained9f5a72c
-file/hash. Independent ifs preserved with continue_matching; templeyes can offer
-and contribute atomically. Exactly5heavyoldtomesi23986 consumed before Tomes1;
-success retains topic1, nextyes says alreadydonated and resets0. Missingbooks
-leavesconfirmationopen. No endsinteraction; tomesinfo sets7 and cancels pending
-confirmation. Unsupported mixed buy/rune/portal phrases failclosed for this
-partial program. No portal, rune, boss, reward or wholequest qualification.
-Source data-global/npc/albinius.lua:105-137 revision
-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d SHA
-1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18.
+New Gnomus program admits only Dangerous Depths initial ordnance offer and confirmed
+acceptance. Exact retained crystal9f5a72c source data-global/npc/gnomus.lua:119-176,
+SHA04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1.
+Existing storage/topic engine reused; seven rules and five existing tracks.
+Combined ordnanceyes offers only, stale yes cannot accept; acceptance atomically
+starts ordnance and conditional questline and resets both counters. Mixed other
+Gnomus task keywords are excluded from this partial program. Literal source
+cooldown comparison preserved. No escorts, points, reward, or wholequest claim.
 
-Three ownPG RED45.946/46.001/44.966s after correcting fixture (duplicate existing
-backpack was not mechanic proof) and checked position conversion. GREEN3/3 on
-realPG180006:48.121325993s,48.162816023s,46.231552174s; total94.35s. Fixtures use
-existing fenced mint/transfer helper, not SQL quest seeds. Test preservesanother
-book, stale/declined confirmations, exact consumption, and one receipt only.
-Questunits322/322PASS15.24s; authorer2/2PASS1.022s. WorkspacealltargetsPASS3m13s;
-clippyquests+dispatch alltargets/allfeatures-DwarningsPASS2m26s. Fmt/duplicate
-migrationsPASS. Binding/matrix/equipment/audit/ledger283 regenerated. No new Item
-admissions; equipment3827. Fresh pinrefresh unchanged Worlddigest2f5895585a.
+Real PG180006 RED48.837227127s missing five briefing lines; GREEN60.63736262s.
+Questunits324PASS32.51s; authorer2PASS0.928s; workspacealltargetsPASS5m55s.
+Clippyquests+dispatch alltargets/allfeatures-DwarningsPASS2m31s. Finalfmt,
+duplicate migrations, applicable generated lists and worldpinsPASS (digestunchanged). Dispatch
+nonPG unit selection running with no-fail-fast, not claimed passed. Final receipt
+BATCH-gnomus-ordnance-2026-11-08.json and QUEST-STATUS hold current verdicts.
 
-Cadence exception: dispatch non-PG unit selection is RUNNING (1613cases expected)
-with --no-fail-fast. No pass claimed yet. Keep runtime content frozen until done;
-collect all failures, group and fix together. Source/logs /tmp/questpc2b-albinius-*
-Native binary /workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-f89a081bc5464778.
-Previous Gerimor receipt: questunits
-320, clientassets10, dispatch1613 and3PG allPASS; read its BATCH file for exacts.
+Scope35packet/29owned/6excluded:3wholequests qualified (Annihilator, Desert Dungeon,
+Elvenbane),8active incomplete,18notstarted. Existing Henricus/Gerimor/Albinius
+slices are qualified only at their documented boundaries. Own migrations1240-1244
+unchanged. Big shared engine work belongsQENGINE2; requests in status/contract.
 
-Scope35packet,29owned,6excluded;3wholequestsQUALIFIED,7active incomplete
-(Soul War,Rotten Blood,Hero of Rathleton,Demon Oak,Inquisition,Cults,Forgotten
-Knowledge),19notstarted. Shared big features belongQENGINE2. Requests in status
-and CONTRACT-NOTES; refreshed614d00506 has tested authored binding API but no
-source level/vocation guards or player-name matching. Do not merge speculatively.
-Own migrations1240-1244 unchanged. Envsource /workspace/oteryn-env/env.sh opaquely;
-PG180006, CARGO_INCREMENTAL=0,jobs2. Requiredblakinio author/committer andClaude
-coauthor/session trailers. No agents. Continue after push; no end while entries.
-
-Latest main integration:3209d3d61 changes only five Rust/test files (Soulpit read
-retry and NPC service-model counts), no content. Clean merge. Combined workspace
-alltargetsPASS4m09s, fmtPASS; own-source clippy passed before this main, its
-recheck is queued. Durability wp3_error_classification_tests queued (the first
-command used a filename rather than module filter and must NOT count as proof).
-Existing dispatch1613selection continues against pre-main binary; keep content
-frozen and collect all failures. Publish compiling merge under cadence exception
-then finish pending checks and fresh post-main mechanic proof. No full pass claim.
-
-FINAL VALIDATION after42a707818: all pending checks completed. RealPG180006
-three Albinius casesPASS63.050059344/66.816094652/48.273847874s total111.32s.
-Dispatch selectedunits1613/1613PASS850.809s (pre-last-main binary); fresh merged
-Soulpit retry test1PASS. Durability635/635selected unitsPASS70.463s, correct
-classification4PASS, service model1PASS22.37s. Clippyall3changedcratesPASS6m36s
-inclqueue. Finalworkspacecheckon42aPASS2m13s; fmtPASS. No known failures.
-BATCH-albinius-main3209-green-2026-11-08.json records all contexts and log hashes.
-Publish this green receipt; then continue scope. Keep3wholequalified/7active/
-19notstarted; source NPC slices must not inflate wholequest counts. Do not rely
-on the old checkpoint's pending state as current; it is historical proof.
+Before push fetch main and explicit questpc2b ref, merge movement, regenerate
+applicable pins/lists with tooling, run ownPG and changedunits/workspacecheck/fmt.
+Cadence exception allows pending bulk unit selection with explicit disclosure.
+Use blakinio identity and required Claude coauthor/session trailers. No force,
+rebase, PR or main push. Continue after each push; never inflate qualification.
