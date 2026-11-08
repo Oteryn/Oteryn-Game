@@ -486,6 +486,13 @@ mod tests {
         // These independently authored callback inputs extend the original donor file.
         // Keep exact inventory equality and apply the same owner exclusion to each input.
         for source in [
+            include_str!(
+                "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
+            ),
+            include_str!("../../../../../content/quests/world-callbacks/l6-item-rewards.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tools.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-world-puzzles.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tomb-rooms.json"),
             include_str!("../../../../../content/quests/shared-access-callbacks.json"),
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
             include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
@@ -498,6 +505,18 @@ mod tests {
                 }
             }
         }
+        // These main-owned constructor cohorts have the same closed inventory.
+        let puzzle_inputs = crate::quest::carried_step::callbacks()
+            .chain(crate::quest::shared_switches::callbacks())
+            .collect::<Vec<_>>();
+        assert_eq!(puzzle_inputs.len(), 14);
+        for callback in puzzle_inputs {
+            assert_ne!(callback.quest, "oteryn:quest.dawnport_quest");
+            expected.insert(callback.key);
+        }
+        // Delegated QENGINE2 authoring retains its unqualified second-phase
+        // selector, while the active registry retains its strict uniqueness rule.
+        assert!(expected.remove("oteryn:quest-callback/questpc7-feaster-purification-entry"));
         // Closed native inputs added by collector3030 remain subject to the
         // same exclusion; retain exact inventory equality across all owners.
         let native = crate::quest::fire_feathered_native::callbacks()

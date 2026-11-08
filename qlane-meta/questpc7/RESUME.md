@@ -1,3 +1,21 @@
+# Publish compiling fresh-main checkpoint — 2026-11-08 11:16 UTC
+
+Main64d8bb8 merged, localheadff18477. ExactauthoringchecksPASS; authoringunits106
+modules/1151cases/8preexisting skips PASS. Contenttreefullgroupwithnestedreplay
+PASS251managedfiles. Questswholecrate335PASS0fail0skip27.569s; clientassets10PASS
+0fail0.52s. Strictclippy11changedcrates PASS; finalquests+clientassetsPASS2.54s.
+FinalworkspacealltargetsPASS52.60s; fmt/duplicate-migrations/closedinventorypins
+PASS. OfficialWorldpinrefreshedandstable3100fafd589a608f7334d383fb3d6daacea324696fa672228339f6a77f953c7c.
+PUBLISH AS COMPILING WIP underPREPUSH2budget, notwholequestrequalification:
+6ownPGcasespendingafterregistryrepairs;remainingRustcrateunitspending. Earlier
+actualfluid6placementsPASS63.463s. Earlierstartupfailuresanddiskerrors retained
+inproof/logs; notPGproof. FreshPGmustprintdatabase/version/duration beforeclaim.
+NEXTIMMEDIATELY run6focusedPGcases,remainingchangedunits,wholeNodeBootfull-manifest
+retryaftercleanup. Node6wholeprofilevariantsallregistrynetworkrefused; full
+manifestgotpastHOMEsandboxfixbuthitdiskfull,notfinalblocker. Keep≥5GBfree by
+removingonlycompletedauxiliaryincrementalcaches;keepmostrecentdispatchtestcache.
+Only4ownquests:3historicallyqualified,HotCuisineACTIVE(engineeligibilityrequest).
+
 # Final merge repairs and delegated callback decision — 2026-11-08 10:55 UTC
 
 Local commits29cd2eaa1 (main3209 reconciliation) andfc1b22485 (latestmainf5b CI)

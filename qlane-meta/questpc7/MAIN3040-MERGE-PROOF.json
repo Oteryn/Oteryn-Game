@@ -1,19 +1,40 @@
 {
-  "at": "2026-11-08T10:52:24.679886+00:00",
-  "main": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
-  "local_merge_head": "fc1b224856cef31693bf8f4cdb44e0dfd512009c",
+  "at": "2026-11-08T11:17:28.067608+00:00",
+  "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
+  "local_merge_head": "ff18477ad12961d7fa38543619a57f52a54b5bc5",
   "authoring_unit_modules": 106,
   "authoring_unit_cases_run": 1151,
   "authoring_unit_failed_modules": [],
-  "authoring_checks": "rerunning after final witness generation; previous exact runner passed",
+  "authoring_checks": "PASS exact CI checks runner; checks6 exit0",
   "content_tree": "PASS full group with repaired nested replay rerun; all251 managed files",
-  "state": "LOCAL_VALIDATION_IN_PROGRESS_NOT_PUBLISHED",
+  "state": "COMPILING_WIP_PREPUSH2_UNIT_BUDGET_PENDING",
   "node_boot": "all six profile calls failed Docker frontend registry networking; full-manifest whole script queued",
   "remaining": [
-    "cargo check retry after lane-cache cleanup",
-    "clippy",
-    "own PostgreSQL rerun after duplicate registry repair",
-    "world pins refresh",
-    "changed Rust crate units pending budget"
-  ]
+    "focused six-case PostgreSQL requalification after registry fixes",
+    "remaining changed Rust crate unit suites under PREPUSH2 budget",
+    "whole node-boot full-manifest retry after lane disk cleanup"
+  ],
+  "quests_unit_tests": {
+    "passed": 335,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 27.569
+  },
+  "client_assets_unit_tests": {
+    "passed": 10,
+    "failed": 0,
+    "seconds": 0.52
+  },
+  "cargo_check_workspace_all_targets": {
+    "result": "PASS",
+    "seconds": 52.6
+  },
+  "clippy": "PASS eleven changed crates all-targets/all-features; quests and generated client-assets rechecked after final changes",
+  "world_pin": "3100fafd589a608f7334d383fb3d6daacea324696fa672228339f6a77f953c7c",
+  "delegated_runtime_exclusion": {
+    "key": "oteryn:quest-callback/questpc7-feaster-purification-entry",
+    "owner": "qengine2",
+    "reason": "unqualified second-phase route duplicates the original STEP selector; authoring retained; strict registry unchanged"
+  },
+  "authoring_unit_preexisting_skips": 8
 }

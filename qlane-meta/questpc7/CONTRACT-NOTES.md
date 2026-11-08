@@ -883,3 +883,18 @@ Disable unrelated Prey/Forge/personal-boss-reward eligibility. Add the three
 canonical declarations/profiles and explicit Wiki binding through existing
 Stage/Mapper; native overlay consumes the same authored packet. No world spawn
 or whole Feaster completion is claimed by the actor-admission slice.
+
+
+## 2026-11-08 fresh-main integration decisions
+
+The binding ANY-packet-claim ownership rule retains four titles and delegates
+21, recorded with branch SHAs in LANE-questpc7.json. Historical source and code
+remain available to the collector. The unqualified Feaster purification-entry
+callback retains authoring but is excluded from this lane runtime registration:
+it duplicates the original STEP selector and needs its QENGINE2 owner's phase
+admission. No selector validation or test was relaxed. Root registry tests are
+now green. Main's two reward documents retain256records per document; their
+bounded aggregate is512. The separate per-document and document-count refusal
+cases remain tested. False completion fields retain main's omitted wire form.
+Generated index witnesses use the planned output only after native palette and
+region equality. This fixes a producer ordering error, without inventing facts.

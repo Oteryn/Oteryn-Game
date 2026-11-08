@@ -34,11 +34,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "b3864f14a",
-      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
-      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
+      "state": "COMPILING_WIP_PREPUSH2_UNIT_BUDGET_PENDING",
+      "proof": "qlane-meta/questpc7/MAIN3040-MERGE-PROOF.json",
       "qualification_change": false,
-      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+      "own_pg_requalification": "PENDING; previous pushed quest proofs preserved"
     }
   },
   {
@@ -1756,11 +1756,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "b3864f14a",
-      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
-      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
+      "state": "COMPILING_WIP_PREPUSH2_UNIT_BUDGET_PENDING",
+      "proof": "qlane-meta/questpc7/MAIN3040-MERGE-PROOF.json",
       "qualification_change": false,
-      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+      "own_pg_requalification": "PENDING; previous pushed quest proofs preserved"
     }
   },
   {
@@ -1956,11 +1956,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "b3864f14a",
-      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
-      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
+      "state": "COMPILING_WIP_PREPUSH2_UNIT_BUDGET_PENDING",
+      "proof": "qlane-meta/questpc7/MAIN3040-MERGE-PROOF.json",
       "qualification_change": false,
-      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+      "own_pg_requalification": "PENDING; previous pushed quest proofs preserved"
     },
     "latest_engine_review": {
       "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
@@ -2077,11 +2077,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "b3864f14a",
-      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
-      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
+      "state": "COMPILING_WIP_PREPUSH2_UNIT_BUDGET_PENDING",
+      "proof": "qlane-meta/questpc7/MAIN3040-MERGE-PROOF.json",
       "qualification_change": false,
-      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+      "own_pg_requalification": "PENDING; previous pushed quest proofs preserved"
     }
   },
   {
