@@ -31,15 +31,22 @@ class QualificationTests(unittest.TestCase):
         self.assertEqual(errors, [])
         # 172 source claims have focused dispatch PG proof; only the
         # two Dawnport claims are excluded. Keep exact denominator detection.
-        self.assertEqual(sum(counts.values()), 162)
+        self.assertEqual(sum(counts.values()), 163)
 
         ledger=qualification.read_json(qualification.LEDGER)
+        coverage = qualification.read_json(qualification.COVERAGE)
+        qualified = {chest['claim'] for quest in coverage['quests']
+                     for chest in quest['chests']
+                     if chest['status'] == 'dispatch_pg_qualified'}
         for key in qualification.ITEMHOLD_ADMISSIONS:
-            self.assertEqual(ledger['claims'][key]['disposition'],'blocked')
-            self.assertEqual(ledger['claims'][key]['dependency'],'QUEST-QUAL-1')
+            self.assertIn(key, qualified)
+            self.assertNotIn(key, ledger['claims'])
+        for record in ledger['claims'].values():
+            self.assertEqual(record['disposition'], 'blocked')
+            self.assertEqual(record['dependency'], 'QUEST-QUAL-1')
 
     def test_missing_row_is_rejected(self):
-        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+        for key in sorted(self.ledger["claims"]):
             with self.subTest(claim=key):
                 ledger = copy.deepcopy(self.ledger)
                 del ledger["claims"][key]

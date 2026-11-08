@@ -2,7 +2,7 @@
   "counts": {
     "dispatch_pg_qualified": 172,
     "not_playable": 2,
-    "supported_unqualified": 162
+    "supported_unqualified": 163
   },
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
   "quests": [
@@ -10421,6 +10421,33 @@
         }
       ],
       "quest": "crystalserver:quest/targuna_quest"
+    },
+    {
+      "chests": [
+        {
+          "claim": "oteryn:reward-claim.quest.u7_5.sams_old_backpack.armor",
+          "placements": [
+            {
+              "position": {
+                "x": 32455,
+                "y": 31968,
+                "z": 14
+              },
+              "sources": [
+                {
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3192",
+                  "reward_matches_current_source": false,
+                  "server": "crystalserver",
+                  "unique_id": 9226
+                }
+              ]
+            }
+          ],
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
+        }
+      ],
+      "quest": "oteryn:quest.sam_s_old_backpack_quest"
     },
     {
       "chests": [
