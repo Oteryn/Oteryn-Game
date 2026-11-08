@@ -505,87 +505,30 @@ fn o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals()
 }
 
 #[test]
-fn o021_live_health_and_party_marks_project_at_entity_position()
--> Result<(), Box<dyn std::error::Error>> {
-    let mut play = view()?;
-    let mut json = serde_json::to_value(play.preferences())?;
-    json["creature_bars"] = serde_json::json!(false);
-    play.set_preferences(serde_json::from_value(json.clone())?)?;
-    let entity = oteryn_session::EntityRef {
-        identity: [8; 16],
-        generation: 2,
-    };
-    play.entities.push(oteryn_session::WorldSpatialEntity {
-        entity,
-        display_name: None,
-        kind: oteryn_session::EntityKind::Creature,
-        position: oteryn_session::ActorPosition {
-            x: 101,
-            y: 200,
-            floor: 0,
-        },
-        detail: oteryn_session::EntityDetail::Actor {
-            direction: oteryn_session::StepDirection::South,
-            appearance_ref: 1,
-            health_percent: 50,
-        },
-    });
-    play.rebuild()?;
-    let baseline = play.scene().sprites().len();
-    json["creature_bars"] = serde_json::json!(true);
-    play.set_preferences(serde_json::from_value(json)?)?;
-    assert_eq!(play.scene().sprites().len(), baseline + 2);
-    play.party_icons = vec![oteryn_client_runtime::party_skull::PartyIcon {
-        entity,
-        shield: 3,
-        skull: 4,
-    }];
-    play.rebuild()?;
-    assert!(play.scene().sprites().len() > baseline + 2);
-    play.party_icons[0].entity.generation += 1;
-    play.rebuild()?;
-    assert_eq!(play.scene().sprites().len(), baseline + 2);
-    Ok(())
-}
-
-#[test]
-fn o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals()
--> Result<(), Box<dyn std::error::Error>> {
-    let mut play = view()?;
-    let baseline = play.scene().sprites().len();
-    let mut json = serde_json::to_value(play.preferences())?;
-    json["health_circle"] = serde_json::json!(true);
-    play.set_preferences(serde_json::from_value(json)?)?;
-    assert_eq!(play.scene().sprites().len(), baseline);
-    play.vitals = Some(oteryn_session::ActorVitals {
-        health: 50,
-        max_health: 100,
-        mana: 0,
-        max_mana: 0,
-        ..Default::default()
-    });
-    play.rebuild()?;
-    // 32 circle segments, four HP/MP quads and six monk indicators.
-    assert_eq!(play.scene().sprites().len(), baseline + 42);
-    let circle = &play.scene().sprites().instances()[baseline + 10..];
-    assert_eq!(circle.len(), 32);
-    assert!(circle.iter().any(|segment| segment.uv != circle[31].uv));
-    Ok(())
-}
-
-#[test]
-fn o037_shortcut_panel_collapse_and_order_survive_restart() -> Result<(), Box<dyn std::error::Error>> {
+fn o037_shortcut_panel_collapse_and_order_survive_restart() -> Result<(), Box<dyn std::error::Error>>
+{
     let path = std::env::temp_dir().join(format!("cg-mainpanel-{}.json", std::process::id()));
     let mut state = crate::play::SettingsState::new(Some(path.clone()));
     let mut json = serde_json::to_value(&state.preferences)?;
     json["shortcuts_collapsed"] = serde_json::json!(true);
-    json["shortcut_order"] = serde_json::json!(["0287-actor-spell-catalog-open", "0279-skill-progress-open"]);
+    json["shortcut_order"] =
+        serde_json::json!(["0287-actor-spell-catalog-open", "0279-skill-progress-open"]);
     state.apply(serde_json::from_value(json.clone())?);
     let restored = crate::play::SettingsState::new(Some(path.clone()));
-    assert_eq!(serde_json::to_value(&restored.preferences)?["shortcut_order"], json["shortcut_order"]);
-    assert_eq!(serde_json::to_value(&restored.preferences)?["shortcuts_collapsed"], true);
+    assert_eq!(
+        serde_json::to_value(&restored.preferences)?["shortcut_order"],
+        json["shortcut_order"]
+    );
+    assert_eq!(
+        serde_json::to_value(&restored.preferences)?["shortcuts_collapsed"],
+        true
+    );
     json["shortcut_order"] = serde_json::json!(["unknown"]);
-    assert!(view()?.set_preferences(serde_json::from_value(json)?).is_err());
+    assert!(
+        view()?
+            .set_preferences(serde_json::from_value(json)?)
+            .is_err()
+    );
     std::fs::remove_file(path)?;
     Ok(())
 }

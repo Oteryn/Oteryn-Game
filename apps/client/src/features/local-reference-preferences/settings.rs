@@ -42,6 +42,13 @@ fn enabled() -> bool {
     true
 }
 
+fn default_shortcuts() -> Vec<String> {
+    WINDOW_ACTIONS
+        .iter()
+        .map(|(id, _)| (*id).to_owned())
+        .collect()
+}
+
 fn default_hud_bounds() -> [u16; 4] {
     [8, 8, 900, 40]
 }
@@ -89,6 +96,10 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub health_circle: bool,
     #[serde(default)]
+    pub shortcuts_collapsed: bool,
+    #[serde(default = "default_shortcuts")]
+    pub shortcut_order: Vec<String>,
+    #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
     pub keybindings: std::collections::BTreeMap<String, String>,
@@ -115,6 +126,8 @@ impl Default for ReferencePreferences {
             show_serene: true,
             creature_bars: false,
             health_circle: false,
+            shortcuts_collapsed: false,
+            shortcut_order: default_shortcuts(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             english: false,
@@ -127,6 +140,14 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        if self.shortcut_order.len() > WINDOW_ACTIONS.len()
+            || self.shortcut_order.iter().enumerate().any(|(i, id)| {
+                !WINDOW_ACTIONS.iter().any(|(key, _)| key == id)
+                    || self.shortcut_order[..i].contains(id)
+            })
+        {
+            return Err(PreferenceError);
+        }
         if !matches!(self.rotation_modifier.as_str(), "CTRL" | "ALT" | "SHIFT")
             || self.keyboard_delay_ms > 1000
             || self.hud_bounds[2] < 120
