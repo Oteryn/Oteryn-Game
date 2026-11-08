@@ -3,8 +3,9 @@
 
 mod admission;
 mod bounds;
-mod equipped_storage;
 mod calendar;
+mod equipped_storage;
+pub use calendar::NpcUtcCalendar;
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
@@ -340,6 +341,13 @@ pub struct NpcRuleInput<'a> {
     pub vocation: &'a str,
     pub sex: u8,
     pub outfits: &'a BTreeMap<u16, u8>,
+}
+
+impl NpcRuleInput<'_> {
+    /// M17: preview and commit project the epoch supplied by their existing owners.
+    pub fn utc_calendar(&self) -> Result<NpcUtcCalendar, NpcRuleError> {
+        NpcUtcCalendar::from_epoch(self.now_epoch_seconds)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

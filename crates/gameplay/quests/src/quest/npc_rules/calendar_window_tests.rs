@@ -154,3 +154,21 @@ fn calendar_window_tamoril_preserves_acceptance_resets_and_blocks_every_outside_
     assert_eq!(plan.track_changes.len(), 5);
     Ok(())
 }
+
+#[test]
+fn calendar_window_current_year_projection_uses_utc_epoch() -> Result<(), NpcRuleError> {
+    for (epoch, year, month, day) in [
+        (-1, 1969, 12, 31),
+        (0, 1970, 1, 1),
+        (1_704_067_199, 2023, 12, 31),
+        (1_704_067_200, 2024, 1, 1),
+        (1_709_164_800, 2024, 2, 29),
+        (1_735_689_600, 2025, 1, 1),
+    ] {
+        let date = NpcUtcCalendar::from_epoch(epoch)?;
+        assert_eq!((date.year, date.month, date.day), (year, month, day));
+    }
+    assert!(NpcUtcCalendar::from_epoch(i64::MAX).is_err());
+    assert!(NpcUtcCalendar::from_epoch(i64::MIN).is_err());
+    Ok(())
+}
