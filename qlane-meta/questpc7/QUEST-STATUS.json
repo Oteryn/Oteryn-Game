@@ -34,11 +34,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "c68395ccc",
-      "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
-      "proof": "qlane-meta/questpc7/MAIN3034-MERGE-PROOF.json",
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "state": "OWN_THREE_ROUTES_PG_GREEN",
+      "proof": "qlane-meta/questpc7/MAIN3044-PG-PROOF.json",
       "qualification_change": false,
-      "own_pg_requalification": "RUNNING five actual-PG cases after main merge/counter occurrence-key repair; historical pushed proofs retained"
+      "own_pg_requalification": "PASS5cases actualPG18.6,332.064s; remaining unit/recheck budget explicitly pending"
     }
   },
   {
@@ -1756,11 +1756,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "c68395ccc",
-      "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
-      "proof": "qlane-meta/questpc7/MAIN3034-MERGE-PROOF.json",
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "state": "OWN_THREE_ROUTES_PG_GREEN",
+      "proof": "qlane-meta/questpc7/MAIN3044-PG-PROOF.json",
       "qualification_change": false,
-      "own_pg_requalification": "RUNNING five actual-PG cases after main merge/counter occurrence-key repair; historical pushed proofs retained"
+      "own_pg_requalification": "PASS5cases actualPG18.6,332.064s; remaining unit/recheck budget explicitly pending"
     }
   },
   {
@@ -1904,7 +1904,8 @@
       ],
       "attempts": [
         "Read the source recipe/bonus calendar planner and the real generic writer; traced the retained Jean Pierre hi rejection to unsupported CalendarMonth rather than interpreting it as an absent test. Did not duplicate qengine2 or activate the test-only cooking planner.",
-        "2026-11-08: confirmed HotCuisineProgram is production-exported via quest/mod.rs; generic npc_program.evaluate_source does not invoke its calendar/recipe planner. Actual PostgreSQL 18.6 native-cook-6 returned StageMismatch (35.881s); requested qengine2 wiring plus real level/Premium admission rather than enabling ungated rewards."
+        "2026-11-08: confirmed HotCuisineProgram is production-exported via quest/mod.rs; generic npc_program.evaluate_source does not invoke its calendar/recipe planner. Actual PostgreSQL 18.6 native-cook-6 returned StageMismatch (35.881s); requested qengine2 wiring plus real level/Premium admission rather than enabling ungated rewards.",
+        "Fresh qengine2 790996f8e: npc_program.rs:148 still level:0; no HotCuisine planner wiring. Guarded execution request remains open; source-only eight Bat/Chicken profiles drafted but not admitted/qualified."
       ],
       "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane.",
       "source_recipe_requirement": "Each Jean Pierre cooking operation must consume all exact ingredient quantities and fluid subtypes, deliver the dish and commit cooking progress under one receipt/fence."
@@ -1957,11 +1958,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "c68395ccc",
-      "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
-      "proof": "qlane-meta/questpc7/MAIN3034-MERGE-PROOF.json",
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "state": "OWN_THREE_ROUTES_PG_GREEN",
+      "proof": "qlane-meta/questpc7/MAIN3044-PG-PROOF.json",
       "qualification_change": false,
-      "own_pg_requalification": "RUNNING five actual-PG cases after main merge/counter occurrence-key repair; historical pushed proofs retained"
+      "own_pg_requalification": "PASS5cases actualPG18.6,332.064s; remaining unit/recheck budget explicitly pending"
     },
     "latest_engine_review": {
       "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
@@ -2078,11 +2079,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "c68395ccc",
-      "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
-      "proof": "qlane-meta/questpc7/MAIN3034-MERGE-PROOF.json",
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "state": "OWN_THREE_ROUTES_PG_GREEN",
+      "proof": "qlane-meta/questpc7/MAIN3044-PG-PROOF.json",
       "qualification_change": false,
-      "own_pg_requalification": "RUNNING five actual-PG cases after main merge/counter occurrence-key repair; historical pushed proofs retained"
+      "own_pg_requalification": "PASS5cases actualPG18.6,332.064s; remaining unit/recheck budget explicitly pending"
     }
   },
   {

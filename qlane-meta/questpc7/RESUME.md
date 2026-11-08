@@ -1,3 +1,27 @@
+# Publish fresh-main actual-PG requalification — 2026-11-08
+
+Main1076254706e4ddc05a6d0a1aba0c1777af2038ac merged cleanly as036be9914.
+Five actualPG18.6 cases PASS332.064s: Friends83.877924444s; Hidden48.168622491s;
+Tokens82.780138134s; L6fluid43.865439416s; cataloguefluid73.190s, six placements.
+Counter claim identity and completion receipt have RED→GREEN proof. No tests or
+constraints weakened. MAIN3044-PG-PROOF.json records exact scope and pending work.
+Authoring checks PASS; full units106modules/1152reported/8existing skips PASS.
+Contenttree34111Items/252Mounts/1864Creaturebindings PASS. Final workspacealltargets
+PASS476s(includes queue), fmt/dups PASS; strict six-crate clippy PASS582s. Official
+pincheck PASS32892823bytes, digest5e23e39d9479b37a4c0b66a17ecf6bdbc4e8158bc5417e150c5b81ca1c01e79d.
+PREPUSH2 budget: remaining Rust quests/NPC/counter unit compilation and final
+assets-only clippy hit disk-full, NOT green; space recovered and reruns next.
+Optional content_world_project_repository test remains pending after priority
+interrupt. Do not claim the whole regeneration command passed; writes/pins and
+individual required checks passed. Proxy-forwarded node boot reached PHP/Composer
+pulls (registry route fixed), but extraction exhausted disk; stopped node matrix.
+No node GREEN. Serialize next whole-node retries after Rust proof and cache cleanup.
+Cleaned25inactive lane fixtureDBs and obsolete non-running lane caches/binaries.
+NEXT finish pending checks, then Hot Cuisine source-only Bat/Chicken data slice:
+new ownPGcase RED → eight exact corpse profiles/two existing loot closures → GREEN.
+Qengine2 fresh790996f8e still level:0/no HotCuisine wiring; guarded planner request
+open. Only4owned titles; skip delegated21. No large new engine in this lane.
+
 # Fresh-main generation and validation checkpoint — 2026-11-08
 
 Main c68395ccc is merged as a533ad557. All18 conflicts resolved; all21 compile
