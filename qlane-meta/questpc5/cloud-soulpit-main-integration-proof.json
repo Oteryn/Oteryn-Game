@@ -5,7 +5,8 @@
     "Main Soulpit lifecycle, physical map facts and migrations1140-1141 consumed as-is",
     "Both exact Cook44563 and bounded55Soulpit static profiles retained, no widened source admission",
     "Main movement_cells() accessor retained together with existing qualified static-field filtering",
-    "Main Soulpit kill exclusion and existing Corruptor source loot capture both retained"
+    "Main Soulpit kill exclusion and existing Corruptor source loot capture both retained",
+    "Main47baa7bb8 floor-transform SpellLanePermit scope proof and provisioning input bound; no content changes"
   ],
   "red": {
     "terrain_tests": "2 failures: main static identities absent in pre-regeneration placements palette",
@@ -34,7 +35,9 @@
   },
   "pending": [
     "postmerge own PostgreSQL tests",
-    "changed-crate unit tests"
+    "changed-crate unit tests",
+    "Final workspace all-target recheck after incoming permit-only fix"
   ],
-  "qualification": "No additional whole quest qualified; ledger remains13/23. No foreign migration introduced."
+  "qualification": "No additional whole quest qualified; ledger remains13/23. No foreign migration introduced.",
+  "latest_main": "47baa7bb872498ba9c5b30cf070c330f85cefba8"
 }
