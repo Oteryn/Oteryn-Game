@@ -310,6 +310,7 @@ fn current_scope_issuer_failure_stays_authority_and_native_source_error_stays_so
 /// PostgreSQL cases use real native source MINT/TRANSFER writers and current
 /// Root/Node/recovery/scope predicates. Prospective insertions remain DATA.
 mod postgres {
+    include!("m02_ground_stack_postgres_tests.rs");
     mod field_capabilities {
         include!("field_capability_port_postgres_tests.rs");
     }
