@@ -626,6 +626,9 @@ mod timed_tests;
 mod literal_text_tests;
 
 #[cfg(test)]
+mod cycle_tests;
+
+#[cfg(test)]
 mod batch4_tests;
 
 #[cfg(test)]
