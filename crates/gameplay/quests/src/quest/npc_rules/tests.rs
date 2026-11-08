@@ -666,6 +666,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.hot_cuisine_quest",
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
+        "oteryn:quest.outfit_and_addon_quests",
         "oteryn:quest.the_first_dragon_quest",
         "oteryn:quest.the_dream_courts_quest",
         "oteryn:quest.the_hidden_city_of_beregar_quest",
@@ -750,7 +751,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
     // Dream Courts, Tamoril and Gnomus source defaults remain registered.
-    assert_eq!(defaults, BTreeMap::from([(-1, 203), (0, 52)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 203), (0, 54)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -1029,5 +1030,63 @@ fn m54_source_completion_does_not_complete_shared_canonical_quest() -> Result<()
     document["rules"][0]["completes"] = false.into();
     document["rules"][0]["effects"][0]["track"] = "oteryn:quest-progress/test/value".into();
     assert!(fixture_catalog(&document).is_err());
+    Ok(())
+}
+
+#[test]
+fn m54_citizen_source_aliases_require_both_local_sagas() -> Result<(), NpcRuleError> {
+    let runtime = NpcRuleCatalog::runtime()?;
+    let loaded = super::super::loader::load_embedded_quest_state("m54-source-sagas")
+        .map_err(|e| NpcRuleError::Invalid(format!("{e:?}")))?;
+    let native = loaded.catalogue();
+    let prefix = "oteryn:quest-progress/quest/u7_8/";
+    let mut facts = Facts::empty();
+    for (track, value) in [
+        ("citizen_outfits/addon_backpack", 3),
+        ("citizen_outfits/addon_hat", 2),
+        ("citizen_outfits_rook/addon_backpack_rook", 0),
+        ("citizen_outfits_rook/addon_hat_rook", 0),
+    ] {
+        facts.tracks.insert(format!("{prefix}{track}"), value);
+    }
+    for npc in ["oteryn:npc.lubo", "oteryn:npc.hanna", "oteryn:npc.amber"] {
+        let admitted = runtime
+            .admitted_for_npc(npc, native)?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing Citizen alias {npc}")))?;
+        let plan = admitted.plan_storage(&facts.input(npc, "addon", 0))?;
+        if npc == "oteryn:npc.amber" {
+            assert!(plan.is_none());
+        } else {
+            let plan = plan.ok_or_else(|| NpcRuleError::Invalid("mainland proof".into()))?;
+            assert!(!plan.completes);
+            assert_eq!(plan.quest, "oteryn:quest.outfit_and_addon_quests");
+            assert_eq!(
+                plan.track_changes[0].key,
+                "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-mainland"
+            );
+        }
+    }
+    facts.tracks.insert(
+        format!("{prefix}citizen_outfits_rook/addon_backpack_rook"),
+        3,
+    );
+    let rook = runtime
+        .admitted_for_npc("oteryn:npc.amber", native)?
+        .ok_or_else(|| NpcRuleError::Invalid("Rook source".into()))?;
+    assert!(
+        rook.plan_storage(&facts.input("oteryn:npc.amber", "addon", 0))?
+            .is_none()
+    );
+    facts
+        .tracks
+        .insert(format!("{prefix}citizen_outfits_rook/addon_hat_rook"), 2);
+    let plan = rook
+        .plan_storage(&facts.input("oteryn:npc.amber", "addon", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("Rook proof".into()))?;
+    assert!(!plan.completes);
+    assert_eq!(
+        plan.track_changes[0].key,
+        "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-rook"
+    );
     Ok(())
 }

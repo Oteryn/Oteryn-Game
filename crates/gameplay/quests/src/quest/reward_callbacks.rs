@@ -1253,6 +1253,23 @@ mod tests {
                 .catalogue()
                 .definition_hash(key)
                 .ok_or("published quest")?;
+            // Citizen source scopes promote the shared quest through the existing
+            // exact-predecessor adapter; its published hash must remain loadable.
+            let hash = if key == "oteryn:quest.outfit_and_addon_quests" {
+                let legacy = lowered
+                    .catalogue()
+                    .npc_legacy
+                    .get(key)
+                    .ok_or("published Citizen predecessor")?
+                    .0;
+                assert_ne!(
+                    hash, legacy,
+                    "source scopes must bind the active definition"
+                );
+                legacy
+            } else {
+                hash
+            };
             assert_eq!(
                 hash.iter().map(|b| format!("{b:02x}")).collect::<String>(),
                 expected,
