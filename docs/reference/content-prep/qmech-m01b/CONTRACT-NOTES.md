@@ -47,3 +47,27 @@ kill or reward. The recipe is free-account, level0 and has no prerequisites.
 The generator now checks that a binding names an existing EXPLORE first stage,
 its count is1, and its counter namespace belongs to that exact canonical quest.
 Other stages fail closed until their individual visit/predecessor guards land.
+
+## Current Premium entry admission
+
+Reuse qmech's existing Callback.admission.premium field and the transaction-scoped
+GrizzlyPremiumGate implemented by the native SpellPremiumCoordinator. The live
+World writer obtains the actual Character account under the gameplay fence and
+joins that provider before any exploration storage change. The ordinary legacy
+World APIs retain NoGrizzlyPremium, so absence of an authority fails closed.
+Normal execution and pending-command recovery both supply the native provider.
+
+Asura's existing chosen recipe requires Premium. Its exact Area point remains
+32953,32685,z7, plain923, pinned by
+https://tibia.fandom.com/index.php?curid=75337&oldid=1175412 . No map data changes.
+The PG case keeps the admitted session's Premium projection while removing the
+transaction provider: cached session flags cannot authorize this write. After
+restoring Current Premium, replay must preserve zero credit; a fresh entry is
+required. Re-entry and replay after success stay at one.
+
+The existing Admission promotion/regular_blessings flags have no World writer
+implementation in the checked qmech source. They fail closed rather than being
+silently ignored. Neither is needed by these bound exploration stages. Quest
+prerequisites still fail closed in the producer. Existing minimum_level is
+emitted for eligible recipes and remains owned by the locked progression read;
+Fire Axe's level60 mapping is tested, but its physical anchor is not activated.

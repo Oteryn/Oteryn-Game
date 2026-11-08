@@ -614,7 +614,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None
             };
             let outcome = slot
-                .commit_world_callback_with_items(
+                .commit_world_callback_with_access(
                     self.root,
                     self.character,
                     self.holder,
@@ -629,6 +629,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.active_generation
                         .and_then(|generation| generation.native_gameplay()),
                     reward_admission,
+                    &self.premium_coordinator,
                 )
                 .await;
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));

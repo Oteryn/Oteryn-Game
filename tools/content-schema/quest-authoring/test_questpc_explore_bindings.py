@@ -11,6 +11,20 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_premium_and_level_requirements_reach_the_fenced_callback(self):
+        cases = (
+            ('oteryn:quest.authored.asura_palace_quest', 'oteryn:area.hunting_place.asura_palace',
+             'authored/asura_palace_quest', 0),
+            ('oteryn:quest.fire_axe_quest', 'oteryn:area.hunting_place.edron_dragon_lair',
+             'chosen-source/fire_axe_quest', 60),
+        )
+        for quest, area, tail, level in cases:
+            with self.subTest(quest=quest), mock.patch.object(
+                    explore, 'BINDINGS', ((quest, 's1', area, tail),)):
+                callback, = explore.callbacks(ROOT)
+                self.assertEqual(callback['admission'], {'premium': True})
+                self.assertEqual(callback.get('minimum_level', 0), level)
+
     def test_non_explore_and_unknown_stages_are_rejected(self):
         for stage in ('s2', 'missing'):
             binding = tuple((q, stage, a, t) for q, _, a, t in explore.BINDINGS)
@@ -26,8 +40,8 @@ class ExploreBindingsTests(unittest.TestCase):
                 explore.callbacks(ROOT)
 
     def test_unimplemented_required_guard_is_not_silently_dropped(self):
-        guarded = (('oteryn:quest.authored.asura_palace_quest', 's1',
-                    'oteryn:area.hunting_place.asura_palace', 'authored/asura_palace_quest'),)
+        guarded = (('oteryn:quest.lion_trophy_quest', 's1',
+                    'oteryn:area.hunting_place.formorgar_mines', 'chosen-source/lion_trophy_quest'),)
         with mock.patch.object(explore, 'BINDINGS', guarded):
             with self.assertRaisesRegex(ValueError, 'additional authoritative guards'):
                 explore.callbacks(ROOT)

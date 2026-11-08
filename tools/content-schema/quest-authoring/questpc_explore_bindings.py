@@ -6,10 +6,14 @@ AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
     ('oteryn:quest.longsword_quest', 's1',
      'oteryn:area.hunting_place.dusalk_s_troll_clan_cave', 'chosen-source/longsword_quest'),
+    ('oteryn:quest.authored.asura_palace_quest', 's1',
+     'oteryn:area.hunting_place.asura_palace', 'authored/asura_palace_quest'),
     ('oteryn:quest.geomancer_quest', 's1',
      'oteryn:area.hunting_place.mount_sternum_undead_cave', 'chosen-source/geomancer_quest'),
 )
 ANCHORS = {
+    'oteryn:area.hunting_place.asura_palace': (32953, 32685, -7, 923),
+    'oteryn:area.hunting_place.edron_dragon_lair': (33098, 31701, -7, 4409),
     'oteryn:area.hunting_place.dusalk_s_troll_clan_cave': (32663, 31970, -7, 4525),
     'oteryn:area.hunting_place.mount_sternum_undead_cave': (32418, 32017, -7, 4529),
 }
@@ -41,8 +45,7 @@ def callbacks(root):
         if track_tail != expected_tail:
             raise ValueError('Explore counter owner differs from canonical quest: ' + quest)
         requirements = recipe['requirements']
-        if (requirements['premium'] or requirements['min_level'] != 0
-                or requirements['prerequisites']):
+        if requirements['prerequisites']:
             raise ValueError('Explore route requires additional authoritative guards: ' + quest)
         matches = [(i, r) for i, r in enumerate(areas)
                    if r['declaration']['identity']['key'] == area]
@@ -77,4 +80,8 @@ def callbacks(root):
             sources=[AREA + '#/records/' + str(index),
                 url,
                 'OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only']))
+        if requirements['premium']:
+            result[-1]['admission'] = {'premium': True}
+        if requirements['min_level']:
+            result[-1]['minimum_level'] = requirements['min_level']
     return result

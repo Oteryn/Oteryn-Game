@@ -115,11 +115,55 @@ fn m01b_geomancer_real_native_entry_credits_once_and_replays() -> TestResult {
     result
 }
 
+#[test]
+fn m01b_asura_native_entry_requires_current_premium_and_replays() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("m01b-asura-premium-step", || {
+        super::quest_world_callbacks::scenario(
+            "m01b/asura-palace/s1/entry",
+            Position {
+                x: 32953,
+                y: 32685,
+                floor: -7,
+            },
+            false,
+        )
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED m01b_asura_premium duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if name == "m01b/asura-palace/s1/entry" {
+        return native_crop(
+            native,
+            NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z07-x128-y127.b3"
+                )),
+                region: (7, 128, 127),
+                bounds: (32952, 32684, 32955, 32687),
+                start: (32954, 32685),
+                expected: vec![ExpectedTile {
+                    position: (32953, 32685),
+                    ids: vec![923],
+                    counted_entry: None,
+                }],
+            },
+        );
+    }
     if name == "m01b/geomancer/s1/entry" {
         return native_crop(
             native,
@@ -172,6 +216,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.admission.as_ref().is_some_and(|a| a.premium) {
+        return exercise_premium(owner, admitted, h, callback).await;
+    }
     let geomancer = callback.key.ends_with("m01b/geomancer/s1/entry");
     assert!(geomancer || callback.key.ends_with(ENTRY));
     let counter = if geomancer {
@@ -260,5 +307,81 @@ pub(super) async fn exercise(
         (1, 1, 0),
         "replay and revisits must not farm credit"
     );
+    Ok(())
+}
+
+async fn exercise_premium(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    callback: &Callback,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    let premium = owner
+        .premium_coordinator
+        .take()
+        .ok_or("current Premium fixture")?;
+    let counter = callback
+        .storage
+        .iter()
+        .find(|s| s.increment)
+        .ok_or("stage counter")?
+        .track
+        .as_str();
+    let counts = || async {
+        sqlx::query_as::<_, (i64, i64)>(
+            "SELECT \
+          (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1), \
+          (SELECT coalesce(max(value),0) FROM game_character_quest_tracks WHERE track_key=$2)",
+        )
+        .bind(&callback.key)
+        .bind(counter)
+        .fetch_one(&h.pool)
+        .await
+    };
+    for (index, direction) in [
+        StepDirection::West,
+        StepDirection::East,
+        StepDirection::West,
+        StepDirection::East,
+        StepDirection::West,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        let command = u64::try_from(index)? + 1;
+        let intent = oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction);
+        let reply =
+            super::quest_world_callbacks::wire(owner, admitted, command, 1, intent.clone()).await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        assert_eq!(
+            counts().await?,
+            if index < 2 { (0, 0) } else { (1, 1) },
+            "movement without Current Premium may not grant imported exploration"
+        );
+        if index == 0 {
+            owner.premium_coordinator = Some(premium);
+            let replay =
+                super::quest_world_callbacks::wire(owner, admitted, command, 1, intent).await?;
+            assert_eq!(replay, reply);
+            assert_eq!(
+                counts().await?,
+                (0, 0),
+                "gaining Premium cannot retroactively credit a replay"
+            );
+        } else if index == 2 {
+            let replay =
+                super::quest_world_callbacks::wire(owner, admitted, command, 1, intent).await?;
+            assert_eq!(replay, reply);
+            assert_eq!(counts().await?, (1, 1));
+        }
+    }
     Ok(())
 }

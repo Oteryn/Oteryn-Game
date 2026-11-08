@@ -9,26 +9,32 @@
     "first_wired_stage": "s1",
     "wired_routes": [
       "Longsword Quest",
-      "Geomancer Quest"
+      "Geomancer Quest",
+      "Asura Palace Quest"
     ],
-    "wired_explore_stages": 2
+    "wired_explore_stages": 3,
+    "pg_proven_routes": [
+      "Longsword Quest",
+      "Geomancer Quest"
+    ]
   },
   "validation": {
-    "quest_unit_tests": "356 passed,0 failed,41.91s after qmech41edb50ef merge",
-    "focused_profile_tests": "3 included in the356 passing quest units",
-    "authoring_modules": "111 passed,0 failed after merge",
+    "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
+    "focused_profile_tests": "4 included in373 passing units;Premium policy hash binding included",
+    "authoring_modules": "112 passed,0 failed",
     "authoring_checks": "PASS",
     "content_tree": "PASS",
-    "clippy": "PASS quests+dispatch all-targets/all-features -D warnings4m40s; changed game-server authority test target3m02s",
+    "clippy": "quests+durability+dispatch PASS6m13s;authority target interrupted for coordinator-requested merge",
     "postgres_catalogue": "PASS PostgreSQL18.6,8.222271585s",
     "postgres_native_step": "PASS Longsword61.045918893s and Geomancer59.238595156s;3cases total128.51s,0failures",
-    "workspace_all_targets": "PASS7m59s after repairing the merged map-mark fixture initializer",
-    "fmt": "PASS cargo fmt --all --check",
-    "world_pin_verify": "PASS current locked repository compiler pin-check after native/source regeneration",
+    "workspace_all_targets": "PASS7m46s --keep-going after four incoming constructor/test-export repairs",
+    "fmt": "pending after coordinator merge",
+    "world_pin_verify": "pending after coordinator merge",
     "postgres_scope": "316cc6842 source tree before qmech41edb50ef merge; no lane SQL changes",
-    "post_merge_postgres": "PENDING under PREPUSH-2 cadence exception; rerun all M01b native cases with the next entry batch"
+    "post_merge_postgres": "PENDING under PREPUSH-2 cadence exception; rerun all M01b native cases with the next entry batch",
+    "postgres_asura": "PENDING: native Current Premium and replay case written,not run"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Push this Geomancer slice, then implement authoritative Premium/level and predecessor/multi-visit guards for remaining44 routes/54 stages. Entire mechanic remains IN_PROGRESS."
+  "continuation": "Merge coordinator qmech0326dc2e5 preserving both sides;regenerate;check/focused tests/fmt;push own branch,then run all4 M01b PG cases. Remaining43 routes/53 stages;M01b remains PARTIAL."
 }

@@ -78,6 +78,25 @@ mod tests {
     use super::super::*;
 
     #[test]
+    fn asura_explore_binding_cannot_strip_current_premium() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/asura-palace/s1/entry")
+            .ok_or("bound Asura entry")?;
+        assert!(callback.admission.as_ref().is_some_and(|a| a.premium));
+        assert!(super::admitted(&callback));
+        let required = gated_binding(&callback)?.ok_or("bound Premium occurrence")?;
+        let mut stripped = callback;
+        stripped.admission = None;
+        assert_ne!(
+            gated_binding(&stripped)?,
+            Some(required),
+            "a native occurrence admitted for a different access policy cannot be substituted"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn geomancer_explore_entry_has_its_own_zero_initial_counter() -> Result<(), String> {
         let callbacks = load()?;
         let callback = callbacks

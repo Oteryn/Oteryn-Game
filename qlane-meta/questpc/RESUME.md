@@ -51,3 +51,12 @@ changes); rerun all M01b native cases with the next entry batch. This is stage
 credit, never whole-quest completion. Next: authoritative Premium/level, then
 visit/predecessor guards for the remaining44 routes/54 stages. CLAIMS is owned
 by the coordinator; M01b remains IN_PROGRESS. Only2000-2009 if SQL is needed.
+
+Current WIP: reused Callback.admission.premium in the fenced World writer and
+new revision-slot/provider APIs;live and pending paths supply native authority.
+Asura s1 is wired,3/56 total,only Longsword+Geomancer have prior PG proof.
+373 quest units/112 authoring modules/checks/tree,workspace check --keep-going
+and quests+durability+dispatch strict Clippy PASS. Asura PG remains PENDING.
+Four incoming compile faults repaired without weakening assertions. Owner now
+requests merge of qmech0326dc2e5;retain both sides,regenerate,check/focused tests/
+fmt,normal push own branch with exact ls-remote proof,then run all4 M01b PG cases.

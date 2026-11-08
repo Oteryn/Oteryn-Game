@@ -668,7 +668,15 @@ impl DurabilityRoot {
                         && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
-                    if reward_callback.as_ref().is_some_and(|c| c.requires_premium) {
+                    // No declared live predicate may silently fall through the writer.
+                    // Premium has a joined owner; the other source predicates remain closed
+                    // until their corresponding durable admission owners are supplied.
+                    let world_admission = callback.as_ref().and_then(|c| c.admission.as_ref());
+                    if world_admission.is_some_and(|a| a.regular_blessings || a.promotion) {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
+                    if reward_callback.as_ref().is_some_and(|c| c.requires_premium)
+                        || world_admission.is_some_and(|a| a.premium) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;

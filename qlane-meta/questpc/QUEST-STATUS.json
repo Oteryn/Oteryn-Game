@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b Geomancer entry slice validated for publication; qmech41edb50ef merged and one missing creature_use initializer repaired; whole M01b remains IN_PROGRESS.",
+  "batch_state": "M01b Premium writer and Asura wiring WIP;merge0326dc2e5 now,retaining both sides;no DONE claim.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -1093,12 +1093,13 @@
     "migration_range": "2000-2009",
     "state": "IN_PROGRESS",
     "claim_push": "a17567dbf03d295a9601f04ff0cb1efd5876143e",
-    "wired_explore_stages": 2,
+    "wired_explore_stages": 3,
     "wired_routes": [
       "Longsword Quest",
-      "Geomancer Quest"
+      "Geomancer Quest",
+      "Asura Palace Quest"
     ],
-    "validation": "Post-merge356 quest units,111 authoring modules/checks/tree,workspace/fmt and changed-target Clippy PASS;PG3/3 before package merge128.51s;post-merge PG pending cadence exception"
+    "validation": "WIP Premium owner+Asura:373units,112authoring modules/checks/tree,workspace check and three-crate Clippy pass;newPG pending;coordinator merge requested"
   },
   "publication_validation": {
     "postgres_cases": 17,

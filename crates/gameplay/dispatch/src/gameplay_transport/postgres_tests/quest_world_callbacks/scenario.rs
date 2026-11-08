@@ -486,7 +486,8 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.contains("l6-beggar-")
+        let premium = if (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+            || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
@@ -620,7 +621,7 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead {
+        if mead || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium)) {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
