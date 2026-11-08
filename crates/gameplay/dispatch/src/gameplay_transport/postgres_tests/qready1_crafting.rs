@@ -1,5 +1,5 @@
 //! M20 World crafting against the unchanged native wooden grinder room.
-use super::fixture::{Harness, debug};
+use super::fixture::Harness;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
