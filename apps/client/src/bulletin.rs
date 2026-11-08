@@ -81,7 +81,7 @@ impl Default for Browser {
             }
         }
         Self { year, month, feed: Bulletin {
-            news: vec![Article { title: format!("Oteryn {}", crate::RELEASE_ID), body: "Sign in through your browser. Use the calendar to browse operator-published events. No event schedule has been bundled with this release.".into() }],
+            news: vec![Article { title: format!("Oteryn {}", crate::RELEASE_ID), body: "Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.".into() }],
             events: Vec::new(),
         } }
     }
