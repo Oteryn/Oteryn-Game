@@ -151,6 +151,9 @@ pub enum NpcRuleGuard {
     Vocation {
         value: String,
     },
+    Premium {
+        value: bool,
+    },
     Sex {
         value: u8,
     },
@@ -334,6 +337,7 @@ pub struct NpcRuleInput<'a> {
     pub inventory: &'a NpcInventorySnapshot,
     pub now_epoch_seconds: i64,
     pub calendar_month: u8,
+    pub premium_current: bool,
     pub level: u32,
     pub vocation: &'a str,
     pub sex: u8,
@@ -459,6 +463,7 @@ impl NpcRuleCatalog {
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
                                 | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.elemental_spheres_quest"
                                 | "oteryn:quest.bigfoot_s_burden_quest"
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
@@ -689,6 +694,9 @@ pub fn legacy_defaults<'a>(
                 .map(|entry| &entry.defaults)
         })
 }
+
+#[cfg(test)]
+mod multiple_item_rewards_tests;
 
 #[cfg(test)]
 mod tests;

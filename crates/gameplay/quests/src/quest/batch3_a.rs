@@ -25,6 +25,7 @@ pub fn input<'a>(
         inventory,
         now_epoch_seconds: 1_785_542_400,
         calendar_month: 8,
+        premium_current: true,
         level: 100,
         vocation: "oteryn:vocation.knight",
         sex: 0,
