@@ -150,7 +150,12 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                 })
                 || (rule.trigger == NpcRuleTrigger::Say
                     && rule.keywords.is_empty()
-                    && !rule.any_message)
+                    && !rule.any_message
+                    && !rule.match_player_name)
+                || (rule.match_player_name
+                    && (rule.trigger != NpcRuleTrigger::Say
+                        || !rule.keywords.is_empty()
+                        || rule.any_message))
                 || rule.reply.len() > 32
                 || rule
                     .reply

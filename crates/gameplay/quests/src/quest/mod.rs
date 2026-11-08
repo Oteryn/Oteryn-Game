@@ -17,6 +17,7 @@
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
 pub mod admission_binding;
+pub mod authored_bindings;
 
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
@@ -31,12 +32,14 @@ pub mod deepling_boss_access;
 pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
+pub mod ground_stack;
 pub mod hero_of_bounac;
 pub mod hive_access;
 pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
+pub mod map_marks;
 pub mod monk_shrines;
 pub mod native_kills;
 pub mod native_rules;
@@ -51,6 +54,7 @@ pub mod shared_world_progress;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod source_deaths;
+pub mod targuna_ram;
 pub mod task_board;
 pub mod threatened_dreams;
 pub mod timers;
@@ -324,6 +328,8 @@ pub struct QuestStateCatalogue {
     hashes: BTreeMap<String, [u8; 32]>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
+    authored_bindings: Option<std::sync::Arc<authored_bindings::Bindings>>,
+    native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -454,6 +460,8 @@ impl QuestStateCatalogue {
             hashes,
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
+            authored_bindings: None,
+            native_recipe_evidence: None,
         })
     }
 
@@ -470,7 +478,7 @@ impl QuestStateCatalogue {
         if let Some(quest) = quests.find(|quest| self.hashes.contains_key(*quest)) {
             return Err(QuestCatalogueError::DuplicateKey(quest.clone()));
         }
-        Self::new(
+        let mut extended = Self::new(
             self.content_revision.clone(),
             self.tracks.values().cloned().chain(tracks).collect(),
             self.transitions
@@ -478,7 +486,13 @@ impl QuestStateCatalogue {
                 .cloned()
                 .chain(transitions)
                 .collect(),
-        )
+        )?;
+        extended.hashes.extend(self.hashes.clone());
+        extended.npc_legacy = self.npc_legacy.clone();
+        extended.predecessors = self.predecessors.clone();
+        extended.authored_bindings = self.authored_bindings.clone();
+        extended.native_recipe_evidence = self.native_recipe_evidence.clone();
+        Ok(extended)
     }
 
     /// A catalogue with no quest: every transition request is unknown.
@@ -488,6 +502,10 @@ impl QuestStateCatalogue {
     }
 
     #[must_use]
+    pub fn authored_bindings(&self) -> Option<&authored_bindings::Bindings> {
+        self.authored_bindings.as_deref()
+    }
+
     pub fn content_revision(&self) -> &str {
         &self.content_revision
     }

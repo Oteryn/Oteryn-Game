@@ -156,6 +156,9 @@ pub struct NativeClaimBinding {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
+    /// Personal display fact created atomically with this dialogue progress receipt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub map_mark: Option<super::map_marks::QuestMapMark>,
     pub key: String,
     pub quest: String,
     pub npc: String,
@@ -289,6 +292,25 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
 ];
 
+/// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
+    let mut callbacks = load()?;
+    if let Some(bindings) = catalogue.authored_bindings() {
+        callbacks.extend(bindings.reward_callbacks().cloned());
+    }
+    if callbacks.len() > super::authored_bindings::MAX_BOUND_STAGES
+        || callbacks
+            .iter()
+            .map(|c| &c.key)
+            .collect::<BTreeSet<_>>()
+            .len()
+            != callbacks.len()
+    {
+        return Err("authored/base reward binding collision or bound".into());
+    }
+    Ok(callbacks)
+}
+
 pub fn load() -> Result<Vec<RewardCallback>, String> {
     parse_documents(DOCUMENTS).map(|document| document.callbacks)
 }
@@ -311,7 +333,10 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
     validate_document(combined)
 }
 
-#[cfg(test)]
+pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
+}
+
 fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     parse_documents(&[text]).map(|document| document.callbacks)
 }
@@ -439,7 +464,10 @@ fn validate_document(document: Document) -> Result<Document, String> {
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         let requires: BTreeSet<_> = c.requires.iter().map(|s| &s.track).collect();
-        if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+        if c.map_mark
+            .as_ref()
+            .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
+            || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || c.peer_requires.as_ref().is_some_and(|requirement| {
                 c.carried_item.is_none()
                     || c.storage.iter().all(|state| state.preserve)
@@ -1304,6 +1332,10 @@ mod tests {
 #[cfg(test)]
 #[path = "reward_callbacks/readable_text_tests.rs"]
 mod readable_text_tests;
+
+#[cfg(test)]
+#[path = "reward_callbacks/map_mark_tests.rs"]
+mod map_mark_tests;
 
 #[cfg(test)]
 mod multiple_rewards_tests;

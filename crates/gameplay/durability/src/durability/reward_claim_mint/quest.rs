@@ -1,6 +1,6 @@
 //! Quest exchanges borrow the existing complete backpack MINT and custody owners.
 use super::*;
-use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
+use crate::domain::appearance::{AppearanceContent, EarnedCosmetic};
 use crate::durability::account_achievement::{
     AchievementCatalogueLookup, AchievementGrantRequest, AchievementSourceEvent,
     FencedGrantingCharacter, record_achievement_grant,
@@ -8,7 +8,7 @@ use crate::durability::account_achievement::{
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::quest_state::QuestTransitionRequest;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
-use oteryn_gameplay_quests::quest::reward_callbacks::{PROVENANCE, RewardCallback};
+use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 
 mod claim;
 pub(crate) use claim::QuestMintClaim;
@@ -56,42 +56,7 @@ pub(crate) fn prepare_achievement(
     }))
 }
 
-/// Both NPC and world rewards use the admitted generation's explicit mappings.
-pub(crate) fn outfit_compatible(
-    native: &NativeGameplayState,
-    reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
-) -> bool {
-    let Some(cosmetics) = native.cosmetics() else {
-        return false;
-    };
-    (0..=2).all(|addon| {
-        if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
-            return true;
-        }
-        let key = reward.grant_key(addon);
-        let target = if addon == 0 {
-            EarnedCosmetic::Outfit(&reward.outfit)
-        } else {
-            EarnedCosmetic::Addon(&reward.outfit, addon)
-        };
-        (match reward.sex {
-            None => cosmetics.earned_unlock(&key, PROVENANCE, target),
-            Some(sex) => cosmetics.earned_unlock_for_sex(
-                &key,
-                PROVENANCE,
-                target,
-                match sex {
-                    oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female => {
-                        crate::domain::appearance::Sex::Female
-                    }
-                    oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male => {
-                        crate::domain::appearance::Sex::Male
-                    }
-                },
-            ),
-        }) == UnlockFact::Compatible
-    })
-}
+pub(crate) use super::super::character_appearance::quest_grants::outfit_compatible;
 
 /// Retained native coin/change identities; the source price remains in the callback.
 #[derive(Clone, Debug)]
@@ -361,11 +326,12 @@ pub(crate) async fn apply(
         ))
         .map_err(|_| DurabilityError::InvalidStoredState)?;
         grant_keys.extend(
-            super::super::character_appearance::grant_callback_outfit(
+            super::super::character_appearance::grant_content_outfit(
                 tx,
                 fence.character_id,
                 &occurrence,
                 reward,
+                admission.native,
             )
             .await?,
         );
