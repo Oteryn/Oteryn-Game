@@ -72,3 +72,32 @@ impl GroundStackRequirement {
                 })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn mutable_ground_callback_needs_a_mutable_bound_effect() -> Result<(), String> {
+        let mut callback = super::super::load()?
+            .into_iter()
+            .find(|c| {
+                !c.storage.is_empty()
+                    && c.native_rule.is_none()
+                    && !c.requires_world_admission
+                    && !c.opening_only
+            })
+            .ok_or("ordinary callback")?;
+        for state in &mut callback.storage {
+            state.preserve = true;
+        }
+        callback.world_requirements = vec![serde_json::from_value(serde_json::json!({
+            "position":{"x":33216,"y":32854,"floor":-9},
+            "ground":{"stacks":[{"item":"oteryn:item.tibia.i2471","revision":"definition-r1","quantity":1}]}
+        })).map_err(|e|e.to_string())?];
+        let text = serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
+        assert!(
+            super::super::parse(&text).is_err(),
+            "read-only effects cannot carry the Ground admission binding"
+        );
+        Ok(())
+    }
+}

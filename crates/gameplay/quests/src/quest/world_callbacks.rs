@@ -390,7 +390,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.effects.portals.is_some()
                     || callback.effects.item_cycle.is_some()
                     || !callback.passages.is_empty()))
-            || ((callback.requires_world_admission || callback.opening_only)
+            || ((callback.requires_world_admission
+                || callback.opening_only
+                || callback.world_requirements.iter().any(|r| !r.is_map()))
                 && (callback.storage.iter().all(|state| state.preserve)
                     || callback.native_rule.is_some()))
             || (callback.opening_only
@@ -675,7 +677,15 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
 
 /// New physical bindings omit display/citation fields and leave every legacy hash unchanged.
 pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
-    if !callback.requires_world_admission && !callback.opening_only {
+    // Mutable custody evidence always belongs to the physical writer, even
+    // when an author omitted the optional flag. Keep legacy map-only hashes.
+    if !callback.requires_world_admission
+        && !callback.opening_only
+        && callback
+            .world_requirements
+            .iter()
+            .all(WorldRequirement::is_map)
+    {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};

@@ -90,3 +90,51 @@ fn mutable_ground_schema_rejects_ambiguous_and_unbounded_conditions() {
     let mixed = serde_json::json!({"position":{"x":1,"y":1,"floor":-7},"appearance":3031,"ground":{"stacks":[row]}});
     assert!(serde_json::from_value::<WorldRequirement>(mixed).is_err());
 }
+
+#[test]
+fn mutable_ground_evidence_cannot_be_stripped_into_a_generic_quest_write() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::{admission_binding, world_callbacks};
+    let mut callback = world_callbacks::load()?
+        .into_iter()
+        .find(|c| {
+            !c.storage.is_empty()
+                && c.native_rule.is_none()
+                && !c.requires_world_admission
+                && !c.opening_only
+                && c.storage.iter().any(|s| !s.preserve)
+        })
+        .ok_or("ordinary world callback fixture")?;
+    callback.key = "oteryn:quest-callback/engenc2/ground-admission-fixture".into();
+    callback.storage.truncate(1);
+    callback.storage[0].track = "oteryn:quest-progress/engenc2/ground-admission-fixture".into();
+    callback.storage[0].preserve = false;
+    callback.storage[0].increment = false;
+    callback.storage[0].at_least = false;
+    callback.storage[0].set = 1;
+    callback.world_requirements.clear();
+    assert_eq!(
+        world_callbacks::gated_binding(&callback)?,
+        None,
+        "legacy callbacks retain their original binding behavior"
+    );
+    callback.world_requirements.push(serde_json::from_value(serde_json::json!({
+        "position":{"x":33216,"y":32854,"floor":-9},
+        "ground":{"stacks":[{"item":"oteryn:item.tibia.i2471","revision":"definition-r1","quantity":1}]}
+    })).map_err(|e| e.to_string())?);
+    let transition = world_callbacks::primary_transition(&callback)?;
+    assert!(
+        admission_binding::validate(&transition, false).is_err(),
+        "a renamed generic transition must not bypass physical Ground evidence"
+    );
+    let binding = world_callbacks::gated_binding(&callback)?.ok_or("missing Ground binding")?;
+    callback.world_requirements[0]=serde_json::from_value(serde_json::json!({
+        "position":{"x":33216,"y":32854,"floor":-9},
+        "ground":{"stacks":[{"item":"oteryn:item.tibia.i2471","revision":"definition-r1","quantity":2}]}
+    })).map_err(|e|e.to_string())?;
+    assert_ne!(
+        world_callbacks::gated_binding(&callback)?,
+        Some(binding),
+        "physical quantity belongs to the exact admission binding"
+    );
+    Ok(())
+}
