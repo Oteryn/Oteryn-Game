@@ -14,6 +14,7 @@ mod encounter;
 mod execute;
 mod ground_stack;
 pub(super) mod monsters;
+mod rafzane_elevator;
 mod rewards;
 mod shared_gate;
 mod soul_war_reward;
@@ -701,6 +702,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
+            return Some(outcome);
+        }
         if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
             return Some(outcome);
         }
