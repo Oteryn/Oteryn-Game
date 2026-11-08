@@ -49,6 +49,9 @@ pub(in crate::play) fn apply(
         panel.feedback = "Invalid training reply".into();
         return;
     };
+    if command.kind == wire::COMMAND_TYPE_OFFLINE_TRAINING && reply.disposition == 3 {
+        panel.offline_confirmed = true;
+    }
     panel.feedback = match reply.disposition {
         1 => "Exercise training is running",
         2 => "Exercise training stopped or settled",
