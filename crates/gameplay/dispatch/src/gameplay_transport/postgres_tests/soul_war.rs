@@ -365,7 +365,7 @@ fn scenario() -> TestResult {
         use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Selector, Trigger};
         use crate::gameplay_transport::connection::FirstEntryOutcome;
         let trigger = Position { x: 33620, y: 31400, floor: -10 };
-        let world = super::quest_world_callbacks::world(&Callback { requires_premium: false,
+        let world = super::quest_world_callbacks::world(&Callback { admission: None, requires_premium: false,
 world_change: None,
             actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
