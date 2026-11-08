@@ -997,3 +997,7 @@ Cadence checkpoint: compiling tree and own focused/PG checks pass; full scoped
 unit run pending. Exact remaining clippy RED: npc_rules.rs:726 empty lines after
 orphaned doc comments above cfg(test). Fix comments after this checkpoint,
 rerun mandatory checks and clippy, then push the corrected slice immediately.
+Post-checkpoint lint repairs also remove the identical, unreachable second
+catalogue-npc harness branch; its first invocation and every test remain.
+Fresh workspace/fmt, complete quests-unit tests and six-crate clippy are queued.
+The ongoing scoped unit set still collects all other failures without fail-fast.

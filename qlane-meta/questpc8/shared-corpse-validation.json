@@ -81,5 +81,14 @@
     "known_old_compiled_failure": "reward_boss fixture corrected focused PASS111.02s",
     "state": "pending; cadence exception, not whole-suite green"
   },
-  "prepush2_exception": "30-minute cadence; own focused tests and PG proof green, full scoped units pending; mandatory fetch/regeneration/workspace check/fmt pass"
+  "prepush2_exception": "30-minute cadence; own focused tests and PG proof green, full scoped units pending; mandatory fetch/regeneration/workspace check/fmt pass",
+  "lint_repair": {
+    "changes": [
+      "Replace orphaned documentation above the quest test module",
+      "Remove identical unreachable catalogue-npc harness branch; retain its first reachable invocation"
+    ],
+    "workspace_check": "running",
+    "quests_unit_tests": "queued",
+    "clippy_six_changed_crates": "queued"
+  }
 }

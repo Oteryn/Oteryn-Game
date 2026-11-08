@@ -599,11 +599,26 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         runtime
             .programs()
             .iter()
+            .filter(|program| program.document.schema == 1)
             .map(|p| p.document.quest.as_str())
             .collect::<std::collections::BTreeSet<_>>(),
         expected_programmes
     );
-    assert_eq!(runtime.programs().len(), expected_programmes.len());
+    assert_eq!(runtime.programs().len(), expected_programmes.len() + 1);
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .filter(|program| program.document.schema == 2)
+            .map(|program| program.document.quest.as_str())
+            .collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from(["oteryn:quest.authored.mystery_of_the_valley_quest"])
+    );
+    assert!(
+        !active
+            .npc_legacy
+            .contains_key("oteryn:quest.authored.mystery_of_the_valley_quest")
+    );
     let hot_cuisine = "oteryn:quest.hot_cuisine_quest";
     assert_eq!(
         active.npc_legacy.get(hot_cuisine).map(|(hash, _)| *hash),
@@ -925,9 +940,11 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        7
+        11
     );
-    assert_eq!(active.npc_legacy.len(), 6);
+    // Canonical main adds the exact source cohort checked above; schema2
+    // Mystery has no fabricated legacy definition or absent-value mapping.
+    assert_eq!(active.npc_legacy.len(), 9);
     let mut defaults = BTreeMap::new();
     for track in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
@@ -937,7 +954,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 180), (0, 50)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 192), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -993,7 +1010,13 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         .map_err(|e| e.to_string())?;
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(loaded.catalogue().npc_legacy.len(), 6);
+    assert_eq!(loaded.catalogue().npc_legacy.len(), 9);
+    assert!(
+        !loaded
+            .catalogue()
+            .npc_legacy
+            .contains_key("oteryn:quest.authored.mystery_of_the_valley_quest")
+    );
     Ok(())
 }
 

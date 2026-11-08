@@ -723,11 +723,7 @@ pub fn legacy_defaults<'a>(
         })
 }
 
-/// Refine only original source-qualified tracks; preserve every wider native bound.
-
-/// Only an exact pre-activation definition can retain its old absent-track values.
-/// Existing rows, their values, pins and receipts are never rewritten.
-
+/// Source catalogue bounds and predecessor regression tests.
 #[cfg(test)]
 mod tests;
 
