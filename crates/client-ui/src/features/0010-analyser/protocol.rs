@@ -31,6 +31,12 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 panel.gold = panel.gold.saturating_add(*gold);
                 panel.gold_chart.add(seconds, *gold);
                 for item in corpse_items {
+                    super::tracking::record(
+                        panel,
+                        item.item_type.get(),
+                        u64::from(item.count.get()),
+                        seconds,
+                    );
                     if !super::state::items::record_item(
                         &mut panel.loot,
                         item.item_type.get(),
@@ -105,6 +111,8 @@ pub fn reset(panel: &mut Panel) {
         party_feedback: panel.party_feedback,
         party_revision: panel.party_revision,
         party_pending_revision: panel.party_pending_revision,
+        loot_tracked: std::mem::take(&mut panel.loot_tracked),
+        loot_only_tracked: panel.loot_only_tracked,
         export_path: std::mem::take(&mut panel.export_path),
         loot_prices: std::mem::take(&mut panel.loot_prices),
         supply_prices: std::mem::take(&mut panel.supply_prices),
@@ -131,7 +139,7 @@ pub fn recover(panel: &mut Panel) {
     };
 }
 
-/// Fetch bounded identity pages only for items the confirmed session has observed.
+/// Fetch bounded identity pages for observed items and explicit tracker selections.
 pub fn catalogue_request(
     panel: &mut Panel,
 ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
@@ -147,7 +155,12 @@ pub fn catalogue_request(
         return None;
     }
     let mut ids = Vec::new();
-    for id in panel.loot.keys().chain(panel.supply.keys()) {
+    for id in panel
+        .loot
+        .keys()
+        .chain(panel.supply.keys())
+        .chain(panel.loot_tracked.iter())
+    {
         if !panel.item_info.contains_key(id) && !ids.contains(id) {
             ids.push(*id);
         }

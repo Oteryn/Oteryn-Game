@@ -38,6 +38,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Export (replace file)",
                 "Refresh party hunt",
                 "Party supply price",
+                "Track loot item",
+                "Untrack loot item",
+                "Tracked / all loot",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.analyser;

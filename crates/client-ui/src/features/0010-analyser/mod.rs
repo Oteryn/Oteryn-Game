@@ -4,6 +4,8 @@ mod input;
 pub mod party;
 pub mod protocol;
 mod state;
+#[path = "state/tracking.rs"]
+pub mod tracking;
 mod view;
 pub use input::{open_key, select_tool, set_item_price, set_xp_goal};
 pub use state::{Panel, Tool};
@@ -11,3 +13,7 @@ pub use view::{panel_text, session_text};
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/loot_tracker.rs"]
+mod loot_tracker_tests;

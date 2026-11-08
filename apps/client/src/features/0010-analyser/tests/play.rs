@@ -261,3 +261,43 @@ fn analyser_party_query_and_confirmed_table_use_production_mailbox()
     assert!(link.analyser_panel().party.is_empty());
     Ok(())
 }
+
+#[test]
+fn analyser_loot_tracking_controls_filter_real_confirmed_drops() {
+    let (link, _, outbox) = play_channel();
+    outbox.analyser_initialize(true);
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 1,
+        new_revision: 2,
+        value: vec![AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![oteryn_session::analyser_transport::AnalyserItemCount {
+                item_type: std::num::NonZeroU32::MIN,
+                count: std::num::NonZeroU16::MIN,
+            }],
+            gold: 0,
+        }],
+    })]);
+    assert!(link.analyser_select("loot-tracker"));
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    let submit = crate::play::feature_0010_analyser::input::submit;
+    let tools = oteryn_client_ui::analyser::Tool::ALL.len();
+    submit(
+        &mut mailbox,
+        &link.commands,
+        tools + 7,
+        vec![String::new(), "1".into(), String::new()],
+    );
+    submit(&mut mailbox, &link.commands, tools + 9, vec![]);
+    let text = oteryn_client_ui::analyser::panel_text(&mailbox.analyser);
+    assert!(text.contains("#1 Name unresolved (tracked) · 1 confirmed items"));
+    assert!(text.contains("#1 × 1"));
+    submit(
+        &mut mailbox,
+        &link.commands,
+        tools + 8,
+        vec![String::new(), "1".into(), String::new()],
+    );
+    assert!(!oteryn_client_ui::analyser::panel_text(&mailbox.analyser).contains("#1"));
+}

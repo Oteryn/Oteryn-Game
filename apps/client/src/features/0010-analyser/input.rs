@@ -111,6 +111,16 @@ pub(in crate::play) fn submit(
         mailbox.analyser.tool = Tool::Supplies;
         oteryn_client_ui::analyser::set_item_price(&mut mailbox.analyser, item, price);
         mailbox.analyser.tool = tool;
+    } else if (action == tools + 7 || action == tools + 8)
+        && let Some(item) = values.get(1)
+    {
+        oteryn_client_ui::analyser::tracking::select(
+            &mut mailbox.analyser,
+            item,
+            action == tools + 7,
+        );
+    } else if action == tools + 9 {
+        mailbox.analyser.loot_only_tracked = !mailbox.analyser.loot_only_tracked;
     }
 }
 
