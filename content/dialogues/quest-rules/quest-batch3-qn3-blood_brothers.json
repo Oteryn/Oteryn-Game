@@ -1,0 +1,202 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.blood_brothers_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission01",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:147-150"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "npc": "oteryn:npc.julius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "note",
+        "vampire"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:55-114",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:141-153"
+      ],
+      "key": "oteryn:quest-npc/blood_brothers/julius/necklace-proof",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission01",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission02",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission03",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission04",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission05",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission06",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission07",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission08",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission09",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "equipped",
+          "slot": "necklace",
+          "item": "oteryn:item.tibia.i3083"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission01",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Hmm, I see, I see. That necklace is only a small indication though... I think I need another proof, just to make sure. Say... have you ever baked {garlic bread}?"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "npc": "oteryn:npc.julius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "note",
+        "vampire"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:55-114",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:141-153"
+      ],
+      "key": "oteryn:quest-npc/blood_brothers/julius/necklace-refusal",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission01",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission02",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission03",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission04",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission05",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission06",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission07",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission08",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission09",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "effects": [],
+      "reply": [
+        "I fear that will not do. Sorry."
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/julius.lua",
+      "sha256": "a3184eb9261079bc3fc08b97a5437fc34bf57b7df84b95dba39432316e775ea4",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}
