@@ -33,3 +33,9 @@ source-plan boundary was reproduced by a failing Rust unit test and the bounded
 planner now passes both positive and fail-closed cases. Production/durable
 wiring and its real-PG qualification remain in progress. This report does not
 count that mechanic or either complete quest as DONE.
+
+The source planner tests are green (2 cases; 19.455 s including build).
+Migration **2220** is reserved for the zero-track NPC teleport receipt shape: a
+matching same-transaction NPC receipt and pending-arrival proof is required.
+The existing receipt arms and their bounds remain intact. No migration has
+been applied by this report-only reservation push.
