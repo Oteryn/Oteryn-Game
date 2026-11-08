@@ -59,3 +59,39 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
     }
     text
 }
+
+/// A countdown is presentation only; refreshing confirms availability with the server.
+pub fn cooldown_text(panel: &BossEncounterPanel, elapsed_ms: u64) -> String {
+    let mut out = String::from("Boss cooldown tracker — Ctrl+Alt+Shift+J\r\n");
+    if !panel.selected {
+        out.push_str("Feature unavailable in this session\r\n");
+        return out;
+    }
+    if let Some(snapshot) = &panel.snapshot {
+        if snapshot.cooldowns.is_empty() {
+            out.push_str("No cooldown records on this page\r\n");
+        }
+        for (key, deadline) in &snapshot.cooldowns {
+            let remaining = deadline
+                .saturating_sub(snapshot.now)
+                .saturating_sub(elapsed_ms);
+            if remaining == 0 {
+                let _ = write!(out, "{key}: Ready — refresh to confirm\r\n");
+            } else {
+                let _ = write!(out, "{key}: {remaining} ms remaining\r\n");
+            }
+        }
+        if snapshot.cooldown_next.is_some() || snapshot.progress_next.is_some() {
+            out.push_str("More records available: Next page\r\n");
+        }
+    } else {
+        out.push_str("Refresh to load server cooldowns\r\n");
+    }
+    if panel.pending {
+        out.push_str("Waiting for the server\r\n");
+    }
+    if let Some(feedback) = panel.feedback {
+        out.push_str(feedback);
+    }
+    out
+}
