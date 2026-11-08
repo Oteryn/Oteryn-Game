@@ -807,27 +807,30 @@
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Party Hunt Analyser",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak tabeli członków i rozliczenia loot/supplies/cost split.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/state/party.rs:119 + analyser_party_query_and_confirmed_table_use_production_mailbox"
  },
  {
   "id": "T109",
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Loot Tracker",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak listy śledzonych itemów i historii dropów/config.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/state/tracking.rs:49 + analyser_loot_tracking_controls_filter_real_confirmed_drops"
  },
  {
   "id": "T110",
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Kill / Hunting Task Tracker",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak samodzielnego trackera; postęp pozostaje w Task Board.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/state/kills.rs:109 + analyser_hunting_task_tracker_reads_real_weekly_query_and_retains_refused_progress"
  },
  {
   "id": "T113",
@@ -1309,9 +1312,10 @@
   "src": "OTCAUD1108",
   "area": "Analytics",
   "feature": "Analizery polowania, XP, łupu, zapasów, obrażeń i drużyny",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje osobnych analizatorów z wykresami/stawkami w czasie, party hunt i boss cooldown/drop tracker; istnieje jeden panel sum kill/XP/loot/supply/damage/heal.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/view.rs:3 + analyser_dedicated_activity_views_chart_confirmed_wire_facts + boss_tracker_controls_use_existing_protocol_owners_and_feed_observed_history"
  },
  {
   "id": "O014",

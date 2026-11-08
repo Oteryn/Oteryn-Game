@@ -46,4 +46,3 @@ pub(super) fn default_panels() -> Vec<String> {
         .map(str::to_owned)
         .collect()
 }
-

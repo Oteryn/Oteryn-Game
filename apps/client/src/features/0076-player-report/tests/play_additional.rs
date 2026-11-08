@@ -243,4 +243,3 @@ fn pc02_player_report_scenario() -> Result<(), Error> {
         .map_err(|_| "scenario thread failed")
         .checked()?
 }
-
