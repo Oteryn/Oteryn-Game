@@ -413,3 +413,21 @@ fn o021_live_health_and_party_marks_project_at_entity_position()
     assert_eq!(play.scene().sprites().len(), baseline + 2);
     Ok(())
 }
+
+#[test]
+fn o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    let baseline = play.scene().sprites().len();
+    let mut json = serde_json::to_value(play.preferences())?;
+    json["health_circle"] = serde_json::json!(true);
+    play.set_preferences(serde_json::from_value(json)?)?;
+    assert_eq!(play.scene().sprites().len(), baseline);
+    play.vitals = Some(oteryn_session::ActorVitals { health: 50, max_health: 100, mana: 0, max_mana: 0, ..Default::default() });
+    play.rebuild()?;
+    // 32 circle segments, four HP/MP quads and six monk indicators.
+    assert_eq!(play.scene().sprites().len(), baseline + 42);
+    let circle = &play.scene().sprites().instances()[baseline + 10..];
+    assert_eq!(circle.len(), 32);
+    assert!(circle.iter().any(|segment| segment.uv != circle[31].uv));
+    Ok(())
+}
