@@ -111,3 +111,46 @@ fn combat_modifier_unknown_is_distinct_from_zero_and_malformed_is_rejected()
     assert!(!apply_result(&mut panel, &reply(trailing)));
     Ok(())
 }
+
+#[test]
+fn defence_table_preserves_signed_resistance_and_exposes_mitigation_sources()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut stats = CombatStats::new(CharacterTab::Defence, 1000, 1, 1).map_err(|_| "stats")?;
+    stats
+        .set(CombatStat::Mitigation, 50000)
+        .map_err(|_| "mitigation")?;
+    stats
+        .set(CombatStat::MitigationEquipment, 20000)
+        .map_err(|_| "equipment")?;
+    stats
+        .set(CombatStat::AbsorbFire, -12500)
+        .map_err(|_| "fire")?;
+    let mut p = CyclopediaCharacterPanel {
+        selected: true,
+        tab: CharacterTab::Defence,
+        ..Default::default()
+    };
+    assert!(request(&mut p, Intent::Tab).is_some());
+    assert!(apply_result(
+        &mut p,
+        &oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: TabView::Combat(stats).encode().map_err(|_| "encode")?
+        }
+    ));
+    let rows = super::combat_rows(&p);
+    assert!(
+        rows.iter()
+            .any(|r| r.key == CombatStat::AbsorbFire && r.value == "-1.2500%")
+    );
+    assert!(
+        rows.iter()
+            .any(|r| r.key == CombatStat::AbsorbIce && r.value == "Unavailable")
+    );
+    let detail = super::combat_detail(&p, CombatStat::Mitigation);
+    assert!(detail.contains("Mitigation Equipment: 2.0000%"));
+    assert!(detail.contains("Observed at: 1000"));
+    Ok(())
+}
