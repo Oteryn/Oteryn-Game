@@ -270,6 +270,7 @@ struct Document {
 }
 
 const DOCUMENTS: &[&str] = &[
+    include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
 ];
