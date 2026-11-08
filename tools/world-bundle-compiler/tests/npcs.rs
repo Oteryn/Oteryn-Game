@@ -51,6 +51,7 @@ impl KeyResolver for Resolver {
             kind: TerrainKind::Ground,
             walkable: Some(walkable),
             ground_speed: Some(if walkable { 150 } else { 0 }),
+            blocks_projectile: None,
         };
         match key {
             "terrain:grass" => Ok(Some(ground(true))),
@@ -59,6 +60,7 @@ impl KeyResolver for Resolver {
                 kind: TerrainKind::Wall,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             })),
             "terrain:mystery" => Err(Error::Key("unclassified".into())),
             _ => Ok(None),
@@ -581,6 +583,7 @@ impl KeyResolver for ItemFloors {
             kind,
             walkable,
             ground_speed: None,
+            blocks_projectile: None,
         }))
     }
 

@@ -56,28 +56,7 @@ pub(super) async fn prepare_channel(
     let (active_content, content) =
         activate_content(root, material.world, material.channel, reset_epoch).await?;
     let qualified_room = content.qualified_room().clone();
-    let candidates = crate::content::bosses::activity_template::captured_boss_levers()
-        .map_err(|_| BootError::ContentActivation("Crystal boss source capture"))?;
-    let (activity_templates, activity_diagnostics) = active_content
-        .qualify_initial_activity_template(
-            &qualified_room,
-            &config.readiness.content_revision,
-            &candidates,
-        );
-    for diagnostic in activity_diagnostics {
-        event(&format!(
-            "event=activity_template state=unavailable source={} reason={:?}",
-            diagnostic.path, diagnostic.reason
-        ));
-    }
-    for template in &activity_templates {
-        event(&format!(
-            "event=activity_template state=qualified key={} revision={} source={}",
-            template.template_key(),
-            template.template_revision(),
-            template.source_path()
-        ));
-    }
+
     let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
@@ -150,6 +129,36 @@ pub(super) async fn prepare_channel(
             }
         }
     });
+    let candidates = crate::content::bosses::activity_template::captured_boss_levers()
+        .map_err(|_| BootError::ContentActivation("Crystal boss source capture"))?;
+    let (activity_templates, activity_diagnostics) = if let Some(room) = combat_room.as_ref() {
+        active_content.qualify_initial_activity_template(
+            &qualified_room,
+            room,
+            &config.readiness.content_revision,
+            &candidates,
+        )
+    } else {
+        (Vec::new(), Vec::new())
+    };
+    crate::durability::activity_handoff::ActivityHandoffOwner::new(root.clone())
+        .publish_qualified_boss_rooms(proof, &activity_templates)
+        .await
+        .map_err(|_| BootError::ContentActivation("qualified activity catalogue publication"))?;
+    for diagnostic in activity_diagnostics {
+        event(&format!(
+            "event=activity_template state=unavailable source={} reason={:?} unavailable_source_hooks={:?}",
+            diagnostic.path, diagnostic.reason, diagnostic.unavailable_source_hooks
+        ));
+    }
+    for template in &activity_templates {
+        event(&format!(
+            "event=activity_template state=qualified key={} revision={} source={}",
+            template.template_key(),
+            template.template_revision(),
+            template.source_path()
+        ));
+    }
     // ADMIT0/D1081: validate the real scope offer before any readiness publication.
     // The generation is the operator assignment just resolved above, not config.
     // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps

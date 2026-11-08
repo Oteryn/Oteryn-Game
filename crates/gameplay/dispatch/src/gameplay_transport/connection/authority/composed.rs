@@ -58,7 +58,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> Vec<(u64, crate::map::overlay::TilePos, u16)> {
         self.bundle_map()
             .map(|map| map.facts.movement_effects_since(after))
-            .unwrap_or_default()
+            .unwrap_or_else(|| self.source_volatile_effects(after))
     }
     async fn observe_current_actor_movement_effects(
         &self,

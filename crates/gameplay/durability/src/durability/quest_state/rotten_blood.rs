@@ -278,6 +278,11 @@ pub async fn apply_rotten_blood_kill_in_transaction(
     }
     let mut locked = Vec::with_capacity(participants.len());
     for &(fence, damage) in participants {
+        if super::super::party_kill_xp::decoded_death_scope(death_key)
+            != Some((fence.runtime_scope, fence.scope_ownership_generation.get()))
+        {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
         let root = assert_item_only_fence(tx, &fence.item_fence(), node).await??;
         let stored = replay(tx, fence.character_id, &occurrence, &binding).await?;
         if let Some(outcome) = stored {
@@ -826,4 +831,19 @@ pub(crate) async fn read_taints_in_transaction(
         state.child_flags(),
         state.final_taint(),
     ))
+}
+
+#[cfg(test)]
+mod death_identity_tests {
+    use super::*;
+
+    #[test]
+    fn rotten_death_occurrence_preserves_instance_tag_and_channel_bytes() {
+        let channel = [1_u8; 52];
+        let mut instance = vec![2];
+        instance.extend_from_slice(&channel);
+        assert_ne!(kill_occurrence(&channel), kill_occurrence(&instance));
+        assert!(kill_occurrence(&instance).ends_with(&instance));
+        assert!(kill_occurrence(&channel).ends_with(&channel));
+    }
 }

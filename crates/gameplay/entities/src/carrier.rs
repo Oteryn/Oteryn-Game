@@ -657,8 +657,7 @@ impl CreatureDeathOccurrenceKey {
         self.actor.runtime_scope
     }
 
-    /// Existing Ground custody only accepts Channel deaths. Callers must explicitly
-    /// refuse an Instance instead of borrowing its origin Channel identity.
+    /// An Instance has no Channel projection; its origin is not its identity.
     pub const fn channel_id(self) -> Option<ChannelId> {
         ExactActorRef(self.actor).channel_id()
     }
@@ -673,6 +672,33 @@ impl CreatureDeathOccurrenceKey {
 
     pub const fn actor_local_generation(self) -> u64 {
         self.actor.actor_local_generation.0
+    }
+
+    /// Lossless native occurrence framing. Legacy Channel bytes stay unchanged;
+    /// the Instance tag keeps otherwise identical identifiers disjoint.
+    pub fn native_bytes(self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(53);
+        match self.runtime_scope() {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => {
+                bytes.extend_from_slice(world_id.as_bytes());
+                bytes.extend_from_slice(channel_id.as_bytes());
+            }
+            RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id,
+            } => {
+                bytes.push(2);
+                bytes.extend_from_slice(world_id.as_bytes());
+                bytes.extend_from_slice(&instance_id);
+            }
+        }
+        bytes.extend_from_slice(&self.scope_ownership_generation().get().to_be_bytes());
+        bytes.extend_from_slice(&self.actor_local_id().to_be_bytes());
+        bytes.extend_from_slice(&self.actor_local_generation().to_be_bytes());
+        bytes
     }
 }
 

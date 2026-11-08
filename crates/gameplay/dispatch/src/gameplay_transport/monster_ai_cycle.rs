@@ -155,6 +155,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.finish_rotten_area(&permit).await;
             return;
         }
+        // The source-qualified callback owner already owns this Primal room.
+        // Retain the catalogue owner's route for other qualified main rooms.
+        if room.pinned_activity_source_room()
+            != Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
+        {
+            super::primal_menace::tick(self, &mut runtime, room, content, now.get() / 1_000);
+        }
         let periodic_pass = now.get() >= states.next_monster_ai_pass_us;
         if !periodic_pass
             && !states

@@ -7,7 +7,9 @@ pub use input::open_key;
 pub use protocol::{apply_result, request};
 pub use state::{Action, HighscoresPanel};
 pub use view::panel_text;
-pub const CATEGORIES: [&str; 13] = [
+// Categories 13 (Loyalty), 15 (Taint), and 16 (Phosphorus) are reserved; Game filters preserve explicit wire IDs.
+pub const CATEGORY_IDS: [u32; 14] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17];
+pub const CATEGORIES: [&str; 14] = [
     "Experience",
     "Magic level",
     "Fist",
@@ -20,30 +22,17 @@ pub const CATEGORIES: [&str; 13] = [
     "Achievement points",
     "Charm points",
     "Boss points",
-    "Tibiadrome levels",
+    // docs/reference/tibia-manual/combat.md:262; both lists use the existing native Highscores controls.
+    "Tibiadrome lifetime",
+    "Tibiadrome current rotation",
 ];
 pub const VOCATIONS: [&str; 6] = ["All", "Knight", "Paladin", "Sorcerer", "Druid", "Monk"];
 
-#[cfg(test)]
-mod srx3_tests {
-    use super::*;
-    #[test]
-    fn srx3_drome_lifetime_highscores_has_native_category_filter() {
-        let mut panel = HighscoresPanel {
-            selected: true,
-            ..Default::default()
-        };
-        let request = request(
-            &mut panel,
-            Action::Filter {
-                category: 13,
-                vocation: 0,
-            },
-        );
-        assert!(
-            request.is_some(),
-            "A6 cumulative Drome levels must have a native filter"
-        );
-        assert_eq!(CATEGORIES.get(12), Some(&"Tibiadrome levels"));
-    }
+/// Convert a native combo selection to the registered category ID, including gaps.
+pub fn category_for_selection(index: usize) -> Option<u32> {
+    CATEGORY_IDS.get(index).copied()
+}
+/// Restore the native combo selection from a registered category ID.
+pub fn category_selection(category: u32) -> Option<usize> {
+    CATEGORY_IDS.iter().position(|id| *id == category)
 }

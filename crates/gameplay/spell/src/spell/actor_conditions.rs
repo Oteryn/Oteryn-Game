@@ -938,6 +938,11 @@ fn stage_hit(
         } else {
             reduce(remaining)
         };
+        // Manual combat.md:276-278: only a live Drome status amplifies incoming
+        // combat damage. Arena CURRENT-HP effects use their direct successor.
+        remaining = state
+            .after_drome_incoming_bonus(remaining, now)
+            .ok_or(SpellCastDisposition::Rejected)?;
     }
     // Crystal src/game/game.cpp:8004-8066 skips origin-based reductions for Lua addHealth,
     // but :8142-8155 and :8290 retain mana shields and the existing lethal-health owner.

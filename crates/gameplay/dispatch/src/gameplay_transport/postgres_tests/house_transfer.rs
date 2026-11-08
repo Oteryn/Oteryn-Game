@@ -571,7 +571,7 @@ async fn case(h: &Harness) -> TestResult {
     let deps = Dependencies::with_content(pin, room, base.spells)?;
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(generation);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &recovery_source.evidence;
     deps.initialize(&owner).await;
     {
@@ -658,7 +658,7 @@ async fn case(h: &Harness) -> TestResult {
     // Each stale value changes just one expected generation and leaves native facts live.
     for field in 0..3 {
         let mut fresh = deps.owner(h, &authority);
-        fresh.movement_cells = &cells;
+        fresh.movement_cells = (&cells).into();
         fresh.evidence = &recovery_source.evidence;
         let mut stale = source;
         let fence = stale.item_fence.as_mut().ok_or("fence")?;
@@ -686,7 +686,7 @@ async fn case(h: &Harness) -> TestResult {
     // Use a new command directory for the valid source after the refused commands.
     drop(owner);
     let mut owner = deps.owner(h, &authority);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &recovery_source.evidence;
     let (inside, status, ack) = drive(&owner, admitted, false)
         .await
@@ -773,7 +773,7 @@ async fn case(h: &Harness) -> TestResult {
     .map_err(debug)?;
     let mut restarted = deps.owner(h, &authority);
     restarted.active_generation = Some(generation);
-    restarted.movement_cells = &cells;
+    restarted.movement_cells = (&cells).into();
     restarted.evidence = &recovery_source.evidence;
     let token = RecoverySource::token(7)?;
     assert!(
@@ -850,7 +850,7 @@ async fn case(h: &Harness) -> TestResult {
     .map_err(debug)?;
     let mut restarted = deps.owner(h, &authority);
     restarted.active_generation = Some(generation);
-    restarted.movement_cells = &cells;
+    restarted.movement_cells = (&cells).into();
     restarted.evidence = &recovery_source.evidence;
     let token = RecoverySource::token(8)?;
     let after = resume_transfer(&restarted, source.game_session_id, &token, 11)

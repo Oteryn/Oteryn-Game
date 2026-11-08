@@ -129,7 +129,7 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
         deps.combat_room = Some(room);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.clock_origin = std::time::Instant::now();
         deps.initialize(&owner).await;
         owner.clock_origin -= Duration::from_secs(10);

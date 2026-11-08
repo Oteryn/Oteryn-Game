@@ -328,6 +328,7 @@ pub(super) fn world(
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
     if let Some(appearance) = callback
@@ -343,6 +344,7 @@ pub(super) fn world(
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
         });
     }
@@ -377,6 +379,7 @@ pub(super) fn world(
                     kind: bundle::TerrainKind::Common,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             });
         }
@@ -412,6 +415,7 @@ pub(super) fn world(
                     kind: bundle::TerrainKind::Common,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             });
             cells
@@ -458,6 +462,7 @@ pub(super) fn world(
                         kind: bundle::TerrainKind::Common,
                         walkable: None,
                         ground_speed: None,
+                        blocks_projectile: None,
                     }),
                 });
             }
@@ -482,6 +487,7 @@ pub(super) fn world(
                     kind: bundle::TerrainKind::Wall,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             });
             index
@@ -515,6 +521,7 @@ pub(super) fn world(
                         } else {
                             Some(150)
                         },
+                        blocks_projectile: None,
                     }),
                 });
             }
@@ -564,6 +571,7 @@ pub(super) fn world(
                 },
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
         });
     }
@@ -619,6 +627,7 @@ pub(super) fn world(
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
         });
         cells

@@ -493,7 +493,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Ok(awards) => awards,
                         Err(error) => return Ok(Err(error)),
                     };
-                    if let Some(death) = endgame_death.as_ref() {
+                    if let Some(death) = endgame_death.as_deref() {
                         // Quest/Hazard gains observe pre-gain XP and commit in the same
                         // transaction. There is no post-XP logout/crash gap to lose a taint.
                         if let Err(error) = crate::durability::quest_state::soul_war::apply_soul_war_kill_in_transaction(

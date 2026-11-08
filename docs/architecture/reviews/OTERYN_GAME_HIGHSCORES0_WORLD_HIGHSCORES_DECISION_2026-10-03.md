@@ -101,7 +101,9 @@ who may read them?
 | 11 | Charm Points | the Charm Points earned, as CHARM-0 derives them | character | yes |
 | 12 | Boss Points | BOSS-RAID-0 §10.2 | character | Now (migration 0929) |
 | 13 | Loyalty Bonus | Platform | account | later (Platform) |
-| 14-16 | Drome Score, Goshnar's Taint, Phosphorus Record | their systems | character | later |
+| 14 | Drome Score (lifetime cumulative Drome levels) | Tibiadrome | character | now |
+| 15-16 | Goshnar's Taint, Phosphorus Record | their systems | character | later |
+| 17 | Current-rotation Drome levels | Tibiadrome | character | now |
 
 - A category whose source does not exist is not offered; the query refuses it (`NOT_SUPPORTED`).
 - A skill category orders by (level, tries), so progress inside a level breaks ties as Tibia's

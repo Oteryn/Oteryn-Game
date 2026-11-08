@@ -80,6 +80,26 @@ pub(in super::super) fn runtime(
     pin: &crate::content::NativeEntryContentPin,
     map: &crate::map::boot::BundleWorld,
 ) -> TestResult {
+    runtime_at(
+        deps,
+        active,
+        pin,
+        map,
+        crate::foundation::MovementLocalPosition {
+            x: donor::KICK.0,
+            y: donor::KICK.1,
+            floor: donor::KICK.2,
+        },
+    )
+}
+
+pub(in super::super) fn runtime_at(
+    deps: &mut Dependencies,
+    active: &crate::content::ActiveGeneration,
+    pin: &crate::content::NativeEntryContentPin,
+    map: &crate::map::boot::BundleWorld,
+    start: crate::foundation::MovementLocalPosition,
+) -> TestResult {
     deps.room = pin.qualified_room().clone();
     let cells = map
         .movement_cells(deps.room.movement_cells())
@@ -91,9 +111,9 @@ pub(in super::super) fn runtime(
                 map.frame_binding_digest(deps.admitted.world_id),
                 map.map_revision_digest(),
                 crate::content::NativeEntryStart {
-                    x: donor::KICK.0,
-                    y: donor::KICK.1,
-                    floor: donor::KICK.2,
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
                 },
             )
             .ok_or("bundle combat view")?,
@@ -105,7 +125,7 @@ pub(in super::super) fn runtime(
         active.identity().client_artifact_digest(),
         map.frame_binding_digest(deps.admitted.world_id),
         map.map_revision_digest(),
-        (donor::KICK.0, donor::KICK.1, donor::KICK.2),
+        (start.x, start.y, start.floor),
     );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         deps.admitted.world_id,

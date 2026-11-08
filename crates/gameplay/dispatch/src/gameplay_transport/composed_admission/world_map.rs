@@ -150,6 +150,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &runtime,
             self.active_generation,
         ))
+        .chain(self.source_volatile_entities(&runtime))
         .map(|mut entry| {
             entry.position = frame.project(crate::foundation::MovementLocalPosition {
                 x: entry.position.x,

@@ -83,26 +83,20 @@ pub struct ActivityTemplateKey {
     pub revision: String,
 }
 
-/// These are borrowed from the real activation owner for the exact template.
-/// Their lifetime is the containing active generation, like the Channel assets.
+/// Channel assets borrow the real activation owner. Instance assets own their
+/// qualified room and fresh scoped bundle map through handoff and recovery.
 #[derive(Clone)]
 pub struct ActivityRuntimeAssets<'a> {
-    pub activity_room: Option<Arc<crate::content::QualifiedNativeEntryRoom>>,
-    pub movement_cells: &'a NativeEntryMovementCells,
+    pub movement_cells: SharedOwner<'a, NativeEntryMovementCells>,
     pub rooms: super::SeamRooms<'a>,
 }
 
 impl ActivityRuntimeAssets<'_> {
     pub(super) fn movement_cells(&self) -> &NativeEntryMovementCells {
-        self.activity_room
-            .as_ref()
-            .map_or(self.movement_cells, |room| room.movement_cells())
+        &self.movement_cells
     }
-
-    pub(super) fn rooms(&self) -> super::SeamRooms<'_> {
-        self.activity_room.as_ref().map_or(self.rooms, |room| {
-            super::SeamRooms::new(None, Some(room.as_ref()))
-        })
+    pub(super) fn rooms(&self) -> &super::SeamRooms<'_> {
+        &self.rooms
     }
 }
 
@@ -939,9 +933,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             lane: self.spell_lane.clone(),
             required_capabilities: Arc::clone(&self.required_capabilities),
             assets: ActivityRuntimeAssets {
-                activity_room: self.activity_room.clone(),
-                movement_cells: self.movement_cells,
-                rooms: self.rooms,
+                movement_cells: self.movement_cells.clone(),
+                rooms: self.rooms.clone(),
             },
         })
     }
@@ -1074,6 +1067,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .rooms()
             .gate_native_combat_cast()
             .ok_or(ActivityRuntimeRegistrationError)?;
+        if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            assets.movement_cells().index()
+        {
+            use crate::map::boot::BundleCollisionIndexExt;
+            if index.map().overlay.runtime_scope() != assignment.scope {
+                return Err(ActivityRuntimeRegistrationError);
+            }
+        }
         if binding.runtime_scope() != assignment.scope
             || binding.scope_generation().get() != assignment.ownership_generation
             || binding.source_revision() != assignment.source_revision
@@ -1085,6 +1086,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             || pin.client_artifact_digest() != active.identity().client_artifact_digest()
             || room.compiled().server_digest() != pin.server_artifact_digest()
             || assets.movement_cells().scope().world_id != self.world_id
+            || assets.movement_cells() != room.movement_cells()
             || runtime.owner_fence().is_err()
         {
             return Err(ActivityRuntimeRegistrationError);
@@ -1129,14 +1131,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
 
     pub(super) fn runtime_view(&self, owner: &RegisteredRuntime<'a>) -> Self {
         let mut view = self.clone();
-        view.activity_room = owner.assets.activity_room.clone();
         view.runtime = owner.runtime.clone();
         view.door = owner.door.clone();
         view.states = Arc::clone(&owner.states);
         view.required_capabilities = Arc::clone(&owner.required_capabilities);
         view.spell_lane = owner.lane.clone();
-        view.movement_cells = owner.assets.movement_cells;
-        view.rooms = owner.assets.rooms;
+        view.movement_cells = owner.assets.movement_cells.clone();
+        view.rooms = owner.assets.rooms.clone();
         if let RuntimeScopeRefV1::Channel {
             world_id,
             channel_id,

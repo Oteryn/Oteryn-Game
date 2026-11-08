@@ -14,6 +14,10 @@ use oteryn_gameplay_encounter_rules::hazard::unlocked_after_primal_menace;
 use sqlx::{Postgres, Row, Transaction};
 
 const PRIMAL_MENACE: &str = "oteryn:creature.the_primal_menace";
+/// Crystal 201189f, data-global/scripts/quests/the_primal_ordeal/
+/// creaturescripts_the_primal_menace_killed.lua:10-12: completion is independent of Hazard gain.
+pub const PRIMAL_MENACE_KILLED_TRACK: &str =
+    "oteryn:quest-progress/quest/u12_90/primal_ordeal/bosses/the_primal_menace_killed";
 // Crystal the_primal_manace.lua:8-14 has exactly five participant slots.
 const MAX_CONTRIBUTORS: usize = 5;
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
@@ -51,9 +55,13 @@ pub async fn apply_hazard_kill_in_transaction(
         || fences
             .windows(2)
             .any(|pair| pair[0].character_id == pair[1].character_id)
-        || fences
-            .iter()
-            .any(|fence| !death_matches_scope(death_key, fence))
+        || fences.iter().any(|fence| {
+            !death_matches_scope(
+                death_key,
+                fence.runtime_scope,
+                fence.scope_ownership_generation.get(),
+            )
+        })
     {
         return Err(CharacterProgressionError::InvalidInput);
     }
@@ -99,9 +107,10 @@ pub async fn apply_hazard_kill_in_transaction(
     Ok(())
 }
 
-fn death_matches_scope(death: &[u8], fence: &CurrentCharacterGameplayFence) -> bool {
-    super::super::party_kill_xp::decoded_death_scope(death)
-        == Some((fence.runtime_scope, fence.scope_ownership_generation.get()))
+fn death_matches_scope(death: &[u8], scope: RuntimeScopeRefV1, generation: u64) -> bool {
+    // Reuse the native death owner's disjoint Channel/Instance framing. Never
+    // reinterpret an Instance UUID as a Channel identifier.
+    super::super::party_kill_xp::decoded_death_scope(death) == Some((scope, generation))
 }
 
 async fn load_contributor(
@@ -209,6 +218,39 @@ async fn commit_contributor(
 }
 
 #[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn primal_death_scope_accepts_tagged_instance_without_channel_alias()
+    -> std::result::Result<(), String> {
+        let mut identity = [1; 16];
+        identity[6] = 0x70;
+        identity[8] = 0x80;
+        let world = crate::foundation::WorldId::decode(&identity).map_err(|e| format!("{e:?}"))?;
+        let channel =
+            crate::foundation::ChannelId::decode(&identity).map_err(|e| format!("{e:?}"))?;
+        let channel_scope = RuntimeScopeRefV1::channel(world, channel);
+        let instance_scope =
+            RuntimeScopeRefV1::instance(world, identity).map_err(|e| format!("{e:?}"))?;
+        let mut legacy = identity.to_vec();
+        legacy.extend_from_slice(&identity);
+        legacy.extend_from_slice(&3_u64.to_be_bytes());
+        legacy.extend_from_slice(&7_u32.to_be_bytes());
+        legacy.extend_from_slice(&9_u64.to_be_bytes());
+        let mut tagged = vec![2];
+        tagged.extend_from_slice(&legacy);
+        assert!(death_matches_scope(&legacy, channel_scope, 3));
+        assert!(death_matches_scope(&tagged, instance_scope, 3));
+        assert!(!death_matches_scope(&legacy, instance_scope, 3));
+        assert!(!death_matches_scope(&tagged, channel_scope, 3));
+        assert!(!death_matches_scope(&tagged, instance_scope, 4));
+        assert!(!death_matches_scope(&tagged[..20], instance_scope, 3));
+        Ok(())
+    }
+}
+
+#[cfg(test)]
 mod scope_tests {
     use super::*;
     type TestResult<T = ()> = std::result::Result<T, String>;
@@ -262,25 +304,53 @@ mod scope_tests {
         let tagged: [u8; 53] = tagged
             .try_into()
             .map_err(|error| format!("tagged Instance death: {error:?}"))?;
-        assert!(death_matches_scope(&old, &channel));
-        assert!(!death_matches_scope(&old, &instance));
-        assert!(death_matches_scope(&tagged, &instance));
-        assert!(!death_matches_scope(&tagged, &channel));
+        assert!(death_matches_scope(
+            &old,
+            channel.runtime_scope,
+            channel.scope_ownership_generation.get()
+        ));
+        assert!(!death_matches_scope(
+            &old,
+            instance.runtime_scope,
+            instance.scope_ownership_generation.get()
+        ));
+        assert!(death_matches_scope(
+            &tagged,
+            instance.runtime_scope,
+            instance.scope_ownership_generation.get()
+        ));
+        assert!(!death_matches_scope(
+            &tagged,
+            channel.runtime_scope,
+            channel.scope_ownership_generation.get()
+        ));
         for byte in [0, 1, 17, 33] {
             let mut changed = tagged;
             changed[byte] ^= 1;
             assert!(
-                !death_matches_scope(&changed, &instance),
+                !death_matches_scope(
+                    &changed,
+                    instance.runtime_scope,
+                    instance.scope_ownership_generation.get()
+                ),
                 "wrong exact native death field at{byte}"
             );
         }
         for span in [41..45, 45..53] {
             let mut zero = tagged;
             zero[span].fill(0);
-            assert!(!death_matches_scope(&zero, &instance));
+            assert!(!death_matches_scope(
+                &zero,
+                instance.runtime_scope,
+                instance.scope_ownership_generation.get()
+            ));
         }
         for n in [0, 1, 51, 52] {
-            assert!(!death_matches_scope(&tagged[..n], &instance));
+            assert!(!death_matches_scope(
+                &tagged[..n],
+                instance.runtime_scope,
+                instance.scope_ownership_generation.get()
+            ));
         }
         Ok(())
     }

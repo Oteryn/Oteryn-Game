@@ -65,6 +65,8 @@ struct CatalogueRecord {
     walkable: Option<Field>,
     #[serde(default)]
     ground_speed: Option<Field>,
+    #[serde(default)]
+    blocks_projectile: Option<Field>,
     // Both families; read for the spawn admission check (format v3).
     #[serde(default)]
     floor_change: Option<Field>,
@@ -91,6 +93,7 @@ struct Classified {
     kind: Option<Value>,
     walkable: Option<Value>,
     ground_speed: Option<Value>,
+    blocks_projectile: Option<Value>,
 }
 
 /// The parts of a native item profile the game server's bundle collision reads
@@ -223,6 +226,7 @@ impl Registry {
                         kind: Field::known(record.kind),
                         walkable: Field::known(record.walkable),
                         ground_speed: Field::known(record.ground_speed),
+                        blocks_projectile: Field::known(record.blocks_projectile),
                     },
                 );
             }
@@ -357,6 +361,15 @@ impl Registry {
             Some("common") => TerrainKind::Common,
             _ => return Err(unclassified("kind is UNKNOWN or not a Terrain kind")),
         };
+        let blocks_projectile = fields
+            .blocks_projectile
+            .as_ref()
+            .map(|value| {
+                value
+                    .as_bool()
+                    .ok_or_else(|| unclassified("KNOWN blocks_projectile is not boolean"))
+            })
+            .transpose()?;
         let terrain = if kind == TerrainKind::Ground {
             let walkable = fields
                 .walkable
@@ -377,6 +390,7 @@ impl Registry {
                 kind,
                 walkable: Some(walkable),
                 ground_speed: Some(speed),
+                blocks_projectile,
             }
         } else {
             Terrain {
@@ -385,6 +399,7 @@ impl Registry {
                 // of the appearance's layer. Do not erase a static obstacle's fact.
                 walkable: fields.walkable.as_ref().and_then(Value::as_bool),
                 ground_speed: None,
+                blocks_projectile,
             }
         };
         Ok(Some(terrain))

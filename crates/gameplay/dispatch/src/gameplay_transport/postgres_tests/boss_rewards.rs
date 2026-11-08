@@ -44,6 +44,7 @@ enum Case {
     Collection,
     Expiry,
     NativeDeath,
+    ProductionNativeDeath,
     OfflineReward,
     LivePrivacy,
     ConcurrentCollection,
@@ -62,6 +63,11 @@ fn boss_rewards_postgres_dispatch_seven_day_expiry_private_scope_and_stale_fence
 #[test]
 fn boss_rewards_postgres_native_lethal_settlement_and_later_replay() -> TestResult {
     run_case(Case::NativeDeath)
+}
+
+#[test]
+fn boss_rewards_postgres_production_boss_lethal_to_personal_item_custody() -> TestResult {
+    run_case(Case::ProductionNativeDeath)
 }
 
 #[test]
@@ -228,7 +234,7 @@ fn scenario(case: Case) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
@@ -266,8 +272,13 @@ fn scenario(case: Case) -> TestResult {
             supported.as_slice(),
             "the physical reward fixture must negotiate every required capability"
         );
-        if matches!(case, Case::NativeDeath) {
-            native_death(&h, &owner, &mut admitted, fence).await?;
+        if matches!(case, Case::NativeDeath | Case::ProductionNativeDeath) {
+            let creature = if matches!(case, Case::ProductionNativeDeath) {
+                "oteryn:creature.grand_mother_foulscale"
+            } else {
+                "oteryn:creature.rat"
+            };
+            native_death(&h, &owner, &mut admitted, fence, creature).await?;
             eprintln!("BOSS_REWARDS POSTGRES_NATIVE_DEATH_COMPLETED");
             drop(owner);
             drop(authority);
@@ -285,6 +296,7 @@ fn scenario(case: Case) -> TestResult {
         let minted = match case {
             Case::Collection
             | Case::NativeDeath
+            | Case::ProductionNativeDeath
             | Case::OfflineReward
             | Case::LivePrivacy
             | Case::ConcurrentCollection => now,
@@ -423,7 +435,7 @@ fn scenario(case: Case) -> TestResult {
             )
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
-            Case::NativeDeath => return Err("native scenario already returned".into()),
+            Case::NativeDeath | Case::ProductionNativeDeath => return Err("native scenario already returned".into()),
             Case::OfflineReward => {
                 assert_eq!(
                     sqlx::query_scalar::<_, i32>(

@@ -239,12 +239,13 @@ message OneItemCommandRefV1 {
 // CREATURE-DEATH-OCCURRENCE-IDENTITY-V1 durable, restart-stable death key.
 message CreatureDeathOccurrenceRefV1 {
   bytes world_id = 1;   // exactly 16-byte non-nil UUIDv7
-  bytes channel_id = 2; // 16-byte UUIDv7 for Channel; empty for Instance
+  bytes channel_id = 2; // UUIDv7 for Channel; empty for Instance
   uint64 scope_ownership_generation = 3;
   uint32 actor_local_id = 4;
   uint64 actor_local_generation = 5;
-  // Absent for Channel; otherwise channel_id must be empty.
-  optional bytes instance_id = 6; // exactly 16-byte non-nil UUIDv7
+  // Crystal src/creatures/creature.cpp:711-721,777-782: exact death scope of the physical corpse.
+  // Exactly one Channel or Instance UUIDv7; omitted in historical Channel bytes.
+  optional bytes instance_id = 6;
 }
 
 // The loot output cause (death key, LootTableDefinitionRef, purpose key,

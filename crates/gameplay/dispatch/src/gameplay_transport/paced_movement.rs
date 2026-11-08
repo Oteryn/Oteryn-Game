@@ -89,6 +89,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
+        // Resolve steering before any direction-dependent field/floor read. Pass
+        // this same frozen `now` to the common movement owner after preflight.
+        let cardinal = match states.drome_step_direction(&runtime, actor, session, now, cardinal) {
+            Ok(direction) => direction,
+            Err(MovementError::Blocked) => {
+                return (
+                    StepOutcome {
+                        disposition: StepDisposition::Blocked,
+                        moved_to: None,
+                    },
+                    None,
+                );
+            }
+            Err(_) => return (StepOutcome::rejected(), None),
+        };
         let (direction, hicks) =
             drunk::admitted_direction(&mut runtime, &states, actor, session, direction, now);
         let cardinal = match direction {
@@ -180,6 +195,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         match outcome {
             Ok((snapshot, duration)) => {
+                // Crystal hazard_primal.lua:23-55: actual accepted STEP consumes
+                // the exact physical pod, with HP owned by this same player turn.
+                super::primal_pods::step(
+                    self,
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    now / 1000,
+                );
                 // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
                 // owner turn as the committed step.
                 if let Some(map) = self.bundle_map() {

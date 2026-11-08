@@ -62,6 +62,8 @@ pub struct ChannelSessionStates {
     /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
     pub npc_conversations: npc_command::NpcConversations,
     pub(super) player_trades: super::player_trade::TradeBook,
+    pub(super) primal_menace: super::primal_menace::PrimalMenace,
+    pub(super) primal_pods: super::primal_pods::State,
     /// PROF-WIRE-1: durable tracks installed for each admitted session. The leaf lock is never
     /// held across a database await.
     pub(super) proficiencies: std::sync::Mutex<
@@ -90,6 +92,7 @@ pub struct ChannelSessionStates {
     pub(super) server_save: super::server_save_countdown::ServerSaveCountdownHub,
     /// VITALS-SOUL-1: the soul hook of each settled kill, applied on the killer's cadence.
     pub(super) soul_kills: super::soul_kill_live::SoulKills,
+    pub(super) source_volatile_items: super::source_volatile_items::SourceVolatileItems,
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,

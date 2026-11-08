@@ -348,11 +348,29 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 let table = loot
                     .tables
                     .iter()
-                    .find(|table| table.identity.key == reference.key)
-                    .ok_or("source loot table")?;
+                    .find(|table| table.identity == *reference)
+                    .ok_or("original complete source loot table")?;
                 assert_eq!(row.loot_table.entries.len(), table.entries.len());
+                if policy.definition_key == "oteryn:creature.sugar_daddy" {
+                    // W02 admits the unchanged source table and all its 22 Items.
+                    assert_eq!(table.entries.len(), 22);
+                } else if policy.definition_key == "oteryn:creature.the_primal_menace" {
+                    // Crystal the_primal_menace.lua:118 explicitly authors {}.
+                    assert_eq!(reference.family, "Loot");
+                    assert_eq!(reference.key, "oteryn:loot.creature.the_primal_menace");
+                    assert_eq!(reference.revision, "definition-r1");
+                    assert!(table.entries.is_empty());
+                    assert!(row.loot_table.entries.is_empty());
+                }
                 for (actual, original) in row.loot_table.entries.iter().zip(&table.entries) {
-                    assert_eq!(actual.item.production_key, original.item.key);
+                    assert_eq!(
+                        actual.item,
+                        LootDefinitionRef::new(
+                            &original.item.family,
+                            &original.item.key,
+                            &original.item.revision
+                        )
+                    );
                     assert_eq!(
                         (actual.min_count, actual.max_count, actual.probability_ppm),
                         (
@@ -361,8 +379,20 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                             original.probability_ppm
                         )
                     );
+                    if policy.definition_key == "oteryn:creature.sugar_daddy" {
+                        assert!(actual.details.children.is_empty());
+                        assert!(original.children.is_empty());
+                    }
                 }
             } else {
+                assert_ne!(
+                    policy.definition_key, "oteryn:creature.sugar_daddy",
+                    "Sugar keeps its actual source Loot binding"
+                );
+                assert_ne!(
+                    policy.definition_key, "oteryn:creature.the_primal_menace",
+                    "Primal keeps its explicit empty Loot binding"
+                );
                 assert_eq!(row.loot_table_ref, row.corpse_item);
                 assert!(row.loot_table.entries.is_empty());
             }
@@ -388,7 +418,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     admitted.sort_unstable();
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 300, 11, 24)
+        (52, 299, 11, 25)
     );
     assert_eq!(
         admitted,
@@ -414,6 +444,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.murcion",
             "oteryn:creature.outburst",
             "oteryn:creature.rupture",
+            "oteryn:creature.sugar_daddy",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
             "oteryn:creature.vemiath",
