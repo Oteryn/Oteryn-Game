@@ -1,7 +1,11 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
     pub(in crate::play) fn store_initialize(&self, selected: bool) {
-        lock(&self.0).store.selected = selected;
+        let mut mailbox = lock(&self.0);
+        mailbox.store.selected = selected;
+        mailbox.store.gift_open = false;
+        mailbox.store.gift_fields = Default::default();
+        mailbox.store.gift_reviewed = None;
     }
     pub(in crate::play) fn store_result(
         &self,

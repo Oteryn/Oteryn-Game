@@ -19,6 +19,10 @@ pub enum SelectionAction {
         character_id: String,
         channel_id: Option<String>,
     },
+    Train {
+        character_id: String,
+        channel_id: Option<String>,
+    },
     Create,
     AccountServices,
     Refresh,

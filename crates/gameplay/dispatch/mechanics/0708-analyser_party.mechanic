@@ -1,0 +1,7 @@
+name=analyser_party
+commands=735
+transport=analyser_party
+composed=analyser_party
+authority=analyser_party
+[route]
+routing::analyser_party::route(authority, &session.admitted, command, &mut session.party_view).await

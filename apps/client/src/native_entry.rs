@@ -84,7 +84,7 @@ pub(crate) async fn enter_observed(
         &config.oauth_client_id,
         config.retry_unit,
     )?;
-    let (ticket, selected_character, selected_channel, character_name) =
+    let (ticket, selected_character, selected_channel, character_name, training_requested) =
         authorize::authorize(&client, config, cancellation.clone()).await?;
     let character_id = parse_uuid_v7(&selected_character)
         .and_then(|bytes| CharacterId::decode(&bytes).ok())
@@ -113,6 +113,7 @@ pub(crate) async fn enter_observed(
         root,
         character_id,
         character_name,
+        training_requested,
         config,
     };
     oteryn_client_runtime::connection::enter(&mut attempt, config.retry_unit, cancellation).await
@@ -127,6 +128,7 @@ struct NativeAttempt<'a> {
     root: CertificateDer<'static>,
     character_id: CharacterId,
     character_name: String,
+    training_requested: bool,
     config: &'a NativeLoginConfig,
 }
 
@@ -160,6 +162,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         Ok(AdmittedSession {
             character_id: self.login.character_id.to_owned(),
             character_name: self.character_name.clone(),
+            training_requested: self.training_requested,
             session,
             world_id: self.grant.world_id.clone(),
             channel_id: self.grant.channel_id.clone(),

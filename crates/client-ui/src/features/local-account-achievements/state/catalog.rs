@@ -84,7 +84,7 @@ impl CatalogState {
     }
 }
 pub fn catalog_rows(catalog: &CatalogState) -> Vec<&AccountAchievementRow> {
-    let search = catalog.search.to_lowercase();
+    let search = catalog.search.trim().to_lowercase();
     let mut rows: Vec<_> = catalog
         .rows
         .iter()
@@ -96,6 +96,7 @@ pub fn catalog_rows(catalog: &CatalogState) -> Vec<&AccountAchievementRow> {
         .filter(|r| {
             r.name.to_lowercase().contains(&search)
                 || r.description.to_lowercase().contains(&search)
+                || r.key.to_lowercase().contains(&search)
         })
         .collect();
     rows.sort_by(|a, b| {
