@@ -439,7 +439,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         revision: u64,
         expected: Option<MovementPositionSnapshot>,
     ) -> Result<Option<ObservedWorldCallback>, UseDisposition> {
-        if !callback.storage.is_empty()
+        if callback.has_personal_state()
             || world_callbacks::world_change_requirement(&callback.key).is_none()
         {
             return Ok(None);
@@ -564,7 +564,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(pending.expected),
                 )
                 .await;
-            if callback.storage.is_empty()
+            if !callback.has_personal_state()
                 && world_callbacks::world_change_requirement(&callback.key).is_some()
             {
                 // A timed-out read has no unknown personal value/receipt to reconcile.
@@ -736,7 +736,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(permit) = self.spell_lane_permit().await else {
                 return UseDisposition::Rejected;
             };
-            let fence = if callback.storage.is_empty() && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
+            let fence = if !callback.has_personal_state() && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none()
                 && world_callbacks::world_change_requirement(&callback.key).is_none() {
@@ -916,7 +916,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let cause = QuestCause::Step(command);
         let operation = async {
-            let fence = if callback.storage.is_empty()
+            let fence = if !callback.has_personal_state()
                 && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none()

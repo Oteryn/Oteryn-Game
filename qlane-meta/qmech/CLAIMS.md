@@ -83,3 +83,5 @@
 
 
 -->
+
+M38 progress: first working server slice `8cc2aaf7e` supplies exact-occurrence conditional NPC projection with real PG RED233.289ms/GREEN355.733ms. Parent M38 remains CLAIMED until event/content wiring and the other assigned rows are complete.

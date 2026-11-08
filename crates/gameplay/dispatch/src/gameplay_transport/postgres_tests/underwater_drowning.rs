@@ -437,7 +437,7 @@ world_change: None,
                 teleport: Some(position(destination)),
                 facing: None,
                 effects: Default::default(),
-                world_requirements: vec![],
+                state_ops: Vec::new(), world_requirements: vec![],
                 storage: if refused {
                     vec![Storage {
                         track: "fixture:unknown-track".into(),
