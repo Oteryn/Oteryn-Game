@@ -60,11 +60,46 @@
     "authoring_units": "PASS112modules,1151reportedtests,zero failing modules",
     "strict_clippy": "PASS238s on content/quests/durability/dispatch all targets with -Dwarnings",
     "world_pins": "PASS isolated refresh/check: inputs fd07c4f36b0d01447305833f109b5892ab9e316f9aff8e64cd811c145eb8cd61, world fa64b0398214387aefd8acb8881a2286c56d411c6b5e74871b60167ac3dd9c1c",
-    "own_pg": "Running19realPG cases; first4PASS, zero failures so far",
+    "own_pg": "All19distinct owned route/component casesGREEN across the18PASS initial repair run plus corrected Newhaven full-route107.124364574s follow-up. Not claiming a single19/19 rerun on the follow-up.",
     "workspace_post_generation": "PASS334s including Cargo lock wait; fmtPASS",
-    "changed_crate_units": "Running2914non-PostgreSQL unit cases across content, quests, durability and dispatch; zero failures so far"
+    "changed_crate_units": "PENDING2914-case run from147c checkpoint, zero failures reported at final push; explicit PREPUSH2 cadence exception. Current changed Quest crate independentlyPASS333/333.",
+    "native_goal_quest_units": "PASS333cases101.204s zero skipped"
   },
   "pr_ready": false,
   "schema_prerequisite": "Main lacks QUESTPC8 backpack_outputs migration; local PG uses authorized UNTRACKED1300 fixture. Never stage or ship that migration; rerun against main after owning PR merges.",
-  "checkpoint": "Compiling WIP published under explicit PREPUSH-2 step3 cadence exception; remaining focusedPG and Rust unit runs are pending, not claimed GREEN."
+  "checkpoint": "Follow-up native admission fix has own unit/PG proof. Broader2914-case unit run from prior checkpoint continues under the explicit cadence exception.",
+  "native_goal_followup": {
+    "cause": "Canonical native death-goal operations were omitted from the bound-operation admission registry.",
+    "red_pg_seconds": 88.322667228,
+    "red_unit": "native_goal_owners_admit_exact_operations_and_reject_forged_counters: unregistered write to bound track",
+    "fix": "Reuse existing native_kill_goals::extend over an empty catalogue; register its exact canonical transitions and protect their counter writes. No new quest/engine feature or data.",
+    "green_units": "333/333quest-crate tests,101.204s,zero skipped.",
+    "pg": {
+      "state": "PASS",
+      "postgres_version": "18.6",
+      "full_case_seconds": 107.124364574,
+      "route_seconds": 57.959576564,
+      "case": "questpc5_newhaven_complete_tutor_exploration_native_kills_and_book_route",
+      "log": "/tmp/questpc5-newhaven-goal-green-pg.log"
+    },
+    "prepush": {
+      "workspace_all_targets": "PASS641s including compile-lock wait",
+      "clippy_quest_all_targets": "PASS6.90s,-Dwarnings",
+      "fmt": "PASS",
+      "native_generation_and_freshness": "PASS50files; equipment3882; rooms30; bindings/matrix current",
+      "world_metadata": "PASSwrote0of4files",
+      "world_pin_check": {
+        "inputs_digest": "fd07c4f36b0d01447305833f109b5892ab9e316f9aff8e64cd811c145eb8cd61",
+        "pins": [
+          {
+            "bytes": 32867965,
+            "digest": "fa64b0398214387aefd8acb8881a2286c56d411c6b5e74871b60167ac3dd9c1c",
+            "world": "oteryn"
+          }
+        ]
+      },
+      "duplicate_migration_check": "PASSno duplicate numbers",
+      "content_delta": "None; this follow-up changes only Rust admission registration, its unit test and lane records. Prior required authoring checks/112unit modules and97directory tree/equivalence checks remain applicable."
+    }
+  }
 }

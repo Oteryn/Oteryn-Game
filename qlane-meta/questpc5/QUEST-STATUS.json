@@ -221,7 +221,7 @@
     "canonical": "oteryn:quest.newhaven_quest",
     "title": "Newhaven Quest",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
@@ -275,20 +275,23 @@
       "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "current_head_validation": {
-      "tested_head": "5afd5b5e58484dc749e7b28c9479561f8882fe1b",
-      "state": "RED; previously qualified route regression under investigation",
+      "state": "GREEN after exact native goal registration",
       "failure": "native Troll corpse admission stale; XP settlement refused",
-      "log": "/tmp/questpc5-finished-readiness-pg.log",
+      "log": "/tmp/questpc5-newhaven-goal-green-pg.log",
       "repair": "47-line owned closure producer reuses canonical Item facts and the existing native corpse/yield validators; preserves every table, probability, quantity and unrelated fact.",
-      "rerun": "same19casePG run active; do not restoreQUALIFIED untilGREEN",
-      "proof": "cloud-readiness-regression-proof.json"
+      "rerun": "PASS full tutor/exploration/two native hunting goals/book route; follow-up333quest unitsPASS",
+      "proof": "cloud-readiness-regression-proof.json",
+      "postgres": "18.6",
+      "seconds": 107.124364574,
+      "tested_base_head": "147c388dc95d4f07eec4d46e6cede735ae3584ad",
+      "tested_changes": "Follow-up exact native-goal admission registration and its333-case unit validation."
     }
   },
   {
     "canonical": "oteryn:quest.authored.nimmersatt_s_lair",
     "title": "Nimmersatt's Lair",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
@@ -346,13 +349,15 @@
       "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "current_head_validation": {
-      "tested_head": "5afd5b5e58484dc749e7b28c9479561f8882fe1b",
-      "state": "RED; previously qualified route regression under investigation",
+      "tested_head": "147c388dc95d4f07eec4d46e6cede735ae3584ad",
+      "state": "GREEN after integration repair",
       "failure": "first exact snowball callback rejected after premium refusal",
       "log": "/tmp/questpc5-finished-readiness-pg.log",
       "repair": "Canonical primary transition includes the exact counter effect; lowering still extends its bounded track once.",
-      "rerun": "same19casePG run active; do not restoreQUALIFIED untilGREEN",
-      "proof": "cloud-readiness-regression-proof.json"
+      "rerun": "PASS; complete19-case run18PASS/1NewhavenFAIL; schema prerequisite remains explicit",
+      "proof": "cloud-readiness-regression-proof.json",
+      "postgres": "18.6",
+      "seconds": 95.62
     }
   },
   {
@@ -401,7 +406,7 @@
     "canonical": "oteryn:quest.authored.nomads_mini_world_change",
     "title": "Nomads Mini World Change",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
@@ -449,13 +454,15 @@
       "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "current_head_validation": {
-      "tested_head": "5afd5b5e58484dc749e7b28c9479561f8882fe1b",
-      "state": "RED; previously qualified route regression under investigation",
+      "tested_head": "147c388dc95d4f07eec4d46e6cede735ae3584ad",
+      "state": "GREEN after integration repair",
       "failure": "terminal cache USE disconnects without a command result",
       "log": "/tmp/questpc5-finished-readiness-pg.log",
       "repair": "World reward plan records callback.completes alongside the same source callback.",
-      "rerun": "same19casePG run active; do not restoreQUALIFIED untilGREEN",
-      "proof": "cloud-readiness-regression-proof.json"
+      "rerun": "PASS; complete19-case run18PASS/1NewhavenFAIL; schema prerequisite remains explicit",
+      "proof": "cloud-readiness-regression-proof.json",
+      "postgres": "18.6",
+      "seconds": 50.087
     }
   },
   {
@@ -965,7 +972,7 @@
     "canonical": "oteryn:quest.devil_helmet_quest",
     "title": "Devil Helmet Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc",
       "questpc6"
@@ -1044,13 +1051,15 @@
       "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "current_head_validation": {
-      "tested_head": "5afd5b5e58484dc749e7b28c9479561f8882fe1b",
-      "state": "RED; previously qualified route regression under investigation",
+      "tested_head": "147c388dc95d4f07eec4d46e6cede735ae3584ad",
+      "state": "GREEN after integration repair",
       "failure": "native source encounter returns LootItemInadmissible",
       "log": "/tmp/questpc5-finished-readiness-pg.log",
       "repair": "47-line owned closure producer reuses canonical Item facts and the existing native corpse/yield validators; preserves every table, probability, quantity and unrelated fact.",
-      "rerun": "same19casePG run active; do not restoreQUALIFIED untilGREEN",
-      "proof": "cloud-readiness-regression-proof.json"
+      "rerun": "PASS; complete19-case run18PASS/1NewhavenFAIL; schema prerequisite remains explicit",
+      "proof": "cloud-readiness-regression-proof.json",
+      "postgres": "18.6",
+      "seconds": 70.695
     }
   },
   {

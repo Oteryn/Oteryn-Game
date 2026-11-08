@@ -3,6 +3,7 @@ use super::{QuestEffectKind, QuestTransition, reward_callbacks, world_callbacks}
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
+mod native_goals;
 mod shared_world;
 
 struct Owner {
@@ -69,6 +70,9 @@ fn registry() -> Result<&'static Registry, String> {
             // Their specialised writer already requires an exact native-death proof.
             for counter in super::native_kills::COUNTERS {
                 add(counter.transition(), false, true)?;
+            }
+            for transition in native_goals::catalogue()?.transitions.values() {
+                add(transition.clone(), false, true)?;
             }
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
