@@ -1,6 +1,7 @@
 //! Native login composition: Platform credentials, runtime retry and TCP transport adapters.
 mod admitted;
 mod authorize;
+mod challenge;
 mod config;
 #[cfg(test)]
 mod test_support;

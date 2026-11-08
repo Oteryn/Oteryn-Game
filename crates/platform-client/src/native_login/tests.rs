@@ -1,3 +1,6 @@
+#[path = "challenge_tests.rs"]
+mod challenge;
+
 use super::*;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
