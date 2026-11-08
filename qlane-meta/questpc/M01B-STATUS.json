@@ -27,9 +27,9 @@
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
     "focused_profile_tests": "RED1failure0.02s,thenGREEN4passed0.03s",
-    "authoring_modules": "112 passed,0 failed",
-    "authoring_checks": "PASS",
-    "content_tree": "PASS",
+    "authoring_modules": "PASS112modules on entrance-batch snapshot;own15tests rerun after fragment planner",
+    "authoring_checks": "PASS run_checks.py --part checks on entrance-batch snapshot",
+    "content_tree": "PASS full validation on entrance-batch snapshot",
     "clippy": "quests+dispatch --all-targets strict PASS7m03s before final2Premium PG cases added",
     "postgres_catalogue": "PASS PostgreSQL18.6,8.262173426s",
     "postgres_native_step": "PASS Longsword60.462902524s,Geomancer60.816349711s",
@@ -50,9 +50,10 @@
     "alawar_postgres": "PASS m01b_alawar_native_approach_credits_once_without_replacing_portal61.222120123s;real native STEP,once,replay,revisit",
     "entrance_batch_authoring": "Elvenbane RED1missing binding4.416s;Premium entries RED2missing bindings7.116s -> GREEN13tests9.395s",
     "entrance_batch_profile": "5Rust testsPASS0.04s",
-    "entrance_batch_postgres": "PENDING:Elvenbane compiling;EdronGoblin/LionsRock cases written,not qualified"
+    "entrance_batch_postgres": "PENDING:Elvenbane compiling;EdronGoblin/LionsRock cases written,not qualified",
+    "fragment_planner": "RED incomplete-set error8.800s -> GREEN15Python tests10.636s;4Koshei native B3 approach tiles verified;missing/duplicate/foreign claims rejected;active JSON unchanged"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish3new native PG cases;then39routes/49stages.7wired,4PG-proven;M01b PARTIAL."
+  "continuation": "Finish3native entrance PG cases;activate Koshei only with real multi-visit runtime proof;then remaining39routes/49stages.7wired,4PG-proven;PARTIAL."
 }

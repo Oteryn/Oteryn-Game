@@ -75,15 +75,21 @@ def callbacks(root):
         recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
         if not recipe:
             raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
-        storage = stage_storage(quest, stage, recipe, track_tail)
-        # A one-Area declaration cannot stand in for a complete multi-visit anchor set.
-        if storage[1]['maximum'] != 0:
+        visit = area.rsplit('/', 1)[-1] if area.startswith('claim:') else 'entry'
+        storage = stage_storage(quest, stage, recipe, track_tail, visit)
+        anchors = [a for q, s, a, _ in BINDINGS if (q, s) == (quest, stage)]
+        # Every counted visit needs a distinct explicit physical anchor; a partial
+        # fragment set cannot make the selected four-visit stage completable.
+        if len(anchors) != storage[1]['maximum'] + 1 or len(set(anchors)) != len(anchors):
             raise ValueError('Explore binding needs an explicit complete visit anchor set: ' + quest)
         tail = quest.removeprefix('oteryn:quest.')
         requirements = recipe['requirements']
         if requirements['prerequisites']:
             raise ValueError('Explore route requires additional authoritative guards: ' + quest)
-        if area.startswith('callback:'):
+        if area.startswith('claim:'):
+            import questpc_fragment_approaches
+            at, appearance, sources = questpc_fragment_approaches.resolve(root, quest, area)
+        elif area.startswith('callback:'):
             import questpc_map_approaches
             at, appearance, sources = questpc_map_approaches.resolve(root, quest, area)
         else:
@@ -110,7 +116,7 @@ def callbacks(root):
                        'OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only']
         slug = tail.removeprefix('authored.').removesuffix('_quest').replace('_', '-')
         result.append(dict(
-            key='oteryn:quest-callback/m01b/' + slug + '/' + stage + '/entry', quest=quest,
+            key='oteryn:quest-callback/m01b/' + slug + '/' + stage + '/' + visit, quest=quest,
             trigger='step_in', selector=dict(position=at, unique=None, action=None,
                 appearance=appearance, native=dict(position=at, ordinal=0, appearance=appearance)),
             lever=None, reversible=False, passages=[], teleport=None,

@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b7/56wired:Alawar/Asura/Geomancer/Longsword PG-proven;Elvenbane+EdronGoblin+LionsRock13authoring testsGREEN,nativePGpending. MechanicPARTIAL.",
+  "batch_state": "M01b7wired/4PG-proven;3native entry cases compiling. Complete4fragment planner GREEN15tests,native map verified,butKoshei not activated;PARTIAL.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [

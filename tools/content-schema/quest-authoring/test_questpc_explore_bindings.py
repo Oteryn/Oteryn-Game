@@ -21,6 +21,30 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_complete_koshei_fragment_set_has_four_distinct_native_visits(self):
+        bindings = tuple(('oteryn:quest.koshei_the_deathless_quest', 's1',
+                          'claim:canary:reward-claim/quest/u8_1/koshei_the_deathless/'
+                          + 'koshei_amulet_part' + str(part),
+                          'chosen-source/koshei_the_deathless_quest') for part in range(1, 5))
+        with mock.patch.object(explore, 'BINDINGS', bindings):
+            callbacks = explore.callbacks(ROOT)
+            self.assertEqual(len(callbacks), 4)
+            self.assertEqual(len({c['key'] for c in callbacks}), 4)
+            self.assertEqual(len({c['storage'][0]['track'] for c in callbacks}), 4)
+            self.assertEqual({c['storage'][1]['maximum'] for c in callbacks}, {3})
+            self.assertTrue(all(c['minimum_level'] == 40 for c in callbacks))
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+        for invalid in (bindings[:3], (*bindings[:3], bindings[0])):
+            with mock.patch.object(explore, 'BINDINGS', invalid):
+                with self.assertRaisesRegex(ValueError, 'complete visit anchor set'):
+                    explore.callbacks(ROOT)
+
+    def test_fragment_approach_cannot_borrow_a_foreign_quests_claim(self):
+        import questpc_fragment_approaches as fragments
+        with self.assertRaisesRegex(ValueError, 'same canonical quest'):
+            fragments.resolve(ROOT, 'oteryn:quest.longsword_quest',
+                              'claim:' + fragments.PREFIX + '1')
+
     def test_edron_goblin_and_lions_rock_keep_current_premium(self):
         for quest, x, y, appearance in (
                 ('oteryn:quest.edron_goblin_quest', 33108, 31850, 355),
