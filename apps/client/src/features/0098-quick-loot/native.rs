@@ -154,6 +154,8 @@ fn specs(
                 "Clear list",
                 "Select mode",
                 "Set destination",
+                "Lists / Managed containers",
+                "Reset selected to main",
             ],
             &[
                 ("Item type", ""),
@@ -329,10 +331,12 @@ unsafe fn window(
             if ended {
                 break;
             }
-            let link = PlayLink {
+            // This temporary facade borrows the live session; running PlayLink::drop
+            // here would shut the session down after the first panel repaint.
+            let mut link = std::mem::ManuallyDrop::new(PlayLink {
                 mailbox: shared,
                 commands: commands.clone(),
-            };
+            });
             for action in std::mem::take(&mut actions.0) {
                 let values: Vec<String> = inputs
                     .iter()
@@ -374,19 +378,28 @@ unsafe fn window(
             let (display, names, available) = match panel {
                 98 => (
                     oteryn_client_ui::quick_loot::panel_text(&state.loot),
-                    state
-                        .loot
-                        .skipped
-                        .iter()
-                        .map(|id| format!("Skip item {id}"))
-                        .chain(
-                            state
-                                .loot
-                                .accepted
-                                .iter()
-                                .map(|id| format!("Accept item {id}")),
-                        )
-                        .collect(),
+                    if state.loot.managed {
+                        state
+                            .loot
+                            .destinations
+                            .iter()
+                            .map(|action| format!("{action:?}"))
+                            .collect()
+                    } else {
+                        state
+                            .loot
+                            .skipped
+                            .iter()
+                            .map(|id| format!("Skip item {id}"))
+                            .chain(
+                                state
+                                    .loot
+                                    .accepted
+                                    .iter()
+                                    .map(|id| format!("Accept item {id}")),
+                            )
+                            .collect()
+                    },
                     state.loot.selected && state.loot.pending.is_none(),
                 ),
                 132 => (
@@ -442,7 +455,11 @@ unsafe fn window(
                 held_rows = names;
             }
             for (i, button) in controls.iter().enumerate() {
-                let enable = if panel == 232 && i >= 8 {
+                let enable = if panel == 98 && (1..5).contains(&i) {
+                    available && !state.loot.managed
+                } else if panel == 98 && i == 7 {
+                    available && state.loot.managed
+                } else if panel == 232 && (8..10).contains(&i) {
                     state.leader.selected && !state.leader.pending
                 } else if panel == 285 && i >= 2 {
                     store.selected || state.history.selected
@@ -475,7 +492,9 @@ unsafe fn window(
                 };
                 EnableWindow(*button, i32::from(enable));
             }
-            drop(link);
+            // Release both cloned handles without invoking the owning facade's destructor.
+            std::ptr::drop_in_place(&mut link.mailbox);
+            std::ptr::drop_in_place(&mut link.commands);
             MsgWaitForMultipleObjects(0, null(), 0, 50, QS_ALLINPUT);
         }
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
