@@ -1,17 +1,18 @@
-# Latest checkpoint: main98d6 Soulpit integrated; native PG rebuilding
+# Latest checkpoint: main98d6 integrated; six native PostgreSQL cases GREEN
 
-Merged main98d6ae8ce with questpc8 logic preserved. Canonical generators,
-central lists/bindings, equipment/audit custody, world pin refresh and duplicate
-migration check PASS. Final workspace all-targets check182.076s, dispatch
-all-targets clippy182.461s, quest units355PASS26.58s and fmt check PASS.
-Independent final source review has no findings. The six native PostgreSQL
-cases are still compiling their fresh test binary; they are PENDING for this
-merge, not claimed green. Prior six-case139.880s proof applies to56668c09d.
-Push uses the owner's PREPUSH-2 cadence exception for pending step3 tests.
-See main-98d6-validation.json. Continue the active focused PostgreSQL run and
-publish its measured proof next. Whole quest qualification remains21/23;
-Colours and Wrath still await their queued qengine2 features. No new quest
-features or lane migrations were added. Original questpc8 stays frozen.
+Pushed product89e75d40b preserves main Soulpit and questpc8 mechanics. Its
+six native PostgreSQL cases PASS139.376s: Braindeath38.729s, Mead39.710s,
+exactfluid3.345s, Colours68.729s, Winterlight68.490s, Wrathopening97.300s.
+Final workspace all-targets check182.076s, dispatch all-targets clippy182.461s,
+quest units355PASS26.58s, fmt and duplicate-migration checks PASS. Canonical
+generators refreshed central quest lists/bindings, native catalogues, equipment,
+audit custody and world pins. Independent final source review found no issues.
+Measured cases and PostgreSQL markers: main-98d6-validation.json. Full backend
+unit suite remains CI scope, not claimed complete. Own migrations1300-1308;
+no incoming canonical migration was rewritten. Original questpc8 stays frozen.
+Whole quest qualification remains21/23. Fresh upstreamQENGINE2c7f9d9ba7
+still queues carried_use_live_player_quest_predicate (Colours) and
+item_look_disguise_restore (Wrath); ownership remains with qengine2.
 
 # Latest checkpoint: main6f61 integrated; six native PG GREEN
 

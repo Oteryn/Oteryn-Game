@@ -1462,9 +1462,15 @@
     },
     "main_sync": {
       "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
-      "state": "COMPILE_AND_FOCUSED_UNITS_GREEN_NATIVE_PG_PENDING",
+      "state": "FOCUSED_GREEN_6_NATIVE_PG",
       "proof": "main-98d6-validation.json",
-      "native_postgres": "pending fresh test binary; prior6/6 apply only56668c09d"
+      "native_postgres": "6/6PASS139.376s on pushed89e75d40b; markers and measured cases recorded",
+      "qengine_audit": {
+        "head": "c7f9d9ba79ec4a53c4b874af54affe6898780c5a",
+        "source": "qlane-meta/qengine2/ENGINE-QUEUE.json",
+        "carried_use_live_player_quest_predicate": "QUEUED",
+        "item_look_disguise_restore": "QUEUED"
+      }
     }
   },
   {
@@ -1753,9 +1759,15 @@
     },
     "main_sync": {
       "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
-      "state": "COMPILE_AND_FOCUSED_UNITS_GREEN_NATIVE_PG_PENDING",
+      "state": "FOCUSED_GREEN_6_NATIVE_PG",
       "proof": "main-98d6-validation.json",
-      "native_postgres": "pending fresh test binary; prior6/6 apply only56668c09d"
+      "native_postgres": "6/6PASS139.376s on pushed89e75d40b; markers and measured cases recorded",
+      "qengine_audit": {
+        "head": "c7f9d9ba79ec4a53c4b874af54affe6898780c5a",
+        "source": "qlane-meta/qengine2/ENGINE-QUEUE.json",
+        "carried_use_live_player_quest_predicate": "QUEUED",
+        "item_look_disguise_restore": "QUEUED"
+      }
     }
   },
   {

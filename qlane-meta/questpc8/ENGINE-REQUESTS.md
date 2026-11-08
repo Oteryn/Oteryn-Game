@@ -1,3 +1,10 @@
+## Latest upstream audit after Soulpit integration
+
+Explicitly fetched QENGINE2c7f9d9ba79ec4a53c4b874af54affe6898780c5a.
+Its ENGINE-QUEUE.json still marks both questpc8 requests QUEUED. No duplicate
+shared feature was authored here. All six focused PostgreSQL cases pass on
+pushed89e75d40b; partial Colours/Wrath openings remain partial quests.
+
 # Live continuation audit: QENGINE2e6bacdda6
 
 Explicit remote-ref fetch verified21 live owning/continuation heads. Earlier
