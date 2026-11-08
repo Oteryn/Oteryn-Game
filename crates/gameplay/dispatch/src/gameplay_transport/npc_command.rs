@@ -79,6 +79,24 @@ pub(in crate::gameplay_transport) fn fixture_prepare_reward_callbacks(
         .is_some()
 }
 
+/// Run fixture offers through the canonical selector and conversation executor.
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn fixture_apply_reward_offer(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: super::connection::UseCommand,
+    intent: NpcTalkIntent,
+    source: &str,
+) -> Option<NpcTalkOutcome> {
+    let step = {
+        let runtime = admission.runtime.lock().await;
+        reward_callbacks::prepare_offer_fixture(
+            admission, actor, command, &intent, &runtime, source,
+        )
+    }?;
+    Some(quest_dialogue::apply(admission, actor, command, intent, step).await)
+}
+
 /// What the server holds of one session's NPC state.
 #[derive(Default)]
 struct SessionNpc {

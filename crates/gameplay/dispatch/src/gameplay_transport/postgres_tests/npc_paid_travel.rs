@@ -25,7 +25,7 @@ fn npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals(
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(Scenario::Travel).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "paid travel thread panicked")??;
     Ok(())
@@ -76,10 +76,21 @@ fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> Str
 }
 
 pub(super) fn confirmation_scenario() -> TestResult {
-    scenario(true)
+    scenario(Scenario::Confirmation)
 }
 
-fn scenario(check_confirmation: bool) -> TestResult {
+pub(super) fn offer_scenario() -> TestResult {
+    scenario(Scenario::Offers)
+}
+
+#[derive(Clone, Copy)]
+enum Scenario {
+    Travel,
+    Confirmation,
+    Offers,
+}
+
+fn scenario(mode: Scenario) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "npc_paid_travel", true, false).await?;
@@ -182,7 +193,7 @@ fn scenario(check_confirmation: bool) -> TestResult {
             .chat
             .admit(session, "Fixture Hero", owner.owner_now());
         owner.states.chat.set_npc_service(session);
-        if check_confirmation {
+        if !matches!(mode, Scenario::Travel) {
             owner.quest_catalogue = Some(Arc::new(
                 oteryn_gameplay_quests::quest::QuestStateCatalogue::new(
                     "content-1",
@@ -266,14 +277,17 @@ fn scenario(check_confirmation: bool) -> TestResult {
             }
         };
         talk(&owner, &dependencies, npc, 1, "hi").await?;
-        if check_confirmation {
+        if matches!(mode, Scenario::Offers) {
+            super::engnpc_offer_topics::exercise(&owner, &dependencies, npc, &h).await?;
+        }
+        if matches!(mode, Scenario::Confirmation) {
             assert!(
                 reward_fallback(&owner, &dependencies, npc).await?,
                 "fixture must reach the reward keyword fallback before a quote"
             );
         }
         assert!(line(&talk(&owner, &dependencies, npc, 2, "venore").await?).contains("170 gold"));
-        if check_confirmation {
+        if matches!(mode, Scenario::Confirmation) {
             assert!(
                 !reward_fallback(&owner, &dependencies, npc).await?,
                 "reward keyword fallback stole the live paid-travel confirmation"

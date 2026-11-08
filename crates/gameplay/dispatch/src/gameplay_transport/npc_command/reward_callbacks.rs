@@ -18,6 +18,8 @@ struct Offer {
     npc: String,
     keywords: Vec<String>,
     topic: u16,
+    #[serde(default)]
+    any_topic: bool,
     next_topic: u16,
     storage: Vec<Storage>,
     #[serde(default)]
@@ -56,6 +58,33 @@ pub(super) fn prepare_with_callbacks(
         return None;
     }
     offers.offers.extend(authored.offers);
+    prepare_with_sources(
+        admission, actor, command, intent, runtime, callbacks, &offers,
+    )
+}
+
+#[cfg(test)]
+pub(super) fn prepare_offer_fixture(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+    source: &str,
+) -> Option<Step> {
+    let offers = serde_json::from_str(source).ok()?;
+    prepare_with_sources(admission, actor, command, intent, runtime, &[], &offers)
+}
+
+fn prepare_with_sources(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+    callbacks: &[reward_callbacks::RewardCallback],
+    offers: &Offers,
+) -> Option<Step> {
     if offers.schema != 1
         || offers.offers.len() > 512
         || offers.offers.iter().any(|o| o.requires.len() > 8)
@@ -112,7 +141,7 @@ pub(super) fn prepare_with_callbacks(
             }
             if let Some(offer) = offers.offers.iter().find(|c| {
                 c.npc == context.2
-                    && c.topic == topic.number
+                    && (c.any_topic || c.topic == topic.number)
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
