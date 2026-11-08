@@ -181,3 +181,6 @@ mod achievements;
 mod misc;
 #[path = "navigation.rs"]
 mod navigation;
+
+#[path = "profile.rs"]
+mod profile;

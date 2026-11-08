@@ -206,3 +206,10 @@ No native owner currently records these facts:
 Command 388 also accepts opt-in selector 128: `128:u8, page:u8`, optionally followed by the 16-byte target Character. Pages are zero-based, 64 rows each, with a maximum complete list of 16,384 earned facts. Legacy tab request/reply grammars and their bounds are unchanged.
 
 The rich reply is `128:u8, character:[u8;16], name_bytes:u8, name:UTF-8`, followed by the existing AccountAchievementsResult codec. The name is 2–29 bytes. Metadata and earned timestamps come from the activated catalogue and immutable grant-request provenance. The same recovery/session-generation fence and foreign-target VIP consent apply. The total command result budget is 32,836 bytes; legacy replies remain bounded at 16,384 bytes. Unsupported, over-limit or unreadable target data is refused without an invented empty list.
+
+## Coherent profile (opt-in selector 129, command 388)
+
+Request: `129:u8` plus optional `target:16 bytes`; absent target selects self.
+Reply: `129:u8, character:16 bytes, name_len:u8, name:utf8, badge_count:u8, badge_ids:u8[], equipment_count:u8`, followed by each `slot:u8, definition_len:u16le, definition:utf8, quantity:u32le`. Name is 2–29 bytes, definitions 1–512 bytes, equipment at most 32 unique slots, quantity positive; badges use the admitted catalogue in ascending order without duplicates. Reply is bounded to 17000 bytes.
+
+Identity, permanent account badges and equipped items are read together under the current viewer item/session, node and recovery fences and existing accepted VIP consent rule. Self queries refresh eligible badges first; foreign reads never grant awards. Refusal discloses no profile. Legacy empty command 387 and tab 7 remain unchanged. Native Badges and Inspection use this opt-in snapshot and discard cached facts on target changes or refused refreshes.

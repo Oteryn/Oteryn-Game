@@ -39,18 +39,11 @@ pub(in crate::play) fn submit(
         };
         return None;
     }
-    if matches!(id, 145..=148) {
-        use oteryn_client_ui::cyclopedia_character::BadgeFilter;
-        p.badge_filter = match id {
-            146 => BadgeFilter::Earned,
-            147 => BadgeFilter::Locked,
-            148 => BadgeFilter::Hidden,
-            _ => BadgeFilter::All,
-        };
+    if target::badge_filter(p, id) {
         return None;
     }
-    if id == 111 {
-        return request(p, Intent::Badges);
+    if let Some(result) = target::submit_profile(p, id, values) {
+        return result;
     }
     let tab = if matches!(id, 112 | 113) {
         Some(p.tab)
@@ -88,22 +81,9 @@ pub(in crate::play) fn submit(
     )
 }
 
-fn parse_target(text: &str) -> Option<[u8; 16]> {
-    if text.len() != 32
-        && (text.len() != 36 || ![8, 13, 18, 23].iter().all(|i| text.as_bytes()[*i] == b'-'))
-    {
-        return None;
-    }
-    let compact: String = text.chars().filter(|c| *c != '-').collect();
-    if compact.len() != 32 || !compact.is_ascii() {
-        return None;
-    }
-    let mut target = [0; 16];
-    for (i, byte) in target.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&compact[i * 2..i * 2 + 2], 16).ok()?;
-    }
-    Some(target)
-}
+#[path = "view/target.rs"]
+mod target;
+use target::parse_target;
 
 #[cfg(windows)]
 pub(in crate::play) use window::open_window;
@@ -139,7 +119,7 @@ mod window {
                 let note = (w >> 16) & 0xffff;
                 if !actions.is_null()
                     && (*actions).0.len() < 32
-                    && matches!(id, 101..=116 | 140)
+                    && matches!(id, 101..=116 | 140 | 145..=150)
                     && note == BN_CLICKED as usize
                 {
                     (*actions).0.push(id);
@@ -157,7 +137,9 @@ mod window {
             }
             m.cyclopedia_character.open = true;
         }
-        link.cyclopedia_character_request(Intent::Tab);
+        link.cyclopedia_character_request(super::target::refresh_intent(
+            &link.cyclopedia_character_panel(),
+        ));
         let weak = Arc::downgrade(&link.mailbox);
         let rollback = weak.clone();
         let commands = link.commands.clone();
@@ -315,31 +297,8 @@ mod window {
                 .collect();
             let stamina_bar = control(hwnd, "msctls_progress32", "", 470, [10, 575, 335, 18], 0);
             let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
-            for (id, label, x) in [
-                (145, "All badges", 10),
-                (146, "Earned badges", 185),
-                (147, "Locked badges", 360),
-                (148, "Hidden locally", 535),
-            ] {
-                control(hwnd, "BUTTON", label, id, [x, 615, 165, 28], WS_TABSTOP);
-            }
-            control(hwnd, "STATIC", "Badge ID", 151, [10, 655, 90, 25], 0);
-            let badge_id = control(
-                hwnd,
-                "EDIT",
-                "",
-                149,
-                [105, 655, 90, 25],
-                WS_BORDER | WS_TABSTOP,
-            );
-            control(
-                hwnd,
-                "BUTTON",
-                "Hide / show locally",
-                150,
-                [210, 655, 200, 25],
-                WS_TABSTOP,
-            );
+            let mut held_profile = Vec::new();
+            let badge_id = super::profile_table::badge_controls(hwnd);
             let mut held_history = Vec::new();
             let mut held_combat = Vec::new();
             let mut held_store = String::new();
@@ -361,17 +320,10 @@ mod window {
                 let mut browse_achievements = false;
                 for action in std::mem::take(&mut actions.0) {
                     if action == 150 {
-                        if let Ok(id) = read_text(badge_id).parse::<u8>()
-                            && mailbox
-                                .cyclopedia_character
-                                .badges
-                                .as_ref()
-                                .is_some_and(|ids| ids.contains(&id))
-                        {
-                            if !mailbox.cyclopedia_character.hidden_badges.remove(&id) {
-                                mailbox.cyclopedia_character.hidden_badges.insert(id);
-                            }
-                        }
+                        super::profile_table::toggle_badge(
+                            &mut mailbox.cyclopedia_character,
+                            badge_id,
+                        );
                         continue;
                     }
                     if action == 140 {
@@ -606,6 +558,13 @@ mod window {
                         held_store = blessings;
                     }
                 }
+                super::profile_table::paint(
+                    panel,
+                    [history, heading, detail, output],
+                    &cards,
+                    [stamina_bar, training_bar],
+                    &mut held_profile,
+                );
                 drop(mailbox);
                 if browse_achievements {
                     crate::play::feature_local_account_achievements::view::open_character(
@@ -634,3 +593,6 @@ mod controls;
 #[cfg(windows)]
 #[path = "view/misc_layout.rs"]
 mod misc_layout;
+#[cfg(windows)]
+#[path = "view/profile_table.rs"]
+mod profile_table;

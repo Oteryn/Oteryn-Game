@@ -2,11 +2,14 @@
 #[path = "protocol/achievements.rs"]
 mod achievements;
 mod input;
+#[path = "view/profile.rs"]
+mod profile;
 mod protocol;
 mod state;
 mod view;
 pub use achievements::{next_request as achievement_next_request, request as achievement_request};
 pub use input::{open_key, set_target};
+pub use profile::{ProfileRow, profile_heading, profile_rows};
 pub use protocol::{Intent, apply_result, request};
 pub use state::{BadgeFilter, BadgeRow, CyclopediaCharacterPanel, HistoryRow};
 pub use view::{
@@ -28,3 +31,6 @@ mod stamina_tests;
 #[cfg(test)]
 #[path = "tests/gap_character_tabs.rs"]
 mod gap_character_tabs;
+#[cfg(test)]
+#[path = "tests/profile.rs"]
+mod profile_tests;
