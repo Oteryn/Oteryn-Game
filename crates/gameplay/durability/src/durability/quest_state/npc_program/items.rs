@@ -11,10 +11,14 @@ pub(super) fn ends(plan: &NpcRulePlan) -> bool {
 }
 
 pub(super) fn end_delay(plan: &NpcRulePlan) -> u64 {
-    plan.effects.iter().filter_map(|effect| match effect {
-        NpcRuleEffect::EndConversation { delay_ms } => Some(*delay_ms),
-        _ => None,
-    }).min().unwrap_or(0)
+    plan.effects
+        .iter()
+        .filter_map(|effect| match effect {
+            NpcRuleEffect::EndConversation { delay_ms } => Some(*delay_ms),
+            _ => None,
+        })
+        .min()
+        .unwrap_or(0)
 }
 
 pub(super) fn changes_items(plan: &NpcRulePlan) -> bool {
@@ -50,13 +54,20 @@ pub(super) async fn apply<C: ItemLoopContent>(
     {
         return Ok(false);
     }
-    let gift = plan.effects.iter().find_map(|effect| match effect {
+    let mut gifts = plan.effects.iter().filter_map(|effect| match effect {
         NpcRuleEffect::GiveItem {
             item,
             count,
             subtype: None,
         } => Some(serde_json::json!({"item": item, "count": count})),
         _ => None,
+    });
+    let gift = gifts.next().map(|mut primary| {
+        let additional = gifts.collect::<Vec<_>>();
+        if !additional.is_empty() {
+            primary["additional"] = serde_json::Value::Array(additional);
+        }
+        primary
     });
     let minted = if gift.is_some() {
         match crate::durability::reward_claim_mint::npc_program::claim(
