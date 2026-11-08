@@ -1,4 +1,5 @@
 //! Fenced durable execution of a channel raid run and its acknowledged live effects.
+pub mod cake;
 mod effects;
 mod end;
 mod live_guard;

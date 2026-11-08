@@ -546,6 +546,13 @@ impl BundleFacts {
         Some(house)
     }
 
+    /// Immutable source cells of one named House. Ambiguous markers grant no membership.
+    pub fn house_tiles(&self, house: u32) -> impl Iterator<Item = TilePos> + '_ {
+        self.houses.iter().filter_map(move |(pos, id)| {
+            (*id == house && self.house_id(*pos) == Some(house)).then_some(*pos)
+        })
+    }
+
     /// The one source door at this tile of this exact House. Ambiguous tiles grant nothing.
     pub fn house_door(&self, pos: TilePos, house: u32) -> Option<u32> {
         let at = self.house_doors.partition_point(|(tile, _, _)| *tile < pos);

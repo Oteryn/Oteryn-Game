@@ -1,4 +1,5 @@
 """Event admission must preserve definitions admitted by established owners."""
+import copy
 import json
 from pathlib import Path
 import unittest
@@ -6,6 +7,7 @@ from unittest.mock import patch
 
 import event_item_profiles
 import hireling_item_profiles
+import house_decoration_actions
 
 import register_spell_families
 
@@ -39,6 +41,13 @@ class EventItemProfilePrecedence(unittest.TestCase):
 
     def test_task_board_weapon_semantics_survive_event_registration(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/task-board-item-profiles.json').read_bytes())
+        original_semantics = {row['production_definition']['production_key']: copy.deepcopy(row['semantics'])
+                              for row in source['records']}
+        # Crystal items.cpp:203-208 adds the initialized source top-order facts
+        # globally. Preserve the exact prior weapon semantics while expecting
+        # those verified physical attributes in the final full-row comparison.
+        house_decoration_actions.apply_top_order(
+            source['records'], json.loads((ROOT / house_decoration_actions.PROFILES).read_bytes()))
         expected = {row['production_definition']['production_key']: row
                     for row in source['records']}
         generated = register_spell_families.outputs(ROOT)
@@ -50,6 +59,7 @@ class EventItemProfilePrecedence(unittest.TestCase):
             key = f'oteryn:item.tibia.i{item}'
             # The hireling owner installs source taxonomy before event admission.
             expected[key]['authoring']['taxonomy'] = taxonomy[key]
+            self.assertEqual(expected[key]['semantics'], original_semantics[key], key)
             self.assertEqual(actual[key], expected[key], key)
 
     def test_yasir_doors_keep_exact_source_geometry_without_global_item_admission(self):
