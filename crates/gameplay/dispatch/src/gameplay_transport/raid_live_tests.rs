@@ -39,6 +39,7 @@ fn status(wave: u16, entry: u16, index: u16, alive: bool) -> TestResult<RaidCrea
         outcome: RaidSpawnOutcome::Placed(actor),
         alive,
         boss: true,
+        replacement_pending: false,
     })
 }
 
