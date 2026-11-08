@@ -627,6 +627,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.a_father_s_burden_quest",
         "oteryn:quest.a_pirates_tail",
         "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.dangerous_depths_quest",
         "oteryn:quest.draconia_quest",
         "oteryn:quest.elemental_spheres_quest",
         "oteryn:quest.hero_of_rathleton_quest",
@@ -714,8 +715,8 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    // Preserve the incoming baseline plus Tamoril's five source-absent tracks.
-    assert_eq!(defaults, BTreeMap::from([(-1, 198), (0, 52)]));
+    // Preserve the incoming baseline, Tamoril and Gnomus's four source-absent tracks.
+    assert_eq!(defaults, BTreeMap::from([(-1, 202), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
