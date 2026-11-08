@@ -276,10 +276,11 @@ struct Document {
 }
 
 const DOCUMENTS: &[&str] = &[
-    include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    // Appended: tests index the shared document as DOCUMENTS[0].
+    include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
