@@ -811,3 +811,18 @@ remain from that merge; publish the final receipt with the next green slice.
   stay intact. Main1333 is unchanged. Full chain through1349 passed onPG180006
   in3.001s; Yeo/Al Dee/Uzgod/Seymour guards all retained. All12initial PG failures
   shared this setup cause; do not count them as executed mechanic proof.
+
+- Continuation2026-11-08: owner says resume while keeping questpc2 frozen for
+  collector. Decision: allocate claude/happy-davinci-ijz3wy-questpc2b from
+  frozen0a6d6e208; continue original packet and publish receipts/fixes there.
+  The13focused runtime cases run on the unchanged frozen production tree.
+  Earlier pending commands failed compilation ENOSPC, so they are not passing
+  runtime evidence. Retire only inactive lane artifacts, then rerun the exact
+  relevant dispatch cases without compiling unrelated package test binaries.
+
+- Pits of Inferno source review: movements_fire_tile.lua:41-48 atCanary04b83,
+  SHAdc674efaebf58f68cf579cad612095e2b7b4af9ea9caec463a3941e3ce41d9d9,
+  applies300fire to the matching vocation and escalating300..7200fire/physical
+  damage otherwise. Do not replace this with visual cues or silently bypass
+  it. Shared effect requested fromqengine2; no whole-quest qualification and
+  no new implementation started from merely inspecting the source.

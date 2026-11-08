@@ -1,3 +1,39 @@
+# GREEN collector runtime receipt: publish questpc2b
+
+Current branch claude/happy-davinci-ijz3wy-questpc2b. Frozen parent questpc2
+at0a6d6e208 remains untouched. Production code/data unchanged in this batch.
+Fresh13/13PGPASS471.109s, build2m43s, actualPG180006markers. Covers genuine
+Annihilator party, Desert rite, Elvenbane treasure/exit, Rotten native death,
+six carriedItems, NPCXP, four exchange cases, twoGrimvale cases and mainYeo.
+Full case names/durations in BATCH-collector-runtime-green-2026-11-08.json.
+WorkspacealltargetsPASS4m00s,fmtPASS,45native outputs reproduced in memory.
+No changed crate in this metadata receipt batch; old18crate suites remainCI
+pending, never claim them passed. Central lists/pins regeneratedPASS, runtime world digest unchanged. Run finaldupcheck,
+fetchmain/frozenparent and actualquestpc2b ref if present, commitowner/trailers,
+pushHEAD:claude/happy-davinci-ijz3wy-questpc2b. No features on frozen parent.
+Then continue original packet onb. Remaining engine features requested from
+qengine2; latestdd35529b6 still lacks Summermembership and sourcebosshooks.
+Pits source damage effect requested, not implemented or qualified.
+Counts remain3qualified,2inprogress,24notstarted,6excluded.
+
+Historical continuation notes:
+
+# ACTIVE continuation on questpc2b
+
+Branch claude/happy-davinci-ijz3wy-questpc2b, AUTHORING, based on frozen
+0a6d6e208a6d92c8873e36b92475b64a13375785. Never modify/push the parent
+questpc2 branch for new work; collector freeze remains binding.
+Current priority: complete13focused dispatch PG cases on unchanged production
+code, log/tmp/questpc2b-collector-runtime-pg.log. Previous pending commands
+failed ENOSPC during compilation; no runtime success inferred. Runtime source
+files must remain unchanged while this run executes. Collect ALL failures.
+Owner scope/ownership and engine ownership rules unchanged. Original29owned
+quests:3qualified,2inprogress,24notstarted;6packet exclusions. No new whole
+qualification. Update this record after the focused result and publish a green
+batch to questpc2b with owner author/trailers and PREPUSH-2 checks.
+
+Previous frozen-publication notes (historical):
+
 # FROZEN for collector after this merge publication
 
 Owner: merge main78294c081, preserve both implementations, push ONCE, then no

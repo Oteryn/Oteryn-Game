@@ -1,0 +1,95 @@
+{
+  "schema": "OTERYN_QUESTPC2_BATCH_EVIDENCE/v1",
+  "batch": "collector runtime receipt on continuation branch",
+  "production_tree": "unchanged from frozen0a6d6e208a6d92c8873e36b92475b64a13375785",
+  "branch": "claude/happy-davinci-ijz3wy-questpc2b",
+  "frozen_parent_unchanged": true,
+  "postgres": {
+    "server_version_num": 180006,
+    "cases": 13,
+    "passed": 13,
+    "failed": 0,
+    "runtime_seconds": 471.109,
+    "build_duration": "2m43s",
+    "cases_detail": [
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::boss_activity::l3_instance_endgame_rotten_blood_native_death_progresses_once",
+        "seconds": 61.486,
+        "ordinal": 1
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::annihilator_route::annihilator_source_route_genuine_party_entry",
+        "seconds": 76.798,
+        "ordinal": 2
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::desert_party_rite::desert_dungeon_four_station_rite_uses_real_fenced_players",
+        "seconds": 41.846,
+        "ordinal": 3
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_general_xp_handin_runs_in_real_dispatch",
+        "seconds": 68.25,
+        "ordinal": 4
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::elvenbane_treasure::elvenbane_source_treasure_exit_and_journal_via_wire",
+        "seconds": 126.687,
+        "ordinal": 5
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::pick_exchange::obsidian_knife_uzgod_atomic_exchange_cooldown_and_replay",
+        "seconds": 67.115,
+        "ordinal": 6
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::pick_exchange::pick_exchange_atomic_confirmation_refusal_and_replay",
+        "seconds": 73.76,
+        "ordinal": 7
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::pick_exchange::present_exchange_seymour_atomic_confirmation_refusal_and_replay",
+        "seconds": 82.906,
+        "ordinal": 8
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::pick_exchange::present_exchange_seymour_filled_box_is_preserved",
+        "seconds": 86.607,
+        "ordinal": 9
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::questpc2_rotten_source_items::rotten_source_items_materialize_into_exact_character_custody",
+        "seconds": 48.001,
+        "ordinal": 10
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::worldchg_grimvale::worldchg_grimvale_final_native_wave_projects_actual_source_portal",
+        "seconds": 41.12,
+        "ordinal": 11
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::worldchg_grimvale::worldchg_grimvale_native_entry_requires_current_moon_without_quest_writes",
+        "seconds": 44.488,
+        "ordinal": 12
+      },
+      {
+        "name": "gameplay_transport::monk_save::postgres_tests::worldchg_yeo::worldchg_yeo_native_repeatable_ten_shrimp_one_gloo_atomic_replay",
+        "seconds": 66.135,
+        "ordinal": 13
+      }
+    ],
+    "custody_marker": "distinct=6 quantity=6",
+    "main_yeo_marker": "native Yeo hi/gloo/yes, repeatable10Shrimp1Gloo, atomic ledger/audit, receipt replay, generic free-offer refusal, wrong source, stale Character, insufficient input rollback",
+    "full_log_sha256": "c52027ea87fef4fd3d7b0d3d5b8d8269e6de8007d4f09f7432580e6d98dc0d77"
+  },
+  "checks": {
+    "workspace_all_targets": "PASS4m00s",
+    "fmt": "PASS",
+    "native_outputs": "45 regenerated and byte-compared; no runtime input writes during active tests",
+    "central_lists_and_pins": "PASS audit tags, quest binding evidence and completion matrix regenerated; pin-refresh runtime digest unchanged6b4be39d9f386b9f86327de020750bb5077ab5f8fd1ec82e874840fa9216617a",
+    "changed_crate_unit_requirement": "No Rust/SQL/content changes in this receipt batch; no crate changed. Previous full18-crate suites remain pendingCI and are not claimed passing.",
+    "duplicate_migrations": "PASS staged tree; own1240-1244 retained"
+  },
+  "qualification": "Integration/regression evidence only; no new whole quest qualification. Existing3qualified quests retain fresh selected route evidence.",
+  "reused_work": "Main collector3030 and QENGINE2 existing typed input/payment/barter owners; no engine rewrite."
+}
