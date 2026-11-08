@@ -168,3 +168,72 @@ fn cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol()
     assert!(!link.cyclopedia_map_panel().pending);
     Ok(())
 }
+
+#[test]
+fn item_browser_round_trip_uses_paged_public_catalogue_protocol()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{
+        combat_input::PlayCommand,
+        play::{mailbox::lock, play_channel},
+    };
+    use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+    use oteryn_client_ui::inspection::{self as wire, catalogue};
+    let (link, mut receiver, outbox) = play_channel();
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.discovery.inspection.selected = true;
+        mailbox.discovery.inspection.search = "silver".into();
+        mailbox.discovery.inspection.category = "sword".into();
+        super::actions::browse_items(&mut mailbox, &link.commands, false);
+    }
+    let PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+        return Err("catalogue command".into());
+    };
+    assert_eq!(
+        wire::decode_request(&command.payload).map_err(|_| "request")?,
+        wire::Request::CataloguePage(
+            catalogue::Query::new(0, "silver", "sword").map_err(|_| "query")?
+        )
+    );
+    let reply = wire::Reply {
+        status: 1,
+        requests: vec![],
+        items: vec![wire::InspectedItem {
+            slot: 0,
+            definition_ref: 10,
+            count: 1,
+            tier: 0,
+            name: "Silver sword".into(),
+            attributes: vec![
+                ("Weapon Type".into(), "sword".into()),
+                ("Attack".into(), "25".into()),
+            ],
+        }],
+        catalogue: Some(catalogue::Page {
+            next: Some(10),
+            categories: vec!["sword".into()],
+        }),
+    };
+    outbox.discovery_result(
+        command.capability,
+        &ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_reply(&reply).map_err(|_| "reply")?,
+        },
+    );
+    let mut mailbox = lock(&link.mailbox);
+    assert!(super::actions::navigate_section(
+        &mut mailbox,
+        1,
+        &[String::new(), "silver".into(), "sword".into()]
+    ));
+    assert!(super::section_text(&mailbox).contains("Attack: 25"));
+    super::actions::browse_items(&mut mailbox, &link.commands, true);
+    assert!(
+        matches!(receiver.try_recv()?, PlayCommand::ServerMechanic(command)
+        if wire::decode_request(&command.payload).map_err(|_| "request")? == wire::Request::CataloguePage(catalogue::Query::new(10, "silver", "sword").map_err(|_| "query")?))
+    );
+    Ok(())
+}

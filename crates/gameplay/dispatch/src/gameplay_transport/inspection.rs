@@ -12,6 +12,8 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::inspection::{InspectedItem, Reply, Request};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::{collections::HashMap, sync::Mutex};
+#[path = "inspection/catalogue.rs"]
+mod catalogue;
 #[path = "inspection_imbuements.rs"]
 mod imbuement_text;
 
@@ -118,9 +120,11 @@ pub(super) async fn inspect(
             Some(Reply {
                 status: 1,
                 requests: Vec::new(),
+                catalogue: None,
                 items: vec![item],
             })
         }
+        Request::CataloguePage(query) => catalogue::query(owner, query).await,
         Request::Catalogue(reference) => {
             let definition = {
                 let runtime = owner.runtime.lock().await;
@@ -132,6 +136,7 @@ pub(super) async fn inspect(
             Some(Reply {
                 status: 1,
                 requests: Vec::new(),
+                catalogue: None,
                 items: vec![project(owner, 0, &definition, 1, None).await?],
             })
         }
@@ -157,6 +162,7 @@ pub(super) async fn inspect(
             Some(Reply {
                 status: 1,
                 requests: Vec::new(),
+                catalogue: None,
                 items: vec![project(owner, 0, &definition, count, Some(&metadata)).await?],
             })
         }
@@ -244,6 +250,7 @@ pub(super) async fn inspect(
                 status: 1,
                 items,
                 requests: Vec::new(),
+                catalogue: None,
             })
         }
     }
@@ -358,6 +365,11 @@ fn details(
             attributes.push((label.to_owned(), value));
         }
     };
+    if let Known(classification) = &s.classification
+        && let Known(item_type) = classification.item_type
+    {
+        add("category", format!("{item_type:?}"));
+    }
     if let Known(value) = &presentation.description {
         add("Description", value.clone());
     }
@@ -1282,3 +1294,7 @@ async fn permission(
         _ => None,
     }
 }
+
+#[cfg(test)]
+#[path = "inspection/catalogue_tests.rs"]
+mod catalogue_tests;

@@ -53,11 +53,18 @@ pub fn catalogue_text(panel: &Panel) -> String {
             let _ = write!(text, "  {key}: {value}\r\n");
         }
     }
+    if let Some(page) = &panel.catalogue_page {
+        text.push_str(if page.next.is_some() {
+            "Next catalogue page available (continues the filtered scan).\r\n"
+        } else {
+            "End of catalogue.\r\n"
+        });
+    }
     if matched == 0 && !panel.catalogue.is_empty() {
         text.push_str("No items match the selected name and category.\r\n");
     }
     if panel.catalogue.is_empty() {
-        text.push_str("Inspect a catalogue definition to load its statistics and sources.\r\n");
+        text.push_str("Browse the catalogue to load public item statistics and sources.\r\n");
     }
     text
 }

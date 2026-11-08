@@ -2,6 +2,8 @@ use super::*;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub catalogue: std::collections::BTreeMap<u32, InspectedItem>,
+    pub catalogue_page: Option<catalogue::Page>,
+    pub catalogue_categories: std::collections::BTreeSet<String>,
     pub catalogue_definition: String,
     pub search: String,
     pub category: String,
@@ -14,17 +16,14 @@ pub struct Panel {
 }
 
 pub(super) fn item_categories(item: &InspectedItem) -> impl Iterator<Item = &str> {
-    item.attributes.iter().filter_map(|(key, value)| {
-        (key.eq_ignore_ascii_case("category") || key == "Weapon Type" || key == "Body Position")
-            .then(|| value.split(',').next().unwrap_or("").trim())
-            .filter(|value| !value.is_empty())
-    })
+    catalogue::categories(item)
 }
 impl Panel {
     pub fn categories(&self) -> Vec<&str> {
         self.catalogue
             .values()
             .flat_map(item_categories)
+            .chain(self.catalogue_categories.iter().map(String::as_str))
             .collect::<std::collections::BTreeSet<_>>()
             .into_iter()
             .collect()

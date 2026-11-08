@@ -104,3 +104,27 @@ privacy defect or consumer interoperability evidence can justify a versioned rep
 Client UI, persistent client preferences, future trade-container support and combat effect
 rules are deliberately not selected here. Independent byte-level golden cases accompany
 round-trip/malformed/limit tests; shared client/server codecs are not the sole wire oracle.
+
+## Public catalogue paging (T078)
+
+Command 153 additionally accepts singular field 6, a catalogue query submessage:
+field 1 uint32 `after` (zero starts the catalogue), field 2 UTF-8 name search
+(at most 48 bytes), field 3 UTF-8 category (at most 32 bytes). Empty filters are
+valid; NUL, unknown fields, missing fields and duplicate singular fields are refused.
+Search is a case-insensitive name substring; category matches a published category,
+weapon type or body position. It uses the same selected capability and session rate
+budget as inspection. The request never addresses an item instance or another player.
+
+A successful catalogue reply has optional field 4 containing page metadata: optional
+field 1 uint32 `next` (nonzero last scanned definition), and repeated field 2 category
+names (at most 64 distinct nonempty strings of at most 32 bytes). Only catalogue replies
+include this metadata. Catalogue items are strictly ascending public definition refs,
+slot zero, quantity one, tier zero, without instance attributes. The existing ten-item
+and 65,536-byte reply limits remain unchanged.
+
+Each query scans at most 256 definitions of the admitted content pin, including entries
+without public presentation metadata. An empty page with a continuation cursor is valid;
+it does not mean the catalogue ended. A missing cursor ends the scan. Clients preserve
+the last confirmed page on rejection, reset pagination when filters change, and do not
+interpret an old single-template response as a catalogue page. Continuation refs are
+session-local content indices and are never persisted as durable identities.

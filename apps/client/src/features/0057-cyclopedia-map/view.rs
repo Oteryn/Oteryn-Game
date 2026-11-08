@@ -45,6 +45,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Previous map floor",
                 "Next map floor",
                 "Toggle POI layer",
+                "Browse items",
+                "Next items",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -64,6 +66,17 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             set_open: |mailbox, value| mailbox.properties.cyclopedia_map.open = value,
             submit: |mailbox, commands, action, values| {
                 if actions::navigate_section(mailbox, action, &values) {
+                    return;
+                }
+                if action == 26 || action == 27 {
+                    let panel = &mut mailbox.discovery.inspection;
+                    panel.search = values.get(1).cloned().unwrap_or_default();
+                    panel.category = values.get(2).cloned().unwrap_or_default();
+                    actions::browse_items(mailbox, commands, action == 27);
+                    mailbox
+                        .properties
+                        .cyclopedia_map
+                        .navigate(oteryn_client_ui::cyclopedia_map::Section::Items);
                     return;
                 }
                 if (23..=25).contains(&action) {

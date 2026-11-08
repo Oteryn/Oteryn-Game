@@ -31,3 +31,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         Err(_) => Dispatch::Unregistered,
     }
 }
+
+#[cfg(test)]
+#[path = "inspection/tests.rs"]
+mod tests;

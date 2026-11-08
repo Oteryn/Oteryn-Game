@@ -35,20 +35,7 @@ pub(super) fn refresh_section(mailbox: &mut Mailbox, commands: &UnboundedSender<
                 panel.feedback = Some("The session has ended");
             }
         }
-        Section::Items => {
-            use oteryn_client_ui::inspection::{Request, request};
-            let panel = &mut mailbox.discovery.inspection;
-            let Some(previous @ Request::Catalogue(_)) = panel.last_request else {
-                panel.feedback = "Inspect a catalogue definition to load it here".into();
-                return;
-            };
-            if let Some(command) = request(panel, previous)
-                && commands.send(PlayCommand::ServerMechanic(command)).is_err()
-            {
-                panel.pending = false;
-                panel.feedback = "The session has ended".into();
-            }
-        }
+        Section::Items => browse_items(mailbox, commands, false),
         Section::Analytics => {}
     }
 }
@@ -91,4 +78,18 @@ pub(super) fn navigate_section(mailbox: &mut Mailbox, index: usize, values: &[St
         mailbox.discovery.inspection.category = values.get(2).cloned().unwrap_or_default();
     }
     true
+}
+
+pub(super) fn browse_items(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    next: bool,
+) {
+    let panel = &mut mailbox.discovery.inspection;
+    if let Some(command) = oteryn_client_ui::inspection::request_page(panel, next)
+        && commands.send(PlayCommand::ServerMechanic(command)).is_err()
+    {
+        panel.pending = false;
+        panel.feedback = "The session has ended".into();
+    }
 }

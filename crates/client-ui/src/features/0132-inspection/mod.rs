@@ -4,7 +4,7 @@ mod protocol;
 mod state;
 mod view;
 pub use input::open_key;
-pub use protocol::{apply_result, request};
+pub use protocol::{apply_result, request, request_page};
 pub use state::Panel;
 pub use view::{catalogue_text, panel_text};
 
@@ -23,6 +23,7 @@ mod catalogue_tests {
         let reply = Reply {
             status: 1,
             requests: vec![],
+            catalogue: None,
             items: vec![InspectedItem {
                 slot: 0,
                 definition_ref: 7,
@@ -81,3 +82,7 @@ mod catalogue_tests {
         assert_eq!(panel.category, "sword");
     }
 }
+
+#[cfg(test)]
+#[path = "tests/catalogue.rs"]
+mod page_tests;

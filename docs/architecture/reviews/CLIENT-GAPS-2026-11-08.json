@@ -510,8 +510,9 @@
   "area": "Cyclopedia",
   "feature": "Items: kategorie/search/statystyki/źródła",
   "status": "PARTIAL",
-  "gap": "Inspect/catalogue/market są; brak kompletnej encyklopedii Items i jej filtrów.",
-  "lane": "cg_cyclo"
+  "gap": "Brak powiązanych ofert rynku i pełnych źródeł łupu; katalog ma teraz serwerowe stronicowanie oraz filtry nazw i kategorii.",
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/inspection/catalogue.rs:6 + catalogue_pages_advance_over_sparse_records_and_filter_public_templates; apps/client/src/features/0057-cyclopedia-map/view/actions.rs:83 + item_browser_round_trip_uses_paged_public_catalogue_protocol; catalogue_inspection_route_decodes_filters_and_encodes_continuation; PARTIAL: linked market offers and complete drop sources remain."
  },
  {
   "id": "T079",

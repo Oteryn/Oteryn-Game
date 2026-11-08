@@ -56,6 +56,7 @@ fn cp02_inspection_native_session_scenario() -> Result<(), Box<dyn std::error::E
                 attributes: vec![("Attack".into(), "30".into())],
             }],
             requests: vec![],
+            catalogue: None,
         };
         push(peer::Exchange {
             command: ServerMechanicCommand {
