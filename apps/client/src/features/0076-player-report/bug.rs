@@ -51,8 +51,14 @@ pub(in crate::play) fn activate(
     if action < CATEGORIES.len() {
         panel.bug.category = action as u8;
         panel.bug.reviewed = None;
+        let guidance = [
+            "Coordinates: enter x,y,floor and explain the blocked tile, missing object or incorrect destination.",
+            "Quote the original text, where it appears, its language and the suggested correction.",
+            "Describe reproducible steps, operating system and the observed client behavior. Optional diagnostics include only build, OS and architecture, never credentials or logs.",
+            "Describe the steps, observed behavior and expected result.",
+        ][action];
         panel.bug.preview = format!(
-            "Category: {}. Describe the steps to reproduce and expected behavior. Map reports need x,y,floor; other categories omit the position. Build details are attached only if you enter YES.",
+            "Category: {}. {guidance} Map reports need x,y,floor; other categories omit the position. Build details are attached only if you enter YES.",
             CATEGORIES[action]
         );
         return;

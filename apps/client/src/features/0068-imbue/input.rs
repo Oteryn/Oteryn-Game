@@ -34,6 +34,10 @@ impl PlayLink {
     }
 
     pub fn imbue_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::imbue::tracker_key(events) {
+            self.open_imbue_tracker();
+            return true;
+        }
         if !open_key(events) {
             return false;
         }
