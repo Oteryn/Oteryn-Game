@@ -2,6 +2,16 @@
 pub mod carried_step;
 pub(super) mod completion;
 pub(crate) mod ground_stack;
+/// Shared PostgreSQL fixture entrypoint; production keeps the Ground owner private.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn fixture_ground_stack_matches(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &crate::durability::spell_item_transaction::SpellItemScopeAuthority,
+    target: &crate::durability::spell_items_abi::SpellGroundTarget,
+    expected: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
+) -> Result<bool, crate::durability::DurabilityError> {
+    ground_stack::matches(tx, authority, target, expected).await
+}
 pub mod shared_count;
 pub mod shared_switch;
 use super::{
