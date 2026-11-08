@@ -83,6 +83,18 @@ impl RaidRandom {
         .map_err(|_| RaidError::Exhausted)
     }
 
+    /// Crystal a_piece_of_cake_config.lua:394-400: each golem chooses
+    /// its own city base uniformly, independently of the coordinate draws.
+    pub fn area_choice(&self, wave: u16, entry: u16, count: usize) -> Result<usize, RaidError> {
+        let index = (u64::from(wave) << 16) | u64::from(entry);
+        usize::try_from(self.below(
+            "area-choice",
+            index,
+            u64::try_from(count).map_err(|_| RaidError::Exhausted)?,
+        )?)
+        .map_err(|_| RaidError::Exhausted)
+    }
+
     /// Crystal 201189f src/lua/creature/raids.cpp:521-547,552-555:
     /// each entry selects its requested amount once, inclusively.
     pub fn amount(&self, wave: u16, entry: u16, min: u16, max: u16) -> Result<u16, RaidError> {

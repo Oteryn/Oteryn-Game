@@ -9,6 +9,7 @@ pub mod bed_regen;
 pub mod bed_sleep;
 pub mod boss_difficulty;
 pub mod boss_encounter;
+pub mod cake_event;
 pub mod character_condition_snapshot;
 pub mod character_hazard;
 pub mod character_home_town;
@@ -28,6 +29,7 @@ pub mod field_removal;
 pub mod guild_chat;
 #[cfg(feature = "test-support")]
 pub mod guild_chat_fixture;
+pub mod house_base_decorations;
 pub mod house_management;
 pub mod house_transfer;
 pub mod hunting_stamina;

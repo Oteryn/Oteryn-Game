@@ -43,6 +43,14 @@ impl DurabilityRoot {
         if fence.runtime_scope != house.runtime_scope()? {
             return Ok(Reply::Refused(Refusal::NotInHouse));
         }
+        // Crystal src/items/decay/decay.cpp:29-54 runs deadlines independently
+        // of map observers. Resolve the current phase before choosing wrapability.
+        if !self
+            .settle_house_timed_decorations(node, fence, house.clone())
+            .await?
+        {
+            return Ok(Reply::Refused(Refusal::Stale));
+        }
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
