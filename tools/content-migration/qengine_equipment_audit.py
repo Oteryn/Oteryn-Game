@@ -9,6 +9,7 @@ import importlib.util
 import json
 from pathlib import Path
 import re
+import subprocess
 
 
 def main():
@@ -38,6 +39,32 @@ def main():
                          f'QENGINE2 adds exactly the {len(expected)} independently captured physical quest Items.', after)
     if count != 1:
         raise SystemExit('QENGINE_EQUIPMENT_AUDIT_COMMENT')
+    # Preserve the frozen base census while independently deriving later owner cohorts.
+    baseline = subprocess.check_output(['git', 'show',
+        '1ae39c7fb9bef09c3cd50d16410374f4134b1676:' + str(test.relative_to(root))],
+        cwd=root, text=True)
+    def cohorts(text):
+        table = text.split('const PROFILE_ADDITIONS:', 1)[1].split('];', 1)[0]
+        return {name: int(count.replace('_', '')) for name, count in
+                re.findall(r'\("([^" ]+)",\s*([\d_]+)\)', table)}
+    frozen, merged = cohorts(baseline), cohorts(after)
+    if any(merged.get(name) != count for name, count in frozen.items()):
+        raise SystemExit('EQUIPMENT_BASE_COHORT_CHANGED')
+    later = {name: count for name, count in merged.items()
+             if name not in frozen and name != 'QNPCFX'}
+    names = ' | '.join(json.dumps(name) for name in later)
+    after, count = re.subn(r'(let later_main_profiles = PROFILE_ADDITIONS.*?matches!\(\s*\*name,\s*)(.*?)(\s*\)\s*\}\))',
+                          lambda match: match[1] + names + match[3], after, flags=re.S)
+    if count != 1:
+        raise SystemExit('EQUIPMENT_LATER_COHORT_ANCHOR')
+    after, count = re.subn(r'assert_eq!\(later_main_profiles, [\d_]+\);',
+                          f'assert_eq!(later_main_profiles, {sum(later.values())});', after)
+    if count != 1:
+        raise SystemExit('EQUIPMENT_LATER_COHORT_COUNT_ANCHOR')
+    after, count = re.subn(r'assert_eq!\(additions.len\(\), QENGINE2_BASE_PROFILES \+ [\d_]+\);',
+                          f'assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + {len(expected) - 53});', after)
+    if count != 1 or len(expected) < 53:
+        raise SystemExit('EQUIPMENT_ENGINE_BASE_ANCHOR')
     if args.check and after != before:
         raise SystemExit('QENGINE_EQUIPMENT_COUNT_STALE: run tools/content-migration/qengine_equipment_audit.py content')
     if not args.check and after != before:

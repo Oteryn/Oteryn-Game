@@ -398,16 +398,26 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .filter(|(name, _)| {
             matches!(
                 *name,
-                "WORLDCHG" | "SRV9-MARRIAGE" | "QUESTPC4-STAG-ITEMS" | "QREADY1" | "QREADY2"
+                "QUESTPC4-STAG-ITEMS"
+                    | "QUESTPC4-YALAHAR-ITEMS"
+                    | "QUESTPC4-BEREGAR-ITEMS"
+                    | "QUESTPC4-RECIPE-ITEMS"
+                    | "QUESTPC4-TYPED-ITEMS"
+                    | "QUESTPC4-SPECIAL-ITEMS"
+                    | "QUESTPC4-TREASURE-INPUTS"
+                    | "WORLDCHG"
+                    | "SRV9-MARRIAGE"
+                    | "QREADY1"
+                    | "QREADY2"
             )
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 54);
-    // BASE1ae39c7f has53 QENGINE2 records. Main's seven QUESTPC4 records
-    // are already enumerated in the generated custody delta, not in that base.
+    assert_eq!(later_main_profiles, 102);
+    // BASE1ae39c7f has53 QENGINE2 records. Later shared and named owner
+    // cohorts are enumerated in the generated custody delta, not in that base.
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 7);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 18);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES

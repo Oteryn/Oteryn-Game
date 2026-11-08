@@ -313,7 +313,9 @@ impl NpcTalkBook {
                 "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
-                        &crate::content::npc_catalogue::grizzly_shop::book_digest(model.source_tree_digest())
+                        &crate::content::npc_catalogue::grizzly_shop::book_digest(
+                            model.source_tree_digest()
+                        )
                     )
                 ),
                 format_args!(
