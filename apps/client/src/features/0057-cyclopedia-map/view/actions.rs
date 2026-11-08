@@ -79,3 +79,16 @@ pub(super) fn load_item_definition(mailbox: &mut Mailbox, commands: &UnboundedSe
         panel.feedback = "The session has ended".into();
     }
 }
+
+/// Shared native navigation preserves each section's confirmed state.
+pub(super) fn navigate_section(mailbox: &mut Mailbox, index: usize, values: &[String]) -> bool {
+    let Some(section) = Section::ALL.get(index).copied() else {
+        return false;
+    };
+    mailbox.properties.cyclopedia_map.navigate(section);
+    if section == Section::Items {
+        mailbox.discovery.inspection.search = values.get(1).cloned().unwrap_or_default();
+        mailbox.discovery.inspection.category = values.get(2).cloned().unwrap_or_default();
+    }
+    true
+}

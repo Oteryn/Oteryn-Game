@@ -63,14 +63,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.properties.cyclopedia_map.open = value,
             submit: |mailbox, commands, action, values| {
-                if let Some(section) = oteryn_client_ui::cyclopedia_map::Section::ALL.get(action) {
-                    mailbox.properties.cyclopedia_map.navigate(*section);
-                    if *section == oteryn_client_ui::cyclopedia_map::Section::Items {
-                        mailbox.discovery.inspection.search =
-                            values.get(1).cloned().unwrap_or_default();
-                        mailbox.discovery.inspection.category =
-                            values.get(2).cloned().unwrap_or_default();
-                    }
+                if actions::navigate_section(mailbox, action, &values) {
                     return;
                 }
                 if (23..=25).contains(&action) {

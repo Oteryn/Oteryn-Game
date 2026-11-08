@@ -499,9 +499,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Wspólne okno i nawigacja",
-  "status": "PARTIAL",
-  "gap": "Fasada i osobne panele nie tworzą zintegrowanego CyclopediaDialog.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8"
  },
  {
   "id": "T078",
@@ -1300,9 +1301,10 @@
   "src": "OTCAUD1108",
   "area": "Cyclopedia",
   "feature": "Cyklopedia: nawigacja między działami",
-  "status": "PARTIAL",
-  "gap": "Brakuje wspólnego okna Cyklopedii łączącego działy; Oteryn otwiera oddzielne formularze postaci, bestiariusza, mapy i inspekcji.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8"
  },
  {
   "id": "O025",

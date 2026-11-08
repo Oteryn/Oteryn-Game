@@ -58,7 +58,7 @@ Zasady przeciw dublowaniu:
 | T163 | Boss | Difficulty selection / preview/start/cancel | PARTIAL | Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora. |
 | T164 | Boss | Hazard level i encounter entry | PARTIAL | Query/select/entry są; brak pełnego wizualnego panelu zagrożenia i prowadzenia wejścia. |
 | O074 | Boss | Cyklopedia: bosstiariusz | PARTIAL | Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu. |
-| T077 | Cyclopedia | Wspólne okno i nawigacja | PARTIAL | Fasada i osobne panele nie tworzą zintegrowanego CyclopediaDialog. |
+| T077 | Cyclopedia | Wspólne okno i nawigacja | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
 | T078 | Cyclopedia | Items: kategorie/search/statystyki/źródła | PARTIAL | Inspect/catalogue/market są; brak kompletnej encyklopedii Items i jej filtrów. |
 | T079 | Cyclopedia | Map: areas/subareas/passages/PoI/NPC | PARTIAL | Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC. |
 | T080 | Cyclopedia | Bestiary: katalog/filter/combat/loot | PARTIAL | Są kills/stage/thresholds; brak pełnego katalogu, ilustracji i danych resistance/loot. |
@@ -67,7 +67,7 @@ Zasady przeciw dublowaniu:
 | T083 | Cyclopedia | Boss Slots: equip/remove/bonus | PARTIAL | Komendy są; brak pełnego selektora bossów i prezentacji bonusów. |
 | T084 | Cyclopedia | Houses: browse/details/auction/map | PARTIAL | Są wire/state i osobny transfer; house/controller.rs jest montowany tylko w teście, bez play.json i produkcyjnego okna Houses/mapy. |
 | T085 | Cyclopedia | Analytics selector | PARTIAL | Jeden panel zbiorczy zamiast selektora i osobnych narzędzi. |
-| O022 | Cyclopedia | Cyklopedia: nawigacja między działami | PARTIAL | Brakuje wspólnego okna Cyklopedii łączącego działy; Oteryn otwiera oddzielne formularze postaci, bestiariusza, mapy i inspekcji. |
+| O022 | Cyclopedia | Cyklopedia: nawigacja między działami | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
 | O072 | Cyclopedia | Cyklopedia: bestiariusz i charmy | PARTIAL | Brakuje przeglądarki kategorii i kart potworów ze statystykami, odpornościami i łupem; formularz pokazuje indeksy ras, zabicia i progi. |
 | O077 | Cyclopedia | Cyklopedia: katalog przedmiotów | PARTIAL | Brakuje katalogu przedmiotów z kategoriami i wyszukiwaniem oraz powiązanych ofert/dropów; istnieje inspekcja wybranego przedmiotu i osobny rynek. |
 | O078 | Cyclopedia | Cyklopedia: mapa i odkrywanie | PARTIAL | Brakuje graficznej mapy Cyklopedii z warstwami, regionami i filtrami; formularz pokazuje tekstowy stan odkrywania oraz POI/donacji. |

@@ -108,3 +108,63 @@ fn item_catalogue_loads_from_shared_host_with_pending_and_disconnect_gates()
     );
     Ok(())
 }
+
+#[test]
+fn cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{
+        combat_input::PlayCommand,
+        play::{mailbox::lock, play_channel},
+    };
+    use oteryn_client_runtime::{
+        cyclopedia_map as wire,
+        raw_feature::{CommandStatus, GatedCommandResult},
+    };
+    use oteryn_client_ui::cyclopedia_map::Section;
+    let (link, mut receiver, outbox) = play_channel();
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.properties.cyclopedia_map.selected = true;
+        mailbox.properties.cyclopedia_map.summary = "retained exploration".into();
+        for (index, section) in Section::ALL.into_iter().enumerate() {
+            assert!(super::actions::navigate_section(&mut mailbox, index, &[]));
+            assert!(
+                super::section_text(&mailbox)
+                    .starts_with(&format!("Cyclopedia > {}", section.title()))
+            );
+        }
+        assert!(!super::actions::navigate_section(&mut mailbox, 99, &[]));
+        assert!(super::actions::navigate_section(&mut mailbox, 2, &[]));
+        assert!(super::section_text(&mailbox).contains("retained exploration"));
+        super::actions::refresh_section(&mut mailbox, &link.commands);
+    }
+    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("expected feature request".into());
+    };
+    assert_eq!((command.capability, command.kind), (57, 72));
+    assert!(command.payload.is_empty());
+    let reply = wire::MapResult {
+        code: 0,
+        revision: 5,
+        discovered: false,
+        found: 1,
+        area_percent: 20,
+        pool: 200,
+        epoch: 3,
+        improved: false,
+        visible: vec![(100, 200, 0)],
+    };
+    outbox.properties_result(
+        &command,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_result(&reply).map_err(|_| "map result")?,
+        },
+    );
+    assert_eq!(link.cyclopedia_map_panel().map, Some(reply));
+    assert!(super::section_text(&lock(&link.mailbox)).contains("100,200,0"));
+    assert!(!link.cyclopedia_map_panel().pending);
+    Ok(())
+}
