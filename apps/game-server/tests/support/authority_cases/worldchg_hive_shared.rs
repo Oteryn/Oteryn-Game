@@ -32,6 +32,10 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .fetch_one(&h.pool)
         .await?;
     eprintln!("M55_POSTGRES_READY version={version}");
+    let version: String = sqlx::query_scalar("SHOW server_version_num")
+        .fetch_one(&h.pool)
+        .await?;
+    eprintln!("M55_POSTGRES_READY version={version}");
     let scope = fixture::scope()?;
     let world = scope.world_id();
     use oteryn_gameplay_quests::quest::hive_access as access;
@@ -178,6 +182,15 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         ))
     };
     assert_eq!(counts().await?, (1, 1));
+    let occurrence: (String, String, Vec<i64>) = sqlx::query_as("SELECT reset_epoch::text,quest_key,values_after FROM game_character_event_quest_progress WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2")
+        .bind(fixture::id(fixture::CHARACTER).as_slice()).bind(binding.key).fetch_one(&h.pool).await?;
+    assert_eq!(occurrence.0, "1");
+    assert_eq!(occurrence.1, shared_world_progress::HIVE_QUEST);
+    assert!(
+        occurrence.2.contains(&0),
+        "task reset is retained in this occurrence"
+    );
+
     let occurrence: (String, String, Vec<i64>) = sqlx::query_as("SELECT reset_epoch::text,quest_key,values_after FROM game_character_event_quest_progress WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2")
         .bind(fixture::id(fixture::CHARACTER).as_slice()).bind(binding.key).fetch_one(&h.pool).await?;
     assert_eq!(occurrence.0, "1");
@@ -422,6 +435,46 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         "egress cannot use a stale World epoch"
     );
     tx.rollback().await?;
+    let entries: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_character_event_quest_progress")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(
+        entries, 1,
+        "replay and refused actions do not add occurrence progress"
+    );
+    // The view follows independently owned World reset state, preserving history.
+    sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,2,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
+        .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+    sqlx::query(
+        "UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    let current: i64 = sqlx::query_scalar("SELECT count(*) FROM game_current_event_quest_progress")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(
+        current, 0,
+        "a new occurrence starts without personal history"
+    );
+    let history: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_character_event_quest_progress")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(history, 1);
+    let stale = sqlx::query("INSERT INTO game_character_event_quest_progress SELECT character_id,world_id,2,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after FROM game_character_event_quest_progress").execute(&h.pool).await.err().ok_or("historical receipt accepted in a new occurrence")?;
+    assert_eq!(
+        stale.as_database_error().and_then(|e| e.code()).as_deref(),
+        Some("23514")
+    );
+    assert!(
+        sqlx::query("UPDATE game_character_event_quest_progress SET completes=true")
+            .execute(&h.pool)
+            .await
+            .is_err()
+    );
     let entries: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_character_event_quest_progress")
             .fetch_one(&h.pool)

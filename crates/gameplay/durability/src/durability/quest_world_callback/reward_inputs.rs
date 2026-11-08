@@ -80,7 +80,7 @@ pub(super) async fn apply(
     let cause = Uuid::from_bytes(*command.game_session_id().as_bytes());
     let ordinal = command.command_id().get().to_string();
     let proofs = inputs.iter().map(|input| {
-        let mut proof = serde_json::json!({"reward_callback":callback,"before":input.before,"location":input.location,"count":input.count});
+        let mut proof = serde_json::json!({"reward_callback":oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback).map_err(|_| DurabilityError::InvalidStoredState)?,"before":input.before,"location":input.location,"count":input.count});
         if let Some(use_) = carried_use {
             proof["carried_use"] = serde_json::to_value(use_).map_err(|_| DurabilityError::InvalidStoredState)?;
         }

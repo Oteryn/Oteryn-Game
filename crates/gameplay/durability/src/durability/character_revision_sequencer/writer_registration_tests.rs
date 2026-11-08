@@ -26,7 +26,6 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_character_quest_transition(", "durability/character_revision_sequencer.rs"),
     (".commit_character_wheel(", "durability/character_revision_sequencer.rs"),
     (".commit_character_world_callback(", "durability/character_revision_sequencer.rs"),
-    (".commit_character_world_callback_with_items_and_gate(", "durability/character_revision_sequencer/world_callback_gate.rs"),
     (".commit_charm_command(", "durability/character_revision_sequencer.rs"),
     (".commit_cyclopedia(", "durability/character_revision_sequencer/cyclopedia.rs"),
     (".commit_npc_marriage(", "durability/character_revision_sequencer/npc_marriage.rs"),
