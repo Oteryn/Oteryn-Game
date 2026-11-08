@@ -23,6 +23,19 @@ impl ConditionalNpcActor {
         })
     }
 
+    /// Retry a return on a later tick when another actor occupies the source anchor.
+    /// Other admission and ownership errors remain errors.
+    pub fn reconcile_or_defer(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        present: bool,
+    ) -> Result<Option<ExactActorRef>, NpcPlacementError> {
+        match self.reconcile(runtime, present) {
+            Err(NpcPlacementError::CellOccupied) => Ok(None),
+            result => result,
+        }
+    }
+
     /// Project authoritative availability without removing another occurrence of this NPC.
     pub fn reconcile(
         &mut self,

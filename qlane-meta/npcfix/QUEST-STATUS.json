@@ -94,7 +94,7 @@
     "clippy_seconds": 523.514
   },
   "mistrock_slice": {
-    "state": "PARTIAL_PG_REPLAY_PENDING",
+    "state": "GREEN_FOCUSED",
     "source_cell": [
       32640,
       31437,
@@ -111,20 +111,54 @@
       "authoring_seconds": 0.444,
       "compiler_tests": 1,
       "compiler_seconds": 29.89,
-      "pin_refresh_seconds": 64.08
+      "pin_refresh_seconds": 64.08,
+      "pg_eligible_replay_seconds": 257.887529366,
+      "pg_ineligible_seconds": 256.50464213
     },
     "pg_cases": [
       "npcfix_m38_mistrock_source_dialogue_commits_once_and_replays_postgres",
       "npcfix_m38_mistrock_requires_current_premium_postgres"
     ],
-    "pg_state": "building on committed qmech0326dc2e5 merge",
+    "pg_state": "Both real PostgreSQL cases passed after current entitlement refresh",
     "premium_policy": "Existing questpc2_live_eligibility prerequisite preserved",
     "migration": "none",
     "pg_no_entitlement_seconds": 134.828247516,
     "pg_last_red": "eligible case returned 0 dialogue lines; expected 2",
-    "pg_fix": "refresh and assert current session premium gate before NPC talk; rerun building",
+    "pg_fix": "Current session premium gate refreshed and asserted; rerun passed",
     "world_pin_refresh_seconds": 64.08,
-    "publication": "Owner requested immediate compiling WIP push; no full-green claim"
+    "publication": "cd0beb21f1101d49af214be518f472ddadfe87c2, verified on origin"
   },
-  "merge_policy": "Owner override: no more qmech/main merges; committed merge3f5d54a83 retained"
+  "merge_policy": "Owner override: no more qmech/main merges; committed merge3f5d54a83 retained",
+  "zarifan_slice": {
+    "state": "GREEN_FOCUSED",
+    "code_commit": "48076c67b8fb211f1252ad96a7a62c595c82da3f",
+    "safety_commit": "aaeeca77d029668f0f54654c9a51bf02e3abc0bb",
+    "source_cell": [
+      33040,
+      32484,
+      11
+    ],
+    "red": "BlockSolid at the exact retained source anchor",
+    "green": {
+      "real_map_seconds": 108.88,
+      "authoring_tests": 12,
+      "safety_tests": 2,
+      "clippy": "PASS",
+      "fmt": "PASS",
+      "world_pin_check": "PASS"
+    },
+    "scope": "Explicit solid-object contact permission; every other terrain hold and movement collision remain intact"
+  },
+  "conditional_return_slice": {
+    "state": "GREEN_ENTITIES_CALLER_PENDING",
+    "scope": "Defer CellOccupied only and retry exact source occurrence; strict errors remain visible",
+    "red": "Error: CellOccupied",
+    "green": {
+      "focused_cases": 5,
+      "pg_seconds": 0.23507951,
+      "pg_marker": "POSTGRES_CASE_COMPLETED NPCFIX_M38 conditional NPC occurrence projection",
+      "clippy": "PASS all-targets all-features -D warnings"
+    },
+    "caller": "Hoaxette tick wiring and its additional tests retained locally for separate validation"
+  }
 }
