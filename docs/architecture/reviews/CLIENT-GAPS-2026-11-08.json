@@ -1301,9 +1301,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Nazwy, zdrowie i ikony nad stworzeniami",
-  "status": "PARTIAL",
-  "gap": "Brakuje pełnego zestawu pasków zdrowia i ikon party/skull nad postacią w widoku świata; potwierdzone tarcze/czaszki są prezentowane w osobnym panelu.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Nazwy, potwierdzone zdrowie i pełne stany tarcz/czaszek są rysowane w świecie; ikony odświeżają się bez otwierania panelu i zachowują miganie oraz generację encji.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/icons.rs:12 + o021_overhead_queries_server_icons_without_opening_status_window + live_names_reach_scene_and_disappear_with_visibility"
  },
  {
   "id": "O022",

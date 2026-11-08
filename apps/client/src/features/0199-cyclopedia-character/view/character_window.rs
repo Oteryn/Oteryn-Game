@@ -95,6 +95,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             cards,
             stamina_bar,
             training_bar,
+            badge_id,
         } = character_widgets::create(hwnd);
         let mut held_history = Vec::new();
         let mut held_combat = Vec::new();

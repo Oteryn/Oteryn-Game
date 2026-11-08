@@ -73,29 +73,9 @@ impl PlayView {
                     .iter()
                     .find(|icon| icon.entity == entity.entity)
                 {
-                    for (offset, value, pattern, skull) in [
-                        (0.0, icon.shield, [5_u8, 7, 2], false),
-                        (8.0, icon.skull, [7_u8, 5, 2], true),
-                    ] {
-                        if value == 0 {
-                            continue;
-                        }
-                        let color = party_icon_rgb(value, skull);
-                        for (row, bits) in pattern.into_iter().enumerate() {
-                            for col in 0..3 {
-                                if bits & (4 >> col) != 0 {
-                                    pixel_rgb(
-                                        batch,
-                                        view,
-                                        atlas,
-                                        [x + offset + col as f32 * 2.0, y + row as f32 * 2.0],
-                                        [2.0, 2.0],
-                                        color,
-                                    )?;
-                                }
-                            }
-                        }
-                    }
+                    let age = now.saturating_duration_since(self.party_icon_epoch);
+                    icons::draw(batch, view, atlas, [x, y], icon.shield, false, age)?;
+                    icons::draw(batch, view, atlas, [x + 16.0, y], icon.skull, true, age)?;
                 }
             }
         }

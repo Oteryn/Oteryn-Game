@@ -36,7 +36,19 @@ impl PlayView {
         self.world_context_feedback = link.world_context_feedback();
         self.project_death(link).map_err(|_error| UNAVAILABLE)?;
         self.vitals = link.actor_vitals();
-        self.party_icons = link.party_skull_panel().icons;
+        let party = link.party_skull_panel();
+        let icon_now = std::time::Instant::now();
+        if self.preferences().creature_bars
+            && party.selected
+            && !party.pending
+            && self.party_icons_refresh.is_none_or(|last| {
+                icon_now.duration_since(last) >= std::time::Duration::from_secs(1)
+            })
+        {
+            link.party_skull_request(oteryn_client_ui::party_skull::Intent::Query);
+            self.party_icons_refresh = Some(icon_now);
+        }
+        self.party_icons = party.icons;
         self.project_presentation(std::time::Instant::now())
             .map_err(|_| UNAVAILABLE)?;
         let battle = link.battle_instinct_status_panel();
