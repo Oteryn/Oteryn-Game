@@ -169,10 +169,17 @@ impl HotCuisineProgram {
 
     /// M17: decode both current and saved dates from the owner's UTC epoch.
     /// M42's production cooking dispatch uses this instead of a caller-made year.
-    pub fn calendar_snapshot_utc(&self, input: &NpcRuleInput<'_>) -> Result<HotCuisineCalendar, NpcRuleError> {
+    pub fn calendar_snapshot_utc(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<HotCuisineCalendar, NpcRuleError> {
         self.calendar_snapshot(input, |seconds| {
-            crate::quest::npc_rules::NpcUtcCalendar::from_epoch(seconds).ok()
-                .map(|date| YearMonth { year: date.year, month: date.month })
+            crate::quest::npc_rules::NpcUtcCalendar::from_epoch(seconds)
+                .ok()
+                .map(|date| YearMonth {
+                    year: date.year,
+                    month: date.month,
+                })
         })
     }
 
@@ -208,8 +215,11 @@ impl HotCuisineProgram {
         input: &NpcRuleInput<'_>,
         calendar: &HotCuisineCalendar,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        if input.npc != NPC || input.trigger != NpcRuleTrigger::Say
-            || input.level < 35 || !input.premium_current {
+        if input.npc != NPC
+            || input.trigger != NpcRuleTrigger::Say
+            || input.level < 35
+            || !input.premium_current
+        {
             return Ok(None);
         }
         let Some(recipe) = self

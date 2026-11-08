@@ -84,7 +84,8 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         ),
         ruleset_revision,
         sim_revision,
-        achievement: crate::durability::quest_state::npc_program::hot_cuisine_m42::achievement(plan)?,
+        // M41 grants the source achievement in the same fenced NPC transaction.
+        achievement: None,
         quest_transition: None,
         key_number: None,
     };

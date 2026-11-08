@@ -90,7 +90,7 @@ async fn cook(
         fence,
         request,
         catalogue,
-        &NativeItemWeights(native),
+        &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
     )
     .await
     .map_err(debug)
@@ -201,6 +201,14 @@ async fn exercise_recipe(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("M42_HOT POSTGRES_STARTED version={version}");
+    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+    assert!(
+        owner
+            .premium_gate(super::fixture::id(40))
+            .await
+            .premium_current(),
+        "resumed cook requires delivered live Premium"
+    );
     let catalogue = super::npc_item_exchanges::resumed_catalogue(owner, h).await?;
     owner.quest_catalogue = Some(catalogue.clone());
     let fence = owner
@@ -433,7 +441,7 @@ async fn exercise_recipe(
     let awards:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/culinary_master'").fetch_one(&h.pool).await?;
     assert_eq!(
         awards, 1,
-        "terminal cookbook award shares the real MINT receipt"
+        "terminal cookbook award shares the fenced cooking transaction"
     );
     let before = snapshot(h).await?;
     let repeat = cook(owner, admitted, authority, catalogue.clone(), bonus).await?;

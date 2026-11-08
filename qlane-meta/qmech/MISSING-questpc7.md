@@ -14,4 +14,8 @@ Illuminated Warrior's authored recipe (`quests-00300-00351.json#/records/5`, `s2
 
 Finished questpc7 work awaiting transfer: tested source head `2caf66704f735bde02cb68370a5b5e00dd2d87a6`; no ancestor of open PR3042's head `440e6d5834f3ffc09c4c8313eefd671f0eaa25aa`. This report does not transfer or activate unfinished quest routes.
 
-Migration ownership remains questpc7 `1280-1289`; the fallback `2080-2089` does not apply because an earlier owner packet assigned the lane range.
+M42 uses coordinator-assigned QMECH range `2080-2089`; migration `2080_quest_utc_cooking_receipts.sql` is reserved for its typed cooking receipt checks. Earlier questpc7 migrations retain their original range.
+
+## M42 implementation update
+
+The UTC cooking dispatch and typed recipe transaction are implemented and PG-tested; see `docs/reference/content-prep/QMECH-M42-UTC-COOKING.md`. Real level and Premium predicates are reused from the merged QMECH eligibility owner. The historical missing-mechanic rows above describe the inspected predecessor. The final menu and Culinary Master pass real PG tests; canonical terminal quest-state completion remains distinct from the menu storage flag and is not claimed by this slice.

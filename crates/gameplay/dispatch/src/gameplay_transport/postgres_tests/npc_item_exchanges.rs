@@ -50,6 +50,14 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("NPC_EXCHANGE POSTGRES_STARTED version={version}");
+    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+    assert!(
+        owner
+            .premium_gate(super::fixture::id(40))
+            .await
+            .premium_current(),
+        "resumed cook requires delivered live Premium"
+    );
     let catalogue = resumed_catalogue(owner, h).await?;
     owner.quest_catalogue = Some(catalogue.clone());
     let book: serde_json::Value = serde_json::from_str(include_str!(
@@ -59,7 +67,8 @@ pub(super) async fn exercise(
         .active_generation
         .and_then(|g| g.native_gameplay())
         .ok_or("native")?;
-    let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
+    let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+        .with_wheel(owner.premium_coordinator);
     let mut mint_ordinal = 700;
     for index in [6_u64, 8, 14] {
         let recipe = &book["recipes"][usize::try_from(index - 1)?];
@@ -434,6 +443,15 @@ pub(super) async fn resumed_catalogue(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
 ) -> TestResult<Arc<QuestStateCatalogue>> {
+    // A resumed level-35 cook is fixture history. Eligibility is subsequently
+    // reloaded by the real fenced NPC owner, never supplied by the command.
+    let mut fixture = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *fixture)
+        .await?;
+    sqlx::query("UPDATE game_character_progression_state SET level=35,total_experience=617100 WHERE character_id=encode($1,'hex')::uuid")
+        .bind(super::fixture::id(41).as_slice()).execute(&mut *fixture).await?;
+    fixture.commit().await?;
     let source = NpcRuleCatalog::runtime().map_err(debug)?;
     let program = source
         .program("oteryn:quest.hot_cuisine_quest")
