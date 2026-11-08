@@ -1,0 +1,13 @@
+# M07 native trial evidence
+
+Assigned: Lion's Rock, Machinery of War, Dreamer's Challenge, Too Hot to Handle, Realm of Dreams. Engine slices do not qualify whole quests.
+
+Crystal source revision: `201189f871d23597b82caf88fd611454a2ddefb8`.
+
+- [Lion trial source, lines13–79](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/lions_rock/actions_lions_rock.lua#L13-L79): consume tongue9634, flower21389 or water21466 only while its flag is below1 and pagoda2074 exists. The pagoda becomes2075 for15seconds. Existing donor storage belongs to TibiaTales; standalone bindings must preserve that ownership.
+- Repository `world_region_codec.decode_region` plus the placements index establishes these native floor-8 targets: `(33137,32291)` ordinal1 source item21390; `(33138,32369)` ordinal3 source item2110; `(33154,32279)` ordinal2 source item21391. Pagodas at `(33134,32289)`, `(33136,32369)`, `(33156,32279)` each have ordinal1 source item2074, in `content/world/placements/region-z08-x129-y126.b3`.
+- [Dreamer walls](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua#L1-L71): UID2246–2249 operate distinct literal wall sets; walls return after7seconds, levers after8seconds. An arbitrary lever command is not evidence of solving the puzzle.
+- [Realm lever](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/chayenne_realm/actions_lever.lua): action55021 requires key14682, removes2129 at33075,32591,z3 for60seconds and has a5minute shared cooldown. [Entrance](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/chayenne_realm/movements_enter_realm.lua): action55022 requires level40 and retains the key. Neither operation alone proves the selected recipe's area-clear stage.
+- [Bricklayer tool](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/tools/bricklayer_kit.lua) is action40027's bridge repair using wood5901/953 and kit7785. It does not establish the selected Machinery route's44-kit/outpost/siege facts; do not transplant it as that route.
+
+Area-clear decision: use the current Channel carrier and exact registered creature keys, require a complete bounded census and previously started positive stage progress, and refuse unknown definitions or failed reads before inputs or quest state mutate. This predicate does not create an encounter or invent kill history. Source-specific stage bindings remain separate work.

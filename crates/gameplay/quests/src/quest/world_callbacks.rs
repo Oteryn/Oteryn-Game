@@ -29,6 +29,8 @@ pub enum Trigger {
 
 #[cfg(test)]
 mod admission_tests;
+mod clear_area;
+pub use clear_area::ClearArea;
 mod clock;
 mod counterparts;
 mod effects;

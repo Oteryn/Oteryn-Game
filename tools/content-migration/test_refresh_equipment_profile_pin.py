@@ -73,6 +73,18 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
         with self.assertRaisesRegex(ValueError, "duplicate production key"):
             self.generate(base=document(0, 0, 1, 2, 3))
 
+    def test_shared_engine_exact_key_pin_is_refreshed_from_independent_source(self):
+        source = self.SOURCE + (
+            "    assert_eq!(added_keys.len(), 60);\n"
+            '    ("qengine-reward-item-profiles.json", 60),\n'
+        )
+        fixed, count = self.generate(source)
+        self.assertEqual(count, 5)
+        self.assertIn("assert_eq!(added_keys.len(), 1);", fixed)
+        self.assertIn('("qengine-reward-item-profiles.json", 1)', fixed)
+        self.assertIn("assert_eq!(venison.attributes.speed_bonus, Some(0))", fixed)
+        self.assertEqual(self.generate(fixed), (fixed, 5))
+
 
 if __name__ == "__main__":
     unittest.main()
