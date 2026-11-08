@@ -26,6 +26,7 @@ pub(crate) mod audit;
 mod enchanting;
 mod event_containers;
 mod harvest;
+pub(crate) mod marriage;
 mod skinning;
 pub mod soulpit;
 pub use enchanting::EnchantingCraft;
