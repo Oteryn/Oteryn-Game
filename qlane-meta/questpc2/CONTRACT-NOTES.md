@@ -1172,3 +1172,15 @@ quest_claim_qualification and quest_completion_matrix; checks also found the
 related old variant total. Fix these together, regenerate the documented complete
 quest dependency pipeline, rerun both exact CI authoring commands and content
 validation before push. Own6realPG remain GREEN; no wholequest count increase.
+
+Post609 validation: final dispatch nonPG1613/1613PASS723.980s with content frozen;
+no remaining failures. No new quest code after that push. Coordinator10:20 asks
+for receipt publication before further quest work.
+Read-only source check: Within the Tides canonical source data identifies Marapur
+and Timira, while data-global/npc/tarun.lua:65-96 (9f5a72c, SHA8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde)
+uses TheLostBrotherQuest storage. Do not substitute that unowned quest's progress.
+Timira source actions_boss_timira_fight.lua:174-241,299-364 SHA49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68
+needs item-driven encounter stages, transformations and delayed reset/evacuation;
+request recorded, no local shared engine written. Maeryn data-global/npc/maeryn.lua:134-173 source43b066a640d3b3d01a73cec683c0c0ddf7fce54e8e8491b0ddd80dc9dec954f8
+has a supported helmet-choice storage slice; leave it for a later batch. No
+Within the Tides or Grimvale gameplay was authored or newly qualified here.

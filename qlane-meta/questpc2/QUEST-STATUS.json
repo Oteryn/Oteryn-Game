@@ -1760,7 +1760,7 @@
       "zero_test_results_accepted": false
     }
   },
-  "current_batch": "albinius-four-portals-and-gnomus-confirmation-boundary",
+  "current_batch": "completed-dispatch-validation-receipt",
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
@@ -1795,7 +1795,8 @@
     "BATCH-main-6f-integration-checkpoint-2026-11-08.json",
     "BATCH-main-6f-postgres-green-2026-11-08.json",
     "BATCH-henricus-green-2026-11-08.json",
-    "BATCH-albinius-portals-gnomus-boundary-2026-11-08.json"
+    "BATCH-albinius-portals-gnomus-boundary-2026-11-08.json",
+    "BATCH-portals-complete-dispatch-2026-11-08.json"
   ],
   "next_batch": "Continue owned scope using existing tested owners; do not build new shared engine features. Requests remain recorded; no whole-quest qualification beyond the prior three.",
   "remote_publications_reused": {
@@ -2239,7 +2240,7 @@
       "context": "Published initial Gnomus content before portal/confirmation extension; production content frozen during run."
     },
     "post_main_workspace_all_targets": "PASS3m48s",
-    "night_retro_checks": "PASS: exact CI checks and unit-tests runners, content-tree validation; no checks/tests weakened or disabled",
+    "night_retro_checks": "PASS exact CI checks +114module unit runner (1142reported tests,8existing skips), content tree,324quest units, own6PG, clippy/fmt/check; receipt-only delta after609.",
     "content_tree": "PASS34111Items/252Mounts/336RewardClaims",
     "quest_authoring_unit_runner": {
       "modules_passed": 114,
@@ -2247,7 +2248,11 @@
       "existing_skips": 8,
       "quest_tree_seconds": 289.147
     },
-    "dispatch_units": "Published-content1613PASS995.337s; fresh expanded-content selection compiling/running --no-fail-fast, not claimed passed"
+    "dispatch_units": {
+      "passed": 1613,
+      "seconds": 723.98,
+      "context": "Final regenerated gameplay code/data published in6097245f5; no runtime content changed during the selection."
+    }
   },
   "engine_requests": [
     {
@@ -2399,6 +2404,15 @@
       "proof": "Gnomus same pinned source: reports146-162,87-97,204-216 combine GiveItem, AddPoints and SetNowPlus(72000). item_exchange_keys rejects SetNowPlus although the storage owner supports it; do not split reward/cooldown transactions.",
       "status": "REQUESTED_FROM_QENGINE2",
       "checked_qengine2": "64b3597c1"
+    },
+    {
+      "feature": "committed item USE advancing encounter phases with world-item transforms and reset cleanup",
+      "quests": [
+        "Within the Tides Quest"
+      ],
+      "where": "world_callbacks / native encounter owner",
+      "proof": "Crystal9f5a72c data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:174-241,299-364 SHA49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68; two item-driven phases precede spawned Timira, followed by delayed reset/evacuation.",
+      "status": "REQUESTED_FROM_QENGINE2"
     }
   ],
   "active_owned_work": {
@@ -2432,10 +2446,8 @@
       "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "5dd600a26f00530797109358ea7bbbdcfdcca333",
-  "prepush_pending_tests": [
-    "Fresh dispatch non-PG unit selection compiling/running on final regenerated content; owner cadence exception. No remaining mandatory quest-authoring or content-tree failures."
-  ],
+  "last_pushed_sha": "6097245f577aad0033891fdcefa2207aee86690b",
+  "prepush_pending_tests": [],
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",
     "parent_frozen_branch": "claude/happy-davinci-ijz3wy-questpc2",

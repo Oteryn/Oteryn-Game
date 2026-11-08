@@ -40,7 +40,11 @@
   },
   "workspace_all_targets": "Final regenerated tree PASS4m48s",
   "clippy": "PASS2m30s quests+dispatch alltargets/allfeatures-Dwarnings",
-  "dispatch_unit_selection": "Fresh final-source selection compiling/running --no-fail-fast; explicit cadence exception, no pass claim",
+  "dispatch_unit_selection": {
+    "passed": 1613,
+    "seconds": 723.98,
+    "proof": "BATCH-portals-complete-dispatch-2026-11-08.json"
+  },
   "log_sha256": {
     "/tmp/questpc2b-portals-green-pg.log": "b3d2263db7c9c08d89c77b0c949595e9826dc8f1c1fa7c82f688a200d49145c2",
     "/tmp/questpc2b-albinius-portals-red-pg.log": "7e4c05fe9b44a8bae3e28206e01f79c208602bceae5cfa38e8fed2e802765735",

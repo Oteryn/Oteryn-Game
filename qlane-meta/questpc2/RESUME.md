@@ -1,8 +1,8 @@
 # questpc2b: Albinius offerings and Gnomus confirmation fix, all authoring gates GREEN
 
 Branch claude/happy-davinci-ijz3wy-questpc2b. Frozen parent questpc2 remains0a6d6e208.
-Feature commit2fb941edd is local; previous push5dd600a26f00530797109358ea7bbbdcfdcca333.
-Mainf5b584ef1 clean active merge (CI-only). No PR open as of latest check.
+Published merge6097245f577aad0033891fdcefa2207aee86690b includes feature2fb941edd.
+Mainf5b584ef1 cleanly merged (CI-only). No PR open as of latest check.
 
 New mechanic: four exact50-item Albinius offerings grant corresponding access
 flags using existing item/quest transaction.31rules/5tracks. Source independent
@@ -27,12 +27,11 @@ Source compatibility fix preserves Draconia's frozen historical hold while live
 existing native bag stays unchanged. Tool proves all frozen SOURCE cores exact.
 Updated finite tests assert exact payload/claim sets; no test weakening or skips.
 
-Fresh dispatch nonPG1613selection is compiling/running with no-fail-fast after
-final generation: /tmp/questpc2b-portals-final-dispatch-units.log. NOT claimedpass.
-Prior published-content selection1613PASS995.337s. Keep runtime content frozen
-until fresh selection completes; collect all failures and fix together. An earlier
-queued build was cancelled before any cases started so final packet regeneration
-could complete; it provides no proof. All authoring/content gates are now green.
+Final dispatch nonPG1613/1613PASS723.980s;1378PG/other cases outside this
+authorized unit selection. No known failures and no pending tests. Content
+remained frozen throughout. BATCH-portals-complete-dispatch-2026-11-08.json
+records full log SHA and source context; all mandatory authoring/content gates
+already passed on identical source. This follow-on changes lane receipts only.
 
 Scope35packet/29owned/6excluded:3wholequests qualified (Annihilator, Desert Dungeon,
 Elvenbane),8active incomplete,18notstarted. No new wholequest qualification.
@@ -45,3 +44,11 @@ fetchmain and explicit questpc2b, merge movement, generate required files last,
 fullauthoring checks+unitrunner/contenttree when relevant, checkworkspace/fmt.
 Owner cadence allows pending bulkRust units only. blakinio identity and required
 Claude coauthor/session trailers. No force/rebase/mainpush/PR. Continue afterpush.
+
+Coordinator10:20 steer: stop new quests before push and publish this completed
+validation receipt after PREPUSH-2. No new quest was authored after609. Read-only
+investigation found Within the Tides Marapur/Timira source; Tarun9f source is Lost
+Brother, so do not write that unrelated quest's storage. New generic item-driven
+phase/reset request recorded for QENGINE2. Grimvale Maeryn selection is a possible
+future source slice; no program/test/content was authored. Original ledger stays
+3wholeDONE,8activeincomplete,18notstarted,6excluded. Follow coordinator scope next.
