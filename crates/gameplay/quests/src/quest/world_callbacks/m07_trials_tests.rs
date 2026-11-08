@@ -13,6 +13,7 @@ fn trial() -> Result<Callback, String> {
         ground_stack: Vec::new(),
         position: c.selector.position.ok_or("sample position")?,
         appearance: 2523,
+        ground_stack: None,
     }];
     Ok(c)
 }

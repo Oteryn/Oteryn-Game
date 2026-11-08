@@ -78,6 +78,7 @@ pub(super) fn predicate_fixture(
             ground_stack: Vec::new(),
             position: trigger,
             appearance: if refuse { 2773 } else { 2772 },
+            ground_stack: None,
         },
     ];
     callback

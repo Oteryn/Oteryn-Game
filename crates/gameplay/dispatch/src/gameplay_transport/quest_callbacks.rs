@@ -11,6 +11,7 @@ mod daily_world_gates;
 mod effects;
 mod encounter;
 mod execute;
+mod ground_stack;
 pub(super) mod monsters;
 mod rewards;
 mod shared_gate;
@@ -362,6 +363,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
                         actor_conditions: None,
                         carried_use: None,
+                        creature_use: None,
                         peer_use: None,
 
                         native,
@@ -423,6 +425,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(content) = self.states.quest_callbacks.fixture.get() {
             return content;
         }
+        if let Some(callbacks) = self
+            .quest_catalogue
+            .as_deref()
+            .and_then(|c| c.authored_world_callbacks())
+        {
+            return callbacks;
+        }
         callbacks()
     }
 
@@ -442,7 +451,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         revision: u64,
         expected: Option<MovementPositionSnapshot>,
     ) -> Result<Option<ObservedWorldCallback>, UseDisposition> {
+        if callback
+            .world_requirements
+            .iter()
+            .any(|r| r.ground_stack.is_some())
+        {
+            let index = {
+                let runtime = self.runtime.lock().await;
+                super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+            };
+            if super::loop_move::loop_ground(self, map.overlay.base(), index)
+                .await
+                .is_none()
+            {
+                return Err(UseDisposition::Rejected);
+            }
+        }
         if !stateless_observation_required(callback) {
+
             return Ok(None);
         }
         let Some(fence) = fence else {
@@ -1145,11 +1171,12 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
 
 fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
     callback.world_requirements.iter().all(|requirement| {
-        // Portable Item custody/quantity/order is checked by the fenced Quest SQL
-        // participant, never by this immutable-map projection. Catalogue validation
-        // admits these prerequisites only on durable personal callbacks.
-        if !requirement.ground_stack.is_empty() {
-            return true;
+        // Closed Ground-only slots have no static anchor; the refreshed Ground
+        // owner and fenced SQL read-set prove their portable roots separately.
+        if requirement.appearance == 0 {
+            let position = tile(requirement.position);
+            return requirement.ground_stack.is_some() && !map.facts.house_tile(position)
+                && map.overlay.base().tile(position.x,position.y,position.floor).is_some();
         }
         let position = tile(requirement.position);
         !map.facts.house_tile(position)
