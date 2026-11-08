@@ -113,6 +113,9 @@ pub(super) async fn exercise(
         )
         .map_err(debug)?,
     ));
+    owner
+        .refresh_quest_session(admitted.game_session_id, true)
+        .await;
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())

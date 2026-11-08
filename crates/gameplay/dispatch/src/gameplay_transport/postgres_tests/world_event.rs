@@ -97,8 +97,7 @@ pub(super) fn scenario_with_consumers(epochs: u64, consumers: bool) -> TestResul
 }
 
 pub(super) fn scenario_with_native_deaths(epochs: u64, creature: &'static str, active: bool) -> TestResult {
-    let seasonal = (creature == "werewolf").then_some(if active { "QworldGrimvaleActive" } else { "QworldGrimvaleInactive" });
-    scenario_run(epochs, seasonal, false, Some((creature, active)))
+    scenario_run(epochs, None, false, Some((creature, active)))
 }
 
 fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_deaths: Option<(&'static str, bool)>) -> TestResult {
@@ -106,10 +105,13 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "world_event_dispatch", !(consumers || native_deaths.is_some()), false).await?;
-        if seasonal.is_some() {
+        let clock = seasonal.or_else(|| native_deaths.and_then(|(creature, active)| {
+            (creature == "werewolf").then_some(if active { "QworldGrimvaleActive" } else { "QworldGrimvaleInactive" })
+        }));
+        if clock.is_some() {
             // Fixture clock set before the real reset writer creates its epoch;
             // admission, publication and mutation guards remain enabled.
-            if seasonal == Some("A Piece of Cake") {
+            if clock == Some("A Piece of Cake") {
                 // Business clock matches the historical epoch fixture. T94's
                 // actual observation clock remains current: terminal native
                 // evidence must not claim a future decision (native.rs:483-484).
@@ -117,14 +119,14 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
                     .execute(&h.pool).await?;
                 sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-02-21 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
-            } else if matches!(seasonal, Some("QworldGrimvaleActive" | "QworldGrimvaleInactive")) {
-                let clock_sql = if seasonal == Some("QworldGrimvaleActive") {
+            } else if matches!(clock, Some("QworldGrimvaleActive" | "QworldGrimvaleInactive")) {
+                let clock_sql = if clock == Some("QworldGrimvaleActive") {
                     "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-13 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
                 } else {
                     "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
                 };
                 sqlx::query(clock_sql).execute(&h.pool).await?;
-            } else if seasonal == Some("Christmas") {
+            } else if clock == Some("Christmas") {
                 sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2025-12-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             } else {
