@@ -1218,10 +1218,10 @@
   "src": "TIBAUD-1",
   "area": "Modal dialogs",
   "feature": "Nagging / balancing / generic notices",
-  "status": "PARTIAL",
-  "gap": "Wiadomości serwera są; brak dedykowanych interaktywnych dialogów i dont-show-again.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/components/modal_dialogs.rs:208 + balancing_notice_requires_acknowledgement_before_suppression; PARTIAL: native notices and persisted suppression integration remain"
+  "evidence": "apps/client/src/features/0092-zones-nologout/view/notices.rs:4 + server_warning_wire_reaches_interactive_notice_and_changed_text_gets_new_key + native_confirmation_cancel_never_persists_and_confirm_survives_reload; domain-57 Warning/Advance frames wired through the real mailbox to a bounded interactive native worker; stable per-message saved suppression and confirm/cancel"
  },
  {
   "id": "O002",

@@ -1,3 +1,6 @@
+#[cfg(all(windows, not(test)))]
+#[path = "view/notices.rs"]
+mod notices;
 use crate::play::{PlayView, ServerMessageInbox};
 use oteryn_session::{AppliedDelta, MAX_QUEUED_EVENTS, ServerMessage};
 
@@ -8,6 +11,10 @@ impl PlayView {
                 self.server_messages.pop_front();
             }
             self.server_messages.push_back(message.clone());
+        }
+        #[cfg(all(windows, not(test)))]
+        for notice in messages.interactive_notices() {
+            notices::enqueue(notice);
         }
     }
 
