@@ -25,6 +25,15 @@ pub(in crate::play) fn submit(
     if p.pending || !p.selected {
         return None;
     }
+    if matches!(id, 114..=116) {
+        use oteryn_client_runtime::cyclopedia_character::KillStatus;
+        p.kill_filter = match id {
+            115 => Some(KillStatus::Unjustified),
+            116 => Some(KillStatus::GuildWar),
+            _ => None,
+        };
+        return None;
+    }
     if id == 111 {
         return request(p, Intent::Badges);
     }
@@ -95,7 +104,13 @@ mod window {
     use std::time::Duration;
     use tokio::sync::mpsc::UnboundedSender;
     use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
-    use windows_sys::Win32::UI::WindowsAndMessaging::*;
+    use windows_sys::Win32::UI::{
+        Controls::{
+            ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx, PBM_SETPOS,
+            PBM_SETRANGE32,
+        },
+        WindowsAndMessaging::*,
+    };
     type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
     #[derive(Default)]
     struct Actions(Vec<usize>);
@@ -107,7 +122,7 @@ mod window {
                 let note = (w >> 16) & 0xffff;
                 if !actions.is_null()
                     && (*actions).0.len() < 32
-                    && matches!(id, 101..=113)
+                    && matches!(id, 101..=116)
                     && note == BN_CLICKED as usize
                 {
                     (*actions).0.push(id);
@@ -229,6 +244,62 @@ mod window {
                 [10, 355, 690, 240],
                 ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
             );
+            for (id, label, x) in [
+                (114, "All PvP results", 10),
+                (115, "Unjustified", 190),
+                (116, "Guild war", 370),
+            ] {
+                control(hwnd, "BUTTON", label, id, [x, 155, 165, 28], WS_TABSTOP);
+            }
+            let heading = control(hwnd, "STATIC", "", 401, [10, 355, 690, 22], 0);
+            let history = control(
+                hwnd,
+                "LISTBOX",
+                "",
+                402,
+                [10, 380, 690, 155],
+                WS_BORDER | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP | LBS_USETABSTOPS as u32,
+            );
+            let detail = control(
+                hwnd,
+                "EDIT",
+                "",
+                403,
+                [10, 545, 690, 50],
+                ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
+            );
+            let tabs: [i32; 2] = [100, 180];
+            SendMessageW(history, LB_SETTABSTOPS, tabs.len(), tabs.as_ptr() as isize);
+            SendMessageW(history, LB_SETHORIZONTALEXTENT, 1800, 0);
+            let status_label = control(hwnd, "STATIC", "", 472, [10, 192, 690, 34], 0);
+            let common = INITCOMMONCONTROLSEX {
+                dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
+                dwICC: ICC_PROGRESS_CLASS,
+            };
+            InitCommonControlsEx(&common);
+            let cards: Vec<_> = (0..14)
+                .map(|i| {
+                    control(
+                        hwnd,
+                        "STATIC",
+                        "",
+                        450 + i,
+                        [
+                            10 + (i % 4) as i32 * 175,
+                            355 + (i / 4) as i32 * 52,
+                            165,
+                            48,
+                        ],
+                        WS_BORDER,
+                    )
+                })
+                .collect();
+            let stamina_bar = control(hwnd, "msctls_progress32", "", 470, [10, 575, 335, 18], 0);
+            let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
+            let mut held_history = Vec::new();
+            let mut held_combat = Vec::new();
+            let mut held_store = String::new();
+            let mut painted_tab = None;
             let mut message: MSG = std::mem::zeroed();
             loop {
                 while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -263,6 +334,167 @@ mod window {
                     output,
                     wide(&display(&mailbox.cyclopedia_character)).as_ptr(),
                 );
+                let panel = &mailbox.cyclopedia_character;
+                let status = if panel.pending {
+                    "Waiting for the server"
+                } else {
+                    panel.feedback.unwrap_or("")
+                };
+                SetWindowTextW(status_label, wide(status).as_ptr());
+                let table = panel.history_tab == Some(panel.tab);
+                let pvp = panel.tab
+                    == oteryn_client_runtime::cyclopedia_character::CharacterTab::RecentPvpKills;
+                for id in 114..=116 {
+                    ShowWindow(GetDlgItem(hwnd, id), if pvp { SW_SHOW } else { SW_HIDE });
+                }
+                let overview = panel.general.is_some()
+                    && panel.tab
+                        == oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats;
+                let combat = panel.combat.as_ref().is_some_and(|s| s.tab() == panel.tab);
+                let store = panel.store.is_some()
+                    && panel.tab
+                        == oteryn_client_runtime::cyclopedia_character::CharacterTab::StoreSummary;
+                let card_rows = if store {
+                    oteryn_client_ui::cyclopedia_character::store_cards(panel)
+                } else {
+                    oteryn_client_ui::cyclopedia_character::overview_cards(panel)
+                };
+                ShowWindow(
+                    output,
+                    if table || overview || combat || store {
+                        SW_HIDE
+                    } else {
+                        SW_SHOW
+                    },
+                );
+                for (i, handle) in cards.iter().enumerate() {
+                    ShowWindow(
+                        *handle,
+                        if (overview || store) && i < card_rows.len() {
+                            SW_SHOW
+                        } else {
+                            SW_HIDE
+                        },
+                    );
+                }
+                for handle in [stamina_bar, training_bar] {
+                    ShowWindow(handle, if overview { SW_SHOW } else { SW_HIDE });
+                }
+                if overview || store {
+                    for (handle, (label, value)) in cards.iter().zip(card_rows) {
+                        SetWindowTextW(*handle, wide(&format!("{label}\r\n{value}")).as_ptr());
+                    }
+                    if let Some(bars) = oteryn_client_ui::cyclopedia_character::overview_bars(panel)
+                    {
+                        for (handle, (value, max)) in
+                            [stamina_bar, training_bar].into_iter().zip(bars)
+                        {
+                            SendMessageW(handle, PBM_SETRANGE32, 0, max as isize);
+                            SendMessageW(handle, PBM_SETPOS, usize::from(value), 0);
+                        }
+                    }
+                }
+                for handle in [heading, detail] {
+                    ShowWindow(handle, if table || combat { SW_SHOW } else { SW_HIDE });
+                }
+                ShowWindow(
+                    history,
+                    if table || combat || store {
+                        SW_SHOW
+                    } else {
+                        SW_HIDE
+                    },
+                );
+                SetWindowPos(
+                    history,
+                    null_mut(),
+                    10,
+                    if store { 415 } else { 380 },
+                    690,
+                    if store { 180 } else { 155 },
+                    SWP_NOZORDER | SWP_NOACTIVATE,
+                );
+                if painted_tab != Some(panel.tab) {
+                    SendMessageW(history, LB_RESETCONTENT, 0, 0);
+                    held_history.clear();
+                    held_combat.clear();
+                    held_store.clear();
+                    painted_tab = Some(panel.tab);
+                }
+                if table {
+                    let note = if panel.pending {
+                        "Loading"
+                    } else {
+                        panel.feedback.unwrap_or("")
+                    };
+                    use oteryn_client_runtime::cyclopedia_character::KillStatus;
+                    let filter = match panel.kill_filter {
+                        None => "All results",
+                        Some(KillStatus::GuildWar) => "Guild war",
+                        Some(KillStatus::Unjustified) => "Unjustified",
+                    };
+                    let columns = format!(
+                        "Time (server Unix ms)     Result     Description | {filter} | {note}"
+                    );
+                    SetWindowTextW(heading, wide(&columns).as_ptr());
+                    let rows: Vec<_> = oteryn_client_ui::cyclopedia_character::history_rows(panel)
+                        .into_iter()
+                        .cloned()
+                        .collect();
+                    if held_history != rows {
+                        SendMessageW(history, LB_RESETCONTENT, 0, 0);
+                        for row in &rows {
+                            let kind = match row.status {
+                                Some(KillStatus::Unjustified) => "Unjustified",
+                                Some(KillStatus::GuildWar) => "Guild war",
+                                None => "Death",
+                            };
+                            let label = format!("{}\t{}\t{}", row.at, kind, row.description);
+                            SendMessageW(history, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                        }
+                        held_history = rows;
+                    }
+                    let selected = usize::try_from(SendMessageW(history, LB_GETCURSEL, 0, 0)).ok();
+                    let description = selected
+                        .and_then(|i| held_history.get(i))
+                        .map_or("Select a row to read its complete description", |r| {
+                            r.description.as_str()
+                        });
+                    SetWindowTextW(detail, wide(description).as_ptr());
+                }
+                if combat {
+                    SetWindowTextW(heading, wide("Statistic                    Value                    Source — select a row for details").as_ptr());
+                    let rows = oteryn_client_ui::cyclopedia_character::combat_rows(panel);
+                    if held_combat != rows {
+                        SendMessageW(history, LB_RESETCONTENT, 0, 0);
+                        for row in &rows {
+                            let label = format!("{}\t{}\t{}", row.label, row.value, row.source);
+                            SendMessageW(history, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                        }
+                        held_combat = rows;
+                    }
+                    let selected = usize::try_from(SendMessageW(history, LB_GETCURSEL, 0, 0)).ok();
+                    let description = selected.and_then(|i| held_combat.get(i)).map_or_else(
+                        || "Select a statistic to inspect its contributions".into(),
+                        |row| oteryn_client_ui::cyclopedia_character::combat_detail(panel, row.key),
+                    );
+                    SetWindowTextW(detail, wide(&description).as_ptr());
+                }
+                if store {
+                    let blessings = oteryn_client_ui::cyclopedia_character::store_blessings(panel);
+                    if held_store != blessings {
+                        SendMessageW(history, LB_RESETCONTENT, 0, 0);
+                        for blessing in blessings.lines() {
+                            SendMessageW(
+                                history,
+                                LB_ADDSTRING,
+                                0,
+                                wide(blessing).as_ptr() as isize,
+                            );
+                        }
+                        held_store = blessings;
+                    }
+                }
                 drop(mailbox);
                 std::thread::sleep(Duration::from_millis(25));
             }

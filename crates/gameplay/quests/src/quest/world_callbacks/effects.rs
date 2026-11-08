@@ -10,12 +10,32 @@ pub enum Facing {
     West,
 }
 
+/// A once-only earned mount through the existing account appearance owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MountReward {
+    pub mount: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub achievement: Option<String>,
+}
+
+impl MountReward {
+    pub fn grant_key(&self) -> String {
+        format!("{}/quest-grant", self.mount)
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Finish this quest only through its bound, irreversible native trial.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes_quest: bool,
     /// Complete a separately owned child quest with this native once-only reward.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quest_completion: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mount_reward: Option<MountReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
     /// An existing, preserved local quest epoch; commands never create reward cycles.
@@ -24,6 +44,9 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
+    /// Restore the exact pre-transform source revision after this delay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
@@ -199,6 +222,17 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.completes_quest
+        && (!callback.requires_world_admission
+            || callback.actor_kind != ActorKind::Player
+            || callback.reversible
+            || callback.opening_only
+            || callback.storage.iter().all(|state| state.preserve)
+            || effects.quest_completion.is_some()
+            || effects.item_reward_cycle.is_some())
+    {
+        return false;
+    }
     if effects.item_reward_cycle.as_ref().is_some_and(|track| {
         effects.item_reward.is_none()
             || !callback.storage.iter().any(|state| {
@@ -272,6 +306,44 @@ pub(super) fn valid(callback: &Callback) -> bool {
                             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                 })
         })
+        || effects.mount_reward.as_ref().is_some_and(|r| {
+            !callback.requires_world_admission
+                || callback.trigger != Trigger::Use
+                || callback.storage.is_empty()
+                || callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                || r.achievement.as_ref().is_some_and(|key| {
+                    key.len() > 160
+                        || !key.strip_prefix("oteryn:achievement/").is_some_and(|tail| {
+                            !tail.is_empty()
+                                && tail.bytes().all(|b| {
+                                    b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_'
+                                })
+                        })
+                })
+                || r.mount.len() > 160
+                || !r
+                    .mount
+                    .strip_prefix("oteryn:content.mount.")
+                    .is_some_and(|tail| {
+                        !tail.is_empty()
+                            && tail
+                                .bytes()
+                                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+                    })
+        })
+        || effects.reset_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay)
+                || callback.actor_kind != ActorKind::Player
+                || (effects.transform.is_none() && callback.lever.is_none())
+                || effects.portals.is_some()
+                || effects.item_presence.is_some()
+                || effects.item_cycle.is_some()
+                || effects.encounter.is_some()
+                || !callback.passages.is_empty()
+        })
         || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())
         || effects
@@ -344,6 +416,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || callback.native_rule.is_some()
                     || effects.item_reward.is_some()
                     || effects.outfit_reward.is_some()
+                    || effects.mount_reward.is_some()
                     || !(1..=60_000).contains(&timing.spawn_after_ms)
                     || timing.reset_after_ms <= timing.spawn_after_ms
                     || timing.reset_after_ms > 3_600_000

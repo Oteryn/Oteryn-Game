@@ -50,6 +50,7 @@ fn input<'a>(
         npc: NPC,
         trigger: NpcRuleTrigger::Say,
         message: "yes",
+        player_name: None,
         topic,
         tracks,
         inventory,

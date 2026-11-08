@@ -99,6 +99,7 @@ fn plan(epoch: i64) -> f::TestResult<NpcRulePlan> {
     let outfits = BTreeMap::new();
     source
         .plan_storage(&NpcRuleInput {
+            player_name: None,
             npc: NPC,
             trigger: NpcRuleTrigger::Say,
             message: "yes",
@@ -334,6 +335,7 @@ async fn year_projection(h: &f::Harness) -> f::TestResult {
     let inventory = NpcInventorySnapshot::default();
     let outfits = BTreeMap::new();
     let input = NpcRuleInput {
+        player_name: None,
         npc: "oteryn:npc.jean_pierre",
         trigger: NpcRuleTrigger::Say,
         message: "yes",

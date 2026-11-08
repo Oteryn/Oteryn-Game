@@ -32,7 +32,7 @@ def sha(value):
 
 
 def donor_inputs():
-    paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
+    paths = ['data/XML/mounts.xml', 'data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         *wizard_cosmetics.DONOR_NPCS, 'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
     paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
@@ -85,6 +85,7 @@ def build():
         looks.update({r['source_id']: r['source_record_sha256'] for r in json.loads(raw)['records']})
         for record in json.loads(raw)['records']:
             addon_patterns[record['source_id']]=min(next((f.get('value',1) for f in group['sprite_info_fields'] if f['field']==2),1) for group in record['frame_groups'])-1
+    ram_look_hash = looks[1934]
     outfits, mappings = [], []
     for name, sexes in sorted(groups.items()):
         if set(sexes) != {'0', '1'}:
@@ -156,7 +157,23 @@ def build():
     cosmetics.validate(nx5)
     nx5_doc = nx5['document']
     doc['outfits'].extend(nx5_doc['outfits'])
-    doc['mounts'] = list(nx5_doc['mounts'])
+    # Reliable Ram uses the named look, not a mutable donor mount ordinal.
+    # Crystal 201189f actions_reliable_ram.lua still says 250, but its mounts.xml
+    # assigns Reliable Ram/look1934 to 252 (250 is Jaracal/look1962). The retained
+    # 9f5a72c corpus agrees on the semantic Ram identity/look and source speed.
+    ram = next(row for row in ET.fromstring(inputs['data/XML/mounts.xml'])
+               if row.get('name') == 'Reliable Ram')
+    if ram.get('clientid') != '1934' or ram.get('speed') != '10' or ram.get('premium') != 'no':
+        raise ValueError('Reliable Ram source identity drift')
+    ram_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
+                  'sha256': sha(inputs['data/XML/mounts.xml'])}
+    ram_key = 'oteryn:content.mount.reliable_ram'
+    doc['mounts'] = [*nx5_doc['mounts'], {'key': ram_key, 'revision': 'srv7-reliable-ram-r1',
+        'look': {'id':1934,'source_record_sha256':ram_look_hash},
+        'speed_bonus':10,'premium':False,'source':ram_source}]
+    mappings.append({'grant_key':ram_key+'/quest-grant',
+                     'target':{'kind':'Mount','mount_key':ram_key},
+                     'compatible_provenance':[PROVENANCE]})
     grant_keys = {row['grant_key'] for row in mappings}
     for row in nx5_doc['grant_mappings']:
         if row['grant_key'] not in grant_keys:
@@ -179,7 +196,7 @@ def build():
             continue
         citation=palette_source if path == '/palette' else source
         if parts[1] == 'mounts':
-            citation = taming_source
+            citation = ram_source if doc['mounts'][int(parts[2])]['key'] == ram_key else taming_source
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}

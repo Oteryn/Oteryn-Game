@@ -77,6 +77,7 @@ pub(super) fn predicate_fixture(
         oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement {
             position: trigger,
             appearance: if refuse { 2773 } else { 2772 },
+            ground_stack: None,
         },
     ];
     callback

@@ -33,3 +33,10 @@ alltargets/fmt PASS; prior merged strict dispatch Clippy4m31s PASS. World
 pin refresh PASS, digest unchanged b79b1d74. PG proof scope remains explicit
 in QUEST-STATUS.json. Active owner assignment is M01b only:46 routes/56
 EXPLORE stages; CLAIMED on qmech a17567dbf. Only2000-2009 if SQL is needed.
+
+M01b first code slice is on owned qm-questpc branch (not shared qmech).
+Longsword s1 reuses native STEP_IN and atomically writes visited+counter.
+329 quest units,2 focused tests,107 authoring modules/checks/tree and strict
+quests+dispatch Clippy pass. Native catalogue PG passes7.422s. Corrected
+immediate-replay PG test is running; never claim that case green yet.
+M01b remains IN_PROGRESS (46 routes/56 stages); CLAIMS belongs to coordinator.
