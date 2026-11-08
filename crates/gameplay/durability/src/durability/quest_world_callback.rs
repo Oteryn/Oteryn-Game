@@ -1,6 +1,7 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
 pub(super) mod completion;
+pub(crate) mod ground_stack;
 pub mod shared_count;
 pub mod shared_switch;
 use super::{
@@ -147,6 +148,10 @@ pub(super) async fn consume(
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
     context: &QuestWorldContext,
+    scope_guard: (
+        &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+        &super::runtime_scope_assignment::NodeIncarnationProof,
+    ),
 ) -> Result<bool, DurabilityError> {
     let (super::quest_state::QuestCause::Use(command)
     | super::quest_state::QuestCause::Step(command)) = request.cause
@@ -189,6 +194,18 @@ pub(super) async fn consume(
         if level.is_none_or(|level| level < i64::from(minimum)) {
             return Ok(false);
         }
+    }
+    if !ground_stack::require(
+        tx,
+        permit,
+        scope_guard,
+        fence,
+        context,
+        &callback.world_requirements,
+    )
+    .await?
+    {
+        return Ok(false);
     }
     if let Some(admission) = &callback.admission {
         if admission.promotion
