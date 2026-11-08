@@ -255,6 +255,7 @@ impl PlayerSpellState {
     }
 }
 
+mod drome;
 mod equipped_armor;
 mod equipped_invisibility;
 mod equipped_regeneration;
@@ -266,6 +267,7 @@ mod state;
 mod vocationless_vitals;
 mod wheel;
 mod wheel_attack;
+pub use drome::DromeStatus;
 pub use wheel_attack::{PreparedWheelAttackHit, WheelAttackActor, WheelAttackComponents};
 
 pub use gate::{

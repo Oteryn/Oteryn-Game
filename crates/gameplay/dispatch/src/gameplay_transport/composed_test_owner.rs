@@ -28,7 +28,6 @@ pub(super) struct ComposedTestOwner<'a, 'f, 's> {
 impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
     pub(super) fn build(self) -> ComposedFreshAdmission<'a, 'f, 's> {
         ComposedFreshAdmission {
-            activity_room: None,
             proficiency_catalogue: None,
             server_motd: "",
             reset_epoch: 0,
@@ -42,7 +41,7 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             premium_only: false,
             required_capabilities: self.required_capabilities,
             runtime: (self.runtime).into(),
-            movement_cells: self.room.movement_cells(),
+            movement_cells: self.room.movement_cells().into(),
             door: (self.door).into(),
             chest: self.room.door(),
             spells: self.spells,

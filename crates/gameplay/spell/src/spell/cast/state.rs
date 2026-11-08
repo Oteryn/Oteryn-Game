@@ -317,6 +317,7 @@ impl PlayerSpellState {
         let mut next = self.clone();
         next.restore_saved_vitals(health, mana);
         next.drome_practice = false;
+        next.clear_drome_statuses();
         next.revision = next.revision.checked_add(1)?;
         Some(next)
     }

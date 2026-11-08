@@ -250,7 +250,7 @@ fn scenario(
             );
         }
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         if ground {
             owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&bundle_room));
         }

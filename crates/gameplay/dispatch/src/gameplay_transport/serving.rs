@@ -43,7 +43,6 @@ pub async fn serve_gameplay(
         });
     }
     let authority = ComposedFreshAdmission {
-        activity_room: None,
         server_motd: &config.server_motd,
         reset_epoch: drain.epoch(),
         emit: owners.emit,
@@ -56,7 +55,7 @@ pub async fn serve_gameplay(
         premium_only: owners.premium_only,
         required_capabilities: owners.required_capabilities,
         runtime: owners.runtime.into(),
-        movement_cells: owners.movement_cells,
+        movement_cells: owners.movement_cells.into(),
         door: owners.door.into(),
         chest: owners.chest,
         spells: owners.spells,

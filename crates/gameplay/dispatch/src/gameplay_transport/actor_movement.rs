@@ -23,6 +23,87 @@ use std::time::Duration;
 /// A committed step and its SPEED-1 duration (CONDITIONS-0 §4.2), or why nothing moved.
 pub type StepInChannel = Result<(MovementPositionSnapshot, Duration), MovementError>;
 
+impl ChannelSpellStates {
+    /// Resolve Drome control before field/floor preflight. The common movement owner
+    /// repeats this pure decision with the same frozen time/position, so a prepared
+    /// destination cannot diverge after SQL and a command replay consumes no new RNG.
+    pub(in crate::gameplay_transport) fn drome_step_direction(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_us: u64,
+        requested: CardinalStep,
+    ) -> Result<CardinalStep, MovementError> {
+        if !runtime.is_tibiadrome(actor) {
+            return Ok(requested);
+        }
+        let Some(state) = self
+            .get(runtime, actor, session)
+            .filter(|state| state.drome_practice)
+        else {
+            return Ok(requested);
+        };
+        // Crystal 201189f creature.cpp:286-291: ROOTED/FEARED refuse walking.
+        if !self.native_condition_movement_allowed(
+            runtime,
+            actor,
+            session,
+            SemanticTimeMicros::from_micros(now_us),
+        ) {
+            return Err(MovementError::Blocked);
+        }
+        use oteryn_gameplay_domain::domain::condition::{ConflictKey, StatusKind};
+        if !state
+            .owned_conditions()
+            .active_at(ConflictKey::Status(StatusKind::Drunk), now_us)
+            .is_some_and(|instance| instance.definition().key() == "drome.drunk")
+        {
+            return Ok(requested);
+        }
+        use oteryn_simulation_determinism::{
+            DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+        };
+        use sha2::{Digest, Sha256};
+        let position = runtime
+            .read_actor_position(actor)
+            .map_err(MovementError::Actor)?;
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:drome-drunk-step:v1")
+            .chain_update(actor.placement_identity())
+            .chain_update(session.as_bytes())
+            .chain_update(position.revision().to_be_bytes())
+            .chain_update(now_us.to_be_bytes())
+            .finalize();
+        let mut bytes = [0; 16];
+        bytes.copy_from_slice(&digest[..16]);
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        let raw = deterministic_decision_u64(
+            &root,
+            DecisionOccurrenceId::from_bytes(bytes),
+            "movement.drome.drunk",
+            0,
+        )
+        .map_err(|_| MovementError::NotQualified)?;
+        let roll = oteryn_gameplay_spell_rules::native_actor_states::normal_draw(
+            1,
+            100,
+            &mut |low, high| crate::spell::uniform_draw(raw, low, high),
+        )
+        .map_err(|_| MovementError::NotQualified)?;
+        // Crystal 201189f creature.cpp:224-260,275-284: default subId 0 gives
+        // threshold (0 + 25) / 5. Tanked Up's stronger intensity is not sourced.
+        // The draw excludes requested direction, making repeated preflight idempotent.
+        Ok(match roll {
+            1..=5 => CardinalStep::North,
+            6..=10 => CardinalStep::West,
+            11..=15 => CardinalStep::South,
+            16..=20 => CardinalStep::East,
+            _ => requested,
+        })
+    }
+}
+
 /// The cell of a local position, for a ground speed lookup.
 fn cell(position: MovementLocalPosition) -> LogicalCell {
     LogicalCell {
@@ -144,6 +225,7 @@ pub fn step_in_channel_with_source_step(
     prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
 ) -> StepInChannel {
     use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+    let direction = states.drome_step_direction(runtime, actor, session, now_us, direction)?;
     let expected = runtime
         .read_actor_position(actor)
         .map_err(MovementError::Actor)?;

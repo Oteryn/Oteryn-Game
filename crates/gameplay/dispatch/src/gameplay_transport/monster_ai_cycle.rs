@@ -71,6 +71,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        super::primal_menace::tick(self, &mut runtime, room, content, now.get() / 1_000);
         let mut states = self.states.spell_states.lock().await;
         let periodic_pass = now.get() >= states.next_monster_ai_pass_us;
         if !periodic_pass
@@ -537,6 +538,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                     let received_damage = match dispatch {
                         Dispatch::Bite(Ok(applied)) => {
+                            // Manual combat.md:270: one 15% Somersault opportunity
+                            // per committed native melee occurrence, never on replay.
+                            if let Some((from, to)) = super::tibiadrome::somersault(
+                                self,
+                                &mut runtime,
+                                *actor,
+                                sequence,
+                                &states,
+                            ) {
+                                // Crystal utils/utils_definitions.hpp:66: teleport11.
+                                states
+                                    .sounds
+                                    .record_item_effect(&runtime, *actor, from, 11, false);
+                                states
+                                    .sounds
+                                    .record_item_effect(&runtime, *actor, to, 11, false);
+                            }
                             if applied.damage.applied > 0 {
                                 attack.kills().boss_damage_received(
                                     &runtime,

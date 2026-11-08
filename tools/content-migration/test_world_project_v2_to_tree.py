@@ -127,6 +127,10 @@ if quest_families:
     assert set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]})
 
 reference = json.loads((ROOT / 'content/world/definitions/reference.json').read_text())
+# Match the materializer's source-proven, exact Primal empty-loot admission.
+# Its witness rejects changed identities and every nonempty or unrelated Loot.
+from primal_reference_overlay import apply_reference
+apply_reference(reference['records'], ROOT)
 creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 'Effect', 'Formula']
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
 assert family_counts['Creature'] == 1_864

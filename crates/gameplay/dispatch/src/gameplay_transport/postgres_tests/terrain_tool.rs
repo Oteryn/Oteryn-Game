@@ -331,7 +331,8 @@ fn scenario_with_voice(
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         owner.reset_epoch = epoch;
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
+
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -505,7 +506,8 @@ fn scenario_with_voice(
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
         restarted.reset_epoch = epoch;
-        restarted.movement_cells = &restored_cells;
+        restarted.movement_cells = (&restored_cells).into();
+
         deps.initialize(&restarted).await;
         let (_, result, _) = exchange(&restarted, admitted, 1, &payload, None)
             .await

@@ -86,6 +86,7 @@ pub struct Record {
 #[derive(Debug)]
 pub struct Read {
     pub potion: Option<(u32, u32, u16)>,
+    pub rotation_points_eligible: bool,
     pub state: Record,
     pub now: u32,
     pub rank: u32,
@@ -118,6 +119,10 @@ impl DurabilityRoot {
                     }
                     let now = now(&mut tx).await?;
                     let state = load(&mut tx, fence).await?;
+                    let rotation_points_eligible = state.progress.rotation
+                        >= now / ROTATION_SECONDS
+                        || rotation_eligible(&mut tx, fence.character_id, state.progress.rotation)
+                            .await?;
                     let replay = replay(&mut tx, fence, command, &payload).await?;
                     publish(&mut tx, fence.character_id, now / ROTATION_SECONDS).await?;
                     let potion = next_potion(&mut tx, fence).await?;
@@ -125,6 +130,7 @@ impl DurabilityRoot {
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(Read {
                         potion,
+                        rotation_points_eligible,
                         state,
                         now,
                         rank,
@@ -171,6 +177,7 @@ impl DurabilityRoot {
             let now=now(&mut tx).await?;
             let rotation=now/ROTATION_SECONDS;
             let mut earned=before.progress.clone();
+            if earned.rotation < rotation && !rotation_eligible(&mut tx, fence.character_id, earned.rotation).await? { earned.waves=0; }
             earned.rotate(rotation);
             if after.progress.rotation!=rotation || after.progress.points!=earned.points
                 || (after.active && (after.session!=*fence.game_session_id.as_bytes() || after.generation!=fence.scope_ownership_generation.get())) {
@@ -254,12 +261,29 @@ pub(super) async fn save(
         .bind(fence.character_id.as_bytes().as_slice()).bind(serde_json::to_value(state).map_err(|_|DurabilityError::InvalidStoredState)?).execute(&mut **tx).await?;
     Ok(())
 }
+// Trading eligibility at the rotation boundary: manual combat.md:263. The
+// existing immutable Bazaar transitions (0994_bazaar_authority.sql:45-58) retain
+// lifecycle history; Bazaar's decided_at is Unix seconds (bazaar/mod.rs:276).
+// A later unlock cannot recover an expired rotation, and a later listing cannot
+// forfeit an earlier rotation. Rotation boundaries belong to the new rotation.
+async fn rotation_eligible(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+    rotation: u32,
+) -> Result<bool, DurabilityError> {
+    sqlx::query_scalar("SELECT game_tibiadrome_lifecycle_at_cut(encode($1,'hex')::uuid,$2)=1")
+        .bind(character.as_bytes().as_slice())
+        .bind((i64::from(rotation) + 1) * i64::from(ROTATION_SECONDS))
+        .fetch_one(&mut **tx)
+        .await
+        .map_err(Into::into)
+}
 pub(super) async fn standing(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
     rotation: u32,
 ) -> Result<(u32, u32), DurabilityError> {
-    let row=sqlx::query("SELECT COALESCE((SELECT rank FROM (SELECT character_id,row_number() OVER(ORDER BY level DESC,experience,character_id) AS rank FROM game_tibiadrome_scores WHERE world_id=encode($2,'hex')::uuid AND rotation=$3) ranked WHERE character_id=encode($1,'hex')::uuid),0)::bigint AS rank,COALESCE((SELECT sum(potions-claimed) FROM game_tibiadrome_awards WHERE character_id=encode($1,'hex')::uuid),0)::bigint AS potions")
+    let row=sqlx::query("SELECT COALESCE((SELECT rank FROM (SELECT s.character_id,row_number() OVER(ORDER BY s.level DESC,s.experience,s.character_id) AS rank FROM game_tibiadrome_scores s JOIN game_character_roots r USING(character_id) WHERE s.world_id=encode($2,'hex')::uuid AND s.rotation=$3 AND r.world_id=s.world_id AND r.lifecycle=1 AND NOT game_account_closure_detached(s.character_id)) ranked WHERE character_id=encode($1,'hex')::uuid),0)::bigint AS rank,COALESCE((SELECT sum(potions-claimed) FROM game_tibiadrome_awards WHERE character_id=encode($1,'hex')::uuid),0)::bigint AS potions")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(i64::from(rotation)).fetch_one(&mut **tx).await?;
     Ok((
         u32::try_from(row.try_get::<i64, _>("rank")?)
@@ -287,11 +311,12 @@ pub(super) async fn publish(
     };
     // oteryn-choice: epoch-aligned fortnight boundaries and UUID final tie-break keep
     // rotation/replay deterministic where the captured sources do not specify an anchor.
-    // Finalize one indexed rotation, at most 20 ranked winners and 50 raffle winners.
+    // Manual combat.md:284: twenty ranked winners and exactly one fifth of
+    // all remaining participants; a large rotation must not truncate that share.
     // oteryn-choice: a stable exponential-race draw implements weighted sampling
     // without replacement; capacity refusals and repeat reads never reroll a prize.
-    sqlx::query("WITH ranked AS (SELECT world_id,rotation,character_id,level,row_number() OVER(ORDER BY level DESC,experience,character_id) AS rank FROM game_tibiadrome_scores WHERE world_id=encode($1,'hex')::uuid AND rotation=$2), top AS (SELECT * FROM ranked WHERE rank<=20 ORDER BY rank LIMIT 20), raffle AS (SELECT * FROM ranked WHERE rank>20 ORDER BY -ln((('x'||substr(md5(character_id::text||rotation::text),1,8))::bit(32)::bigint+1)::double precision/4294967297.0)/level,character_id LIMIT LEAST(50,(SELECT count(*)/5 FROM ranked WHERE rank>20))) INSERT INTO game_tibiadrome_awards(world_id,rotation,character_id,rank,potions) SELECT world_id,rotation,character_id,rank,CASE WHEN rank<=5 THEN 3 WHEN rank<=10 THEN 2 ELSE 1 END FROM top UNION ALL SELECT world_id,rotation,character_id,rank,1 FROM raffle ON CONFLICT DO NOTHING")
-        .bind(world.as_slice()).bind(pending).execute(&mut **tx).await?;
+    sqlx::query("WITH ranked AS (SELECT world_id,rotation,character_id,level,row_number() OVER(ORDER BY level DESC,experience,character_id) AS rank FROM game_tibiadrome_scores s WHERE world_id=encode($1,'hex')::uuid AND rotation=$2 AND game_tibiadrome_lifecycle_at_cut(s.character_id,$3)=1), top AS (SELECT * FROM ranked WHERE rank<=20 ORDER BY rank LIMIT 20), raffle AS (SELECT * FROM ranked WHERE rank>20 ORDER BY -ln((('x'||substr(md5(character_id::text||rotation::text),1,8))::bit(32)::bigint+1)::double precision/4294967297.0)/level,character_id LIMIT (SELECT count(*)/5 FROM ranked WHERE rank>20)) INSERT INTO game_tibiadrome_awards(world_id,rotation,character_id,rank,potions) SELECT world_id,rotation,character_id,rank,CASE WHEN rank<=5 THEN 3 WHEN rank<=10 THEN 2 ELSE 1 END FROM top UNION ALL SELECT world_id,rotation,character_id,rank,1 FROM raffle ON CONFLICT DO NOTHING")
+        .bind(world.as_slice()).bind(pending).bind((pending+1)*i64::from(ROTATION_SECONDS)).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_tibiadrome_rotations(world_id,rotation) VALUES(encode($1,'hex')::uuid,$2)").bind(world.as_slice()).bind(pending).execute(&mut **tx).await?;
     Ok(())
 }
@@ -373,6 +398,7 @@ impl DurabilityRoot {
                 if ended || state.progress.rotation!=now/ROTATION_SECONDS {
                     state.active=false;state.progress.finish(now);
                 }
+                if state.progress.rotation < now/ROTATION_SECONDS && !rotation_eligible(&mut tx, fence.character_id, state.progress.rotation).await? { state.progress.waves=0; }
                 state.progress.rotate(now/ROTATION_SECONDS);
                 sqlx::query("UPDATE game_character_tibiadrome SET body=$2 WHERE character_id=encode($1,'hex')::uuid")
                     .bind(fence.character_id.as_bytes().as_slice()).bind(serde_json::to_value(state).map_err(|_|DurabilityError::InvalidStoredState)?).execute(&mut *tx).await?;

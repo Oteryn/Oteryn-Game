@@ -121,7 +121,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             (&[], INVENTORY_OFFERS)
         };
     let mut owner = deps.owner(h, &authority);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
@@ -510,7 +510,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     // now-obsolete handle and must replay the receipt before resolving it.
     drop(owner);
     let mut owner = deps.owner(h, &authority);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(

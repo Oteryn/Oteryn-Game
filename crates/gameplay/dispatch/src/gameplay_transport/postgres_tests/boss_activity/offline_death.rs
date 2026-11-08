@@ -1,11 +1,11 @@
 //! A real transferred actor dies after losing its socket. The existing native
 //! death, selected AoL burn, temple return and terminal release all run through
 //! their production owners; no death receipt or returned session is fabricated.
-use super::{debug, fixture, Harness, TestResult};
+use super::{Harness, TestResult, debug, fixture};
 use crate::durability::activity_handoff::{ActivityRefusal, ActivityReturnReason};
 use crate::durability::character_build::{
-    convert_vocation, prepare_character_build_in_transaction, BuildCause, BuildChangeRequest,
-    BuildCommitOutcome, BuildFormula, BuildOccurrence, DurableBuildState,
+    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
+    DurableBuildState, convert_vocation, prepare_character_build_in_transaction,
 };
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceAwardRequest,
@@ -17,12 +17,12 @@ use crate::foundation::{
     AuthenticatedTransportRefV1, ControlLossEpochRefV1, GameSessionId, GameSessionState,
     RuntimeScopeRefV1, ScopeOwnershipGeneration,
 };
+use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
 use crate::gameplay_transport::connection::{
     AdmissionRefusal, AdmittedSession, ControlLossResult, FreshAdmissionAuthority, ResumeAttempt,
 };
 use crate::gameplay_transport::native_activity::NativeActivityOutcome;
-use crate::gameplay_transport::ComposedFreshAdmission;
 use oteryn_gameplay_progression::hit_training::SkillFamily;
 use std::time::Duration;
 
@@ -149,9 +149,11 @@ pub(super) async fn assert_offline_death(
         fence.runtime_scope,
         RuntimeScopeRefV1::Instance { .. }
     ));
-    assert!(instance
-        .progression_binding(admitted.game_session_id)
-        .is_some());
+    assert!(
+        instance
+            .progression_binding(admitted.game_session_id)
+            .is_some()
+    );
     assert_eq!(
         origin.lose_control(admitted, Duration::ZERO, None).await,
         ControlLossResult::Recorded
@@ -224,11 +226,13 @@ async fn train_and_kill(
     let request = {
         let runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
-        assert!(runtime
-            .player_control_facts(actor, admitted.game_session_id)
-            .map_err(debug)?
-            .control_loss
-            .is_some());
+        assert!(
+            runtime
+                .player_control_facts(actor, admitted.game_session_id)
+                .map_err(debug)?
+                .control_loss
+                .is_some()
+        );
         assert!(states.load_owned_build(&runtime, actor, admitted.game_session_id, &build));
         let state = states
             .get_mut(&runtime, actor, admitted.game_session_id)
@@ -555,9 +559,11 @@ async fn cancel_undecided_return(
         let runtime = instance.runtime.lock().await;
         let states = instance.states.spell_states.lock().await;
         let actor = source.runtime_actor.ok_or("frozen source actor")?;
-        assert!(runtime
-            .player_control_facts(actor, source.game_session_id)
-            .is_err());
+        assert!(
+            runtime
+                .player_control_facts(actor, source.game_session_id)
+                .is_err()
+        );
         assert!(
             states
                 .player_death(&runtime, actor, source.game_session_id)
@@ -841,22 +847,26 @@ async fn assert_complete(
         1,
         "pending sword training survived the offline death flush and AoL protection"
     );
-    assert!(origin
-        .runtime
-        .lock()
-        .await
-        .activity_participant_sessions()
-        .map_err(debug)?
-        .is_empty());
-    assert!(instance
-        .runtime
-        .lock()
-        .await
-        .player_control_facts(
-            source.runtime_actor.ok_or("old actor")?,
-            source.game_session_id
-        )
-        .is_err());
+    assert!(
+        origin
+            .runtime
+            .lock()
+            .await
+            .activity_participant_sessions()
+            .map_err(debug)?
+            .is_empty()
+    );
+    assert!(
+        instance
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(
+                source.runtime_actor.ok_or("old actor")?,
+                source.game_session_id
+            )
+            .is_err()
+    );
     // Re-running the real lifecycle is idempotent and retires the now empty
     // private room. No old Instance actor/session becomes playable again.
     origin
@@ -868,10 +878,12 @@ async fn assert_complete(
         .await
         .map_err(|_| "retirement replay")?;
     let fence = source.item_fence.ok_or("old scope")?;
-    assert!(origin
-        .activity_runtimes
-        .get(fence.runtime_scope, fence.scope_ownership_generation.get())
-        .is_none());
+    assert!(
+        origin
+            .activity_runtimes
+            .get(fence.runtime_scope, fence.scope_ownership_generation.get())
+            .is_none()
+    );
     assert_eq!(
         sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_activity_runtime_returns")
             .fetch_one(&h.pool)

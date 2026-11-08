@@ -112,6 +112,24 @@ fn scenario() -> Result<(), String> {
             .as_ref()
             .is_some_and(|r| r.category == 2)
     })?;
+    // docs/reference/tibia-manual/combat.md:262: native filters use the existing highscore wire for both Drome lists.
+    for (category, label) in [
+        (14, "Tibiadrome lifetime"),
+        (17, "Tibiadrome current rotation"),
+    ] {
+        link.highscores_request(Action::Filter {
+            category,
+            vocation: 0,
+        });
+        wait(&|| {
+            link.highscores_panel()
+                .reply
+                .as_ref()
+                .is_some_and(|r| r.category == category)
+        })?;
+        let text = highscores::panel_text(&link.highscores_panel());
+        assert!(text.contains(label) && text.contains("Ada Knight") && text.contains("123456"));
+    }
     drop(link);
     runtime.shutdown(Duration::from_millis(250));
     Ok(())

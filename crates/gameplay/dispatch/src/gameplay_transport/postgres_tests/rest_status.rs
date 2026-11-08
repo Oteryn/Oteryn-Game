@@ -62,7 +62,7 @@ fn scenario() -> TestResult {
                 )
                 .ok_or("capability")?;
             let mut owner = deps.owner(&h, &authority);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             deps.initialize(&owner).await;
             let current =
                 crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())

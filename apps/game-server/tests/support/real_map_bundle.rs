@@ -110,6 +110,7 @@ fn terrain_records(root: &Path) -> Fallible<HashMap<String, Terrain>> {
                     kind,
                     walkable,
                     ground_speed,
+                    blocks_projectile: known("blocks_projectile").and_then(|v| v.as_bool()),
                 },
             );
         }

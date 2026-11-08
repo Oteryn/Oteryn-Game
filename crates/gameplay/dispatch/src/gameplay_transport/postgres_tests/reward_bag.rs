@@ -232,7 +232,7 @@ fn scenario(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -358,7 +358,7 @@ fn scenario(
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         deps.initialize(&restarted).await;
         let replayed = restarted
             .use_item_completion(deps.actor, UseCommand { game_session_id: deps.admitted.game_session_id, command_id, item_fence: Some(fence) }, ItemKey::Instance(source))
