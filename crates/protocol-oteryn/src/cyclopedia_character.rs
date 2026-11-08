@@ -14,6 +14,9 @@ pub mod gallery;
 #[path = "cyclopedia_character/items.rs"]
 pub mod items;
 
+#[path = "cyclopedia_character/protection.rs"]
+pub mod protection;
+
 pub const CAPABILITY_CYCLOPEDIA_CHARACTER_V1: u32 = 199;
 pub const COMMAND_TYPE_CYCLOPEDIA_BADGES: u32 = 387;
 pub const COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB: u32 = 388;

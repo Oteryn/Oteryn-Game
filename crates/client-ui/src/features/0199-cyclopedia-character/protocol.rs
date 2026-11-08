@@ -11,6 +11,7 @@ use oteryn_client_runtime::{
 };
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    Protection,
     Items,
     ItemsNext,
     ItemsPrevious,
@@ -33,6 +34,9 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     if p.pending {
         p.feedback = Some("Waiting for the server");
         return None;
+    }
+    if matches!(intent, Intent::Protection) {
+        return super::protection::request(p);
     }
     if matches!(
         intent,
@@ -73,7 +77,8 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         _ => {}
     }
     let (kind, payload) = match intent {
-        Intent::Items
+        Intent::Protection
+        | Intent::Items
         | Intent::ItemsNext
         | Intent::ItemsPrevious
         | Intent::Appearances
@@ -131,6 +136,9 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     })
 }
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
+    if p.protection.awaiting {
+        return super::protection::apply(p, r);
+    }
     if p.items.pending_offset.is_some() {
         return super::items::apply(p, r);
     }

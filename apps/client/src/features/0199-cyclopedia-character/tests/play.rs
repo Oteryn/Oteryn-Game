@@ -185,3 +185,5 @@ mod item_summary;
 mod misc;
 #[path = "navigation.rs"]
 mod navigation;
+#[path = "protection.rs"]
+mod protection;

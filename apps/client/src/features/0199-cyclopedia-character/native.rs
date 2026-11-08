@@ -130,3 +130,7 @@ mod browsers;
 #[cfg(windows)]
 #[path = "view/items_window.rs"]
 mod items_window;
+
+#[cfg(windows)]
+#[path = "view/protection_window.rs"]
+mod protection_window;

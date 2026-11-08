@@ -87,6 +87,14 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
         ] {
             control(hwnd, "BUTTON", label, id, [x, 155, 165, 28], WS_TABSTOP);
         }
+        control(
+            hwnd,
+            "BUTTON",
+            "Death loss preview",
+            119,
+            [10, 190, 340, 28],
+            WS_TABSTOP,
+        );
         let achievement_browser = control(
             hwnd,
             "BUTTON",

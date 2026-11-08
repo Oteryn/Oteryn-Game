@@ -236,3 +236,27 @@ order; keys are nonempty, at most 512 bytes, and contain no NUL/newlines.
 At least one quantity per row is positive. Maximum reply: 13110 bytes.
 Filters on the client apply to the confirmed page; pagination retains the
 complete server custody projection and does not require opening containers.
+
+## Death loss forecast
+
+Command 388 accepts the single-byte selector 131 for a self-only forecast under
+the current Character/session fence. It is read-only: it neither samples a
+future lost-item set nor consumes a blessing or creates a death receipt.
+
+The reply is at most 51 bytes: `131:u8, observed_at_unix_ms:u64, level:u32,
+experience:u64, regular_blessings:u8, flags:u8`, followed by a creature-death scenario and an optional
+player-death scenario. The latter is present only when flag 16 is set; without
+it the reply is 37 bytes and carries no player-death estimates. Each scenario is `experience_lost:u64,
+equipment_per_mille:u16, container_per_mille:u16, consumption:u8,
+amulet_consumed:u8`. Consumption is keep=0, regular=1, PvP safeguard=2.
+Flags are owned Twist=1, current promotion benefit=2, effective red/black skull=4,
+Adventurer PvP exemption=8, and published PvP available in this scope=16.
+Reserved flags, invalid bool/enumeration tags, chances above 1000, XP loss above
+current XP, trailing bytes and truncation are rejected.
+
+The server uses the same XP formula, blessing disposition, item-loss ladders,
+Amulet of Loss, vocation/level exemptions and Adventurer owner as normal death
+settlement. Promotion includes the current Premium gate. A player-death scenario
+is displayed only with a published compatible World policy. XP is the baseline
+before attacker-specific Bless reductions; final death settlement re-reads its
+facts and determines actual item loss. A lost backpack includes its contents.

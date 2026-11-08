@@ -65,6 +65,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 wire::encode_badges(&badges).map_err(|_| ())
             }
             wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
+                if payload.first() == Some(&wire::protection::SELECTOR) {
+                    if payload != [wire::protection::SELECTOR] { return Err(()); }
+                    let current = super::character_gameplay_fence::current(self, admitted.game_session_id, false).await.ok_or(())?;
+                    if current.connection_generation.get() != admitted.continuity.connection_generation || current.character_id != fence.character_id { return Err(()); }
+                    let premium = self.session_premium_gate(admitted.game_session_id).await.premium_current();
+                    return self.root.read_death_forecast(self.character, self.holder, current, premium).await.map_err(|_| ())?.encode().ok_or(());
+                }
                 if payload.first() == Some(&wire::items::SELECTOR) {
                     let offset = wire::items::decode_request(payload).map_err(|_| ())?;
                     return self.root.read_cyclopedia_item_summary(self.character, self.holder, fence, offset).await.map_err(|_| ())?.encode().map_err(|_| ());

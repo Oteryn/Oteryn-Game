@@ -7,6 +7,12 @@ pub use gallery::Gallery;
 #[path = "state/items.rs"]
 mod items;
 pub use items::ItemSummary;
+#[path = "state/protection.rs"]
+mod protection;
+pub use protection::Protection;
+#[path = "view/protection.rs"]
+mod protection_view;
+pub use protection_view::{PROTECTION_NOTE, protection_cards, protection_heading};
 mod input;
 mod protocol;
 mod state;
