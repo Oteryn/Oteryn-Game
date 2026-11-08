@@ -1759,7 +1759,7 @@
       "zero_test_results_accepted": false
     }
   },
-  "current_batch": "henricus-recruitment-red-scaffold",
+  "current_batch": "henricus-source-program-green-attempt",
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
@@ -1792,7 +1792,8 @@
     "BATCH-book-speed-and-main-pg-green-2026-11-08.json",
     "BATCH-oldrak-npc-green-2026-11-08.json",
     "BATCH-main-6f-integration-checkpoint-2026-11-08.json",
-    "BATCH-main-6f-postgres-green-2026-11-08.json"
+    "BATCH-main-6f-postgres-green-2026-11-08.json",
+    "BATCH-henricus-green-2026-11-08.json"
   ],
   "next_batch": "Finish merge tooling/checks and push integration; then run remaining focused PG and continue owned supported quests.",
   "remote_publications_reused": {
@@ -2208,38 +2209,19 @@
     "unit_and_pg": "pending current merge build; prior pushed receipts remain valid for prior source only"
   },
   "current_validation": {
-    "red_pg": {
-      "test": "questpc2_henricus_recruitment_and_first_mission_are_topic_fenced_and_atomic",
+    "authorer_tests": "PASS2/2,1.473s",
+    "quest_units_initial": "317PASS/1expected admitted-set update; exact finite set amended to include only Inquisition, rollback/hash/default assertions retained",
+    "quest_units_final": "PASS318/318,0ignored,49.65s",
+    "fresh_pg": {
+      "passed": 5,
+      "total_focused": 7,
+      "all_passed": true,
       "server_version": 180006,
-      "duration_seconds": 65.812208608,
-      "error": "missing source recruitment offer: []",
-      "log": "/tmp/questpc2b-henricus-red-pg.log"
+      "total_seconds": 215.776216
     },
-    "workspace": "PASS5m03s",
-    "clippy": "PASS8m17s dispatch alltargets/allfeatures -Dwarnings; includes queue wait",
-    "runtime_gameplay_source": "unchanged from last pushed b33d0c985; only test scaffold and task notes added",
-    "generated": "PASS applicable central lists/pins, unchanged runtime content",
-    "publication": "WIP scaffold and composed Soulpit main compile; Henricus source recruitment remains RED, implement next",
-    "main_integration": {
-      "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
-      "conflicts": 9,
-      "resolved": "XP source composition and quest-capture exclusion; strict semantic JSON union; derived pins regenerated",
-      "workspace_pre_pin": "PASS3m36s",
-      "clippy_dispatch_and_compiler": "PASS4m00s",
-      "compiler_build": "PASS14.23s",
-      "terrain_units": "PASS6/6,0ignored,0.02s",
-      "workspace_post_pin": "PASS4m20s",
-      "red_pg_scope": "Henricus65.812s RED is pre-Soulpit; no postmerge GREEN claimed"
-    },
-    "main_47b": {
-      "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
-      "merge": "clean four-file merge",
-      "workspace": "PASS3m03s",
-      "provisioning_tests": "PASS2/2,0.022s",
-      "generated": "PASS unchanged applicable central outputs/pins",
-      "clippy_durability": "PASS3m57s alltargets/allfeatures -Dwarnings",
-      "npc_source_implementation": "pending immediately after publication; RED premerge65.812s"
-    }
+    "workspace": "PASS8m06s including queue wait",
+    "clippy_quests_dispatch": "PASS11m25s including queue wait",
+    "generated": "PASS applicable final outputs/pins"
   },
   "engine_requests": [
     {
@@ -2373,9 +2355,9 @@
       "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "b33d0c985c4088285f7f8ce273183a87fce49541",
+  "last_pushed_sha": "ccb004b0c6dbfc514c6f46f669e7d0f698a597c5",
   "prepush_pending_tests": [
-    "Full crate suites remain CI pending; own eight PG regressions and two focused unit assertions all PASS."
+    "Full crate suites remain CI pending; own5PG+2unit focused cases and318quest units allPASS."
   ],
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",
@@ -2399,6 +2381,9 @@
     "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
     "source": "data-global/npc/henricus.lua:65-102,204-225,286-290",
     "source_sha256": "1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d",
-    "next": "Author bounded source program using existing storage/topic owner; add exact custody helper and focused guards, then PG GREEN. Do not SQL-seed quest progress."
+    "next": "Author bounded source program using existing storage/topic owner; add exact custody helper and focused guards, then PG GREEN. Do not SQL-seed quest progress.",
+    "implementation": "Generated pinned recruitment/first-mission/report branches, exact41-line source custody helper, narrow runtime admission; existing storage/topic owner reused unchanged.",
+    "qualification_boundary": "Recruitment, mission start and unearned-report refusal only. Guard interview acquisition and positive report completion are not yet PG qualified; no whole-quest qualification.",
+    "slice_status": "OWN MECHANIC PG GREEN; this commit publishes the qualified recruitment/first-mission slice"
   }
 }

@@ -992,3 +992,18 @@ price query at:63 contributes no state effects to these selected branches.
 New PG regression RED on180006 after65.812208608s: missing source recruitment
 offer: []. No direct quest-state SQL seed, fabricated guard credits or mission
 completion. Implement the missing source program next.
+
+Henricus's unconditional price query is read-only for Player state:
+Crystal9f5a72c `data/libs/systems/blessing.lua:231-244`, SHA256
+e4cc6975aab546c73e2fa8ba59ee42427e030ce39dad0b913800bc1b54569b4a,
+counts missing blessings and computes/returns price from level. Its Lua filter
+assignments do not mutate Character state. Storage-only selected branches do
+not need a new money/blessing owner merely to compute an unused price.
+
+The first Henricus programme follows source branch order (inquisitor, join,
+blessing/flask refusal, mission/report, confirmation and decline). All five
+interrogation guard flags must equal1 before its report-success branch writes
+Questline3 and Mission01=7; the positive report path is authored but NOT yet
+PG-qualified because guard acquisition is not implemented in this slice.
+The current PG case earns recruitment and first mission through NPC talk,
+then proves an unearned report refuses. Whole-quest counts stay unchanged.
