@@ -23,7 +23,7 @@ Zasady przeciw dublowaniu:
 
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
-| T165 | Account | Premium status/features i expiry | PARTIAL | Dane account/store są; brak dedykowanego Premium Panel z feature list i expiry; real-money zakup wykluczony. |
+| T165 | Account | Premium status/features i expiry | PARTIAL | Native Premium panel, typed client and real-caller mock tests exist; remaining: existing Platform Premium read model needs the authenticated native projection and live qualification. Real-money purchase excluded.<br>evidence: apps/client/src/features/local-premium/mod.rs:133 + premium_panel_opens_from_real_services_selection_and_refreshes_without_payment; apps/client/src/features/local-premium/tests.rs:131 + premium_panel_reports_missing_service_and_never_confirms_cached_benefits. PARTIAL: authenticated native Premium status/features/expiry producer remains unqualified; see docs/contracts/OTERYN_PREMIUM_PANEL_V1.md. |
 
 ## cg_analytics
 

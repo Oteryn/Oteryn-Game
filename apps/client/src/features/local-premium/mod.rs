@@ -121,7 +121,12 @@ async fn refresh(
         }
         Err(error) => {
             view.fresh_until = None;
-            view.feedback = format!("Premium service unavailable ({:?}).", error.public_class());
+            view.feedback = match error {
+                oteryn_platform_client::native_login::NativeLoginError::Platform(
+                    oteryn_platform_client::PlatformClientError::HttpStatus(404 | 501),
+                ) => "Premium details are not available on this service yet. Game access is checked separately.".into(),
+                _ => format!("Premium service unavailable ({:?}).", error.public_class()),
+            };
         }
     }
 }
