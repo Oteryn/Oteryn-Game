@@ -557,9 +557,8 @@ mod tests {
                 }
             }
         }
-        expected.insert(crate::quest::schrodinger_island::callback().key);
+        assert!(expected.insert(crate::quest::schrodinger_island::callback().key));
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
-        expected.insert(crate::quest::schrodinger_island::callback().key);
         // Collector main adds these exact native World cohorts; no donor
         // exclusion becomes an automatic admission through a loaded key.
         let before_native = expected.len();

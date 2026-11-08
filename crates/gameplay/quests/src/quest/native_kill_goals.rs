@@ -239,18 +239,6 @@ pub fn validate_closed(catalogue: &QuestStateCatalogue) -> Result<(), String> {
             return Err("native goal activation must be once-only".into());
         }
         for t in catalogue.transitions.values() {
-            // Reward contract markers fingerprint value plans; they never execute.
-            // Keep executable writes (including marker-shaped forgeries) in the guard.
-            if t.key.starts_with("oteryn:quest-reward-rule/")
-                && t.effects.len() == 1
-                && t.effects[0].from == QuestComparison::Any
-                && t.effects[0].effect == QuestEffectKind::Computed
-                && !t.completes
-                && t.experience.is_none()
-                && t.world_change.is_none()
-            {
-                continue;
-            }
             for e in &t.effects {
                 // Computed contract markers cannot execute or mutate a track.
                 if e.effect == QuestEffectKind::Computed {
@@ -380,28 +368,6 @@ mod tests {
                 Err(super::super::QuestRefusal::NotSupported)
             ));
         }
-        let marker = lowered
-            .catalogue()
-            .transitions
-            .values()
-            .find(|t| {
-                t.key.starts_with("oteryn:quest-reward-rule/")
-                    && t.effects.iter().any(|effect| {
-                        load()
-                            .is_ok_and(|goals| goals.iter().any(|goal| goal.phase == effect.track))
-                    })
-            })
-            .ok_or("native goal reward contract marker")?;
-        assert_eq!(
-            lowered.catalogue().evaluate(marker, &BTreeMap::new(), 0),
-            Err(super::super::QuestRefusal::NotSupported)
-        );
-        let mut forged = lowered.catalogue().clone();
-        let mut writer = marker.clone();
-        writer.effects[0].from = QuestComparison::Between(-1, -1);
-        writer.effects[0].effect = QuestEffectKind::Set(0);
-        forged.transitions.insert(writer.key.clone(), writer);
-        assert!(validate_closed(&forged).is_err());
         for (track, from, effect) in [
             (&goal.phase, QuestComparison::Eq(1), QuestEffectKind::Set(0)),
             (

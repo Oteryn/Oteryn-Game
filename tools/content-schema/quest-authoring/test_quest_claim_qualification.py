@@ -87,8 +87,6 @@ class QualificationTests(unittest.TestCase):
                         'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
                     'oteryn:reward-claim.kv.powerring2':
                         'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
-                    'oteryn:reward-claim.kv.triangletower':
-                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
                 }[key])
 
     def test_invented_test_is_rejected(self):

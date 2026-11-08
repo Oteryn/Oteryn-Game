@@ -155,7 +155,10 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             .iter_mut()
             .find(|track| track.key == objective.counter)
         else {
-            return Err("missing objective counter".into());
+            return Err(format!(
+                "{}: missing objective counter {}",
+                objective.key, objective.counter
+            ));
         };
         if counter.quest != objective.quest {
             return Err("foreign objective counter".into());

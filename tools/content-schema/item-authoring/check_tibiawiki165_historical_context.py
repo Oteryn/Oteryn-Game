@@ -82,9 +82,7 @@ def historical_context(root=ROOT, native=False, weapon=False):
     import historical_world_owner_context as world_context
 
     c = read_context(root)
-    with tempfile.TemporaryDirectory(
-        prefix="oteryn-explicit-old165-"
-    ) as directory:
+    with tempfile.TemporaryDirectory(prefix="oteryn-explicit-old165-") as directory:
         path = Path(directory)
         # Writable Item-authoring outputs and their byte-identical decoders are
         # detached copies: formal verification rebuilds schemas/catalogs/templates.

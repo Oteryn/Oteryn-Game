@@ -1,19 +1,24 @@
 -- Paid repeatable exchanges keep the existing once-only MINT owner: each exact
 -- CommandRef gets its own claim, coupled to the original source and payment.
 DO $migration$
-DECLARE body TEXT;
-    original TEXT := 'm.claim_production_key=NEW.transition_key AND m.created_xact_id=pg_current_xact_id()';
+DECLARE body TEXT; helper TEXT;
+    original TEXT := 'm.claim_production_key=game_quest_reward_mint_claim_key(NEW.character_id,NEW.cause_id,NEW.cause_ordinal,NEW.transition_key,NEW.plan) AND m.created_xact_id=pg_current_xact_id()';
+    hash_anchor TEXT := 'THEN ''oteryn:quest-exchange/''';
 BEGIN
     SELECT pg_get_functiondef('game_quest_reward_complete()'::regprocedure) INTO STRICT body;
-    IF position(original IN body)=0 THEN
+    IF (length(body)-length(replace(body,original,'')))/length(original)<>1
+        OR (length(body)-length(replace(body,'RETURN NULL;','')))/length('RETURN NULL;')<>1 THEN
         RAISE EXCEPTION 'repeatable quest MINT requires exact source proof anchor';
     END IF;
-    body := replace(body, original, $proof$
-        m.claim_production_key=CASE WHEN NEW.plan->>'repeatable'='true'
-            THEN NEW.transition_key||':command:'||replace(NEW.cause_id::text,'-','')||':'||NEW.cause_ordinal::text
-            ELSE NEW.transition_key END
-        AND m.created_xact_id=pg_current_xact_id()
-    $proof$);
+    -- Main's 1004 already owns the source-bound claim derivation. Extend its
+    -- exact paid-exchange hash to fee-paid repeatable rewards, matching the
+    -- native MINT caller; retain ordinary exchanges and fixed claims unchanged.
+    SELECT pg_get_functiondef('game_quest_reward_mint_claim_key(uuid,uuid,numeric,text,jsonb)'::regprocedure)
+        INTO STRICT helper;
+    IF (length(helper)-length(replace(helper,hash_anchor,'')))/length(hash_anchor)<>1 THEN
+        RAISE EXCEPTION 'repeatable quest MINT requires exact main claim-key helper';
+    END IF;
+    EXECUTE replace(helper,hash_anchor,'OR v_plan->>''repeatable''=''true'' '||hash_anchor);
     EXECUTE replace(body, 'RETURN NULL;', $guard$
         IF NEW.plan->>'repeatable'='true' AND (
             NEW.mint_transaction_id IS NULL

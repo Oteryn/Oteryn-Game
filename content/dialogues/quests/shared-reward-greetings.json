@@ -123,6 +123,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.bloodshade_rotten",
+      "greet": "Mortal! If you are on a {quest} to serve the blood god, my master - be greeted! I can also cleanse you from rotten {taints} that burden your soul.",
+      "farewell": "Bye, |PLAYERNAME|.",
+      "walkaway": "Bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bloodshade_rotten.lua:148:sha256:153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bloodshade_rotten.lua:150:sha256:153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bloodshade_rotten.lua:149:sha256:153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c"
+      ]
+    },
+    {
       "npc": "oteryn:npc.bo_ques",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Goodbye. I am sure you will come back for more. They all do.",
@@ -186,6 +197,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ceiron.lua:200:sha256:fb4cc1a978148a1ea552764b78930c098afd735af56738433797f20aa17da780",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ceiron.lua:201:sha256:fb4cc1a978148a1ea552764b78930c098afd735af56738433797f20aa17da780",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ceiron.lua:202:sha256:fb4cc1a978148a1ea552764b78930c098afd735af56738433797f20aa17da780"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "greet": "Blessings, Player! How may I be of service? Do you wish to trade some {token}s, or would you like some {information} or {talk}? Should I {enchant} certain items for you?",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cledwyn.lua:212:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
     },
     {
@@ -318,6 +340,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/fa_hradin.lua:138:sha256:dc5aac1a85ed07799591dfce7f31d8c0cf1f16494903a1756e3a480ee269aa47",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/fa_hradin.lua:139:sha256:dc5aac1a85ed07799591dfce7f31d8c0cf1f16494903a1756e3a480ee269aa47"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.flickering_soul",
+      "greet": "Be greeted, living soul!",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/flickering_soul.lua:198:sha256:67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
     },
     {

@@ -8172,7 +8172,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "84edeae8bc2a15bd7498450ac919bae01eaf6f4e161f889a202f37d3d41cb724",
+        "canonical_definition_sha256": "0bbcc7aa57820f2718b64cdac1f385e304ea395528a2ff2296d399227c48974b",
         "canonical_name": "dragon scale mail",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -8679,7 +8679,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "1ae8e52727cf5625eae19cb8ceb685774b551949fdd4abc8e495557f12cccaff",
+        "canonical_definition_sha256": "f13bfcf17051c8845c24916241fd0a4d9953aafc72dca39a7260f714ac9555a2",
         "canonical_name": "royal helmet",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -14484,7 +14484,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "f10ed47e257f3feb6afe80ba5d68418fea27c22f2c2af5cca55136f4bef0dc55",
+        "canonical_definition_sha256": "a78068672bd10226c71f3229d62d2ba8083480ebcb97e40c71e96390961506f4",
         "canonical_name": "dragon slayer",
         "canonical_path": "content/items/definitions/items-31000-31499.json",
         "wiki_observations": [

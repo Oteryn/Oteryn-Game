@@ -319,7 +319,7 @@
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
-      "sha256": "3eebe14691681f5b2807b3dba36bfd9dad8429fc050eb24e353fe0874877e5af"
+      "sha256": "78d89f6fb82d0f5b6b8b222feb5e1d6856e03c9bd560a7abb0e9f2d1a81b99a5"
     },
     {
       "path": "content/items/definitions/items-31500-31999.json",
@@ -345,7 +345,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "25fa755516fedb1aab08925c98017cab4803f4bdfa563acae20614a717930888"
+      "sha256": "652fc1afd55fded6e61ae6da2d3bec52198c2f7dc3eb80cae4c63f5c1eed57a7"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",

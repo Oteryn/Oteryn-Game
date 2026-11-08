@@ -53,7 +53,7 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
             source_witnesses[key] = witness
         changed = {key for key in native if native[key] != source_witnesses[key]}
         self.assertEqual(changed, {
-            'oteryn:reward-claim.kv.madmageroom3', triangle, desert,
+            'oteryn:reward-claim.kv.madmageroom3', triangle, desert, draconia,
             'oteryn:reward-claim.kv.ornamentedshield',
             'oteryn:reward-claim.kv.present_box',
             'oteryn:reward-claim.kv.edrongoblin1', 'oteryn:reward-claim.kv.ghoulroom1',
@@ -61,14 +61,9 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
             'oteryn:reward-claim.kv.powerring2',
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',
             'oteryn:reward-claim.kv.weddingring1',
-            'oteryn:reward-claim.kv.draconia1',
-            'oteryn:reward-claim.kv.edrongoblin1',
             'oteryn:reward-claim.kv.fireaxe1',
-            'oteryn:reward-claim.kv.ghoulroom1',
             'oteryn:reward-claim.kv.goblintemple2',
             'oteryn:reward-claim.kv.lifering',
-            'oteryn:reward-claim.kv.silveramulet',
-            'oteryn:reward-claim.kv.stealhring1',
             'oteryn:reward-claim.quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield',
             'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine',
         })
