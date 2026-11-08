@@ -10,6 +10,9 @@ use crate::durability::quest_state::QuestTransitionRequest;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_quests::quest::reward_callbacks::{PROVENANCE, RewardCallback};
 
+mod claim;
+pub(crate) use claim::QuestMintClaim;
+
 pub(crate) fn prepare_achievement(
     callback: Option<&RewardCallback>,
 ) -> std::result::Result<Option<AchievementGrantRequest>, DurabilityError> {
@@ -363,7 +366,7 @@ pub(crate) async fn apply(
             fence,
             command,
             &callback.key,
-            callback.is_paid_exchange(),
+            if callback.is_paid_exchange() { QuestMintClaim::PaidExchange } else { QuestMintClaim::Once },
             reward,
             admission,
         )
@@ -420,7 +423,7 @@ pub(crate) async fn mint(
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     callback_key: &str,
-    repeatable: bool,
+    claim: QuestMintClaim<'_>,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
@@ -468,29 +471,25 @@ pub(crate) async fn mint(
             .map(|b| format!("{b:02x}"))
             .collect::<String>()
     );
-    // The MINT owner still permits each claim exactly once. A repeatable paid
-    // exchange supplies its own stable per-command occurrence, not a bypass of
-    // the claim ledger or its pending/reservation checks.
-    let claim_key = if repeatable {
-        let digest = Sha256::new()
-            .chain_update(b"oteryn:quest-exchange:v1\0")
-            .chain_update(fence.character_id.as_bytes())
-            .chain_update(command.game_session_id().as_bytes())
-            .chain_update(command.command_id().get().to_string().as_bytes())
-            .chain_update(b":")
-            .chain_update(callback_key.as_bytes())
-            .finalize();
-        format!(
-            "oteryn:quest-exchange/{}",
-            digest
-                .iter()
-                .map(|b| format!("{b:02x}"))
-                .collect::<String>()
-        )
-    } else {
-        callback_key.to_owned()
-    };
+    // Every occurrence still uses the existing MINT once ledger and reservations.
+    let claim_key = claim::key(fence.character_id, command, callback_key, claim)?;
     let request = RewardClaimMintRequest {
+        additional_items: reward
+            .additional
+            .iter()
+            .map(|item| {
+                if item.fluid_subtype.is_some() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                Ok(RewardClaimMintContent {
+                    fluid_subtype: None,
+                    item: resolve(&item.item)?,
+                    quantity: u32::from(item.count),
+                    key_number: None,
+                    text: None,
+                })
+            })
+            .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
