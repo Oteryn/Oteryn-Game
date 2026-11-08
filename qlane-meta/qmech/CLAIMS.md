@@ -76,3 +76,5 @@
 | M26: qualified Soul War and Rotten Blood boss rooms with source-faithful Bakragore cooldown | srvgap2 | none allocated yet; reserve 2270–2279 only | Soul War Quest; Rotten Blood Quest | CLAIMED |
 
 | M01a — imported-route native TALK stage bindings through preflight and server consumer | qengine2 | none planned; assigned QMECH range 2040–2049 | 44 TALK quests listed in MISSING-questpc-pc2.md; ASSIGN.md M01a | CLAIMED |
+
+| M04 — canonical quest completion in final native NPC hand-in receipt | engnpc | 2230 reserved if required; own QMECH range 2230–2239 | A Father's Burden; Marlin Trophy; Djinn War Efreet; Djinn War Marid; White Raven Monastery | CLAIMED |
