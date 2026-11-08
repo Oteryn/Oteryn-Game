@@ -96,6 +96,11 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             } else {
                 None
             };
+            p.combat = if tab == Some(cyclopedia_character::CharacterTab::Defence) {
+                cyclopedia_character::combat::CombatStats::decode(&r.payload).ok()
+            } else {
+                None
+            };
             p.general = general;
             if let Some(tab) = tab.filter(|t| {
                 matches!(

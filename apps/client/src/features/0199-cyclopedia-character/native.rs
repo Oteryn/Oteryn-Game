@@ -297,6 +297,8 @@ mod window {
             let stamina_bar = control(hwnd, "msctls_progress32", "", 470, [10, 575, 335, 18], 0);
             let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
             let mut held_history = Vec::new();
+            let mut held_combat = Vec::new();
+            let mut painted_tab = None;
             let mut message: MSG = std::mem::zeroed();
             loop {
                 while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -347,7 +349,15 @@ mod window {
                 let overview = panel.general.is_some()
                     && panel.tab
                         == oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats;
-                ShowWindow(output, if table || overview { SW_HIDE } else { SW_SHOW });
+                let combat = panel.combat.as_ref().is_some_and(|s| s.tab() == panel.tab);
+                ShowWindow(
+                    output,
+                    if table || overview || combat {
+                        SW_HIDE
+                    } else {
+                        SW_SHOW
+                    },
+                );
                 for handle in cards.iter().copied().chain([stamina_bar, training_bar]) {
                     ShowWindow(handle, if overview { SW_SHOW } else { SW_HIDE });
                 }
@@ -372,7 +382,13 @@ mod window {
                     }
                 }
                 for handle in [heading, history, detail] {
-                    ShowWindow(handle, if table { SW_SHOW } else { SW_HIDE });
+                    ShowWindow(handle, if table || combat { SW_SHOW } else { SW_HIDE });
+                }
+                if painted_tab != Some(panel.tab) {
+                    SendMessageW(history, LB_RESETCONTENT, 0, 0);
+                    held_history.clear();
+                    held_combat.clear();
+                    painted_tab = Some(panel.tab);
                 }
                 if table {
                     let note = if panel.pending {
@@ -414,6 +430,24 @@ mod window {
                             r.description.as_str()
                         });
                     SetWindowTextW(detail, wide(description).as_ptr());
+                }
+                if combat {
+                    SetWindowTextW(heading, wide("Statistic                    Value                    Source — select a row for details").as_ptr());
+                    let rows = oteryn_client_ui::cyclopedia_character::combat_rows(panel);
+                    if held_combat != rows {
+                        SendMessageW(history, LB_RESETCONTENT, 0, 0);
+                        for row in &rows {
+                            let label = format!("{}\t{}\t{}", row.label, row.value, row.source);
+                            SendMessageW(history, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                        }
+                        held_combat = rows;
+                    }
+                    let selected = usize::try_from(SendMessageW(history, LB_GETCURSEL, 0, 0)).ok();
+                    let description = selected.and_then(|i| held_combat.get(i)).map_or_else(
+                        || "Select a statistic to inspect its contributions".into(),
+                        |row| oteryn_client_ui::cyclopedia_character::combat_detail(panel, row.key),
+                    );
+                    SetWindowTextW(detail, wide(&description).as_ptr());
                 }
                 drop(mailbox);
                 std::thread::sleep(Duration::from_millis(25));

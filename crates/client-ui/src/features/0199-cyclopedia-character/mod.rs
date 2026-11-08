@@ -6,7 +6,9 @@ mod view;
 pub use input::{open_key, set_target};
 pub use protocol::{Intent, apply_result, request};
 pub use state::{CyclopediaCharacterPanel, HistoryRow};
-pub use view::{history_rows, overview_bars, overview_cards, panel_text};
+pub use view::{
+    CombatRow, combat_detail, combat_rows, history_rows, overview_bars, overview_cards, panel_text,
+};
 
 #[cfg(test)]
 mod tests;
