@@ -179,27 +179,34 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     if source_ordinal.is_some_and(|source| source != ordinal) {
         return false;
     }
-    if let Some(binding) = &callback.selector.native
-        && tile(binding.position) == pos
-        && ordinal == binding.ordinal
-        && map
-            .overlay
-            .base()
-            .tile(pos.x, pos.y, pos.floor)
-            .and_then(|base| {
-                base.ids()
-                    .iter()
-                    .zip(base.depths())
-                    .filter(|(_, depth)| **depth == 0)
-                    .nth(usize::from(ordinal))
-                    .map(|(id, _)| *id)
-            })
-            .is_some_and(|id| {
-                map.facts
-                    .quest_callback_native_object(key, id, binding.appearance)
-            })
-    {
-        return true;
+    if let Some(binding) = &callback.selector.native {
+        let matched = tile(binding.position) == pos
+            && ordinal == binding.ordinal
+            && map
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .and_then(|base| {
+                    base.ids()
+                        .iter()
+                        .zip(base.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(ordinal))
+                        .map(|(id, _)| *id)
+                })
+                .is_some_and(|id| {
+                    map.facts
+                        .quest_callback_native_object(key, id, binding.appearance)
+                });
+        // Counterpart adapters retain a separately authoritative legacy route.
+        // Native-only selectors must never become an unconstrained fallback.
+        if matched
+            || (callback.selector.position.is_none()
+                && callback.selector.unique.is_none()
+                && callback.selector.action.is_none())
+        {
+            return matched;
+        }
     }
     if oteryn_gameplay_quests::quest::shared_switches::native::bindings(&callback.key)
         .iter()
@@ -1216,4 +1223,127 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
                         })
                 })
     })
+}
+
+#[cfg(test)]
+mod native_selector_tests {
+    use super::*;
+
+    #[test]
+    fn native_selector_mismatch_never_falls_back_to_empty_legacy_selector()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::map::boot::BundleCollisionIndexExt;
+        let world = crate::map::boot::tests::door_world()?;
+        let mut world_bytes = [1; 16];
+        world_bytes[6] = 0x70;
+        world_bytes[8] = 0x80;
+        let world_id = crate::foundation::WorldId::decode(&world_bytes)?;
+        let room = crate::content::qualify_native_entry_room(world_id)?;
+        let cells = world.movement_cells(room.movement_cells())?;
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err("bundle index".into());
+        };
+        let map = index.map();
+        let position = crate::map::boot::tests::DOOR_AT;
+        let key = crate::map::view::placement_key(position, 1).ok_or("source key")?;
+        let base = map
+            .overlay
+            .base()
+            .tile(position.x, position.y, position.floor)
+            .ok_or("source tile")?;
+        let id = *base
+            .ids()
+            .iter()
+            .zip(base.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .nth(1)
+            .ok_or("source object")?
+            .0;
+        let appearance = map
+            .facts
+            .base_entry(position, 1, id)
+            .ok_or("source appearance")?
+            .appearance_id;
+        let mut callback = world_callbacks::load()?
+            .into_iter()
+            .next()
+            .ok_or("callback")?;
+        callback.key = "oteryn:quest-callback/native-selector-regression".into();
+        callback.selector.position = None;
+        callback.selector.unique = None;
+        callback.selector.action = None;
+        callback.selector.appearance = None;
+        callback.selector.native = Some(world_callbacks::NativeSelector {
+            position: Position {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            },
+            ordinal: 1,
+            appearance,
+        });
+        assert!(
+            matches(map, &callback, key),
+            "real bare source binds exactly"
+        );
+        callback
+            .selector
+            .native
+            .as_mut()
+            .ok_or("selector")?
+            .position
+            .x += 1;
+        assert!(
+            !matches(map, &callback, key),
+            "wrong native position must not use all-None legacy fallback"
+        );
+        callback.selector.appearance = Some(appearance);
+        assert!(
+            !matches(map, &callback, key),
+            "appearance alone cannot authorize native mismatch fallback"
+        );
+        callback.selector.position = Some(Position {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        });
+        assert!(
+            matches(map, &callback, key),
+            "retained exact legacy source position and door appearance remain valid"
+        );
+        callback.selector.position = None;
+        callback.selector.appearance = None;
+
+        callback
+            .selector
+            .native
+            .as_mut()
+            .ok_or("selector")?
+            .position
+            .x -= 1;
+        callback
+            .selector
+            .native
+            .as_mut()
+            .ok_or("selector")?
+            .appearance = appearance.checked_add(1).ok_or("appearance")?;
+        assert!(
+            !matches(map, &callback, key),
+            "wrong native appearance must not use legacy fallback"
+        );
+        callback
+            .selector
+            .native
+            .as_mut()
+            .ok_or("selector")?
+            .appearance = appearance;
+        callback.selector.native.as_mut().ok_or("selector")?.ordinal = 0;
+        assert!(
+            !matches(map, &callback, key),
+            "wrong native stack ordinal must not use legacy fallback"
+        );
+        Ok(())
+    }
 }
