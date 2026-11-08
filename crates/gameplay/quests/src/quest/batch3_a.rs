@@ -20,6 +20,7 @@ pub fn input<'a>(
         npc,
         trigger: NpcRuleTrigger::Say,
         message: "a",
+        player_name: None,
         topic: 2,
         tracks,
         inventory,

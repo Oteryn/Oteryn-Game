@@ -56,6 +56,7 @@ fn hero_greeting_plans_the_source_access_write() -> Result<(), NpcRuleError> {
         npc: "oteryn:npc.strange_pipe",
         trigger: NpcRuleTrigger::Greet,
         message: "hi",
+        player_name: None,
         topic: 0,
         tracks: &tracks,
         inventory: &inventory,
@@ -95,6 +96,7 @@ impl Facts {
             npc,
             trigger: NpcRuleTrigger::Say,
             message,
+            player_name: None,
             topic,
             tracks: &self.tracks,
             inventory: &self.inventory,
@@ -630,6 +632,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.hot_cuisine_quest",
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
+        "oteryn:quest.the_dream_courts_quest",
         "oteryn:quest.the_hidden_city_of_beregar_quest",
         "oteryn:quest.the_order_of_the_stag_quest",
         "oteryn:quest.tibia_tales",
@@ -710,7 +713,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 192), (0, 52)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 193), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()

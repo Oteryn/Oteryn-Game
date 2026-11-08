@@ -133,6 +133,7 @@ mod tests {
                 npc: "oteryn:npc.corym_ratter",
                 trigger: NpcRuleTrigger::Say,
                 message: "yes",
+                player_name: None,
                 topic: 1,
                 tracks: &tracks,
                 inventory: &inventory,
