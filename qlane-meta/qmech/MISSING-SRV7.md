@@ -1,4 +1,4 @@
-# SRV7 — checked missing mechanics
+# SRV7 — PARTIAL checked missing mechanics
 
 Checked package head: `7792b6fb31f8855bfdea4b10b56f3f375906df8d`. This is a bounded code audit, not a whole-quest completion claim.
 
