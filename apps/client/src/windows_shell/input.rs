@@ -8,6 +8,12 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        if oteryn_client::bulletin::open_key(events) {
+            if let Some(login) = &self.login {
+                login.show_bulletin();
+            }
+            return;
+        }
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
         let routed = self.settings.input(events);
         let events = routed.as_slice();

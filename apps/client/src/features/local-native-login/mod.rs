@@ -154,6 +154,7 @@ pub fn settings_path() -> Result<PathBuf, String> {
 
 pub struct LoginForm {
     pub settings: LoginSettings,
+    connected: bool,
     pending: bool,
     retry: bool,
     message: String,
@@ -161,7 +162,7 @@ pub struct LoginForm {
 
 impl LoginForm {
     pub fn new(settings: LoginSettings) -> Self {
-        Self { settings, pending: false, retry: false, message: "Enter connection settings, then choose Save and sign in. Sign-in opens your browser.".into() }
+        Self { settings, connected: false, pending: false, retry: false, message: "Enter connection settings, then choose Save and sign in. Sign-in opens your browser.".into() }
     }
     /// Action shown after a failed attempt starts a fresh browser admission.
     pub fn submit_caption(&self) -> &'static str {
@@ -170,6 +171,12 @@ impl LoginForm {
         } else {
             "Save and sign in"
         }
+    }
+    pub fn can_submit(&self) -> bool {
+        !self.pending && !self.connected
+    }
+    pub fn offline(&mut self) {
+        self.connected = false;
     }
     pub fn pending(&self) -> bool {
         self.pending
@@ -181,6 +188,9 @@ impl LoginForm {
         self.message = message;
     }
     pub fn submit(&mut self) -> Result<NativeLoginConfig, String> {
+        if self.connected {
+            return Err("Already connected. Log out before signing in again.".into());
+        }
         if self.pending {
             return Err(
                 "Sign-in is already running. Complete browser sign-in or wait for it to time out."
@@ -197,6 +207,7 @@ impl LoginForm {
     }
     pub fn finish(&mut self, result: Result<(), GameplayEntryError>) {
         self.pending = false;
+        self.connected = result.is_ok();
         self.retry = result.is_err();
         self.message = result.map_or_else(
             |error| error_text(error).to_owned(),

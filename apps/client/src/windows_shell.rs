@@ -145,41 +145,6 @@ impl Application {
         self.leave_play(error_text(GameplayEntryError::Rejected(class)));
     }
 
-    /// Reauthenticate after the consumed ticket, then show account character selection.
-    fn return_to_character_selection(&mut self) {
-        self.leave_play("Choose a character after browser sign-in.");
-        if let Some(login) = &self.login {
-            login.finish(Ok(()));
-        }
-        if let Some(entry) = &mut self.entry {
-            entry.request();
-        }
-    }
-
-    fn leave_play(&mut self, message: &str) {
-        self.audio.stop();
-        self.play = None;
-        if let Some(entry) = &mut self.entry {
-            entry.leave_play();
-        }
-        if let Some(login) = &self.login {
-            login.show(message.to_owned());
-        }
-        println!("Oteryn: {message}");
-        if let Some(window) = &self.window {
-            window.set_title(&format!("Oteryn — {message} — Enter: log in again"));
-        }
-        if self.rebuild_offline().is_err() {
-            self.scene = None;
-        }
-    }
-
-    fn request_entry(&mut self) {
-        if let Some(login) = &self.login {
-            login.show("Review connection settings, then choose Save and sign in.".into());
-        }
-    }
-
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: ShellError) {
         retain_first_error(&mut self.fatal_error, error);
         event_loop.exit();

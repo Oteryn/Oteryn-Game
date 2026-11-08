@@ -330,6 +330,7 @@ pub struct GatedDelta {
 /// Dropping the session closes the connection.
 #[derive(Debug)]
 pub struct Session<S> {
+    bulletin: Option<String>,
     stream: S,
     deadline: Duration,
     last_received: tokio::time::Instant,

@@ -25,8 +25,9 @@
   "area": "Login",
   "feature": "News i kalendarz zdarzeń",
   "status": "PARTIAL",
-  "gap": "Raid schedule i world events są; brak news feed oraz kalendarza z opisami wydarzeń.",
-  "lane": "cg_ui"
+  "gap": "Rzeczywisty caller HTTP/Gateway/TLS odbiera opcjonalny dokument ServerAccepted 21 i aktualizuje news/kalendarz; jest bezpieczny podgląd podczas gry. Pozostaje test i publikacja producenta pliku operatora po stronie serwera.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/native_entry/tests/live_bulletin.rs:7 + live_operator_bulletin_crosses_gateway_tls_session_and_calendar_caller; Pozostaje: test i publikacja producenta pliku operatora na serwerze."
  },
  {
   "id": "T005",
@@ -1224,8 +1225,9 @@
   "area": "Login",
   "feature": "Kalendarz wydarzeń i ekran nowości",
   "status": "PARTIAL",
-  "gap": "Brakuje przeglądanego miesiącami kalendarza zaplanowanych wydarzeń i ekranu nowości; dostępny jest tylko bieżący komunikat wydarzenia.",
-  "lane": "cg_ui"
+  "gap": "Rzeczywisty caller HTTP/Gateway/TLS odbiera opcjonalny dokument ServerAccepted 21 i aktualizuje news/kalendarz; jest bezpieczny podgląd podczas gry. Pozostaje test i publikacja producenta pliku operatora po stronie serwera.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/native_entry/tests/live_bulletin.rs:7 + live_operator_bulletin_crosses_gateway_tls_session_and_calendar_caller; Pozostaje: test i publikacja producenta przyszłych wydarzeń na serwerze."
  },
  {
   "id": "O005",

@@ -34,6 +34,12 @@ impl Browser {
         }
         Ok(browser)
     }
+    /// Replace only a complete validated publication; malformed updates retain the last feed.
+    pub fn replace(&mut self, document: &str) -> Result<(), String> {
+        let feed = Bulletin::parse(document)?;
+        self.feed = feed;
+        Ok(())
+    }
     pub fn news(&self) -> String {
         self.feed.news_text()
     }
@@ -85,4 +91,13 @@ impl Default for Browser {
             events: Vec::new(),
         } }
     }
+}
+
+/// Ctrl+Alt+Shift+L opens the read-only login news/calendar while playing.
+pub fn open_key(events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
+    let modifiers = Modifiers::one(Modifier::Control)
+        .with(Modifier::Alt)
+        .with(Modifier::Shift);
+    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers: held, repeat: false } if code.get() == 15 && *held == modifiers))
 }

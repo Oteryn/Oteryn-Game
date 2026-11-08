@@ -34,6 +34,9 @@ impl Application {
             return;
         };
         if let Some(login) = &self.login {
+            if let Some(document) = self.entry.as_mut().and_then(Reentry::take_bulletin) {
+                login.bulletin(document);
+            }
             login.finish(result.as_ref().map(|_| ()).map_err(|error| *error));
         }
         match result {
@@ -47,6 +50,39 @@ impl Application {
                 });
             }
             Err(error) => self.leave_play(error_text(error)),
+        }
+    }
+    pub(super) fn leave_play(&mut self, message: &str) {
+        self.audio.stop();
+        self.play = None;
+        if let Some(entry) = &mut self.entry {
+            entry.leave_play();
+        }
+        if let Some(login) = &self.login {
+            login.offline(message.to_owned());
+        }
+        println!("Oteryn: {message}");
+        if let Some(window) = &self.window {
+            window.set_title(&format!("Oteryn — {message} — Enter: log in again"));
+        }
+        if self.rebuild_offline().is_err() {
+            self.scene = None;
+        }
+    }
+
+    pub(super) fn request_entry(&mut self) {
+        if let Some(login) = &self.login {
+            login.show("Review connection settings, then choose Save and sign in.".into());
+        }
+    }
+    /// Reauthenticate after the consumed ticket, then show account character selection.
+    pub(super) fn return_to_character_selection(&mut self) {
+        self.leave_play("Choose a character after browser sign-in.");
+        if let Some(login) = &self.login {
+            login.finish(Ok(()));
+        }
+        if let Some(entry) = &mut self.entry {
+            entry.request();
         }
     }
 }
