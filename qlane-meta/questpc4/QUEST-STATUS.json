@@ -10908,7 +10908,26 @@
         "unit_crates": "Fresh content+dispatch nextestallfeatures rebuilding after final data/pin; pending under PREPUSH-2 step3 cadence allowance",
         "main": "83acbdac3 merged as0d5e78ee5; history-only merge changes no tree bytes; all main code already integrated as8edc2d297",
         "duplicate_migrations": 0
-      }
+      },
+      "pushed": "c4718a3c15c18ff4b20b5701f138aa51960ab4ef"
+    },
+    "yalahar_item_slice": {
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "items": [
+        8758,
+        8759,
+        8760,
+        8761,
+        8762,
+        8763,
+        8818,
+        8819
+      ],
+      "source": "Crystal201189f871d23597b82caf88fd611454a2ddefb8 items.xml lines23398,23401,23404,23407,23410,23413,23495,23498; SHA8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+      "decision": "Reuse existing capture, source qualifier and custody proof. All eight are nonstackable, nonfluid, noncontainer, no-equipment items; preserve UNKNOWN protection. No NPC custom-use/finale activation.",
+      "reuse": "Qengine2e6bacdda6 has none of these profiles; main source259-rule NPC program retained. Default Stag capture remains byte-identical after parameterized authoring reuse.",
+      "validation": "19 source/pin controls PASS25.648s; RuffPASS. Independent pin RED3776 vs3768. Eight PG RED cases compiling; no native admission yet.",
+      "state": "IN_PROGRESS custody slice; whole quest remains IN_PROGRESS."
     }
   }
 }

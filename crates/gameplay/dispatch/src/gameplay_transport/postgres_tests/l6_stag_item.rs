@@ -102,6 +102,46 @@ pub(super) async fn exercise(
     fence: CurrentCharacterGameplayFence,
     source_id: u32,
 ) -> TestResult {
+    assert!(matches!(
+        source_id,
+        52586 | 52635 | 52743 | 52758 | 52759 | 52824
+    ));
+    let maximum = if matches!(source_id, 52635 | 52743 | 52758) {
+        100
+    } else {
+        1
+    };
+    exercise_custody(
+        owner,
+        admitted,
+        harness,
+        fence,
+        source_id,
+        matches!(source_id, 52759 | 52824),
+        maximum,
+    )
+    .await
+}
+
+pub(super) async fn exercise_plain(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    source_id: u32,
+) -> TestResult {
+    exercise_custody(owner, admitted, harness, fence, source_id, false, 1).await
+}
+
+async fn exercise_custody(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    source_id: u32,
+    neutral_equipment: bool,
+    expected_stack_maximum: u32,
+) -> TestResult {
     let version: String = sqlx::query_scalar("SELECT version()")
         .fetch_one(&harness.pool)
         .await?;
@@ -115,7 +155,7 @@ pub(super) async fn exercise(
         .item_policy_for_source_id(source_id)
         .ok_or("Stag source item native policy missing")?;
     let semantics = serde_json::to_value(&policy.record().semantics)?;
-    if matches!(source_id, 52759 | 52824) {
+    if neutral_equipment {
         assert_eq!(
             semantics["protection"]["value"]["armor"],
             serde_json::json!({"state":"KNOWN","value":0})
@@ -125,7 +165,6 @@ pub(super) async fn exercise(
             "EXTRA"
         );
     } else {
-        assert!(matches!(source_id, 52586 | 52635 | 52743 | 52758));
         assert_eq!(semantics["protection"]["state"], "UNKNOWN");
         assert_eq!(semantics["equipment"]["state"], "NOT_APPLICABLE");
     }
@@ -138,11 +177,6 @@ pub(super) async fn exercise(
             && qualified.inventory_destination
             && qualified.ground_destination
     );
-    let expected_stack_maximum = if matches!(source_id, 52635 | 52743 | 52758) {
-        100
-    } else {
-        1
-    };
     assert_eq!(qualified.stack_maximum, expected_stack_maximum);
     assert!(qualified.decay.is_none() && qualified.container_capacity.is_none());
     admitted.continuity.selected_capabilities =

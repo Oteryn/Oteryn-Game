@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 import questpc4_stag_equipment_pin
+import questpc4_yalahar_equipment_pin
 
 ROOT = Path(__file__).resolve().parents[2]
 TEST = (
@@ -87,6 +88,15 @@ def main():
             (
                 ROOT
                 / "tools/content-schema/native-gameplay/questpc4-stag-item-profiles.json"
+            ).read_text()
+        ),
+    )
+    source = questpc4_yalahar_equipment_pin.refresh(
+        source,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-yalahar-item-profiles.json"
             ).read_text()
         ),
     )

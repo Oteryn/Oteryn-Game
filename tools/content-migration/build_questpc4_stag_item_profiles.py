@@ -28,19 +28,30 @@ def digest(value):
     ).hexdigest()
 
 
-def definition(root):
+def definition(root, items=ITEMS):
+    keys = {f"oteryn:item.tibia.i{i}" for i in items}
     found = [
         row["definition"]
         for path in (root / "content/items/definitions").glob("items-*.json")
         for row in json.loads(path.read_bytes())["records"]
-        if row["definition"]["identity"]["key"] in KEYS.values()
+        if row["definition"]["identity"]["key"] in keys
     ]
-    if len(found) != len(ITEMS):
+    if len(found) != len(items):
         raise ValueError("STAG_ITEM_CANONICAL_SET")
     return {row["identity"]["key"]: row for row in found}
 
 
-def capture(source_root, root=ROOT):
+def capture(
+    source_root,
+    root=ROOT,
+    *,
+    items=ITEMS,
+    qualify=scoped.qualify,
+    schema=SCHEMA,
+    producer="tools/content-migration/build_questpc4_stag_item_profiles.py",
+    scope="Physical custody and existing neutral ammo-slot semantics only; no custom action/script activation.",
+):
+    keys = {i: f"oteryn:item.tibia.i{i}" for i in items}
     xml_raw = (source_root / "items.xml").read_bytes()
     client_raw = (root / shared.CLIENT).read_bytes()
     if (
@@ -53,28 +64,28 @@ def capture(source_root, root=ROOT):
     appearances = native.engine_items.load_appearance_objects(client_raw)
     physical = {
         row["server_item_id"]: row
-        for row in native.policies(client_raw, xml_raw, set(ITEMS))
+        for row in native.policies(client_raw, xml_raw, set(items))
     }
     bindings = native.binding_index(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
-    canonical = definition(root)
+    canonical = definition(root, items)
     records = [
-        scoped.qualify(
+        qualify(
             item_id,
             nodes[item_id],
             appearances[item_id],
             physical[item_id],
             bindings,
-            canonical[KEYS[item_id]],
+            canonical[keys[item_id]],
         )
-        for item_id in ITEMS
+        for item_id in items
     ]
     lines = batch.xml_lines(xml_raw)
     return {
-        "schema": SCHEMA,
-        "producer": "tools/content-migration/build_questpc4_stag_item_profiles.py",
-        "scope": "Physical custody and existing neutral ammo-slot semantics only; no custom action/script activation.",
+        "schema": schema,
+        "producer": producer,
+        "scope": scope,
         "sources": [
             {
                 "revision": batch.REVISION,
@@ -88,13 +99,13 @@ def capture(source_root, root=ROOT):
                             ET.tostring(nodes[item_id], encoding="utf-8")
                         ).hexdigest(),
                     }
-                    for item_id in ITEMS
+                    for item_id in items
                 ],
             },
             {"path": shared.CLIENT, "sha256": shared.CLIENT_SHA},
         ],
         "definition_sha256": {key: digest(value) for key, value in canonical.items()},
-        "binding_sha256": {str(i): digest(bindings[str(i)]) for i in ITEMS},
+        "binding_sha256": {str(i): digest(bindings[str(i)]) for i in items},
         "record_sha256": {
             r["production_definition"]["production_key"]: digest(r) for r in records
         },
@@ -102,19 +113,34 @@ def capture(source_root, root=ROOT):
     }
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical_bytes):
-    packet = json.loads((root / PROOF).read_bytes())
+def admit(
+    root,
+    generated,
+    profile_path,
+    manifest_path,
+    order,
+    canonical_bytes,
+    *,
+    proof=PROOF,
+    items=ITEMS,
+    schema=SCHEMA,
+    neutral=scoped.NEUTRAL_EQUIPMENT,
+    producer="tools/content-migration/build_questpc4_stag_item_profiles.py",
+):
+    keys = {i: f"oteryn:item.tibia.i{i}" for i in items}
+    packet = json.loads((root / proof).read_bytes())
     bindings = source_owner.source.binding_index(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
     if (
-        packet["schema"] != SCHEMA
-        or len(packet["records"]) != len(ITEMS)
+        packet["schema"] != schema
+        or packet["producer"] != producer
+        or len(packet["records"]) != len(items)
         or [r["production_definition"]["production_key"] for r in packet["records"]]
-        != list(KEYS.values())
+        != list(keys.values())
         or packet["definition_sha256"]
-        != {key: digest(value) for key, value in definition(root).items()}
-        or packet["binding_sha256"] != {str(i): digest(bindings[str(i)]) for i in ITEMS}
+        != {key: digest(value) for key, value in definition(root, items).items()}
+        or packet["binding_sha256"] != {str(i): digest(bindings[str(i)]) for i in items}
         or packet["sources"][0]["sha256"] != batch.XML_SHA256
         or packet["sources"][1]["sha256"] != shared.CLIENT_SHA
     ):
@@ -125,12 +151,12 @@ def admit(root, generated, profile_path, manifest_path, order, canonical_bytes):
             packet["record_sha256"][key] != digest(record)
             or packet["sources"][0]["revision"] != batch.REVISION
             or (
-                key in {KEYS[i] for i in scoped.NEUTRAL_EQUIPMENT}
+                key in {keys[i] for i in neutral}
                 and record["semantics"]["protection"]["value"]["armor"]
                 != source_owner.source.K(0)
             )
             or (
-                key in {KEYS[i] for i in scoped.MATERIALS}
+                key in {keys[i] for i in items if i not in neutral}
                 and record["semantics"]["equipment"] != source_owner.source.NA
             )
             or record["admission"]["legal_destinations"]

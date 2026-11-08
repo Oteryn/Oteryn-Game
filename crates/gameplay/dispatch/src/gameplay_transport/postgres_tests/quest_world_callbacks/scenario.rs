@@ -109,6 +109,14 @@ fn scenario_case(
             | "l6-stag-iron-profile"
             | "l6-stag-silver-profile"
             | "l6-stag-bronze-profile"
+            | "l6-yalahar-item-8758"
+            | "l6-yalahar-item-8759"
+            | "l6-yalahar-item-8760"
+            | "l6-yalahar-item-8761"
+            | "l6-yalahar-item-8762"
+            | "l6-yalahar-item-8763"
+            | "l6-yalahar-item-8818"
+            | "l6-yalahar-item-8819"
     );
     let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
@@ -718,7 +726,10 @@ fn scenario_case(
             super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, 52759)
                 .await?;
         } else if let Some(source_id) = super::super::l6_stag_item::material_source_id(name) {
-            super::super::l6_stag_item::exercise(
+            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, source_id)
+                .await?;
+        } else if let Some(source_id) = super::super::l6_yalahar_items::source_id(name) {
+            super::super::l6_stag_item::exercise_plain(
                 &mut owner,
                 &mut admitted,
                 &h,
