@@ -1,3 +1,35 @@
+## NPC13 compiling checkpoint ready to push
+FULL Quest units318/318 PASS153.70s; strict Quest Clippy PASS12.22s; workspace
+all-targets PASS8m03s; fmt PASS; native/tree/evidence/matrix/pins/SOURCE all PASS.
+World pin unchanged0d87e75b463e. Only Quest crate code changed; no migrations or
+PG tests changed. Existing exact8c649465 assertion is intact. Exact history-key
+inventory now also REQUIRES the formerly discarded Citizen predecessor and
+checks cross-quest hash substitution refusal. Live old-save PG GREEN is pending
+under owner PREPUSH-2 cadence exception. After push IMMEDIATELY run:
+ cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib hidden_threats_doors_ -- --nocapture --test-threads=1
+Do not mutate runtime inputs while building/running. Expect4cases; compare every
+printed active hash to pre-fix8cad8ca2510445fc38fef2aeab01b400ecc5d44e0d451758bb21cf018654400b.
+Then update proof/status, push, and resume main reconciliation/remaining packet.
+
+## NPC13 compatibility repair — current batch
+Last pushed eaffb5405 (Kingsday QUALIFIED; local63). Existing Hidden Threats
+Works01 PG reproduced RED on18.6 in53.374819329s at unchanged8c649465 hash
+assertion. New questpc_npc13_prefix.rs reconstructs that exact validated source
+prefix: historical rescued01/06/08 bounds-1 and pre-Hallowed/Outfox cohort.
+Active tracks/transitions/bounds stay unchanged. Native-kill and NPC extensions
+now preserve existing history maps. Exact inventory additionally requires the
+previously lost Citizen aggregate; new cross-quest negatives retain strictness.
+FULL quest units318/318 PASS153.70s; strict Quest Clippy PASS12.22s. No PG tests
+or pinned hash expectations were altered. Regeneration is running; workspace
+check is /tmp/questpc-npc13-workspace-check.log. Pending: compile/fmt final gate,
+then four unchanged hidden_threats_doors_* PG cases via newly built binary.
+Do not reuse the old ce72 test binary for GREEN until Cargo rebuilds it.
+Before marking PG GREEN assert printed active Tibia Tales hash remains
+8cad8ca2510445fc38fef2aeab01b400ecc5d44e0d451758bb21cf018654400b.
+Proof: cloud-npc13-compatibility-validation.json. Keep63 counts unchanged.
+Main6f61ac15d still requires reconciliation; saved11 drafts are based on83ac
+and pre-repair source, so merge current additions before applying any draft.
+
 ## Qualification proof checks complete
 Kingsday code remains20eb2e45b, live PostgreSQL18.6 GREEN1/1 134.27059665s.
 Final post-regeneration workspace check PASS7m36s, fmt PASS; all regenerated

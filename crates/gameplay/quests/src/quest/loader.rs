@@ -289,6 +289,8 @@ pub fn load_embedded_quest_state_at_layer(
     }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::questpc_npc13_prefix::retain(lowered.catalogue, layer)
+        .map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend_layers(lowered.catalogue, layer)
         .map_err(QuestLoadError::Json)?;
     for callback in super::world_callbacks::load()

@@ -97,12 +97,15 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             experience: None,
         });
     }
-    QuestStateCatalogue::new(
+    let mut active = QuestStateCatalogue::new(
         catalogue.content_revision,
         catalogue.tracks.into_values().collect(),
         transitions,
     )
-    .map_err(|error| format!("{error:?}"))
+    .map_err(|error| format!("{error:?}"))?;
+    active.npc_legacy = catalogue.npc_legacy;
+    active.predecessors = catalogue.predecessors;
+    Ok(active)
 }
 #[cfg(test)]
 mod tests {

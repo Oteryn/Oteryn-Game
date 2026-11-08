@@ -11346,5 +11346,25 @@
       "historical cohort predates hallowed-holy-water and outfox-helmet reward callbacks"
     ],
     "next": "small finite compatibility reconstruction after this proof push; assertion unchanged"
+  },
+  "npc13_compatibility_repair": {
+    "state": "UNIT_GREEN; LIVE_PG_GREEN_PENDING",
+    "proof": "cloud-npc13-compatibility-validation.json",
+    "unit_cases": 318,
+    "unit_failures": 0,
+    "pg_red_seconds": 53.374819329,
+    "historical_definition": "8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084",
+    "active_definition_before": "8cad8ca2510445fc38fef2aeab01b400ecc5d44e0d451758bb21cf018654400b",
+    "new_helper_lines": 50,
+    "live_pg_green": "pending build/run after compiling push; original PG cases unchanged",
+    "checks": {
+      "quest_units": "PASS318/318153.70s;0ignored",
+      "strict_quest_clippy": "PASS12.22s",
+      "workspace_all_targets": "PASS8m03s",
+      "fmt_all": "PASS",
+      "regeneration": "PASS native44; tree34111Items/252Mounts/1282NPCs; evidence/matrix/mint/equipment/SOURCE",
+      "world_pin": "PASS unchanged0d87e75b463e",
+      "live_pg_green": "PENDING under PREPUSH-2 cadence exception"
+    }
   }
 }

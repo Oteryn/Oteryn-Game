@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "state": "UNIT_GREEN; LIVE_PG_GREEN_PENDING",
+  "quest_scope": "Existing Hidden Threats/Draconia/Citizen definition compatibility; no new quest started",
+  "baseline": "eaffb5405e78044593e547a9c6a5d0ce0117da4d",
+  "historical_definition": "8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084",
+  "pre_fix_layer0": "a7692b947dc48bdbb756f8e4f192fc18d384b5a9499865eeabccefed0aeb3829",
+  "active_definition_before": "8cad8ca2510445fc38fef2aeab01b400ecc5d44e0d451758bb21cf018654400b",
+  "postgres_red": {
+    "version": 180006,
+    "duration_seconds": 53.374819329,
+    "test": "hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door",
+    "failure": "exact saved-definition assertion; original test unchanged"
+  },
+  "root_causes": [
+    "Historical NPC13 flag bounds01/06/08 differ from later literal-write refinement",
+    "Two later canonical reward callbacks entered the historical base",
+    "Native-kill and NPC catalogue reconstruction discarded previously registered history maps"
+  ],
+  "fix": [
+    "New finite50-line source-cohort reconstruction; hash derived from validated catalogue, not hardcoded acceptance",
+    "Preserve existing history maps in both catalogue reconstruction owners",
+    "Require exact three-key history inventory including the existing Citizen source predecessor, with cross-quest substitution refusal"
+  ],
+  "unit_green": {
+    "cases": 318,
+    "failures": 0,
+    "ignored": 0,
+    "duration_seconds": 153.7
+  },
+  "pending": [
+    "four unchanged retained-key PG cases; requires rebuilt dispatch test binary"
+  ],
+  "migrations_changed": [],
+  "logs": {
+    "pg_red": {
+      "sha256": "4543d6ae2f0a6f75e52e468c047f6be8058191d3de2042947beb6a2301d45bab",
+      "bytes": 1178,
+      "tail": [
+        "failures:",
+        "    gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door",
+        "",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2876 filtered out; finished in 53.38s",
+        ""
+      ]
+    },
+    "unit_green": {
+      "sha256": "16633567917d2ca5da6ddd3450ff5ac142743108287a48ee61c4bcf0ca8e6a93",
+      "bytes": 32952,
+      "tail": [
+        "test tutorial::steps_tests::tutorial_non_newhaven_start_is_inert_for_every_event ... ok",
+        "test quest::wrath_sleeping_dragon::tests::sleeping_dragon_final_requires_locked_source_prerequisites ... ok",
+        "",
+        "test result: ok. 318 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 153.70s",
+        ""
+      ]
+    },
+    "clippy": {
+      "sha256": "faf5f1f6357ac5d62ca54d0286fc69cc728ed16033169a5a9736cf58f267fe80",
+      "bytes": 164,
+      "tail": [
+        "    Checking oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.22s"
+      ]
+    },
+    "workspace": {
+      "sha256": "aa1639f110e01c28a5f514a8a065e2af5023bbd275831eb56045ec0b77dee6b7",
+      "bytes": 4388,
+      "tail": [
+        "    Checking oteryn-client v0.1.0 (/workspace/Oteryn-Game/apps/client)",
+        "    Checking oteryn-synthetic-client-harness v0.1.0 (/workspace/Oteryn-Game/tools/synthetic-client-harness)",
+        "    Checking oteryn-pre-native-client-tests v0.1.0 (/workspace/Oteryn-Game/tests/pre-native-client)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8m 03s"
+      ]
+    },
+    "fmt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "tail": []
+    },
+    "pins": {
+      "sha256": "41b8cacdb1df5032bf356d058d24be2d5e9768ff5d9c29c684373f0365a0da17",
+      "bytes": 404,
+      "tail": [
+        "      \"world\": \"oteryn\"",
+        "    }",
+        "  ]",
+        "}"
+      ]
+    }
+  },
+  "checks": {
+    "quest_units": "PASS318/318153.70s;0ignored",
+    "strict_quest_clippy": "PASS12.22s",
+    "workspace_all_targets": "PASS8m03s",
+    "fmt_all": "PASS",
+    "regeneration": "PASS native44; tree34111Items/252Mounts/1282NPCs; evidence/matrix/mint/equipment/SOURCE",
+    "world_pin": "PASS unchanged0d87e75b463e",
+    "live_pg_green": "PENDING under PREPUSH-2 cadence exception"
+  },
+  "main_merge": {
+    "head": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+    "conflicts": 74,
+    "result": "ABORTED under owner15-minute exception",
+    "tested_tree_restored": "9b326b567979e5f4d5d67f8d017d356bfaf2e43d"
+  }
+}

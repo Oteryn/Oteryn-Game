@@ -1144,6 +1144,7 @@ mod tests {
 #[cfg(test)]
 mod citizen_source_tests;
 
+mod questpc_npc13_prefix;
 mod questpc_sources;
 
 #[cfg(feature = "test-support")]

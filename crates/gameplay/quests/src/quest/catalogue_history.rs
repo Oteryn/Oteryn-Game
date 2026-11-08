@@ -183,8 +183,34 @@ mod tests {
                 .keys()
                 .map(String::as_str)
                 .collect::<BTreeSet<_>>(),
-            BTreeSet::from(["oteryn:quest.tibia_tales", "oteryn:quest.draconia_quest"])
+            BTreeSet::from([
+                "oteryn:quest.tibia_tales",
+                "oteryn:quest.draconia_quest",
+                "oteryn:quest.outfit_and_addon_quests",
+            ])
         );
+        // The Citizen source cohort's exact predecessor must stay quest-scoped.
+        let outfit = "oteryn:quest.outfit_and_addon_quests";
+        let history = catalogue
+            .predecessors
+            .get(outfit)
+            .ok_or("Citizen predecessor")?;
+        assert!(!history.is_empty());
+        for previous in history {
+            assert_eq!(
+                super::super::npc_rules::legacy_defaults(catalogue, outfit, &previous.hash),
+                Some(&previous.defaults)
+            );
+            assert!(
+                super::super::npc_rules::legacy_defaults(
+                    catalogue,
+                    "oteryn:quest.draconia_quest",
+                    &previous.hash
+                )
+                .is_none()
+            );
+            assert_ne!(catalogue.definition_hash(outfit), Some(previous.hash));
+        }
         assert_ne!(
             catalogue.definition_hash("oteryn:quest.tibia_tales"),
             Some(hash)

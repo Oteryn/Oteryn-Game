@@ -662,6 +662,7 @@ pub(super) fn extend(
     )
     .map_err(|e| format!("{e:?}"))?;
     active.npc_legacy = legacy;
+    active.predecessors = catalogue.predecessors;
     Ok(active)
 }
 

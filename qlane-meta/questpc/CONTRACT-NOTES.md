@@ -756,3 +756,39 @@ Kingsday callback provenance includes the captured Canary47dfd51f King source
 identity/placement alongside the immutable Wiki recipe references. That source
 witness names native identity and position only; it does not attribute the
 on-demand Oteryn progression to donor Lua or pretend a calendar script exists.
+
+## Exact NPC13 source predecessor reconstruction
+The unchanged unit and retained-key PG test both pin the published Tibia Tales
+NPC13 definition8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084.
+QNPCFX changed bound refinement from declared programme ranges to literal-write
+ranges; rescued01/06/08 therefore narrowed from min-1 to0. Two later canonical
+reward callbacks (hallowed-holy-water/outfox-helmet) also entered layer0. A typed,
+read-only catalogue probe restored the three historical lower bounds and omitted
+those later callbacks; QuestStateCatalogue::new reproduced the exact pinned hash.
+Restore that finite historical prefix for layer0 and register its validated hash/
+defaults for active layers. Active tracks/transitions/bounds remain unchanged;
+all prior NPC legacy maps and predecessors are retained. Do not replace the
+expected hash or relax the general additive-extension validator. No save is
+rewritten and no caller-supplied hash is admitted. Existing PG RED on18.6 ran
+53.374819329s at the exact saved-definition assertion; no tests were edited.
+Source: https://github.com/Oteryn/Oteryn-Game/commit/099836485
+Compare quest/npc_rules.rs declared-range refinement against current literal
+write bounds; private probe facts and candidate source remain in/tmp/questpc-npc13-*.
+
+After restoring the hash, the same unchanged regression exposed a second issue:
+NPC rule catalogue reconstruction discarded predecessor maps built by earlier
+source cohorts, including Draconia. Preserve that map when constructing the NPC
+catalogue. The generic additive-extension rejection rules remain unchanged.
+
+The native-kill extension between reward and NPC composition also discarded
+history maps. Carry both its existing NPC legacy map and predecessor map into
+the reconstructed catalogue; then preserve predecessors through NPC composition.
+No new counters, transitions, bounds or reward paths are added by this repair.
+
+Retaining both maps also recovers the real Citizen aggregate predecessor from
+questpc-citizen-reward-callbacks.json. Update the exact history-key inventory to
+require it alongside Draconia and Tibia Tales; retain the original8c649465 hash
+and both original key assertions. Add exact-default lookup and cross-quest
+substitution refusal assertions for the newly retained Citizen predecessor.
+This strengthens the complete-history invariant rather than dropping history
+to satisfy the old, incomplete two-key expectation. No PG tests were changed.
