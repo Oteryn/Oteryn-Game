@@ -23400,13 +23400,18 @@
       "active": true,
       "boss_names": [],
       "end": {
-        "despawn_after_ms": null,
-        "kind": "until_reset"
+        "despawn_after_ms": 72000000,
+        "kind": "boss_death_or_timeout"
       },
+      "end_source": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/quests/grimvale.lua:46-48",
       "inactive_reasons": [],
       "key": "raid:edron.feroxa",
       "kind": "boss",
       "name": "edron.feroxa",
+      "requires_world_change": {
+        "key": "grimvale",
+        "variant": "full_moon"
+      },
       "schedule": {
         "interval_s": 86400,
         "kind": "legacy_xml",
