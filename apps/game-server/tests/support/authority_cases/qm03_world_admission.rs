@@ -27,6 +27,15 @@ impl GrizzlyPremiumGate for Premium {
 
 #[test]
 fn qm03_world_admission_live_blessings_promotion_premium_fences_and_replay() -> f::TestResult {
+    run_admission(false)
+}
+
+#[test]
+fn m03_time_machine_production_binding_admission_postgres() -> f::TestResult {
+    run_admission(true)
+}
+
+fn run_admission(production: bool) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
     };
@@ -38,12 +47,12 @@ fn qm03_world_admission_live_blessings_promotion_premium_fences_and_replay() -> 
                 .block_on(async {
                     let started = std::time::Instant::now();
                     let h = f::Harness::create(admin, "qm03_world_admission", true).await?;
-                    let result = exercise(&h).await;
+                    let result = exercise(&h, production).await;
                     h.cleanup().await?;
                     result?;
                     assert!(started.elapsed().as_secs_f64() > 0.01);
                     eprintln!(
-                        "M03_PG_EXECUTED world_admission duration={:?}",
+                        "M03_PG_EXECUTED world_admission production={production} duration={:?}",
                         started.elapsed()
                     );
                     Ok::<(), Box<dyn std::error::Error>>(())
@@ -60,53 +69,12 @@ async fn snapshot(h: &f::Harness) -> f::TestResult<serde_json::Value> {
         .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?)
 }
 
-async fn exercise(h: &f::Harness) -> f::TestResult {
+async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
     let version: String = sqlx::query_scalar("SELECT version()")
         .fetch_one(&h.pool)
         .await?;
     eprintln!("M03_POSTGRES {version}");
-    let mut callback = world_callbacks::load()?
-        .into_iter()
-        .find(|c| !c.storage.is_empty() && !c.reversible && c.effects.is_empty())
-        .ok_or("fixture callback")?;
-    callback.key = "oteryn:quest-callback/qm03-admission".into();
-    callback.quest = "oteryn:quest.qm03_admission".into();
-    callback.trigger = world_callbacks::Trigger::StepIn;
-    callback.admission = Some(Admission {
-        regular_blessings: true,
-        promotion: true,
-        premium: true,
-    });
-    callback.minimum_level = None;
-    callback.world_change = None;
-    callback.requires_world_admission = false;
-    callback.native_rule = None;
-    callback.state_ops.clear();
-    callback.offerings.clear();
-    callback.item_on_target = None;
-    callback.storage = vec![Storage {
-        track: "oteryn:quest-progress/qm03-admission/stage".into(),
-        minimum: 0,
-        maximum: 0,
-        set: 1,
-        preserve: false,
-        increment: false,
-        at_least: false,
-    }];
-    let catalogue = Arc::new(
-        QuestStateCatalogue::new(
-            "content-1",
-            vec![QuestTrack {
-                key: callback.storage[0].track.clone(),
-                quest: callback.quest.clone(),
-                initial: 0,
-                min: 0,
-                max: 1,
-            }],
-            vec![world_callbacks::primary_transition(&callback).map_err(f::debug)?],
-        )
-        .map_err(f::debug)?,
-    );
+    let (callback, catalogue) = definition(production)?;
     let (controller, pin) =
         oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
             f::scope()?.world_id(),
@@ -162,13 +130,19 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     let session = GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?;
     let request = QuestTransitionRequest {
         transition_key: callback.key.clone(),
-        cause: QuestCause::Step(CommandRef::new(
-            session,
-            CommandId::new(9810).map_err(f::debug)?,
-        )),
+        cause: {
+            let command = CommandRef::new(session, CommandId::new(9810).map_err(f::debug)?);
+            if callback.trigger == world_callbacks::Trigger::Use {
+                QuestCause::Use(command)
+            } else {
+                QuestCause::Step(command)
+            }
+        },
     };
+    let attempt_number = std::sync::atomic::AtomicUsize::new(0);
     let attempt = |revision| -> f::TestResult<_> {
-        Ok(h.root.commit_fixture_world_admission(
+        let number = attempt_number.fetch_add(1, Ordering::SeqCst) + 1;
+        let operation = h.root.commit_fixture_world_admission(
             &authority,
             &h.node,
             f::fence(revision)?,
@@ -178,7 +152,16 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             context.clone(),
             &gate,
             callback.clone(),
-        ))
+        );
+        Ok(async move {
+            let started = std::time::Instant::now();
+            let result = operation.await;
+            eprintln!(
+                "M03_ATTEMPT production={production} n={number} revision={revision} elapsed={:?} result={result:?}",
+                started.elapsed()
+            );
+            result
+        })
     };
     let before = snapshot(h).await?;
     assert!(
@@ -245,5 +228,160 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         QuestTransitionOutcome::AlreadyCommitted(receipt)
     );
     assert_eq!(snapshot(h).await?, after);
+    if production {
+        let returning = world_callbacks::load_for(&catalogue)?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m03/25-years/time-machine-return")
+            .ok_or("production return route")?;
+        assert!(returning.admission.is_none());
+        assert!(returning.minimum_level.is_none());
+        assert!(returning.storage.iter().all(|s| s.preserve));
+        let returned = h
+            .root
+            .commit_fixture_world_admission(
+                &authority,
+                &h.node,
+                f::fence(2)?,
+                QuestTransitionRequest {
+                    transition_key: returning.key.clone(),
+                    cause: QuestCause::Use(CommandRef::new(
+                        session,
+                        CommandId::new(9811).map_err(f::debug)?,
+                    )),
+                },
+                Arc::clone(&catalogue),
+                &lane,
+                context.clone(),
+                &gate,
+                returning,
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(
+            matches!(returned, QuestTransitionOutcome::Committed(_)),
+            "return remains usable with expired Premium and no blessings: {returned:?}"
+        );
+        let progress: i64 = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key=$2",
+        )
+        .bind(&callback.quest)
+        .bind(&callback.storage[0].track)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            progress, 1,
+            "return cannot reset the admitted entrance stage"
+        );
+        let completed: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes",
+        )
+        .bind(&callback.quest)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            completed, 0,
+            "entrance/return do not complete the anniversary quest"
+        );
+    }
     Ok(())
+}
+
+fn definition(
+    production: bool,
+) -> f::TestResult<(world_callbacks::Callback, Arc<QuestStateCatalogue>)> {
+    if production {
+        let catalogue =
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(f::debug)?
+                .catalogue()
+                .clone();
+        let callback = world_callbacks::load_for(&catalogue)?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m03/25-years/time-machine")
+            .ok_or("production time-machine binding")?;
+        assert_eq!(callback.quest, "oteryn:quest.25_years_of_tibia_quest");
+        assert_eq!(callback.trigger, world_callbacks::Trigger::Use);
+        assert_eq!(callback.minimum_level, Some(20));
+        assert_eq!(
+            callback.admission,
+            Some(Admission {
+                regular_blessings: true,
+                promotion: true,
+                premium: true
+            })
+        );
+        let native = callback
+            .selector
+            .native
+            .as_ref()
+            .ok_or("native time machine")?;
+        assert_eq!(
+            (
+                native.position.x,
+                native.position.y,
+                native.position.floor,
+                native.ordinal,
+                native.appearance
+            ),
+            (32430, 32166, -8, 1, 25098)
+        );
+        assert_eq!(
+            callback.teleport,
+            Some(world_callbacks::Position {
+                x: 33453,
+                y: 31030,
+                floor: -8
+            })
+        );
+        assert!(
+            !catalogue
+                .transition(&callback.key)
+                .ok_or("production operation")?
+                .completes
+        );
+        return Ok((callback, Arc::new(catalogue)));
+    }
+    let mut callback = world_callbacks::load()?
+        .into_iter()
+        .find(|c| !c.storage.is_empty() && !c.reversible && c.effects.is_empty())
+        .ok_or("fixture callback")?;
+    callback.key = "oteryn:quest-callback/qm03-admission".into();
+    callback.quest = "oteryn:quest.qm03_admission".into();
+    callback.trigger = world_callbacks::Trigger::StepIn;
+    callback.admission = Some(Admission {
+        regular_blessings: true,
+        promotion: true,
+        premium: true,
+    });
+    callback.minimum_level = None;
+    callback.world_change = None;
+    callback.requires_world_admission = false;
+    callback.native_rule = None;
+    callback.state_ops.clear();
+    callback.offerings.clear();
+    callback.item_on_target = None;
+    callback.storage = vec![Storage {
+        track: "oteryn:quest-progress/qm03-admission/stage".into(),
+        minimum: 0,
+        maximum: 0,
+        set: 1,
+        preserve: false,
+        increment: false,
+        at_least: false,
+    }];
+    let catalogue = Arc::new(
+        QuestStateCatalogue::new(
+            "content-1",
+            vec![QuestTrack {
+                key: callback.storage[0].track.clone(),
+                quest: callback.quest.clone(),
+                initial: 0,
+                min: 0,
+                max: 1,
+            }],
+            vec![world_callbacks::primary_transition(&callback).map_err(f::debug)?],
+        )
+        .map_err(f::debug)?,
+    );
+    Ok((callback, catalogue))
 }
