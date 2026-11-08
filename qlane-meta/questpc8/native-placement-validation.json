@@ -1,0 +1,83 @@
+{
+  "scope": "authored placement prerequisite; no whole quest newly qualified",
+  "base": "4bc2bdb42",
+  "qengine2_checked": "5a6de28c1",
+  "red": {
+    "seconds": 23.62,
+    "failure": "native authored selector was not served"
+  },
+  "checks": {
+    "authored_pg": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib quest_authored_placement_without_legacy_uid_mints_once_and_replays -- --nocapture",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-authored-green3.log",
+      "sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1",
+      "result": [
+        "QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CASE_COMPLETED 26.170233947s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 26.17s"
+      ]
+    },
+    "source_pg": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib quest_demon_helmet_chests_steel_boots_once_and_replay -- --nocapture",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-source-regression.log",
+      "sha256": "19024cd9d6a09376c714b06a817c980d15590c033545bc7c7e0955c1f8612d54",
+      "result": [
+        "QUESTS3_DEMON_BOOTS POSTGRES_CASE_COMPLETED 25.586263619s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 25.59s"
+      ]
+    },
+    "check": {
+      "command": "cargo check --locked -p oteryn-gameplay-content -p oteryn-gameplay-world -p oteryn-gameplay-dispatch --all-features",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-placement-check.log",
+      "sha256": "ce734a9de17a4c55a7676d2ce204d5b244c2d3826c6c86421f1da96950e6d526"
+    },
+    "clippy": {
+      "command": "cargo clippy --locked -p oteryn-gameplay-content -p oteryn-gameplay-world -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-placement-clippy.log",
+      "sha256": "6c29f13166a03143c61e058324adb9ceee7d08d42ce026a1550772e87665f11e"
+    },
+    "fmt": {
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-placement-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "pins": {
+      "command": "oteryn-world-bundle-compiler pin-refresh .; oteryn-world-bundle-compiler pin-check . /tmp/questpc8-placement-pincheck",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-placement-pins.log",
+      "sha256": "3c67ed7d876acaca2f2fe06d6e3c4afde63fd7c76413bfff3a90095a0a2c693e"
+    },
+    "content_unit": {
+      "command": "cargo test --locked -p oteryn-gameplay-content --lib world_reward_claims -- --nocapture",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-placement-content-unit.log",
+      "sha256": "adaf59aa573f1b05a2ce7094a1c7b0c6a2ecd4aa0499c72e9e6251c7d69f9db7",
+      "result": [
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 305 filtered out; finished in 0.12s"
+      ]
+    },
+    "content_integration": {
+      "command": "cargo test --locked -p oteryn-game-server --test integration_rest content_ --quiet",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-placement-content-integration.log",
+      "sha256": "485543b6fb3bbfa8c8954142d2b9ee07c6bbc8687ea2b8532c223ad2bb42d75c",
+      "result": [
+        "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 1.43s"
+      ]
+    },
+    "world_repository": {
+      "command": "cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-placement-world-repository.log",
+      "sha256": "c99ab8fd4696859ccf7c3f28df6f0c1cb6f72f2fb68a2728938e4992e879f581",
+      "result": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.72s"
+      ]
+    }
+  },
+  "review": "Reviewed all product and test changes: explicit selector namespace, exact palette match, malformed selector refusal, no mutation of fencing/charges/replay. No blocking finding."
+}

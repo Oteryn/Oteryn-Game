@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/mintwallin-cyclops-scene",
+      "quest": "oteryn:quest.mintwallin_cyclops_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32600,
+          "y": 32105,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 1
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32592,
+                "y": 32105,
+                "floor": -14
+              },
+              "remove": null,
+              "create": 1270,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32592,
+                "y": 32106,
+                "floor": -14
+              },
+              "remove": null,
+              "create": 1270,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32593,
+                "y": 32104,
+                "floor": -14
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null
+            },
+            {
+              "position": {
+                "x": 32594,
+                "y": 32104,
+                "floor": -14
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null
+            },
+            {
+              "position": {
+                "x": 32595,
+                "y": 32104,
+                "floor": -14
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null
+            },
+            {
+              "position": {
+                "x": 32596,
+                "y": 32104,
+                "floor": -14
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null
+            },
+            {
+              "position": {
+                "x": 32597,
+                "y": 32104,
+                "floor": -14
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null
+            },
+            {
+              "position": {
+                "x": 32598,
+                "y": 32104,
+                "floor": -14
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null
+            },
+            {
+              "position": {
+                "x": 32599,
+                "y": 32104,
+                "floor": -14
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null
+            },
+            {
+              "position": {
+                "x": 32600,
+                "y": 32104,
+                "floor": -14
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null
+            },
+            {
+              "position": {
+                "x": 32601,
+                "y": 32104,
+                "floor": -14
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null
+            }
+          ],
+          "close": [],
+          "remove_self": true
+        }
+      },
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua:1-23",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
+        "Committed native region-z14-x127-y125.b3: lever32600,32105,14 appearance2772 ordinal1; action30008 is not retained, so no legacy tag is invented."
+      ]
+    }
+  ]
+}

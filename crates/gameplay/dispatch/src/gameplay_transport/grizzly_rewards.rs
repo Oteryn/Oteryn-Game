@@ -103,6 +103,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Some(UseDisposition::Rejected);
         };
         let request = RewardClaimMintRequest {
+            backpack_outputs: false,
             command: CommandRef::new(command.game_session_id, id),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
@@ -114,6 +115,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             quantity: 1,
             contents: Vec::new(),
             root_text: None,
+            root_fluid_subtype: None,
+            root_charges_remaining: None,
             backpack,
             // Keep the earning pin in the entitlement. Resolve the durable Item
             // identity in the current generation so deployments cannot strand it.

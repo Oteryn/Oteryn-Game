@@ -10,24 +10,30 @@ pub const VISITED: &str = "oteryn:quest-progress/schrodingers_island/visited";
 pub const ENTER: &str = "oteryn:quest-callback/srv6-schrodinger-island";
 
 pub(crate) fn callback() -> Callback {
-    Callback {
+    Callback {facing: None,world_requirements: Vec::new(),
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: ENTER.into(),
         quest: QUEST.into(),
         trigger: Trigger::StepIn,
-        selector: Selector { native: None, position:None, unique:None, action:Some(15998), appearance:None },
+        use_range: 1,
+        disguise: None,
+        selector: Selector {native: None, position:None, ordinal:None, unique:None, action:Some(15998), appearance:None },
+
         lever:None,
         reversible:false,
         passages:Vec::new(),
         teleport:Some(Position { x:32832, y:32435, floor:-7 }),
-        facing:None,
-        world_requirements: Vec::new(),
-        storage:vec![Storage { track:VISITED.into(), minimum:-1, maximum:1, set:1, preserve:false, increment:false, at_least:false }],
+        storage:vec![Storage {increment: false, at_least: false, track:VISITED.into(), minimum:-1, maximum:1, set:1, preserve:false, read_only:false }],
+
         minimum_level:Some(999),
         experience:None,
+        completes:false,
+        premium_required:false,
         monk_reward:None,
         offerings:Vec::new(),
+        present:Vec::new(),
+        required_travel:Vec::new(),
         item_on_target:None,
         return_on_failure:true,
         failure_message:Some("You need level 999 to enter here.".into()),

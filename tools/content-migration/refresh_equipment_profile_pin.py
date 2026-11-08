@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import sys
 import tempfile
 from pathlib import Path
 
@@ -25,7 +26,44 @@ def keys(document):
     return set(rows)
 
 
-def regenerate(source, base, updates, qengine, npc, starting=None, overlap_keys=frozenset()):
+def frozen_union():
+    sys.path.insert(0, str(ROOT / "tools/contracts"))
+    from refresh_quest_custody_equipment import composition
+    own, _ = composition("534ea6b23de451ae1086e0be585d1f75887aa17a")
+    main, _ = composition("c77d436d8be39f348924e66d97928ffd69e61a8c")
+    from questpc8_wrath_profile_expectation import declared_keys
+    own = own | declared_keys(ROOT)
+    return own | main, len(own - main)
+
+
+def regenerate(source, base, updates, qengine, npc, starting=None, frozen=None, overlap_keys=frozenset()):
+    if frozen is not None:
+        expected, own_only = frozen
+        row = f'    ("QUESTPC8-MERGED", {own_only}),'
+        if '("QUESTPC8-MERGED",' in source:
+            source = re.sub(r'    \("QUESTPC8-MERGED", [\d_]+\),', row, source)
+        else:
+            source = source.replace('    ("QUICKLOOT-1",', row + '\n    ("QUICKLOOT-1",', 1)
+
+    if "    let later_main_profiles =" in source:
+        # QREADY registrations overlap the old lane-only keys, so their ownership
+        # shifts out of that cohort while the immutable baseline stays unchanged.
+        start = source.index("    let later_main_profiles =")
+        end = source.index("    let baseline =", start)
+        later = source[start:end]
+        for name in ("QREADY1", "QREADY2"):
+            if f'"{name}"' not in later:
+                later = later.replace('"QUESTPC8-MERGED"', f'"QUESTPC8-MERGED" | "{name}"')
+        later = re.sub(r"Frozen own-only cohort\d+ plus\d+ post-baseline main registrations\.",
+                       "Frozen published union partitions the same205 post-baseline registrations.", later)
+        if frozen is not None:
+            cohort_names = {"WORLDCHG", "SRV9-MARRIAGE", "QNPCFX", "QUESTPC4-STAG-ITEMS", "QUESTPC8-MERGED", "QREADY1", "QREADY2"}
+            table = source.split("const PROFILE_ADDITIONS:", 1)[1].split("];", 1)[0]
+            later_count = sum(int(n.replace("_", "")) for name, n in re.findall(r'\("([^\"]+)",\s*([\d_]+)\)', table) if name in cohort_names)
+            later = re.sub(r"assert_eq!\(later_main_profiles, [\d_]+\);", f"assert_eq!(later_main_profiles, {later_count});", later)
+            later = re.sub(r"// Frozen published union partitions.*", "// Published owner cohorts plus independently declared recipe tools.", later)
+        source = source[:start] + later + source[end:]
+
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(
             "_", ""
@@ -49,6 +87,8 @@ def regenerate(source, base, updates, qengine, npc, starting=None, overlap_keys=
         + sum(map(int, extra.groups()))
     )
     actual = keys(base) | keys(updates) | keys(starting or {"records": []})
+    if frozen is not None and actual != expected:
+        raise ValueError("generated profile keys differ from frozen published union")
     engine_keys, npc_keys = keys(qengine), keys(npc)
     if engine_keys & npc_keys or not (engine_keys | npc_keys) <= actual:
         raise ValueError("source proof keys are overlapping or absent")
@@ -61,7 +101,9 @@ def regenerate(source, base, updates, qengine, npc, starting=None, overlap_keys=
         )
     # The NPC owner is already counted in PROFILE_ADDITIONS. Keep every strict
     # raw-attribute/identity assertion and remove only its duplicate sum term.
-    start = source.index("    assert_eq!(\n        profiles.records.len(),")
+    start = source.find("    assert_eq!(\n        profiles.records.len(),")
+    if start < 0:
+        return source, declared
     end = source.index("\n    );", start) + len("\n    );")
     block = source[start:end]
     duplicate = "            + npc_additions.len()\n"
@@ -85,7 +127,8 @@ def main():
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths),
         overlap_keys={f"oteryn:item.tibia.i{i}" for i in
-            __import__('qengine_reward_item_profiles').PREVIOUSLY_COUNTED_IDS}
+            __import__('qengine_reward_item_profiles').PREVIOUSLY_COUNTED_IDS},
+        frozen=frozen_union()
     )
     if args.check and generated != source:
         raise SystemExit("equipment cohort pin is stale")

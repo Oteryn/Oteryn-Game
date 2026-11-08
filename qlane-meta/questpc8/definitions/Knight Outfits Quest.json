@@ -1,0 +1,72 @@
+{
+  "claims": [
+    {
+      "family": "RewardClaim",
+      "key": "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest",
+      "revision": "reward-claim-r1"
+    }
+  ],
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "completeness": "NOT_ASSESSED",
+  "display_name": "Knight Outfits Quest",
+  "identity": {
+    "key": "oteryn:quest.knight_outfits_quest",
+    "revision": "quest-r1"
+  },
+  "kind": "reward_only",
+  "missing_data": [],
+  "readiness": "definition_ready",
+  "reported_source_readiness": {
+    "data_gaps": {
+      "interactions_with_gaps": 0,
+      "unresolved_items": 0
+    },
+    "features": [
+      "door_progress",
+      "npc_dialogue",
+      "quest_state",
+      "reward_claim",
+      "trigger_use"
+    ],
+    "interactions": 0,
+    "kind": "reward_only",
+    "quest": "canary:quest/knight_outfits_quest"
+  },
+  "requirements": {
+    "min_level": 0,
+    "premium": true
+  },
+  "requirements_from_wiki": {
+    "lvl": "0",
+    "premium": "yes"
+  },
+  "requirements_unparsed": {},
+  "shown_in_quest_log": false,
+  "source_refs": {
+    "claims": [
+      {
+        "family": "RewardClaim",
+        "key": "canary:reward-claim/quest/u7_8/knight_outfits/ramsays_helmet_chest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    ],
+    "gates": [
+      {
+        "family": "Gate",
+        "key": "canary:door-gate/progress/quest/u7_8/knight_outfits/ramsays_helmet_door",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    ],
+    "quest": {
+      "family": "Quest",
+      "key": "canary:quest/knight_outfits_quest",
+      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+    }
+  },
+  "unresolved_claims": [],
+  "wiki": {
+    "pageid": 8569,
+    "revid": 740136,
+    "title": "Knight Outfits Quest"
+  }
+}

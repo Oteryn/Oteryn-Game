@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-client --lib quest_log_recorded_domain_16_frames_reach_the_play_panel -- --nocapture",
+  "exit": 0,
+  "duration_seconds": 20.732
+}

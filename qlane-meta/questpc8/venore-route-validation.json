@@ -1,0 +1,77 @@
+{
+  "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+  "scope": "Complete finite chosen daily circuit, native ordinary kill rewards and exact repeat boundary",
+  "result": "QUALIFIED",
+  "source_head": "5af557b4d6d85665f8a2d0642711a111a47f8d39",
+  "postgres": {
+    "red": {
+      "duration_seconds": 110.410557464,
+      "marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit",
+      "log_sha256": "1b2940b48edaca997926c1a4bef8bfc72cf5ada8fadfdabeada6fcf4931127ac",
+      "point": "First captured corym death advances quest but ordinary XP refuses missing corpse admission"
+    },
+    "green": {
+      "duration_seconds": 113.890788027,
+      "marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit duration=113.890788027s result=Ok(())",
+      "log_sha256": "6576bc437b36c2dba2feb798dcfb5c4dcf01f3e1071ad29c0749420aa4a10277"
+    }
+  },
+  "asserted_behaviour": [
+    "Owned rope/shovel, actual native Norman/Scott/Frank, three real uncharged supplies",
+    "Nine source-geometry machine USEs, strict reach/order and replay rejection",
+    "Both exact tool hand-ins burn their physical inputs; oil remains uncharged and retained",
+    "Five native corym captured deaths each commit ordinary XP and capped quest credit",
+    "Report gives exactly1000XP and1000gold, completes once, retains cooldown state",
+    "Original callback source key retained; occurrence MINT claim differs by nonce through shared SQL owner",
+    "Immediate/cold refusal, exact72000-second boundary, rejected no-op occurrence effects"
+  ],
+  "checks": {
+    "importer": {
+      "result": "PASS",
+      "log_sha256": "b5547bb75596bc6b05217f1cbeda74122fb9f1d6d775cafe7203c3a9b124e68e"
+    },
+    "default_check": {
+      "result": "PASS",
+      "log_sha256": "ed9b9b404c8c29bc72673f14e084d66cff461a7463e587c9a9b38ac3830ca11d"
+    },
+    "clippy": {
+      "result": "PASS",
+      "log_sha256": "9fdd6d5bad8c98d3a2f0694a8fed197c86e524e8950b1c9b908bcb3adf4a19bc"
+    },
+    "native_generated": {
+      "result": "PASS",
+      "log_sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f"
+    },
+    "pin_refresh": {
+      "result": "PASS",
+      "log_sha256": "1468174cff1820aadc03b281cb27b334e27d84d2f1438b14a42876ec8bcb106d"
+    },
+    "pin_check": {
+      "result": "PASS",
+      "log_sha256": "35bec7bc80a682a3c5002945117af1a837642626762d108c7ff7457cafff803c"
+    },
+    "fmt": {
+      "result": "PASS",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "duplicate_migrations": {
+      "result": "PASS",
+      "duplicate_numbers": []
+    }
+  },
+  "lane_migrations": [
+    "apps/game-server/migrations/1301_questpc8_reward_backpack_outputs.sql",
+    "apps/game-server/migrations/1302_questpc8_world_reward_receipts.sql",
+    "apps/game-server/migrations/1303_questpc8_state_operation_validation.sql",
+    "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql"
+  ],
+  "input_sha256": {
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_venore.rs": "aa735a37e527c84e4db1774ceacc0101158df3fb00580719ba31c13245793052",
+    "tools/content-migration/quest_corpse_profiles.py": "e6b3dfdbc888dd4981acd8704b4714c9afcc5826e27dbc0ad47ae13d644258d0",
+    "tools/content-migration/test_quest_corpse_profiles.py": "05783e8bee0463416785162683819379f213043c2b7fc8ad22d96bc8005484e2",
+    "tools/content-schema/native-gameplay/quest-corpse-objectives.json": "414041e01e1a599e5f4ef980dd82056c916037329ce614f73f583875a532e028",
+    "tools/content-schema/native-gameplay/loot-tables.json": "70f129e25f585bb4428781dc827c399684e01464a01d79196c2940d6928e11a8",
+    "content/items/definitions/spell-native-profiles.json": "f2be0c3fc138cfc3a17b43585c347e3d4d0a0409a21a3083305f285d6c3e8955",
+    "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql": "c79752de099590d21afb9ae783e47cb9adf804bcf7663bd715af2a245c31fc37"
+  }
+}

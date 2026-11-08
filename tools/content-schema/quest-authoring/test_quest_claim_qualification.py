@@ -29,18 +29,12 @@ class QualificationTests(unittest.TestCase):
     def test_checked_in_ledger_is_valid(self):
         errors, counts = qualification.validate()
         self.assertEqual(errors, [])
-        # Three Demon Helmet selectors now have real USE/PostgreSQL receipt
-        # coverage. The exact remaining denominator still rejects drift.
-        # ITEMHOLD-Q expands the inventory, without qualifying these World routes.
-        self.assertEqual(sum(counts.values()) - len(qualification.ITEMHOLD_ADMISSIONS), 297)
-        ledger = qualification.read_json(qualification.LEDGER)
-        for key in qualification.ITEMHOLD_ADMISSIONS:
-            record = ledger["claims"][key]
-            self.assertEqual(record["disposition"], "blocked")
-            self.assertEqual(record["dependency"], "QUEST-QUAL-1")
+        # Keep the exact outstanding denominator; qualified and not-playable
+        # source claims remain in their separate coverage categories.
+        self.assertEqual(sum(counts.values()), 299)
 
     def test_missing_row_is_rejected(self):
-        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+        for key in sorted(self.ledger["claims"]):
             with self.subTest(claim=key):
                 ledger = copy.deepcopy(self.ledger)
                 del ledger["claims"][key]

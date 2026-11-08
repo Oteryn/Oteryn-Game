@@ -1,0 +1,105 @@
+{
+  "base": "b92200d03",
+  "scope": "Complete finite chosen Mystery of the Valley recipe. Prior quest events are fixture setup through their existing receipt owners; no Mystery tracks/items are inserted by SQL. Native arrivals between regions are fixture setup, not a travel reward or transport-network qualification.",
+  "validation": {
+    "pg": {
+      "log_sha256": "31ae7b5d407a315f4a124326f85137f81d47f0200ad0c4b557de4d61a777774d",
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_mystery_assembly_consumes_all_three_or_none duration=111.881352291s",
+      "duration_seconds": 111.881352291,
+      "postgres": true
+    },
+    "intro-pg": {
+      "log_sha256": "f5fa5e1cb502e63c1128d674a28d6ce253cbb6cce7bf703a62df43f9698a2949",
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_mystery_lai_introduction_requires_access_and_is_once duration=71.970482066s",
+      "duration_seconds": 71.970482066,
+      "postgres": true
+    },
+    "check": {
+      "log_sha256": "808dbd9f97269ed247cf6b85e10bf7b52acc297d53a5a01fac3e97cc6038add5"
+    },
+    "clippy": {
+      "log_sha256": "869577baa3510f28eed3c01784b59f607c9b898ee83a2bd05d7374a580eacaab"
+    },
+    "regenerate": {
+      "log_sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f"
+    },
+    "generator": {
+      "log_sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f"
+    },
+    "pin": {
+      "log_sha256": "c58ffa84b5ffb43da9cb259be99dea2f507d26cdc820064faf8c5245ad37dff1",
+      "result": {
+        "inputs_digest": "2c2d18bb5e5b9e31b86c0373756ed47b43d1877dcaafa7c9c3022fc7b85d0e0f",
+        "pins": [
+          {
+            "digest": "dc9b7254fc57318d4062aa5094496c8403bec9665af6cd8100710654fae5b34c",
+            "previous": "dc9b7254fc57318d4062aa5094496c8403bec9665af6cd8100710654fae5b34c",
+            "world": "oteryn"
+          }
+        ]
+      }
+    },
+    "pin-check": {
+      "log_sha256": "20a235d348d02171751f6345e0f32b7b2ad42fb416fa763f40c3b5bea87ec0cf",
+      "result": {
+        "inputs_digest": "2c2d18bb5e5b9e31b86c0373756ed47b43d1877dcaafa7c9c3022fc7b85d0e0f",
+        "pins": [
+          {
+            "bytes": 31102022,
+            "digest": "dc9b7254fc57318d4062aa5094496c8403bec9665af6cd8100710654fae5b34c",
+            "world": "oteryn"
+          }
+        ]
+      }
+    },
+    "units": {
+      "log_sha256": "815a67c6aa291682c611732bf43330686cd85471eee01d0c88a09e6b6cbe92d7",
+      "postgres": false
+    },
+    "fmt": {
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "access_red": {
+      "log_sha256": "4936bf938448667a60bdab466b364f8930a39ee95974fd856922c3cc7d19182f",
+      "duration_seconds": 74.08,
+      "postgres": true
+    },
+    "input_schema_red": {
+      "log_sha256": "b3b9005045bc984b2e49990f33e1102e4473eac30eaa14ae988ff22f4b2baa96",
+      "duration_seconds": 37.24,
+      "postgres": true
+    },
+    "constructor_units": {
+      "log_sha256": "7a6877e4f12fea55480d93451f3a505ce366358271a7f79964c77799310142b0",
+      "postgres": false
+    },
+    "reward_proof_red": {
+      "log_sha256": "b99cd99cdac57b87ca647544366d74790851c58b0597cca8571b75ce7692bf6c",
+      "duration_seconds": 108.89,
+      "postgres": true,
+      "server_error": "quest reward consumed an unauthored input",
+      "fix": "Populate give_world reward plan.take from the declared scalar and extra carried inputs; retain deferred SQL guard."
+    }
+  },
+  "existing_native_item_profiles_unchanged": true,
+  "upstream_checked": {
+    "head": "e7867e061",
+    "carried_document_commit": "97cb9db79",
+    "finding": "Single-input/no-item-reward carried document USE cannot supply this contextual world crafting action; reuse the existing world input/BURN owner with bounded extra inputs."
+  },
+  "bindings": {
+    "introduction": "oteryn:quest-npc/authored-mystery/lai/statue",
+    "world_callbacks": [
+      "authored-mystery-inukaya",
+      "authored-mystery-muggy-plains",
+      "authored-mystery-kilmaresh",
+      "authored-mystery-crystal",
+      "authored-mystery-assembly"
+    ]
+  },
+  "qualification_counts": {
+    "active": 23,
+    "qualified": 19,
+    "remaining": 4
+  }
+}

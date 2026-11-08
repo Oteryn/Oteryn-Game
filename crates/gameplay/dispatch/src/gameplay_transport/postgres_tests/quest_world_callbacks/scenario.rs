@@ -99,7 +99,10 @@ fn scenario_case(
     };
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
-    let floor_profiles = matches!(name, "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile");
+    let floor_profiles = matches!(
+        name,
+        "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile"
+    );
     let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
     let reusable_tool = name.starts_with("l6-reusable-tool");
@@ -109,7 +112,27 @@ fn scenario_case(
     let classic_npc = qengine_reward
         || matches!(
             name,
-            "catalogue-npc" | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp" | "nx6-wayfarer"
+            "catalogue-npc-end"
+                | "catalogue-npc-calendar"
+                | "catalogue-npc-xp"
+                | "nx6-wayfarer"
+                | "catalogue-npc"
+                | "authored-mystery-intro"
+                | "authored-mystery-assembly"
+                | "authored-mystery-geometry"
+                | "authored-static-constructors"
+                | "authored-venore"
+                | "authored-venore-supplies"
+                | "authored-winterlight"
+                | "authored-wrath-opening"
+                | "authored-wrath-hunt"
+                | "authored-wrath-crystals"
+                | "authored-colours-opening"
+                | "catalogue-npc-father"
+                | "fathers-burden-handins"
+                | "catalogue-npc-hero"
+                | "catalogue-npc-legacy"
+                | "catalogue-npc-scoped"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -117,160 +140,6 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if native_signs || diprath_room {
-        callback("ancient-tombs-diprath-sign-1")?
-    } else if native_flames {
-        callback("ancient-tombs-morguthis-seven-flame-gate")?
-    } else if native_room {
-        super::super::l6_native_rooms::callback(name)?
-    } else {
-        callback(if name == "triangle-tower-wall" {
-            "triangle-tower-lever"
-        } else if ancient_instruments {
-            "ancient-tombs-diprath-sign-1"
-        } else if classic_npc || small_ruby || reward_fluids {
-            "behemoth"
-        } else if rotten_purchase {
-            "rotten-blood/sacrifice"
-        } else if monk {
-            "monk-guidance"
-        } else if target_swap
-            || reusable_tool
-            || floor_profiles
-            || floor_assembly
-            || room_raise
-            || carried_step
-            || shared_switch
-            || shared_gate
-        {
-            "fish-napping-key"
-        } else {
-            name.strip_suffix("-expiry").unwrap_or(name)
-        })?
-    };
-    if shared_gate {
-        let unique = name.rsplit('-').next().ok_or("gate UID")?.parse()?;
-        callback.key = "oteryn:quest-callback/l6-shared-gate-fixture".into();
-        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
-        callback.selector.position = Some(trigger);
-        callback.selector.unique = Some(unique);
-        callback.selector.action = None;
-        callback.selector.appearance = Some(100);
-        callback.lever = None;
-        callback.storage.clear();
-        callback.offerings.clear();
-        callback.passages.clear();
-        callback.item_on_target = None;
-        callback.effects = Default::default();
-        callback.teleport = Some(super::super::l6_shared_gates::spec(unique)?.2);
-        callback.return_on_failure = true;
-    }
-    if shared_switch {
-        callback.key = "oteryn:quest-callback/l6-shared-switch-fixture".into();
-        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
-        callback.selector.position = Some(trigger);
-        callback.selector.unique = None;
-        callback.selector.action = Some(name.rsplit('-').next().ok_or("switch action")?.parse()?);
-        callback.selector.appearance = Some(2772);
-        callback.lever = Some([2772, 2773]);
-        callback.reversible = false;
-        callback.storage.clear();
-        callback.offerings.clear();
-        callback.passages.clear();
-        callback.item_on_target = None;
-        callback.teleport = None;
-        callback.effects = Default::default();
-    }
-    if carried_step {
-        // Geometry supplies the exact source UID and both floor endpoints only.
-        // Production callback selection and physical branch ownership are unchanged.
-        let unique = name.rsplit('-').next().ok_or("tomb UID")?.parse::<u16>()?;
-        callback.key = "oteryn:quest-callback/l6-carried-step-fixture".into();
-        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
-        callback.selector.position = Some(trigger);
-        callback.selector.unique = Some(unique);
-        callback.selector.action = None;
-        callback.selector.appearance = Some(100);
-        callback.item_on_target = None;
-        callback.storage.clear();
-        callback.passages.clear();
-        callback.offerings.clear();
-        callback.lever = None;
-        callback.effects = Default::default();
-        callback.teleport = stateless_destination;
-        if tomb_native {
-            callback.key = "oteryn:quest-callback/l6-native-step-fixture".into();
-        }
-    }
-    if name.ends_with("-expiry") {
-        callback
-            .effects
-            .portals
-            .as_mut()
-            .ok_or("portal pair")?
-            .lifetime_us = Some(60_000_000);
-    }
-    if reusable_tool {
-        callback = super::super::l6_reusable_tools::fixture(callback);
-    }
-    if floor_profiles || floor_assembly {
-        callback.key = "oteryn:quest-callback/l6-floor-profile-fixture".into();
-        callback.selector.unique = None;
-        callback.selector.action = if name.ends_with("-unbound") {
-            Some(40041)
-        } else if floor_assembly {
-            Some(40040)
-        } else {
-            None
-        };
-        callback.selector.appearance = Some(100);
-        callback.selector.position = None;
-        callback.item_on_target = None;
-        callback.storage.clear();
-        callback.teleport = None;
-    }
-    if ancient_instruments {
-        // The fixture supplies source-verified native positions and appearances;
-        // all matching and durable effects still come from the production registry.
-        callback.key = "oteryn:quest-callback/l6-instrument-fixture".into();
-        callback.selector.unique = None;
-        callback.selector.position = Some(trigger);
-        callback.selector.action = None;
-        callback.selector.appearance = Some(3255);
-    }
-    if target_swap {
-        callback
-            .item_on_target
-            .as_mut()
-            .ok_or("item")?
-            .target_replacement = Some(7777);
-    }
-    if lever_fixture {
-        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
-        callback.selector.unique = Some(25012);
-        callback.selector.appearance = Some(2772);
-        callback.lever = Some([2772, 2773]);
-    }
-    if stateless_destination.is_some() {
-        assert_eq!(callback.selector.position, Some(trigger));
-    }
-    if name.starts_with("qengine-rewards-questpc4-admission-") {
-        callback = super::super::l6_world_admission::callback(name)?;
-    }
-    if name.starts_with("qengine-rewards-questpc4-puzzle-predicate") {
-        callback = super::super::l6_world_puzzles::predicate_fixture(
-            callback,
-            trigger,
-            name.ends_with("-refuse"),
-        );
-    }
-    if name == "qengine-rewards-questpc4-puzzle-presence" {
-        callback = super::super::l6_world_puzzles::presence_fixture(callback, trigger);
-    }
-    if name == "qengine-rewards-questpc4-puzzle-ladder" {
-        callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
-    }
-    let world = world(&callback, trigger)?;
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
             Harness::create_quest_reward(
@@ -297,9 +166,236 @@ fn scenario_case(
                 eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
             }
         }
-        prepare_current_session(&h)
-            .await
-            .map_err(|e| format!("callback session: {e}"))?;
+        if name == "mintwallin-cyclops-scene" {
+            eprintln!(
+                "POSTGRES_CASE_STARTED mintwallin-cyclops-scene after PostgreSQL fixture initialization"
+            );
+        }
+        if name.starts_with("authored-") {
+            eprintln!("POSTGRES_CASE_STARTED {name} after PostgreSQL fixture initialization");
+        }
+        if name == "authored-wrath-hunt" { super::super::questpc8_wrath_hunt::require_bindings()?; }
+        if name == "nx6-wayfarer" { super::super::questpc8_wrath_source_dragon::require_bindings()?; }
+        if name == "authored-wrath-crystals" { super::super::questpc8_wrath_crystals::require_bindings()?; }
+        let mut callback = if native_signs || diprath_room {
+            callback("ancient-tombs-diprath-sign-1")?
+        } else if native_flames {
+            callback("ancient-tombs-morguthis-seven-flame-gate")?
+        } else if native_room {
+            super::super::l6_native_rooms::callback(name)?
+        } else {
+            callback(if name == "triangle-tower-wall" {
+                "triangle-tower-lever"
+            } else if ancient_instruments {
+                "ancient-tombs-diprath-sign-1"
+            } else if classic_npc || small_ruby || reward_fluids {
+                "behemoth"
+            } else if rotten_purchase {
+                "rotten-blood/sacrifice"
+            } else if monk {
+                "monk-guidance"
+            } else if name == "giant-smithhammer-asymmetric" {
+                "giant-smithhammer"
+            } else if name == "authored-trader" {
+                "authored-trader-package"
+            } else if target_swap
+                || reusable_tool
+                || floor_profiles
+                || floor_assembly
+                || room_raise
+                || carried_step
+                || shared_switch
+                || shared_gate
+            {
+                "fish-napping-key"
+            } else {
+                name.strip_suffix("-expiry").unwrap_or(name)
+            })?
+        };
+        if shared_gate {
+            let unique = name.rsplit('-').next().ok_or("gate UID")?.parse()?;
+            callback.key = "oteryn:quest-callback/l6-shared-gate-fixture".into();
+            callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+            callback.selector.position = Some(trigger);
+            callback.selector.unique = Some(unique);
+            callback.selector.action = None;
+            callback.selector.appearance = Some(100);
+            callback.lever = None;
+            callback.storage.clear();
+            callback.offerings.clear();
+            callback.passages.clear();
+            callback.item_on_target = None;
+            callback.effects = Default::default();
+            callback.teleport = Some(super::super::l6_shared_gates::spec(unique)?.2);
+            callback.return_on_failure = true;
+        }
+        if shared_switch {
+            callback.key = "oteryn:quest-callback/l6-shared-switch-fixture".into();
+            callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
+            callback.selector.position = Some(trigger);
+            callback.selector.unique = None;
+            callback.selector.action =
+                Some(name.rsplit('-').next().ok_or("switch action")?.parse()?);
+            callback.selector.appearance = Some(2772);
+            callback.lever = Some([2772, 2773]);
+            callback.reversible = false;
+            callback.storage.clear();
+            callback.offerings.clear();
+            callback.passages.clear();
+            callback.item_on_target = None;
+            callback.teleport = None;
+            callback.effects = Default::default();
+        }
+        if carried_step {
+            // Geometry supplies the exact source UID and both floor endpoints only.
+            // Production callback selection and physical branch ownership are unchanged.
+            let unique = name.rsplit('-').next().ok_or("tomb UID")?.parse::<u16>()?;
+            callback.key = "oteryn:quest-callback/l6-carried-step-fixture".into();
+            callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+            callback.selector.position = Some(trigger);
+            callback.selector.unique = Some(unique);
+            callback.selector.action = None;
+            callback.selector.appearance = Some(100);
+            callback.item_on_target = None;
+            callback.storage.clear();
+            callback.passages.clear();
+            callback.offerings.clear();
+            callback.lever = None;
+            callback.effects = Default::default();
+            callback.teleport = stateless_destination;
+            if tomb_native {
+                callback.key = "oteryn:quest-callback/l6-native-step-fixture".into();
+            }
+        }
+        if name.ends_with("-expiry") {
+            callback
+                .effects
+                .portals
+                .as_mut()
+                .ok_or("portal pair")?
+                .lifetime_us = Some(60_000_000);
+        }
+        if reusable_tool {
+            callback = super::super::l6_reusable_tools::fixture(callback);
+        }
+        if floor_profiles || floor_assembly {
+            callback.key = "oteryn:quest-callback/l6-floor-profile-fixture".into();
+            callback.selector.unique = None;
+            callback.selector.action = if name.ends_with("-unbound") {
+                Some(40041)
+            } else if floor_assembly {
+                Some(40040)
+            } else {
+                None
+            };
+            callback.selector.appearance = Some(100);
+            callback.selector.position = None;
+            callback.item_on_target = None;
+            callback.storage.clear();
+            callback.teleport = None;
+        }
+        if ancient_instruments {
+            // The fixture supplies source-verified native positions and appearances;
+            // all matching and durable effects still come from the production registry.
+            callback.key = "oteryn:quest-callback/l6-instrument-fixture".into();
+            callback.selector.unique = None;
+            callback.selector.position = Some(trigger);
+            callback.selector.action = None;
+            callback.selector.appearance = Some(3255);
+        }
+        if target_swap {
+            callback
+                .item_on_target
+                .as_mut()
+                .ok_or("item")?
+                .target_replacement = Some(7777);
+        }
+        if lever_fixture {
+            callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
+            callback.selector.unique = Some(25012);
+            callback.selector.appearance = Some(2772);
+            callback.lever = Some([2772, 2773]);
+        }
+        if stateless_destination.is_some() {
+            assert_eq!(callback.selector.position, Some(trigger));
+        }
+        if name.starts_with("qengine-rewards-questpc4-admission-") {
+            callback = super::super::l6_world_admission::callback(name)?;
+        }
+        if name.starts_with("qengine-rewards-questpc4-puzzle-predicate") {
+            callback = super::super::l6_world_puzzles::predicate_fixture(
+                callback,
+                trigger,
+                name.ends_with("-refuse"),
+            );
+        }
+        if name == "qengine-rewards-questpc4-puzzle-presence" {
+            callback = super::super::l6_world_puzzles::presence_fixture(callback, trigger);
+        }
+        if name == "qengine-rewards-questpc4-puzzle-ladder" {
+            callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
+        }
+        let world = if name == "authored-wrath-crystals" {
+            super::super::questpc8_wrath_crystals::world()?
+        } else if name == "nx6-wayfarer" {
+            super::super::questpc8_wrath_source_dragon::world()?
+        } else if name == "authored-wrath-hunt" {
+            super::super::questpc8_wrath_hunt::world()?
+        } else if matches!(name, "authored-wrath-opening" | "authored-colours-opening") {
+            super::super::questpc8_wrath_opening::world()?
+        } else if name == "authored-winterlight" {
+            super::super::questpc8_winterlight::world()?
+        } else if name == "authored-venore" {
+            super::super::questpc8_venore::world()?
+        } else if matches!(
+            name,
+            "authored-mystery-geometry" | "authored-mystery-assembly"
+        ) {
+            super::super::questpc8_mystery_geometry::world()?
+        } else if name == "authored-secret-library" {
+            super::super::questpc8_secret_library::world()?
+        } else if name == "authored-treasure-island" {
+            super::super::questpc8_treasure_island::world()?
+        } else if name == "authored-trader" {
+            super::super::questpc8_trader::world()?
+        } else if name == "authored-anniversary" {
+            super::super::questpc8_anniversary::world()?
+        } else if name == "authored-magic-sword" {
+            super::super::questpc8_magic_sword::world()?
+        } else if name == "authored-torch" {
+            super::super::questpc8_bridge_routes::torch_world()?
+        } else if name == "authored-life-ring-entry" {
+            super::super::questpc8_life_ring::world()?
+        } else if name == "authored-life-ring-bridge" {
+            super::super::questpc8_life_ring_bridge::world()?
+        } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
+            super::super::questpc8_retrieval_routes::world(route)?
+        } else if name == "authored-braindeath" {
+            super::super::quest_callbacks::source_world((32546, 31522, -11), 0, 1983, 0)?
+        } else if name == "authored-kormarak" {
+            super::super::quest_callbacks::source_world_rectangle_with_prefix(
+                (32342, 32125, -10),
+                &[(32342, 0)],
+                4240,
+                2,
+                4,
+                &[1854],
+            )?
+        } else if name == "authored-smith-cache" {
+            super::super::quest_callbacks::source_world_rectangle(
+                (32776, 32253, -8),
+                &[(32776, 0)],
+                2472,
+                2,
+            )?
+        } else if name == "authored-tinder-box" {
+            super::super::quest_callbacks::source_world((32085, 31025, -1), 0, 4285, 0)?
+        } else if name == "mintwallin-cyclops-scene" {
+            super::super::questpc8_native_scenes::world()?
+        } else {
+            world(&callback, trigger)?
+        };
+        prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -449,10 +545,26 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
+            // These two cases keep five source NPCs and one player alive.
             if name.starts_with("qengine-rewards-l12-") {
                 128
-            } else if native_story || (native_upper && name.ends_with("-complete")) {
+            } else if native_story
+                || (native_upper && name.ends_with("-complete"))
+                || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
+            {
                 6
+            } else if name == "authored-magic-sword" {
+                9
+            } else if name == "authored-trader" {
+                7
+            } else if name == "authored-treasure-island" {
+                3
+            } else if name == "authored-secret-library" {
+                5
+            } else if matches!(name, "authored-anniversary" | "authored-venore") {
+                12
+            } else if name == "authored-torch" {
+                3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
             } else if classic_npc {
@@ -476,7 +588,9 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.contains("l6-beggar-")
+        let premium = if name.starts_with("authored-")
+            || name == "nx6-wayfarer"
+            || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
@@ -610,7 +724,7 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead {
+        if mead || name == "nx6-wayfarer" {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
@@ -829,7 +943,8 @@ fn scenario_case(
             )
             .await?;
         } else if name == "catalogue-npc-xp" {
-            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "catalogue-npc-calendar" {
             super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
         } else if name == "catalogue-npc-end" {
@@ -837,7 +952,6 @@ fn scenario_case(
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if outfit_world {
-
             super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,
@@ -855,6 +969,56 @@ fn scenario_case(
                 &h,
                 &authority,
                 name,
+            )
+            .await?;
+        } else if name == "authored-magic-sword" {
+            super::super::questpc8_magic_sword::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-trader" {
+            super::super::questpc8_trader::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-treasure-island" {
+            super::super::questpc8_treasure_island::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-secret-library" {
+            super::super::questpc8_secret_library::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-anniversary" {
+            super::super::questpc8_anniversary::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-torch" {
+            super::super::questpc8_bridge_routes::exercise_torch(&mut owner, &mut admitted, &h)
+                .await?;
+        } else if name == "authored-life-ring-entry" {
+            super::super::questpc8_life_ring::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-life-ring-bridge" {
+            super::super::questpc8_life_ring_bridge::exercise(&mut owner, &mut admitted).await?;
+        } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
+            super::super::questpc8_retrieval_routes::exercise(route, &mut owner, &mut admitted, &h)
+                .await?;
+        } else if name == "authored-braindeath" {
+            super::super::questpc8_authored_programmes::exercise_braindeath(
+                &mut owner,
+                &mut admitted,
+                &h,
+            )
+            .await?;
+        } else if name == "authored-kormarak" {
+            super::super::questpc8_kormarak::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-smith-cache" {
+            super::super::questpc8_smith_cache::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-tinder-box" {
+            super::super::questpc8_authored_programmes::exercise_tinder_box(
+                &mut owner,
+                &mut admitted,
+                &h,
+            )
+            .await?;
+        } else if name == "mintwallin-cyclops-scene" {
+            super::super::questpc8_native_scenes::exercise(&mut owner, &mut admitted, &world)
+                .await?;
+        } else if name == "giant-smithhammer-asymmetric" {
+            super::super::quest_l7_asymmetric::exercise(
+                &mut owner,
+                &mut admitted,
+                &callback,
+                trigger,
+                &world,
             )
             .await?;
         } else if callback.effects != Default::default()
@@ -900,8 +1064,76 @@ fn scenario_case(
                 origin,
             )
             .await?;
+        } else if name == "authored-wrath-crystals" {
+            super::super::questpc8_wrath_crystals::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "authored-wrath-hunt" {
+            super::super::questpc8_wrath_hunt::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "nx6-wayfarer" {
             super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if matches!(
+            name,
+            "catalogue-npc-father" | "catalogue-npc-legacy" | "fathers-burden-handins"
+        ) {
+            super::super::questpc8_npc_program_regressions::exercise_father(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name == "catalogue-npc-legacy",
+                name == "fathers-burden-handins",
+            )
+            .await?;
+        } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+            super::super::questpc8_npc_program_regressions::exercise_scoped(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name == "catalogue-npc-hero",
+            )
+            .await?;
+        } else if name == "authored-mystery-assembly" {
+            super::super::questpc8_mystery_assembly::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name == "authored-mystery-geometry" {
+            super::super::questpc8_mystery_geometry::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name == "authored-colours-opening" {
+            super::super::questpc8_colours_opening::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-wrath-opening" {
+            super::super::questpc8_wrath_opening::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-winterlight" {
+            super::super::questpc8_winterlight::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-venore" {
+            super::super::questpc8_venore::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-venore-supplies" {
+            super::super::questpc8_venore_supplies::exercise_supplies(
+                &mut owner,
+                &mut admitted,
+                &h,
+            )
+            .await?;
+        } else if name == "authored-static-constructors" {
+            super::super::questpc8_static_constructors::exercise(&mut owner, &mut admitted, &h)
+                .await?;
+        } else if name == "authored-mystery-intro" {
+            super::super::questpc8_mystery::exercise_intro(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
         } else if name == "conditional-quest-greetings" {
             super::super::conditional_quest_greetings::exercise(
                 &mut owner,

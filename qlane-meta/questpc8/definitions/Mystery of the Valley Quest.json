@@ -1,0 +1,204 @@
+{
+  "classification": "OTERYN_AUTHORED_APPROXIMATION",
+  "completeness_scope": "CHOSEN_OTERYN_RECIPE_ONLY",
+  "data_complete": true,
+  "definition_profile": "oteryn_authored_v1",
+  "display_name": "Mystery of the Valley Quest",
+  "identity": {
+    "key": "oteryn:quest.authored.mystery_of_the_valley_quest",
+    "revision": "authored-r1"
+  },
+  "kind": "storyline",
+  "missing_data": [
+    {
+      "code": "quest_native_lowering_missing"
+    },
+    {
+      "code": "authored_trigger_and_delivery_bindings_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "canonical_reward_refs": [],
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "provenance": {
+    "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+    "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+  },
+  "readiness": "waiting_native_bindings",
+  "recipe": {
+    "adaptations": [
+      "Rozmowa z Lai jest wybranym obowi\u0105zkowym wprowadzeniem; \u017ar\u00f3d\u0142o dopuszcza pomini\u0119cie Lai i Azzilon.",
+      "Pobranie ka\u017cdego fragmentu przyj\u0119to jednokrotnie, a finalne u\u017cycie konsumuje komplet trzech fragment\u00f3w."
+    ],
+    "repeat": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "kind": "once"
+    },
+    "requirements": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "min_level": 0,
+      "premium": true,
+      "prerequisites": [
+        "The Ice Islands Quest: Cure the Dogs access",
+        "The New Frontier Quest: An Offer You Can't Refuse access"
+      ]
+    },
+    "reward_intents": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item_resolution": "unresolved",
+        "kind": "item",
+        "name": "Guardian Statue (Quest)"
+      }
+    ],
+    "source_notes": [
+      "Fandom wskazuje trzy miejsca fragment\u00f3w i monta\u017c przy kryszta\u0142ach; nie opisuje dzia\u0142aj\u0105cego teleportu statuy.",
+      "Nie wybrano magicznej funkcji ani nagrody teleportacyjnej dla statuy."
+    ],
+    "source_refs": [
+      {
+        "content_sha256": "93227f7e18c015e29f20eb6c69f1de476f76084d69882b35908ec68fccf8fc57",
+        "pageid": 107854,
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "revid": 1092319,
+        "url": "https://tibia.fandom.com/index.php?curid=107854&oldid=1092319"
+      },
+      {
+        "content_sha256": "72ae62972be13a063ff91a9352bafb864faf285219eb052e9d620a98d0cfd61e",
+        "pageid": 107855,
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "revid": 1091060,
+        "url": "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      },
+      {
+        "content_sha256": "7050ebabedeeb8b2206ff7a5eb97a905f16c99551e3bf8e8e54dd9d451c2391b",
+        "pageid": 63794,
+        "provider": "tibiawiki_br",
+        "relation": "crosscheck",
+        "revid": 423926,
+        "url": "https://www.tibiawiki.com.br/index.php?curid=63794&oldid=423926"
+      }
+    ],
+    "stages": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s1",
+        "kind": "talk",
+        "next": [
+          "s2"
+        ],
+        "objective": "Zapytaj Lai o statu\u0119 i rozpocznij poszukiwanie trzech \u015bwi\u0105ty\u0144.",
+        "targets": [
+          "Lai"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s2",
+        "kind": "collect",
+        "next": [
+          "s3"
+        ],
+        "objective": "Odszukaj \u015bwi\u0105tyni\u0119 Inukayi i odbierz pierwszy fragment statuy.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "Fragment of a Statue (1st)"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "Inukaya Shrine"
+          }
+        ],
+        "targets": [
+          "Fragment of a Statue (1st)",
+          "Inukaya Shrine"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s3",
+        "kind": "collect",
+        "next": [
+          "s4"
+        ],
+        "objective": "Zbadaj \u015bwi\u0105tyni\u0119 na p\u0142askowy\u017cu Muggy Plains i odbierz drugi fragment.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "Fragment of a Statue (2nd)"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "Muggy Plains Shrine"
+          }
+        ],
+        "targets": [
+          "Fragment of a Statue (2nd)",
+          "Muggy Plains Shrine"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s4",
+        "kind": "collect",
+        "next": [
+          "s5"
+        ],
+        "objective": "Zbadaj \u015bwi\u0105tyni\u0119 nad po\u0142udniowym stepem Kilmaresh i odbierz trzeci fragment.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "Fragment of a Statue (3rd)"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "Kilmaresh Shrine"
+          }
+        ],
+        "targets": [
+          "Fragment of a Statue (3rd)",
+          "Kilmaresh Shrine"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s5",
+        "kind": "explore",
+        "next": [
+          "s6"
+        ],
+        "objective": "Dotrzyj do skalnego miejsca z pozosta\u0142o\u015bciami kryszta\u0142u w Kha'zeel.",
+        "targets": [
+          "Kha'zeel Crystal Fragments"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s6",
+        "kind": "complete",
+        "next": [],
+        "objective": "Po\u0142\u0105cz trzy fragmenty z kryszta\u0142em na skale, aby uko\u0144czy\u0107 statu\u0119.",
+        "targets": [
+          "Guardian Statue (Quest)",
+          "Kha'zeel Crystal Fragments"
+        ]
+      }
+    ],
+    "summary": "Odtw\u00f3rz miniaturow\u0105 statu\u0119 Merudri z trzech fragment\u00f3w i kryszta\u0142u Kha'zeel.",
+    "wiki_title": "Mystery of the Valley Quest"
+  },
+  "runtime_enabled": false
+}

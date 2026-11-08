@@ -1,4 +1,5 @@
 """SRVGAP-C1: native kit closure and the Monk's donor two-handed equipment policy."""
+import copy
 import json
 from pathlib import Path
 import unittest
@@ -29,6 +30,31 @@ class StartingLoadoutProfiles(unittest.TestCase):
         self.assertEqual(pattern['additional_reserved_slots'], {'state': 'KNOWN', 'value': ['SHIELD']})
         self.assertEqual(pattern['vocations'], {'state': 'KNOWN', 'value': ['MONK']})
         self.assertEqual(staff['semantics']['physical']['value']['weight'], {'state': 'KNOWN', 'value': 2100})
+
+    def test_existing_owner_is_unique_and_conflicting_physics_refuse_atomically(self):
+        canonical = lambda value: json.dumps(value).encode()
+        order = lambda row: row['production_definition']['production_key']
+        fresh = {'items': b'{"records":[]}', 'manifest': b'{"item_profiles":{}}'}
+        source.admit(ROOT, fresh, 'items', 'manifest', order, canonical)
+        original = json.loads(fresh[source.FRAGMENT])['records'][0]
+        existing = copy.deepcopy(original)
+        existing['semantics']['protection'] = {'state': 'UNKNOWN'}
+        planned = {'items': canonical({'records': [existing]}),
+                   'manifest': b'{"item_profiles":{}}'}
+        source.admit(ROOT, planned, 'items', 'manifest', order, canonical)
+        kept = json.loads(planned['items'])['records']
+        additions = json.loads(planned[source.FRAGMENT])['records']
+        self.assertEqual(kept, [original])
+        self.assertEqual(len(additions), 7)
+        self.assertNotIn(original['production_definition']['production_key'],
+                         [row['production_definition']['production_key'] for row in additions])
+        existing['semantics']['physical']['value']['weight']['value'] += 1
+        planned = {'items': canonical({'records': [existing]}),
+                   'manifest': b'{"item_profiles":{}}'}
+        before = dict(planned)
+        with self.assertRaisesRegex(ValueError, 'STARTING_LOADOUT_PROFILE_CONFLICT'):
+            source.admit(ROOT, planned, 'items', 'manifest', order, canonical)
+        self.assertEqual(planned, before)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-content --lib source_charge_and_fluid_projections_reach_the_native_candidate -- --nocapture",
+  "exit": 101,
+  "duration_seconds": 8.355
+}

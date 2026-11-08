@@ -4,8 +4,16 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod carried;
+mod carried_bounds;
+#[cfg(test)]
+mod carried_exchange_tests;
+mod published_markers;
+#[cfg(test)]
+mod questpc8_exchange_tests;
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
@@ -35,6 +43,8 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub backpack_outputs: Vec<ItemAmount>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -116,6 +126,15 @@ pub struct AchievementProgress {
     pub target: u32,
 }
 
+/// Immutable evidence survives a source track being reset for another task run.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(deny_unknown_fields)]
+pub struct ReceiptPredicate {
+    pub transition: String,
+    pub track: String,
+    pub value: i64,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -125,6 +144,9 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    /// Explicit selected-instance exchange; legacy tools retain their no-grant contract.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub carried_exchange: bool,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -154,6 +176,8 @@ pub struct RewardCallback {
     pub forbids_addons: Vec<OutfitReward>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_receipts: Vec<ReceiptPredicate>,
     pub take: Vec<ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fee: Option<MonetaryFee>,
@@ -161,6 +185,8 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
     pub give: Option<ItemReward>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub per_occurrence_mint: bool,
     pub outfit: Option<OutfitReward>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub outfits: Vec<OutfitReward>,
@@ -169,8 +195,32 @@ pub struct RewardCallback {
     pub achievement: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub achievement_progress: Vec<AchievementProgress>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience: Option<i64>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+pub(crate) fn valid_item_reward(reward: &ItemReward) -> bool {
+    let valid = |item: &str, count: u16| {
+        super::valid_quest_key(item)
+            && item
+                .strip_prefix("oteryn:item.")
+                .is_some_and(|tail| !tail.is_empty())
+            && (1..=100).contains(&count)
+    };
+    valid(&reward.item, reward.count)
+        && (reward.contents.is_empty() || reward.backpack_outputs.is_empty())
+        && reward.backpack_outputs.len() <= 19
+        && reward
+            .backpack_outputs
+            .iter()
+            .all(|item| valid(&item.item, item.count))
+        && reward.contents.len() <= 20
+        && reward
+            .contents
+            .iter()
+            .all(|item| valid(&item.item, item.count))
 }
 
 impl OutfitReward {
@@ -245,10 +295,20 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
 ];
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
     parse_documents(DOCUMENTS).map(|document| document.callbacks)
+}
+
+fn load_document() -> Result<Document, String> {
+    parse_documents(DOCUMENTS)
+}
+
+#[cfg(test)]
+fn parse_document(source: &str) -> Result<Document, String> {
+    parse_documents(&[source])
 }
 
 fn parse_documents(sources: &[&str]) -> Result<Document, String> {
@@ -273,6 +333,30 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     parse_documents(&[text]).map(|document| document.callbacks)
 }
 
+fn external_track_owners() -> Result<&'static [(String, String)], String> {
+    static OWNERS: std::sync::OnceLock<Result<Vec<(String, String)>, String>> =
+        std::sync::OnceLock::new();
+    OWNERS
+        .get_or_init(|| {
+            let mut owners = Vec::new();
+            for callback in super::world_callbacks::load()? {
+                for storage in callback.storage {
+                    if !storage.read_only {
+                        owners.push((callback.quest.clone(), storage.track));
+                    }
+                }
+            }
+            for objective in super::death_objectives::load()? {
+                owners.push((objective.quest.clone(), objective.stage.clone()));
+                owners.push((objective.quest.clone(), objective.counter.clone()));
+            }
+            Ok(owners)
+        })
+        .as_ref()
+        .map(Vec::as_slice)
+        .map_err(Clone::clone)
+}
+
 fn validate_document(document: Document) -> Result<Document, String> {
     let mut keys = BTreeSet::new();
     let slug = |value: &str, prefix: &str, alphabet: &[u8], maximum: usize| {
@@ -290,6 +374,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
         return Err("reward callback bounds".into());
     }
     let mut declarations = BTreeSet::new();
+    let external = external_track_owners()?;
     for track in &document.tracks {
         if !slug(&track.key, "oteryn:", b"._/:-", 128)
             || !slug(&track.quest, "oteryn:", b"._/:-", 128)
@@ -314,6 +399,11 @@ fn validate_document(document: Document) -> Result<Document, String> {
                                     .flat_map(|p| p.tracks().map(|key| (&p.quest, key))),
                             )
                     })
+                    .chain(
+                        external
+                            .iter()
+                            .map(|(quest, track)| (quest, track.as_str())),
+                    )
                     .filter(|(_, key)| *key == track.key)
                     .map(|(owner, _)| owner)
                     .collect();
@@ -343,6 +433,19 @@ fn validate_document(document: Document) -> Result<Document, String> {
         }
     }
     for c in &document.callbacks {
+        if c.give
+            .as_ref()
+            .is_some_and(|reward| !valid_item_reward(reward))
+            || (c.per_occurrence_mint
+                && (c.give.is_none()
+                    || c.cosmetic_targets().next().is_some()
+                    || c.achievement.is_some()
+                    || !c.achievement_progress.is_empty()))
+            || c.experience
+                .is_some_and(|amount| !(1..=super::QUESTGATE0_RL_05).contains(&amount))
+        {
+            return Err(format!("invalid reward value extension {}", c.key));
+        }
         let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
         let op_keys: BTreeSet<_> = c.state_ops.iter().map(|s| &s.track).collect();
         let participant_keys: BTreeSet<_> = c
@@ -397,17 +500,8 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
-            || c.carried_item.as_ref().is_some_and(|item| {
-                c.take
-                    != [ItemAmount {
-                        item: item.clone(),
-                        count: 1,
-                        fluid_subtype: None,
-                    }]
-                    || c.give.is_some()
-                    || c.fee.is_some()
-                    || !c.requires_actor_conditions.is_empty()
-            })
+            || !c.valid_carried_use()
+            || !carried_bounds::valid(c)
             || c.forbids_outfits.len() > 8
             || c.forbids_outfits.iter().collect::<BTreeSet<_>>().len() != c.forbids_outfits.len()
             || c.forbids_outfits
@@ -462,6 +556,14 @@ fn validate_document(document: Document) -> Result<Document, String> {
                 && c.storage
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+            || c.required_receipts.len() > 8
+            || c.required_receipts.iter().collect::<BTreeSet<_>>().len()
+                != c.required_receipts.len()
+            || c.required_receipts.iter().any(|requirement| {
+                !super::valid_quest_key(&requirement.transition)
+                    || !super::valid_quest_key(&requirement.track)
+                    || requirement.transition == c.key
+            })
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
@@ -559,11 +661,69 @@ pub fn participant_key(callback: &str, index: usize) -> String {
     format!("{callback}/participant/{index}")
 }
 
+fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
+    let legacy = serde_json::to_vec(&(
+        &callback.key,
+        &callback.quest,
+        &callback.required_receipts,
+        &callback.npc,
+        &callback.keywords,
+        callback.topic,
+        callback.next_topic,
+        &callback.storage,
+        &callback.take,
+        &callback.present,
+        &callback.give,
+        &callback.outfit,
+        &callback.achievement,
+        callback.completes,
+        callback.experience,
+    ))
+    .map_err(|e| e.to_string())?;
+    let current =
+        if callback.state_ops.is_empty() && callback.fee.is_none() && !callback.requires_premium {
+            legacy
+        } else {
+            serde_json::to_vec(&(
+                "oteryn:quest-reward-extended-v1",
+                legacy,
+                &callback.state_ops,
+                &callback.fee,
+                callback.requires_premium,
+            ))
+            .map_err(|error| error.to_string())?
+        };
+    if callback.per_occurrence_mint {
+        serde_json::to_vec(&("oteryn:quest-reward-occurrence-mint-v1", current))
+            .map_err(|error| error.to_string())
+    } else {
+        Ok(current)
+    }
+}
+
+/// Declare authored bounds before world and death adapters validate their stages.
+/// Their complete rewards and provenance are still installed by `extend` afterward.
+pub(crate) fn declare_tracks(
+    catalogue: QuestStateCatalogue,
+) -> Result<QuestStateCatalogue, String> {
+    extend_callbacks(catalogue, Vec::new(), load_document()?.tracks)
+}
+
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+    let document = load_document()?;
+    extend_callbacks(catalogue, document.callbacks, document.tracks)
+}
+fn extend_callbacks(
+    catalogue: QuestStateCatalogue,
+    callbacks: Vec<RewardCallback>,
+    declarations: Vec<TrackDeclaration>,
+) -> Result<QuestStateCatalogue, String> {
+    let npc_legacy = catalogue.npc_legacy.clone();
+    let published = published_markers::keys()?;
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    let document = parse_documents(DOCUMENTS)?;
-    for declaration in document.tracks {
+    let explicit: BTreeSet<_> = declarations.iter().map(|d| d.key.clone()).collect();
+    for declaration in declarations {
         let declared = QuestTrack {
             key: declaration.key,
             quest: declaration.quest,
@@ -582,17 +742,25 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             tracks.push(declared);
         }
     }
-    let callbacks = document.callbacks;
     let requires: Vec<_> = callbacks.iter().flat_map(|c| &c.requires).collect();
     for callback in &callbacks {
         for operation in &callback.state_ops {
-            if tracks
+            let track = tracks
                 .iter()
-                .find(|t| t.key == operation.track)
-                .is_none_or(|t| t.quest != callback.quest)
+                .find(|track| track.key == operation.track)
+                .ok_or_else(|| format!("undeclared reward operation {}", operation.track))?;
+            if track.quest != callback.quest
+                || !operation.valid()
+                || ((matches!(operation.effect, StateMutation::SetNow)
+                    || matches!(
+                        operation.from,
+                        StateCondition::ElapsedAtLeast { .. }
+                            | StateCondition::ElapsedLessThan { .. }
+                    ))
+                    && (track.initial != 0 || track.min != 0 || track.max != i64::MAX))
             {
                 return Err(format!(
-                    "undeclared or foreign reward operation {}",
+                    "foreign or invalid reward operation {}",
                     operation.track
                 ));
             }
@@ -648,13 +816,74 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 experience: None,
             });
         }
+        for requirement in &callback.required_receipts {
+            if !catalogue
+                .transition(&requirement.transition)
+                .is_some_and(|transition| transition.quest == callback.quest)
+                || !catalogue.track(&requirement.track).is_some_and(|track| {
+                    track.quest == callback.quest
+                        && (track.min..=track.max).contains(&requirement.value)
+                })
+            {
+                return Err(format!(
+                    "foreign or invalid receipt predicate {}",
+                    callback.key
+                ));
+            }
+        }
+
+        // Value participants are part of the pinned quest contract. Reply copy and
+        // source citations remain journal metadata and do not invalidate progress.
+        let value_plan = value_plan(callback)?;
+        let digest: String = Sha256::digest(value_plan)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        if (!callback.storage.is_empty() || !callback.state_ops.is_empty())
+            && published_markers::needs_marker(callback, &published)
+        {
+            transitions.push(QuestTransition {
+                world_change: None,
+                key: format!("oteryn:quest-reward-rule/{digest}"),
+                quest: callback.quest.clone(),
+                effects: vec![QuestEffect {
+                    track: callback
+                        .storage
+                        .first()
+                        .map(|storage| storage.track.clone())
+                        .or_else(|| {
+                            callback
+                                .state_ops
+                                .first()
+                                .map(|operation| operation.track.clone())
+                        })
+                        .ok_or("reward storage/operation")?,
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Computed,
+                }],
+                completes: false,
+                experience: None,
+            });
+        }
         for s in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|t| t.key == s.track) {
                 if track.quest != callback.quest {
                     return Err(format!("foreign reward track {}", s.track));
                 }
-                track.max = track.max.max(s.maximum).max(s.set);
-                track.min = track.min.min(s.minimum);
+                if explicit.contains(&s.track)
+                    && (s.minimum < track.min
+                        || s.maximum > track.max
+                        || !(track.min..=track.max).contains(&s.set))
+                {
+                    return Err(format!(
+                        "unbounded explicitly declared reward track {}",
+                        s.track
+                    ));
+                }
+                if !explicit.contains(&s.track) {
+                    track.max = track.max.max(s.maximum).max(s.set);
+                    track.min = track.min.min(s.minimum);
+                }
             } else {
                 tracks.push(QuestTrack {
                     key: s.track.clone(),
@@ -673,8 +902,10 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     {
         return Err(format!("undeclared reward prerequisite {}", required.track));
     }
-    QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
-        .map_err(|e| format!("{e:?}"))
+    let mut updated = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
+        .map_err(|e| format!("{e:?}"))?;
+    updated.npc_legacy = npc_legacy;
+    Ok(updated)
 }
 
 /// Exact primary state operation shared by lowering and bound admission validation.
@@ -706,7 +937,7 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
             .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
             .collect(),
         completes: callback.completes,
-        experience: None,
+        experience: callback.experience,
     })
 }
 
@@ -1183,3 +1414,462 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod receipt_test_base;
+
+#[cfg(test)]
+mod lane_tests {
+    use super::*;
+    #[test]
+    fn reward_extension_preserves_native_npc_legacy_bindings() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            !loaded.catalogue().npc_legacy.is_empty(),
+            "adding rewards must preserve the native NPC source binding owner"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn reward_amount_is_part_of_the_quest_definition_hash() -> Result<(), String> {
+        let before = parse(include_str!(
+            "../../../../../content/quests/chosen-reward-callbacks.json"
+        ))?;
+        let mut changed = before.clone();
+        changed
+            .first_mut()
+            .and_then(|c| c.give.as_mut())
+            .ok_or("reward")?
+            .count = 51;
+        let empty = receipt_test_base::catalogue;
+        let before = extend_callbacks(
+            empty()?,
+            before,
+            parse_document(include_str!(
+                "../../../../../content/quests/chosen-reward-callbacks.json"
+            ))?
+            .tracks,
+        )?;
+        let changed = extend_callbacks(
+            empty()?,
+            changed,
+            parse_document(include_str!(
+                "../../../../../content/quests/chosen-reward-callbacks.json"
+            ))?
+            .tracks,
+        )?;
+        assert_ne!(
+            before.definition_hash(super::super::grizzly_adams::QUEST),
+            changed.definition_hash(super::super::grizzly_adams::QUEST),
+            "a changed payout must not reuse a running quest's pinned value plan"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn reward_receipt_predicates_require_the_same_quest_and_declared_value() -> Result<(), String> {
+        let base = receipt_test_base::catalogue()?;
+        // Include every receipt-gated callback and its production receipt owner;
+        // unrelated participant prerequisites are covered separately.
+        let callbacks: Vec<_> = load()?
+            .into_iter()
+            .filter(|callback| !callback.required_receipts.is_empty())
+            .collect();
+        assert!(!callbacks.is_empty());
+        let extend_receipts = |base| extend_callbacks(base, callbacks.clone(), vec![]);
+        extend_receipts(base.clone())?;
+        let transition = "oteryn:quest-transition/grizzly/report-boss-1";
+        let track = super::super::grizzly_adams::storage_track(34100);
+        let mut foreign_transition = base.clone();
+        foreign_transition
+            .transitions
+            .get_mut(transition)
+            .ok_or("report")?
+            .quest = "oteryn:quest.foreign".into();
+        assert!(extend_receipts(foreign_transition).is_err());
+        let mut foreign_track = base.clone();
+        foreign_track
+            .tracks
+            .get_mut(&track)
+            .ok_or("boss track")?
+            .quest = "oteryn:quest.foreign".into();
+        assert!(extend_receipts(foreign_track).is_err());
+        let mut bounded = base;
+        bounded.tracks.get_mut(&track).ok_or("boss track")?.max = 2;
+        assert!(extend_receipts(bounded).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants() -> Result<(), String>
+    {
+        let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
+        let callbacks = load()?;
+        assert!(callbacks.len() >= 6);
+        for edit in 0..6 {
+            let mut value: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            match edit {
+                0 => {
+                    value["callbacks"][0]["take"] =
+                        serde_json::json!([{"item":"oteryn:item.tibia.i139","count":0}])
+                }
+                1 => {
+                    value["callbacks"][0]["outfit"] =
+                        serde_json::json!({"outfit":"oteryn:outfit.pirate","addons":4})
+                }
+                2 => value["callbacks"][0]["storage"] = serde_json::json!([]),
+                3 => {
+                    value["callbacks"][0]["storage"][0]["set"] =
+                        value["callbacks"][0]["storage"][0]["minimum"].clone()
+                }
+                4 => value["callbacks"][0]["unknown"] = true.into(),
+                _ => {
+                    value["callbacks"][0]["take"] = serde_json::json!([{"item":"oteryn:item.tibia.i139","count":1},{"item":"oteryn:item.tibia.i139","count":1}])
+                }
+            }
+            assert!(parse(&value.to_string()).is_err(), "case {edit}");
+        }
+        for (field, invalid) in [
+            ("npc", "oteryn:npc."),
+            ("npc", "oteryn:npc.morgan?"),
+            ("quest", "oteryn:quest.BAD"),
+            ("key", "oteryn:quest-reward/bad.key"),
+        ] {
+            let mut value: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            value["callbacks"][0][field] = invalid.into();
+            assert!(parse(&value.to_string()).is_err(), "{field}={invalid}");
+        }
+        let mut value: serde_json::Value =
+            serde_json::from_str(source).map_err(|e| e.to_string())?;
+        value["callbacks"][0]["take"] =
+            serde_json::json!([{"item":"oteryn:item.tibia.i3031","count":1000}]);
+        assert!(
+            parse(&value.to_string()).is_ok(),
+            "inputs may span many stacks"
+        );
+        for present in [
+            serde_json::json!([{"item":"oteryn:item.tibia.i9041","count":0}]),
+            serde_json::json!([{"item":"oteryn:item.tibia.i9041","count":1},{"item":"oteryn:item.tibia.i9041","count":1}]),
+        ] {
+            let mut invalid: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            invalid["callbacks"][0]["present"] = present;
+            assert!(parse(&invalid.to_string()).is_err());
+        }
+        super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        Ok(())
+    }
+    #[test]
+    fn npc_rewards_reject_mixed_or_unbounded_backpack_outputs() -> Result<(), String> {
+        let mut document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        document["callbacks"][0]["outfit"] = serde_json::Value::Null;
+        let valid = serde_json::json!({"item":"oteryn:item.tibia.i2853","count":1,
+            "contents":[],"backpack_outputs":[{"item":"oteryn:item.tibia.i3034","count":1}]});
+        document["callbacks"][0]["give"] = valid.clone();
+        let parsed = parse(&document.to_string());
+        assert!(parsed.is_ok(), "bounded backpack delivery: {parsed:?}");
+        let mut mixed = valid.clone();
+        mixed["contents"] = serde_json::json!([{"item":"oteryn:item.tibia.i3031","count":1}]);
+        let mut excessive = valid.clone();
+        excessive["backpack_outputs"] = serde_json::json!(vec![
+            serde_json::json!({"item":"oteryn:item.tibia.i3034","count":1});
+            20
+        ]);
+        let mut empty_quantity = valid;
+        empty_quantity["backpack_outputs"][0]["count"] = serde_json::json!(0);
+        for invalid in [mixed, excessive, empty_quantity] {
+            document["callbacks"][0]["give"] = invalid;
+            assert!(parse(&document.to_string()).is_err());
+        }
+        Ok(())
+    }
+    #[test]
+    fn quest_fees_preserve_free_callback_identity_and_reject_coin_double_charge()
+    -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
+        let mut document: serde_json::Value =
+            serde_json::from_str(source).map_err(|error| error.to_string())?;
+        let free = parse(source)?.remove(0);
+        assert!(free.fee.is_none());
+        assert!(
+            serde_json::to_value(&free)
+                .map_err(|error| error.to_string())?
+                .get("fee")
+                .is_none()
+        );
+        document["callbacks"][0]["fee"] = serde_json::json!({"gold":100,"include_bank":true});
+        assert!(parse(&document.to_string()).is_ok());
+        for gold in [0_u64, 1_000_000_000_001] {
+            let mut invalid = document.clone();
+            invalid["callbacks"][0]["fee"]["gold"] = gold.into();
+            assert!(parse(&invalid.to_string()).is_err());
+        }
+        for coin in [3031, 3035, 3043] {
+            let mut invalid = document.clone();
+            invalid["callbacks"][0]["take"] = serde_json::json!([
+                {"item":format!("oteryn:item.tibia.i{coin}"),"count":1}
+            ]);
+            assert!(parse(&invalid.to_string()).is_err());
+        }
+        Ok(())
+    }
+
+    fn state_ops_callback() -> Result<RewardCallback, String> {
+        serde_json::from_value(serde_json::json!({
+            "key":"oteryn:quest-reward/state_ops_test/start","quest":"oteryn:quest.state_ops_test",
+            "npc":"oteryn:npc.test","keywords":["start"],"topic":0,"next_topic":0,
+            "storage":[{"track":"oteryn:quest-progress/state_ops_test/stage","minimum":-1,"maximum":-1,"set":1}],
+            "take":[],"give":null,"outfit":null,"achievement":null,"reply":["Start."],"sources":["test:state-ops"]
+        })).map_err(|error|error.to_string())
+    }
+
+    fn clock_declaration() -> TrackDeclaration {
+        TrackDeclaration {
+            writable: true,
+            key: "oteryn:quest-progress/state_ops_test/clock".into(),
+            quest: "oteryn:quest.state_ops_test".into(),
+            initial: 0,
+            min: 0,
+            max: i64::MAX,
+            sources: vec!["test:clock".into()],
+        }
+    }
+
+    fn callback_hash(
+        callback: RewardCallback,
+        declarations: Vec<TrackDeclaration>,
+    ) -> Result<String, String> {
+        let quest = callback.quest.clone();
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("empty catalogue")?,
+            vec![callback],
+            declarations,
+        )?;
+        Ok(catalogue
+            .definition_hash(&quest)
+            .ok_or("definition hash")?
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect())
+    }
+
+    #[test]
+    fn free_legacy_hash_is_stable_and_fees_premium_operations_and_guards_are_bound()
+    -> Result<(), String> {
+        let legacy = state_ops_callback()?;
+        // Snapshot computed from the pre-port reward tuple and version2 quest encoding.
+        let baseline = callback_hash(legacy.clone(), Vec::new())?;
+        assert_eq!(
+            baseline,
+            "4a17ff7834109f75619e0aac06f022d0485ef3a7f9ca89973479c244c4d7ffea"
+        );
+        let encoded = serde_json::to_value(&legacy).map_err(|error| error.to_string())?;
+        for omitted in ["state_ops", "fee", "requires_premium"] {
+            assert!(encoded.get(omitted).is_none());
+        }
+        let mut paid = legacy.clone();
+        paid.fee = Some(MonetaryFee {
+            gold: 50,
+            include_bank: false,
+        });
+        let first = callback_hash(paid.clone(), Vec::new())?;
+        assert_ne!(first, baseline);
+        paid.fee.as_mut().ok_or("fee")?.gold = 51;
+        assert_ne!(callback_hash(paid.clone(), Vec::new())?, first);
+        paid.fee = Some(MonetaryFee {
+            gold: 50,
+            include_bank: true,
+        });
+        assert_ne!(callback_hash(paid, Vec::new())?, first);
+        let mut premium = legacy.clone();
+        premium.requires_premium = true;
+        assert_ne!(callback_hash(premium, Vec::new())?, baseline);
+        let clock = clock_declaration();
+        let mut operation = legacy;
+        operation.state_ops.push(StateOperation {
+            track: clock.key.clone(),
+            from: StateCondition::ElapsedLessThan { seconds: 1800 },
+            effect: StateMutation::Add { value: 0 },
+        });
+        let with_guard = callback_hash(operation.clone(), vec![clock.clone()])?;
+        operation.state_ops[0].from = StateCondition::ElapsedLessThan { seconds: 1801 };
+        assert_ne!(
+            callback_hash(operation.clone(), vec![clock.clone()])?,
+            with_guard
+        );
+        operation.state_ops[0].from = StateCondition::ElapsedLessThan { seconds: 1800 };
+        operation.state_ops[0].effect = StateMutation::SetNow;
+        assert_ne!(callback_hash(operation, vec![clock])?, with_guard);
+        Ok(())
+    }
+
+    #[test]
+    fn state_operations_require_exact_writable_owned_declarations() -> Result<(), String> {
+        let mut callback = state_ops_callback()?;
+        let clock = clock_declaration();
+        callback.state_ops.push(StateOperation {
+            track: clock.key.clone(),
+            from: StateCondition::Any,
+            effect: StateMutation::SetNow,
+        });
+        assert!(callback_hash(callback.clone(), Vec::new()).is_err());
+        callback_hash(callback.clone(), vec![clock.clone()])?;
+        let mut foreign = clock.clone();
+        foreign.quest = "oteryn:quest.other".into();
+        assert!(callback_hash(callback.clone(), vec![foreign]).is_err());
+        let mut untyped = clock.clone();
+        untyped.initial = -1;
+        untyped.min = -1;
+        assert!(callback_hash(callback.clone(), vec![untyped]).is_err());
+        let serialized = serde_json::to_value(&callback).map_err(|error| error.to_string())?;
+        let mut document = serde_json::json!({"schema":1,"tracks":[{"writable":true,"key":clock.key,"quest":clock.quest,"initial":0,"min":0,"max":i64::MAX,"sources":["test:clock"]}],"callbacks":[serialized]});
+        parse_document(&document.to_string())?;
+        for edit in 0..4 {
+            let mut invalid = document.clone();
+            match edit {
+                0 => invalid["tracks"][0]["writable"] = false.into(),
+                1 => invalid["tracks"][0]["quest"] = "oteryn:quest.other".into(),
+                2 => invalid["tracks"][0]["initial"] = (-1).into(),
+                _ => {
+                    invalid["callbacks"][0]["state_ops"][0]["track"] =
+                        invalid["callbacks"][0]["storage"][0]["track"].clone()
+                }
+            }
+            assert!(
+                parse_document(&invalid.to_string()).is_err(),
+                "invalid declaration/operator case {edit}"
+            );
+        }
+        document["tracks"] = serde_json::json!([]);
+        let undeclared = parse_document(&document.to_string())?;
+        assert!(
+            extend_callbacks(
+                QuestStateCatalogue::empty("content-1").ok_or("empty")?,
+                undeclared.callbacks,
+                undeclared.tracks
+            )
+            .is_err()
+        );
+        Ok(())
+    }
+    #[test]
+    fn published_marker_compatibility_keeps_new_value_terms_bound() -> Result<(), String> {
+        let published = published_markers::keys()?;
+        let callback = parse(DOCUMENTS[0])?
+            .into_iter()
+            .find(|callback| !callback.storage.is_empty() && callback.give.is_some())
+            .ok_or("published item callback")?;
+        assert!(!published_markers::needs_marker(&callback, &published));
+        let before = callback_hash(callback.clone(), Vec::new())?;
+        let mut occurrence = callback.clone();
+        occurrence.per_occurrence_mint = true;
+        assert!(published_markers::needs_marker(&occurrence, &published));
+        assert_ne!(callback_hash(occurrence, Vec::new())?, before);
+        let mut carried = callback.clone();
+        carried.carried_exchange = true;
+        assert!(published_markers::needs_marker(&carried, &published));
+        let mut outputs = callback.clone();
+        outputs
+            .give
+            .as_mut()
+            .ok_or("give")?
+            .backpack_outputs
+            .push(ItemAmount {
+                item: "oteryn:item.tibia.i3031".into(),
+                count: 1,
+                fluid_subtype: None,
+            });
+        assert!(published_markers::needs_marker(&outputs, &published));
+        let mut receipt = callback;
+        receipt.required_receipts.push(ReceiptPredicate {
+            transition: "oteryn:quest-reward/fixture".into(),
+            track: "oteryn:quest-progress/fixture/stage".into(),
+            value: 1,
+        });
+        assert!(published_markers::needs_marker(&receipt, &published));
+        let chosen = parse(DOCUMENTS[2])?.into_iter().next().ok_or("chosen")?;
+        assert!(published_markers::needs_marker(&chosen, &published));
+        assert!(published_markers::needs_marker(
+            &state_ops_callback()?,
+            &published
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn occurrence_mint_is_explicit_portable_and_part_of_the_value_hash() -> Result<(), String> {
+        let mut callback = load()?
+            .into_iter()
+            .find(|c| c.key.ends_with("/venore-daily/accept"))
+            .ok_or("accept")?;
+        let legacy = value_plan(&callback)?;
+        let encoded = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
+        assert!(encoded.get("per_occurrence_mint").is_none());
+        callback.per_occurrence_mint = true;
+        assert_ne!(legacy, value_plan(&callback)?);
+        let document = serde_json::json!({"schema":1,"callbacks":[callback]});
+        assert!(parse(&document.to_string()).is_ok());
+        for case in 0..3 {
+            let mut bad = document.clone();
+            match case {
+                0 => bad["callbacks"][0]["give"] = serde_json::Value::Null,
+                1 => {
+                    bad["callbacks"][0]["outfit"] =
+                        serde_json::json!({"outfit":"oteryn:outfit.revenant","addons":0})
+                }
+                _ => bad["callbacks"][0]["per_occurrence_mint"] = "true".into(),
+            }
+            assert!(
+                parse(&bad.to_string()).is_err(),
+                "occurrence option case {case}"
+            );
+        }
+        callback.per_occurrence_mint = false;
+        assert_eq!(legacy, value_plan(&callback)?);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod world_track_owner_tests {
+    use super::*;
+
+    #[test]
+    fn world_only_track_declarations_preserve_exact_quest_ownership() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/chosen-reward-callbacks.json");
+        let document = parse_document(source)?;
+        assert!(
+            document
+                .tracks
+                .iter()
+                .any(|track| track.key == "oteryn:quest-progress/chosen/winterlight/stage")
+        );
+        let mut wrong: serde_json::Value =
+            serde_json::from_str(source).map_err(|e| e.to_string())?;
+        let track = wrong["tracks"]
+            .as_array_mut()
+            .ok_or("tracks")?
+            .iter_mut()
+            .find(|track| track["key"] == "oteryn:quest-progress/chosen/winterlight/stage")
+            .ok_or("stage")?;
+        track["quest"] = "oteryn:quest.authored.venore_daily_tasks_quest".into();
+        let wrong = serde_json::to_string(&wrong).map_err(|e| e.to_string())?;
+        assert!(
+            parse_document(&wrong).is_err(),
+            "world/death ownership cannot be reassigned by a declaration"
+        );
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+#[path = "reward_callbacks/venore_tests.rs"]
+mod venore_tests;

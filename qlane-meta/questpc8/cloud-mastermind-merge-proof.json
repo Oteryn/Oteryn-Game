@@ -1,0 +1,57 @@
+{
+  "parents": [
+    "50cd6f5d4",
+    "0f5cb0a62"
+  ],
+  "decision": "Retain incoming native NPC placement/weekday work and Voodoo/Kormarak routes. Retain local Mastermind final201-gold payout required by the chosen recipe; no early100-gold payout. Consolidate both named Mastermind cases on the stronger exercise including final Premium refusal and cold-cache replay.",
+  "primary_merged_pg": {
+    "passed": 1,
+    "duration_seconds": 40.769679054,
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_mastermind_two_native_caches_premium_and_exact_201_gold"
+  },
+  "retrieval_regression": {
+    "passed": 3,
+    "elapsed_seconds": 51.84,
+    "case_seconds": {
+      "kormarak": 38.496340111,
+      "mastermind": 41.020662806,
+      "voodoo": 51.841395091
+    },
+    "postgres": "18.6 real framed STEP/USE and native deaths; no chosen quest counters or receipts seeded"
+  },
+  "grizzly_production_pg": {
+    "passed": 1,
+    "duration_seconds": 66.961891753,
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_grizzly_production_placement_native_join_and_task"
+  },
+  "checks_pending": [],
+  "checks": {
+    "fmt": "passed cargo fmt --all -- --check",
+    "check": "server/content/dispatch/quests all features passed69s",
+    "clippy": "server/content/dispatch/quests all features/all targets -D warnings passed; see log duration",
+    "item_generator": "40files drift check passed",
+    "npc_generator": "native placement drift check passed",
+    "pin_refresh": {
+      "inputs_digest": "6d025b2111e7e996086ce78e935c3c242c5df70edb7096fedd62f8d284e1df7c",
+      "pins": [
+        {
+          "digest": "eef8f279e03d6ca5944d1ea5986b7364d95e1f82eba36f8c30a8db2be1af4012",
+          "previous": "eef8f279e03d6ca5944d1ea5986b7364d95e1f82eba36f8c30a8db2be1af4012",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "self_review": "All merge conflicts traced; no duplicate callback keys, alternate reward route or weakened assertion. Earlier single-route proof retained as historical; current canonical Mastermind uses final201gold and cold replay."
+  },
+  "logs": {
+    "questpc8-mastermind-merged-green.log": "1b25d793d04deb050a6baa32512559851f30b14af03eecbdbe1799dab107938f",
+    "questpc8-retrieval-merged-regression.log": "84239802f1934aa35f4e6c90e2a66a7d9883114839008155c29f33675b122fba",
+    "questpc8-grizzly-placement-merged.log": "2643c489cfc968785ea3b1dc22ded8e2560733cc6b9fa2d49a356334112f0fd3",
+    "questpc8-mastermind-merge-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "questpc8-mastermind-merge-check.log": "ef3b29e38e9bab2530412181defc2baa97ab0cd395e4f87a8daf24bead165460",
+    "questpc8-mastermind-merge-clippy.log": "15a18757872f4b708e50c64b2edb4fee3015e403e3448bcea0ff845dc61f93c5",
+    "questpc8-mastermind-merge-generator.log": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa",
+    "questpc8-mastermind-merge-npc-generator.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "questpc8-mastermind-merge-pin.log": "e03e653eee38eab4e5f13090f89cf4705bca400813306eb2749f3e2aecd6b603"
+  }
+}

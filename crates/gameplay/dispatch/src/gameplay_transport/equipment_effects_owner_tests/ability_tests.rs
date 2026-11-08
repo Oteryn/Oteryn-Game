@@ -158,6 +158,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
+    ("QUESTPC8-MERGED", 151),
     ("QUICKLOOT-1", 9),
     // Skull 3114 (tools/content-migration/quest_callback_profiles.py), from Canary
     // 47dfd51f items.xml and exact Crystal ff7ede59 bindings. speed_bonus=0.
@@ -387,6 +388,36 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
 
+    let later_main_profiles = PROFILE_ADDITIONS
+        .iter()
+        .filter(|(name, _)| {
+            matches!(
+                *name,
+                "WORLDCHG"
+                    | "SRV9-MARRIAGE"
+                    | "QNPCFX"
+                    | "QUESTPC4-STAG-ITEMS"
+                    | "QUESTPC8-MERGED"
+                    | "QREADY2"
+                    | "QREADY1"
+            )
+        })
+        .map(|(_, count)| count)
+        .sum::<usize>();
+    // Published owner cohorts plus independently declared recipe tools.
+    assert_eq!(later_main_profiles, 206);
+    let baseline = ORIGINAL_PROFILES
+        + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
+        + additions.len()
+        - 18 // QENGINE grew from the immutable baseline 53 to 71 source records.
+        - later_main_profiles; // Post-baseline main cohorts are already in the generated delta.
+    assert_eq!(baseline, 3663);
+    let custody: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json"
+    )))?;
+    assert_eq!(custody["schema"], 1);
+    assert_eq!(custody["base"], "1ae39c7fb9bef09c3cd50d16410374f4134b1676");
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES
@@ -398,6 +429,49 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
             + 26 + 23
     );
+    assert_eq!(
+        custody["base_count"].as_u64(),
+        Some(u64::try_from(baseline)?)
+    );
+    let manifest: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/spells.manifest.json"
+    )))?;
+    for (field, pin) in [
+        "item_profiles",
+        "item_profile_updates",
+        "starting_loadout_item_profiles",
+    ]
+    .into_iter()
+    .zip(custody["inputs"].as_array().ok_or("custody input pins")?)
+    {
+        assert_eq!(
+            pin["path"],
+            format!(
+                "content/{}",
+                manifest[field]["path"].as_str().ok_or("path")?
+            )
+        );
+        assert_eq!(pin["sha256"], manifest[field]["sha256"]);
+    }
+    let extra = custody["added_keys"]
+        .as_array()
+        .ok_or("custody additions")?;
+    let mut custody_keys = std::collections::BTreeSet::new();
+    for key in extra {
+        let key = key.as_str().ok_or("custody key")?;
+        assert!(custody_keys.insert(key), "duplicate custody identity");
+        assert!(
+            profiles
+                .records
+                .iter()
+                .any(|p| p.production_definition.production_key == key),
+            "missing custody identity {key}"
+        );
+    }
+    // Main's QUESTPC4 floor/callback cohorts add 26 + 23 keys.
+    // They join the same exact regenerated post-base census and are counted once.
+    assert_eq!(profiles.records.len(), baseline + custody_keys.len());
     for id in [2949, 12369, 14156, 33330, 44179, 52732] {
         let key = format!("oteryn:item.tibia.i{id}");
         let record = profiles

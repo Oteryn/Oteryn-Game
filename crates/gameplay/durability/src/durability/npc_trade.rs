@@ -74,6 +74,7 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, NpcTradeError>;
 const REQUEST_BINDING_VERSION: u8 = 1;
 mod hireling;
+mod quest_access;
 pub(super) mod sell_hireling;
 pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
 
@@ -852,6 +853,9 @@ impl DurabilityRoot {
 
                     if !grizzly::permitted(&mut tx, fence.character_id, &request).await?
                         || !quest_shop::permitted(&mut tx, fence.character_id, &request).await? {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
+                    if !quest_access::permitted(&mut tx, fence.character_id, &request).await? {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
                     let backpack = sqlx::query(

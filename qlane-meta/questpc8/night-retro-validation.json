@@ -1,0 +1,230 @@
+{
+  "state": "GREEN_REMAINDER_TERMINAL_SLICE_DROPPED",
+  "main": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+  "checks": {
+    "workspace": {
+      "exit": 0,
+      "seconds": 451.6798424199951
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 12.5608024510002
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.29028814598859753
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 500.5659036050056
+    },
+    "pg": {
+      "exit": 0,
+      "seconds": 965.0982620020077
+    }
+  },
+  "authoring": {
+    "quest-units": {
+      "exit": 0,
+      "seconds": 130.876522578008
+    },
+    "authoring-checks": {
+      "exit": 0,
+      "seconds": 406.67470467499516
+    },
+    "authoring-units": {
+      "exit": 0,
+      "seconds": 459.58045730499725
+    },
+    "content-tree": {
+      "exit": 0,
+      "seconds": 587.5367798270017
+    }
+  },
+  "authoring_modules_passed": 103,
+  "postgres_cases": {
+    "fathers_burden_eight_handins_cape_experience_and_replay": 84.147,
+    "nx6_wayfarer_real_npc_atomic_finale_replay_and_fences": 119.515,
+    "questpc8_venore_native_daily_circuit_and_exact_repeat_boundary": 123.782,
+    "questpc8_winterlight_native_disguise_four_fires_queen_and_base_outfit": 75.496,
+    "questpc8_wrath_four_native_crystals_require_tool_order_and_replay": 69.924
+  },
+  "log": "/tmp/questpc8b-remainder-pg.log",
+  "markers": [
+    "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay duration=84.093664268s",
+    "POSTGRES_CASE_STARTED questpc8_wrath_source_dragon after PostgreSQL fixture initialization",
+    "POSTGRES_CASE_STARTED questpc8_wrath_dream_report",
+    "POSTGRES_WRATH_DREAM_RECEIPT_STAGE_REPLAY_AND_COLD_REFUSAL_PASS",
+    "NX6_POSTGRES_CASE_COMPLETED elapsed=39.913793584s",
+    "POSTGRES_CASE_STARTED authored-venore after PostgreSQL fixture initialization",
+    "POSTGRES_CASE_STARTED questpc8_venore after PostgreSQL fixture initialization",
+    "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit duration=123.733923254s result=Ok(())",
+    "POSTGRES_CASE_STARTED authored-winterlight after PostgreSQL fixture initialization",
+    "POSTGRES_CASE_FINISHED questpc8_winterlight_native_route duration=75.447552243s result=Ok(())",
+    "POSTGRES_CASE_STARTED authored-wrath-crystals after PostgreSQL fixture initialization",
+    "POSTGRES_CASE_STARTED questpc8_wrath_crystals after PostgreSQL fixture initialization",
+    "POSTGRES_WRATH_FOUR_NATIVE_CRYSTALS_EXACT_TOOL_ORDER_COLD_REPLAY_PASS",
+    "POSTGRES_CASE_FINISHED questpc8_wrath_crystals duration=69.89125796s result=Ok(())"
+  ],
+  "dropped_slice": {
+    "scope": "New terminal outfit/jade reward slice only; previously green opening/hunt/dream/crystal work retained",
+    "state": "DROPPED_FROM_BATCH_BY_COORDINATOR_RULE",
+    "command": "cargo nextest run -p oteryn-gameplay-dispatch --lib --config-file /tmp/questpc8-focused-nextest.toml --profile questpc8_focus --success-output immediate -E 'test(questpc8_wrath_late_journey_final_reward_atomic_outfit_and_jade) or test(questpc8_wrath_four_native_crystals_require_tool_order_and_replay) or test(nx6_wayfarer_real_npc_atomic_finale_replay_and_fences) or test(fathers_burden_eight_handins_cape_experience_and_replay) or test(questpc8_winterlight_native_disguise_four_fires_queen_and_base_outfit) or test(questpc8_venore_native_daily_circuit_and_exact_repeat_boundary)'",
+    "error": "early eof; join_prepare_failed phase=appearances; join_prepare_failed phase=items",
+    "postgres_seconds": 107.911672992,
+    "local_note": "/tmp/questpc8-wrath-finale-dropped.rs; /tmp/questpc8b-wrath-terminal-dropped.patch"
+  },
+  "audit": {
+    "denominator": 299,
+    "ledger_rows": 299,
+    "missing_row_negatives": 299,
+    "source_native_public_difference_keys": 11,
+    "old_ledger_rows": 164,
+    "no_test_or_scenario_locator_erased": true,
+    "runtime_quest_graph_unchanged": true
+  },
+  "generation": {
+    "0": {
+      "command": [
+        "python3",
+        "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"
+      ],
+      "exit": 0,
+      "seconds": 0.8205379350110888
+    },
+    "1": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_state_lowering.py"
+      ],
+      "exit": 0,
+      "seconds": 0.32250159900286235
+    },
+    "2": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_v2_export.py"
+      ],
+      "exit": 0,
+      "seconds": 0.35170981800183654
+    },
+    "3": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+      ],
+      "exit": 0,
+      "seconds": 15.333748459001072
+    },
+    "4": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/source_lowered_binding_plan.py"
+      ],
+      "exit": 0,
+      "seconds": 0.08641358600289095
+    },
+    "5": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_completion_import.py"
+      ],
+      "exit": 0,
+      "seconds": 5.0673674319987185
+    },
+    "6": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+      ],
+      "exit": 0,
+      "seconds": 0.6745443859981606
+    },
+    "7": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/collect_claim_candidates.py"
+      ],
+      "exit": 0,
+      "seconds": 0.2095990539964987
+    },
+    "8": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/use_trigger_candidates.py"
+      ],
+      "exit": 0,
+      "seconds": 0.291550335008651
+    },
+    "9": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_reward_only_binding_candidates.py"
+      ],
+      "exit": 0,
+      "seconds": 0.43569223099621013
+    },
+    "10": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_native_binding_preflight.py"
+      ],
+      "exit": 0,
+      "seconds": 0.40573607600526884
+    },
+    "11": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_rollout_authoring.py"
+      ],
+      "exit": 0,
+      "seconds": 1.222335149999708
+    },
+    "12": {
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/check_quest_claim_qualification.py"
+      ],
+      "exit": 0,
+      "seconds": 0.05771184399782214
+    },
+    "13": {
+      "command": [
+        "python3",
+        "-c",
+        "import sys;sys.path.insert(0,'tools/content-migration');import regenerate_content;regenerate_content.refresh_quest_callback_proof()"
+      ],
+      "exit": 0,
+      "seconds": 0.41410241699486505
+    },
+    "14": {
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 119.88154611900973
+    },
+    "15": {
+      "command": [
+        "cargo",
+        "fmt",
+        "--all"
+      ],
+      "exit": 0,
+      "seconds": 11.834788182008197
+    }
+  },
+  "whole_quests_qualified": 21,
+  "packet_quests": 23,
+  "sha_pinned_pg_files_changed": false,
+  "node_boot_serve_activation_production_code_changed": false,
+  "collector_ready": true,
+  "ci_scope": "heavy suites"
+}

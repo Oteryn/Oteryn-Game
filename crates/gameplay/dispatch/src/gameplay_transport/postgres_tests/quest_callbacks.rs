@@ -45,6 +45,65 @@ pub(super) fn source_world_positions(
     choices: &[(u16, u16, u16)],
     appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    let rows: Vec<_> = choices.iter().map(|(_, y, _)| (*y, appearance)).collect();
+    source_world_rectangle_positions(chest, choices, appearance, 1, 2, &[], &rows)
+}
+
+pub(super) fn source_world_rectangle(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_rectangle_with_prefix(chest, choices, appearance, height, 2, &[])
+}
+
+/// Preserve native top-level scenery preceding a reward object in its tile stack.
+pub(super) fn source_world_rectangle_with_prefix(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_rectangle_with_prefix_rows(
+        chest,
+        choices,
+        appearance,
+        height,
+        west,
+        prefix,
+        &[(chest.1, appearance)],
+    )
+}
+
+/// Several native cache rows may share the same appearance and column.
+pub(super) fn source_world_rectangle_with_prefix_rows(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let positions: Vec<_> = choices
+        .iter()
+        .flat_map(|(x, unique)| rows.iter().map(move |(y, _)| (*x, *y, *unique)))
+        .collect();
+    source_world_rectangle_positions(chest, &positions, appearance, height, west, prefix, rows)
+}
+
+fn source_world_rectangle_positions(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -61,6 +120,45 @@ pub(super) fn source_world_positions(
             ground_speed: None,
         }),
     });
+    for appearance in prefix {
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            family: bundle::Family::Terrain,
+            id: u32::try_from(data.manifest.palette.len()).map_err(debug)?,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+    }
+    let mut row_palettes = Vec::new();
+    for (row, row_appearance) in rows {
+        let key = format!("oteryn:terrain.tibia.i{row_appearance}");
+        let palette = if let Some(index) = data
+            .manifest
+            .palette
+            .iter()
+            .position(|entry| entry.key == key)
+        {
+            u32::try_from(index).map_err(debug)?
+        } else {
+            let id = u32::try_from(data.manifest.palette.len()).map_err(debug)?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key,
+                family: bundle::Family::Terrain,
+                id,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+            id
+        };
+        row_palettes.push((*row, palette));
+    }
+    let row_palettes = row_palettes.as_slice();
     let ground = || sector::Item {
         palette: 0,
         depth: 0,
@@ -71,7 +169,7 @@ pub(super) fn source_world_positions(
         .map(|(x, _, _)| x.saturating_sub(2))
         .min()
         .ok_or("source choices")?
-        .min(chest.0 - 2);
+        .min(chest.0 - west);
     let max_x = choices
         .iter()
         .map(|(x, _, _)| *x)
@@ -92,34 +190,40 @@ pub(super) fn source_world_positions(
         min_x,
         min_y,
         max_x: max_x + 1,
-        max_y: max_y + 1,
+        max_y: (max_y + 1).max(chest.1 + height),
         floors: vec![chest.2],
     };
-    let tiles = (min_y..=max_y)
-        .flat_map(|y| (min_x..=max_x).map(move |x| (x, y)))
-        .map(|(x, y)| sector::Tile {
-            x,
-            y,
-            flags: 0,
-            house: 0,
-            zones: Vec::new(),
-            items: if let Some((_, _, unique)) =
-                choices.iter().find(|(px, py, _)| (*px, *py) == (x, y))
-            {
-                vec![
-                    ground(),
-                    sector::Item {
-                        palette: 1,
-                        depth: 0,
-                        attrs: sector::Attrs {
-                            unique: Some(*unique),
-                            ..Default::default()
-                        },
-                    },
-                ]
-            } else {
-                vec![ground()]
-            },
+    let tiles = (min_y..(max_y + 1).max(chest.1 + height))
+        .flat_map(|y| {
+            (min_x..=max_x).map(move |x| sector::Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: Vec::new(),
+                items: if let Some((_, _, unique)) =
+                    choices.iter().find(|(px, py, _)| (*px, *py) == (x, y))
+                    && let Some((_, row_palette)) = row_palettes.iter().find(|(row, _)| *row == y)
+                {
+                    std::iter::once(ground())
+                        .chain(prefix.iter().enumerate().map(|(index, _)| sector::Item {
+                            palette: u32::try_from(index + 2).expect("bounded fixture prefix"),
+                            depth: 0,
+                            attrs: sector::Attrs::default(),
+                        }))
+                        .chain(std::iter::once(sector::Item {
+                            palette: *row_palette,
+                            depth: 0,
+                            attrs: sector::Attrs {
+                                unique: (*unique != 0).then_some(*unique),
+                                ..Default::default()
+                            },
+                        }))
+                        .collect()
+                } else {
+                    vec![ground()]
+                },
+            })
         })
         .collect::<Vec<_>>();
     // The Demon Helmet source chest is one tile from a sector boundary; its

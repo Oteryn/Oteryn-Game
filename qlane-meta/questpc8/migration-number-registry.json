@@ -1,0 +1,162 @@
+{
+  "shared_qengine2_head": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "shared_migrations": [
+    {
+      "path": "apps/game-server/migrations/0999_quest_reward_callbacks.sql",
+      "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
+      "main_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1000_quest_reward_payments.sql",
+      "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311",
+      "main_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1001_quest_reward_participants.sql",
+      "sha256": "de9d7f8d779b1b5d24105139c2b781afd09ad0067aa15ef904ef3267bd4c38e5",
+      "main_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1002_quest_reward_state_operations.sql",
+      "sha256": "7ccf2726dbe7637c646573a004a265b0e1c484aa5330dee42894b96fb2a27ba8",
+      "main_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1003_quest_reward_target_sets.sql",
+      "sha256": "56c9fd32ab49a247e41b66c2e0a4b4df6613e6366f6667bd00edf28d190704bf",
+      "main_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1004_quest_paid_item_exchanges.sql",
+      "sha256": "4a5da4833971b005a99adee986114a609744ad03e4441d06c724754e8a911800",
+      "main_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1005_quest_carried_use_proofs.sql",
+      "sha256": "77fe7b21e135c99a69b6e7ab26d14ff62c0f73dd01b1986bfba45912713fb023",
+      "main_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1006_quest_owned_base_predicates.sql",
+      "sha256": "2490e09e46f2f4bebb50cdebc2ae17183646f3e111f9cdafc9208bd6da6b21b2",
+      "main_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1007_quest_carried_payment_reapplication.sql",
+      "sha256": "7e2498f421c470305eadf8b89e3eab0928b8a386fea385cff9768a51a743a2ae",
+      "main_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1008_quest_carried_membership_projection.sql",
+      "sha256": "3c8d74e1b4ef3c4a19d6b9bd0cee4651bd2e57e3c3e10891b39126452b7751ca",
+      "main_byte_identical": true
+    }
+  ],
+  "qbase_migrations": [],
+  "lane_migrations": [
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql",
+    "apps/game-server/migrations/1301_questpc8_reward_backpack_outputs.sql",
+    "apps/game-server/migrations/1302_questpc8_world_reward_receipts.sql",
+    "apps/game-server/migrations/1303_questpc8_state_operation_validation.sql",
+    "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql",
+    "apps/game-server/migrations/1305_questpc8_forge_profile_admission.sql",
+    "apps/game-server/migrations/1306_questpc8_father_reward_amount.sql"
+  ],
+  "duplicate_numbers": [],
+  "validation_state": "PASS: main0999-1008 byte-identical, unique lane1300-1306, fresh PG schema3s, five native PG mechanics green, latest workspace all-target check and fmt pass; generated providers/pins refreshed.",
+  "shared_pr_3020_state": "MERGED",
+  "tested_source_head": "b3ec5f491 plus current repair worktree",
+  "supplement_1303": {
+    "path": "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql",
+    "sha256": "c79752de099590d21afb9ae783e47cb9adf804bcf7663bd715af2a245c31fc37",
+    "state": "PASS: initialized full native PostgreSQL113.890788027s, exact occurrence/no-op/replay guards; final strict/default/generated/pin checks pass."
+  },
+  "fresh_shared_qengine2_head": "5c01deabb33b448fe7de795a3f9271477af05ea6",
+  "all_shared_migrations_still_byte_identical": true,
+  "latest_venore_proof": "venore-route-validation.json",
+  "previous_revision_checks": {
+    "default_check": {
+      "result": "PASS",
+      "log_sha256": "85430b661063b32c3bb0c7af4b90865dad463f08ba76e9cb199cf9d12fd72a61"
+    },
+    "strict_clippy": {
+      "result": "PASS",
+      "log_sha256": "5cfe9c97885d4d3f93653fa6ce8a25cb3e7647f7dbc671c18e3a155b41faef74"
+    },
+    "native_drift": {
+      "result": "PASS",
+      "log_sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f"
+    },
+    "npc_placement_units": {
+      "result": "PASS",
+      "log_sha256": "6f283ee6225d2cef4c0127d95456a6f954c45141c92b97dd89016cb1c630e8f4"
+    },
+    "pin_refresh": {
+      "result": "PASS",
+      "log_sha256": "e49252f6f9a2f14b099264bced918ddbe25e1635a7aae7d51ac558277ec431f6"
+    },
+    "pin_check": {
+      "result": "PASS",
+      "log_sha256": "e19519564dff19eb7ccce377dde01755c84a62be3eb74f9c037291100c544f6f"
+    },
+    "fmt": {
+      "result": "PASS",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "embedded_migration_ledger_unit": {
+      "result": "PASS",
+      "postgres": false,
+      "cases": 1,
+      "log_sha256": "1c768f26bcdc5afd34fb54d83c7a69af28cd028fb1dcb6345bf0279624e8abcb"
+    }
+  },
+  "previous_revision_postgres": [
+    {
+      "case": "layout",
+      "duration_seconds": 39.33024761,
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_venore_supplies_mint_and_carry_without_invented_charges duration=39.33024761s",
+      "log_sha256": "76f8705398a5b75232d89f0a5801caec0f50442a26daacea916d81346a58d8e3",
+      "result": "PASS"
+    },
+    {
+      "case": "mystery",
+      "duration_seconds": 166.134295868,
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_mystery_assembly_consumes_all_three_or_none duration=166.134295868s",
+      "log_sha256": "1e0b7dfe19cd8569887165bf56fa60f18972d07613f01111192f8c07c366d7ad",
+      "result": "PASS"
+    },
+    {
+      "case": "father",
+      "duration_seconds": 154.423917076,
+      "marker": "POSTGRES_CASE_COMPLETED catalogue-npc-father 154.423917076s",
+      "log_sha256": "e2a239b868873f22349f8e142672735ca0cc88495fc17541b3290faae5ce75a9",
+      "result": "PASS"
+    },
+    {
+      "case": "clock",
+      "duration_seconds": 5.994392702,
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_state_clock duration=5.994392702s",
+      "log_sha256": "9f15b7f011f6f9f9576ea36e696e7b129350b74d0865e2bf337ed4f417620617",
+      "result": "PASS"
+    },
+    {
+      "case": "fee",
+      "duration_seconds": 201.44931012,
+      "marker": "POSTGRES_CASE_FINISHED questpc8_remaining_route authored-treasure-island duration=201.44931012s result=Ok(())",
+      "log_sha256": "f7a049b3e2f35395c25a9f35e19429c8d70664a6bde7f2234f43cb6a2985d736",
+      "result": "PASS"
+    }
+  ],
+  "shared_source": "canonical main1ae39c7f, migrations0999-1008",
+  "lane_sha256": {
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql": "b1d36f16922b84c5cf8e13cc524eb3440bc7b44254a64e5c0f9ed8a42af94a11",
+    "apps/game-server/migrations/1301_questpc8_reward_backpack_outputs.sql": "ffc7094ae396ef1ca0ec4d9186b907500813ab5c690279e3b3574f0060a65e5f",
+    "apps/game-server/migrations/1302_questpc8_world_reward_receipts.sql": "b465509f7a576a190b37a5d6ae7bb8cfabb403c57647172890b92fb6ae3d3f65",
+    "apps/game-server/migrations/1303_questpc8_state_operation_validation.sql": "bd382d9946109895f0a9bbd1c0d244b2955d41a0943dd6017d99eaee80af86c3",
+    "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql": "c79752de099590d21afb9ae783e47cb9adf804bcf7663bd715af2a245c31fc37",
+    "apps/game-server/migrations/1305_questpc8_forge_profile_admission.sql": "79062bb775179ac7d6b23982a59e338a585898a0dc5dfc09ea451ccec5deff67",
+    "apps/game-server/migrations/1306_questpc8_father_reward_amount.sql": "deaf3cd09f931105f5c9ce70f415c4b6058b3e1c65fca4482799cfaa8a7f1395"
+  },
+  "latest_shared_branch_note": "Checked for reuse; its unmerged1007/1008 are different additions, so canonical main versions remain authoritative.",
+  "current_proof": "main-3020-integration-validation.json"
+}

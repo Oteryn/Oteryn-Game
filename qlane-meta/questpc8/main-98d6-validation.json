@@ -1,0 +1,106 @@
+{
+  "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+  "prior_product_head": "56668c09daefe7c06dcda379d51b75b7e410a0a4",
+  "state": "FOCUSED_GREEN_6_NATIVE_PG",
+  "checks": {
+    "fmt-write": {
+      "exit": 0,
+      "seconds": 11.603599163005129
+    },
+    "workspace": {
+      "exit": 0,
+      "seconds": 182.07649571599904
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 182.4613435509964
+    },
+    "units": {
+      "exit": 0,
+      "seconds": 26.714019832987105
+    },
+    "pg": {
+      "exit": 0,
+      "seconds": 462.32379869501165
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.404890074001742
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.31288841999776196
+    }
+  },
+  "fmt_check": "PASS /tmp/questpc8b-98d6-fmt-prepush.log",
+  "duplicate_migrations": "PASS /tmp/questpc8b-98d6-dups-prepush.log",
+  "regeneration": {
+    "native_catalogues": "PASS",
+    "central_quest_lists_and_bindings": "PASS",
+    "equipment_custody_and_item_audit": "PASS",
+    "world_pin_refresh_seconds": 118.73981272199308,
+    "world_digest": "cfb5281ca44d51a575c9076ffa611a10b2b444287ebcca4274d8bc88be8cc29d"
+  },
+  "pending": [
+    "remaining dispatch unit coverage: CI scope; full backend suite not claimed complete"
+  ],
+  "prior_pg_proof": "main-83ac-validation.json: six native PostgreSQL cases passed139.880s on56668c09d; not represented as proof of this Soulpit merge",
+  "conflicts": [
+    "world pin and preprod digest: canonical pin-refresh",
+    "kill_reward: incoming Soulpit guard plus existing quest death loot and Corruptor cache",
+    "classic_quests and soul_war fixtures: active-room movement_cells accessor"
+  ],
+  "review": "Independent final source review: no findings",
+  "own_migrations": "1300-1308; none renumbered; incoming1140-1141 unchanged",
+  "whole_quests_qualified": 21,
+  "whole_quests_total": 23,
+  "native_postgres": {
+    "product_head": "89e75d40b2639782be2538ae2ea7436adfe92bed",
+    "summary_seconds": 139.376,
+    "cases": [
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_authored_programmes::questpc8_braindeath_exploration_native_death_coffin_and_replay",
+        "seconds": 38.729
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::l6_mead::l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag",
+        "seconds": 39.71
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_fluid_output_proof::questpc8_fluid_outputs_preserve_exact_subtype_and_legacy_plan_postgres",
+        "seconds": 3.345
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_colours_opening::questpc8_colours_native_envelope_and_self_marking_postgres",
+        "seconds": 68.729
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_winterlight::questpc8_winterlight_native_disguise_four_fires_queen_and_base_outfit",
+        "seconds": 68.49
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_wrath_opening::questpc8_wrath_native_opening_exact_materials_crate_and_replay",
+        "seconds": 97.3
+      }
+    ],
+    "markers": [
+      "POSTGRES_CASE_COMPLETED questpc8_braindeath_exploration_native_death_coffin_and_replay duration=38.691527851s",
+      "POSTGRES_CASE_COMPLETED l6/waterskin-of-mead duration=39.665473652s success=true",
+      "POSTGRES_EXACT_FLUID_OUTPUTS_LEGACY_AND_REFUSALS_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_fluid_outputs duration=3.332027347s result=Ok(())",
+      "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_colours_opening duration=68.691429701s result=Ok(())",
+      "POSTGRES_WINTERLIGHT_PHYSICAL_COMPONENTS_DISGUISE_COLD_FOUR_FIRES_QUEEN_BASE_OUTFIT_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_winterlight_native_route duration=68.454815068s result=Ok(())",
+      "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_wrath_native_opening duration=97.247665494s result=Ok(())"
+    ],
+    "nonselected_tests": 2963
+  },
+  "engine_audit": {
+    "head": "c7f9d9ba79ec4a53c4b874af54affe6898780c5a",
+    "source": "qlane-meta/qengine2/ENGINE-QUEUE.json",
+    "carried_use_live_player_quest_predicate": "QUEUED",
+    "item_look_disguise_restore": "QUEUED"
+  }
+}

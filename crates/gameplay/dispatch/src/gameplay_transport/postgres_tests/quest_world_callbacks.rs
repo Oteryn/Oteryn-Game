@@ -226,6 +226,20 @@ pub(super) fn world(
     callback: &Callback,
     trigger: Position,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_ordinal(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+    )
+}
+
+fn world_ordinal(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -285,41 +299,11 @@ pub(super) fn world(
             cells.entry((p.floor, p.x, p.y)).or_default();
         }
     }
-    for passage in &callback.passages {
-        if passage.replacement == Some(7767) {
-            let p = passage.position;
-            cells.entry((p.floor, p.x, p.y - 1)).or_default();
-            cells.entry((p.floor - 1, p.x, p.y)).or_default();
-        }
-    }
     if let Some(presence) = &callback.effects.item_presence {
         let p = presence.position;
         cells.entry((p.floor, p.x, p.y)).or_default();
         cells.entry((p.floor + 1, p.x, p.y + 1)).or_default();
     }
-    let mut effect_positions = Vec::new();
-    if let Some(pair) = &callback.effects.portals {
-        for portal in &pair.portals {
-            effect_positions.extend([portal.position, portal.destination]);
-        }
-    }
-    if let Some(cycle) = &callback.effects.item_cycle {
-        effect_positions.push(cycle.position);
-    }
-    if let Some(encounter) = &callback.effects.encounter {
-        for player in &encounter.players {
-            effect_positions.extend([player.from, player.to]);
-        }
-        effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
-    }
-    for p in effect_positions {
-        for x in p.x - 1..=p.x + 1 {
-            for y in p.y - 1..=p.y + 1 {
-                cells.entry((p.floor, x, y)).or_default();
-            }
-        }
-    }
-    let appearance = callback.selector.appearance.unwrap_or(100);
     data.manifest.palette.push(bundle::PaletteEntry {
         key: format!("oteryn:terrain.tibia.i{appearance}"),
         family: bundle::Family::Terrain,
@@ -345,6 +329,16 @@ pub(super) fn world(
                 ground_speed: None,
             }),
         });
+    }
+    for _ in 1..ordinal {
+        cells
+            .entry((trigger.floor, trigger.x, trigger.y))
+            .or_default()
+            .push(sector::Item {
+                palette: 0,
+                depth: 0,
+                attrs: Default::default(),
+            });
     }
     cells
         .entry((trigger.floor, trigger.x, trigger.y))
@@ -778,6 +772,8 @@ mod actions;
 mod assertions;
 #[path = "quest_world_callbacks/lions_rock.rs"]
 mod lions_rock;
+#[path = "quest_world_callbacks/literal_uses.rs"]
+mod literal_uses;
 #[path = "quest_world_callbacks/rotten_blood.rs"]
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]

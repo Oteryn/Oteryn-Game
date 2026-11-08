@@ -18,6 +18,23 @@ MAX_CONTENTS = 20  # Existing BAGS-0 direct-container admission, not a donor cap
 # Their source total remains 200; this deliberately preserves the accepted
 # native two-stack recipe over Container:addItem's donor clamp to one stack.
 ACCEPTED_TWO_STACKS = {6218: 3031, 6226: 3450}
+CHARGE_EVIDENCE = Path(__file__).with_name('source_charge_evidence.json')
+CHARGE_EVIDENCE_SHA256 = 'aced9b5e52f472f2a1bc80e7192093036f513c182a6542933ae1abe7f613cf71'
+MEDUSA_DIFFERENCE = 'CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT'
+MEDUSA_HOLD = [{'category': 'source', 'code': 'SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED',
+                'placement_index': 0}]
+# Current Wiki names the contents; Crystal's enum supplies their native subtype.
+# Goblin page3574/revid683865 and Dreamer spoiler12355/revid891457 override
+# the donor's raw1 (water). Present page3214/revid1044890 names no liquid;
+# preserve Crystal chest.lua:1447-1456 + Item::CreateItem raw1 for its two vessels.
+FLUID_CHOICES = {
+    'oteryn:reward-claim.kv.goblintemple2': (
+        [6119], {2: (2874, 9)}, 'WIKI_MILK_OVERRIDES_DONOR_WATER'),
+    'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine': (
+        [6197, 6198, 6199, 6200], {1: (2874, 2)}, 'WIKI_WINE_OVERRIDES_DONOR_WATER'),
+    'oteryn:reward-claim.kv.present_box': (
+        [6113], {0: (2882, 1), 2: (2881, 1)}, 'CRYSTAL_PRESENT_WATER_SUBTYPES'),
+}
 # These Item profiles already have native charged-instance custody. The
 # historical canonical hold predates that owner. Scope the admission to these
 # exact quest claims; neither global Item definitions nor other quests change.
@@ -39,11 +56,17 @@ CHARGE_SOURCE_SHA256 = 'b1c6603253e04042c113a8e5c69bff2b58b4f61f94f03ffdf4df6a07
 
 def native_charge_item(item, profile):
     """Use existing native custody only when canonical physical/custody facts agree."""
-    if item is None or profile is None:
+    if item is None:
         return item
     identity = item['identity']
     key = identity['key']
     charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200}.get(item_id(identity))
+    if charges is None:
+        return item
+    held = copy.deepcopy(item)
+    held['materializable'] = False
+    if profile is None:
+        return held
     semantics = profile['semantics']
     binding = profile['production_binding']
     if (charges is None or profile['production_definition'] != {
@@ -56,7 +79,7 @@ def native_charge_item(item, profile):
             or fact({'semantics': semantics}, 'charges', 'count') != charges
             or semantics['container'] != {'state': 'NOT_APPLICABLE'}
             or semantics['temporal'] != {'state': 'NOT_APPLICABLE'}):
-        return item
+        return held
 
     def agrees(accepted, observed):
         if isinstance(accepted, dict):
@@ -69,7 +92,7 @@ def native_charge_item(item, profile):
             or any(fact({'semantics': semantics}, 'physical', field) is not True
                    for field in ('movable', 'pickupable'))
             or type(fact({'semantics': semantics}, 'physical', 'weight')) is not int):
-        return item
+        return held
     qualified = copy.deepcopy(item)
     qualified['materializable'] = True
     return qualified
@@ -122,7 +145,7 @@ def item_id(ref):
 
 
 def full_charge_leaf(item, pilot_key, position, key, raw_count):
-    """A pinned leaf is one already-admitted Item at its exact definition charges.
+    """An exact D277 source leaf is one admitted Item at definition charges.
 
     Missing native timed state means full definition values; this does not
     authorize partial source charges or make a held Item materializable.
@@ -130,14 +153,25 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
     from itemhold_charge_precedence import qualifies
     if qualifies(item, pilot_key, position, key, raw_count):
         return True
-    binding = FULL_CHARGE_LEAVES.get(pilot_key)
-    if binding is None:
-        return False
-    unique, source_id, charges = binding
-    if (key != f'oteryn:item.tibia.i{source_id}' or raw_count != charges
+    if (type(raw_count) is not int or raw_count <= 0
             or not item or item.get('identity', {}).get('key') != key
             or not item.get('materializable') or item.get('stack_class') != 'NonStackable'
             or fact(item, 'charges', 'count') != raw_count):
+        return False
+    raw = CHARGE_EVIDENCE.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != CHARGE_EVIDENCE_SHA256:
+        raise ValueError('pinned charge source evidence changed')
+    matches = [row for row in json.loads(raw)['rewards']
+               if row['pilot_key'] == pilot_key and row['project_position'] == position
+               and row['item'] == key and row['source_count_argument'] == raw_count
+               and row['source_default_charges'] == raw_count]
+    if len(matches) != 1:
+        return False
+    binding = FULL_CHARGE_LEAVES.get(pilot_key)
+    if binding is None:
+        return True
+    unique, source_id, charges = binding
+    if key != f'oteryn:item.tibia.i{source_id}' or raw_count != charges:
         return False
     if unique == 6082:
         _, entries = source()
@@ -159,6 +193,41 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
 
 
 def derive(definition, items, stack_problem):
+    difference = None
+    fluid_choice = FLUID_CHOICES.get(definition['identity']['key'])
+    if fluid_choice is not None:
+        uids, fills, selected = fluid_choice
+        actual = [[u['unique_id'] for u in p['source_binding']['legacy_unique_ids']
+                   if u['server'] == 'crystalserver'] for p in definition['placements']]
+        holds = [{'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+                  'item': f'oteryn:item.tibia.i{number}', 'placement_index': index,
+                  'reason': 'waiting', 'reward_field': 'items', 'reward_index': child}
+                 for index in range(len(uids)) for child, (number, _) in fills.items()]
+        if (actual != [[uid] for uid in uids] or definition.get('data_holds') not in ([], holds)
+                or definition.get('source_variant', {}).get('source_data') != {
+                    'missing': [], 'status': 'COMPLETE'}):
+            return None
+        # Only this exact historical Item hold is superseded. Current Item
+        # admission is checked below for every child, including the vessels.
+        definition = copy.deepcopy(definition)
+        definition['data_holds'] = []
+        difference = selected
+    if (definition['identity']['key'] == 'oteryn:reward-claim.quest.u7_3.the_medusa_quest'
+            and definition.get('data_holds') == MEDUSA_HOLD
+            and len(definition['placements']) == 1
+            and definition['placements'][0]['reward'].get('written_text') == {
+                'item': None, 'text_ref': {'length': 70, 'placeholders': [],
+                    'sha256': '3d95b7c96da6a14a36118fbbd5a8397239e7e3cc9931c5f60f65d136bd72ff27'}}):
+        # QUEST-FINISH source reconciliation: Crystal201189f chest.lua:2017
+        # gives exactly the bag and three items, with no6183 text attribute.
+        # Its handler:42-49 assigns the fox text to6179/book2815 instead.
+        # Canary47dfd handler:40-47,119-123 wrongly stamps all three Medusa
+        # children. Preserve that SOURCE conflict; native rewards follow the
+        # same pinned Crystal handler as every other native container here.
+        definition = copy.deepcopy(definition)
+        definition['data_holds'] = []
+        del definition['placements'][0]['reward']['written_text']
+        difference = MEDUSA_DIFFERENCE
     if definition.get('data_holds') or definition['claim'] != {'per': 'character', 'repeat': {'kind': 'once'}}:
         return None
     if not any('container' in p['reward'] or 'written_text' in p['reward']
@@ -260,7 +329,7 @@ def derive(definition, items, stack_problem):
         elif 'key_binding' in reward:
             return None
         contents = []
-        for quantity, (source_id, raw_count) in zip(reward['items'], original):
+        for index, (quantity, (source_id, raw_count)) in enumerate(zip(reward['items'], original)):
             item = items.get(quantity['item']['key'])
             count = quantity['count']
             if (item is None or item['identity'] != quantity['item'] or item_id(quantity['item']) != source_id
@@ -275,11 +344,20 @@ def derive(definition, items, stack_problem):
             child_capacity = fact(item, 'container', 'capacity')
             if child_capacity is not None and (type(child_capacity) is not int or not 1 <= child_capacity <= 65535 or count != 1):
                 return None
-            # A source fluid argument is a subtype, never a stack count. The
-            # immutable source compiler records those separately; do not erase it.
-            if known(item.get('semantics', {}).get('fluid')) is not None:
+            selected_fluid = fluid_choice[1].get(index) if fluid_choice is not None else None
+            fluid = known(item.get('semantics', {}).get('fluid'))
+            if selected_fluid is not None:
+                if (selected_fluid[0] != source_id or raw_count != 1 or count != 1
+                        or item.get('stack_class') != 'NonStackable' or child_capacity is not None
+                        or known(item.get('semantics', {}).get('charges')) is not None
+                        or fluid != {'fluid_type': {'state': 'NOT_APPLICABLE'}}):
+                    return None
+            elif fluid is not None:
+                # Other fluid recipes require their own exact source choice.
                 return None
             child = copy.deepcopy(quantity)
+            if selected_fluid is not None:
+                child['fluid_subtype'] = selected_fluid[1]
             if source_id in key_ids and key_number is not None:
                 if count != 1:
                     return None
@@ -298,5 +376,8 @@ def derive(definition, items, stack_problem):
         result.append(projected)
     if not result:
         return None
-    return {'schema': 'OTERYN_NATIVE_CONTAINER_REWARD/v1', 'revision': REVISION,
-            'source_sha256': SOURCE_SHA256, 'placements': result}
+    projection = {'schema': 'OTERYN_NATIVE_CONTAINER_REWARD/v1', 'revision': REVISION,
+                  'source_sha256': SOURCE_SHA256, 'placements': result}
+    if difference is not None:
+        projection['source_difference'] = difference
+    return projection

@@ -1,0 +1,5 @@
+{
+  "command": "python3 -m unittest discover -s tools/content-schema/quest-authoring -p test_grizzly_rooms.py -v",
+  "exit": 0,
+  "duration_seconds": 4.117
+}

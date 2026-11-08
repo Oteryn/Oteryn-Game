@@ -1,0 +1,202 @@
+{
+  "source_commit": "534ea6b23de451ae1086e0be585d1f75887aa17a",
+  "branch": "claude/happy-davinci-ijz3wy-questpc8b",
+  "checkpoint_utc": "2026-11-08T03:33:08.430057+00:00",
+  "scope": "Evidence-only checkpoint; executable and product inputs unchanged",
+  "unit_run": {
+    "state": "INTERRUPTED_FOR_MAIN_MERGE",
+    "selected": 2560,
+    "passed_so_far": 810,
+    "failed_so_far": 0,
+    "crates": [
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-dispatch"
+    ],
+    "filter": "not test(postgres) and not test(schema_tests) and not test(db_tests)",
+    "log": "/tmp/questpc8b-complete-units.log",
+    "full_success_claimed": false,
+    "passed_before_interrupt": 1004,
+    "assertion_failures_during_merge": 3,
+    "interrupted_cases": 3,
+    "not_run": 1550,
+    "seconds": 1146.628
+  },
+  "postgres": {
+    "case": "questpc8_colours_native_envelope_and_self_marking_postgres",
+    "result": "PASS",
+    "seconds": 105.9,
+    "marker": "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
+    "log": "/tmp/questpc8b-checkpoint-own-pg.log"
+  },
+  "workspace": {
+    "result": "PASS",
+    "duration": "0.32s cached compile check; not a skipped PG case",
+    "log": "/tmp/questpc8b-checkpoint-workspace.log"
+  },
+  "clippy": {
+    "result": "PASS",
+    "crates": "three changed Rust crates",
+    "flags": "--all-targets -- -D warnings",
+    "duration": "5m21s",
+    "log": "/tmp/questpc8b-checkpoint-clippy.log"
+  },
+  "fmt": "PASS",
+  "dup_migrations": "PASS",
+  "generated_consistency": {
+    "mode": "Repository generators --check plus pin-check; product inputs unchanged, no generated files hand-edited or rewritten during unit execution",
+    "native_outputs": 46,
+    "binding_identities": 310,
+    "binding_pointers": 6628,
+    "completion_quests": 310,
+    "pin_digest": "8100dbd4e497e9354dd69d877c478e97ae1b3652cc8e2ce5a5fbc0b8ec11ea27",
+    "pin_bytes": 32840502,
+    "pin_retry": "First attempt exited137 while overlapping clippy; rerun after clippy PASS exit0"
+  },
+  "peer_reuse_audit": {
+    "live_heads": [
+      {
+        "head": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+        "branch": "claude/happy-davinci-ijz3wy-qbind1"
+      },
+      {
+        "head": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+        "branch": "claude/happy-davinci-ijz3wy-qbind2"
+      },
+      {
+        "head": "e6bacdda606c65290d6c2df64473cd2b75cdbaf1",
+        "branch": "claude/happy-davinci-ijz3wy-qengine2"
+      },
+      {
+        "head": "04255c6af7f21caa71cc56d5fa138cbf15a095ac",
+        "branch": "claude/happy-davinci-ijz3wy-qengine2-wip"
+      },
+      {
+        "head": "ddfe9b076093cf83e6c2d5e5931388b1c2985d28",
+        "branch": "claude/happy-davinci-ijz3wy-qready1"
+      },
+      {
+        "head": "a9f723152f128ce76c0a793dae0f6905bd85ca73",
+        "branch": "claude/happy-davinci-ijz3wy-qready2"
+      },
+      {
+        "head": "0a6d6e208a6d92c8873e36b92475b64a13375785",
+        "branch": "claude/happy-davinci-ijz3wy-questpc2"
+      },
+      {
+        "head": "c913a88349317056cf8f2db83e52a0911200ce53",
+        "branch": "claude/happy-davinci-ijz3wy-questpc2-wip"
+      },
+      {
+        "head": "303b2b6e21920f7d220bf817303faf23f26728b8",
+        "branch": "claude/happy-davinci-ijz3wy-questpc2b"
+      },
+      {
+        "head": "09c26dcee6ca67f43b89bee6523e011f4f466c03",
+        "branch": "claude/happy-davinci-ijz3wy-questpc3"
+      },
+      {
+        "head": "968f6812010e719d91316f92eedb5732841283fd",
+        "branch": "claude/happy-davinci-ijz3wy-questpc3-wip"
+      },
+      {
+        "head": "30fdcba6ac22ef7bb666dbd12054821e76ac7c6b",
+        "branch": "claude/happy-davinci-ijz3wy-questpc3b"
+      },
+      {
+        "head": "8edc2d297a3668dfda1aab8c6105b9bcdd7135c2",
+        "branch": "claude/happy-davinci-ijz3wy-questpc4"
+      },
+      {
+        "head": "30e0b2af23a01fae1d932395b13d1c2365b65662",
+        "branch": "claude/happy-davinci-ijz3wy-questpc4-wip"
+      },
+      {
+        "head": "0fcfb69137b545ea2a2b6b05a1310784ab139621",
+        "branch": "claude/happy-davinci-ijz3wy-questpc4b"
+      },
+      {
+        "head": "26549ea49991421b16b3bb770b6ead1e7731ad1e",
+        "branch": "claude/happy-davinci-ijz3wy-questpc5"
+      },
+      {
+        "head": "be670b5c145bd14882926e917299b4bd35c480b3",
+        "branch": "claude/happy-davinci-ijz3wy-questpc5-wip"
+      },
+      {
+        "head": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+        "branch": "claude/happy-davinci-ijz3wy-questpc6"
+      },
+      {
+        "head": "db355fae2d4900be2728eca6d645f72376134b5a",
+        "branch": "claude/happy-davinci-ijz3wy-questpc6-wip"
+      },
+      {
+        "head": "c7d67c4fc95e29b9e4651ea069fd441810b40e4d",
+        "branch": "claude/happy-davinci-ijz3wy-questpc7"
+      },
+      {
+        "head": "06c1349463051f39823a8f8e5d8b4326c120f868",
+        "branch": "claude/happy-davinci-ijz3wy-questpc7-wip"
+      }
+    ],
+    "required_feature_matches": [],
+    "qengine2": "e6bacdda606c65290d6c2df64473cd2b75cdbaf1",
+    "remaining_features": [
+      "carried_use_live_player_quest_predicate",
+      "item_look_disguise_restore"
+    ],
+    "state": "Both explicitly QUEUED in current QENGINE2 ENGINE-QUEUE.json"
+  },
+  "qualification_counts_unchanged": true,
+  "prepush2_cadence_exception": "Publish last compiling evidence-only state under explicit merge-abort exception. Full unit qualification remains incomplete.",
+  "merge_induced_failure_recheck": {
+    "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b8cd666c09afb429",
+    "cases": [
+      {
+        "case": "gameplay_transport::item_use::crystal_parity_tests::i14_crystal_consumables_have_source_qualified_owners",
+        "exit": 0,
+        "seconds": 27.348724000010407,
+        "log": "/tmp/questpc8b-recheck-i14_crystal_consumables_have_source_qualified_owners.log"
+      },
+      {
+        "case": "gameplay_transport::item_use::crystal_parity_tests::i14_matching_restore_potions_and_foods_are_admitted",
+        "exit": 0,
+        "seconds": 27.58545385899197,
+        "log": "/tmp/questpc8b-recheck-i14_matching_restore_potions_and_foods_are_admitted.log"
+      },
+      {
+        "case": "gameplay_transport::item_use::crystal_parity_tests::i14_global_consumables_are_admitted",
+        "exit": 0,
+        "seconds": 27.4700775250094,
+        "log": "/tmp/questpc8b-recheck-i14_global_consumables_are_admitted.log"
+      },
+      {
+        "case": "gameplay_transport::item_use::crystal_parity_tests::i14_admitted_consumables_match_crystal",
+        "exit": 0,
+        "seconds": 27.406955561003997,
+        "log": "/tmp/questpc8b-recheck-i14_admitted_consumables_match_crystal.log"
+      },
+      {
+        "case": "gameplay_transport::loop_move::tests::the_content_revision_is_the_prefixed_digest",
+        "exit": 0,
+        "seconds": 0.006427839005482383,
+        "log": "/tmp/questpc8b-recheck-the_content_revision_is_the_prefixed_digest.log"
+      },
+      {
+        "case": "gameplay_transport::loop_move::tests::the_ground_cell_codec_is_the_item_owners",
+        "exit": 0,
+        "seconds": 0.005833160990732722,
+        "log": "/tmp/questpc8b-recheck-the_ground_cell_codec_is_the_item_owners.log"
+      }
+    ],
+    "result": "All6PASS on restored clean source; three failed native-manifest/digest checks were caused by attempted merge changing files under the old test binary."
+  },
+  "main_sync": {
+    "incoming": "83acbdac3720d7fe2df6c44d82623b7307806402",
+    "conflict_files": 64,
+    "state": "MERGE_ABORTED_FOR_AUTHORIZED_LAST_COMPILING_CHECKPOINT",
+    "authorization": "Owner PREPUSH-2 step1 retains the15-minute merge fallback: abort an unfinishable merge and push last compiling state, then continue integration.64files cannot be safely resolved in that budget.",
+    "next": "Resume this merge immediately after checkpoint publication; do not claim newest main is integrated."
+  }
+}

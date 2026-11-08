@@ -1,0 +1,247 @@
+{
+  "classification": "OTERYN_AUTHORED_APPROXIMATION",
+  "completeness_scope": "CHOSEN_OTERYN_RECIPE_ONLY",
+  "data_complete": true,
+  "definition_profile": "oteryn_authored_v1",
+  "display_name": "Insectoid Outfits Quest",
+  "identity": {
+    "key": "oteryn:quest.authored.insectoid_outfits_quest",
+    "revision": "authored-r1"
+  },
+  "kind": "storyline",
+  "missing_data": [
+    {
+      "code": "quest_native_lowering_missing"
+    },
+    {
+      "code": "authored_trigger_and_delivery_bindings_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "canonical_reward_refs": [],
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "provenance": {
+    "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+    "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+  },
+  "readiness": "waiting_native_bindings",
+  "recipe": {
+    "adaptations": [
+      "Cumulative thresholds are selected unchanged: total required War Exp is 1000, not 1800. Global Hive cycles become the preceding personal Hive Born access quest. No XP amount is invented. Outfit rewards occur at their corresponding milestone."
+    ],
+    "repeat": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "kind": "once"
+    },
+    "requirements": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "min_level": 0,
+      "premium": true,
+      "prerequisites": [
+        "Hive Born World Change"
+      ]
+    },
+    "reward_intents": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Insectoid Outfits"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Insectoid first addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Insectoid second addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "achievement",
+        "name": "Bane of the Hive"
+      }
+    ],
+    "source_notes": [
+      "Fandom and BR explicitly distinguish cumulative thresholds 300, 500 and 1000. War Exp is an authored progression counter requiring its own binding, not an item.",
+      "All behavior and reward delivery are authored Oteryn choices; named entities are unresolved references, not canonical IDs. Native bindings, locations and runtime execution remain to be implemented."
+    ],
+    "source_refs": [
+      {
+        "content_sha256": "7774bd45b175316a5a8aa156aaee89232d4cc441431bb3b1dd6288df961e59c6",
+        "pageid": 57000,
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "revid": 1091445,
+        "url": "https://tibia.fandom.com/index.php?curid=57000&oldid=1091445"
+      },
+      {
+        "content_sha256": "db50f7a6405e41edf904651071c92714c434e7c8f2db38d0418eb38f1d973081",
+        "pageid": 56999,
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "revid": 856052,
+        "url": "https://tibia.fandom.com/index.php?curid=56999&oldid=856052"
+      },
+      {
+        "content_sha256": "43322727d890e1e66fa3e2bf5c06a02a68a8c85f8422b1ba1211edefd7360984",
+        "pageid": 45931,
+        "provider": "tibiawiki_br",
+        "relation": "crosscheck",
+        "revid": 401315,
+        "url": "https://www.tibiawiki.com.br/index.php?curid=45931&oldid=401315"
+      }
+    ],
+    "stages": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s1",
+        "kind": "talk",
+        "next": [
+          "s2"
+        ],
+        "objective": "Ask Orockle how War Exp qualifies a veteran for the outfit.",
+        "targets": [
+          "Orockle"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 300,
+        "key": "s2",
+        "kind": "use",
+        "next": [
+          "s3"
+        ],
+        "objective": "Verify cumulative War Exp of at least 300; this is a threshold, not a consumption.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "cumulative War Exp threshold 300"
+          }
+        ],
+        "targets": [
+          "cumulative War Exp threshold 300"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s3",
+        "kind": "use",
+        "next": [
+          "s4"
+        ],
+        "objective": "Visit the western Hive tower and use the Insectoid Remains for the basic outfit.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "western Hive tower Insectoid Remains"
+          }
+        ],
+        "targets": [
+          "western Hive tower Insectoid Remains"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 500,
+        "key": "s4",
+        "kind": "use",
+        "next": [
+          "s5"
+        ],
+        "objective": "Verify cumulative War Exp of at least 500; retain the previous 300.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "cumulative War Exp threshold 500"
+          }
+        ],
+        "targets": [
+          "cumulative War Exp threshold 500"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s5",
+        "kind": "use",
+        "next": [
+          "s6"
+        ],
+        "objective": "Use the Insectoid Remains for the first addon.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "western Hive tower Insectoid Remains"
+          }
+        ],
+        "targets": [
+          "western Hive tower Insectoid Remains"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1000,
+        "key": "s6",
+        "kind": "use",
+        "next": [
+          "s7"
+        ],
+        "objective": "Verify cumulative War Exp of at least 1000; retain all previous progress.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "cumulative War Exp threshold 1000"
+          }
+        ],
+        "targets": [
+          "cumulative War Exp threshold 1000"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s7",
+        "kind": "use",
+        "next": [
+          "s8"
+        ],
+        "objective": "Use the Insectoid Remains for the second addon.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "western Hive tower Insectoid Remains"
+          }
+        ],
+        "targets": [
+          "western Hive tower Insectoid Remains"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s8",
+        "kind": "complete",
+        "next": [],
+        "objective": "Record completion and the selected Oteryn reward intents in the character journal.",
+        "targets": [
+          "Insectoid Outfits Quest"
+        ]
+      }
+    ],
+    "summary": "Qualify for the Hive outfit and its two addons by cumulative War Exp.",
+    "wiki_title": "Insectoid Outfits Quest"
+  },
+  "runtime_enabled": false
+}

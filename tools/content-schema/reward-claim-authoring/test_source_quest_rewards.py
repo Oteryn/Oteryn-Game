@@ -11,7 +11,12 @@ import reward_claim_variant_authoring as variant
 class SourceQuestRewards(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.items = plain.load_items()
+        cls.merged_items = plain.load_items()
+        # Replay main's historical Item holds independently of QUESTPC8's
+        # subsequent source-backed global admission of these same identities.
+        cls.items = copy.deepcopy(cls.merged_items)
+        for number in (3082, 3083, 3084, 3085):
+            cls.items[f'oteryn:item.tibia.i{number}']['materializable'] = False
         cls.claims = plain.load_json(plain.ROOT / plain.CLAIMS_REL)['claims']
         cls.manifest = plain.load_json(plain.ROOT / plain.MANIFEST_REL)
 
@@ -98,6 +103,21 @@ class SourceQuestRewards(unittest.TestCase):
                 self.assertFalse(container_native.full_charge_leaf(item, claim, position, key, charges - 1))
                 self.assertFalse(container_native.full_charge_leaf(item, claim, {**position, 'x': position['x'] + 1}, key, charges))
                 self.assertFalse(container_native.full_charge_leaf(item, claim + '_other', position, key, charges))
+
+    def test_merged_charge_admissions_are_idempotent_and_never_mutate_sources(self):
+        before = copy.deepcopy(self.merged_items)
+        for claim in container_native.CHARGED_QUEST_CLAIMS:
+            once = container_native.claim_items(claim, self.merged_items)
+            self.assertEqual(container_native.claim_items(claim, once), once)
+        self.assertEqual(self.merged_items, before)
+        profiles = plain.load_json(plain.ROOT / 'content/items/definitions/spell-native-profiles.json')
+        key = 'oteryn:item.tibia.i3083'
+        profile = copy.deepcopy(next(p for p in profiles['records']
+                                    if p['production_definition']['production_key'] == key))
+        profile['semantics']['charges']['value']['count']['value'] = 149
+        self.assertTrue(self.merged_items[key]['materializable'])
+        self.assertFalse(container_native.native_charge_item(self.merged_items[key], profile)['materializable'])
+        self.assertEqual(self.merged_items, before)
 
     def test_qualification_changes_only_the_five_owned_claims(self):
         after = self.build(self.items)

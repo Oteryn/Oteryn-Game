@@ -12,6 +12,7 @@ mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
 include!(concat!(env!("OUT_DIR"), "/npc_rule_programs.rs"));
+include!(concat!(env!("OUT_DIR"), "/authored_npc_rule_programs.rs"));
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -285,10 +286,17 @@ pub struct NpcRuleDocument {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub program_key: Option<String>,
     pub quest: String,
+    /// Live account authority is rechecked by the durable NPC writer.
+    #[serde(default, skip_serializing_if = "npc_false")]
+    pub premium_required: bool,
     pub tracks: Vec<NpcTrackDefinition>,
     pub rules: Vec<NpcRule>,
     #[serde(default)]
     pub source_files: Vec<NpcSourceFile>,
+}
+
+fn npc_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Debug, Clone)]
@@ -418,6 +426,8 @@ impl NpcRuleCatalog {
         Ok(self)
     }
 
+    /// Preserve the source's absent value while accepting the complete native
+    /// track range shared with other quest owners. Source bytes keep their digest.
     pub fn load_embedded() -> Result<Self, NpcRuleError> {
         Self::embedded().cloned()
     }
@@ -427,7 +437,19 @@ impl NpcRuleCatalog {
         static SOURCE: std::sync::OnceLock<Result<NpcRuleCatalog, NpcRuleError>> =
             std::sync::OnceLock::new();
         SOURCE
-            .get_or_init(|| Self::from_json_documents(NPC_RULE_PROGRAMS))
+            .get_or_init(|| {
+                let catalogue = Self::from_json_documents(NPC_RULE_PROGRAMS)?;
+                if catalogue
+                    .programs
+                    .iter()
+                    .any(|program| program.document.schema != 1)
+                {
+                    return Err(NpcRuleError::Invalid(
+                        "source NPC registry requires schema1".into(),
+                    ));
+                }
+                Ok(catalogue)
+            })
             .as_ref()
             .map_err(Clone::clone)
     }
@@ -461,6 +483,23 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_order_of_the_stag_quest"
                         )
                 });
+                let authored = Self::from_json_documents(AUTHORED_NPC_RULE_PROGRAMS)?;
+                if authored
+                    .programs
+                    .iter()
+                    .any(|program| program.document.schema != 2)
+                {
+                    return Err(NpcRuleError::Invalid(
+                        "authored NPC registry requires schema2".into(),
+                    ));
+                }
+                catalogue.programs.extend(
+                    authored
+                        .programs
+                        .into_iter()
+                        .filter(|program| super::in_runtime_scope(&program.document.quest)),
+                );
+                validate::catalogue(&catalogue)?;
                 Ok(catalogue)
             })
             .as_ref()
@@ -569,7 +608,8 @@ pub(super) fn extend(
     let mut legacy = catalogue.npc_legacy.clone();
     for program in source.programs() {
         let quest = &program.document.quest;
-        if quest != "oteryn:quest.the_order_of_the_stag_quest"
+        if program.document.schema == 1
+            && quest != "oteryn:quest.the_order_of_the_stag_quest"
             && let Some(hash) = catalogue.definition_hash(quest)
         {
             legacy.insert(
@@ -683,6 +723,7 @@ pub fn legacy_defaults<'a>(
         })
 }
 
+/// Source catalogue bounds and predecessor regression tests.
 #[cfg(test)]
 mod tests;
 

@@ -1,0 +1,137 @@
+{
+  "classification": "OTERYN_AUTHORED_APPROXIMATION",
+  "completeness_scope": "CHOSEN_OTERYN_RECIPE_ONLY",
+  "data_complete": true,
+  "definition_profile": "oteryn_authored_v1",
+  "display_name": "Lumberjack Mini World Change",
+  "identity": {
+    "key": "oteryn:quest.authored.lumberjack_mini_world_change",
+    "revision": "authored-r1"
+  },
+  "kind": "storyline",
+  "missing_data": [
+    {
+      "code": "quest_native_lowering_missing"
+    },
+    {
+      "code": "authored_trigger_and_delivery_bindings_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "canonical_reward_refs": [],
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "provenance": {
+    "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+    "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+  },
+  "readiness": "waiting_native_bindings",
+  "recipe": {
+    "adaptations": [
+      "The required Chip-before-Eloise order is retained. The investigation is personal and once-only, so another player's report never removes access. Wood sales are an access intent, not a fifty-gold quest payout; no trade price or inventory item binding is implied."
+    ],
+    "repeat": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "kind": "once"
+    },
+    "requirements": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "min_level": 0,
+      "premium": false,
+      "prerequisites": []
+    },
+    "reward_intents": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "achievement",
+        "name": "Whistle-Blower"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "access",
+        "name": "Wood trade with Chip"
+      }
+    ],
+    "source_notes": [
+      "The spoiler explicitly requires meeting Chip before the royal report and distinguishes Wood's fifty-gold sale price from the achievement.",
+      "All behavior and reward delivery are authored Oteryn choices; named entities are unresolved references, not canonical IDs. Native bindings, locations and runtime execution remain to be implemented."
+    ],
+    "source_refs": [
+      {
+        "content_sha256": "f7b2e61fe991e5e8b709f52cf51d0777b55944ce5c7011df4eb6a2640b65a4f1",
+        "pageid": 76246,
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "revid": 845163,
+        "url": "https://tibia.fandom.com/index.php?curid=76246&oldid=845163"
+      },
+      {
+        "content_sha256": "a31cf523648ff168e34f12a31429a05d8db42be4e7a0daa6df49dc6e32355ce2",
+        "pageid": 76247,
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "revid": 893906,
+        "url": "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
+      }
+    ],
+    "stages": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s1",
+        "kind": "explore",
+        "next": [
+          "s2"
+        ],
+        "objective": "Find Chip's clearing in the Fields of Glory north of Carlin.",
+        "targets": [
+          "Fields of Glory lumberjack clearing"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s2",
+        "kind": "talk",
+        "next": [
+          "s3"
+        ],
+        "objective": "Speak with Chip about his work and establish knowledge of the logging.",
+        "targets": [
+          "Chip"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s3",
+        "kind": "talk",
+        "next": [
+          "s4"
+        ],
+        "objective": "Report Chip the lumberjack to Queen Eloise.",
+        "targets": [
+          "Queen Eloise"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s4",
+        "kind": "complete",
+        "next": [],
+        "objective": "Record completion and the selected Oteryn reward intents in the character journal.",
+        "targets": [
+          "Lumberjack Mini World Change"
+        ]
+      }
+    ],
+    "summary": "Find Chip's illegal logging operation and report it to Queen Eloise.",
+    "wiki_title": "Lumberjack Mini World Change"
+  },
+  "runtime_enabled": false
+}

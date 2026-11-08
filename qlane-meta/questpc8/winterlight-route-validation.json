@@ -1,0 +1,35 @@
+{
+  "canonical": "oteryn:quest.winterlight_solstice",
+  "scope": "Complete chosen finite Premium Winterlight recipe: native physical remains, Percht disguise and cold restoration, reusable torch, four five-branch fires, native Queen death and ordinary XP, once-only base Percht Raider outfit",
+  "result": "PASS",
+  "postgres": true,
+  "duration_seconds": 88.598050216,
+  "marker": "POSTGRES_WINTERLIGHT_PHYSICAL_COMPONENTS_DISGUISE_COLD_FOUR_FIRES_QUEEN_BASE_OUTFIT_PASS",
+  "completion_marker": "POSTGRES_CASE_FINISHED questpc8_winterlight_native_route duration=88.598050216s result=Ok(())",
+  "log_sha256": "8a480f81d706793a8063df3f0d6329e4612d4cbdd951c97b2ae2795261f021b6",
+  "test": "questpc8_winterlight_native_disguise_four_fires_queen_and_base_outfit",
+  "test_source": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_winterlight.rs",
+  "source_parent": "b3ec5f491",
+  "red_proofs": [
+    {
+      "duration_seconds": 70.281342919,
+      "point": "First bonfire rejected because fixture discarded native Premium authority"
+    },
+    {
+      "duration_seconds": 72.960616778,
+      "point": "Five non-stackable branches incorrectly requested as one stack"
+    },
+    {
+      "duration_seconds": 90.57785558,
+      "point": "All four fires passed; Queen attack fixture lacked bound current Character lease"
+    }
+  ],
+  "invariants": [
+    "No quest progress or completion SQL seeded",
+    "Five separate branches per fire; exact quantity resolved before atomic existing BURN",
+    "Torch remains reusable only on exact definition match",
+    "Native captured Queen death and ordinary XP committed",
+    "Base outfit only; replay cannot duplicate reward"
+  ],
+  "notes": "CONTRACT-NOTES.md"
+}

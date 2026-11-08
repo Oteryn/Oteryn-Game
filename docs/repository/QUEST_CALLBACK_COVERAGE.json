@@ -10511,7 +10511,7 @@
       "quest": "unlinked"
     }
   ],
-  "scope": "Once-only leaf/key/text chests and exact filled-container/shared-storage-choice recipes; levers and step-in scripts are separate owners.",
+  "scope": "Once-only leaf/key/text chests, exact filled-container/shared-storage-choice recipes and six Falcon 24h random-cycle sources; levers and step-in scripts are separate owners.",
   "source_revisions": {
     "canary": "47dfd51f",
     "crystalserver": "201189f871d23597b82caf88fd611454a2ddefb8"

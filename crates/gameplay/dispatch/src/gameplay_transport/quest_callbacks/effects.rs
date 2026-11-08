@@ -41,6 +41,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry: facts,
             }));
         }
+        if callback.effects.scene.is_some() {
+            return self.prepare_quest_scene(map, callback, close);
+        }
         if let Some(pair) = &callback.effects.portals {
             let facts = map
                 .facts

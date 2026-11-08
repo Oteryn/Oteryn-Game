@@ -25,11 +25,22 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
         self.assertEqual(native[desert]['data_holds'], [])
         self.assertIn('native_contents', native[desert])
         self.assertEqual(source[desert]['data_holds'][0]['item'], 'oteryn:item.tibia.i3084')
-        changed = {key for key in native if native[key] != source[key]}
+        # These two private SOURCE compiler annotations are not native claim
+        # definition fields. Check their exact historical values separately.
+        for suffix, categories in {
+            'ornamentedshield': ['item', 'source'],
+            'present_box': ['item'], 'triangletower': ['item'],
+        }.items():
+            self.assertEqual(source['oteryn:reward-claim.kv.' + suffix]['_source_hold_categories'], categories)
+        annotations = {'_source_baseline_item_hold', '_source_hold_categories'}
+        changed = {key for key in native if native[key] != {
+            field: value for field, value in source[key].items() if field not in annotations}}
+
         self.assertEqual(changed, {
             'oteryn:reward-claim.kv.madmageroom3', triangle, desert,
-            'oteryn:reward-claim.kv.ornamentedshield',
-            'oteryn:reward-claim.kv.present_box', 'oteryn:reward-claim.kv.powerring2',
+            'oteryn:reward-claim.kv.edrongoblin1', 'oteryn:reward-claim.kv.ghoulroom1',
+            'oteryn:reward-claim.kv.silveramulet', 'oteryn:reward-claim.kv.stealhring1',
+            'oteryn:reward-claim.kv.powerring2',
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',
             'oteryn:reward-claim.kv.weddingring1',
         })

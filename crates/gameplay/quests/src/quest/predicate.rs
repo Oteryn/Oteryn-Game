@@ -65,6 +65,9 @@ impl QuestPredicate {
                 let valid = match *comparison {
                     QuestComparison::Between(low, high) => low <= high,
                     QuestComparison::ElapsedAtLeast(seconds) => seconds >= 0,
+                    QuestComparison::ElapsedLessThan(seconds) => {
+                        (1..=366 * 24 * 60 * 60).contains(&seconds)
+                    }
                     _ => true,
                 };
                 valid

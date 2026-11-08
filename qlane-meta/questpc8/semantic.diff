@@ -1,0 +1,410 @@
+apps/game-server/src/node/serve/qualification_fixture.rs
++ root_fluid_subtype: None,
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs
+- bind, and the 11 waiting
++ bind. QUEST-FINISH leaves three
+- are left out. KEY-1 adds the 21 key
++ waiting, admits
+- variants with a `canary:door-key/` binding. W15b adds 67
++ eight exact full-charge leaves and six additional
+- container/text/key recipes
++ recipes,
+- one fully charged
+- plain leaf through the same binder.
++ excludes both Dawnport records while preserving their source data.
+- 308);
++ 320);
+- 11
++ 3
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs
++ #[path = "reward_claim_mint_postgres_cases/filled_fluid.rs" ] mod filled_fluid;
++ None, root_fluid_subtype:
+crates/gameplay/content/src/content/world_reward_claims.rs
++ /// QUEST-FINISH owner scope excludes Dawnport from the Newhaven runtime. OwnerExcluded,
++ if definition .get("quest") .and_then(|quest| quest.get("key")) .and_then(Value::as_str) == Some("canary:quest/dawnport_quest") { return Ok(Err(LeftOut::OwnerExcluded)); }
++ let medusa = crystal_medusa_reconciliation(definition);
++ Some(recipes) if medusa => { let mut native = placement.clone(); native["reward"] .as_object_mut() .ok_or(ClaimsError("Medusa reward is malformed"))? .remove("written_text"); candidate_container_placement(&native, &recipes[index])? }
++ crystal_medusa_reconciliation(definition: &serde_json::Map<String, Value>) -> bool { if definition .get("identity") .and_then(|value| value.get("key")) .and_then(Value::as_str) != Some("oteryn:reward-claim.quest.u7_3.the_medusa_quest") { return false; } // Crystal201189f chest.lua:2017-2024 and handler:42-49: the fox text // belongs to6179/book2815. Canary47dfd handler:40-47,119-123 attaches it // to all Medusa children. Only this complete, exact Crystal projection // resolves that SOURCE-only conflict; no other hold or carrier is erased. let item = |number: u16| { serde_json::json!({"family":"Item", "key" :format!("oteryn:item.tibia.i{number}"),"revision":"definition-r1"}) }; let contents: Vec<_> = [3436, 3567, 3324] .into_iter() .map(|number| serde_json::json!({"item":item(number),"count":1})) .collect(); let Some(projection) = definition.get("native_contents") else { return false; }; projection.get("source_difference").and_then(Value::as_str) == Some("CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT") && definition.get("readiness").and_then(Value::as_str) == Some("waiting_data") && definition.get("data_holds") == Some(&serde_json::json!([ {"category":"source","code":"SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED","placement_index":0}])) && definition .get("source_variant") .and_then(|value| value.get("source_data")) == Some(&serde_json::json!({"status":"WAITING_SOURCE","missing":[ {"code":"SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED","placement_index":0}]})) && definition.get("placements") == Some(&serde_json::json!([{ "appearance_tibia_id" :1983,"source_binding":{ "project_position" :{"x":33049,"y":32399,"z":10}, "legacy_unique_ids" :[{"server":"canary","unique_id":6183}, {"server":"crystalserver","unique_id":6183}]}, "reward" :{"container":item(2853),"items":contents,"written_text":{ "item" :null,"text_ref":{"length":70,"placeholders":[], "sha256" :"3d95b7c96da6a14a36118fbbd5a8397239e7e3cc9931c5f60f65d136bd72ff27"}}}}])) && projection.get("placements") == Some(&serde_json::json!([{ "unique_id" :6183,"line":2017,"root":item(2853),"capacity":8,"contents":contents, "completion" :{"kind":"storage","key":"Storage.Quest.U7_3.TheMedusaQuest"}}])) } fn
++ let medusa = crystal_medusa_reconciliation(definition);
+- definition.get("readiness")?.as_str()?
++ (!medusa && (definition.get("readiness")?.as_str()?
++ ))
+- &["schema",
++ &[ "schema" ,
++ , "source_difference" ,
++ || (projection.get("source_difference").is_some() && !medusa)
++ #[test] fn medusa_uses_exact_crystal_bag_without_canary_text_carrier_guess() { let source = authored("quest.u7_3.the_medusa_quest").expect("Medusa source"); let parsed = candidate(source.as_object().expect("definition"), &|_| true) .expect("decoded") .expect("complete Crystal bag"); assert_eq!(parsed.placements[0].contents.len(), 3); for mutation in ["sibling hold", "carrier" , "count" , "difference" ] { let mut changed = source.clone(); match mutation { "sibling hold" => changed["data_holds"] .as_array_mut() .expect("holds") .push(serde_json::json!({"category":"item","code":"ITEM_SEMANTICS_MISSING"})), "carrier" => { changed["placements"][0]["reward"]["written_text"]["item"] = changed["placements"][0]["reward"]["items"][0]["item"].clone() } "count" => changed["placements"][0]["reward"]["items"][0]["count"] = 2.into(), "difference" => changed["native_contents"]["source_difference"] = "guessed" .into(), _ => unreachable!(), } assert!( candidate(changed.as_object().expect("definition"), &|_| true) .expect("decoded") .is_err(), "{mutation}" ); } } #[test] fn owner_scope_excludes_dawnport_rewards_even_when_items_are_admitted() { for suffix in ["quest.key.id0010", "quest.u10_55.dawnport.torn_log_book" ] { let definition = authored(suffix).expect("Dawnport source claim retained"); assert!( candidate(definition.as_object().expect("definition"), &|_| true) .expect("well-formed source claim") .is_err(), "{suffix}" ); } }
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs
++ fluid_subtype: None,
++ root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs
++ fluid_subtype: None,
++ root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs
++ root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
++ if !oteryn_gameplay_quests::quest::in_runtime_scope("oteryn:quest.dawnport_quest") { return NpcTalkOutcome::only(Disposition::NoConversation); }
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/classic_quests.rs
+- classic_talk::MORRIS, classic_talk::WOBLIN,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs
++ let started = std::time::Instant::now();
+- -15
++ -15,
+- })
++ })?; eprintln!( "POSTGRES_CASE_COMPLETED classic_quests_npc_commands_commit_exact_start_branches_and_fence_topics {:?}" , started.elapsed() ); Ok(())
+- ).map_err(debug)?;
++ ) .map_err(debug)?;
+- owner.states.chat.install_npc_talk(std::sync::Arc::new(NpcTalkBook::from_model(&model))); owner.states.chat.admit(admitted.game_session_id,
++ owner .states .chat .install_npc_talk(std::sync::Arc::new(NpcTalkBook::from_model(&model))); owner .states .chat .admit(admitted.game_session_id,
+- owner.current_quest_fence(admitted.game_session_id).await
++ owner .current_quest_fence(admitted.game_session_id) .await
+- )?.ok_or("fence")?;
++ )? .ok_or("fence")?;
+- runtime.bind_attacker_lease(actor,
++ runtime .bind_attacker_lease( actor,
+- crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
++ crate::foundation::CharacterId::decode(fence.character_id.as_bytes()) .map_err(debug)?,
+- ).map_err(debug)?).map_err(debug)?;
++ ) .map_err(debug)?, ) .map_err(debug)?;
+- runtime.read_actor_position(actor).map_err(debug)?.position();
++ runtime .read_actor_position(actor) .map_err(debug)? .position();
+- keys.into_iter().enumerate().map(|(i,key)|
++ keys .into_iter() .enumerate() .map(|(i, key)|
+- }]}) }).collect::<TestResult<Vec<_>>>()?;
++ }], }) }) .collect::<TestResult<Vec<_>>>()?;
+- runtime.place_npcs(&NpcPlacementTable
++ runtime .place_npcs(&NpcPlacementTable
+- placements,
++ placements
+- true).map_err(debug)?;
++ true) .map_err(debug)?;
+- found.push(runtime.visible_entities().npcs.into_iter().find_map(|npc|
++ found.push( runtime .visible_entities() .npcs .into_iter() .find_map(|npc|
+- }).ok_or("placed
++ }) .ok_or("placed
+- NPC")?);
++ NPC")?, );
+- owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
++ owner .clock_origin .checked_sub(std::time::Duration::from_secs(2)) .ok_or("clock")?;
+- owner.current_quest_fence(admitted.game_session_id).await
++ owner .current_quest_fence(admitted.game_session_id) .await
+- )?.ok_or("fence")?;
++ )? .ok_or("fence")?;
+- owner.npc_talk(admitted.runtime_actor.ok_or("actor")?,
++ owner .npc_talk( admitted.runtime_actor.ok_or("actor")?,
+- text.into() }).await; assert_eq!(result.disposition,
++ text.into(), }, ) .await; assert_eq!( result.disposition,
+- owner.current_quest_fence(admitted.game_session_id).await
++ owner .current_quest_fence(admitted.game_session_id) .await
+- )?.ok_or("fence")?;
++ )? .ok_or("fence")?;
+- owner.root.read_character_quest_state(authority, fence.character_id).await.map_err(debug)?;
++ owner .root .read_character_quest_state(authority, fence.character_id) .await .map_err(debug)?;
+- [morris,woblin,jerom,queen]
++ [morris, woblin, jerom, queen]
+- [MORRIS,WOBLIN,JEROM,QUEEN]).await?;
++ [MORRIS, WOBLIN, JEROM, QUEEN]).await?;
+- assert_eq!(progress(owner,
++ assert_eq!( progress( owner,
+- &format!("{DAWN}the_lost_amulet")).await?, 0);
++ &format!("{DAWN}the_lost_amulet") ) .await?, 0 );
+- assert!(offer.iter().any(|line|
++ assert!( !offer.iter().any(|line|
+- amulet")));
++ amulet")), "Dawnport offer is excluded" );
+- assert!(accepted.iter().any(|line|
++ assert!( !accepted.iter().any(|line|
+- alive"))); assert_eq!(progress(owner,
++ alive")), "Dawnport confirmation is excluded" ); assert_eq!( progress( owner,
+- &format!("{DAWN}the_lost_amulet")).await?, 1);
++ &format!("{DAWN}the_lost_amulet") ) .await?, 0 );
+- assert_eq!(herbs.len(), 2, "both literal donor reply parts must be retained"
++ assert!( !herbs .iter() .any(|line| line.contains("light grey-brown sand")), "Dawnport herbs are excluded"
+- assert!(herbs[1].contains("light grey-brown sand")); assert_eq!(progress(owner,
++ assert_eq!( progress(owner,
+- 1); assert_eq!(progress(owner,
++ 0 ); assert_eq!( progress(owner,
+- 1);
++ 0 );
+- assert_eq!(progress(owner,
++ assert_eq!( progress(owner,
+- 1);
++ 0 );
+- assert_eq!(fish.len(), 2, "Woblin has consecutive source ifs"
++ assert!( !fish.iter().any(|line| line.contains("Old Nasty")), "Dawnport Woblin transition is excluded"
+- assert!(fish[1].contains("Old Nasty")); assert_eq!(progress(owner,
++ assert_eq!( progress(owner,
+- 2);
++ 0 );
+- assert!(refused.iter().any(|line|
++ assert!( refused .iter() .any(|line|
+- sacrifice")));
++ sacrifice")) );
+- assert_eq!(receipts, 5, "five mutations, never a receipt for static answers or repeated yes"
++ assert_eq!( receipts, 1, "only Jerom mutates; excluded Dawnport commands and repeated yes write no receipts"
+- -15
++ -15,
+- crate::durability::quest_state::{QuestCause,
++ crate::durability::quest_state::{ QuestCause,
+- QuestTransitionRequest};
++ QuestTransitionRequest, };
+- assert_eq!(progress(owner,
++ assert_eq!( progress(owner,
+- 0);
++ 0 );
+- owner.current_quest_fence(admitted.game_session_id).await
++ owner .current_quest_fence(admitted.game_session_id) .await
+- )?.ok_or("fence")?;
++ )? .ok_or("fence")?;
+- owner.refresh_quest_session(admitted.game_session_id, false).await;
++ owner .refresh_quest_session(admitted.game_session_id, false) .await;
+- assert!(accepted.iter().any(|line|
++ assert!( accepted .iter() .any(|line|
+- us"))); assert_eq!(progress(owner,
++ us")) ); assert_eq!( progress(owner,
+- 3); assert_eq!(progress(owner,
++ 3 ); assert_eq!( progress(owner,
+- 1); assert_eq!(progress(owner,
++ 1 ); assert_eq!( progress( owner,
+- ).await?, 0);
++ ) .await?, 0 );
+- owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
++ owner .clock_origin .checked_sub(std::time::Duration::from_secs(2)) .ok_or("clock")?;
+- owner.current_quest_fence(admitted.game_session_id).await
++ owner .current_quest_fence(admitted.game_session_id) .await
+- )?.ok_or("fence")?;
++ )? .ok_or("fence")?;
+- owner.npc_talk(admitted.runtime_actor.ok_or("actor")?,
++ owner .npc_talk( admitted.runtime_actor.ok_or("actor")?,
+- .into() }).await;
++ .into(), }, ) .await;
+- reply.lines.iter().any(|line|
++ { reply .lines .iter() .any(|line|
+- repaired")))); assert_eq!(progress(owner,
++ repaired")) })); assert_eq!( progress(owner,
+- 3);
++ 3 );
+- -7
++ -7,
+- -7
++ -7,
+- ("outlaw-camp-entrance",
++ ( "outlaw-camp-entrance" ,
+- -6 }), ("banshees-first-seal-return",
++ -6, }, ), ( "banshees-first-seal-return" ,
+- -12 }), ("banshees-second-seal",
++ -12, }, ), ( "banshees-second-seal" ,
+- -15 }), ("banshees-final-battle-exit",
++ -15, }, ), ( "banshees-final-battle-exit" ,
+- -15 }),
++ -15, }, ),
+- #[allow(clippy::too_many_arguments,
++ #[allow( clippy::too_many_arguments,
+- assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), super::quest_world_callbacks::local(callback.teleport.ok_or("teleport")?));
++ assert_eq!( owner .runtime .lock() .await .read_actor_position(actor) .map_err(debug)? .position(), super::quest_world_callbacks::local(callback.teleport.ok_or("teleport")?) );
+- assert_eq!(progress(owner,
++ assert_eq!( progress(owner,
+- effect.set);
++ effect.set );
+- ).map_err(debug)?;
++ ) .map_err(debug)?;
+- owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
++ owner .clock_origin .checked_sub(std::time::Duration::from_secs(2)) .ok_or("clock")?;
+- assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
++ assert_eq!( owner .runtime .lock() .await .read_actor_position(actor) .map_err(debug)? .position(),
+- sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1") .bind(&callback.key).fetch_one(&h.pool).await?;
++ sqlx::query_scalar( "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1" , ) .bind(&callback.key) .fetch_one(&h.pool) .await?;
+- 1).ok_or("source
++ 1) .ok_or("source
+- assert!(world.facts().quest_callback_matches(key,
++ assert!(world.facts().quest_callback_matches( key,
+- callback.selector.appearance));
++ callback.selector.appearance ));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs
++ root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs
++ Catalogue,
++ let started = std::time::Instant::now();
+- POSTGRES_CASE_COMPLETED");
++ POSTGRES_CASE_COMPLETED {:?}", started.elapsed());
++ scenario_case(case, None, None) } pub(super) fn catalogue_scenario( chest: &super::quest_catalogue_chests::CatalogueChest, activation: &super::quest_catalogue_chests::CatalogueActivation, ) -> TestResult { scenario_case(Case::Catalogue, Some(chest), Some(activation)) } fn scenario_case( case: Case, catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>, activation: Option<&super::quest_catalogue_chests::CatalogueActivation>, ) -> TestResult {
++ Case::Catalogue => { let chest = catalogue.ok_or("catalogue chest")?; ( chest.claim.as_str(), chest.position, chest.unique, chest.root.as_str(), chest .contents .iter() .map(|(key, count, number)| (key.as_str(), *count, *number)) .collect(), ) }
++ owned_activation; let
++ = if let Some(activation) = activation { activation } else { owned_activation
++ &owned_activation };
++ if let Some(chest) = catalogue { chest.appearance } else {
++ }
+- assert!(
++ assert_eq!(
+- "source claim did not bind"
++ catalogue.is_none_or(|chest| chest.servable), "source namespace must match the native World binder"
++ root_fluid_subtype: None,
++ ); } else if catalogue.is_some_and(|chest| !chest.servable) { // A Canary-only UID cannot acquire a Crystal World binding just // because its numeric value matches. This negative source-alias // case executes USE and must not qualify the unbound placement. assert!(report.unbound.iter().any(|row| row.claim == claim && row.reason == crate::content::world_reward_claims::UnboundReason::NoCrystalUniqueId)); let mut owner = deps.owner(&harness, &authority); owner.active_generation = Some(generation); owner.movement_cells = &cells; owner.admit_progression_session(&mut admitted).await; deps.initialize(&owner).await; assert_eq!( wire_use_targets( &owner, admitted, &[(1, &target), (1, &target), (2, &target)] ) .await?, [ (CommandStatus::Accepted, UseDisposition::NothingToUse), (CommandStatus::DuplicateReplay, UseDisposition::NothingToUse), (CommandStatus::Accepted, UseDisposition::NothingToUse), ] ); let counts: (i64, i64) = sqlx::query_as("SELECT \ (SELECT count(*) FROM game_reward_claims WHERE claim_production_key=$1), \ (SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1)") .bind(claim).fetch_one(&harness.pool).await?; assert_eq!(counts, (0, 0), "unbound donor UID must mint nothing"
+- 1);
++ catalogue.map_or(1, |chest| chest.quantity));
++ if let Some(chest) = catalogue { let texts: Vec<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,t.text \ FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) \ WHERE i.item_instance_id=encode($1,'hex')::uuid OR i.item_instance_id IN \ (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) \ ORDER BY i.definition_production_key,t.text") .bind(root.item_instance_id.as_slice()).fetch_all(&harness.pool).await?; let mut expected_texts = chest.texts.clone(); expected_texts.sort(); assert_eq!(texts, expected_texts, "complete source text plan" ); let number: Option<i32> = sqlx::query_scalar("SELECT key_number FROM game_item_keys WHERE item_instance_id=encode($1,'hex')::uuid") .bind(root.item_instance_id.as_slice()).fetch_optional(&harness.pool).await?; assert_eq!(number, chest.key_number, "source root key number" ); }
+- assert_eq!(achievements, i64::from(matches!(case, Case::Choice)));
++ assert_eq!( achievements, i64::from( matches!(case, Case::Choice) || catalogue.is_some_and(|chest| chest.achievement) ) );
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs
++ root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs
++ root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs
++ root_fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs
++ fluid; mod
++ /// Source-resolved fluid subtype; no row means an empty container. pub fluid_subtype: Option<u8>,
++ /// Source-resolved fluid subtype of the top-level reward. pub root_fluid_subtype: Option<u8>,
+- root_text)
++ root_text, fluid_plan)
+- $19)",
++ $19, $20)",
++ .bind(sqlx::types::Json(fluid::plan(request)))
++ fluid::apply(tx, frozen, reservation).await?;
+- root_text
++ root_text, fluid_plan
+- root_text)
++ root_text, fluid_plan)
+- $16)",
++ $16, $17)",
++ .bind(sqlx::types::Json(fluid::plan(request)))
++ fluid::validate(request)?;
++ } let fluid_plan = fluid::plan(request); if fluid_plan.as_array().is_some_and(|plan| !plan.is_empty()) { canonical.push(0x46); push_text(&mut canonical, fluid_plan.to_string().as_bytes()) .map_err(from_transfer_input)?;
++ root_fluid_subtype: None,
++ filled_fluid_rewards_bind_subtypes_and_refuse_ambiguous_shapes() { let character = CharacterId::from_bytes(id(41)).expect("character"); let mut empty = request(None); empty.item = facts("fixture:vial", ItemStackClass::NonStackable); empty.quantity = 1; let mut filled = empty.clone(); filled.root_fluid_subtype = Some(6); assert!(validate_request(&filled).is_ok()); assert_ne!( intent_binding(&empty, character).expect("empty intent"), intent_binding(&filled, character).expect("filled intent") ); let mut wine = filled.clone(); wine.root_fluid_subtype = Some(15); assert_ne!( intent_binding(&filled, character).expect("filled intent"), intent_binding(&wine, character).expect("wine intent") ); for mutation in ["empty subtype", "stack" , "key" , "text" , "container" ] { let mut changed = filled.clone(); match mutation { "empty subtype" => changed.root_fluid_subtype = Some(0), "stack" => changed.item.stack = COIN, "key" => changed.key_number = Some(3801), "text" => changed.root_text = Some("authored".into()), _ => changed.item.container_capacity = Some(4), } assert!(validate_request(&changed).is_err(), "{mutation}" ); } let mut bag = request(None); bag.item = backpack_facts(4); bag.quantity = 1; bag.contents = vec![RewardClaimMintContent { item: filled.item.clone(), quantity: 1, key_number: None, text: None, fluid_subtype: Some(6), }]; assert!(validate_request(&bag).is_ok()); let before = intent_binding(&bag, character).expect("bag intent"); bag.contents[0].fluid_subtype = Some(15); assert_ne!( before, intent_binding(&bag, character).expect("changed bag intent") ); bag.contents[0].fluid_subtype = Some(0); assert!(validate_request(&bag).is_err()); } #[test] fn
++ fluid_subtype: None,
++ None, fluid_subtype:
++ None, fluid_subtype:
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs
++ pub(super)
+- Ok(
++ let fluids: sqlx::types::Json<Value> = row.try_get("fluid_plan")?; Ok(fluids.0 == fluid::plan(request) &&
+- request.root_text, )
++ request.root_text)
+crates/gameplay/quests/src/quest/classic_dialogue.rs
++ // Donor qualification only: production excludes Dawnport (QUEST-FINISH).
+- loader::load_embedded_quest_state("classic-test").map_err(|e|
++ loader::parse_quest_state( include_str!("../../../../../content/quests/dawnport-starts.json"), "classic-test" , ) .map_err(|e|
+- loader::load_embedded_quest_state("classic-test").map_err(|e|
++ loader::parse_quest_state( include_str!("../../../../../content/quests/dawnport-starts.json"), "classic-test" , ) .map_err(|e|
+crates/gameplay/quests/src/quest/loader.rs
++ // Preserve source captures and their counts; only the production catalogue // and its executable bindings are filtered by the owner's target scope. lowered.catalogue = QuestStateCatalogue::new( content_revision, lowered .catalogue .tracks .values() .filter(|track| super::in_runtime_scope(&track.quest)) .cloned() .collect(), lowered .catalogue .transitions .values() .filter(|transition| super::in_runtime_scope(&transition.quest)) .cloned() .collect(), ) .map_err(QuestLoadError::Catalogue)?; lowered .source_tracks .retain(|key, _| lowered.catalogue.track(key).is_some()); lowered .requested_by .retain(|key, _| lowered.catalogue.transition(key).is_some());
++ #[test] fn owner_scope_excludes_dawnport_from_runtime_state_and_callbacks() -> Result<(), String> { let loaded = load_embedded_quest_state("owner-scope").map_err(|error| format!("{error:?}"))?; assert!( loaded .catalogue() .definition_hash("oteryn:quest.dawnport_quest") .is_none() ); assert!( loaded .catalogue() .transition("oteryn:quest-transition/classic/dawnport/start-the-rare-herb") .is_none() ); let callbacks = crate::quest::world_callbacks::load()?; assert!( callbacks .iter() .all(|callback| callback.quest != "oteryn:quest.dawnport_quest" ) ); let source: serde_json::Value = serde_json::from_str(crate::quest::world_callbacks::EMBEDDED) .map_err(|error| error.to_string())?; let mut expected: std::collections::BTreeSet<_> = source["callbacks"] .as_array() .ok_or("source callbacks")? .iter() .filter(|callback| callback["quest"] != "oteryn:quest.dawnport_quest" ) .map(|callback| { callback["key"] .as_str() .map(str::to_owned) .ok_or("callback key") }) .collect::<Result<_, _>>()?; expected.insert(crate::quest::rotten_blood::altar_callback().key); assert_eq!( callbacks .into_iter() .map(|callback| callback.key) .collect::<std::collections::BTreeSet<_>>(), expected ); Ok(()) }
++ // Source transcription remains complete, including owner-excluded // donor quests. The owner_scope test separately checks runtime admission.
+- embedded();
++ parse_quest_state(EMBEDDED, "content-1" ).expect("source catalogue");
+crates/gameplay/quests/src/quest/mod.rs
++ /// QUEST-FINISH owner scope: Dawnport is reference data; Newhaven owns the start. #[must_use] pub fn in_runtime_scope(quest: &str) -> bool { quest != "oteryn:quest.dawnport_quest" }
+crates/gameplay/quests/src/quest/world_callbacks.rs
++ callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
+crates/gameplay/social/src/interaction/chest_use.rs
++ root_fluid_subtype: None,
+tools/content-migration/quest_callback_profiles.py
++ # Canary04b83b5:data/items/items.xml:16088-16091. The admitted poem # scroll has an unknown canonical weight, but this exact donor explicitly # supplies 120 centi-oz. Preserve the canonical record and known native facts. if (definition['identity']['key'] == 'oteryn:item.tibia.i5952' and semantics['physical'].get('state') == 'KNOWN' and semantics['physical']['value'].get('weight') == {'state': 'UNKNOWN'}): raw = (root / SOURCE).read_bytes() if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256: raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST') witnesses = ET.fromstring(raw).findall("item[@id='5952']/attribute[@key='weight']") if len(witnesses) != 1 or witnesses[0].get('value') != '120': raise ValueError('QUEST_CALLBACK_POEM_SCROLL_WEIGHT_DRIFT') semantics['physical']['value']['weight'] = {'state': 'KNOWN', 'value': 120}
++ # QUEST-FINISH owner scope: retain the donor record as evidence, # but do not admit Dawnport's rewards into the Newhaven start path. if definition.get('quest', {}).get('key') == 'canary:quest/dawnport_quest': continue
+- if placement.get('quest_transition'):
++ # A ready source reward still needs the same exact native # Item admission when it has no quest-state side effect.
+tools/content-migration/quest_reward_item_semantics.py
++ # QUEST-FINISH: existing item_timed_state treats an absent row as full definition # charges. These exact defaults are independently rechecked from the digest-bound # admission packet, not from a chest helper's quantity argument. Canary04b83b5 # data/items/items.xml:6946,6966,7255,7272,7283,7294,8525 respectively. NATIVE_FULL_CHARGE_DEFAULTS = { 'oteryn:item.tibia.i3054': 200, 'oteryn:item.tibia.i3056': 200, 'oteryn:item.tibia.i3082': 50, 'oteryn:item.tibia.i3083': 150, 'oteryn:item.tibia.i3084': 250, 'oteryn:item.tibia.i3085': 200, 'oteryn:item.tibia.i3284': 1, }
++ elif (facts['holds'] == ['INSTANCE_CHARGE_ATTRIBUTE_LOWERING_MISSING'] and not facts['stackable'] and facts['capacity'] is None and facts['charges'] == NATIVE_FULL_CHARGE_DEFAULTS.get(definition['identity']['key'])): # Keep source diagnostics, partial-charge conflicts and every sibling # hold intact. MINT creates one instance; the timed owner supplies its # exact full definition value until the first charge mutation. definition['materializable'] = True
+tools/content-migration/test_quest_callback_profiles.py
++ test_every_ready_reward_leaf_has_its_exact_native_item_profile(self): self.admit() rows = {row['production_definition']['production_key']: row for row in json.loads(self.generated[PROFILE])['records']} expected = { item['item']['key'] for path in sorted((ROOT / 'content/interactions/reward_claims').glob('reward-claim*.json')) for row in json.loads(path.read_bytes())['records'] if row['definition'].get('readiness') == 'ready' and row['definition'].get('quest', {}).get('key') != 'canary:quest/dawnport_quest' for placement in row['definition']['placements'] for item in placement['reward'].get('items', []) } self.assertEqual(sorted(expected - rows.keys()), []) for key in expected: self.assertTrue(rows[key]['admission']['materializable'], key) self.assertEqual(rows[key]['production_binding']['target']['key'], key) self.assertEqual(rows[key]['production_binding']['disposition'], 'EXACT') self.assertEqual(rows['oteryn:item.tibia.i5952']['semantics']['physical']['value']['weight'], {'state': 'KNOWN', 'value': 120}) def
++ # Five full-charge containers add eight identities; Medusa adds three.
+- 130)
++ 141)
+tools/content-migration/test_quest_reward_item_semantics.py
++ def test_full_charge_quest_items_reuse_the_existing_timed_instance_owner(self): defaults = {3054: 200, 3056: 200, 3082: 50, 3083: 150, 3084: 250, 3085: 200, 3284: 1} for item_id, charges in defaults.items(): with self.subTest(item_id=item_id): entry, appearance, definition = self.fixture(attrs={"charges": str(charges)}) definition['identity']['key'] = f'oteryn:item.tibia.i{item_id}' facts = item_facts(entry, appearance) enrich(definition, facts, entry['xml']) self.assertTrue(definition['materializable']) self.assertEqual(definition['semantics']['charges']['value']['count'], known(charges)) self.assertIn('INSTANCE_CHARGE_ATTRIBUTE_LOWERING_MISSING', facts['holds'], 'retain the original source capture diagnostic') def test_full_charge_admission_does_not_discard_a_sibling_fluid_hold(self): entry, appearance, definition = self.fixture( {'flags.liquidcontainer': True}, {'charges': '200'}) definition['identity']['key'] = 'oteryn:item.tibia.i3085' facts = item_facts(entry, appearance) enrich(definition, facts, entry['xml']) self.assertFalse(definition['materializable'])
+tools/content-schema/quest-authoring/check_quest_claim_qualification.py
+- W15b
++ QUEST-FINISH
+- 308
++ 320 in-scope
+- 297
++ 309
+tools/content-schema/quest-authoring/quest_callback_coverage.py
++ medusa = ( key == "oteryn:reward-claim.quest.u7_3.the_medusa_quest" and native.get("source_difference") == "CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT" and definition.get("data_holds") == [{"category": "source" , "code" : "SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED" , "placement_index" : 0}] )
+- not
++ (not
++ or medusa)
++ if definition.get('quest', {}).get('key') == 'canary:quest/dawnport_quest': status = 'not_playable' reason = 'OWNER_EXCLUDED_DAWNPORT: Newhaven owns the tutorial and starting equipment'
+tools/content-schema/quest-authoring/quest_tree_authoring.py
++ # completion242 is a pinned SOURCE qualification, not the live MINT # admission. QUEST-FINISH promotes these exact full-charge Item identities # through the existing timed owner; retain their historical SOURCE holds, # as for UID6082 below, without changing the production claim definitions. full_charge_items = {f'oteryn:item.tibia.i{number}' for number in (3054, 3056, 3082, 3083, 3084, 3085, 3284)} charge_source = read(root, 'tools/content-schema/reward-claim-authoring/source_charge_evidence.json') charge_leaves = {row['pilot_key'] for row in charge_source['rewards'] if row['source_count_argument'] == row['source_default_charges']}
+- claim['identity']['key'] == 'oteryn:reward-claim.kv.madmageroom3': # W15b lowers the already normalized full-charge amulet through the # live RewardClaim owner. Keep completion242's historical SOURCE # witness independent of that native admission, just as the variant # claims retain their SOURCE holds beside native_contents. if
++ (claim['provenance']['pilot_key'] in charge_leaves and
+- 'ready':
++ 'ready'):
++ claim['_source_baseline_item_hold'] = any( binding.get('canonical_item', {}).get('key') in full_charge_items for binding in claim.get('source_variant', {}).get('item_bindings', []) if binding.get('canonical_item'))
++ categories = {hold['category'] for hold in claim['data_holds']} if claim.get('_source_baseline_item_hold'): categories.add('item')
+- sorted({hold['category'] for hold in claim['data_holds']}):
++ sorted(categories):
+tools/content-schema/quest-authoring/test_quest_claim_qualification.py
+- Three Demon Helmet selectors now have real USE/PostgreSQL receipt
++ Thirteen full-charge claims and the Crystal Medusa bag are supported;
+- coverage. The
++ two Dawnport claims are excluded. Preserve
+- remaining
+- still rejects drift.
++ drift detection.
+- 297)
++ 309)
+tools/content-schema/quest-authoring/test_quest_completion_matrix.py
+- W15b qualifies Mad Mage room 3's full-charge amulet as one more ready claim. self.assertEqual(124,
++ QUEST-FINISH admits eight additional exact full-default charge claims. # SOURCE holds remain separate from native implementation support. self.assertEqual(132,
+- self.assertEqual(127,
++ self.assertEqual(136,
+- 16,
++ 5,
+- 40,
++ 44,
+- 49,
++ 56,
+tools/content-schema/reward-claim-authoring/container_native.py
++ CHARGE_EVIDENCE = Path(__file__).with_name('source_charge_evidence.json') CHARGE_EVIDENCE_SHA256 = 'aced9b5e52f472f2a1bc80e7192093036f513c182a6542933ae1abe7f613cf71' MEDUSA_DIFFERENCE = 'CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT' MEDUSA_HOLD = [{'category': 'source', 'code': 'SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED', 'placement_index': 0}]
+- "UID6082 is one already-admitted Item at its exact definition charges.
+
+    Missing native timed state means full definition values; this does not
+    authorize partial source charges or make a held Item materializable.
+    "
++ "An exact D277 source leaf is one admitted Item at definition charges.
+
+    Missing native timed state means full definition values; this does not
+    authorize partial source charges or make a held Item materializable.
+    "
+- (pilot_key != 'canary:reward-claim/kv/madmageroom3' or key != 'oteryn:item.tibia.i3081'
++ (type(raw_count) is not int
+- != 5
++ <= 0
++ raw = CHARGE_EVIDENCE.read_bytes() if hashlib.sha256(raw).hexdigest() != CHARGE_EVIDENCE_SHA256: raise ValueError('pinned charge source evidence changed') matches = [row for row in json.loads(raw)['rewards'] if row['pilot_key'] == pilot_key and row['project_position'] == position and row['item'] == key and row['source_count_argument'] == raw_count and row['source_default_charges'] == raw_count] if len(matches) != 1: return False if pilot_key != 'canary:reward-claim/kv/madmageroom3': return True
++ difference = None if (definition['identity']['key'] == 'oteryn:reward-claim.quest.u7_3.the_medusa_quest' and definition.get('data_holds') == MEDUSA_HOLD and len(definition['placements']) == 1 and definition['placements'][0]['reward'].get('written_text') == { 'item': None, 'text_ref': {'length': 70, 'placeholders': [], 'sha256': '3d95b7c96da6a14a36118fbbd5a8397239e7e3cc9931c5f60f65d136bd72ff27'}}): # QUEST-FINISH source reconciliation: Crystal201189f chest.lua:2017 # gives exactly the bag and three items, with no6183 text attribute. # Its handler:42-49 assigns the fox text to6179/book2815 instead. # Canary47dfd handler:40-47,119-123 wrongly stamps all three Medusa # children. Preserve that SOURCE conflict; native rewards follow the # same pinned Crystal handler as every other native container here. definition = copy.deepcopy(definition) definition['data_holds'] = [] del definition['placements'][0]['reward']['written_text'] difference = MEDUSA_DIFFERENCE
+- return
++ projection =
++ if difference is not None: projection['source_difference'] = difference return projection
+tools/content-schema/reward-claim-authoring/reward_claim_variant_authoring.py
++ 'source_difference': {'const': container_native.MEDUSA_DIFFERENCE},
+tools/content-schema/reward-claim-authoring/test_container_native.py
++ def test_medusa_uses_complete_crystal_reward_without_canary_fox_text(self): definition = next(d for d in self.rows if d['identity']['key'].endswith('quest.u7_3.the_medusa_quest')) before = copy.deepcopy(definition) native = container_native.derive(definition, self.items, plain.stack_problem) self.assertIsNotNone(native) self.assertEqual(native['source_difference'], 'CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT') placement = native['placements'][0] self.assertEqual(placement['unique_id'], 6183) self.assertEqual(placement['root']['key'], 'oteryn:item.tibia.i2853') self.assertEqual([(child['item']['key'], child['count']) for child in placement['contents']], [(f'oteryn:item.tibia.i{i}', 1) for i in (3436, 3567, 3324)]) self.assertNotIn('root_text', placement) self.assertTrue(all('text' not in child for child in placement['contents'])) self.assertEqual(definition, before, 'the original Canary SOURCE hold stays intact') def test_medusa_reconciliation_cannot_clear_a_sibling_hold_or_invent_a_carrier(self): definition = next(d for d in self.rows if d['identity']['key'].endswith('quest.u7_3.the_medusa_quest')) for mutation in ('hold', 'carrier', 'quantity'): changed = copy.deepcopy(definition) if mutation == 'hold': changed['data_holds'].append({'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING'}) elif mutation == 'carrier': changed['placements'][0]['reward']['written_text']['item'] = self.items[ 'oteryn:item.tibia.i3436']['identity'] else: changed['placements'][0]['reward']['items'][0]['count'] = 2 self.assertIsNone(container_native.derive(changed, self.items, plain.stack_problem), mutation)
+- 67)
++ 73) # Full-charge containers plus the reconciled Crystal Medusa bag.
+- 54)
++ 60)
++ test_every_admitted_default_matching_charge_leaf_uses_one_instance(self): proof = plain.load_source_charge_evidence() for source in proof: item = self.items[source['item']] if (not item['materializable'] or source['source_count_argument'] != source['source_default_charges']): continue with self.subTest(claim=source['pilot_key']): self.assertEqual(plain.charged_source_reward( item, source['pilot_key'], source['project_position'], source['item'], source['source_count_argument'], proof), (1, None)) def
+tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
+- test_plain_231_definition_records_remain_exact_and_readiness_220_11(self):
++ test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
+- 220)
++ 228)
+- 11)
++ 3)
+- W15b
++ QUEST-FINISH
+- 67
++ 73
+- 67)
++ 73)
+- 38)
++ 32)
+tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py
+- implements 67
++ and QUEST-FINISH implement 73
+- 38)
++ 32)

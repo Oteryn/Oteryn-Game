@@ -1,0 +1,257 @@
+{
+  "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+  "branch": "claude/happy-davinci-ijz3wy-questpc8b",
+  "previous_pushed": "4c27b37d50d8ba555cff32232353bcc06bc5f8cb",
+  "state": "MERGED_FOCUSED_GREEN",
+  "timestamp_utc": "2026-11-08T04:50:50.350835+00:00",
+  "conflict_files_resolved": 64,
+  "quest_units": {
+    "passed": 355,
+    "failed": 0,
+    "seconds": 26.28,
+    "log": "/tmp/questpc8b-83ac-quest-units4.log"
+  },
+  "python": {
+    "groups": 9,
+    "passed": 100,
+    "failed": 0,
+    "groups_detail": [
+      {
+        "path": "tools/content-migration/test_quest_callback_profiles.py",
+        "exit": 0,
+        "seconds": 108.10697762100608,
+        "log": "/tmp/questpc8b-83ac-test_quest_callback_profiles.log"
+      },
+      {
+        "path": "tools/content-migration/test_regenerate_content.py",
+        "exit": 0,
+        "seconds": 0.4388350660010474,
+        "log": "/tmp/questpc8b-83ac-test_regenerate_content.log"
+      },
+      {
+        "path": "tools/content-migration/test_refresh_equipment_profile_pin.py",
+        "exit": 0,
+        "seconds": 0.058294025002396666,
+        "log": "/tmp/questpc8b-83ac-test_refresh_equipment_profile_pin.log"
+      },
+      {
+        "path": "tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py",
+        "exit": 0,
+        "seconds": 20.488342094991822,
+        "log": "/tmp/questpc8b-83ac-test_reward_claim_variant_authoring.log"
+      },
+      {
+        "path": "tools/content-schema/reward-claim-authoring/test_source_quest_rewards.py",
+        "exit": 0,
+        "seconds": 14.91157848999137,
+        "log": "/tmp/questpc8b-83ac-test_source_quest_rewards.log"
+      },
+      {
+        "path": "tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py",
+        "exit": 0,
+        "seconds": 10.958236364007462,
+        "log": "/tmp/questpc8b-83ac-test_variant_stack_serialization.log"
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_quest_completion_matrix.py",
+        "exit": 0,
+        "seconds": 0.5392122760094935,
+        "log": "/tmp/questpc8b-83ac-test_quest_completion_matrix.log"
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_quest_tree_authoring.py",
+        "exit": 0,
+        "seconds": 202.96260032198916,
+        "log": "/tmp/questpc8b-83ac-test_quest_tree_authoring.log"
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_quest_batch4.py",
+        "exit": 0,
+        "seconds": 0.46011074499983806,
+        "log": "/tmp/questpc8b-83ac-test_quest_batch4.log"
+      }
+    ]
+  },
+  "workspace": {
+    "result": "PASS",
+    "duration": "2m48s",
+    "log": "/tmp/questpc8b-83ac-workspace-final.log"
+  },
+  "clippy": {
+    "result": "PASS",
+    "duration": "2m49s",
+    "flags": "three changed Rust crates --all-targets -- -D warnings",
+    "log": "/tmp/questpc8b-83ac-clippy-release.log"
+  },
+  "fmt": "PASS",
+  "duplicate_migrations": "PASS",
+  "fluid_sql_proof": {
+    "red_seconds": 2.988322891993448,
+    "red_marker": "PG_FLUID_EXACT_OUTPUT_RED: actual installed guard dropped authored fluid16",
+    "green_seconds": 3.2649051580083324,
+    "green_marker": "POSTGRES_FLUID_EXACT_OUTPUT_GREEN: installed projection preserves authored fluid16",
+    "migrations": 369,
+    "red_log": "/tmp/questpc8b-fluid-proof-red.log",
+    "green_log": "/tmp/questpc8b-fluid-proof-green.log"
+  },
+  "repairs": [
+    "Preserve both typed fluid/charge and backpack output mechanics without duplicate grants",
+    "Premium-only world contextual admission remains valid; mixed/unused routes rejected",
+    "World source plan carries exact completion flag for canonical1254 proof",
+    "New1308 retains exact optional fluid subtype and legacy absent-field equality",
+    "Selector sharing requires pairwise disjoint durable ranges within same quest and actor; overlap and aliases still rejected",
+    "Published main catalogue markers remain stable; chosen/new extended reward markers remain bound",
+    "Independent exact3924-key profile union derived from immutable published heads; baseline3663 and raw attributes preserved",
+    "Strict source-charge qualification returns held copies on profile mismatch without canonical mutation"
+  ],
+  "generated": {
+    "initial": {
+      "proof": {
+        "exit": 0,
+        "seconds": 0.44441233499674127
+      },
+      "quest-tree": {
+        "exit": 0,
+        "seconds": 35.61885257199174
+      },
+      "claims": {
+        "exit": 0,
+        "seconds": 2.806543578990386
+      },
+      "binding": {
+        "exit": 0,
+        "seconds": 14.791019948999747
+      },
+      "completion": {
+        "exit": 0,
+        "seconds": 4.905580721999286
+      },
+      "matrix": {
+        "exit": 0,
+        "seconds": 0.4719637829985004
+      },
+      "prey": {
+        "exit": 0,
+        "seconds": 619.7810225010035
+      },
+      "native": {
+        "exit": 1,
+        "seconds": 313.4731612230098
+      }
+    },
+    "resumed": {
+      "equipment": {
+        "exit": 0,
+        "seconds": 0.325900047988398
+      },
+      "grizzly": {
+        "exit": 0,
+        "seconds": 3.701399694007705
+      },
+      "audit_sites": {
+        "exit": 0,
+        "seconds": 0.025830002006841823
+      },
+      "room_sites": {
+        "exit": 0,
+        "seconds": 0.025185089005390182
+      },
+      "audit": {
+        "exit": 0,
+        "seconds": 0.02146844800154213
+      },
+      "pins": {
+        "exit": 0,
+        "seconds": 111.17689738300396
+      },
+      "dups": {
+        "exit": 0,
+        "seconds": 0.2981116640003165
+      }
+    },
+    "native_producer": "PASS46; subsequent equipment pin mismatch repaired and remaining steps resumed without redoing native producer",
+    "expected_equipment_keys": 3924,
+    "baseline_equipment_keys": 3663,
+    "prey_simulation": "PASS15cases776creatures",
+    "binding_identities": 310,
+    "binding_pointers": 6628,
+    "world_pins": "PASS repo pin-refresh; incoming World content and own native additions preserved"
+  },
+  "dispatch_pg": {
+    "state": "PASS",
+    "source_commit": "56668c09daefe7c06dcda379d51b75b7e410a0a4",
+    "passed": 6,
+    "failed": 0,
+    "seconds": 139.88,
+    "cases": [
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_authored_programmes::questpc8_braindeath_exploration_native_death_coffin_and_replay",
+        "seconds": 39.117,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::l6_mead::l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag",
+        "seconds": 40.324,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_fluid_output_proof::questpc8_fluid_outputs_preserve_exact_subtype_and_legacy_plan_postgres",
+        "seconds": 3.531,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_colours_opening::questpc8_colours_native_envelope_and_self_marking_postgres",
+        "seconds": 68.605,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_winterlight::questpc8_winterlight_native_disguise_four_fires_queen_and_base_outfit",
+        "seconds": 67.51,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_wrath_opening::questpc8_wrath_native_opening_exact_materials_crate_and_replay",
+        "seconds": 97.229,
+        "result": "PASS"
+      }
+    ],
+    "markers": [
+      "POSTGRES_EXACT_FLUID_OUTPUTS_LEGACY_AND_REFUSALS_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_fluid_outputs duration=3.518522072s result=Ok(())",
+      "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_colours_opening duration=68.565456562s result=Ok(())",
+      "POSTGRES_WINTERLIGHT_PHYSICAL_COMPONENTS_DISGUISE_COLD_FOUR_FIRES_QUEEN_BASE_OUTFIT_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_winterlight_native_route duration=67.473280041s result=Ok(())",
+      "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_wrath_native_opening duration=97.179776055s result=Ok(())"
+    ],
+    "log": "/tmp/questpc8b-6f61-own-pg.log",
+    "full_backend_suite_success_claimed": false
+  },
+  "prepush2_cadence_exception": "Closed for six focused native dispatch cases. Full remaining backend units remain CI scope; no full backend suite completion claimed.",
+  "whole_quest_qualification_unchanged": true,
+  "migration_files": [
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql",
+    "apps/game-server/migrations/1301_questpc8_reward_backpack_outputs.sql",
+    "apps/game-server/migrations/1302_questpc8_world_reward_receipts.sql",
+    "apps/game-server/migrations/1303_questpc8_state_operation_validation.sql",
+    "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql",
+    "apps/game-server/migrations/1305_questpc8_forge_profile_admission.sql",
+    "apps/game-server/migrations/1306_questpc8_father_reward_amount.sql",
+    "apps/game-server/migrations/1307_questpc8_canonical_father_values.sql",
+    "apps/game-server/migrations/1308_questpc8_exact_fluid_reward_outputs.sql"
+  ],
+  "latest_main_sync": {
+    "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+    "files": 13,
+    "conflicts": 1,
+    "resolution": "Canonical main physical item lane; remove obsolete unreferenced input_authority declaration and unused lifetime; preserve selected-source filter",
+    "workspace": "PASS2m41s",
+    "clippy": "PASS2m47s",
+    "data_inputs_changed": false,
+    "generator_reuse": "Same data/authoring inputs as validated83ac generation and369migration probe",
+    "fmt": "PASS",
+    "state": "FOCUSED_GREEN"
+  },
+  "completed_utc": "2026-11-08T05:09:26.478535+00:00"
+}

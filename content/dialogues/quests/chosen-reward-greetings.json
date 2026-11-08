@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.briasol",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/briasol.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rashid",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.snake_eye",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/uzgod.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.willard",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/willard.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.charles",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.spectulus",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gail",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "greet": "Greetings, |PLAYERNAME|. Ask about construction jobs.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.scott_the_scout",
+      "greet": "Greetings, |PLAYERNAME|. Ask about construction jobs.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.frank_the_plank",
+      "greet": "Greetings, |PLAYERNAME|. Ask about construction jobs.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your wrath mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: explicit opening mission keyword for the chosen recipe."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zlak",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your imperial hunt.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    }
+  ]
+}

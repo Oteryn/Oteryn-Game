@@ -1,0 +1,35 @@
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:347:            Some(crate::durability::tutorial_viola::ViolaReply::Completed)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:401:        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model_with_native_quests(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs:70:        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:29:        fallback_lines: Vec<String>,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:43:    fallback_lines: Vec<String>,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:160:    let fallback_lines = if greeting && plan.reply.is_empty() {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:174:        fallback_lines,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:229:        fallback_lines,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:297:            fallback_lines: fallback_lines.clone(),
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:334:                    fallback_lines
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:368:        fallback_lines,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:404:                        fallback_lines
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:58:        "mission" | "task" | "book" => Some(ViolaAction::Mission),
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:74:                Some(ViolaAction::Accept)
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:99:        ViolaReply::ReturnOffer => "Glad to see you are back. Did you find my book? Say yes or no.",
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:100:        ViolaReply::Offer => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:103:        ViolaReply::Accepted => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:106:        ViolaReply::MissingBook => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:109:        ViolaReply::Completed => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:112:        ViolaReply::AlreadyCompleted => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:115:        ViolaReply::NoRoom => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:130:        state.viola = if matches!(reply, ViolaReply::Offer | ViolaReply::ReturnOffer) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:143:    if reply == ViolaReply::Completed
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:149:        inventory_changed: reply == ViolaReply::Completed,
+apps/game-server/src/node/serve/bundle_npcs.rs:354:            talk: Arc::new(NpcTalkBook::from_model_with_native_quests(
+crates/gameplay/durability/src/durability/tutorial_viola.rs:134:                (2,_)=>ViolaReply::AlreadyCompleted,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:135:                (0,ViolaAction::Mission)=>ViolaReply::Offer,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:136:                (0,ViolaAction::Accept)=>{sqlx::query("INSERT INTO game_character_viola(character_id,stage) VALUES(encode($1,'hex')::uuid,1)").bind(fence.character_id.as_bytes().as_slice()).execute(&mut **tx).await?;ViolaReply::Accepted},
+crates/gameplay/durability/src/durability/tutorial_viola.rs:137:                (1,ViolaAction::Mission)=>ViolaReply::ReturnOffer,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:138:                (1,ViolaAction::Accept)=>{
+crates/gameplay/durability/src/durability/tutorial_viola.rs:146:                        Exchange::Missing=>ViolaReply::MissingBook,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:147:                        Exchange::NoRoom=>ViolaReply::NoRoom,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:154:                            craft=Some(transaction);xp=Some(occurrence.as_bytes().to_vec());ViolaReply::Completed
+crates/gameplay/durability/src/durability/tutorial_viola.rs:178:            ViolaReply::stored(reply)
+crates/gameplay/npc/src/npc_talk.rs:552:        let book = NpcTalkBook::from_model_with_native_quests(&model, &keys);

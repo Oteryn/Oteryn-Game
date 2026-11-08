@@ -1,0 +1,55 @@
+{
+  "material_head": "4f00fb6ce5c1d98ca377ed36c1cbe7e50bb426a9",
+  "scope": "Combined native source placement alias and concurrent smith atomic backpack outputs",
+  "postgres": "18.6; real server fixtures, markers and nonzero durations",
+  "cases": {
+    "mintwallin_native_cache": 25.03837681,
+    "smith_guardian_atomic_outputs": 26.27184565,
+    "legacy_nested_container": 25.879177332,
+    "fathers_burden_atomic_eleven_tracks": 47.156350738,
+    "exact_full_definition_charges": 29.083511268
+  },
+  "checks": {
+    "all_feature_check": "PASS50.90s; content/dispatch/durability/quests/social/server",
+    "strict_clippy": "PASS222s; same crates, all features and all targets, -D warnings",
+    "fmt": "PASS",
+    "item_profile_units": "16 PASS90.089s",
+    "profile_regeneration": "PASS40files unchanged",
+    "pin_refresh_and_check": "PASS; world digest unchanged"
+  },
+  "outside_required_lane_probe": {
+    "outside_lane_probe": "fathers_burden_eight_handins_cape_experience_and_replay",
+    "result": "DefinitionNotFound after47.25seconds; native profiles were already absent before this batch",
+    "missing_before_and_after": [
+      "oteryn:item.tibia.i11548",
+      "oteryn:item.tibia.i11547",
+      "oteryn:item.tibia.i11546",
+      "oteryn:item.tibia.i11545",
+      "oteryn:item.tibia.i11552",
+      "oteryn:item.tibia.i11551",
+      "oteryn:item.tibia.i11549",
+      "oteryn:item.tibia.i11550",
+      "oteryn:item.tibia.i11701"
+    ],
+    "only_added_native_profile": [
+      "oteryn:item.tibia.i3208"
+    ],
+    "changed_existing_profiles": [],
+    "required_atomic_acceptance_test": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction",
+    "atomic_acceptance_result": "PASS47.156350738s realPostgreSQL, POSTGRES_CASE_COMPLETED"
+  },
+  "logs": {
+    "questpc8-alias-smith-native-pg.log": "3c6463337aa778957c82621aa794926d362ed2fac233145a4e277bb806732906",
+    "questpc8-alias-smith-smith-pg.log": "2c99e83288ef4e4795cfcb1a5ffb6fa3245b740d23df9e5e88572ad97f6c607b",
+    "questpc8-alias-smith-nested-pg.log": "6d294dc6aa0d98943dfd0135b0489f4375bf618306946e8b2eee9f591ace5fb5",
+    "questpc8-alias-smith-father-atomic-pg.log": "16327ed3e2c9b69031a3c3a5c1235149a6729f53f01bae45498a85934420f913",
+    "questpc8-alias-smith-charges-pg.log": "3a964705e6b9dfbfa2b0af8a82b81adfed60a94f98e693f2467258b3feaed518",
+    "questpc8-alias-smith-check.log": "226c17e536ca1d05a2cf6a31ec7b87d7ff05d655bdcbdc584fd37256498cdbbf",
+    "questpc8-alias-smith-clippy.log": "257375e08482bd771a8d3fe462f1ec0210b8dfb051e3982af3d8d4b26817b998",
+    "questpc8-alias-smith-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "questpc8-alias-smith-profile-units.log": "389a76d31a5b40cf035e62f94c9173a7632bbd51eb92dbfd207f7e3df1b0bdf8",
+    "questpc8-alias-smith-generator.log": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa",
+    "questpc8-alias-smith-pins.log": "89782f0c9d577c0a7d1e7d3cfa6e2d2de283d5d49cf1d381801734da20742f9a",
+    "questpc8-alias-smith-father-pg.log": "08d9a09138453384b2afe1f747214ce5999b73cbfa9ea39e40e27e55e042e424"
+  }
+}

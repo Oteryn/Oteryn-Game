@@ -17,6 +17,7 @@ use super::{
 pub mod grizzly_shop;
 pub mod healing;
 pub mod premium_services;
+pub mod quest_access;
 pub mod quest_shops;
 pub mod replies;
 mod s10_nonquest;

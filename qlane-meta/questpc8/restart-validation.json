@@ -1,0 +1,76 @@
+{
+  "restart-dispatch-check": {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo check --locked --offline -p oteryn-gameplay-dispatch --all-targets --all-features --quiet",
+    "exit": 0,
+    "duration_seconds": 150.559
+  },
+  "restart-clippy": {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-content -p oteryn-gameplay-durability -p oteryn-gameplay-quests -p oteryn-gameplay-social -p oteryn-gameplay-dispatch -p oteryn-gameplay-combat -p oteryn-gameplay-encounters -p oteryn-gameplay-npc -p oteryn-game-server --all-targets --all-features --quiet -- -D warnings",
+    "exit": 0,
+    "duration_seconds": 182.732
+  },
+  "restart-reward-units": {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-quests -p oteryn-gameplay-content -p oteryn-gameplay-durability --lib --quiet -- quest:: world_reward_claims:: reward_claim_mint::tests --test-threads=2",
+    "exit": 101,
+    "duration_seconds": 105.009
+  },
+  "restart-quest-units-final": {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-quests --lib --quiet quest:: -- --test-threads=2",
+    "exit": 0,
+    "duration_seconds": 22.84
+  },
+  "restart-quest-clippy-final": {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-quests --all-targets --all-features --quiet -- -D warnings",
+    "exit": 0,
+    "duration_seconds": 8.634
+  },
+  "restart-phase-a-pg": {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-features",
+      "--lib",
+      "quest_catalogue_chests_phase_a_",
+      "--",
+      "--test-threads=2",
+      "--nocapture"
+    ],
+    "exit": 101,
+    "duration_seconds": 442.178,
+    "test_results": {
+      "quest_catalogue_chests_phase_a_01_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_02_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_03_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_04_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_05_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_06_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_07_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_08_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_09_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_10_use_replay_and_refusal": "FAILED",
+      "quest_catalogue_chests_phase_a_11_use_replay_and_refusal": "FAILED"
+    },
+    "qualified_cohorts": 0,
+    "qualified_quests": 0
+  },
+  "restart-fmt-final": {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check",
+    "exit": 0,
+    "duration_seconds": 14.693
+  },
+  "scope": {
+    "quests": 54,
+    "claims": 100,
+    "placements": 102,
+    "newly_qualified": 0,
+    "unfinished": "PostgreSQL storage full; Phase A qualification, then Phase B/C"
+  },
+  "current_source_sha256": {
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs": "452142fb5123b3c4aead60590de93a4abfa6ab6a304cb8459bb01a5d4a48371a",
+    "crates/gameplay/quests/src/quest/loader.rs": "111a0e2842631f4e12df00d2a670cdb6ae97ce9137c8560caf280e6d3772e7bc"
+  }
+}

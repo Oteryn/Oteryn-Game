@@ -361,7 +361,7 @@ def validate_callback(callback, directory):
     seen = set()
     for storage in callback['storage']:
         fields(storage, {'track', 'minimum', 'maximum', 'set'},
-               {'track', 'minimum', 'maximum', 'set', 'preserve', 'increment'}, key + ': storage')
+               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only', 'increment'}, key + ': storage')
         require(valid_key(storage['track']) and storage['track'] not in seen, key + ': duplicate or invalid track')
         seen.add(storage['track'])
         require(all(integer(storage[field], -(2 ** 63), 2 ** 63 - 1) for field in ('minimum', 'maximum', 'set'))
@@ -370,8 +370,19 @@ def validate_callback(callback, directory):
         require(type(storage.get('increment', False)) is bool, key + ': invalid increment')
         if storage.get('increment', False):
             require(storage['set'] > 0 and not storage.get('preserve', False)
+                    and not storage.get('read_only', False)
                     and callback.get('native_rule') is None
                     and storage['maximum'] <= 2 ** 63 - 1 - storage['set'], key + ': invalid increment')
+        require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
+    if any(entry.get('read_only', False) for entry in callback['storage']):
+        require(all(entry.get('read_only', False) and not entry.get('preserve', False)
+                    for entry in callback['storage'])
+                and callback['trigger'] == 'use' and callback.get('teleport') is not None
+                and not callback.get('lever') and not callback['passages']
+                and not callback['offerings'] and not callback.get('item_on_target')
+                and callback.get('minimum_level') is None and callback.get('experience') is None
+                and callback.get('monk_reward') is None and callback.get('native_rule') is None,
+                key + ': invalid read-only callback')
     seen = set()
     for passage in callback['passages']:
         fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement', 'create_on_close'}, key + ': passage')

@@ -11,18 +11,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 COVERAGE = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
-# W15b supports 308 claims; ITEMHOLD-Q adds the three named admissions below.
-# Eleven have source-selector dispatch PG grant coverage. Every other supported
-# claim keeps its per-World qualification hold.
-# Batch 3 qualified the three independent Demon Helmet claims through the
-# existing USE/MINT/replay owner; this does not qualify its access mechanisms.
-ITEMHOLD_ADMISSIONS = frozenset({
-    "oteryn:reward-claim.kv.ornamentedshield",
-    "oteryn:reward-claim.kv.powerring2",
-})
-# Triangle now has the canonical source-placement PG reward witness and leaves
-# this pending-route inventory; the two remaining ITEMHOLD routes stay blocked.
-EXPECTED_DENOMINATOR = 297 + len(ITEMHOLD_ADMISSIONS)
+# Exact current coverage partition:299 supported-unqualified claims,16 with
+# dispatch PG qualification and21 not playable. The ledger covers every one
+# of the299 outstanding source claims; whole storylines are a separate scope.
+EXPECTED_DENOMINATOR = 299
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

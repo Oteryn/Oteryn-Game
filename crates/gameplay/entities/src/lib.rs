@@ -192,8 +192,10 @@ pub use runtime_actor_carrier::runtime_actor_periodic::PreparedCreaturePeriodicT
 pub use runtime_actor_carrier::runtime_actor_source_reservation::SourceActorReservation;
 pub use runtime_actor_carrier::runtime_actor_source_reservation::SourceActorReservationProof;
 pub use runtime_actor_carrier::runtime_actor_source_reservation::source_reservation_seal;
-pub use runtime_actor_carrier::runtime_actor_source_step::SourceStepCommitProof;
 pub use runtime_actor_carrier::runtime_actor_source_step::source_step_seal;
+pub use runtime_actor_carrier::runtime_actor_source_step::{
+    SourceSceneMove, SourceSceneRelocationProof, SourceStepCommitProof,
+};
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::runtime_actor_spell::CreatureCombatFacts;
 #[allow(unused_imports)]
@@ -205,6 +207,9 @@ pub use runtime_actor_carrier::runtime_actor_spell::StagedSpellBatch;
 pub use runtime_actor_carrier::runtime_actor_spell_types;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::runtime_actor_spell_types::DeferredCommitAuthority;
+pub use runtime_actor_carrier::source_scene::{
+    MAX_SOURCE_SCENE_ACTORS, SceneActorKind, SceneActorSnapshot,
+};
 pub use runtime_actor_carrier::{
     NativeRaidSpawnSpec, RaidCreatureStatus, RaidSpawnIdentity, RaidSpawnOutcome, RaidSpawnReceipt,
 };

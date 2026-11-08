@@ -1,0 +1,1510 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/chosen/trader/trophy",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 71,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7397",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/willard",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.willard",
+      "keywords": [
+        "package for rashid"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/willard.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/snake-eye",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.snake_eye",
+      "keywords": [
+        "package for rashid"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/package",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "package"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i145",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/buy-cheese",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 72,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i169",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/miraia.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "fee": {
+        "gold": 100,
+        "include_bank": true
+      },
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/cheese",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "cheese"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i169",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 10,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/buy-vase",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.briasol",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 73,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i227",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/briasol.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/vase",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "vase"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i227",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/buy-sword",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 75,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5880",
+          "count": 3
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i7385",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/uzgod.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "fee": {
+        "gold": 250,
+        "include_bank": true
+      },
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/sword",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "sword"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7385",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/goldfish",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "goldfish"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5929",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/recognised",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/recognised_trader",
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "completes": true,
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/authored-secret-library/charles",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.charles",
+      "keywords": [
+        "raft"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "If you are stranded, lash the loose raft planks with a hawser."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/authored-secret-library/spectulus",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.spectulus",
+      "keywords": [
+        "rumours"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Investigate the sunken temple in northern Tiquanda and its fishmen."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/authored-secret-library/gail",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.gail",
+      "keywords": [
+        "daughter"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for telling me what happened to my daughter."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/accept",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "construction jobs"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i17617",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i17514",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take these supplies. Oil the saw, treadmill and crane at each site, north to south. Then deliver the grind stone to Scott and the kit to Frank."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/scott",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.scott_the_scout",
+      "keywords": [
+        "grind stone"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17617",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the grind stone. Deliver the pathfinder kit to Frank."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/frank",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.frank_the_plank",
+      "keywords": [
+        "pathfinder kit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17514",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. Defeat five little corym charlatans beneath the southern construction site, then report to Norman."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "construction report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 10,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "All three jobs and the daily bonus:1000experience and1000gold. Return after20hours."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "completes": true,
+      "experience": 1000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/restart",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "construction jobs"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i17617",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i17514",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here are fresh supplies for your next construction circuit."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/dream-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "dream journey"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "required_receipts": [
+        {
+          "transition": "oteryn:quest-transition/wrath-of-the-emperor/dragon-dream-complete",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "value": 28
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Your journey through the dream is recorded. The four imperial crystal influences remain."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sleeping_dragon.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen Wrath recipe s7 report after the source Sleeping Dragon finale; exact durable questline28 receipt is required, no second achievement and no whole-quest completion."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/start",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "wrath mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission01",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Bring me three nails and one piece of wood, and ask for a crate."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/crate",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "crate"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i953",
+          "count": 3
+        },
+        {
+          "item": "oteryn:item.tibia.i5901",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i11328",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "The marked crate is ready. Use the disguise to enter the maintenance tunnel."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/colours/envelope",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "npc": "oteryn:npc.nathaniel",
+      "keywords": [
+        "colours envelope"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/colours/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12204",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12208",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i12205",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": false,
+      "reply": [
+        "The envelope contains blue powder and a letter."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ],
+      "carried_item": "oteryn:item.tibia.i12204",
+      "carried_exchange": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/colours/mark-blue",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "npc": "oteryn:npc.nathaniel",
+      "keywords": [
+        "colours mark-blue"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/colours/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/colours/colour",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12208",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12228",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": false,
+      "reply": [
+        "You are marked blue; retain the remaining powder for a differently marked participant."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ],
+      "carried_item": "oteryn:item.tibia.i12208",
+      "carried_exchange": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/imperial-hunt",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "imperial hunt"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/magistrati",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/nobles",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Eliminate four magistrati and six imperial nobles, then report your imperial hunt."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/imperial-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "imperial report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/magistrati",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/nobles",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 27,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission09",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/interdimensional_potion",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Your imperial hunt is recorded. Free the sleeping dragon from its dream. The dream-opening word is SOLOSARASATIQUARIUM."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    }
+  ],
+  "offers": [
+    {
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 71,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Bring me a rare deer trophy. May I take it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "scarab cheese"
+      ],
+      "topic": 0,
+      "next_topic": 72,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you like to buy scarab cheese for 100 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.briasol",
+      "keywords": [
+        "fine vase"
+      ],
+      "topic": 0,
+      "next_topic": 73,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you buy this fine vase for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "crimson sword"
+      ],
+      "topic": 0,
+      "next_topic": 75,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 9,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I can make the crimson sword for three iron ores and 250 gold. Agreed?"
+      ]
+    }
+  ],
+  "greetings": [
+    {
+      "npc": "oteryn:npc.briasol",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/briasol.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rashid",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.snake_eye",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/uzgod.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.willard",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/willard.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.charles",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.spectulus",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gail",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "greet": "Greetings, |PLAYERNAME|. Ask about construction jobs.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.scott_the_scout",
+      "greet": "Greetings, |PLAYERNAME|. Ask about construction jobs.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.frank_the_plank",
+      "greet": "Greetings, |PLAYERNAME|. Ask about construction jobs.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your wrath mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: explicit opening mission keyword for the chosen recipe."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zlak",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your imperial hunt.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    }
+  ],
+  "tracks": [
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/last-report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/stage",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 13,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/kills",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/winterlight/stage",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "initial": 0,
+      "min": 0,
+      "max": 8,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/winterlight/issued",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/winterlight/kills",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/wrath/stage",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 8,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "oteryn-authored:chosen-recipe:wrath-opening:authored-r1"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/colours/stage",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/colours/colour",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/wrath/magistrati",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 4,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/wrath/nobles",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 6,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/wrath/crystals",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ]
+    }
+  ]
+}

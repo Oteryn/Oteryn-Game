@@ -1,0 +1,8 @@
+{
+  "scope": "Venore supply MINT/custody regression only",
+  "result": "RED",
+  "duration_seconds": 37.99,
+  "postgres_marker": "POSTGRES_CASE_STARTED authored-venore-supplies after PostgreSQL fixture initialization",
+  "log_sha256": "1e07519d402bde6cef033e2b592a1d38633ec810dbab1baa8b4428f71098c79f",
+  "compiles": true
+}
