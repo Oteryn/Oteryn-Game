@@ -50,3 +50,4 @@
 | M19 — authoritative transaction clock in world callbacks (reuse existing quest clock) | qready1 | none planned; QMECH range 2090–2099 only | Bewitched; Threatened Dreams | CLAIMED |
 
 | M29 — Primal Ordeal Instance corpse stage/deadline and party prerequisite refusal | encx | 2200 reserved; coordinator-assigned 2200–2209 only | The Primal Ordeal | CLAIMED; party refusal fix transferred in ed8f218de, Instance corpse deadline implementation next |
+| M08 — fenced live level/vocation/Premium predicates in source NPC programs | questpc2 | none planned; owner-assigned QMECH range 2050–2059 only | Elemental Spheres; Hot Cuisine; The Hidden City of Beregar | CLAIMED |
