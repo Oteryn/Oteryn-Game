@@ -460,12 +460,6 @@ fn run(shared: Arc<Mutex<Shared>>) {
         .collect::<Vec<_>>();
         let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
         if [
-            rotation_label,
-            rotation,
-            mouse_preset,
-            delay_label,
-            delay,
-            controls_apply,
             chat_on,
             chat_off,
             rotation_label,
