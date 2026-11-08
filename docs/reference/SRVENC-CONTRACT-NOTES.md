@@ -1728,3 +1728,71 @@ Donor evidence: TibiaTools `fe745abf` `damage-calc/damage.ts:13-26`, as admitted
 for defense/armor/mitigation, and `creature.cpp:911-914` for response order. The
 repair changes no production combat, encounter, loot, Prey or persistence rule,
 allocates no IDs/migrations, and weakens no test. Final execution receipts follow.
+
+### CI repair validation and latest main integration (2026-11-08)
+
+Merged main `3209d3d61` normally. Preserved main's exact Soulpit boot,
+handoff owner, durability error classification and NPC service-model test files
+(400 services / 12415 offers / 17 sell-above-cap). The branch retains its
+substantive encounter diff; no migration or identifier was allocated.
+
+The repaired hunt scenario executed against PostgreSQL: PASS 67.087 s
+(nextest summary 67.098 s). The explore-area generator's eight targeted tests
+passed in 0.235 s after reproducing the stale receipt failure. Workspace
+all-targets check after the latest merge passed in 278.622 s; formatting passed
+in 15.156 s. Dispatch all-targets/all-features Clippy passed with `-D warnings`
+(1084.612 s including build-lock wait); architecture check passed in 281.028 s.
+
+The full quest-authoring run executed 1110 tests in 1340.713 s and exposed
+two errors with one cause: the earlier SharedOwner compile adaptation changed
+`qready1_reward_claims.rs`, invalidating its source-bound PG evidence. The same
+source-binding sweep found all five QREADY1/QREADY2/Purple receipts stale. All
+41 real PostgreSQL cases passed: QREADY1 17/17 in 552.21 s (individual
+31.885–103.013 s), QREADY2 21/21 in 448.40 s (31.119–52.959 s), Purple Tome
+3/3 in 61.68 s (29.443–32.485 s). The existing lane-specific QREADY1 importer
+and generic `quest_reward_use_proofs.py` importer regenerated all five receipts
+from successful completion markers and the actual passing summaries. Neither
+hashes nor durations were edited by hand. The completion matrix was regenerated
+and unchanged; the explore packet was regenerated last. All 23 focused quest
+proof/matrix/explore tests passed in 1.748 s.
+
+The previous merged-main unit run passed all 3274 selected Rust tests. A fresh
+full dispatch unit build was deferred under the owner's cadence exception to
+prioritize the latest-main all-targets compile gate; that final unit rerun remains
+pending and is not represented as passed. No test was weakened or removed.
+
+The final CI report added the schema-78 Type2 activation backfill failure.
+The branch's current-schema reservation helper explicitly supplies death-scope
+columns introduced in migration 1152, whereas main's helper supplies the older
+columns. Reproduced the exact local PostgreSQL 42703 failure in 1.04 s. The
+fixture helper now selects the historical insert shape for schema 78 and keeps
+the explicit death-scope writer for current-schema cases. This matches main's
+historical SQL, preserves every backfill/immutability assertion, and changes no
+production writer or migration. The entire five-case activation PG module is
+rerun, rather than only the reported case.
+
+After main integration, repo-tool pin refresh passed in 28.712 s, pin-check
+in 30.958 s and duplicate-migration check in 0.465 s. Quest binding evidence
+regeneration and its check passed in 17.934 / 18.026 s; equipment's independent
+3792-profile union check passed in 0.171 s. No generated values were edited by
+hand. The post-backfill-fix workspace all-targets check passed in 59.557 s.
+
+All five Type2 activation PostgreSQL cases passed in 31.76 s after the
+schema-aware fixture repair (180.932 s including compilation/lock wait).
+The quest-authoring CI `checks` and complete two-worker `unit-tests` runners,
+and fresh changed-crate Rust units, were started after proof regeneration.
+Their final receipts are kept separate from earlier passing runs; the owner
+cadence exception applies if the complete unit runners are pending at push.
+
+Final prepush receipts: the isolated backfill PG execution passed in 6.34 s
+(6.352 s wall); the full quest-authoring `checks` job passed in 308.579 s.
+Game-server all-targets/all-features Clippy passed with `-D warnings` in
+338.781 s; final formatting passed in 32.656 s. Final repo-tool pin refresh,
+pin-check and duplicate-migration check passed in 49.325 / 45.135 / 0.398 s.
+
+At the cadence-exception push, fresh full Rust library units (game-server and
+the dispatch/content/client-assets set, plus the durability feature-union
+package) and the complete quest unit runner are executing, with no failures
+reported so far. The queued nextest build was replaced before execution by
+`cargo test --no-fail-fast` to share in-process fixtures; no assertions or
+tests are omitted. These ongoing runs are not claimed as green at push time.
