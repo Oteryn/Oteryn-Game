@@ -279,8 +279,9 @@ impl DurabilityRoot {
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
         )>,
     ) -> Result<QuestTransitionOutcome> {
-        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let reward_callbacks =
+            oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
+                .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let world_callbacks = oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_quest_inner_resolved(
@@ -349,7 +350,9 @@ impl DurabilityRoot {
             || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
                 .is_some();
         if native_key != native.is_some()
-            || native.as_ref().is_some_and(|death| !death.valid(&request, &catalogue))
+            || native
+                .as_ref()
+                .is_some_and(|death| !death.valid(&request, &catalogue))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -385,13 +388,21 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let collection = catalogue.authored_bindings().and_then(|bindings|
-            bindings.quests.iter().flat_map(|quest| &quest.stages).find_map(|stage|
-                match &stage.trigger {
-                    oteryn_gameplay_quests::quest::authored_bindings::Trigger::Collect { collection }
-                        if collection.key == request.transition_key => Some(collection.as_ref()),
-                    _ => None,
-                })).cloned();
+        let collection = catalogue
+            .authored_bindings()
+            .and_then(|bindings| {
+                bindings
+                    .quests
+                    .iter()
+                    .flat_map(|quest| &quest.stages)
+                    .find_map(|stage| match &stage.trigger {
+                        oteryn_gameplay_quests::quest::authored_bindings::Trigger::Collect {
+                            collection,
+                        } if collection.key == request.transition_key => Some(collection.as_ref()),
+                        _ => None,
+                    })
+            })
+            .cloned();
         let reward_callback = reward_callbacks
             .into_iter()
             .find(|c| c.key == request.transition_key);

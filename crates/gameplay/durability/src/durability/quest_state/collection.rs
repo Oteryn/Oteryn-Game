@@ -8,8 +8,12 @@ pub(super) async fn admit(
     request: &QuestTransitionRequest,
     collection: &Collection,
 ) -> StoredResult<bool> {
-    let QuestCause::Command(command) = request.cause else { return Ok(false); };
-    if command.game_session_id() != fence.game_session_id { return Ok(false); }
+    let QuestCause::Command(command) = request.cause else {
+        return Ok(false);
+    };
+    if command.game_session_id() != fence.game_session_id {
+        return Ok(false);
+    }
     let character = fence.character_id.as_bytes().as_slice();
     let session = command.game_session_id();
     let moved: bool = sqlx::query_scalar(
@@ -17,23 +21,35 @@ pub(super) async fn admit(
         .bind(character).bind(session.as_bytes().as_slice()).bind(command.command_id().get().to_string())
         .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string())
         .fetch_one(&mut **tx).await?;
-    if !moved { return Ok(false); }
-    let keys: Vec<_> = collection.items.iter().map(|item| item.item.as_str()).collect();
+    if !moved {
+        return Ok(false);
+    }
+    let keys: Vec<_> = collection
+        .items
+        .iter()
+        .map(|item| item.item.as_str())
+        .collect();
     let world = fence.runtime_scope.world_id();
     let rows = sqlx::query("SELECT i.definition_production_key,i.quantity,coalesce(k.key_number,0)::bigint AS key_number FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item LEFT JOIN game_item_keys k ON k.item_instance_id=i.item_instance_id WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(character).bind(world.as_bytes().as_slice()).bind(keys).fetch_all(&mut **tx).await?;
-    if rows.len() > 500 { return Ok(false); }
+    if rows.len() > 500 {
+        return Ok(false);
+    }
     for required in &collection.items {
         let mut needed = i64::from(required.count);
         for row in &rows {
-            if row.try_get::<&str,_>("definition_production_key")? == required.item
-                && required.key_number.is_none_or(|number|
-                    row.try_get::<i64,_>("key_number").ok() == Some(i64::from(number))) {
+            if row.try_get::<&str, _>("definition_production_key")? == required.item
+                && required.key_number.is_none_or(|number| {
+                    row.try_get::<i64, _>("key_number").ok() == Some(i64::from(number))
+                })
+            {
                 let quantity: i64 = row.try_get("quantity")?;
                 needed -= needed.min(quantity);
             }
         }
-        if needed != 0 { return Ok(false); }
+        if needed != 0 {
+            return Ok(false);
+        }
     }
     Ok(true)
 }
