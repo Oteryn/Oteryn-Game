@@ -1419,7 +1419,10 @@ mod tests {
         .unwrap();
         assert_eq!((state.health, state.mana), (120, 107));
         tick(&mut state, 10000, TickFacts::default()).unwrap();
-        assert_eq!((state.health, state.mana), (140, 121));
+        // Crystal201189f src/creatures/combat/condition.cpp:1348-1356,1385-1391:
+        // leaving PZ permits one pulse and resets each accumulator to zero;
+        // suppressed mana time never grants multiple retrospective pulses.
+        assert_eq!((state.health, state.mana), (140, 114));
         assert!(state.conditions.instances().is_empty());
         let revision = state.revision;
         clear_on_lifecycle(&mut state);

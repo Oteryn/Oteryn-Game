@@ -291,6 +291,15 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("WORLDCHG", 40),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
+    // BEGIN GENERATED QREADY PROFILE ADDITIONS
+    // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
+    // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json
+    // Source-qualified zero speed: 3068, 3323, 3383, 3579, 3734, 4871.
+    ("QREADY1", 6),
+    // tools/content-migration/qready2_native_profiles.py
+    // Source-qualified zero speed: 2822, 2823, 2848, 3310, 21982.
+    ("QREADY2", 5),
+    // END GENERATED QREADY PROFILE ADDITIONS
     // SEASON W18:2126 exact initialized House source profiles. Relative to the
     // frozen9668e0a04 base (including loadout/SRX updates),1959 keys are new.
     // Source: house-decoration-profiles.json, Crystal201189f items.xml and
@@ -394,6 +403,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
             + (additions.len() - 53)
+            // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
             + 26
             + 23
     );

@@ -140,7 +140,7 @@ def grant_semantics(root, definition):
     return semantics
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical):
+def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'content-schema/reward-claim-authoring'))
@@ -152,6 +152,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:

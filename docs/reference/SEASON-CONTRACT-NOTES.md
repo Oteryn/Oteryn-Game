@@ -1178,3 +1178,93 @@ remained unrun. This is explicitly incomplete unit evidence, not a green
 3982-case claim. CI owns the full suite; no tests were weakened or removed.
 This single publication includes all requested main updates through47baa7bb8.
 After publication the branch returns to frozen status, awaiting owner CI fixes.
+
+## Main integration c77d436d8 (2026-11-08)
+
+Merged origin/main c77d436d8 without rebasing. Own migrations remain
+1160-1162 and1164-1169;1163 is unused. No new command, capability,
+mechanic, registry or migration numbers are allocated by this integration.
+
+Regenerated QREADY equipment additions through
+`tools/contracts/update_equipment_profile_additions.py` and native profiles
+through `tools/content-migration/regenerate_content.py --native-only`.
+The independently declared cohort sum and actual profile union both equal
+5768. The existing53-key QENGINE cohort is counted once; its explicit Rust
+subtraction must match the declared cohort or the refresh tool rejects it.
+All six equipment refresh tests pass, including wrong-subtraction rejection.
+
+Rechecked NPC service/offer counts as requested. Source catalogue counts
+remain1282 NPCs,836 dialogues and399 services. The production model adds
+Grizzly's source-qualified shop (`npc_catalogue/service.rs:367`,
+`npc_catalogue/grizzly_shop.rs:16` under crates/gameplay/content/src/content).
+Its existing fluid/full-charge restoration is in
+`crates/gameplay/content/src/content/npc_catalogue/subtype_trades.rs:78-138`.
+No admission rule changes here. The old390-service snapshot failed against
+400 services; the complete model reports12415 admitted offers,195 routes,
+446 generated-reply NPCs,31 non-gold holds and17 price-cap holds, with all
+other hold categories zero. Main3209d3d61 supplies the exact strict service/offer snapshot with the
+source explanation. Per owner direction its test version is retained.
+No computed equipment or world pins were hand-edited.
+
+## PR3039 CI correction, same c77d436d8 merge publication
+
+All nine owner-reported Rust regressions passed together (30.301s execution).
+The repeated partition24 Soulpit failure is the same source identity boundary
+case: it now requires the exact admitted Cake Golem key and rejects an
+unqualified lookalike. The primary raid area is validated even when its
+source-backed alternate city bases are present, retaining the original
+fail-closed test instead of bypassing its malformed area.
+
+Source evidence is Crystal201189f
+`data-global/monster/quests/a_piece_of_cake/cake_golem.lua:1` (identity),
+`:11-19` (easy/very-rare Bestiary, [2,3,5] and30 points), `:25` (venom),
+`:76-95` (three attacks and one defence), and
+`data-global/scripts/lib/a_piece_of_cake_config.lua:394-400` (raid bases).
+`src/creatures/combat/condition.cpp:1348-1356,1385-1391` resets each permitted
+regeneration accumulator after one pulse; the exact actor test therefore
+expects140 HP/114 mana after PZ rather than granting retrospective mana.
+The source projection adds no unsupported attack: the pinned gap count
+remains116, with1690 supported melee and4200 supported spell attacks.
+
+Normal tools regenerated presentation bindings (Canary CONST_ANI_CAKE=42),
+all1864 source-bound creature races, and quest NPC binding evidence/index.
+The race builder admits only Cake's exact Creature definition-r1, target,
+file and201189f revision as the additional source; forged revisions, targets
+and files are rejected. Both new source-boundary tests passed. Presentation
+validation passed15 tests17.152s; quest binding-index validation passed6
+tests0.305s; the merge-regenerator checks passed14 cases.
+
+`refresh_season_creature_inventory.py` qualifies the full Cake donor packet
+and canonical identity closure before refreshing Creature/schedule, Bestiary,
+raid and attack-coverage pins. Non-seasonal populations and the116-gap
+boundary remain explicit rejection guards. Its source-checked results are
+1864 Creatures,7205 schedules,824 Bestiary rows,240 raids/137 active.
+Native registration regenerated44 outputs279.462s; only five registry/index
+files needed new bytes after the race/presentation refresh. The generated
+mechanic profiles remained byte-identical. No computed pins were hand-edited.
+
+Focused seasonal/House validation on the merged source passed11/11, with
+608.562s execution (1153.785s including compilation/lock wait). Its nine
+PostgreSQL cases ran45.166-88.170s each; strict raw equipment validation
+ran59.419s and the complete charm inventory test0.932s.
+Six independent library crates passed1954 tests52.485s execution.
+Client-assets passed10 unit tests1.49s. NPC catalogue/service integration
+tests passed all six cases, retaining1282 NPCs,399 declared services and
+400 projected services/12415 admitted offers. Both architecture modes
+passed (workspace10.009s, client-structure2.397s).
+
+The seven-crate batch passed1865 tests887.037s execution; the six CI-affected
+crates passed1468 tests930.766s execution, including95 explicitly named
+PostgreSQL cases with individual durations0.264-170.085s. The server
+HOUSE ACL add/remove cases also passed53.918s/23.235s. The full dispatch
+and server suites remain pending under PREPUSH-2's cadence exception; their
+focused mechanics and integration targets passed. Existing ignored retained
+source/host-measurement fixtures are untouched.
+
+The merge resolver had seeded main's pre-Cake root summaries and seven
+retired shard paths despite retaining the source-qualified new shards. The
+normal raid generator refreshes its240-record index; the seasonal inventory
+tool checks exact identity-set equality against the hash-bound WorldProject
+before updating central counts, source bindings, source blobs and managed
+shards. A same-count Creature substitution is rejected (3.849s regression).
+Both normal regeneration modes now invoke the source-qualified refresh.
