@@ -34,7 +34,7 @@ Zasady przeciw dublowaniu:
 | T104 | Analytics | Supply Analyser | PARTIAL | Brak listy zużytych itemów, cen, rate/h i graph; jest supplies total. |
 | T105 | Analytics | Impact Analyser | PARTIAL | Brak źródeł, DPS/HPS i gauge/graph; są damage/healing totals. |
 | T106 | Analytics | Input Analyser | PARTIAL | Brak typów/źródeł obrażeń, tempa i wykresów; jest received total. |
-| T107 | Analytics | Hunting Session Analyser | PARTIAL | Brak zegara, XP/h, profit/balance, kills/loot breakdown i save/export sesji. |
+| T107 | Analytics | Hunting Session Analyser | DONE | Brak zegara, XP/h, profit/balance, kills/loot breakdown i save/export sesji. evidence: `crates/client-ui/src/features/0010-analyser/view.rs:259 + analyser_session_export_writes_confirmed_report_through_native_action` |
 | T108 | Analytics | Party Hunt Analyser | PARTIAL | Brak tabeli członków i rozliczenia loot/supplies/cost split. |
 | T109 | Analytics | Loot Tracker | PARTIAL | Brak listy śledzonych itemów i historii dropów/config. |
 | T110 | Analytics | Kill / Hunting Task Tracker | PARTIAL | Brak samodzielnego trackera; postęp pozostaje w Task Board. |

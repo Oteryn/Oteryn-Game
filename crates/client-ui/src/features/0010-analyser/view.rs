@@ -283,9 +283,11 @@ pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
     }
     let _ = write!(
         text,
-        "\r\n\r\n{}\r\n\r\n{}",
+        "\r\n\r\n{}\r\n\r\n{}\r\nSession gained XP per minute\r\n{}\r\nSession raw XP per minute\r\n{}",
         loot_text(panel, seconds),
-        supply_text(panel, seconds)
+        supply_text(panel, seconds),
+        panel.xp_chart.chart(seconds),
+        panel.raw_xp_chart.chart(seconds)
     );
     text
 }

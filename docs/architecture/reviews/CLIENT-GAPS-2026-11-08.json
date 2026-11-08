@@ -784,9 +784,10 @@
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Hunting Session Analyser",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak zegara, XP/h, profit/balance, kills/loot breakdown i save/export sesji.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/view.rs:259 + analyser_session_export_writes_confirmed_report_through_native_action"
  },
  {
   "id": "T108",
