@@ -1,0 +1,44 @@
+{
+  "schema": "OTERYN_CAPTURED_STACK_TRANSFORM/v1",
+  "recipe": "oteryn:item-conversion.tainted-souls-antler-talisman",
+  "used": 3736,
+  "target": 10297,
+  "output": 22008,
+  "used_count": 1,
+  "target_quantity": "CAPTURED_WHOLE_STACK",
+  "output_quantity": 1,
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/scripts/quests/the_tainted_soul/actions_star_herb.lua",
+    "lines": 19,
+    "sha256": "f3ffe07cf0538c6a072cc0145e340ea9bf1a74a83601e3e7c42c6a90d03f13e4",
+    "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_tainted_soul/actions_star_herb.lua"
+  },
+  "items": [
+    {
+      "item": 3736,
+      "stackable": true,
+      "weight_centi_oz": 30,
+      "url": "https://www.tibiawiki.com.br/index.php?curid=8480&oldid=391844",
+      "revision": 391844,
+      "body_sha256": "114dd62a6294e36ff49e6ef5aec77ad9e870ea5fffd80a992b9f786858478e82"
+    },
+    {
+      "item": 10297,
+      "stackable": true,
+      "weight_centi_oz": 90,
+      "url": "https://www.tibiawiki.com.br/index.php?curid=6884&oldid=379046",
+      "revision": 379046,
+      "body_sha256": "22b6a20893f442610a4360c41b4fd18b54a967459a4d51d3c37654aba18ba2c2"
+    },
+    {
+      "item": 22008,
+      "stackable": false,
+      "weight_centi_oz": 240,
+      "url": "https://www.tibiawiki.com.br/index.php?curid=36261&oldid=379044",
+      "revision": 379044,
+      "body_sha256": "7a00d7a24f75dfc6cfb31824bab8d5fef7fbef6e0dc2ed717f2ec7e6bcbb79ae"
+    }
+  ]
+}

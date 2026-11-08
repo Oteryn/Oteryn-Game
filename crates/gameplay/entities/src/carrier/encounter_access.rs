@@ -1,6 +1,9 @@
 //! Generic owner operations used by encounter rules in the runtime layer.
 use super::*;
 use crate::SourceStepCommitProof;
+#[path = "encounter_defenders.rs"]
+mod encounter_defenders;
+pub use encounter_defenders::EncounterDefenders;
 
 pub type EncounterHealProjection = (Vec<(ExactActorRef, String, u64, u64)>, Vec<usize>);
 

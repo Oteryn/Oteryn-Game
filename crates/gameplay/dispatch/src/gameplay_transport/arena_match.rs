@@ -11,6 +11,9 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+#[path = "arena_match/pit_exit.rs"]
+mod pit_exit;
+
 macro_rules! authority_methods {
     () => {
         fn arena_match_command(
@@ -105,12 +108,49 @@ fn admits(
     walkable(owner, runtime, at) && runtime.native_summon_cell_free(at)
 }
 
+fn credited_victory(
+    runtime: &mut ChannelRuntimeV1,
+    opponent: ExactActorRef,
+    character: &[u8; 16],
+) -> Option<crate::foundation::CreatureDeathOccurrenceKey> {
+    let death = runtime.borrow_combat_death();
+    let (key, _) = death.projected_death(opponent).ok()?;
+    death.top_damage_character(opponent).ok()?
+        .filter(|winner| winner.as_bytes() == character)
+        .map(|_| key)
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) fn pit_exit_open(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+) -> bool {
+    owner.states.arena_matches.live.lock().is_ok_and(|matches| {
+        matches.get(&session).is_some_and(|live| live.state.phase == 2)
+    })
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) fn expire_pit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+) {
+    if let Ok(mut matches) = owner.states.arena_matches.live.lock()
+        && let Some(live) = matches.get_mut(&session)
+    {
+        live.deadline = Instant::now();
+    }
+}
+
 /// Registered on the existing creature-owner cadence. A silent player cannot keep
 /// a pit beyond the donor deadline; logout/death/relocation release its opponent.
 pub(in crate::gameplay_transport) fn tick(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
 ) {
+    if runtime.owner_fence().is_err() {
+        return;
+    }
     let Ok(mut matches) = owner.states.arena_matches.live.lock() else {
         return;
     };
@@ -126,7 +166,25 @@ pub(in crate::gameplay_transport) fn tick(
             .try_lock()
             .is_ok_and(|states| states.is_dead(live.actor));
         if present && inside && !expired && !dead {
+            // The existing owner cadence also runs for a silent connection.
+            let character = runtime
+                .bound_attacker_lease(live.actor, *session)
+                .ok()
+                .map(|lease| *lease.character_id().as_bytes());
+            if live.state.phase == 1
+                && character.is_some_and(|character| {
+                    credited_victory(runtime, live.opponent, &character).is_some()
+                })
+            {
+                live.state.phase = 2;
+            }
+            if live.state.phase == 2 && let Some(map) = owner.bundle_map() {
+                pit_exit::project(map, live.state.pit, true);
+            }
             return true;
+        }
+        if let Some(map) = owner.bundle_map() {
+            pit_exit::project(map, live.state.pit, false);
         }
         let _ = runtime.remove_arena_opponent(live.opponent);
         if present
@@ -269,18 +327,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && let Some(current) = &live
         {
             let mut runtime = self.runtime.lock().await;
-            let death_owner = runtime.borrow_combat_death();
-            let dead = death_owner.projected_death(current.opponent).is_ok()
-                && death_owner
-                    .top_damage_character(current.opponent)
-                    .is_ok_and(|winner| {
-                        winner.is_some_and(|id| id.as_bytes() == fence.character_id.as_bytes())
-                    });
-            if dead {
-                victory = death_owner
-                    .projected_death(current.opponent)
-                    .ok()
-                    .map(|(key, _)| key);
+            victory = credited_victory(&mut runtime, current.opponent, fence.character_id.as_bytes());
+            if victory.is_some() {
                 after.phase = 2;
             }
         }
@@ -545,6 +593,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return None;
             }
             if let Some(old) = existing {
+                if let Some(map) = self.bundle_map() {
+                    pit_exit::project(map, old.state.pit, false);
+                }
                 let _ = runtime.remove_arena_opponent(old.opponent);
             }
             self.states.arena_matches.live.lock().ok()?.insert(
@@ -567,6 +618,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && current.y.abs_diff(reward_room.y) <= 30)
             {
                 if let Some(old) = self.states.arena_matches.live.lock().ok()?.remove(&session) {
+                    if let Some(map) = self.bundle_map() {
+                        pit_exit::project(map, old.state.pit, false);
+                    }
                     let _ = runtime.remove_arena_opponent(old.opponent);
                 }
                 let before = runtime.read_actor_position(actor).ok()?;
