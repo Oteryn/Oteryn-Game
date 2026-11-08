@@ -195,6 +195,11 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    if !ground_stack::matches_requirements(tx, permit, fence, context, &callback.world_requirements)
+        .await?
+    {
+        return Ok(false);
+    }
     if !ground_stack::require(
         tx,
         permit,
@@ -205,9 +210,6 @@ pub(super) async fn consume(
     )
     .await?
     {
-        return Ok(false);
-    }
-    if !ground_stack::matches(tx, permit, fence, context, &callback.world_requirements).await? {
         return Ok(false);
     }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {

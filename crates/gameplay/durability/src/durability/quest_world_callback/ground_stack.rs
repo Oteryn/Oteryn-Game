@@ -1,7 +1,6 @@
 //! M02: physical Ground predicates participate in the existing fenced quest TX.
 //! Nomads Land chosen recipe s4 (Wiki spoiler revision 1002600) needs actual
 //! crates/amphorae. Static ItemPresence projections cannot establish this fact.
-use super::*;
 use crate::durability::spell_item_transaction::{
     SpellItemError, SpellItemScopeAuthority, assert_spell_item_scope_with_recovery,
     check_scope_transaction,
@@ -133,18 +132,17 @@ pub(crate) async fn matches(
         }),
     ))
 }
-//! M02: read-only portable-item prerequisites share the existing Ground custody lock.
-//! Nomads Land authored recipe s4 derives from TibiaWiki spoiler page 22842,
-//! revision 1002600; arrangement is a prerequisite, not an offering to consume.
-//! See docs/reference/content-prep/SRVWLD-M02.md: TibiaWiki BR Arito's Task,
-//! lines115-117 specify ordered crate/amphora piles. Crystal 201189f
-//! data/items/items.xml:5020-5024 and6245-6247 identify the two source Items.
+// M02: read-only portable-item prerequisites share the existing Ground custody lock.
+// Nomads Land authored recipe s4 derives from TibiaWiki spoiler page 22842,
+// revision 1002600; arrangement is a prerequisite, not an offering to consume.
+// See docs/reference/content-prep/SRVWLD-M02.md: TibiaWiki BR Arito's Task,
+// lines115-117 specify ordered crate/amphora piles. Crystal 201189f
+// data/items/items.xml:5020-5024 and6245-6247 identify the two source Items.
 use super::{DurabilityError, QuestWorldContext, SpellLanePermit};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement;
 use sqlx::{Postgres, Row, Transaction};
 
-pub(crate) async fn matches(
+pub(crate) async fn matches_requirements(
     tx: &mut Transaction<'_, Postgres>,
     permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,

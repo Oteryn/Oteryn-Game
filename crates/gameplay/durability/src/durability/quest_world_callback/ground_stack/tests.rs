@@ -139,7 +139,7 @@ async fn check(
     let mut fence = h::fence(1)?;
     fence.scope_ownership_generation =
         ScopeOwnershipGeneration::new(generation).map_err(h::debug)?;
-    let result = matches(&mut tx, &permit, fence, &context, &[requirement]).await?;
+    let result = matches_requirements(&mut tx, &permit, fence, &context, &[requirement]).await?;
     tx.rollback().await?;
     Ok(result)
 }

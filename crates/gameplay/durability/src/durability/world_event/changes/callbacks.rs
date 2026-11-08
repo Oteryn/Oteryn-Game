@@ -89,7 +89,7 @@ impl DurabilityRoot {
                         return Ok(false);
                     }
                     if let Some(requirements) = &ground
-                        && !crate::durability::quest_world_callback::ground_stack::matches(
+                        && !crate::durability::quest_world_callback::ground_stack::matches_requirements(
                             &mut tx, lane, fence, &context, requirements,
                         ).await? {
                         return Ok(false);
