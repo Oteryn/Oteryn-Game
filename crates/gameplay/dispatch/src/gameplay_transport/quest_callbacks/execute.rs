@@ -69,6 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .is_some_and(|pair| after.appearance_id == pair[1]);
         if !close
             && (!world_requirements_match(map, callback)
+                || !self.ground_requirements_match(runtime, map, callback)
                 || !super::clear_area::area_is_clear(runtime, callback))
         {
             return UseDisposition::Rejected;
@@ -602,6 +603,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::reward_claim_mint::QuestRewardAdmission {
                             actor_conditions: None,
                             carried_use: None,
+                            creature_use: None,
                             peer_use: None,
 
                             native,

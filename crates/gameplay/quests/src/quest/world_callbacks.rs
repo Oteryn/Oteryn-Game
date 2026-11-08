@@ -27,16 +27,20 @@ pub enum Trigger {
     StepOut,
 }
 
+#[cfg(test)]
+mod admission_tests;
 mod clear_area;
 pub use clear_area::ClearArea;
 mod clock;
 mod counterparts;
 mod effects;
+mod ground_stack;
 mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
 };
+pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -149,17 +153,34 @@ impl ActorKind {
     }
 }
 
-/// A read-only exact appearance predicate on a native, immovable map entry.
+/// A static native anchor, optionally guarded by an ordered durable Ground stack.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
     pub position: Position,
     pub appearance: u16,
+    /// Exact durable Ground roots, bottom first, in addition to the static anchor.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ground_stack: Option<Vec<GroundStackEntry>>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Admission {
+    #[serde(default)]
+    pub regular_blessings: bool,
+    #[serde(default)]
+    pub promotion: bool,
+    #[serde(default)]
+    pub premium: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
+    /// Live Character predicates, evaluated by the fenced receipt owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission: Option<Admission>,
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
@@ -242,6 +263,14 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
+/// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    match catalogue.authored_world_callbacks() {
+        Some(callbacks) => Ok(callbacks.to_vec()),
+        None => load(),
+    }
+}
+
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
@@ -264,6 +293,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
@@ -289,6 +321,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)
+}
+
+pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
@@ -385,10 +421,13 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
             || callback.world_requirements.len() > MAX_EFFECTS
-            || callback
-                .world_requirements
-                .iter()
-                .any(|r| !valid_pos(r.position) || r.appearance == 0)
+            || callback.world_requirements.iter().any(|r| {
+                !valid_pos(r.position)
+                    || r.appearance == 0
+                    || r.ground_stack.as_ref().is_some_and(|stack| {
+                        callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
+                    })
+            })
             || (!callback.world_requirements.is_empty()
                 && ((callback.has_personal_state() && !callback.requires_world_admission)
                     || !callback.offerings.is_empty()
@@ -435,6 +474,13 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .minimum_level
                 .is_some_and(|level| level == 0 || !callback.has_personal_state())
+            || callback.admission.as_ref().is_some_and(|a| {
+                (!a.regular_blessings && !a.promotion && !a.premium)
+                    || callback.actor_kind != ActorKind::Player
+                    || !callback.has_personal_state()
+                    || callback.reversible
+                    || callback.opening_only
+            })
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -866,6 +912,7 @@ mod tests {
                 floor: -7,
             },
             appearance: 2773,
+            ground_stack: None,
         }];
         parse(&wire(&callback))?;
         callback.experience = Some(1);

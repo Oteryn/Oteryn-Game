@@ -182,6 +182,11 @@ pub enum NpcRuleGuard {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NpcRuleEffect {
+    /// Once-only proof of one source saga; never closes the canonical quest.
+    /// The declared 0..1 track includes the canonical quest and source identity.
+    CompleteSource {
+        track: String,
+    },
     BigfootMatchmakerTarget,
     BigfootSoulMelody,
     Set {
@@ -491,6 +496,7 @@ impl NpcRuleCatalog {
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
                                 | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.dangerous_depths_quest"
                                 | "oteryn:quest.elemental_spheres_quest"
                                 | "oteryn:quest.bigfoot_s_burden_quest"
                                 | "oteryn:quest.hero_of_rathleton_quest"
@@ -500,6 +506,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
+                                | "oteryn:quest.tower_defence_quest"
                         )
                 });
                 Ok(catalogue)
