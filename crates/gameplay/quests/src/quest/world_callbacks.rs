@@ -30,10 +30,12 @@ pub enum Trigger {
 mod clock;
 mod counterparts;
 mod effects;
+mod ground_stack;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
 };
+pub use ground_stack::GroundStackItem;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -146,12 +148,25 @@ impl ActorKind {
     }
 }
 
-/// A read-only exact appearance predicate on a native, immovable map entry.
+/// A read-only native appearance or exact mutable Ground stack prerequisite.
+/// Ground entries are ordered top to bottom and checked by the durable owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
     pub position: Position,
+    #[serde(default, skip_serializing_if = "is_zero_appearance")]
     pub appearance: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ground_stack: Option<Vec<GroundStackItem>>,
+}
+
+/// Ground prerequisites require a bounded player callback with a bound writable transition.
+pub fn valid_ground_requirements(callback: &Callback) -> bool {
+    ground_stack::valid(callback)
+}
+
+fn is_zero_appearance(value: &u16) -> bool {
+    *value == 0
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -381,8 +396,12 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .world_requirements
                 .iter()
-                .any(|r| !valid_pos(r.position) || r.appearance == 0)
-            || (!callback.world_requirements.is_empty()
+                .any(|r| !valid_pos(r.position) || (r.appearance == 0 && r.ground_stack.is_none()))
+            || !ground_stack::valid(callback)
+            || (callback
+                .world_requirements
+                .iter()
+                .any(|r| r.ground_stack.is_none())
                 && (!!callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
@@ -645,7 +664,13 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
 
 /// New physical bindings omit display/citation fields and leave every legacy hash unchanged.
 pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
-    if !callback.requires_world_admission && !callback.opening_only {
+    if !callback.requires_world_admission
+        && !callback.opening_only
+        && !callback
+            .world_requirements
+            .iter()
+            .any(|r| r.ground_stack.is_some())
+    {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
@@ -852,6 +877,7 @@ mod tests {
                 floor: -7,
             },
             appearance: 2773,
+            ground_stack: None,
         }];
         parse(&wire(&callback))?;
         callback.experience = Some(1);
