@@ -118,9 +118,12 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
                 sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-02-21 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             } else if matches!(seasonal, Some("QworldGrimvaleActive" | "QworldGrimvaleInactive")) {
-                let date = if seasonal == Some("QworldGrimvaleActive") { "2026-10-13 06:00 Europe/Berlin" } else { "2026-10-12 06:00 Europe/Berlin" };
-                sqlx::query(&format!("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '{date}'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"))
-                    .execute(&h.pool).await?;
+                let clock_sql = if seasonal == Some("QworldGrimvaleActive") {
+                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-13 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
+                } else {
+                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
+                };
+                sqlx::query(clock_sql).execute(&h.pool).await?;
             } else if seasonal == Some("Christmas") {
                 sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2025-12-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
