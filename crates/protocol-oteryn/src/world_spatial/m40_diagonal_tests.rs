@@ -51,3 +51,62 @@ fn m40_larger_pacing_receipts_require_both_capabilities() -> Result<(), String> 
     );
     Ok(())
 }
+
+#[test]
+fn m40_step_extension_does_not_add_diagonal_turns() {
+    use crate::target_move::{
+        TargetMoveIntent, decode_target_move_intent, encode_target_move_intent,
+    };
+    for direction in [
+        StepDirection::NorthEast,
+        StepDirection::SouthEast,
+        StepDirection::SouthWest,
+        StepDirection::NorthWest,
+    ] {
+        assert!(encode_target_move_intent(TargetMoveIntent::Turn(direction)).is_err());
+        assert!(decode_target_move_intent(&[26, 2, 8, direction as u8]).is_err());
+    }
+}
+
+#[test]
+fn m40_actor_facing_remains_cardinal() -> Result<(), String> {
+    use crate::world_spatial_entities::{
+        EntityDetail, EntityKind, EntityRef, WorldSpatialEntitiesSnapshot, WorldSpatialEntity,
+        encode_world_spatial_entities_snapshot,
+    };
+    let mut snapshot = WorldSpatialEntitiesSnapshot {
+        content_generation: [1; 32],
+        actor_position: ActorPosition {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
+        own_identity: [1; 16],
+        entities: vec![WorldSpatialEntity {
+            display_name: None,
+            kind: EntityKind::Player,
+            entity: EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            position: ActorPosition {
+                x: 0,
+                y: 0,
+                floor: 0,
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::East,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        }],
+    };
+    encode_world_spatial_entities_snapshot(&snapshot).map_err(|e| format!("valid actor: {e:?}"))?;
+    snapshot.entities[0].detail = EntityDetail::Actor {
+        direction: StepDirection::NorthEast,
+        appearance_ref: 1,
+        health_percent: 100,
+    };
+    assert!(encode_world_spatial_entities_snapshot(&snapshot).is_err());
+    Ok(())
+}

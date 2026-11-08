@@ -657,13 +657,9 @@ fn next(
     mut at: MovementLocalPosition,
     step: oteryn_protocol_oteryn::world_spatial::StepDirection,
 ) -> MovementLocalPosition {
-    use oteryn_protocol_oteryn::world_spatial::StepDirection as D;
-    match step {
-        D::North => at.y -= 1,
-        D::East => at.x += 1,
-        D::South => at.y += 1,
-        D::West => at.x -= 1,
-    }
+    let (dx,dy)=step.delta();
+    at.x+=dx;
+    at.y+=dy;
     at
 }
 
