@@ -210,8 +210,11 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
         deps.room = room.clone();
         if consumers || native_deaths.is_some() {
             deps.combat_room = Some(room.clone());
+            // Native death threshold cases retain twelve distinct dead actors
+            // alongside the player; the smaller consumer fixture needs only three slots.
+            let actor_capacity = if native_deaths.is_some() { 14 } else { 3 };
             planned_world_reset::reset_fixture::set_runtime_with_capacity(
-                &mut deps, world, channel, &pin, epochs + 1, 3,
+                &mut deps, world, channel, &pin, epochs + 1, actor_capacity,
             )?;
         } else {
             set_seasonal_runtime(&mut deps, world, channel, &pin, epochs + 1)?;
