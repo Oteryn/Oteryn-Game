@@ -503,6 +503,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
+                                | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"

@@ -379,3 +379,82 @@ fn command(ordinal: u64) -> f::TestResult<crate::foundation::CommandRef> {
         CommandId::new(ordinal).map_err(f::debug)?,
     ))
 }
+
+#[test]
+fn m37_riddler_postgres_progress_and_arrival_commit_together() -> f::TestResult {
+    let Some(admin) = f::configured_admin() else { return Ok(()); };
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+        f::runtime().map_err(f::debug)?.block_on(async {
+            let started = std::time::Instant::now();
+            let h = f::Harness::create(admin, "questpc8_riddler_teleport", true).await?;
+            let result = exercise_riddler(&h).await;
+            h.cleanup().await?;
+            result?;
+            assert!(started.elapsed().as_secs_f64() > 0.01);
+            eprintln!("M37_POSTGRES_RIDDLER_PROGRESS_AND_ARRIVAL_EXECUTED duration={:?}", started.elapsed());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }).map_err(f::debug)
+    })?.join().map_err(|_| "M37 Riddler PG thread failed")?.map_err(Into::into)
+}
+
+async fn exercise_riddler(h: &f::Harness) -> f::TestResult {
+    use crate::durability::npc_travel::{PendingArrival, TravelOccurrence};
+    use crate::durability::quest_state::{QuestCause, QuestTransitionRequest, QuestTransitionOutcome};
+    use crate::durability::quest_state::npc_program::{NpcProgramRequest, teleport::{self, NpcTeleportAdmission}};
+    use crate::durability::spell_owner_commit::SpellLanePermit;
+    use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition, npc_rules::{NpcRuleCatalog, NpcRuleTrigger}};
+    use std::sync::Arc;
+    let program = NpcRuleCatalog::runtime().map_err(f::debug)?.programs().iter()
+        .find(|p|p.document.quest == "oteryn:quest.the_paradox_tower_quest").ok_or("Riddler runtime programme")?;
+    let tracks: Vec<_> = program.document.tracks.iter().map(|t|QuestTrack {
+        key:t.key.clone(),quest:t.quest.clone(),initial:t.initial,min:t.min,max:t.max,
+    }).collect();
+    let prefix = "oteryn:quest-progress/quest/u7_24/the_paradox_tower";
+    let changed = [format!("{prefix}/mathemagics"),format!("{prefix}/favorite_colour")];
+    let digest = program.digest.iter().map(|b|format!("{b:02x}")).collect::<String>();
+    let setup = "oteryn:quest-test/riddler/setup";
+    let transitions = vec![
+        QuestTransition { key:setup.into(),quest:program.document.quest.clone(),effects:changed.iter().map(|track|QuestEffect {
+            track:track.clone(),from:QuestComparison::Any,effect:QuestEffectKind::Set(1),
+        }).collect(),completes:false,experience:None,world_change:None },
+        QuestTransition { key:format!("oteryn:quest-npc-pin/{digest}"),quest:program.document.quest.clone(),effects:vec![QuestEffect {
+            track:changed[0].clone(),from:QuestComparison::Any,effect:QuestEffectKind::Computed,
+        }],completes:false,experience:None,world_change:None },
+    ];
+    let catalogue = Arc::new(QuestStateCatalogue::new("content-1",tracks,transitions).map_err(f::debug)?);
+    let seal = h.recovery.seal_current().map_err(f::debug)?;
+    let authority = h.root.open_character_authority(&seal).await.map_err(f::debug)?;
+    let seed = h.root.commit_character_quest_transition(&authority,&h.node,f::fence(1)?,QuestTransitionRequest {
+        transition_key:setup.into(),cause:QuestCause::Command(command(9800)?),
+    },catalogue.clone()).await.map_err(f::debug)?;
+    assert!(matches!(seed,QuestTransitionOutcome::Committed(_)));
+    assert_eq!(h.root_revision().await?,"2");
+    let state = h.root.read_character_quest_state(&authority,f::fence(2)?.character_id).await.map_err(f::debug)?;
+    let mut request = NpcProgramRequest {command:command(9801)?,npc:"oteryn:npc.riddler".into(),trigger:NpcRuleTrigger::Say,
+        message:"1".into(),topic:13,transition_key:"oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-135-15-1-1".into()};
+    let preview = teleport::preview_teleport(&request,state.tracks(),&catalogue,1_700_000_000,&Default::default()).map_err(f::debug)?.ok_or("Riddler preview")?;
+    request.transition_key = preview.source.selected_rule_keys.first().ok_or("Riddler selected branch")?.clone();
+    assert_eq!(preview.source.track_changes.len(),2);
+    let fence = f::fence(2)?;
+    let arrival = PendingArrival { occurrence:TravelOccurrence::from_bytes(f::id(99)).map_err(f::debug)?,world_id:fence.runtime_scope.world_id(),
+        destination:NpcTeleportAdmission::runtime_destination(preview.destination).ok_or("Riddler runtime coordinates")? };
+    let permit = SpellLanePermit::of_fresh_scope(fence.runtime_scope).await.map_err(f::debug)?;
+    let mut wrong = arrival;
+    wrong.destination.x += 1;
+    assert!(h.root.commit_character_npc_teleport(&authority,&h.node,&permit,fence,request.clone(),catalogue.clone(),&NoItems,NpcTeleportAdmission {arrival:wrong}).await.is_err());
+    assert_eq!(h.root_revision().await?,"2");
+    assert!(h.root.read_npc_pending_arrival(&authority,&h.node,fence).await.map_err(f::debug)?.is_none());
+    let commit = h.root.commit_character_npc_teleport(&authority,&h.node,&permit,fence,request.clone(),catalogue.clone(),&NoItems,NpcTeleportAdmission {arrival}).await.map_err(f::debug)?;
+    assert!(!commit.read_only);
+    assert!(matches!(commit.transition,QuestTransitionOutcome::Committed(_)));
+    assert_eq!(h.root_revision().await?,"3");
+    let state = h.root.read_character_quest_state(&authority,fence.character_id).await.map_err(f::debug)?;
+    for key in changed { assert_eq!(state.tracks().get(&key),Some(&2)); }
+    assert_eq!(h.root.read_npc_pending_arrival(&authority,&h.node,f::fence(3)?).await.map_err(f::debug)?,Some(arrival));
+    let paired:bool = sqlx::query_scalar("SELECT t.quest_changed AND t.created_xact_id=q.created_xact_id AND t.xmin=a.xmin FROM game_quest_npc_teleport_receipts t JOIN game_character_quest_receipts q USING(character_id) JOIN game_character_pending_arrivals a USING(character_id) WHERE t.command_id=9801 AND q.transition_key=t.transition_key").fetch_one(&h.pool).await?;
+    assert!(paired,"progress receipt and arrival share a transaction");
+    let replay = h.root.commit_character_npc_teleport(&authority,&h.node,&permit,fence,request,catalogue,&NoItems,NpcTeleportAdmission {arrival}).await.map_err(f::debug)?;
+    assert_eq!(replay.reply,commit.reply);
+    assert_eq!(h.root_revision().await?,"3");
+    Ok(())
+}
