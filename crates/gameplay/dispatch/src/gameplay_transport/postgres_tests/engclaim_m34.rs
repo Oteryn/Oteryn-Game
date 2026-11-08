@@ -245,6 +245,9 @@ fn claim_case(suffix: &'static str) -> TestResult {
             });
         let mut qualified_catalogue = None;
         let admission_start = admitted;
+        let clock_origin = std::time::Instant::now()
+            .checked_sub(std::time::Duration::from_secs(1))
+            .ok_or("clock")?;
         for cold in [false, true] {
             admitted = admission_start;
             let mut owner = deps.owner(&harness, &authority);
@@ -261,10 +264,7 @@ fn claim_case(suffix: &'static str) -> TestResult {
             deps.initialize(&owner).await;
             let mut stale = fence;
             stale.character_lease_generation += 1;
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(std::time::Duration::from_secs(1))
-                .ok_or("clock")?;
+            owner.clock_origin = clock_origin;
             let refused = owner
                 .use_bundle_chest_from_shards(
                     deps.actor,
