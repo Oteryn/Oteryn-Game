@@ -17,7 +17,7 @@
 | Fugue native combat profile source missing from checked native catalogue | ENGENC2 | none | The Order of the Lion | OWNER: need an authoritative creature profile; do not invent combat data |
 | Literal readable text on NPC/World quest Item rewards through the existing MINT owner | questpc5 | none planned; own range 1270–1279 retained | Nomads Land Quest (book reward step only; window puzzle remains) | CLAIMED |
 | Literal readable text on quest-reward root Items through the existing fenced mint owner (NPC/world bridge) | qready1 | none | Nomads Land Quest | RELEASED: questpc5 claimed first during push race; no code written |
-| NPC carried/bank payment composed atomically with amulet-piece hand-in and quest progress (reuse existing fee-burn owner) | QNPCFX | none planned; reserved 1310-1319 only | Koshei the Deathless Quest (paid amulet assembly step) | CLAIMED |
+| M10: NPC carried/bank payment + item hand-in + magic effect (reuse existing value owners) | qnpcfx | none planned; reserved 2120-2129 only | Koshei the Deathless Quest; The Demon Oak Quest; The Inquisition Quest | CLAIMED |
 | Source NPC quest teleport composed with fenced dialogue progress, admitted destination and command replay | PGSPEED | 2220 reserved; own QMECH range 2220–2229 | The Paradox Tower Quest (Riddler); In Service of Yalahar Quest (NPC teleport steps only; other blockers remain) | CLAIMED |
 # QMECH claims
 
@@ -43,7 +43,7 @@
 
 | Canonical-key achievement grant participant in fenced source NPC progress/item receipts | engclaim | none planned; retain own range1830–1839 | The Order of the Stag (Eldoran news reward); Kilmaresh (Sculptor Apprentice finale, programme binding also needed) | CLAIMED |
 
-| Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | CLAIMED |
+| Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | RELEASED: coordinator ASSIGN transfers Cake Golem to SRVENC/M24; no Cake code written |
 | Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
 | M36 — NPC outfit/addon grants and real outfit snapshot | engoutfit | none planned; 1820–1829 reserved | In Service of Yalahar; Rock Steady / Deepling | CLAIMED |
 
@@ -52,4 +52,19 @@
 | M29 — Primal Ordeal Instance corpse stage/deadline and party prerequisite refusal | encx | 2200 reserved; coordinator-assigned 2200–2209 only | The Primal Ordeal | CLAIMED; party refusal fix transferred in ed8f218de, Instance corpse deadline implementation next |
 
 | M39: NPC any_topic offers and inventory quantity/absence predicates with refusal dialogue | questl2 | none planned; owner allocation 2020–2029 reserved | Tomes of Knowledge; Into The Bone Pit | CLAIMED |
+
+| M01b: imported-route EXPLORE native stage binding | questpc | none planned; only 2000–2009 if required by this assignment | 46 explore routes in MISSING-questpc-pc2.md, per ASSIGN.md | CLAIMED |
+| M08 — fenced live level/vocation/Premium predicates in source NPC programs | questpc2 | none planned; owner-assigned QMECH range 2050–2059 only | Elemental Spheres; Hot Cuisine; The Hidden City of Beregar | CLAIMED |
+
+| M01c imported-route: native USE / COLLECT / KILL stage bindings | questpc3 | 2030–2039 reserved; none allocated yet | Ancient Aucar Outfits Quest; Black Knight Quest; Dead Archer Quest; Decaying Defender Outfits Quest; Draconia Quest; Dreamer's Challenge Quest; Falconer Outfits Quest; Fanfare Quest; Feral Trappers Quest; Grimvale Quest; Illuminator Outfits Quest | CLAIMED |
+
+| M31 — native world-change activation, thresholds, raid bindings and journal/recipe lowering | engworldchg | 1840 reserved; explicit task allocation1840–1859 retained | All10 quests in MISSING-engworldchg.md | CLAIMED |
+
+| M30 — native spear/magic-missile hit events and participant-scoped defender death/door progression | engenc | 2240 reserved; only 2240–2249 for this assignment | Child of Destiny; Asura Palace | CLAIMED |
+
+| M21 — nested map containers: pickup/reset and captured key provenance | npcfix2 | 2150 reserved if required; assigned range2150–2159 only | Outlaw Camp; Skeleton Decoration; Small Ruby | CLAIMED |
+
+| M25 — BossLever Ahau configured exit teleporter and Mitmah Vanguard callback closure | boss2 (SRX3-BOSS2) | none planned; 2171–2172 reserved within 2170–2179; 2170 is the existing boss2 cleanup | Adventures of Galthen (s5 Ahau; s8 Mitmah Vanguard) | CLAIMED |
+
+| M18: timed player-admitting encounter with personal cooldown and cleanup | SEASON | 2210 reserved if schema work is needed; coordinator range2210–2219 | The First Dragon Quest (selected final encounter) | CLAIMED |
 | M41 — achievement in the NPC transaction and corpse-provenance-bound hand-ins | wpkg | 2130 reserved; only 2130–2139 permitted | Kilmaresh; The Order of the Stag finale | CLAIMED |
