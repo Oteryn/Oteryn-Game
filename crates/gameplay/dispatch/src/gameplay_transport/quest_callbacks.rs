@@ -159,7 +159,7 @@ fn shared_added_source(
         .then_some((pos, entry.facts))
 }
 
-fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
+pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
         return shared_added_source(map, callback, key).is_some();
     }
@@ -360,6 +360,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
                         actor_conditions: None,
                         carried_use: None,
+                        creature_use: None,
                         peer_use: None,
 
                         native,
