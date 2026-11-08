@@ -166,7 +166,7 @@ Zasady przeciw dublowaniu:
 | O043 | Appearance | Wybór stroju, dodatków i kolorów | PARTIAL | Brakuje wizualnego podglądu stroju i selektorów palety/addonów; obecny formularz wymaga klucza stroju, maski dodatków i czterech indeksów kolorów. |
 | T127 | Depot | Search/details po item/tier, retrieve | PARTIAL | Retrieve one/all są już w cgmech; dodano indeksy, sumy, tier i zakres retrieve-all. Brak pełnego natywnego widżetu wyboru wyników. |
 | T118 | Exaltation | Tier effects i rezultat exaltation | PARTIAL | Są wyniki forge i item effects; brak pełnej prezentacji tier bonuses i wyniku. |
-| T116 | Forge | Fusion/convergence i transfer/convergence | PARTIAL | Numeric operation/item handles/occurrence zamiast selektora i podglądu przedmiotów. |
+| T116 | Forge | Fusion/convergence i transfer/convergence | DONE | Numeric operation/item handles/occurrence zamiast selektora i podglądu przedmiotów. Evidence: apps/client/src/features/0152-item-forge/controller.rs:46 + forge_preview_negotiated_reply_reaches_actual_run_session; forge_preview_postgres_coherent_quote_readonly_paid_replay_and_stale_fence (51.12s). |
 | T117 | Forge | Dust/slivers/cores/limit i historia | PARTIAL | Odczyt/mutacje/historia są; brak pełnego confirmation/result dialog. |
 | O041 | Game window | Banery i powiadomienia gry | PARTIAL | Brakuje ogólnego systemu konfigurowalnych banerów/okienek zdarzeń; dostępne są komunikaty samouczka i HUD. |
 | T121 | Gems | Reveal/socket/unsocket/dismantle/enhance | PARTIAL | Komendy/selektory są; brak kompletnej wizualnej prezentacji gem/mod i atelier. |

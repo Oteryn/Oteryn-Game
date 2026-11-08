@@ -134,6 +134,7 @@ impl Panels {
 impl Outbox {
     pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
         let mut shared = lock(&self.0);
+        shared.item_forge.preview.selected = session.feature_selected(152);
         shared.imbue.details_selected = session.feature_selected(447);
         shared
             .properties
@@ -225,6 +226,10 @@ impl Outbox {
         result: &GatedCommandResult,
     ) {
         let mut shared = lock(&self.0);
+        if command.capability == 152 {
+            oteryn_client_ui::item_forge::preview::apply(&mut shared.item_forge, command, result);
+            return;
+        }
         if command.capability == 447 {
             oteryn_client_ui::imbue::details::apply(&mut shared.imbue, command, result);
             return;
