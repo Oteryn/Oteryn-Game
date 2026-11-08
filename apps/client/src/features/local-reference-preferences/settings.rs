@@ -16,7 +16,7 @@ mod store;
 mod sync;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use store::PreferenceStore;
-pub use sync::{SettingsPage, SettingsState};
+pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
 
 const PANEL_IDS: &[&str] = &[
     "battle",
@@ -70,6 +70,10 @@ pub struct ReferencePreferences {
     pub show_effects: bool,
     #[serde(default = "enabled")]
     pub show_lights: bool,
+    #[serde(default = "enabled")]
+    pub show_harmony: bool,
+    #[serde(default = "enabled")]
+    pub show_serene: bool,
     #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
@@ -90,6 +94,8 @@ impl Default for ReferencePreferences {
             hud_bars: true,
             show_effects: true,
             show_lights: true,
+            show_harmony: true,
+            show_serene: true,
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             english: false,
