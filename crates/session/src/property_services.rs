@@ -10,6 +10,8 @@ pub use oteryn_protocol_oteryn::house_move_out;
 mod house_handoff;
 #[path = "property_services/house_transfer.rs"]
 pub mod house_transfer;
+#[path = "property_services/imbuement_details.rs"]
+pub mod imbuement_details;
 pub mod guildhall {
     pub use oteryn_protocol_oteryn::guild::{
         GuildIntentResult, decode_guild_intent_result, encode_guild_intent_result,

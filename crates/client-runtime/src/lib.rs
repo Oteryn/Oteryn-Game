@@ -294,6 +294,9 @@ pub mod npc_shop;
 /// Imbuement commands executed through the admitted session.
 #[path = "features/0068-imbue/protocol.rs"]
 pub mod imbue;
+/// Optional material quotes for the existing shrine panel.
+#[path = "features/0447-imbuement-details/protocol.rs"]
+pub mod imbuement_details;
 
 /// VIP list, groups and consent commands.
 #[path = "features/0043-vip/protocol.rs"]

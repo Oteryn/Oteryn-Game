@@ -9,7 +9,19 @@ use tokio::sync::mpsc::UnboundedSender;
 
 impl PlayLink {
     pub fn imbue_item(&self, item: ItemHandle) {
-        lock(&self.mailbox).imbue.item = Some(item);
+        lock(&self.mailbox).imbue.select_item(item);
+    }
+
+    pub fn imbue_slot(&self, slot: u8) -> bool {
+        lock(&self.mailbox).imbue.select_slot(slot)
+    }
+
+    pub fn imbue_offer(&self, offer: usize) -> bool {
+        lock(&self.mailbox).imbue.select_offer(offer)
+    }
+
+    pub fn imbue_details_request(&self) {
+        enqueue_details(&mut lock(&self.mailbox), &self.commands);
     }
 
     pub fn imbue_request(&self, intent: Intent) {
@@ -35,5 +47,17 @@ pub(in crate::play) fn enqueue(
     {
         mailbox.imbue.pending = false;
         mailbox.imbue.feedback = Some("The session has ended");
+    }
+}
+
+pub(in crate::play) fn enqueue_details(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+) {
+    if let Some(command) = oteryn_client_ui::imbue::details::request(&mut mailbox.imbue)
+        && commands.send(PlayCommand::Feature(command)).is_err()
+    {
+        mailbox.imbue.details_pending = None;
+        mailbox.imbue.details_feedback = Some("The session has ended");
     }
 }

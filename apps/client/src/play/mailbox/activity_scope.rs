@@ -41,7 +41,7 @@ impl Mailbox {
         self.npc_shop.live.pending = false;
         self.dialogue.pending = false;
         self.prey.pending = Default::default();
-        self.imbue.pending = Default::default();
+        self.imbue.invalidate_item_scope();
         self.player_trade.pending = Default::default();
         self.player_trade.items.pending = false;
         self.vip.pending = Default::default();

@@ -2,16 +2,18 @@
 #![allow(unsafe_code)]
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::imbue::{ImbuePanel, Intent, panel_text};
+use oteryn_client_ui::imbue::{ImbuePanel, Intent, panel_text, slot_label};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 
 const OFFERS: usize = 101;
 const REFRESH: usize = 102;
 const APPLY: usize = 103;
 const CLEAR: usize = 104;
+const SLOTS: usize = 106;
 
 #[derive(Default)]
 struct Actions(Vec<usize>);
@@ -23,8 +25,8 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
             let id = w & 0xffff;
             let notification = (w >> 16) & 0xffff;
-            if !actions.is_null()
-                && ((id == OFFERS && notification == LBN_SELCHANGE as usize)
+            if !actions.is_null() && (*actions).0.len() < 32
+                && ((matches!(id, OFFERS | SLOTS) && notification == LBN_SELCHANGE as usize)
                     || (matches!(id, REFRESH | APPLY | CLEAR)
                         && notification == BN_CLICKED as usize))
             {
@@ -94,12 +96,16 @@ fn run(
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
+        let slots = control(
+            hwnd, "LISTBOX", "", SLOTS, [10, 10, 180, 260],
+            LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_TABSTOP,
+        );
         let offers = control(
             hwnd,
             "LISTBOX",
             "",
             OFFERS,
-            [10, 10, 580, 260],
+            [200, 10, 390, 260],
             LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_TABSTOP,
         );
         let refresh = control(
@@ -134,7 +140,7 @@ fn run(
             [10, 320, 580, 190],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
-        if [offers, refresh, apply, clear, status]
+        if [slots, offers, refresh, apply, clear, status]
             .iter()
             .any(|handle| handle.is_null())
         {
@@ -159,11 +165,21 @@ fn run(
             if mailbox.imbue_shutdown {
                 break;
             }
+            if mailbox.imbue.refresh_required && !mailbox.imbue.pending {
+                super::super::input::enqueue(&mut mailbox, &commands, Intent::Refresh);
+            }
+            super::super::input::enqueue_details(&mut mailbox, &commands);
             for action in std::mem::take(&mut actions.0) {
                 let intent = match action {
+                    SLOTS => {
+                        if let Ok(slot) = u8::try_from(SendMessageW(slots, LB_GETCURSEL, 0, 0)) {
+                            mailbox.imbue.select_slot(slot);
+                        }
+                        None
+                    }
                     OFFERS => {
                         if let Ok(row) = usize::try_from(SendMessageW(offers, LB_GETCURSEL, 0, 0)) {
-                            mailbox.imbue.offer = row;
+                            mailbox.imbue.select_offer(row);
                         }
                         None
                     }
@@ -177,6 +193,13 @@ fn run(
                 }
             }
             if held.as_ref() != Some(&mailbox.imbue) {
+                SendMessageW(slots, LB_RESETCONTENT, 0, 0);
+                if let Some(window) = &mailbox.imbue.window {
+                    for slot in 0..window.slot_count {
+                        SendMessageW(slots, LB_ADDSTRING, 0, wide(&slot_label(&mailbox.imbue, slot)).as_ptr() as isize);
+                    }
+                }
+                SendMessageW(slots, LB_SETCURSEL, usize::from(mailbox.imbue.slot), 0);
                 SendMessageW(offers, LB_RESETCONTENT, 0, 0);
                 if let Some(window) = &mailbox.imbue.window {
                     for (index, offer) in window.offers.iter().enumerate() {
@@ -189,6 +212,12 @@ fn run(
                 }
                 SendMessageW(offers, LB_SETCURSEL, mailbox.imbue.offer, 0);
                 SetWindowTextW(status, wide(&panel_text(&mailbox.imbue)).as_ptr());
+                let ready = mailbox.imbue.selected && !mailbox.imbue.pending;
+                EnableWindow(slots, i32::from(ready));
+                EnableWindow(offers, i32::from(ready));
+                EnableWindow(refresh, i32::from(ready));
+                EnableWindow(apply, i32::from(mailbox.imbue.can_apply()));
+                EnableWindow(clear, i32::from(mailbox.imbue.can_clear()));
                 held = Some(mailbox.imbue.clone());
             }
             drop(mailbox);

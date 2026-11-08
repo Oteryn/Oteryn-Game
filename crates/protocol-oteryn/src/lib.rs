@@ -78,6 +78,7 @@ pub mod house_rotation;
 pub mod house_transfer;
 pub mod house_wrap;
 pub mod imbuement;
+pub mod imbuement_details;
 pub mod inspection;
 pub mod item_forge;
 pub mod item_look;

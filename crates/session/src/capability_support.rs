@@ -135,6 +135,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
+    oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
     property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
 ];
@@ -231,6 +232,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
+    oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
     potion_durations::CAPABILITY_POTION_DURATIONS_V1,
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
