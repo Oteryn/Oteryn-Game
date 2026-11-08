@@ -307,3 +307,5 @@ pub mod rest_status;
 pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;
+
+pub mod modal_dialogs;
