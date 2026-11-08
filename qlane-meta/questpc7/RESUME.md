@@ -1,3 +1,42 @@
+# Native sign-stage proof publishing — 2026-11-08 04:15 UTC
+
+Actual PG18.6 sign case GREEN91.409172094s on1982a397b. Workspace all-target
+check PASS5m46s; fmt, callback/native/audit/matrix freshness, duplicate migrations
+and pin refresh PASS. Qualification change is metadata only; runtime source
+identical to1982 (strict changed3 clippy PASS3m09s). Full content/dispatch/quests
+unit run is RUNNING, admin URLunset for unit mode; do not call its guarded0.00
+cases actual PG. Keep production data immutable until full run collects results.
+Newest fetched main6f61ac15d; shared collision blobs byte-identical to83ac
+verified. Preserve key33 physical NPC-lane fix during qengine2 convergence.
+Next regression draft /tmp/questpc7-goblin-ground-jobs-regression.rs; apply
+script /tmp/questpc7-goblin-ground-apply.py prepared but NOT executed. It adds
+tool probes before purchase (old exercise wrapper passes empty probes), source
+trunks/pond, decoys, retained hammer, consumed urine, replay/duplicate guards.
+After the frozen unit run: apply test draft, get actualPG RED, then author
+source callbacks and add17677/9527 through existing static physical qualifier.
+Both are absent from current base profiles, so source cohort grows96to98.
+No wholequest count change:21historicalQUALIFIED,4ACTIVE.
+
+# Three native sign sites QUALIFIED — 2026-11-08 04:04 UTC
+
+PG18.6 GREEN91.409172094s on pushed1982a397b: exact3 carried signs consumed,
+all3 personal flags, decoy no spend, exact command replay, fresh duplicate,
+other jobs/tools/8875gold unchanged and whole quest not completed. Corrected
+post-intro RED67.994534856s is the relevant baseline. Whole Goblin remains
+ACTIVE; first unqualified stage advanced to s3 odours. Publish proof after
+per-push gates, then run content/dispatch Rust unit crates (quests308 already
+GREEN21.27s). Keep production data immutable through the unit run.
+Next ground witnesses saved /tmp/questpc7-goblin-next-ground-witnesses.json:
+trunks33101,32047;33143,32051;33136,32076 onfloor10; pond33134,32093 item9527.
+Existing qualifier captures17677/9527 Ground-only NonStackable, facts only/tmp.
+Native Marsh Stalker profile already exists;17source spawns near Rafzan in
+/tmp/questpc7-marsh-source-spawns.json. Existing DeathObjective guardian=None
+and species/bounds matching plus grizzly_kills support ordinary native kills.
+Reuse prepare_native_hunter/lethal_creature in questpc7_native_deaths.rs;
+fixture actors may use admitted source policy, never quest progress seeds.
+Main83acbdac3 shared-effects convergence remains owner-routed qengine2 request;
+last merge aborted under explicit15-minute exception (67conflicts,18Rust).
+
 # Activation checkpoint ready — 2026-11-08 03:53 UTC
 
 Workspace all-target check PASS3m33s; strict changed3 clippy PASS3m09s; fmt,

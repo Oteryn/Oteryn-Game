@@ -1,5 +1,5 @@
 {
-  "state": "ACTIVATION_FIXED_QUESTS_308_GREEN_SIGN_PG_PENDING",
+  "state": "THREE_NATIVE_SIGN_SITES_PG_QUALIFIED",
   "whole_quest": "ACTIVE",
   "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
   "test": "questpc7_goblin_three_personal_sign_sites",
@@ -17,7 +17,16 @@
     "error": "physical target must be unique",
     "resolution": "Keep native Items; remove their duplicate terrain representations. Not counted as a mechanic RED."
   },
-  "green": "PENDING; no sign-stage or whole-quest qualification claimed",
+  "green": {
+    "compiled_source": "1982a397bbcb6c87715382f82e0717287d78c572",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "seconds": 91.409172094,
+    "marker": "QUESTPC7_GOBLIN_SIGNS POSTGRES_CASE_COMPLETED duration=91.409172094s success=true",
+    "selected_passed": 1,
+    "selected_failed": 0,
+    "log": "/tmp/questpc7-signs-final-green.log",
+    "command": "cargo nextest run --locked -p oteryn-gameplay-dispatch -E test(questpc7_goblin_three_personal_sign_sites) --success-output immediate --failure-output immediate"
+  },
   "sites": [
     [
       33055,
@@ -57,7 +66,6 @@
     "physical_admission": "6 passed in0.003s (unit mocks, not PG)"
   },
   "pending_tests": [
-    "post-change sign PG case",
     "content and dispatch Rust unit crates"
   ],
   "owner_exception": "PREPUSH-2: publish passes1,2,4 when step3 exceeds cadence; explicitly record pending tests.",
@@ -77,7 +85,7 @@
     "authoring-tests": "AUTHORING_TESTS_EXIT=0",
     "profile-tests": "PROFILE_TESTS_EXIT=0"
   },
-  "check_duration": "3m33s",
+  "check_duration": "5m46s",
   "clippy_duration": "3m09s",
   "superseded_preintro_red": {
     "baseline": "c7d67c4fc95e29b9e4651ea069fd441810b40e4d plus the new regression and corrected native-only fixture",
@@ -106,7 +114,14 @@
     "action": "Aborted before publication under the explicit owner15-minute merge exception; preserve last coherent activation fix, compile/fmt/clippy, push, then resume integration.",
     "conflict_list": "/tmp/questpc7-main3029-conflicts.txt",
     "local_activation_commit": "940472244",
-    "merged": false
+    "merged": false,
+    "latest_fetched_main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+    "shared_collision_files_unchanged_since_aborted_merge": [
+      "crates/gameplay/quests/src/quest/world_callbacks.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs",
+      "crates/gameplay/durability/src/durability/reward_claim_mint/quest.rs"
+    ],
+    "latest_main_fix": "6f61ac15d adds physical key33 NPC item-lane ownership; must be retained when qengine2 resolves shared convergence."
   },
   "activation_checkpoint_checks": {
     "generation": "ACTIVATION_GENERATION_EXIT=0",
@@ -120,5 +135,22 @@
     "publish-check": "ACTIVATION_PUBLISH_CHECK_EXIT=0",
     "publish-clippy": "ACTIVATION_PUBLISH_CLIPPY_EXIT=0",
     "publish-fmt": "ACTIVATION_PUBLISH_FMT_EXIT=0"
+  },
+  "green_publication_checks": {
+    "publish-check": "GREEN_PUBLISH_CHECK_EXIT=0",
+    "publish-fmt": "GREEN_PUBLISH_FMT_EXIT=0",
+    "callback-check": "GREEN_CALLBACK_CHECK_EXIT=0",
+    "audit": "GREEN_AUDIT_EXIT=0",
+    "native-check": "GREEN_NATIVE_CHECK_EXIT=0",
+    "migrations": "GREEN_MIGRATIONS_EXIT=0",
+    "matrix-check": "GREEN_MATRIX_CHECK_EXIT=0",
+    "pins": "GREEN_PINS_EXIT=0"
+  },
+  "clippy_reuse": "Metadata-only qualification; runtime/code identical to1982a397b, whose changed3 strict clippy passed3m09s.",
+  "rust_crate_unit_run": {
+    "state": "RUNNING_CONTENT_DISPATCH_QUESTS",
+    "postgres_admin_unset": true,
+    "log": "/tmp/questpc7-signs-final-rust-unit.log",
+    "actual_pg_proof_separate": true
   }
 }

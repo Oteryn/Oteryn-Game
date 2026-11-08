@@ -1027,17 +1027,20 @@
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
-      "stage": "s2",
+      "stage": "s3",
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
     "first_unqualified_stage": {
-      "key": "s2",
+      "key": "s3",
       "kind": "use",
-      "objective": "Place three Advertisement Signs on cracked swamp stones.",
+      "objective": "Gather slug, swamp-gas, Rotworm and mouldy-cheese odours with the perfume gatherer.",
       "targets": [
-        "Advertisement Sign",
-        "Cracked Stone"
+        "Perfume Gatherer",
+        "Slug",
+        "Black Swamp Gas",
+        "Rotworm",
+        "Mouldy Cheese"
       ]
     },
     "owner": "questpc7",
@@ -1106,11 +1109,13 @@
       "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     },
     "sign_progress": {
-      "state": "ACTIVATION_FIXED_QUESTS_308_GREEN_SIGN_PG_PENDING",
+      "state": "THREE_NATIVE_SIGN_SITES_PG_QUALIFIED",
       "proof": "qlane-meta/questpc7/GOBLIN-SIGNS-PG-PROOF.json",
       "whole_quest": "ACTIVE",
-      "next": "Run the authored route on PG; only after GREEN qualify the sign stage, then continue native trunk and urine jobs.",
-      "main_merge": "83acbdac3 merge aborted under owner15-minute conflict exception; resume after coherent checkpoint"
+      "next": "Three native trunk sites, exact pond use and five native Marsh Stalker kills; capture/Rotworm and shared merge convergence remain routed to qengine2.",
+      "main_merge": "83acbdac3 merge aborted under owner15-minute conflict exception; resume after coherent checkpoint",
+      "postgres": "18.6",
+      "green_seconds": 91.409172094
     }
   },
   {
