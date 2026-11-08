@@ -360,7 +360,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             }
             let page_help = match state.page {
                 SettingsPage::CustomHotkeys => {
-                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Object, text and passive action assignment is not available yet."
+                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Object, text and passive action assignment is not available yet."
                 }
                 SettingsPage::BarHotkeys => {
                     "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."

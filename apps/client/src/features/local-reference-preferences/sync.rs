@@ -252,6 +252,10 @@ impl SettingsState {
         if self.preferences.battle_lists != preferences.battle_lists {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
+        if !preferences.chat_context_hotkeys {
+            self.pending_chat_mode = None;
+            self.chat_context = None;
+        }
         self.preferences = preferences;
         self.feedback = match result {
             Ok(()) => "Applied and saved".into(),

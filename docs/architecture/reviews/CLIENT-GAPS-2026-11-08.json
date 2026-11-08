@@ -263,7 +263,7 @@
   "status": "PARTIAL",
   "gap": "Brak pełnego edytora własnych object/text/passive actions i profili.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:20 + hotkey_profiles_preserve_routes_across_restart; Named profiles implemented. Remaining: Custom Hotkeys integration with object/text/passive assignment editor owned by T043 (TIBIA-CLIENT-PARITY-2026-11-08.md:87); no shared assignment interface exists on this branch. Passive assignment displays cooldowns per docs/reference/tibia-manual/interface.md:254."
+  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:37 + hotkey_profiles_preserve_routes_across_restart + loaded_hotkey_profile_preserves_manual_routes_in_live_chat_context; Named profiles persist and load as manual bindings without queued chat presets overwriting them. Remaining: Custom Hotkeys integration with object/text/passive assignment editor owned by T043 (TIBIA-CLIENT-PARITY-2026-11-08.md:87); no shared assignment interface exists on this branch. Passive assignment displays cooldowns per docs/reference/tibia-manual/interface.md:254."
  },
  {
   "id": "T050",
