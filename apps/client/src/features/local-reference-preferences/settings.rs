@@ -74,6 +74,10 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_scale")]
+    pub interface_scale: u16,
+    #[serde(default)]
+    pub cursor_crosshair: bool,
     #[serde(default = "default_rotation_modifier")]
     pub rotation_modifier: String,
     #[serde(default)]
@@ -120,6 +124,8 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            interface_scale: 100,
+            cursor_crosshair: false,
             rotation_modifier: default_rotation_modifier(),
             swap_mouse_buttons: false,
             keyboard_delay_ms: 0,
@@ -155,7 +161,8 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
-        if !matches!(self.rotation_modifier.as_str(), "CTRL" | "ALT" | "SHIFT")
+        if !(80..=200).contains(&self.interface_scale)
+            || !matches!(self.rotation_modifier.as_str(), "CTRL" | "ALT" | "SHIFT")
             || self.keyboard_delay_ms > 1000
             || self.hud_bounds[2] < 120
             || self.hud_bounds[3] < 24
@@ -176,6 +183,10 @@ impl ReferencePreferences {
     #[must_use]
     pub fn panel_visible(&self, id: &str) -> bool {
         self.visible_panels.iter().any(|visible| visible == id)
+    }
+
+    pub fn scaled_hud_bounds(&self) -> [u16; 4] {
+        self.hud_bounds.map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
     }
 }
 

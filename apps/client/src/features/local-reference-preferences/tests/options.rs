@@ -1,6 +1,20 @@
 use super::*;
 
 #[test]
+fn interface_scale_changes_hud_geometry_and_rejects_invalid_values() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    let mut preferences = play.preferences().clone();
+    preferences.interface_scale = 150;
+    preferences.cursor_crosshair = true;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.preferences().scaled_hud_bounds(), [12, 12, 1350, 60]);
+    let mut invalid = play.preferences().clone();
+    invalid.interface_scale = 201;
+    assert!(play.set_preferences(invalid).is_err());
+    Ok(())
+}
+
+#[test]
 fn hotkey_profiles_preserve_routes_across_restart() -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{PreferenceStore, ReferencePreferences};
     let path = std::env::temp_dir().join(format!("cgopt-profiles-{}.json", std::process::id()));

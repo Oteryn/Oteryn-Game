@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            interface,
             profile_name,
             profile_save,
             profile_load,
@@ -122,6 +123,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
                     &[profile_name, profile_save, profile_load, profile_delete][..],
@@ -262,6 +264,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    if let Err(error) = interface.read(&mut preferences) {
+                        state.feedback = error;
+                        continue;
+                    }
                     match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
                         (Ok(scale), Ok(volume)) => {
                             preferences.ui_scale = scale;
@@ -288,6 +294,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                interface.refresh(&state.preferences);
                 let selection = selected.max(0) as usize;
                 SendMessageW(list, CB_RESETCONTENT, 0, 0);
                 for binding in &bindings {

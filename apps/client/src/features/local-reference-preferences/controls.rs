@@ -1,7 +1,11 @@
 //! Construction and validation of the settings dialog controls.
 use super::*;
+#[path = "interface_controls.rs"]
+mod interface_controls;
+use interface_controls::InterfaceControls;
 
 pub(super) struct Controls {
+    pub(super) interface: InterfaceControls,
     pub(super) profile_name: HWND,
     pub(super) profile_save: HWND,
     pub(super) profile_load: HWND,
@@ -37,6 +41,7 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
                 hwnd,
                 "EDIT",
@@ -297,6 +302,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                interface,
                 profile_name,
                 profile_save,
                 profile_load,
