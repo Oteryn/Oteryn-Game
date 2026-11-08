@@ -28,6 +28,8 @@ Checked package base `aca84855776f1f68e3d2d61bf720366c6b46d1cf`. Server gaps onl
 
 Spirit has a retained-wills/confession personal-completion test. Hydra Egg reuses questpc7 ownership/proof. Awash and Chyllfroest are world-lane ownership exclusions, not missing mechanics claimed here.
 
-The earlier questpc4d content and n2 Treasure Hunt reward profiles/tests/tooling are already in this package/main (compared exact paths, including `l6_treasure_rewards.rs`); do not duplicate them. The n3 commits contain audit metadata only, not unpublished playable code. No PR branch is changed by this report.
+The earlier questpc4d native content is present. Exact path audit corrects the initial broad comparison: n2 Treasure Hunt test/profile tooling and five native profiles are absent from QMECH and open collector3042; that owned slice is being restored with fresh qualification. No PR3042/3046/3050/3054 branch is modified. The n3 commits contain audit metadata only.
 
 Important bounds: `ItemOnTarget.reusable` already exists; Machinery does not need a second reusable-tool feature. Too Hot selected stages do not require heat/decay timers. Mead's parent callback must not be changed to complete Ice Islands. Small Ruby currently proves shared reset custody, not the selected personal once completion.
+
+M06 status: actualPG18.6 RED59.812s at standalone completion assertion; the reward itself committed. Implementation and six-case green qualification are in progress. Migration2060 follows the coordinator ASSIGN range; the unshipped1259 draft was never executed. M07 follows M06, in the assigned order.
