@@ -176,6 +176,9 @@
         },
         "preserve": {
           "type": "boolean"
+        },
+        "at_least": {
+          "type": "boolean"
         }
       }
     },
@@ -475,6 +478,11 @@
           }
         },
         "carried_item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "carried_target": {
           "type": "string",
           "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
           "maxLength": 256
