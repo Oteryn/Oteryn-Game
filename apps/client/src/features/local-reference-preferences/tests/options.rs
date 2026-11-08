@@ -1,15 +1,73 @@
 use super::*;
 
 #[test]
-fn hud_name_controls_separate_owner_players_and_creatures() -> Result<(), Box<dyn std::error::Error>> {
-    use oteryn_session::{EntityDetail, EntityDisplayName, EntityKind, EntityRef, VisibleAppearance, WorldSpatialEntity};
+fn hud_arc_geometry_uses_configured_distance_and_size() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.vitals = Some(oteryn_session::ActorVitals {
+        health: 50,
+        max_health: 100,
+        mana: 20,
+        max_mana: 40,
+        ..Default::default()
+    });
+    let mut preferences = play.preferences().clone();
+    preferences.health_circle = true;
+    preferences.arc_distance = 14;
+    preferences.arc_size = 5;
+    play.set_preferences(preferences)?;
+    let quads = play.scene().sprites().instances();
+    assert!(
+        quads[quads.len() - 32..]
+            .iter()
+            .all(|quad| quad.size == [5.0, 5.0])
+    );
+    let mut invalid = play.preferences().clone();
+    invalid.arc_size = 0;
+    assert!(play.set_preferences(invalid).is_err());
+    Ok(())
+}
+
+#[test]
+fn hud_name_controls_separate_owner_players_and_creatures() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_session::{
+        EntityDetail, EntityDisplayName, EntityKind, EntityRef, VisibleAppearance,
+        WorldSpatialEntity,
+    };
     let mut play = view()?;
     play.set_own_identity([1; 16]);
-    let entries = [(1, EntityKind::Player), (2, EntityKind::Player), (3, EntityKind::Creature)].into_iter().map(|(id, kind)| Ok(VisibleAppearance {
-        entity: WorldSpatialEntity { entity: EntityRef { identity: [id; 16], generation: 1 }, kind,
-            position: ActorPosition { x: 100 + i32::from(id), y: 200, floor: 0 }, display_name: Some(EntityDisplayName::new("Actor")?),
-            detail: EntityDetail::Actor { direction: StepDirection::South, appearance_ref: 1, health_percent: 100 } }, look: None, light: None, forge_stacks: None,
-    })).collect::<Result<Vec<_>, oteryn_session::SessionError>>()?;
+    let entries = [
+        (1, EntityKind::Player),
+        (2, EntityKind::Player),
+        (3, EntityKind::Creature),
+    ]
+    .into_iter()
+    .map(|(id, kind)| {
+        Ok(VisibleAppearance {
+            entity: WorldSpatialEntity {
+                entity: EntityRef {
+                    identity: [id; 16],
+                    generation: 1,
+                },
+                kind,
+                position: ActorPosition {
+                    x: 100 + i32::from(id),
+                    y: 200,
+                    floor: 0,
+                },
+                display_name: Some(EntityDisplayName::new("Actor")?),
+                detail: EntityDetail::Actor {
+                    direction: StepDirection::South,
+                    appearance_ref: 1,
+                    health_percent: 100,
+                },
+            },
+            look: None,
+            light: None,
+            forge_stacks: None,
+        })
+    })
+    .collect::<Result<Vec<_>, oteryn_session::SessionError>>()?;
     play.set_presentations(entries)?;
     assert_eq!(play.scene().name_count(), 3);
     let mut preferences = play.preferences().clone();
@@ -20,7 +78,8 @@ fn hud_name_controls_separate_owner_players_and_creatures() -> Result<(), Box<dy
 }
 
 #[test]
-fn interface_scale_changes_hud_geometry_and_rejects_invalid_values() -> Result<(), Box<dyn std::error::Error>> {
+fn interface_scale_changes_hud_geometry_and_rejects_invalid_values()
+-> Result<(), Box<dyn std::error::Error>> {
     let mut play = view()?;
     let mut preferences = play.preferences().clone();
     preferences.interface_scale = 150;
@@ -221,5 +280,5 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 8);
+    assert_eq!(SettingsPage::ALL.len(), 9);
 }

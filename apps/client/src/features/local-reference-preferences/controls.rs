@@ -3,8 +3,12 @@ use super::*;
 #[path = "interface_controls.rs"]
 mod interface_controls;
 use interface_controls::InterfaceControls;
+#[path = "arc_controls.rs"]
+mod arc_controls;
+use arc_controls::ArcControls;
 
 pub(super) struct Controls {
+    pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
     pub(super) profile_name: HWND,
     pub(super) profile_save: HWND,
@@ -41,6 +45,7 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let arcs = ArcControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
                 hwnd,
@@ -302,6 +307,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                arcs,
                 interface,
                 profile_name,
                 profile_save,

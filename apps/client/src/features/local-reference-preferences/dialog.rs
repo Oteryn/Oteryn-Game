@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            arcs,
             interface,
             profile_name,
             profile_save,
@@ -123,6 +124,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
@@ -171,7 +173,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 apply,
                 if matches!(
                     state.page,
-                    SettingsPage::Interface | SettingsPage::Sound | SettingsPage::Graphics
+                    SettingsPage::Interface
+                        | SettingsPage::Sound
+                        | SettingsPage::Graphics
+                        | SettingsPage::Arcs
                 ) {
                     SW_SHOW
                 } else {
@@ -264,6 +269,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    if let Err(error) = arcs.read(&mut preferences) {
+                        state.feedback = error;
+                        continue;
+                    }
                     if let Err(error) = interface.read(&mut preferences) {
                         state.feedback = error;
                         continue;
@@ -294,6 +303,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
                 let selection = selected.max(0) as usize;
                 SendMessageW(list, CB_RESETCONTENT, 0, 0);

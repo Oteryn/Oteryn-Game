@@ -44,7 +44,16 @@ fn enabled() -> bool {
     true
 }
 
-fn default_hud_names() -> [bool; 3] { [true; 3] }
+fn default_arc_distance() -> u16 {
+    8
+}
+fn default_arc_size() -> u16 {
+    3
+}
+
+fn default_hud_names() -> [bool; 3] {
+    [true; 3]
+}
 
 fn default_shortcuts() -> Vec<String> {
     WINDOW_ACTIONS
@@ -76,6 +85,10 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_arc_distance")]
+    pub arc_distance: u16,
+    #[serde(default = "default_arc_size")]
+    pub arc_size: u16,
     #[serde(default = "default_hud_names")]
     pub hud_names: [bool; 3],
     #[serde(default = "default_scale")]
@@ -128,6 +141,8 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            arc_distance: 8,
+            arc_size: 3,
             hud_names: default_hud_names(),
             interface_scale: 100,
             cursor_crosshair: false,
@@ -166,7 +181,9 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
-        if !(80..=200).contains(&self.interface_scale)
+        if self.arc_distance > 80
+            || !(1..=8).contains(&self.arc_size)
+            || !(80..=200).contains(&self.interface_scale)
             || !matches!(self.rotation_modifier.as_str(), "CTRL" | "ALT" | "SHIFT")
             || self.keyboard_delay_ms > 1000
             || self.hud_bounds[2] < 120
@@ -191,7 +208,8 @@ impl ReferencePreferences {
     }
 
     pub fn scaled_hud_bounds(&self) -> [u16; 4] {
-        self.hud_bounds.map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
+        self.hud_bounds
+            .map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
     }
 }
 
