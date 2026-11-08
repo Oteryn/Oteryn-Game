@@ -1195,7 +1195,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "apps/client/src/features/0117-boss-encounter/tests/hazard.rs:8 + hazard_confirmation_updates_entry_guide_and_next_selection; crates/client-ui/src/features/0117-boss-encounter/view.rs:48"
+  "evidence": "crates/client-ui/src/features/0117-boss-encounter/protocol/auxiliary.rs:63 + pc05_boss_activity_refusal_and_reconnect_scenario; apps/client/src/features/0117-boss-encounter/tests/hazard.rs:8 + hazard_confirmation_updates_entry_guide_and_next_selection"
  },
  {
   "id": "T165",

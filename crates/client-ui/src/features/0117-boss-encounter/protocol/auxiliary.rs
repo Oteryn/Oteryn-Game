@@ -60,8 +60,15 @@ pub(super) fn summary(panel: &mut BossEncounterPanel, bytes: &[u8]) -> Option<St
     match panel.pending_kind {
         wire::hazard::COMMAND_TYPE_HAZARD => match bytes {
             [unlocked @ 1..=12, selected @ 1..=12] if selected <= unlocked => {
+                let draft = panel.fields[2].parse::<u8>().ok();
+                if draft.is_none_or(|level| !(1..=*unlocked).contains(&level))
+                    || panel
+                        .hazard
+                        .is_some_and(|(_, previous)| Some(previous) == draft)
+                {
+                    panel.fields[2] = selected.to_string();
+                }
                 panel.hazard = Some((*unlocked, *selected));
-                panel.fields[2] = selected.to_string();
                 Some(format!("Hazard: {selected} | Unlocked: {unlocked}"))
             }
             _ => None,
