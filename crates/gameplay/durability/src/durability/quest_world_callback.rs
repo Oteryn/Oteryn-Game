@@ -415,6 +415,38 @@ async fn consume_inputs(
         if !required.reusable {
             inputs.push(input);
         }
+        for material in &required.ingredients {
+            let row = sqlx::query(
+                "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
+                 c.location,c.kind,i.quantity FROM \
+                 game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
+                 JOIN game_item_instances i ON i.item_instance_id=c.item \
+                 WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
+                 AND i.definition_family='Item' AND i.definition_production_key=$3 \
+                 AND i.quantity >= $4 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(world_id.as_bytes().as_slice())
+            .bind(&material.item)
+            .bind(i64::from(material.count))
+            .fetch_optional(&mut **tx)
+            .await?;
+            let Some(row) = row else { return Ok(false) };
+            let input = Input {
+                item: row.try_get("item")?,
+                before: row.try_get("before_item")?,
+                location: row.try_get("location")?,
+                kind: row.try_get("kind")?,
+                quantity: row.try_get("quantity")?,
+                count: material.count,
+                replacement: None,
+            };
+            if inputs.iter().any(|prior| prior.item == input.item) {
+                return Ok(false);
+            }
+            lock_location(tx, &input).await?;
+            inputs.push(input);
+        }
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.
     let mut offerings = callback.offerings.iter().collect::<Vec<_>>();

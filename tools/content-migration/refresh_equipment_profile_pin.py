@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 import qready1_clock_equipment_pin
+import qready1_cradle_equipment_pin
 import qready1_craft_equipment_pin
 import questpc4_treasure_reward_equipment_pin
 
@@ -101,6 +102,10 @@ def main():
     source = qready1_craft_equipment_pin.refresh(
         source,
         json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-craft-item-profiles.json").read_bytes()),
+    )
+    source = qready1_cradle_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-cradle-item-profiles.json").read_bytes()),
     )
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths)

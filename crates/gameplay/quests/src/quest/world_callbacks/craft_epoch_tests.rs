@@ -29,6 +29,7 @@ fn spent_material_counter_can_own_repeatable_crafting_rewards() -> Result<(), St
         increment: true,
     }];
     callback.item_on_target = Some(ItemOnTarget {
+        ingredients: Vec::new(),
         item: "oteryn:item.tibia.i16122".into(),
         alternatives: vec![],
         count: 1,
@@ -60,6 +61,80 @@ fn spent_material_counter_can_own_repeatable_crafting_rewards() -> Result<(), St
             "free or unbounded craft shape {edit}"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn world_crafting_requires_distinct_positive_bounded_ingredients() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/qready1-cursed-grind")
+        .ok_or("registered crafting callback")?;
+    let mut document = serde_json::json!({"schema":1,"callbacks":[callback]});
+    document["callbacks"][0]["item_on_target"]["ingredients"] = serde_json::json!([
+        {"item":"oteryn:item.tibia.i3606","count":1},
+        {"item":"oteryn:item.tibia.i3492","count":1}
+    ]);
+    parse(&document.to_string())?;
+    for edit in 0..5 {
+        let mut bad = document.clone();
+        match edit {
+            0 => bad["callbacks"][0]["item_on_target"]["ingredients"][0]["count"] = 0.into(),
+            1 => bad["callbacks"][0]["item_on_target"]["ingredients"][0]["count"] = 101.into(),
+            2 => {
+                bad["callbacks"][0]["item_on_target"]["ingredients"][1]["item"] =
+                    "oteryn:item.tibia.i3606".into()
+            }
+            3 => {
+                bad["callbacks"][0]["item_on_target"]["ingredients"][0]["item"] =
+                    "oteryn:item.tibia.i16122".into()
+            }
+            _ => {
+                bad["callbacks"][0]["effects"]["item_reward"]["item"] =
+                    "oteryn:item.tibia.i3606".into()
+            }
+        }
+        assert!(
+            parse(&bad.to_string()).is_err(),
+            "unsafe ingredient shape {edit}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn one_station_can_spend_distinct_ground_materials_only_under_a_paid_epoch() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/qready1-scatter-blend")
+        .ok_or("registered blending station")?;
+    let document =
+        |callback: &Callback| serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
+    parse(&document(&callback))?;
+    assert_eq!(callback.offerings.len(), 5);
+    assert!(
+        callback
+            .offerings
+            .iter()
+            .all(|input| input.position == callback.offerings[0].position)
+    );
+    let mut duplicate = callback.clone();
+    duplicate.offerings[1] = duplicate.offerings[0].clone();
+    assert!(parse(&document(&duplicate)).is_err());
+    let mut unpaid = callback.clone();
+    unpaid.effects.item_reward_cycle = None;
+    assert!(
+        parse(&document(&unpaid)).is_err(),
+        "legacy altars still require distinct tiles"
+    );
+    let mut returns_material = callback;
+    returns_material
+        .effects
+        .item_reward
+        .as_mut()
+        .ok_or("output")?
+        .item = returns_material.offerings[0].item.clone();
+    assert!(parse(&document(&returns_material)).is_err());
     Ok(())
 }
 

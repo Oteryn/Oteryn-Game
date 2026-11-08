@@ -25,6 +25,7 @@ fn scenario_case(
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let qready_craft = name == super::super::qready1_crafting::NAME;
+    let qready_workbench = super::super::qready1_workbenches::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
     let shared_gate = name.starts_with("l6-tomb-gate-");
     let shared_switch = name.starts_with("l6-tomb-switch-");
@@ -42,7 +43,9 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = qready_craft || qm48
+    let native_crop = qready_workbench
+        || qready_craft
+        || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -58,8 +61,14 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if qready_craft {
-        Position {x:32011,y:32907,floor:-7}
+    let start = if qready_workbench {
+        super::super::qready1_workbenches::start(name)?
+    } else if qready_craft {
+        Position {
+            x: 32011,
+            y: 32907,
+            floor: -7,
+        }
     } else if qm48 {
         Position {
             x: trigger.x,
@@ -340,8 +349,19 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if qready_craft {
-            super::super::qready1_crafting::world(generation.native_gameplay().ok_or("grinder native policies")?)?
+        let world = if qready_workbench {
+            super::super::qready1_workbenches::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("workbench native policies")?,
+                name,
+            )?
+        } else if qready_craft {
+            super::super::qready1_crafting::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("grinder native policies")?,
+            )?
         } else if qm48 {
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
@@ -654,9 +674,15 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if qready_craft {
+        if qready_workbench {
+            super::super::qready1_workbenches::exercise(&owner, &mut admitted, &h, &callback, name)
+                .await?;
+        } else if qready_craft {
             super::super::qready1_crafting::exercise(&owner, &mut admitted, &h, &callback).await?;
-        } else if matches!(name, "qready1-bewitched-contribution" | "qready1-threatened-raven-herb") {
+        } else if matches!(
+            name,
+            "qready1-bewitched-contribution" | "qready1-threatened-raven-herb"
+        ) {
             super::super::qready1_world_clocks::exercise(&owner, &mut admitted, &h, &callback)
                 .await?;
         } else if name == "barbarian-test-mead" {

@@ -1,8 +1,8 @@
-"""Declare M20's closed, independently source-qualified two-identity cohort."""
+"""Declare M20's closed, independently source-qualified five-identity cohort."""
 
 import re
 
-IDS = {21507, 21573}
+IDS = {8997, 9108, 9109, 21507, 21573}
 SCHEMA = "OTERYN_QREADY1_CRAFT_ITEM_PROFILES/v1"
 NAME = "QREADY1-CRAFT"
 
@@ -30,7 +30,7 @@ def refresh(source, packet):
         raise ValueError("M20_COHORT_ANCHOR")
     return source.replace(
         anchor,
-        "    // M20: two exact Items in qready1-craft-item-profiles.json.\n"
+        "    // M20: five exact Items in qready1-craft-item-profiles.json.\n"
         + line
         + "\n"
         + anchor,

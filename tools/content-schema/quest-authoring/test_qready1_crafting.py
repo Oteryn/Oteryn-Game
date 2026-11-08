@@ -12,8 +12,46 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools/content-schema/world-authoring"))
 import world_region_codec as codec
 
+sys.path.insert(0, str(ROOT / "tools/content-schema/native-gameplay"))
+import build_qready1_cradle_items as cradle
+
 
 class Qready1CraftBindings(unittest.TestCase):
+    def test_cradle_uses_three_prepared_inputs_and_one_antimutagen(self):
+        row = next(r for r in crafts.build()["callbacks"] if r["key"].endswith("cradle-brew"))
+        primary = row["item_on_target"]
+        self.assertEqual("oteryn:quest.cradle_of_monsters", row["quest"])
+        self.assertEqual("oteryn:item.tibia.i40601", primary["item"])
+        self.assertEqual(
+            [{"item": "oteryn:item.tibia.i40598", "count": 1},
+             {"item": "oteryn:item.tibia.i40016", "count": 1}],
+            primary["ingredients"],
+        )
+        self.assertEqual("oteryn:item.tibia.i40603", row["effects"]["item_reward"]["item"])
+        self.assertEqual(1, row["effects"]["item_reward"]["count"])
+
+    def test_blender_spends_the_five_literal_materials_on_its_native_tile(self):
+        row = next(r for r in crafts.build()["callbacks"] if r["key"].endswith("scatter-blend"))
+        self.assertIsNone(row["item_on_target"])
+        self.assertEqual(
+            {f"oteryn:item.tibia.i{i}" for i in [3603, 3492, 3723, 3606, 3738]},
+            {r["item"] for r in row["offerings"]},
+        )
+        self.assertTrue(all(r["count"] == 1 for r in row["offerings"]))
+        self.assertTrue(all(r["position"] == row["selector"]["native"]["position"] for r in row["offerings"]))
+        self.assertEqual("oteryn:item.tibia.i9109", row["effects"]["item_reward"]["item"])
+
+    def test_cradle_bindings_reproduce_named_official_and_explicit_wiki_evidence(self):
+        packet = cradle.build()
+        self.assertEqual(packet, json.loads(cradle.OUTPUT.read_bytes()))
+        self.assertEqual(4, len(packet["records"]))
+        for row, evidence in zip(packet["records"], packet["evidence"], strict=True):
+            identity = row["production_binding"]
+            self.assertEqual("tibiawiki/item_id", identity["identity_namespace"])
+            self.assertEqual(evidence["appearance_id"], evidence["wiki_item_id"])
+            self.assertEqual(str(evidence["appearance_id"]), identity["external_id"])
+            self.assertEqual(f"fandom-r{evidence['wiki_fact']['revision_id']}", identity["source_revision"])
+            self.assertEqual(evidence["official_name"].casefold(), evidence["wiki_fact"]["wiki_title"].casefold())
     def test_first_mixture_spends_both_operands_without_a_progress_gate(self):
         document = carried.build()
         self.assertEqual(document, json.loads(carried.OUTPUT.read_bytes()))
@@ -73,7 +111,7 @@ class Qready1CraftBindings(unittest.TestCase):
             r["production_definition"]["production_key"]: r for r in packet["records"]
         }
         self.assertEqual(
-            {"oteryn:item.tibia.i21507", "oteryn:item.tibia.i21573"}, set(rows)
+            {f"oteryn:item.tibia.i{i}" for i in [8997, 9108, 9109, 21507, 21573]}, set(rows)
         )
         dust = rows["oteryn:item.tibia.i21507"]
         self.assertEqual(60, dust["semantics"]["physical"]["value"]["weight"]["value"])

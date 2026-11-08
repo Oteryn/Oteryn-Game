@@ -1,0 +1,663 @@
+{
+  "schema": "OTERYN_QREADY1_CRADLE_ITEM_PROFILES/v1",
+  "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+  "official_membership_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+  "wiki_stats_sha256": "24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae",
+  "identity_decision": "A12-ITEM-IDENTITY-TIBIA-ID-V1",
+  "binding_basis": "EXPLICIT_WIKI_ITEM_ID_CORROBORATED_BY_OFFICIAL_NAMED_APPEARANCE",
+  "recipe_scope": "CHOSEN_OTERYN_STABLE_PREPARED_INGREDIENTS",
+  "evidence": [
+    {
+      "appearance_id": 40016,
+      "wiki_item_id": 40016,
+      "official_name": "fresh hydra herbs",
+      "wiki_fact": {
+        "content_sha256": "1f2bc33c64ebe987b90380d45a8bca86ff4200e94f03c4350bc3c3cf43df9015",
+        "fields": {
+          "objectclass": "Other Items",
+          "primarytype": "Quest Items",
+          "stackable": "yes",
+          "weight": "0.50"
+        },
+        "page_id": 101150,
+        "revision_id": 1116246,
+        "revision_sha1": "e0735d1bacbe619f2b21b30794bfc02395d35e88",
+        "revision_timestamp": "2025-07-26T12:29:32Z",
+        "url": "https://tibia.fandom.com/wiki/Fresh_Hydra_Herbs",
+        "wiki_title": "Fresh Hydra Herbs"
+      }
+    },
+    {
+      "appearance_id": 40598,
+      "wiki_item_id": 40598,
+      "official_name": "bottled yolk",
+      "wiki_fact": {
+        "content_sha256": "4e64dc378a9f5e47c42560f243304f0a61ccb8983eb6e77d193bbe037b9f53b3",
+        "fields": {
+          "objectclass": "Other Items",
+          "primarytype": "Quest Items",
+          "weight": "1.50"
+        },
+        "page_id": 101181,
+        "revision_id": 1116259,
+        "revision_sha1": "16c981f22a09c74fd28eee4b5826647661b82f8a",
+        "revision_timestamp": "2025-07-26T12:34:45Z",
+        "url": "https://tibia.fandom.com/wiki/Bottled_Yolk",
+        "wiki_title": "Bottled Yolk"
+      }
+    },
+    {
+      "appearance_id": 40601,
+      "wiki_item_id": 40601,
+      "official_name": "nutrient solution",
+      "wiki_fact": {
+        "content_sha256": "0493fc63cf92c973993c025119775153ce1e0a7b34334e8000ed588dcadcb1ca",
+        "fields": {
+          "objectclass": "Other Items",
+          "primarytype": "Quest Items",
+          "weight": "1.50"
+        },
+        "page_id": 101183,
+        "revision_id": 1116261,
+        "revision_sha1": "259e0b9efb0ff1c980300842e73e5f3ecae43e86",
+        "revision_timestamp": "2025-07-26T12:34:49Z",
+        "url": "https://tibia.fandom.com/wiki/Nutrient_Solution",
+        "wiki_title": "Nutrient Solution"
+      }
+    },
+    {
+      "appearance_id": 40603,
+      "wiki_item_id": 40603,
+      "official_name": "flask with anti-mutagen",
+      "wiki_fact": {
+        "content_sha256": "720b6a3c31140cc605059035a9e7214623e9c4dfb46a7bb4fb7195e163667199",
+        "fields": {
+          "stackable": "yes",
+          "weight": "1.50"
+        },
+        "page_id": 101185,
+        "revision_id": 1011469,
+        "revision_sha1": "d9f14ab1281ff6ffcd99521ec524dc816d5eb6e8",
+        "revision_timestamp": "2023-07-11T21:02:34Z",
+        "url": "https://tibia.fandom.com/wiki/Flask_with_Anti-Mutagen",
+        "wiki_title": "Flask with Anti-Mutagen"
+      }
+    }
+  ],
+  "records": [
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/40016",
+          "revision": "qready1-cradle-r1"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "fresh hydra herbs"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 50
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i40016",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "fandom-r1116246",
+        "identity_namespace": "tibiawiki/item_id",
+        "external_id": "40016",
+        "disposition": "EXACT",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i40016",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/40598",
+          "revision": "qready1-cradle-r1"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "bottled yolk"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "It is fresh now. But according to the laboratory assistant it will decay soon"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 150
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i40598",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "fandom-r1116259",
+        "identity_namespace": "tibiawiki/item_id",
+        "external_id": "40598",
+        "disposition": "EXACT",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i40598",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/40601",
+          "revision": "qready1-cradle-r1"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "nutrient solution"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "The volatile liquid will expire soon"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 150
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i40601",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "fandom-r1116261",
+        "identity_namespace": "tibiawiki/item_id",
+        "external_id": "40601",
+        "disposition": "EXACT",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i40601",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/40603",
+          "revision": "qready1-cradle-r1"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "flask with anti-mutagen"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 150
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i40603",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "fandom-r1011469",
+        "identity_namespace": "tibiawiki/item_id",
+        "external_id": "40603",
+        "disposition": "EXACT",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i40603",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    }
+  ]
+}

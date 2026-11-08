@@ -109,8 +109,16 @@ mod native;
 mod nomads_window;
 use native::valid_native_callback;
 
-/// One carried item applied to the selected world object.  This deliberately is not a
-/// recipe language: the receipt owner locks the source and consumes, changes or retains it.
+/// Exact carried material required alongside a World tool's primary input.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CraftIngredient {
+    pub item: String,
+    pub count: u16,
+}
+
+/// Bounded carried inputs applied to the selected World object. The receipt
+/// owner locks all materials before consuming any of them.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemOnTarget {
@@ -123,6 +131,8 @@ pub struct ItemOnTarget {
     pub target_replacement: Option<u16>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub reusable: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ingredients: Vec<CraftIngredient>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -392,6 +402,16 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let selector = &callback.selector;
         let valid_pos = |p: Position| (-15..=0).contains(&p.floor);
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
+        let unique_materials: BTreeSet<_> = callback
+            .offerings
+            .iter()
+            .map(|o| (o.position, o.item.as_str()))
+            .collect();
+        let paid_workbench = callback
+            .effects
+            .item_reward_cycle
+            .as_deref()
+            .is_some_and(|track| callback.craft_reward_epoch(track));
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
@@ -492,7 +512,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .effects
                 .iter()
                 .any(|e| !valid_pos(e.position) || e.effect == 0)
-            || unique_offerings.len() != callback.offerings.len()
+            || unique_materials.len() != callback.offerings.len()
+            || (unique_offerings.len() != callback.offerings.len() && !paid_workbench)
             || unique_passages.len() != callback.passages.len()
             || unique_storage.len() != callback.storage.len()
             || callback.passages.len() > MAX_EFFECTS
@@ -567,12 +588,25 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 let accepted: BTreeSet<_> = std::iter::once(item.item.as_str())
                     .chain(item.alternatives.iter().map(String::as_str))
                     .collect();
+                let ingredients: BTreeSet<_> = item.ingredients.iter().map(|i| &i.item).collect();
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
                     || !callback.has_personal_state()
                     || callback.trigger != Trigger::Use
                     || item.count == 0
                     || item.count > 100
+                    || item.ingredients.len() > 15
+                    || ingredients.len() != item.ingredients.len()
+                    || (!item.ingredients.is_empty()
+                        && (item.reusable
+                            || item.replacement.is_some()
+                            || callback.key == super::rotten_blood::SACRIFICE))
+                    || item.ingredients.iter().any(|input| {
+                        input.count == 0
+                            || input.count > 100
+                            || !super::valid_quest_key(&input.item)
+                            || accepted.contains(input.item.as_str())
+                    })
                     || (item.reusable && (item.count != 1 || item.replacement.is_some()))
                     || !super::valid_quest_key(&item.item)
                     || item.alternatives.len() > 3

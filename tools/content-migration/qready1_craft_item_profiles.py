@@ -4,7 +4,7 @@ import hashlib
 import json
 
 PACKET = "tools/content-schema/native-gameplay/qready1-craft-item-profiles.json"
-IDS = {21507, 21573}
+IDS = {8997, 9108, 9109, 21507, 21573}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
