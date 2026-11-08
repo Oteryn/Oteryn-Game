@@ -1,0 +1,42 @@
+# questpc5 shared engine requests
+
+Quest ownership stays with questpc5. Implement only reusable capabilities in QENGINE2. Checked QENGINE2 `0aa80f984`: authored native admissions are available, but these lane requests are absent from its published ENGINE-QUEUE. No gameplay source changes are requested in other quest lanes.
+
+| Capability | Needed by | Existing reuse and exact missing boundary |
+| --- | --- | --- |
+| Literal readable reward text | Nomads Land Quest | `reward_claim_mint.rs:193` already has `RootPlan.root_text`; `reward_callbacks.rs::ItemReward` exposes no text. Surface bounded, validated root text through NPC and World rewards without an extra MINT. Book2814/case7527 source facts are in `cloud-nomads-land-item-resolution.json`. |
+| Mutable Ground stack predicates | Nomads Land Quest | `WorldRequirement` only tests an immovable appearance. Need a fenced read-only predicate for each of two Ground columns: two exact crates2471 and one amphora2904, including the selected stack order. Reuse ordinary MapBase->inventory pickup and inventory->Ground drop: direct MapBase->Ground support is not required to play this route. Preserve the World owner; do not substitute a window click for moving real Items. |
+| Exact nested native source leaf selection | Ornamented Shield Quest | Select shield3424 from UID6062's existing eight-child source bag. Existing full bag/charge source qualification is retained. Reuse its existing source MINT/once ledger; no second MINT, missing siblings, or rewritten donor reward. |
+| Temporary disguise with restoration and matching portals | Last Creep Standing | Reuse appearance-condition and portal owners. Bind the chosen disguise to the player's quest phase and restore on exit/cleanup. Reuse QENGINE2's queued `item_look_disguise_restore` where applicable; do not grant a permanent outfit. |
+| Fenced World USE relocation of an exact live Creature | 20 Years a Cook Quest | Existing movement/relocation owners should move the selected live rival cook atomically with admitted tool/progress. Exact retained axe44525 is at32345,31601,z6 ordinal3; adjacent source catapult44562 at32346,31601,z6 ordinal2. See `cloud-cook-catapult-source.json` for B3 SHA. Do not replace the Creature with a player teleport or an item grant. |
+| Quest-guarded object taming with atomic progress | Targuna Quest | Reuse object-target mount taming. Source Ram is Item53439 at31926,31896,z7, not a Creature. Exact turnip53073, earned-turnip quest predicate, mount Reliable Ram (donor250/client1934), and quest progress must join one fenced operation; owned/refused/replayed matches consume nothing. Source evidence: `cloud-targuna-ram-source.json`. |
+| Recipe-scoped nondecay specimen | The Explorer Society Quest | Reuse existing duration/admission owners. Selected purple-butterfly specimen needs a nondecay quest form while legacy Item4837's timed behavior stays unchanged. Do not globally erase a source duration or invent a Tibia Item ID. |
+| Cycle-scoped repeatable World item MINT | Oramond Quest | Transactional `StateCondition::ElapsedAtLeast` and `StateMutation::SetNow` already exist. `reward_claim_mint/quest.rs::give_world` currently passes `false` to `mint`; repeated plant awards therefore share a permanent once key. Need a quest-cycle-scoped identity with replay safety and phase admission. No fabricated price or reuse of last cycle's roots. |
+| Claimant-fenced loot-pickup quest credit | Tutorial | Native one-shot kill goals already exist. Need actual pickup credit for the Item issued by the exact Creature death, joined to the claimant's active phase; kill alone or inventory presence is insufficient. Reuse corpse/loot settlement and existing custody proofs. Wounded Cave Draptor10HP/150XP and tool identities are resolved in `cloud-tutorial-source-resolution.json`. This does not authorize the excluded Dawnport quest or another StarterKit grant. |
+| Claimant-attributed capture/pickup quest credit | Overhunting World Change | `world/movement/monster_map/special_movement.rs:57-73` already captures exact starving_wolf on trap12368 and creates captured wolf12369. Reuse that and Benevola's existing World contribution owner. Need personal daily quest attribution for five actual captures/pickups, not a new global counter. Existing transaction clocks suffice. |
+
+| Read-only foreign quest prerequisite alongside a local transition | Opticording Sphere Quest | Existing Bigfoot rank track is owned by Bigfoot. `quest/mod.rs:415` rejects foreign transition effects; `preserve` lowers to `Add(0)` and therefore is not a foreign read. `world_callbacks.rs:490-501` only permits read_only storage on pure teleport callbacks. Need a fenced predicate for rank>=2 before mutating Opticording phase, without a foreign write or fabricated local rank. Exact track `oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank`, initial0/max2147483647. Reuse existing owned-base admission predicates where possible. |
+
+These are pending integration requests, not hard blockers or whole-quest qualification. Continue independent owned data/programme work and consume QENGINE2/main implementations when available. Historical finished work must not be repeated.
+
+ENGINE-REQUEST questpc5: literal readable NPC/World reward text | needed by: Nomads Land Quest | where: gameplay-quests ItemReward and reward_claim_mint
+ENGINE-REQUEST questpc5: fenced mutable Ground stack/order predicate | needed by: Nomads Land Quest | where: gameplay-quests world callbacks and World admission
+ENGINE-REQUEST questpc5: exact selected nested native leaf with source once ledger | needed by: Ornamented Shield Quest | where: native source reward claims UID6062
+ENGINE-REQUEST questpc5: temporary disguise restoration and matching portals | needed by: Last Creep Standing | where: appearance condition and portal owners
+ENGINE-REQUEST questpc5: exact live Creature relocation on fenced World USE | needed by: 20 Years a Cook Quest | where: World movement owner and quest callbacks
+ENGINE-REQUEST questpc5: quest-guarded object taming with atomic progress | needed by: Targuna Quest | where: object-target mount taming
+ENGINE-REQUEST questpc5: recipe-scoped nondecay butterfly specimen | needed by: The Explorer Society Quest | where: native Item duration admission
+ENGINE-REQUEST questpc5: quest-cycle-scoped repeatable World item MINT | needed by: Oramond Quest | where: reward_claim_mint quest give_world
+ENGINE-REQUEST questpc5: claimant-fenced actual corpse-loot pickup credit | needed by: Tutorial | where: quick_loot corpse settlement and quest admission
+ENGINE-REQUEST questpc5: claimant-attributed captured-wolf pickup credit | needed by: Overhunting World Change | where: existing World trap capture and personal quest admission
+ENGINE-REQUEST questpc5: read-only foreign quest prerequisite with local transition | needed by: Opticording Sphere Quest | where: gameplay-quests world callbacks and fenced dispatch admission
+
+## N2 verified addition: Sterling's personal map marker
+
+ENGINE-REQUEST questpc5: fenced NPC map-marker effect committed with quest progress | needed by: Targuna Quest | where: gameplay-quests reward_callbacks / gameplay-dispatch NPC quest routing
+
+Checked actual fetched QENGINE2 head925d8480ef1cb88b16154a1dbf018a57ac22152a and QENGINE2-WIP04255c6af7f21caa71cc56d5fa138cbf15a095ac, alongside main107625470. RewardCallback has no map-marker field and dispatch has no MapMark handler. Existing NpcRuleEffect::MapMark is representable in the source-rule model, but its evaluator arm is a no-op; it does not provide the missing native delivery.
+
+Retained source: corpus.tar.gz Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/npc/sterling.lua:142-155, SHA2563069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9. The return sets mission/marked progress and sends MAPMARK_CROSS at31948,31924,z7 with text Treasure. It checks MorlaDone and does not remove the map or require its continued possession; do not introduce a permanent lost-map softlock through an extra carried-map requirement.
+
+Sterling first acceptance and Morla's physical map reward are separately PG-proven and pushed in406d93309 and92ea8bc1c. Their partial scope is unchanged; neither proves the later marker or the whole quest. Historical requests above are carried from frozen a2564ddc as context, not asserted freshly missing without rechecking their current contracts.

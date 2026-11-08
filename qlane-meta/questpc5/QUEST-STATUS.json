@@ -933,7 +933,7 @@
       "last_red_pg_seconds": 106.820341344,
       "last_red_point": "Separate short-lived wire connections correctly dropped NPC focus; fixed by existing wire_reward conversation helper, then GREEN.",
       "authoring": "PASS exact CI checks+104modules1121tests, own source/placement units, content tree/equivalence, all generated native outputs/equipment/worldmetadata",
-      "remaining_tests": "Broader dispatch/content unit run1039/1954passed,zero failures so far; remainder pending under PREPUSH-2 cadence exception. OwnPG and all shipping checks PASS.",
+      "remaining_tests": "Broader dispatch/content/quests2261unit cases now all PASS3466.760s; ownPG proof recorded. Whole quest remains UNFINISHED.",
       "proof": "TARGUNA-CONTACT-PROOF.json",
       "green_pg": {
         "case": "questpc5_targuna_sterling_first_contact_commits_once_without_reward_or_completion",
@@ -951,7 +951,21 @@
       "red_pg_seconds": 47.965954115,
       "green_pg_seconds": 96.253608336,
       "progress": "Intermediate map acquisition0->1; chosen explore s2 still requires returning to Sterling.",
-      "shipping_checks": "PASS ownPG18.6 96.253608336s, authoring105modules1122tests, tree/equivalence, all generated files/pins, workspacealltargets8m30s, clippy4m38s, fmt. Broader3-crate units pending under PREPUSH-2 cadence exception."
+      "shipping_checks": "PASS ownPG18.6 96.253608336s, authoring105modules1122tests, tree/equivalence, all generated files/pins, workspacealltargets8m30s, clippy4m38s, fmt. Broader3-crate units pending under PREPUSH-2 cadence exception. Completed current3-crate unit run:2261/2261PASS3466.760s,zero failures."
+    },
+    "n2_map_marker_request": {
+      "owner": "qengine2",
+      "feature": "Fenced NPC personal map marker effect with quest-progress receipt",
+      "source": "Retained Sterling.lua142-155, SHA3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9",
+      "position": [
+        31948,
+        31924,
+        7
+      ],
+      "checked_main": "107625470",
+      "checked_actual_qengine2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+      "checked_qengine2_wip": "04255c6af7f21caa71cc56d5fa138cbf15a095ac",
+      "state": "Requested; do not build a generic engine feature in this lane or claim the return/whole quest qualified."
     }
   },
   {

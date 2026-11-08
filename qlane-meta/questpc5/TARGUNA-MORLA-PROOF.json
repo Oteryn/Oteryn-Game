@@ -37,9 +37,7 @@
     "ci_units": "PASS105modules1122tests0failures",
     "tree": "PASS97/97; Item34111 Mount252 equivalence preserved"
   },
-  "validation_pending": [
-    "Broader dispatch/content/quests2261unit cases continue under PREPUSH-2 step3 cadence exception;133passed,zero failures reported at publication."
-  ],
+  "validation_pending": [],
   "previous_broader_units": "Previous-step dispatch/content run stopped at new content batch boundary:1056passed;2running cases interrupted; no pre-interruption assertion failure. Restarted for current dispatch/content/quests data.",
   "activation_scope": "Only existing authoring producer/profile data and quest callback data changed; generator activation=false. No boot/serve/runtime activation-controller change.",
   "whole_quest_qualified": false,
@@ -51,6 +49,7 @@
     "pins": "PASS current compiler serial pin-refresh and pin-check",
     "equipment": "PASS independent3793 union; six tool tests; generated cohort declaration only through repository tooling",
     "generated": "Native45 outputs, dialogue/placement/callback registries, item audit, binding evidence, completion matrix and talk packets refreshed",
-    "main": "Fetched main107625470 again before publication; no new commits to merge"
+    "main": "Fetched main107625470 again before publication; no new commits to merge",
+    "crate_units": "PASS all2261 dispatch/content/quests unit cases3466.760s; zero failures. PG cases filtered from this unit run; own Morla PG18.6 case separately PASS96.253608336s."
   }
 }

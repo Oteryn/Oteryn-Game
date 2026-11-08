@@ -68,7 +68,7 @@
     "clippy": "PASS dispatch/content all-targets -D warnings, current fixture3m35s including lock wait; preceding identical run13m28s including lock wait",
     "own_pg": "PASS PG18.6 122.354090168s, source placement, once acceptance, literal replay, fresh focused duplicate, zero reward/completion",
     "fmt": "PASS cargo fmt --all --check and explicit new PG-file rustfmt --check",
-    "crate_units": "RUNNING1039/1954passed,zero failures reported at publication. Remaining dispatch/content units pending under explicit PREPUSH-2 step3 cadence exception.",
+    "crate_units": "PASS current branch all2261 dispatch/content/quests unit cases3466.760s; ownPG proof separately recorded. Earlier pending cadence exception resolved.",
     "placement_regression": "PASS9tests0.564s"
   },
   "main_sync": "Fast-forward to107625470 (SRVENC/ENCX and node-boot fix), both local producer hooks auto-merged without conflicts; refresh affected providers/pins and rerun merged-tree checks. Pre-merge Rust crate-test invocation cancelled before test execution.",
