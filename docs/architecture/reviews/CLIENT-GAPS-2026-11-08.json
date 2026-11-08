@@ -222,7 +222,8 @@
   "feature": "Basic Options",
   "status": "PARTIAL",
   "gap": "Jeden mały Settings zamiast zbiorczej strony Gameplay/Interface/Graphics/Sound.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/sync.rs:10 + basic_options_navigate_without_changing_preferences; Complete category controls and native interaction verification remain."
  },
  {
   "id": "T046",
@@ -231,7 +232,8 @@
   "feature": "Controls / General: mouse preset, movement, rotation, keyboard delay",
   "status": "PARTIAL",
   "gap": "Rebinding jest; brak presetów myszy, rotation modifier i keyboard delay.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/sync.rs:160 + mouse_preset_changes_actual_click_routing; Reference classic/smart mouse preset semantics remain; swap, rotation and repeat delay are wired."
  },
  {
   "id": "T047",
@@ -240,7 +242,8 @@
   "feature": "Controls / General Hotkeys",
   "status": "PARTIAL",
   "gap": "Brak równoważnej strony i presetów chat-on/chat-off.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/bindings.rs:92 + general_hotkey_presets_route_movement_and_preserve_other_bindings; Automatic selection from chat composer mode remains."
  },
  {
   "id": "T048",
@@ -249,7 +252,8 @@
   "feature": "Controls / Action Bar Hotkeys",
   "status": "PARTIAL",
   "gap": "Brak kompletnej konfiguracji wszystkich rzędów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/bindings.rs:77 + action_bar_hotkeys_route_every_supported_slot; Additional action-bar rows remain unsupported; all four existing slots are configurable."
  },
  {
   "id": "T049",
@@ -258,7 +262,8 @@
   "feature": "Controls / Custom Hotkeys",
   "status": "PARTIAL",
   "gap": "Brak pełnego edytora własnych object/text/passive actions i profili.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:20 + hotkey_profiles_preserve_routes_across_restart; Object/text/passive action editor remains."
  },
  {
   "id": "T050",
@@ -267,25 +272,28 @@
   "feature": "Interface / General: language/scale, cursor i tooltips",
   "status": "PARTIAL",
   "gap": "Skala mapy i pole języka są; brak pełnej skali UI, kursora i tooltip controls.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/interface_controls.rs:15 + interface_scale_changes_hud_geometry_and_rejects_invalid_values; Full panel scaling and tooltip controls remain."
  },
  {
   "id": "T051",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / HUD: player/creature names, HP/mana, marks, NPC icons",
-  "status": "MISSING",
+  "status": "PARTIAL",
   "gap": "Brak osobnych przełączników dla owner i pozostałych aktorów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/interface_controls.rs:17 + hud_name_controls_separate_owner_players_and_creatures; Independent HP/mana, marks and NPC icon controls remain."
  },
  {
   "id": "T052",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / HUD: arcs/distance/size/opacity",
-  "status": "MISSING",
+  "status": "PARTIAL",
   "gap": "Brak konfigurowalnych łuków HP/mana.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/arc_controls.rs:10 + hud_arc_geometry_uses_configured_distance_and_size; Arc opacity remains."
  },
  {
   "id": "T053",
@@ -294,7 +302,8 @@
   "feature": "Interface / HUD: status bars/panel, style, skills/condition order",
   "status": "PARTIAL",
   "gap": "Dane statusu są; brak edytora stylu, pozycji i kolejności.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/layout_controls.rs:10 + compact_status_style_projects_confirmed_vitals_only; Skill and condition ordering remain."
  },
  {
   "id": "T054",
