@@ -30,6 +30,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Previous boss",
                 "Next boss",
                 "Boss category",
+                "Soul War boss",
+                "Rotten Blood boss",
                 "Apply search",
                 "Next unlocked slot",
             ],
@@ -65,6 +67,17 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 }
                 for (index, value) in values.into_iter().take(3).enumerate() {
                     super::super::input::edit(&mut mailbox.boss_encounter, index, value);
+                }
+                if let Some(chain) = match action {
+                    17 => Some(oteryn_client_ui::boss_encounter::EndgameChain::SoulWar),
+                    18 => Some(oteryn_client_ui::boss_encounter::EndgameChain::RottenBlood),
+                    _ => None,
+                } {
+                    oteryn_client_ui::boss_encounter::select_next_boss(
+                        &mut mailbox.boss_encounter,
+                        chain,
+                    );
+                    return;
                 }
                 let intent = match action {
                     0 => Intent::Refresh,
