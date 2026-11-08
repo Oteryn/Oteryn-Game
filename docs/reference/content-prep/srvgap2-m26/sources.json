@@ -1,0 +1,232 @@
+{
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "verified_source_manifests": [
+    {
+      "manifest": "sources.json",
+      "facts": [
+        {
+          "path": "data-global/lib/quests/soul_war.lua",
+          "bytes": 64972,
+          "sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/lib/quests/soul_war.lua"
+        },
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/rotten_bakragore.lua",
+          "bytes": 960,
+          "sha256": "821b49caf5e1c55f8a0e9a83b5f1158e5f34d3b3876681c5d9adfb6eedd96189",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/rotten_bakragore.lua"
+        },
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/rotten_bakragore1.lua",
+          "bytes": 960,
+          "sha256": "f6c8fc46dfde8d43bec59b0a2355871afbd19e6cb745f3096456d40c2bdc59a1",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/rotten_bakragore1.lua"
+        },
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/rotten_chagorz.lua",
+          "bytes": 1071,
+          "sha256": "d3f632880a7e871e0303994905ef3e814b22d6f797e51b732d4ce7f7c49050c2",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/rotten_chagorz.lua"
+        },
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/rotten_ichgahal.lua",
+          "bytes": 895,
+          "sha256": "0822f2c430b389aa74bc3109db975e2bb96cd69385e6fc8fe26991b9b69f9b7c",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/rotten_ichgahal.lua"
+        },
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/rotten_murcion.lua",
+          "bytes": 999,
+          "sha256": "48f572ec9c418340bb07490334a216e81f4361627495e5c221d2a2d45b71d727",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/rotten_murcion.lua"
+        },
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/rotten_vemiath.lua",
+          "bytes": 894,
+          "sha256": "9b163af79214effbb5e9d2bd3d54290c266b988b33a89d809a70563e24c0c6c5",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/rotten_vemiath.lua"
+        }
+      ]
+    },
+    {
+      "manifest": "map-sources.json",
+      "facts": [
+        {
+          "path": "data-global/world/world.otbm",
+          "bytes": 53471153,
+          "git_blob": "e61658ec0ab7b70ec35025ae969426d6fc57ae75",
+          "sha256": "c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm"
+        },
+        {
+          "path": "data/items/appearances.dat",
+          "bytes": 5002660,
+          "git_blob": "37ce9c8ee497b7edffe809f40d02c5d12ec4ccf0",
+          "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/appearances.dat"
+        },
+        {
+          "path": "data/items/items.xml",
+          "bytes": 3915530,
+          "git_blob": "ea4196beae8f77be898f05de89db81de134886b6",
+          "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml"
+        },
+        {
+          "path": "data/libs/functions/boss_lever.lua",
+          "bytes": 10034,
+          "git_blob": "1a2412551d425e671a19af2ea5ea676e957bbe35",
+          "sha256": "0a91d34c17c8fb2a20cdfddd3bb57df23d52ddafbc2053b03c938ee9162edd03",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/boss_lever.lua"
+        },
+        {
+          "path": "config.lua.dist",
+          "bytes": 30707,
+          "git_blob": "f215fa6e4612bd8f500e859c504935ef649e3e00",
+          "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/config.lua.dist"
+        }
+      ]
+    },
+    {
+      "manifest": "monster-sources.json",
+      "facts": [
+        {
+          "path": "data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+          "git_blob": "5aa267092b90f054138e2043fc6db1802a424356",
+          "sha256": "974df9389e734ca947111cd41af9adec44f531adf0cc53233d5a7a94ab190178",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onThink = function(monster, interval)",
+            "mType.onAppear = function(monster, creature)",
+            "mType.onDisappear = function(monster, creature) end",
+            "mType.onMove = function(_, creature, fromPos, toPos)",
+            "mType.onSay = function(monster, creature, type, message) end"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/rotten_blood_quest/chagorz.lua",
+          "git_blob": "7c7dd5beef1bf511c7223f28d4ba54e96601e3b0",
+          "sha256": "297fc5a9fc5e58ade139dd3c3e60e10fdd2f0d6745c05dc9137c0f44d6a60732",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/chagorz.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onThink = function(monster, interval)",
+            "mType.onAppear = function(monster, creature)",
+            "mType.onDisappear = function(monster, creature) end",
+            "mType.onMove = function(_, creature, fromPos, toPos)",
+            "mType.onSay = function(monster, creature, type, message) end"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/rotten_blood_quest/ichgahal.lua",
+          "git_blob": "6d3244cf24574ece4d13eb353177e3d058db0c43",
+          "sha256": "237c4b4a8743fc2f2868f0a0ce183fa9c1a0d66cc2037345419fe70cd3eb852d",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/ichgahal.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onThink = function(monster, interval)",
+            "mType.onAppear = function(monster, creature)",
+            "mType.onDisappear = function(monster, creature) end",
+            "mType.onMove = function(_, creature, fromPos, toPos)",
+            "mType.onSay = function(monster, creature, type, message) end"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/rotten_blood_quest/murcion.lua",
+          "git_blob": "817a6db5150f27b52ad6d747e59985c2bb09ebc0",
+          "sha256": "cdd4e39e5119d6c1952f3850ba4bfd19877f608716f8b166fe39a6f25ca1801a",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/murcion.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onThink = function(monster, interval)",
+            "mType.onAppear = function(monster, creature)",
+            "mType.onDisappear = function(monster, creature) end",
+            "mType.onMove = function(_, creature, fromPos, toPos)",
+            "mType.onSay = function(monster, creature, type, message) end"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/rotten_blood_quest/vemiath.lua",
+          "git_blob": "a582d15b54463ec6d2d50d255f2847da268ef842",
+          "sha256": "d0b477325e4d3e058490023870075dd6e1b159cd614f82610d122510f7c7a8e7",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/vemiath.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onThink = function(monster, interval)",
+            "mType.onAppear = function(monster, creature)",
+            "mType.onDisappear = function(monster, creature) end",
+            "mType.onMove = function(_, creature, fromPos, toPos)",
+            "mType.onSay = function(monster, creature, type, message) end"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+          "git_blob": "7781c66516d83abbe905496cff7c3caf44902bf9",
+          "sha256": "cd2cae8c72c72a46064ec084c5db1684a4223e4150d3670f154a88bcb2589b2b",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onSpawn = function(monster)",
+            "mType.onThink = function(monsterCallback, interval)"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/soul_war/goshnars_cruelty.lua",
+          "git_blob": "468e6a312e446b328771641f2feb7878f101e8b8",
+          "sha256": "5f71c7170921b537ba5bd397b70805c00cb3457da97f08a915383b3e34e58c0b",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/soul_war/goshnars_cruelty.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onThink = function(monster, interval)",
+            "mType.onDisappear = function(monster, creature)"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/soul_war/goshnars_greed.lua",
+          "git_blob": "0a869103c09426c6e8816de9b028bc63908681c1",
+          "sha256": "e9c11a26a1c18f42947b8a5b37ba9dcea8ca5b0322dfb2fc047c3d2e33b07ad0",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/soul_war/goshnars_greed.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onThink = function(monsterCallback, interval)",
+            "mType.onSpawn = function(monster)",
+            "mType.onDisappear = function(monster, creature)"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/soul_war/goshnars_hatred.lua",
+          "git_blob": "cc6652eb9d91f15b5d182206076bb216c0e43bf9",
+          "sha256": "2f5c8e63b499eddca333e39421b651607f2992afbf13873dc5e0fdd498511fef",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/soul_war/goshnars_hatred.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onDisappear = function(monster, creature)"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/soul_war/goshnars_malice.lua",
+          "git_blob": "1cda5185bbe9caa2b3b01bc9fc47320005d80305",
+          "sha256": "2394dae37135ca27aea35459e7879e95a566a5c7b68bd5491e9bc625f84839ec",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/soul_war/goshnars_malice.lua",
+          "hooks": [
+            "monster.events = {",
+            "mType.onThink = function(monster, interval)"
+          ]
+        },
+        {
+          "path": "data-global/monster/quests/soul_war/goshnars_spite.lua",
+          "git_blob": "1daedf2a19178f90bc7f6ea6041f8f3fd1bacef6",
+          "sha256": "50c678660280d5f455b97e90a8c976bc022f3120b616f64b7e799fddf6264fd0",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/soul_war/goshnars_spite.lua",
+          "hooks": [
+            "monster.events = {"
+          ]
+        }
+      ]
+    }
+  ]
+}

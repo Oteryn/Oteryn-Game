@@ -1,0 +1,18 @@
+{
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+  "sources": [
+    {
+      "path": "data/items/items.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data/items/items.xml",
+      "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+      "bytes": 3819874
+    },
+    {
+      "path": "data/items/appearances.dat",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data/items/appearances.dat",
+      "sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+      "bytes": 4862378
+    }
+  ]
+}
