@@ -63,3 +63,5 @@
 | M30 — native spear/magic-missile hit events and participant-scoped defender death/door progression | engenc | 2240 reserved; only 2240–2249 for this assignment | Child of Destiny; Asura Palace | CLAIMED |
 
 | M21 — nested map containers: pickup/reset and captured key provenance | npcfix2 | 2150 reserved if required; assigned range2150–2159 only | Outlaw Camp; Skeleton Decoration; Small Ruby | CLAIMED |
+
+| M25 — BossLever Ahau configured exit teleporter and Mitmah Vanguard callback closure | boss2 (SRX3-BOSS2) | none planned; 2171–2172 reserved within 2170–2179; 2170 is the existing boss2 cleanup | Adventures of Galthen (s5 Ahau; s8 Mitmah Vanguard) | CLAIMED |
