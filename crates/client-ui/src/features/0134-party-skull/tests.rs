@@ -59,3 +59,27 @@ fn pc06_party_skull_view_keeps_confirmed_result_during_refusal() {
     assert!(fresh.summary.is_empty());
     assert!(panel_text(&fresh).contains("Unavailable"));
 }
+
+#[test]
+fn skull_timer_projects_observed_remaining_time_without_inventing_an_expiry() {
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.skull_timer = Some(SkullTimer {
+        skull: 4,
+        remaining_ms: Some(1501),
+    });
+    assert!(panel_text(&panel).contains("Red skull: 2s at observation"));
+    let timer = SkullTimer {
+        skull: 4,
+        remaining_ms: Some(1501),
+    };
+    assert_eq!(timer.remaining_seconds(1500), Some(1));
+    assert_eq!(timer.remaining_seconds(9999), Some(0));
+    panel.skull_timer = Some(SkullTimer {
+        skull: 4,
+        remaining_ms: None,
+    });
+    assert!(panel_text(&panel).contains("expiry unavailable"));
+}
