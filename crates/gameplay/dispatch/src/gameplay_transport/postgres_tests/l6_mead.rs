@@ -368,7 +368,8 @@ pub(super) async fn exercise(
             &permit,
             context.clone(),
             Some(native),
-            Some(admission)
+            Some(admission),
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await,
         Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)
@@ -394,7 +395,8 @@ pub(super) async fn exercise(
                 native,
                 weights: &NativeItemWeights(native),
                 fee_payment: None,
-            })
+            }),
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(debug)?,
@@ -408,6 +410,7 @@ pub(super) async fn exercise(
     assert!(matches!(slot.commit_world_callback_with_items(
         owner.root, owner.character, owner.holder, fence, request(955)?,
         std::sync::Arc::new(without_child), &permit, context.clone(), Some(native), Some(admission),
+        &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
     ).await.map_err(debug)?, QuestTransitionOutcome::Refused(_)), "missing child admission must roll back the already prepared reward");
     assert_eq!(counts(h).await?, before);
     drop(slot);
@@ -575,6 +578,7 @@ pub(super) async fn exercise(
             context,
             Some(native),
             Some(admission),
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(debug)?;

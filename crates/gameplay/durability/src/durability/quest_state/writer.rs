@@ -81,6 +81,46 @@ impl DurabilityRoot {
         .await
     }
 
+    /// The same immutable fixture resolution as NPC rewards, retaining every World fence.
+    #[cfg(feature = "test-support")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "fixture retains the complete production World admission tuple"
+    )]
+    pub async fn commit_fixture_world_admission<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        gate: &G,
+        callback: oteryn_gameplay_quests::quest::world_callbacks::Callback,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner_resolved::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, None)),
+            None,
+            None,
+            None,
+            gate,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Vec::new(),
+            vec![callback],
+        )
+        .await
+    }
+
     /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
     /// under the current recovery fence without session authority; another cause kind on the
     /// same key conflicts. A new request is fenced like an XP award, refused while a death's
@@ -152,7 +192,7 @@ impl DurabilityRoot {
 
     /// A content-bound world callback uses the same fenced quest writer and receipt.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_character_world_callback_with_items(
+    pub async fn commit_character_world_callback_with_items<G: grizzly::GrizzlyPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -163,6 +203,7 @@ impl DurabilityRoot {
         context: super::super::quest_world_callback::QuestWorldContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
         admission: Option<QuestRewardAdmission<'_>>,
+        gate: &G,
     ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner::<_, 0>(
             authority,
@@ -174,7 +215,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            &grizzly::NoGrizzlyPremium,
+            gate,
             None,
             None,
             admission,
@@ -523,6 +564,7 @@ impl DurabilityRoot {
                             || c.item_on_target.is_some()
                             || c.world_change.is_some()
                             || c.minimum_level.is_some()
+                            || c.admission.is_some()
                             || c.experience.is_some()
                             || c.monk_reward.is_some()
                             || c.native_rule.is_some()
@@ -660,6 +702,16 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
+                    // Premium's shared latch precedes the Character root lock. Historical
+                    // receipts above replay without evaluating current entrance eligibility.
+                    if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium) {
+                        let account: String = sqlx::query_scalar(
+                            "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+                        ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        if !grizzly_gate.task_permitted(&mut tx, uuid_text(&account)?).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
