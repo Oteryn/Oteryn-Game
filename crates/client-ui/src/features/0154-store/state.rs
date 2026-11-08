@@ -10,6 +10,8 @@ pub enum StorePage {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct StorePanel {
+    pub search: String,
+    pub sort: StoreSort,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -31,4 +33,12 @@ pub struct StorePanel {
     pub purchase: Option<StorePurchaseResult>,
     pub claim: Option<StoreClaimReceipt>,
     pub feedback: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum StoreSort {
+    #[default]
+    Catalogue,
+    Title,
+    Price,
 }
