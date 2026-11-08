@@ -757,6 +757,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => MovementFacing::East,
             StepDirection::South => MovementFacing::South,
             StepDirection::West => MovementFacing::West,
+            StepDirection::NorthEast => MovementFacing::North,
+            StepDirection::SouthEast => MovementFacing::South,
+            StepDirection::SouthWest => MovementFacing::South,
+            StepDirection::NorthWest => MovementFacing::North,
         };
         movement.commit_turn(expected, facing).is_ok()
     }
