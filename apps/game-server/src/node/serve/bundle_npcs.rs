@@ -23,6 +23,8 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
 
+#[path = "bundle_npcs/conditional.rs"]
+mod conditional;
 mod seasonal;
 
 /// W05c: NPCs that stand only by day or only by night. Donor
@@ -142,10 +144,11 @@ enum TimedPeriod {
 /// Unlike the donor, which picks the startup set from the light level (`functions.lua:33-40`, so
 /// a start during dusk spawns the day set) and spawns 5 s after the period change
 /// (`spawns_npc_by_time.lua:159-170`), the set follows the world minute at boot and every tick.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub(super) struct TimedNpcSpawns {
     admitted: [bool; TIMED_NPCS.len()],
     seasonal: seasonal::SeasonalNpcSpawns,
+    conditional: conditional::ConditionalNpcSpawns,
 }
 
 impl TimedNpcSpawns {
@@ -159,6 +162,7 @@ impl TimedNpcSpawns {
         Self {
             admitted,
             seasonal: seasonal::SeasonalNpcSpawns::default(),
+            conditional: conditional::ConditionalNpcSpawns::default(),
         }
     }
 
@@ -168,7 +172,13 @@ impl TimedNpcSpawns {
         events: &[String],
         enterable: impl Fn(crate::map::overlay::TilePos) -> bool,
     ) -> Self {
+        self.conditional = conditional::ConditionalNpcSpawns::admit(boot, &enterable);
         self.seasonal = seasonal::SeasonalNpcSpawns::admit(boot, events, enterable);
+        self
+    }
+
+    pub(super) fn with_calendar(mut self, calendar: Option<(u8, u8)>) -> Self {
+        self.conditional.set_calendar(calendar);
         self
     }
 
@@ -176,8 +186,10 @@ impl TimedNpcSpawns {
         self.seasonal.set_brutus_present(present);
     }
 
-    pub(super) fn is_empty(self) -> bool {
-        !self.admitted.iter().any(|admitted| *admitted) && self.seasonal.is_empty()
+    pub(super) fn is_empty(&self) -> bool {
+        !self.admitted.iter().any(|admitted| *admitted)
+            && self.seasonal.is_empty()
+            && self.conditional.is_empty()
     }
 
     /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the
@@ -202,7 +214,7 @@ impl TimedNpcSpawns {
     /// is reconciled on its own: one that cannot move now (its cell occupied) keeps the rest
     /// going and is retried on the next tick; the first such error is returned.
     fn reconcile(
-        self,
+        &mut self,
         runtime: &mut ChannelRuntimeV1,
         tibian_minute: u32,
     ) -> Result<(), NpcPlacementError> {
@@ -239,7 +251,7 @@ impl TimedNpcSpawns {
                 outcome = outcome.and(placed.map(|_| ()));
             }
         }
-        outcome
+        outcome.and(self.conditional.tick(runtime))
     }
 }
 
@@ -1095,4 +1107,8 @@ mod tests {
         bytes[last] ^= 0xFF;
         assert!(matches!(read(&bytes), Err(BootError::WorldBundle(_))));
     }
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/node/serve/bundle_npcs/m38_hoaxette_tests.rs"
+    ));
 }
