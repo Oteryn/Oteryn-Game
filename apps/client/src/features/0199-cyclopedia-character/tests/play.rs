@@ -179,6 +179,8 @@ fn statistics_reject_malformed_results_and_keep_unknown_distinct_from_zero()
 mod achievements;
 #[path = "gallery.rs"]
 mod gallery;
+#[path = "item_summary.rs"]
+mod item_summary;
 #[path = "misc.rs"]
 mod misc;
 #[path = "navigation.rs"]

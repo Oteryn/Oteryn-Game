@@ -68,6 +68,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             (112, "Previous page", 10),
             (113, "Next page", 190),
             (117, "Analytics", 370),
+            (118, "Item summary", 545),
         ] {
             control(hwnd, "BUTTON", label, id, [x, 112, 165, 28], WS_TABSTOP);
         }

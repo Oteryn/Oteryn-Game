@@ -123,3 +123,10 @@ mod misc_layout;
 #[cfg(windows)]
 #[path = "view/gallery_window.rs"]
 mod gallery_window;
+
+#[cfg(windows)]
+#[path = "view/browsers.rs"]
+mod browsers;
+#[cfg(windows)]
+#[path = "view/items_window.rs"]
+mod items_window;

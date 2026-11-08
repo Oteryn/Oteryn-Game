@@ -667,9 +667,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Item Summary / inventory/depot/stash/inboxes",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Jest Inspection/item summary; brak grid/list/filter wszystkich lokacji.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0199-cyclopedia-character/view/items_window.rs:35 + apps/client/src/features/0199-cyclopedia-character/tests/item_summary.rs:8 t095_item_summary_caller_requests_all_locations_and_filters_confirmed_rows + crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_items.rs:13 cyclopedia_items_real_dispatch"
  },
  {
   "id": "T096",

@@ -221,3 +221,18 @@ Entries are sorted by kind and key, with exactly `min(24, total-offset)` rows.
 Look ids must be positive; keys are nonempty UTF-8 of at most 255 bytes without
 NUL/newlines. Maximum reply: 6270 bytes. The client resolves these confirmed ids
 through its pinned local sprite loader, without packaging additional art.
+
+## Item summary
+
+Selector 130 on command 388 accepts `offset:u16` and reads only the requesting
+Character under its current item/session fence. The single statement includes
+main backpack and equipment roots, legacy and nested bag edges, depot boxes,
+Character inboxes, and World-scoped stash balances. Closed bags are included.
+
+Reply: `130:u8, offset:u16, total:u16, count:u8`, then `count` rows of
+`definition_len:u16, definition:UTF-8, inventory:u64, depot:u64, stash:u64, inbox:u64`.
+There are exactly `min(24,total-offset)` rows, sorted by definition in byte
+order; keys are nonempty, at most 512 bytes, and contain no NUL/newlines.
+At least one quantity per row is positive. Maximum reply: 13110 bytes.
+Filters on the client apply to the confirmed page; pagination retains the
+complete server custody projection and does not require opening containers.

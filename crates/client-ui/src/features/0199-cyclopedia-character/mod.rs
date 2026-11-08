@@ -4,6 +4,9 @@ mod achievements;
 #[path = "state/gallery.rs"]
 mod gallery;
 pub use gallery::Gallery;
+#[path = "state/items.rs"]
+mod items;
+pub use items::ItemSummary;
 mod input;
 mod protocol;
 mod state;

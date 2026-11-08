@@ -7,6 +7,9 @@ pub mod achievements;
 #[path = "cyclopedia_character/combat.rs"]
 pub mod combat;
 
+#[path = "cyclopedia_character/items.rs"]
+pub mod items;
+
 use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,

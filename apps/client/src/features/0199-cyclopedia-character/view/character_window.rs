@@ -27,7 +27,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 32
-                && matches!(id, 101..=117 | 140)
+                && matches!(id, 101..=118 | 140)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -115,8 +115,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             let mut analytics = false;
-            let mut browse_achievements = false;
-            let mut browse_gallery = false;
+            let mut browser = None;
             for action in std::mem::take(&mut actions.0) {
                 if action == 150 {
                     if let Ok(id) = read_text(badge_id).parse::<u8>()
@@ -132,16 +131,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     }
                     continue;
                 }
-                if action == 105 && mailbox.cyclopedia_character.target.is_none() {
-                    browse_gallery = true;
+                if let Some(selected) =
+                    super::browsers::Browser::for_action(action, &mailbox.cyclopedia_character)
+                {
+                    browser = Some(selected);
                     continue;
                 }
                 if action == 117 {
                     analytics = true;
-                    continue;
-                }
-                if action == 140 {
-                    browse_achievements = true;
                     continue;
                 }
                 let values = edits.map(read_text);
@@ -360,17 +357,11 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 }
             }
             drop(mailbox);
-            if browse_gallery {
-                super::gallery_window::open(weak.clone(), commands.clone());
+            if let Some(browser) = browser {
+                browser.open(weak.clone(), commands.clone());
             }
             if analytics {
                 crate::play::feature_0010_analyser::view::open_shared(&shared, &commands);
-            }
-            if browse_achievements {
-                crate::play::feature_local_account_achievements::view::open_character(
-                    weak.clone(),
-                    commands.clone(),
-                );
             }
             std::thread::sleep(Duration::from_millis(25));
         }

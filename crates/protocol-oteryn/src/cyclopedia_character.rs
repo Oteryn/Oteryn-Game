@@ -11,6 +11,9 @@ pub mod combat;
 #[path = "cyclopedia_character/gallery.rs"]
 pub mod gallery;
 
+#[path = "cyclopedia_character/items.rs"]
+pub mod items;
+
 pub const CAPABILITY_CYCLOPEDIA_CHARACTER_V1: u32 = 199;
 pub const COMMAND_TYPE_CYCLOPEDIA_BADGES: u32 = 387;
 pub const COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB: u32 = 388;

@@ -65,6 +65,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 wire::encode_badges(&badges).map_err(|_| ())
             }
             wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
+                if payload.first() == Some(&wire::items::SELECTOR) {
+                    let offset = wire::items::decode_request(payload).map_err(|_| ())?;
+                    return self.root.read_cyclopedia_item_summary(self.character, self.holder, fence, offset).await.map_err(|_| ())?.encode().map_err(|_| ());
+                }
                 if payload.first() == Some(&wire::gallery::SELECTOR) {
                     return self.cyclopedia_gallery(admitted, payload).await;
                 }
