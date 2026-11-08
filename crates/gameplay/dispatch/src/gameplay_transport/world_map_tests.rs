@@ -651,7 +651,7 @@ fn appearance_ids_come_from_the_definition_key() {
 // --- Move source and object revision -----------------------------------------------------------
 
 #[test]
-fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
+fn movable_leaves_and_unbound_captured_containers_carry_handles() {
     let open = tp(21, 20, -7);
     let house = tp(22, 20, -7);
     let mut fixture = Fixture::new(vec![
@@ -679,8 +679,8 @@ fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
     };
     let handle = fixture.items.table().handle(&coin).expect("coin handle");
     assert_eq!(tile.items[1].origin, MapOrigin::Handle(handle));
-    // The door, the bound chest, the furniture and the bag holding contents keep their ordinals.
-    for (index, ordinal) in [(2, 2), (3, 3), (4, 4), (5, 5)] {
+    // Bound objects and fixed empty scenery keep their ordinal targets.
+    for (index, ordinal) in [(2, 2), (3, 3), (4, 4)] {
         assert_eq!(
             tile.items[index].origin,
             MapOrigin::BaseOrdinal {
@@ -689,6 +689,17 @@ fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
             }
         );
     }
+    let source = ItemKey::MapBase {
+        bundle_digest: fixture.digest(),
+        placement_key: key(open, 5),
+        reset_epoch: 1,
+    };
+    let handle = fixture
+        .items
+        .table()
+        .handle(&source)
+        .expect("captured container handle");
+    assert_eq!(tile.items[5].origin, MapOrigin::Handle(handle));
     // Contents are never on the map.
     assert_eq!(tile.items.len(), 6);
     // A house tile's coin is not movable.
@@ -1094,6 +1105,7 @@ fn entry(id: u32) -> ComposedEntry {
             ordinal: 0,
             placement_key: 0,
             movable: false,
+            openable_source: false,
         },
         facts: facts_of(id),
     }

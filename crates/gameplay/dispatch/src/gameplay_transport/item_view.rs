@@ -67,7 +67,8 @@ pub enum ItemKey {
     /// A live item instance: the main backpack, its entries and a corpse's entries, and a Ground
     /// item of the map view.
     Instance([u8; 16]),
-    /// A movable base entry of the map view (MAP-WIRE-1 §3 Move source), never an ItemInstance.
+    /// An interactive base entry of the map view, never an ItemInstance.
+    /// Captured source-container handles permit observation; pickup still checks physical facts.
     MapBase {
         bundle_digest: [u8; 32],
         placement_key: u64,

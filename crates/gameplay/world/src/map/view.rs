@@ -23,6 +23,8 @@
 
 #![cfg_attr(not(test), allow(dead_code))]
 
+mod source_handles;
+
 use super::WorldBase;
 use super::overlay::{AddedItem, ChannelOverlay, EntryId, TileOverlayView, TilePos};
 use oteryn_protocol_oteryn::world_map::{
@@ -84,11 +86,13 @@ pub trait MapFacts {
 /// Where a composed entry comes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum EntrySource {
-    /// An unhidden base entry. `movable` entries carry a handle (contract §3 Move source).
+    /// An unhidden base entry. Movable leaves and read-only captured containers carry handles.
     Base {
         ordinal: u8,
         placement_key: u64,
         movable: bool,
+        /// A read-only captured container source, independent of pickup permission.
+        openable_source: bool,
     },
     /// An overlay-added volatile item.
     Added(EntryId),
@@ -103,7 +107,11 @@ impl EntrySource {
     /// Whether the entry carries a handle within the budget.
     pub const fn handle_bearing(&self) -> bool {
         match self {
-            Self::Base { movable, .. } => *movable,
+            Self::Base {
+                movable,
+                openable_source,
+                ..
+            } => *movable || *openable_source,
             Self::Added(_) | Self::Ground(_) | Self::House(_) => true,
         }
     }
@@ -112,7 +120,7 @@ impl EntrySource {
 /// The identity a handle-bearing entry's handle is bound to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MapEntryKey {
-    /// A movable base entry, by its bundle placement key.
+    /// An interactive base entry, by its bundle placement key.
     Base(u64),
     Added(EntryId),
     Ground([u8; 16]),
@@ -244,12 +252,20 @@ pub fn compose_into(
                 .base_entry(pos, ordinal, *id)
                 .ok_or(ViewError::MissingFacts)?;
             let contents = depths.get(at + 1).is_some_and(|next| *next != 0);
-            let movable = entry.pickupable && !entry.bound && !contents && !facts.house_tile(pos);
+            let (movable, openable_source) = source_handles::base_handles(
+                entry.pickupable,
+                entry.bound,
+                contents,
+                facts.house_tile(pos),
+            );
+            let openable_source =
+                openable_source && matches!(entry.definition, MapDefinition::Item(_));
             out.push(ComposedEntry {
                 source: EntrySource::Base {
                     ordinal,
                     placement_key: placement_key(pos, ordinal).ok_or(ViewError::OrdinalReach)?,
                     movable,
+                    openable_source,
                 },
                 facts: entry,
             });

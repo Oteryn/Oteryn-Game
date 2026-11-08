@@ -628,6 +628,7 @@ pub mod tests {
                 ordinal: 1,
                 placement_key: 0,
                 movable: false,
+                openable_source: false,
             },
             facts: wall_facts,
         }];
