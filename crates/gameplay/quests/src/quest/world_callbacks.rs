@@ -146,13 +146,8 @@ impl ActorKind {
     }
 }
 
-/// A read-only exact appearance predicate on a native, immovable map entry.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct WorldRequirement {
-    pub position: Position,
-    pub appearance: u16,
-}
+mod requirements;
+pub use requirements::WorldRequirement;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -183,7 +178,8 @@ pub struct Callback {
     /// Evaluated with SET_NOW against the fenced writer transaction clock.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<super::reward_callbacks::StateOperation>,
-    /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.
+    /// Immutable map predicates run under the Channel turn; live Ground predicates
+    /// are checked and locked by the durable progress transaction.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub world_requirements: Vec<WorldRequirement>,
     /// Checked against the progression owner in the same fenced quest transaction.
@@ -378,11 +374,12 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
             || callback.world_requirements.len() > MAX_EFFECTS
-            || callback
+            || callback.world_requirements.iter().any(|r| !r.valid())
+            || (callback.has_ground_stack_requirements() && !callback.supports_ground_stack_guard())
+            || (callback
                 .world_requirements
                 .iter()
-                .any(|r| !valid_pos(r.position) || r.appearance == 0)
-            || (!callback.world_requirements.is_empty()
+                .any(|r| r.ground_stack().is_none())
                 && (!!callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
@@ -645,7 +642,10 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
 
 /// New physical bindings omit display/citation fields and leave every legacy hash unchanged.
 pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
-    if !callback.requires_world_admission && !callback.opening_only {
+    if !callback.requires_world_admission
+        && !callback.opening_only
+        && !callback.has_ground_stack_requirements()
+    {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
@@ -657,6 +657,9 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
     let bytes = serde_json::to_vec(&value).map_err(|error| error.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))
 }
+
+#[cfg(test)]
+mod ground_requirement_tests;
 
 #[cfg(test)]
 mod timed_tests;
@@ -845,7 +848,7 @@ mod tests {
             );
         }
         callback.actor_kind = ActorKind::Player;
-        callback.world_requirements = vec![WorldRequirement {
+        callback.world_requirements = vec![WorldRequirement::Immovable {
             position: Position {
                 x: 1,
                 y: 1,

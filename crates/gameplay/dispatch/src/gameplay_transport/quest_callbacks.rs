@@ -1160,7 +1160,25 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
 
 fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
     callback.world_requirements.iter().all(|requirement| {
-        let position = tile(requirement.position);
+        let position = tile(requirement.position());
+        if requirement.ground_stack().is_some() {
+            // Preview only checks the target cell. The current Ground owner
+            // validates and protects the complete stack in the quest transaction.
+            return callback.supports_ground_stack_guard()
+                && !map.facts.house_tile(position)
+                && map
+                    .overlay
+                    .base()
+                    .tile(position.x, position.y, position.floor)
+                    .is_some();
+        }
+        let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement::Immovable {
+            appearance,
+            ..
+        } = requirement
+        else {
+            return false;
+        };
         !map.facts.house_tile(position)
             && map
                 .overlay
@@ -1181,10 +1199,7 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
                             };
                             !map.facts.base_hidden(key)
                                 && map.facts.base_entry(position, ordinal, *id).is_some_and(
-                                    |entry| {
-                                        !entry.pickupable
-                                            && entry.appearance_id == requirement.appearance
-                                    },
+                                    |entry| !entry.pickupable && entry.appearance_id == *appearance,
                                 )
                         })
                 })

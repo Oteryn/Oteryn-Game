@@ -2,6 +2,10 @@ use super::super::db::begin_type2_transaction;
 use super::super::reward_claim_mint::quest::QuestRewardAdmission;
 use super::*;
 
+#[cfg(feature = "test-support")]
+#[path = "writer/ground_fixture.rs"]
+mod ground_fixture;
+
 impl DurabilityRoot {
     /// Isolated source fixtures exercise the production reward transaction without adding quest content.
     #[cfg(feature = "test-support")]
@@ -435,7 +439,8 @@ impl DurabilityRoot {
                     .iter()
                     .any(|c| {
                         c.key == request.transition_key
-                            && (!c.state_ops.is_empty()
+                            && (c.has_ground_stack_requirements()
+                                || !c.state_ops.is_empty()
                                 || !c.offerings.is_empty()
                                 || c.item_on_target.is_some()
                                 || c.world_change.is_some()
