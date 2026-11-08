@@ -35,6 +35,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Next Houses",
                 "Previous analyser",
                 "Next analyser",
+                "Refresh section",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -60,6 +61,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         mailbox.discovery.inspection.category =
                             values.get(2).cloned().unwrap_or_default();
                     }
+                    return;
+                }
+                if action == 17 {
+                    actions::refresh_section(mailbox, commands);
                     return;
                 }
                 if action == 15 || action == 16 {
@@ -148,60 +153,10 @@ fn select_analytics(mailbox: &mut crate::play::mailbox::Mailbox, previous: bool)
         .navigate(Section::Analytics);
 }
 
+#[cfg(any(windows, test))]
+#[path = "view/actions.rs"]
+mod actions;
+
 #[cfg(test)]
-mod navigation_tests {
-    #[test]
-    fn host_reads_selected_section_without_losing_map_state() {
-        let mut mailbox = crate::play::mailbox::Mailbox::default();
-        mailbox.properties.cyclopedia_map.summary = "retained map".into();
-        mailbox
-            .properties
-            .cyclopedia_map
-            .navigate(oteryn_client_ui::cyclopedia_map::Section::Charms);
-        assert!(super::section_text(&mailbox).starts_with("Cyclopedia > Charms"));
-        mailbox
-            .properties
-            .cyclopedia_map
-            .navigate(oteryn_client_ui::cyclopedia_map::Section::Map);
-        assert!(super::section_text(&mailbox).contains("retained map"));
-    }
-    #[test]
-    fn houses_section_projects_the_live_catalogue() {
-        let mut mailbox = crate::play::mailbox::Mailbox::default();
-        mailbox
-            .properties
-            .cyclopedia_map
-            .navigate(oteryn_client_ui::cyclopedia_map::Section::Houses);
-        mailbox
-            .properties
-            .house
-            .model
-            .page
-            .rows
-            .push(oteryn_client_runtime::house::Row {
-                house: "oteryn:house.harbour".into(),
-                rent: 500,
-                ends: Some(900),
-                ..Default::default()
-            });
-        let text = super::section_text(&mailbox);
-        assert!(text.contains("oteryn:house.harbour"));
-        assert!(text.contains("rent 500"));
-        assert!(text.contains("900"));
-    }
-    #[test]
-    fn analytics_selector_cycles_tools_without_resetting_confirmed_totals() {
-        use oteryn_client_ui::analyser::Tool;
-        let mut mailbox = crate::play::mailbox::Mailbox::default();
-        mailbox.analyser.selected = true;
-        mailbox.analyser.kills = 9;
-        super::select_analytics(&mut mailbox, false);
-        assert_eq!(mailbox.analyser.tool, Tool::Hunting);
-        assert!(super::section_text(&mailbox).contains("Kills: 9"));
-        super::select_analytics(&mut mailbox, true);
-        super::select_analytics(&mut mailbox, true);
-        assert_eq!(mailbox.analyser.tool, Tool::Healing);
-        assert_eq!(mailbox.analyser.kills, 9);
-        assert!(!super::section_text(&mailbox).contains("Kills:"));
-    }
-}
+#[path = "view/tests.rs"]
+mod navigation_tests;
