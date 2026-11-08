@@ -490,9 +490,10 @@
   "src": "TIBAUD-1",
   "area": "Minimap",
   "feature": "Exploration/markers/labels, floor/zoom/pan",
-  "status": "PARTIAL",
-  "gap": "Bieżący server window zamiast pełnej trwałej mapy i edytora markerów.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/local-minimap/state.rs:79 + minimap_world_switch_reanchors_camera_without_losing_same_world_pan"
  },
  {
   "id": "T077",

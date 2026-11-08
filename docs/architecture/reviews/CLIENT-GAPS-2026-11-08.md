@@ -87,7 +87,7 @@ Zasady przeciw dublowaniu:
 | T143 | Highscores | Kategorie/world/vocation, paging/show-me | PARTIAL | Są category/vocation/refresh/previous/next; brak world selector i show-me; BattlEye wykluczone. |
 | T113 | Hunting tasks | Bounty, rewards, shop i talisman | PARTIAL | Główne operacje są; brak pełnej prezentacji sklepu/drzewa ulepszeń i odbioru wszystkich nagród jak w referencji. |
 | T114 | Hunting tasks | Soul Seals fight dialog | PARTIAL | Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia. |
-| T076 | Minimap | Exploration/markers/labels, floor/zoom/pan | PARTIAL | Bieżący server window zamiast pełnej trwałej mapy i edytora markerów. |
+| T076 | Minimap | Exploration/markers/labels, floor/zoom/pan | DONE | evidence: apps/client/src/features/local-minimap/state.rs:79 + minimap_world_switch_reanchors_camera_without_losing_same_world_pan |
 | O039 | Minimap | Minimapa i nawigacja | PARTIAL | Brakuje trwałej mapy odkrytych terenów, edytowanych znaczników, przewijania i zmiany pięter/zoomu minimapy; nakładka pokazuje bieżące okno świata. |
 | T142 | Quest | Tracker auto-add/remove i filters | PARTIAL | Track quest jest; brak pełnego osobnego trackera, auto-reguł i hide/completed filters. |
 | O050 | Quest | Dziennik zadań i śledzenie | PARTIAL | Brakuje wyszukiwania i sortowania dziennika; istnieją wybór zadania/misji, opis i przełączanie śledzenia. |
