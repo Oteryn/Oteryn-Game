@@ -33,6 +33,7 @@ fn scenario_case(
                 | "questpc2-rotten-source-items"
                 | "classic-quests-npc"
                 | "questpc2-hero-pipes"
+                | "questpc2-oldrak-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
@@ -369,6 +370,8 @@ fn scenario_case(
             .await?;
         } else if name == "questpc2-hero-pipes" {
             super::super::questpc2_hero_rathleton::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "questpc2-oldrak-npc" {
+            super::super::questpc2_oldrak::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if classic_npc {
             super::super::classic_quests::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;

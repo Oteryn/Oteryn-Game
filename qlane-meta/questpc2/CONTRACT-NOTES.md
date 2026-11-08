@@ -882,3 +882,14 @@ remain from that merge; publish the final receipt with the next green slice.
   reproduces HEADproof, permits only existing2824speedNone->0, requiressource0
   and canonicalidentity. No hand-edited fingerprint/pins or weakened assertion.
   Final7/7Rust215.213458s including5realPG180006; Python16PASS33.306s.
+
+- OldrakNPCslice decision: reuse generic rules for source102-124and151-153,
+  Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/oldrak.lua
+  SHAdc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40.
+  Coalesce synchronousProgress1then2intoone final-value atomic write. Preserve
+  sourcebranch order:Progress2/Done<1elseif is unreachable behindDone<1.
+  Done1finishdialogue is a distinct NPC step, not earnedwaveproof. Existing
+  canonicalwriter may establish that explicit testprecondition only.
+  NativeDoneabsent0anddonor-1both satisfy theonlyinitialDone<1guard. Noaxe
+  grant,fee,item919orwavequalification inthisslice. Requestbigfeaturesfrom
+  qengine2; narrowlypinnedNPCsource admission is a smalllocaldatahelper.

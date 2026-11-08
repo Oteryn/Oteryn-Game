@@ -740,7 +740,7 @@
       "canonical": "oteryn:quest.demon_oak",
       "title": "The Demon Oak Quest",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
+      "status": "IN_PROGRESS",
       "blocker": "Hallowed Axe use on all four Oak parts, defender waves and final reward entitlement are not composed.",
       "source_lane_checks": [
         {
@@ -751,7 +751,7 @@
           ]
         }
       ],
-      "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
+      "qualification_scope": "Oldrak NPC start/decline/finish steps only; source defender waves and hallowed-axe grant remain unqualified. No whole quest completion inferred.",
       "external_owner_blocker": false
     },
     {
@@ -1758,9 +1758,13 @@
     }
   },
   "current_batch": {
-    "name": "Book speed fact and merged main PostgreSQL proof",
-    "state": "GREEN_FOCUSED_BATCH",
-    "proof": "qlane-meta/questpc2/BATCH-book-speed-and-main-pg-green-2026-11-08.json"
+    "name": "Oldrak source NPC dialogue steps",
+    "state": "PG_RED_BUILD_RUNNING",
+    "log": "/tmp/questpc2b-oldrak-red.log",
+    "source_sha256": "dc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40",
+    "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "source_path": "data-global/npc/oldrak.lua",
+    "source_lines": "102-124,151-153"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -2415,11 +2419,12 @@
       "Elvenbane Quest",
       "Rotten Blood Quest",
       "Soul War Quest",
-      "Hero of Rathleton Quest"
+      "Hero of Rathleton Quest",
+      "The Demon Oak Quest"
     ],
     "done_pushed": 3,
-    "in_progress": 3,
-    "not_started_owned": 23,
+    "in_progress": 4,
+    "not_started_owned": 22,
     "excluded_other_lane": 6,
     "packet_total": 35
   },
@@ -2430,10 +2435,11 @@
     "active_quests": [
       "Rotten Blood Quest",
       "Soul War Quest",
-      "Hero of Rathleton Quest"
+      "Hero of Rathleton Quest",
+      "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "33890c3f3e1fdeb66ec4daf44688dc3406b934ad",
+  "last_pushed_sha": "303b2b6e21920f7d220bf817303faf23f26728b8",
   "prepush_pending_tests": {
     "focused_16": "13runtimePG+3pure, recompiling embedded ledger after fixed1333composition; log/tmp/questpc2-collector3030-focused-schema-fixed.log",
     "full_changed_crate_units": [

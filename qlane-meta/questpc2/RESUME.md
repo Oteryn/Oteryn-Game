@@ -1,3 +1,21 @@
+# ACTIVE: Oldrak NPC slice on questpc2b, PG RED build running
+
+Lastpushed303b2b6e2: all7focusedRust/5PGand16PythonchecksGREEN, mainb386merged.
+Currentonlytestsource changes: mountedquestpc2_oldrak.rs and scenarioroute.
+PGREDlog/tmp/questpc2b-oldrak-red.log. Observe actualRED before production.
+PinnedCrystal9fOldraksha dc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40.
+Source102-124:Done<1offerTopic1, yeswritesProgress1then2andTopic0;Done1mission
+has3secret linesandDone2. Source151-153:noTopic1resets0. Keepunreachable
+Progress2/Done<1elseif shadowedbyfirstif. Nativeabsent0equivalent forDone<1.
+UseexistinggenericNPCrules; no newreward/trigger capability. Supplemental
+programmustownquestaliasdemon_oakmatchingexistingtracksinitial0. Existing
+NPCsourcevalidatorallows9fonlyPemaret: narrowlypinnedOldrakhelper<50lines
+needed; do not lie about201189fsource. Authorerchecksretainedarchiveblobsha.
+Testfinishpreconditionusescanonicaldone/action_1writer explicitly; no earned
+wave/wholequestclaim. Bigwaves remainqengine2request; Item919notadmittedhere.
+Counts3qualified,4inprogress,22notstarted,6excluded. Parentfrozen0a6unchanged.
+Freshownershipcheckqdata1-8/qbind1-2still1ae39;nonamedtransferreceived.
+
 # GREEN: publish book fact repair and merged-main runtime proof
 
 Current source33890c3f3plus bounded book2824producer fix. Sevenfocused cases
