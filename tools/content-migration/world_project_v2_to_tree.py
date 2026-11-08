@@ -142,11 +142,20 @@ def refresh_bestiary_inventory(root: Path) -> None:
         golden_text, guarded = re.subn(pattern, lambda match: match.group(1) + f"{count:_}", golden_text)
         if guarded != 1:
             raise RuntimeError("BESTIARY_CORPUS_GOLDEN_SEAM")
+    charm = root / "crates/gameplay/dispatch/src/gameplay_transport/charm_progression_tests.rs"
+    charm_text, charm_pinned = re.subn(
+        r"assert_eq!\(bestiary\.races\.len\(\), [0-9_]+\);",
+        f"assert_eq!(bestiary.races.len(), {bestiary_count:_});",
+        charm.read_text(),
+    )
+    if charm_pinned != 1:
+        raise RuntimeError("BESTIARY_CHARM_GOLDEN_SEAM")
     # Validate every source and replacement seam before publishing the strict
-    # reader, validator and record/binding golden population pins together.
+    # reader, validator and record/binding/charm population pins together.
     target.write_text(text)
     validator.write_text(validator_text)
     golden.write_text(golden_text)
+    charm.write_text(charm_text)
 
 
 def retained_quest_registration(root: Path) -> tuple[dict[str, Any], list[str]]:

@@ -133,6 +133,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // C27 adds server weather (26, domain 22).
     // CLIGAP-W13 adds 83 (served World/Channel list, domain 48).
     // CLIGAP-W12 adds 10 (typed analyser facts and the native totals panel).
+    // CLCAST adds native caster settings, chat and consent (290–292); Watch 289 is separate.
     // C17b adds 275 (empty-outfit-v1: invisible creatures project an empty outfit).
     // The real-server client journeys (node boot) add 3 (npc_service) and 81 (npc_shop) for the
     // NPC shop phase, and 51 (staff) with 165 (hireling) for the hireling phase; staff negotiation
@@ -145,7 +146,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
             72, 75, 80, 81, 82, 83, 86, 87, 91, 92, 97, 98, 99, 104, 115, 117, 132, 134, 140, 147,
             148, 149, 150, 151, 152, 153, 154, 165, 168, 179, 180, 182, 195, 199, 200, 207, 224,
             230, 232, 233, 240, 258, 259, 272, 274, 275, 276, 277, 278, 279, 280, 285, 286, 287,
-            288, 330, 350, 370, 381, 382, 383, 384, 445, 446
+            288, 290, 291, 292, 330, 350, 370, 381, 382, 383, 384, 445, 446
         ]
     );
 }

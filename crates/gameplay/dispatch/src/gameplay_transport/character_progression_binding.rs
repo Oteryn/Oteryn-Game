@@ -217,6 +217,9 @@ where
         if round > 1 {
             tokio::time::sleep(rounds.backoff).await;
         }
+        if durable.root.await_ready().await.is_err() {
+            continue;
+        }
         let current_fence = match fence().await {
             Ok(Some(current_fence)) => current_fence,
             Ok(None) => {
@@ -224,6 +227,9 @@ where
             }
             Err(()) => continue,
         };
+        if durable.root.await_ready().await.is_err() {
+            continue;
+        }
         let Ok(interpretation) = durable
             .root
             .read_character_root_interpretation(durable.character, current_fence.character_id)
@@ -265,6 +271,9 @@ async fn bind_round<const N: usize>(
     fence: CurrentCharacterGameplayFence,
 ) -> Round<N> {
     use ProgressionUnbound::{ContextMismatch, StaleRevision};
+    if durable.root.await_ready().await.is_err() {
+        return Round::Retry;
+    }
     let row = match durable
         .root
         .read_character_progression(durable.character, fence.character_id)
@@ -328,6 +337,7 @@ async fn initialize<const N: usize>(
     fence: CurrentCharacterGameplayFence,
     request: ProgressionInitializationRequest<N>,
 ) -> Result<ProgressionInitializationOutcome, CharacterProgressionError> {
+    durable.root.await_ready().await?;
     #[cfg(test)]
     let fault = seam::enter();
     #[cfg(test)]

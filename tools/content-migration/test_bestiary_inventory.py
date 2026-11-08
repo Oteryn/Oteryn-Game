@@ -17,6 +17,7 @@ spec.loader.exec_module(module)
 TARGET = 'crates/gameplay/content/src/content/project/bestiary.rs'
 VALIDATOR = 'tools/content-migration/validate_world_project_v2_to_tree.py'
 GOLDEN = 'tools/content-migration/test_world_project_v2_to_tree.py'
+CHARM = 'crates/gameplay/dispatch/src/gameplay_transport/charm_progression_tests.rs'
 SHARD = 'content/creatures/definitions/creatures-00000-00002.json'
 
 class InventoryTests(unittest.TestCase):
@@ -28,6 +29,9 @@ class InventoryTests(unittest.TestCase):
         validator.parent.mkdir(parents=True, exist_ok=True)
         validator.write_text((ROOT / VALIDATOR).read_text())
         (root / GOLDEN).write_text((ROOT / GOLDEN).read_text())
+        charm = root / CHARM
+        charm.parent.mkdir(parents=True, exist_ok=True)
+        charm.write_text((ROOT / CHARM).read_text())
         records = [
             {'authoring': {'kind': 'Creature', 'profile': {'bestiary': {'kill_thresholds': [2, 3, 5]}}}},
             {'authoring': {'kind': 'Creature', 'profile': {'bestiary': None}}},
@@ -45,6 +49,7 @@ class InventoryTests(unittest.TestCase):
             root = Path(directory)
             _, _, target = self.fixture(root)
             module.refresh_bestiary_inventory(root)
+            self.assertIn('assert_eq!(bestiary.races.len(), 2);', (root / CHARM).read_text())
             text = target.read_text()
             self.assertIn('const CREATURE_COUNT: usize = 3;', text)
             self.assertIn('const BESTIARY_COUNT: usize = 2;', text)

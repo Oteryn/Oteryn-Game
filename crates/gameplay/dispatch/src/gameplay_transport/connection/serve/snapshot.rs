@@ -246,6 +246,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         let Some(inventory) =
             item_move::observe_inventory(authority, actor, admitted.game_session_id, &view).await
         else {
+            crate::gameplay_transport::operator_event("event=join_prepare_failed phase=inventory");
             return Err(ServeEnd::Disconnected);
         };
         let reopen = match view.carried_open_corpse() {
@@ -281,6 +282,7 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         )
         .await
         else {
+            crate::gameplay_transport::operator_event("event=join_prepare_failed phase=visibility");
             return Err(ServeEnd::Disconnected);
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())
@@ -296,6 +298,9 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
             )
             .await
         else {
+            crate::gameplay_transport::operator_event(
+                "event=join_prepare_failed phase=appearances",
+            );
             return Err(ServeEnd::Disconnected);
         };
         if let Some(item_view) = &item_view {

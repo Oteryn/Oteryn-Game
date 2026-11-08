@@ -151,6 +151,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // P11: mechanical rod 9306 from Crystal 201189f items.xml:25156-25159
     // (tools/content-migration/gathering_item_profiles.py). It has speed_bonus=0.
     ("P11-MECHANICAL-FISHING", 1),
+    // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
+    // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
+    ("QNPCFX", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
@@ -302,6 +305,53 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
+    // QENGINE2 adds exactly the 53 independently captured physical quest Items.
+    // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
+    // data. Main d34807f5 has none of these keys; all retain qualified zero speed.
+    let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
+    )))?;
+    let additions = proof["records"]
+        .as_array()
+        .ok_or("QENGINE2 source profiles")?;
+    let mut added_keys = std::collections::BTreeSet::new();
+    for source in additions {
+        let key = source["production_definition"]["production_key"]
+            .as_str()
+            .ok_or("QENGINE2 source key")?;
+        assert!(
+            added_keys.insert(key),
+            "duplicate QENGINE2 source key {key}"
+        );
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing QENGINE2 source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+    assert_eq!(added_keys.len(), 53);
+    let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
+    )))?;
+    let npc_additions = npc_proof["records"]
+        .as_array()
+        .ok_or("NPC source profiles")?;
+    assert_eq!(npc_additions.len(), 1);
+    assert_eq!(
+        npc_additions[0]["production_definition"]["production_key"],
+        "oteryn:item.tibia.i52636"
+    );
+    let venison = profiles
+        .records
+        .iter()
+        .find(|row| row.production_definition.production_key == "oteryn:item.tibia.i52636")
+        .ok_or("missing NPC venison profile")?;
+    assert!(venison.admission.materializable);
+    assert_eq!(venison.attributes.speed_bonus, Some(0));
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()

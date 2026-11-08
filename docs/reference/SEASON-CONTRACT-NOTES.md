@@ -1048,3 +1048,56 @@ inventory assertions remain unchanged; own PG confirmation is pending.
 
 Timed publication gates: workspace/all-targets check passed 162.149s;
 fmt --all --check passed 14.314s.
+
+### Native NPC lease regression and main integration
+
+The actual native Baker/Santa PostgreSQL regressions now pass after the
+first-entry lease repair: Baker 77.772s, Santa 77.801s; nextest execution
+77.804s, build plus run 415.548s. These are real database cases, not skipped
+environment guards. No mechanics row is claimed complete by these results.
+
+Merged main47db34f09: retain its world-change occurrence validation and
+consumer fixtures alongside the seasonal calendar, Cake post-reset hook and
+first-entry actor lease. Both active-world-change and active-seasonal event
+announcements remain asserted. The normal merge resolver regenerates native
+providers, content trees, central authoring lists and all world pins.
+Changed-crate unit tests and post-merge native-NPC PG reruns remain pending
+under PREPUSH-2's cadence exception; pre-merge PG evidence is recorded above.
+
+The complete normal merge regeneration (including registered freshness checks,
+five content repository tests, and world pin refresh) passed in 2089.967s.
+
+### One-push publication and freeze (owner direction, 2026-11-08)
+
+The owner requested this current checkpoint as one merge commit and one push,
+then a frozen branch accepting only owner-supplied CI fixes. Complete rows are
+not claimed: W12 donor-formula work and the remaining full-podium/carpet
+implementation are unfinished; private feature drafts are not mounted.
+
+The merged-state dispatch binary executed all three seasonal PostgreSQL cases:
+3 passed, 0 failed, 224.071s wall time (224.02s test harness). Santa recorded
+114.534s; Baker 169.719s; Halloween also ran for over60s and passed.
+Workspace/all-targets check passed286.277s; fmt15.731s; changed resolution
+crates' Clippy passed649.198s including build-lock wait; pin-check33.341s.
+
+The15 changed crates' unit driver was started with dispatch isolated for
+memory bounds, then the other14 crates queued. Only PostgreSQL-labelled
+cases are excluded from the library-unit phase; own PG runs are separate.
+The dispatch batch selects1605 tests. It exposed a stale authored charm
+population pin823 versus the admitted824 Bestiary entries. The normal
+Bestiary inventory generator now refreshes that strict assertion alongside
+its existing reader/validator/golden pins. Its three generator tests passed
+0.026s; actual regeneration0.079s. No threshold, refusal or source-validation
+assertion was removed. The Rust count-assertion rerun is pending.
+
+PREPUSH-2 explicitly permits publication after steps1,2,4 when step3 exceeds
+the cadence budget, with pending tests disclosed. This publication uses that
+exception: remaining dispatch library tests, the other14 crates' library
+tests and the broader focused House/Cake PG rerun remain pending. Existing
+focused House/kernel/protocol/native-client and PG evidence is recorded above.
+The running driver may finish read-only after the push; no further source
+changes are authorized until the owner supplies the CI failure list.
+
+Final publication gates after charm-inventory regeneration: workspace/all-targets
+check passed370.565s; fmt --all --check passed20.524s. Staged-tree duplicate
+migration check passed; no own migration renumbering was needed.

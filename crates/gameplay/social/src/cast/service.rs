@@ -55,6 +55,7 @@ pub enum Operation {
     ),
     Refresh(TargetFacts),
     ObserverState(ObserverId),
+    CasterRoster(GameSessionId),
     State(GameSessionId),
     Invalidate(CharacterId, i64),
     CasterChat(GameSessionId),
@@ -64,6 +65,7 @@ pub enum Operation {
     Flush(ObserverId, CastWriter),
 }
 pub enum Reply {
+    Roster(Option<(u64, Vec<[u8; 16]>)>),
     State(State),
     Capture(CapturePermit),
     Observer(ObserverId),
@@ -110,7 +112,10 @@ impl CastService {
                 operation,
                 reply,
             })
-            .map_err(|_| Error::Full)?;
+            .map_err(|error| match error {
+                mpsc::error::TrySendError::Full(_) => Error::Full,
+                mpsc::error::TrySendError::Closed(_) => Error::Unavailable,
+            })?;
         rx.await.map_err(|_| Error::Unavailable)?
     }
 }
@@ -122,11 +127,28 @@ async fn run(
     mut rx: mpsc::Receiver<Request>,
     clock: std::time::Instant,
 ) {
-    let Ok(mut privacy) = root
-        .register_cast_consent_worker(&node, owner.audit.incarnation)
-        .await
-    else {
-        return;
+    // Canary livestream.cpp:249 starts the live service explicitly. S17 additionally
+    // requires a consent-worker lease: retry only a busy durable holder, never
+    // process a queued Start before registration or after the bounded deadline.
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+    let mut privacy = loop {
+        match root
+            .register_cast_consent_worker(&node, owner.audit.incarnation)
+            .await
+        {
+            Ok(worker) => break worker,
+            Err(oteryn_gameplay_durability::durability::DurabilityError::RootUnavailable)
+                if tokio::time::Instant::now() < deadline =>
+            {
+                let now = tokio::time::Instant::now();
+                root.wait_holder_retry(
+                    now + std::time::Duration::from_millis(2),
+                    (now + std::time::Duration::from_millis(50)).min(deadline),
+                )
+                .await;
+            }
+            Err(_) => return,
+        }
     };
     let mut privacy_pulse = std::time::Instant::now();
     let mut accounts = std::collections::HashMap::new();
@@ -222,6 +244,7 @@ async fn run(
                 | Operation::Refresh(f)
                 | Operation::Publish(_, f, _, _, _)
                 | Operation::PublishView(_, f, _, _, _, _)
+                | Operation::Capture(f)
                 | Operation::Slate(f) => {
                     freshness.insert(f.authority.current_game_session_id(), now);
                 }
@@ -405,6 +428,26 @@ pub(super) fn apply(
             owner.invalidate(id, revision).map(|()| Reply::Applied)
         }
         Operation::State(id) => owner.state(id).map(Reply::State).ok_or(Error::Unavailable),
+        Operation::CasterRoster(target) => {
+            let mut subjects: Vec<_> = owner
+                .viewers
+                .iter()
+                .filter(|(_, viewer)| viewer.target == target)
+                .map(|(id, _)| id.0)
+                .collect();
+            subjects.sort_unstable();
+            let cast = owner.casts.get_mut(&target).ok_or(Error::Unavailable)?;
+            if cast.chat.last_roster == subjects
+                && cast.chat.roster_revision == cast.state.revision
+                && now.saturating_sub(cast.chat.roster_at) < 2000
+            {
+                return Ok(Reply::Roster(None));
+            }
+            cast.chat.last_roster = subjects.clone();
+            cast.chat.roster_revision = cast.state.revision;
+            cast.chat.roster_at = now;
+            Ok(Reply::Roster(Some((cast.state.revision, subjects))))
+        }
         Operation::ObserverState(id) => {
             let viewer = owner.viewers.get(&id).ok_or(Error::Unavailable)?;
             owner

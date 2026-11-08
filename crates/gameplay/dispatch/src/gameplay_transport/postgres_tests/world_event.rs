@@ -26,7 +26,7 @@ fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
         .stack_size(256 << 20)
         .spawn(|| {
             for epochs in [1, 2] {
-                scenario(epochs, None).map_err(|e| e.to_string())?;
+                scenario(epochs).map_err(|e| e.to_string())?;
             }
             Ok::<_, String>(())
         })?
@@ -46,7 +46,7 @@ fn w05d_halloween_calendar_reaches_real_reset_query_and_replay() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(2, Some("Halloween")).map_err(|error| error.to_string()))?
+        .spawn(|| scenario_run(2, Some("Halloween"), false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "seasonal reset query thread panicked")??;
     Ok(())
@@ -60,7 +60,7 @@ fn w05d_christmas_real_npc_present_replay_and_permanent_claim() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(2, Some("Christmas")).map_err(|error| error.to_string()))?
+        .spawn(|| scenario_run(2, Some("Christmas"), false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Christmas native NPC thread panicked")??;
     eprintln!(
@@ -78,7 +78,7 @@ fn w05d_cake_real_baker_burns_only_remaining_goal_and_replays() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(2, Some("A Piece of Cake")).map_err(|error| error.to_string()))?
+        .spawn(|| scenario_run(2, Some("A Piece of Cake"), false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Cake native NPC thread panicked")??;
     eprintln!(
@@ -88,11 +88,19 @@ fn w05d_cake_real_baker_burns_only_remaining_goal_and_replays() -> TestResult {
     Ok(())
 }
 
-fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
+pub(super) fn scenario(epochs: u64) -> TestResult {
+    scenario_run(epochs, None, false)
+}
+
+pub(super) fn scenario_with_consumers(epochs: u64, consumers: bool) -> TestResult {
+    scenario_run(epochs, None, consumers)
+}
+
+fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool) -> TestResult {
     run(async move |admin| {
         reset();
         let h =
-            Harness::create_with_admission_seed(admin, "world_event_dispatch", true, false).await?;
+            Harness::create_with_admission_seed(admin, "world_event_dispatch", !consumers, false).await?;
         if seasonal.is_some() {
             // Fixture clock set before the real reset writer creates its epoch;
             // admission, publication and mutation guards remain enabled.
@@ -143,6 +151,14 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
             )
             .await?;
         event_fixture::reset_epochs(&h, &authority, room, world, channel, epochs).await?;
+        // The reset decision owns the calendar across every Channel and restart.
+        let calendar = h.root.world_change_calendar(world, epochs).await?;
+        assert_eq!(h.root.world_change_calendar(world, epochs).await?, calendar);
+        assert!(h.root.world_change_calendar(world, epochs + 1).await.is_err());
+        let changes = oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), epochs, calendar.0, calendar.1);
+        for (key, expected) in [("grimvale", changes.grimvale_full_moon), ("their_masters_voice", changes.their_masters_voice), ("fury_gates", changes.fury_gates.is_some())] {
+            assert_eq!(h.root.world_change_active(world, key).await?, expected);
+        }
         for _ in 0..16 {
             h.root
                 .t94_start_world(
@@ -178,7 +194,15 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
         event_fixture::admit(&h, epochs + 1).await?;
         let mut deps = Dependencies::new()?;
         deps.room = room.clone();
-        set_seasonal_runtime(&mut deps, world, channel, &pin, epochs + 1)?;
+        if consumers {
+            deps.combat_room = Some(room.clone());
+            planned_world_reset::reset_fixture::set_runtime_with_capacity(
+                &mut deps, world, channel, &pin, epochs + 1, 3,
+            )?;
+        } else {
+            set_seasonal_runtime(&mut deps, world, channel, &pin, epochs + 1)?;
+        }
+        let channel_pin = deps.runtime.lock().await.content_pin().clone();
         let actor = {
             let mut runtime = deps.runtime.lock().await;
             let reservation = runtime
@@ -194,6 +218,13 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
         item_fence.scope_ownership_generation =
             ScopeOwnershipGeneration::new(epochs + 1).map_err(debug)?;
         deps.admitted.item_fence = Some(item_fence);
+        if consumers {
+            let mut runtime = deps.runtime.lock().await;
+            runtime.initialize_pinned_test_position(actor, crate::foundation::MovementLocalPosition { x: 2, y: 11, floor: -7 }).map_err(debug)?;
+            runtime.bind_attacker_lease(actor, deps.admitted.game_session_id,
+                crate::foundation::CharacterLease::new(crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?, 2).map_err(debug)?).map_err(debug)?;
+        }
+
         // Match production first-entry admission: inventory services require the
         // runtime actor to carry the same durable Character lease as its fence.
         deps.runtime
@@ -220,6 +251,10 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
             .await?
             .ok_or("active epoch")?;
         deps.initialize(&owner).await;
+        if consumers {
+            super::qworld::consumers::qualify(&h, &mut owner, &mut admitted, actor, channel_pin, room, epochs).await?;
+        }
+
         owner
             .runtime
             .lock()
@@ -249,16 +284,14 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
         assert_eq!(results[1].0, CommandStatus::Accepted);
         let state = wire::decode_world_event_state(&results[1].1).map_err(debug)?;
         assert_eq!(state.reset_epoch, epochs);
-        assert_eq!(state.active, epochs == 1 || seasonal.is_some());
-        assert_eq!(
-            state.announcement.is_empty(),
-            epochs == 2 && seasonal.is_none()
-        );
+        let expected_active = epochs % 2 == 1 || seasonal.is_some() || changes.their_masters_voice || changes.grimvale_full_moon || changes.fury_gates.is_some();
+        assert_eq!(state.active, expected_active);
+        assert_eq!(state.announcement.is_empty(), !expected_active);
+        for (name, active) in [("Their Master's Voice", changes.their_masters_voice), ("Grimvale", changes.grimvale_full_moon), ("Fury Gates", changes.fury_gates.is_some())] {
+            assert_eq!(state.announcement.contains(name), active, "wire world-state decision for {name}");
+        }
         if let Some(name) = seasonal {
-            assert!(
-                state.announcement.contains(name),
-                "the real query must expose its seasonal producer"
-            );
+            assert!(state.announcement.contains(name), "the real query must expose its seasonal producer");
         }
         let stored: Vec<u8> = sqlx::query_scalar(
             "SELECT result FROM game_world_event_query_receipts WHERE command_id=2",
