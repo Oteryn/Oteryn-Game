@@ -376,7 +376,8 @@
   "feature": "Graphics / Effects: ambient/separator/indoor/cloud attenuation",
   "status": "PARTIAL",
   "gap": "Światło jest; brak grupy ambient/separator/attenuation.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0019-world-light/view.rs:13 + ambient_preference_changes_confirmed_clock_lighting; Graphics ambient floor control persists and consumes confirmed world-clock light. Remaining: separator, indoor and cloud attenuation."
  },
  {
   "id": "T063",

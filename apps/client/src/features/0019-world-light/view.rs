@@ -10,10 +10,9 @@ impl PlayView {
             self.scene.set_lights(Vec::new());
             return Ok(());
         }
-        self.scene.set_ambient(
-            self.world_clock
-                .map_or([255; 3], oteryn_client_ui::world_light::ambient_rgb),
-        )?;
+        let ambient = self.world_clock.map_or([255; 3], oteryn_client_ui::world_light::ambient_rgb);
+        let minimum = (u16::from(self.preferences().ambient_brightness) * 255 / 100) as u8;
+        self.scene.set_ambient(ambient.map(|channel| channel.max(minimum)))?;
         let view = self.scene.view();
         let tile_px = view.tile_px() as f32;
         let sources = self

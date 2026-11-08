@@ -88,6 +88,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub ambient_brightness: u8,
     #[serde(default = "default_foreground_fps")]
     pub foreground_fps: u16,
     #[serde(default = "default_background_fps")]
@@ -150,6 +152,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            ambient_brightness: 0,
             foreground_fps: default_foreground_fps(),
             background_fps: default_background_fps(),
             arc_distance: 8,
@@ -189,6 +192,7 @@ impl ReferencePreferences {
 
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        if self.ambient_brightness > 100 { return Err(PreferenceError); }
         if !(1..=500).contains(&self.foreground_fps) || !(1..=500).contains(&self.background_fps) { return Err(PreferenceError); }
         self.validate_profiles()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
