@@ -138,6 +138,10 @@ pub(super) async fn exercise(
         .checked_sub(std::time::Duration::from_secs(3))
         .ok_or("clock")?;
     for command in 1..=4 {
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(1))
+            .ok_or("world action clock")?;
         if command > 1 {
             let now = owner.owner_now().get();
             let (definition, at) = apply(
@@ -244,7 +248,7 @@ pub(super) fn catalogue(
         quest: callback.quest.clone(),
         initial: 0,
         min: 0,
-        max: 10,
+        max: 9,
     });
     let seed = QuestTransition {
         world_change: None,
@@ -252,7 +256,7 @@ pub(super) fn catalogue(
         quest: callback.quest.clone(),
         effects: tracks
             .iter()
-            .zip([6, 1, 10])
+            .zip([6, 1, 9])
             .map(|(t, value)| QuestEffect {
                 track: t.key.clone(),
                 from: QuestComparison::Any,
