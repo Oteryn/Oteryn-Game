@@ -30,8 +30,8 @@ pub enum Trigger {
 #[cfg(test)]
 mod admission_tests;
 mod clock;
-mod craft_epoch;
 mod counterparts;
+mod craft_epoch;
 mod effects;
 mod ground_stack;
 mod imported_explore;
@@ -656,7 +656,11 @@ fn extend_callbacks(
                         callback.key, storage.track
                     ));
                 }
-                let initial = imported_explore::initial(callback, storage);
+                let initial = if callback.craft_reward_epoch(&storage.track) {
+                    0
+                } else {
+                    imported_explore::initial(callback, storage)
+                };
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),

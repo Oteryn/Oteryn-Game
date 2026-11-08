@@ -62,3 +62,48 @@ fn spent_material_counter_can_own_repeatable_crafting_rewards() -> Result<(), St
     }
     Ok(())
 }
+
+#[test]
+fn fresh_material_craft_epoch_starts_at_zero_without_changing_legacy_tracks() -> Result<(), String>
+{
+    let callback = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/qready1-cursed-grind")
+        .ok_or("registered grinder")?;
+    let empty = QuestStateCatalogue::new("craft-initial", vec![], vec![])
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = extend_callbacks(empty, std::slice::from_ref(&callback))?;
+    assert_eq!(
+        catalogue
+            .track(&callback.storage[0].track)
+            .ok_or("craft counter")?
+            .initial,
+        0
+    );
+    let changes = catalogue
+        .evaluate(
+            catalogue
+                .transition(&callback.key)
+                .ok_or("craft transition")?,
+            &Default::default(),
+            0,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(changes.len(), 1);
+    assert_eq!((changes[0].before, changes[0].after), (0, 1));
+    let mut legacy = callback;
+    legacy.effects = serde_json::from_str("{}").map_err(|error| error.to_string())?;
+    legacy.item_on_target = None;
+    legacy.storage[0].minimum = -1;
+    let empty = QuestStateCatalogue::new("legacy-initial", vec![], vec![])
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = extend_callbacks(empty, std::slice::from_ref(&legacy))?;
+    assert_eq!(
+        catalogue
+            .track(&legacy.storage[0].track)
+            .ok_or("legacy track")?
+            .initial,
+        -1
+    );
+    Ok(())
+}

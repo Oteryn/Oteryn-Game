@@ -3,6 +3,9 @@ use super::Callback;
 
 impl Callback {
     pub fn craft_reward_epoch(&self, track: &str) -> bool {
+        if self.effects.item_reward_cycle.as_deref() != Some(track) {
+            return false;
+        }
         let Some(input) = &self.item_on_target else {
             return false;
         };
