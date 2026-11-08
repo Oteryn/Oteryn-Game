@@ -99,7 +99,10 @@ fn scenario_case(
     };
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
-    let floor_profiles = matches!(name, "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile");
+    let floor_profiles = matches!(
+        name,
+        "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile" | "questpc3-tainted-items"
+    );
     let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
     let reusable_tool = name.starts_with("l6-reusable-tool");
@@ -698,6 +701,9 @@ fn scenario_case(
                 drop(seal);
                 return h.cleanup().await;
             }
+        } else if name == "questpc3-tainted-items" {
+            super::super::questpc3_tainted_items::exercise(&mut owner, &mut admitted, &h, fence)
+                .await?;
         } else if name == "l6-stag-item-profile" {
             super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence).await?;
         } else if name == "l6-ruby-profile" {

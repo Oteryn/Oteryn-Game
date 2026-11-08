@@ -10142,6 +10142,55 @@
       "branch": "claude/happy-davinci-ijz3wy-questpc3",
       "head": "09c26dcee6ca67f43b89bee6523e011f4f466c03",
       "rule": "Do not add new features or push this frozen predecessor; new work belongs to questpc3b"
+    },
+    "tainted_talisman_item_admission": {
+      "phase": "QUALIFIED_MECHANISM: source talisman custody; publication candidate",
+      "items": [
+        22008,
+        22009
+      ],
+      "scope": "Item custody only; whole-target crafting and live-target cleansing remain QENGINE2 requests",
+      "red": {
+        "postgres": "18.6",
+        "duration_ms": 57970,
+        "error": "source talisman native policy missing",
+        "log": "/tmp/questpc3b-tainted-items-pg-red.log"
+      },
+      "helper_tests": "6 PASS2.197s: evidence/idempotence and changed weight/digest/lifetime/classification/duplicate identity refused",
+      "recipe_authored": false,
+      "additional_red": [
+        {
+          "postgres": "18.6",
+          "duration_ms": 67221,
+          "error": "unknown native Item temporal capability",
+          "log": "/tmp/questpc3b-tainted-items-pg-green.log"
+        },
+        {
+          "postgres": "18.6",
+          "duration_ms": 69488,
+          "error": "unknown spell Item classification",
+          "log": "/tmp/questpc3b-tainted-items-pg-final.log"
+        }
+      ],
+      "final_checks": {
+        "workspace_all_targets": "PASS5m51s",
+        "dispatch_library_clippy_deny_warnings": "PASS2m48s",
+        "fmt_all_check": "PASS",
+        "native_and_central_generation": "PASS; independent equipment union3804",
+        "duplicate_migrations": "CLEAR; no migration added",
+        "world_pin": "unchanged0150fa8ddcd156f5ec3180fd0ffaa2cad8884cd06d75b9dd19d503f3e535ccb2; World-input scope unchanged",
+        "unit_suite": "running /tmp/questpc3b-tainted-dispatch-units.log; non-PG dispatch units pending under PREPUSH-2 step3 cadence exception"
+      },
+      "green": {
+        "postgres": "18.6",
+        "duration_ms": 56207,
+        "passed": 1,
+        "failed": 0,
+        "log": "/tmp/questpc3b-tainted-custody-qualified-pg.log",
+        "proof": "real native ground moves17/1units retain identity/quantity; exact replay leaves one receipt per command",
+        "execution": "unchanged RED test executable; runtime content manifest reloaded after final repo generation"
+      },
+      "unit_suite": "changed-crate broad unit run pending under PREPUSH-2 step3 cadence exception; helper6 tests and own realPG case pass"
     }
   },
   "counts": {

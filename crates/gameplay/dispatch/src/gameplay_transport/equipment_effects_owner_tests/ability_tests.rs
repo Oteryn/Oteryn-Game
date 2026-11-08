@@ -161,6 +161,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // QREADY2 now owns the shared trough2822 admission, counted only there.
     // quest_callback_profiles.py validates each exact binding and native facts.
     ("QUESTPC3-CALLBACK-CLOSURE", 28),
+    // Exact source talismans22008/22009; independent of recipe qualification.
+    ("QUESTPC3-TAINTED-TALISMANS", 2),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).

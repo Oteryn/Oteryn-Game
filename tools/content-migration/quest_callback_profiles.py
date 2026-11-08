@@ -177,6 +177,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     keys.update(('oteryn:item.tibia.i3272', 'oteryn:item.tibia.i3053',
                  'oteryn:item.tibia.i3091', 'oteryn:item.tibia.i3587',
                  'oteryn:item.tibia.i3466'))
+    # Retained Tainted talismans; recipes remain separate engine work.
+    keys.update(('oteryn:item.tibia.i22008', 'oteryn:item.tibia.i22009'))
     keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         reward = callback.get('effects', {}).get('item_reward')

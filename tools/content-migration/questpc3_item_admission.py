@@ -167,6 +167,13 @@ def apply_admissions(definitions):
     spec.loader.exec_module(trophies)
     trophies.apply_admissions(definitions)
 
+    # Tainted source talismans: custody admission is independent of crafting.
+    spec = importlib.util.spec_from_file_location(
+        'questpc3_tainted_items', Path(__file__).with_name('questpc3_tainted_items.py'))
+    talismans = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(talismans)
+    talismans.apply_admissions(definitions)
+
 
 def refresh_tree(root, check=False):
     """Apply strict admissions to existing canonical shards without rebuilding World."""
