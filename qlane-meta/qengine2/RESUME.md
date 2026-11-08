@@ -1777,3 +1777,20 @@ incoming World0aac4a46b1eef52983f86141295f59f9063296e20723ee8551108f5e80db8b58.
 No unresolved conflicts remain. Finish merge commit with owner identity/trailers,
 then check workspace/fmt/clippy and publish WIP under PREPUSH-2 before waiting
 for the focused5case/native-coverage and non-PG dispatch unit confirmation.
+
+Published WIP3babb30bdc8852dccad97435a25a027b64dc5e6b at07:09UTC, remote
+readback matched. Final fetch/main c77d436d8 already merged. Postmerge workspace
+check PASS5m59s; strict dispatch alltargets/allfeatures clippy PASS11m45s
+(includes lock wait); fmt PASS. Focused5case/native coverage is building; run
+non-PG dispatch units after its PG cases to avoid native-activation contention.
+The previously queued unit runner was stopped before execution, not a passing
+unit run. KeepHEAD3babb stable through these tests; proof commit after all results.
+
+Focused ready-claim qualification PASS5/5,187.179s on public3babb30bd. All
+59claims/60source placements and54native reward Items admitted; coverage55.878s.
+Actual PostgreSQL18.6 markers RuneEmblem60.3514832s/BloodHerb60.71162594s.
+Both retained chest regressions PASS109.634s/70.889s. QREADY1+2/main supply
+the11native admissions; no duplicate producer or artificial PG RED. Packet
+counts44/66 unchanged. Broad non-PG unit suite still RUNNING: 715/1612passed,
+0failed so far; no full-unit success claim. PREPUSH-2 cadence exception
+publishes this focused proof while the remaining unit cases continue.

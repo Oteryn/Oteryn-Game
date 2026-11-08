@@ -1,5 +1,5 @@
 {
-  "state": "WIP: reused main admissions; postmerge integration qualification pending",
+  "state": "FOCUSED_PG_GREEN; broad unit confirmation running",
   "base": "614d005067a2a645539303ee2a8bb875f21cde85",
   "baseline": {
     "passed": 1,
@@ -25,9 +25,7 @@
     4871
   ],
   "pending": [
-    "all59claim/60placement postmerge coverage GREEN",
-    "five-case focused dispatch PostgreSQL confirmation",
-    "dispatch non-PostgreSQL unit suite"
+    "finish broad non-PostgreSQL dispatch unit confirmation; collect all failures before repairs"
   ],
   "production_changes": 0,
   "whole_quest_counts_changed": false,
@@ -56,8 +54,58 @@
     "definition_ready_quests": 42,
     "main_reward_use_verified_quests": 35,
     "main_reward_use_pending_quests": 7,
-    "checks": "postmerge refresh pending; prior checks remain premerge evidence",
+    "checks": {
+      "workspace_all_targets": "PASS5m59s",
+      "dispatch_all_targets_all_features_clippy": "PASS -D warnings11m45s including lock wait",
+      "fmt_all_check": "PASS",
+      "duplicate_migrations": "PASS; no output",
+      "source_regeneration": "PASS3781profiles;67lane source profiles retained",
+      "focused_postgres_and_native_coverage": "PASS5/5 in187.179s; realPG18.6 markers60.35s/60.71s",
+      "dispatch_non_postgres_units": "PENDING; run after focused PostgreSQL to avoid native-activation contention"
+    },
     "regeneration": "PASS3781total native profiles;67retained lane profiles",
     "world_pin": "0aac4a46b1eef52983f86141295f59f9063296e20723ee8551108f5e80db8b58"
+  },
+  "published_wip": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
+  "green": {
+    "source_sha": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
+    "passed": 5,
+    "failed": 0,
+    "seconds": 187.179,
+    "source_claims": 59,
+    "source_placements": 60,
+    "native_reward_items": 54,
+    "native_coverage_seconds": 55.878,
+    "postgres_server": "PostgreSQL18.6 Debian18.6-1.pgdg13+2",
+    "postgres_cases": [
+      {
+        "case": "definition_ready_claim_use_and_replay_dispatch_postgres",
+        "marker_seconds": 60.3514832
+      },
+      {
+        "case": "definition_ready_claim_bloodherb_use_and_replay_dispatch_postgres",
+        "marker_seconds": 60.71162594
+      },
+      {
+        "case": "quest_callbacks_bundle_chest_advances_quest_once_after_catalogue_admission",
+        "nextest_seconds": 109.634
+      },
+      {
+        "case": "quest_callbacks_source_chest_use_once_replay_and_second_use_refused",
+        "nextest_seconds": 70.889
+      }
+    ],
+    "log": "/tmp/qengine2-ready-postmerge-focused.log",
+    "scope": "shared engine capability only; no whole quest qualification"
+  },
+  "unit_confirmation": {
+    "state": "RUNNING; PREPUSH-2 cadence exception",
+    "selected": 1612,
+    "passed_so_far": 715,
+    "failed_so_far": 0,
+    "not_completed": 897,
+    "filter": "not(test(postgres))",
+    "log": "/tmp/qengine2-ready-postmerge-units.log",
+    "not_claimed": "full crate unit success"
   }
 }

@@ -31,9 +31,11 @@
       "quests_reported": 42,
       "state": "IN_PROGRESS",
       "remaining": [
-        "postmerge source-placement/native-item coverage and focused PostgreSQL confirmation"
+        "finish broad non-PostgreSQL dispatch unit confirmation; focused PostgreSQL/source coverage is GREEN"
       ],
-      "reuse": "main c77d436d8 QREADY1+2: all11missing native admissions; retain existing generic resolver"
+      "reuse": "main c77d436d8 QREADY1+2: all11missing native admissions; retain existing generic resolver",
+      "focused_state": "GREEN5cases187.179s; source/native coverage59claims60placements54Items",
+      "proof": "PG-READY-CLAIMS-2026-11-08.json"
     },
     {
       "feature": "ground_item_mint_and_ground_use_with",
