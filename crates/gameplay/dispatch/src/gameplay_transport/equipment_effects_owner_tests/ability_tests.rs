@@ -306,7 +306,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 captures 53 shared Items plus seven portable QUESTPC4 Items.
+    // QENGINE2 adds exactly the 71 independently captured physical quest Items.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -333,7 +333,10 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
-    assert_eq!(added_keys.len(), 60);
+    assert_eq!(added_keys.len(), 71);
+    for id in [3029, 3035, 3205, 3212, 3234, 3607] {
+        assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
+    }
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -389,6 +392,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
             + additions.len()
+            // Six keys were already counted by main's native Item cohorts:
+            // 3029, 3035, 3205, 3212, 3234 and 3607 (main f5b584ef1).
+            - 6
             // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
             + 26 + 23
     );
@@ -464,6 +470,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     }
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
+    let diary = profiles
+        .records
+        .iter()
+        .find(|r| r.production_definition.production_key == "oteryn:item.tibia.i3212")
+        .ok_or("source-qualified White Raven diary")?;
+    assert_eq!(diary.attributes.speed_bonus, Some(0));
+    assert!(added_keys.contains("oteryn:item.tibia.i3212"));
     for record in profiles.records {
         let abilities = item_ability_profile(&record.semantics)?;
         let sum = abilities.abilities.iter().try_fold(0_i32, |sum, ability| {
@@ -519,6 +532,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             record.production_definition.production_key
         );
     }
+
     assert_eq!(
         unknown_speed,
         [
@@ -547,7 +561,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .chain(
             [
                 347, 401, 635, 636, 2815, 2821, 2827, 2833, 2835,
-                2842, 3212, 3505, 3507,
+                2842, 3505, 3507,
                 4100, 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 8150,
                 8151, 8155, 8156, 8737, 9206, 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214,
                 9215, 9216, 9217, 9218, 9219, 9220, 9221, 9222, 9223, 9224, 9538, 9614, 15276,

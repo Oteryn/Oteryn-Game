@@ -276,6 +276,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     if callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds including native access".into());
     }
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/questl2-djinn-world.json"
+    ))?);
     counterparts::apply(&mut callbacks)?;
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));

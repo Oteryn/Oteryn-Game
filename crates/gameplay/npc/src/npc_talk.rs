@@ -24,12 +24,15 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
 ];
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
 ];
+
+mod quest_merchant;
 
 #[derive(serde::Deserialize)]
 struct RewardMessages {
@@ -63,7 +66,7 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
         }
         (rows.len() <= 256).then_some(rows)
     });
-    reward_callback_npc(key).then_some(())?;
+    (reward_callback_npc(key) || quest_merchant::contains(key)).then_some(())?;
     rows.as_ref()?.iter().find(|r| r.npc == key)
 }
 
@@ -304,8 +307,10 @@ impl NpcTalkBook {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
                 "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
-                crate::content::npc_catalogue::grizzly_shop::book_digest(
-                    model.source_tree_digest()
+                crate::content::npc_catalogue::quest_shops::book_digest(
+                    &crate::content::npc_catalogue::grizzly_shop::book_digest(
+                        model.source_tree_digest()
+                    )
                 ),
                 format_args!(
                     "{}\0{}\0{}\0{}\0{}",
@@ -580,6 +585,7 @@ impl NpcTalkBook {
                         || dark_messages.is_some()
                         || isle_messages.is_some()
                         || reward_callback_npc(&reference.key)
+                        || quest_merchant::contains(&reference.key)
                         || native_npcs.contains(&reference.key.as_str()),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())

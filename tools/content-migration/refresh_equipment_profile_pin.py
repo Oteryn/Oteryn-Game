@@ -25,7 +25,7 @@ def keys(document):
     return set(rows)
 
 
-def regenerate(source, base, updates, qengine, npc, starting=None):
+def regenerate(source, base, updates, qengine, npc, starting=None, overlap_keys=frozenset()):
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(
             "_", ""
@@ -52,6 +52,9 @@ def regenerate(source, base, updates, qengine, npc, starting=None):
     engine_keys, npc_keys = keys(qengine), keys(npc)
     if engine_keys & npc_keys or not (engine_keys | npc_keys) <= actual:
         raise ValueError("source proof keys are overlapping or absent")
+    if not set(overlap_keys) <= (engine_keys & actual):
+        raise ValueError("unproven source cohort overlap")
+    declared -= len(overlap_keys)
     if declared != len(actual):
         raise ValueError(
             f"declared cohorts={declared}, generated profile union={len(actual)}"
@@ -80,7 +83,9 @@ def main():
     )
     source = TEST.read_text()
     generated, count = regenerate(
-        source, *(json.loads((ROOT / p).read_text()) for p in paths)
+        source, *(json.loads((ROOT / p).read_text()) for p in paths),
+        overlap_keys={f"oteryn:item.tibia.i{i}" for i in
+            __import__('qengine_reward_item_profiles').PREVIOUSLY_COUNTED_IDS}
     )
     if args.check and generated != source:
         raise SystemExit("equipment cohort pin is stale")
