@@ -87,7 +87,7 @@ pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, Gather
     // Keep every simple corpse row in the donor table.
     let (spent_item, item, threshold) = match (tool, target) {
         // Pinned Crystal skinning.lua:24–26. The donor marks this chance unconfirmed.
-        (5908, 52678 | 52679 | 52680) => (52677, 52632, 10_000),
+        (5908, 52678..=52680) => (52677, 52632, 10_000),
         (5908, 4272) => (4012, 5878, 7000),
         (5908, 5969) => (4012, 5878, 7000),
         (5908, 4052) => (4053, 5878, 7000),
