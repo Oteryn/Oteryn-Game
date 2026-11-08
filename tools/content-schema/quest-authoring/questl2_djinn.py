@@ -108,7 +108,10 @@ def append(add, state, callbacks, offers, inputs, pin):
         grant('finish', faction, npc, ['yes'],
               [s(faction, 'mission03', 2, 3), s(faction, enemy_door, 1)],
               'permission to trade' if faction == 'efreet' else 'welcome to trade', topic=2,
-              requires=[requirement(faction, 'start', 1)])
+              requires=[requirement(faction, 'start', 1)],
+              achievement=f'oteryn:achievement/{faction}_ally')
+        _, achievement_witness = text(npc, faction.capitalize() + ' Ally')
+        callbacks[-1]['sources'].append(achievement_witness)
 
 
 def world_callbacks(inputs, pin):
@@ -125,11 +128,11 @@ def world_callbacks(inputs, pin):
             'lever': None, 'reversible': False, 'passages': [], 'teleport': None,
             'storage': [{'track': track, 'minimum': 1, 'maximum': 1, 'set': 2}],
             'offerings': [], 'item_on_target': {
-                'item': 'oteryn:item.tibia.i3231', 'count': 1, 'replacement': None,
+                'item': 'oteryn:item.tibia.i3231', 'count': 1,
+                'replacement': 'oteryn:item.tibia.i3243',
                 'target_replacement': None},
             'return_on_failure': False, 'failure_message': None,
-            'effects': {'item_reward': {'item': 'oteryn:item.tibia.i3243',
-                        'count': 1, 'contents': []}},
+            'effects': {},
             'sources': [f'crystal:{pin}:{path}:2-484:sha256:{hashlib.sha256(inputs[path]).hexdigest()}'],
         })
     rows.append({

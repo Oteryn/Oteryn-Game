@@ -1,6 +1,7 @@
 //! Both exclusive factions run from enlistment through the real lamp callbacks.
 use super::questl2_journeys::{quantity, use_at};
 use super::*;
+use oteryn_protocol_oteryn::npc_service::NpcTradeSide;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 const ROOT: &str = "oteryn:quest-progress/quest/u7_4/djinn_war/";
@@ -88,13 +89,34 @@ pub(super) async fn exercise(
         "oteryn:npc.haroun"
     };
     let merchandise = if efreet { 3097 } else { 3092 };
+    let seller = if efreet { npcs[2] } else { npcs[11] };
+    let seller_key = if efreet {
+        "oteryn:npc.alesar"
+    } else {
+        "oteryn:npc.nah_bob"
+    };
+    let sold_item = if efreet { 3369 } else { 3385 };
+    // Supply ordinary money and merchandise before testing the permission gate.
+    supply(owner, admitted, 3043, 19020).await?;
+    supply(owner, admitted, sold_item, 19021).await?;
+    shop(
+        owner,
+        admitted,
+        seller,
+        seller_key,
+        0,
+        (sold_item, NpcTradeSide::Sell),
+        NpcIntentDisposition::Rejected,
+    )
+    .await?;
+    assert_eq!(quantity(h, sold_item).await?, 1);
     shop(
         owner,
         admitted,
         merchant,
         merchant_key,
         0,
-        merchandise,
+        (merchandise, NpcTradeSide::Buy),
         NpcIntentDisposition::Rejected,
     )
     .await?;
@@ -161,6 +183,26 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 3243).await?, 1);
     assert_eq!(track(h, faction, "mission03").await?, 2);
     act!(faction, "finish", NpcIntentDisposition::Ok);
+    let achievement = format!("oteryn:achievement/{faction}_ally");
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1"
+        )
+        .bind(&achievement)
+        .fetch_one(&h.pool)
+        .await?,
+        1
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1"
+        )
+        .bind(format!("oteryn:achievement/{other}_ally"))
+        .fetch_one(&h.pool)
+        .await?,
+        0
+    );
+
     assert_eq!(track(h, faction, "mission03").await?, 3);
     act!(faction, "finish", NpcIntentDisposition::Rejected);
     assert_eq!(
@@ -168,8 +210,6 @@ pub(super) async fn exercise(
         1,
         "sleeping lamp preserved after completion"
     );
-    // Ordinary spending money is fixture input; permission must come from the mission.
-    supply(owner, admitted, 3043, 19020).await?;
     let stage = track(h, faction, "mission03").await?;
     shop(
         owner,
@@ -177,7 +217,7 @@ pub(super) async fn exercise(
         merchant,
         merchant_key,
         stage,
-        merchandise,
+        (merchandise, NpcTradeSide::Buy),
         NpcIntentDisposition::Ok,
     )
     .await?;
@@ -185,6 +225,21 @@ pub(super) async fn exercise(
         quantity(h, merchandise).await?,
         1,
         "real entitled shop purchase"
+    );
+    shop(
+        owner,
+        admitted,
+        seller,
+        seller_key,
+        stage,
+        (sold_item, NpcTradeSide::Sell),
+        NpcIntentDisposition::Ok,
+    )
+    .await?;
+    assert_eq!(
+        quantity(h, sold_item).await?,
+        0,
+        "second faction merchant buys exactly once"
     );
     Ok(())
 }
@@ -234,14 +289,13 @@ async fn shop(
     npc: EntityRef,
     npc_key: &str,
     stage: i64,
-    item: u32,
+    selection: (u32, NpcTradeSide),
     expected: NpcIntentDisposition,
 ) -> TestResult {
     use crate::content::npc_catalogue::quest_shops;
-    use oteryn_protocol_oteryn::npc_service::{
-        NpcTradeIntent, NpcTradeSide, encode_npc_trade_intent,
-    };
-    // The preceding tome conversation used three talk intents. Respect the
+    use oteryn_protocol_oteryn::npc_service::{NpcTradeIntent, encode_npc_trade_intent};
+    let (item, side) = selection;
+    // The preceding mission conversation used several talk intents. Respect the
     // native four-intents-per-second limit before this greeting and trade.
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     let book = owner.states.chat.npc_talk().ok_or("shop book")?;
@@ -287,9 +341,32 @@ async fn shop(
     let shown = oteryn_gameplay_npc::npc_command::projected(&visible, index)
         .enumerate()
         .find(|(_, (_, source))| source.item.key == target);
+    // Before completion, send the same valid offer and price an ungated shop
+    // would expose. A wrong price must not be the reason access is refused.
+    let ungated: Vec<_> = entry
+        .offers()
+        .iter()
+        .filter(|offer| {
+            crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                native,
+                &crate::durability::item_mint::TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: offer.item.key.clone(),
+                    revision_ref: offer.item.revision.clone(),
+                },
+            )
+            .is_ok()
+        })
+        .cloned()
+        .collect();
+    let source_offer = oteryn_gameplay_npc::npc_command::projected(&ungated, index)
+        .enumerate()
+        .find(|(_, (_, source))| source.item.key == target)
+        .map(|(n, (offer, _))| (n, offer.unit_price))
+        .ok_or("Djinn source offer must be materializable")?;
     let (offer_index, price) = shown
-        .map(|(n, (o, _))| (n, o.unit_price))
-        .unwrap_or((visible.len(), 2500));
+        .map(|(n, (offer, _))| (n, offer.unit_price))
+        .unwrap_or(source_offer);
     drop(runtime);
     let first = admitted.continuity.next_command_id;
     let mut commands = Vec::new();
@@ -305,7 +382,7 @@ async fn shop(
         npc_actor: npc,
         catalogue_revision: book.catalogue_revision(),
         offer_index: u32::try_from(offer_index)?,
-        side: NpcTradeSide::Buy,
+        side,
         quantity: 1,
         expected_unit_price: price,
     };

@@ -64,7 +64,7 @@ with actual18.6 server markers and five-second durations before authoring.
 
 Reuse the existing NPC reward, paid exchange, conditional shop and literal map-USE
 owners. Source UID 2285 (Efreet) and UID 3024 (Marid) exchange a carried 3231 lamp
-for a fresh 3243 sleeping lamp and advance mission 3 atomically:
+for a 3243 sleeping lamp and advance mission 3 atomically:
 `data-global/scripts/actions/other/others/quest_system2.lua:2-38,361-484`,
 sha256 `04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635`.
 The fountain AID 12105 issues tear 3233 only at Efreet mission 2 stage 1:
@@ -88,3 +88,42 @@ quest catalogue does not implement charged minting. Requested the generic trade
 feature from qengine2. The journey's access purchase uses an ordinary source
 offer (Yaman dwarven ring 3097 / Haroun axe ring 3092), keeping the unsupported
 charged rows faithful rather than relabelling them as ordinary items.
+
+### Koshei source decision and shared seams (2026-11-07)
+
+The pinned donor is explicit: A Sweaty Cyclops consumes parts 7528–7531 and
+5000 gold, waits 24 hours, then issues amulet 7532 once. Witness:
+`data-global/npc/a_sweaty_cyclops.lua:251-337`, sha256
+`bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a`.
+Oteryn will apply the fee and four parts atomically, retaining them when any
+input is absent; the donor's fee-before-parts bug is not copied.
+
+The final use selects carried amulet 7532 on corpse appearance 7535, consumes
+one and grants RewardDoor=1:
+`data-global/scripts/quests/koshei_the_deathless_quest/action_boss.lua:1-14`,
+sha256 `1452b73d3922672bd6a2f5173cbcad2d52e2cb747a5d2978d1292b6e93033fd0`.
+The coffin switch UID3070 checks all five statue positions and transforms
+162→167 for 120 seconds; its source is
+`data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua:1-46`,
+sha256 `73c7e2f3c6b1b5ef582b9e09e068d829fd127ec5553358d443b7c25873b26855`.
+
+Existing bounded reward state operations already provide SetNow and
+ElapsedAtLeast for assembly. Production duration remains 86400 seconds.
+Requested qengine2's selected-corpse item-use route and a deterministic durable
+quest-clock test seam; tests must not shorten that timer or seed completion.
+QENGINE2 was fetched again and remains e5850715e. No competing implementation
+was found in its current head or the available corpse-callback branch history.
+This is source investigation, not a claim of Koshei qualification.
+
+Djinn lamp identity decision: use the existing one-item replacement owner for
+3231→3243, preserving the carried instance while changing its definition in the
+same transaction as mission progress. The donor instead mints a new instance
+and removes the old one. Contents, quantities, access and replay behavior are
+preserved; no unsupported combination of world item-cost and fresh reward is
+authored. Both donor Ally achievements are part of the final NPC transition.
+
+The post-main boss fixture also exposed stale generated loot facts: the active
+profiles already admit corpses 5973/5995/6006, while this branch's loot table
+still marked them unmaterializable. Regenerate with
+`build_full_spell_artifact.py --refresh-loot-tables` before registering native
+providers. Keep all five pre-existing shared-body admission expectations intact.

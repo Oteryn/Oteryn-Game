@@ -390,8 +390,8 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
                 facts[definition['identity']['key']]['charges'] = charge_count['value']
                 stack = definition.get('semantics', {}).get('stack', {})
                 stackable = stack.get('value', {}).get('stackable', {}) if stack.get('state') == 'KNOWN' else {}
-                if stackable.get('state') == 'KNOWN' and stackable['value'] is True:
-                    facts[definition['identity']['key']]['stackable'] = True
+                if stackable.get('state') == 'KNOWN' and type(stackable.get('value')) is bool:
+                    facts[definition['identity']['key']]['stackable'] = stackable['value']
             client = re.fullmatch(r'oteryn:item\.tibia\.i(\d+)', definition['identity']['key'])
             if client is not None and int(client.group(1)) in products:
                 facts[definition['identity']['key']]['creature_product'] = True
@@ -418,6 +418,10 @@ def refine_native_item_facts(facts: dict, native_profiles: dict) -> dict:
             continue
         if fact['item'] != {'family':reference['family'],'key':reference['production_key'],'revision':reference['revision_ref']}:
             raise ValueError('Native loot custody identity differs from canonical declaration')
+        native = native_loot_yield_facts(fact['item'], record)
+        if native is not None:
+            fact.update(native)
+            continue
         container=record['semantics']['container']
         capacity=container.get('value',{}).get('capacity',{}) if container['state']=='KNOWN' else {}
         fact['materializable']=True
@@ -449,7 +453,8 @@ def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path)
     table['entries'].append({'item': facts['oteryn:item.tibia.i51760']['item'],
                              'min_count': 1, 'max_count': 1, 'probability_ppm': 47600})
     tables[key] = table
-    _, profiles = read(item_definitions / 'spell-native-profiles.json')
+    from questl2_native_fragments import item_profiles
+    profiles = {'records': item_profiles(item_definitions)}
     # Include every guaranteed-vocation item and each durable decay stage, even
     # when the ordinary table cannot roll that item.
     selected = (3359, 3285, 3375, 3571, 51760, 3074, 7991, 3066, 50195, 51119, 3338,

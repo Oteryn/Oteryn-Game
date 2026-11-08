@@ -27,18 +27,12 @@
       "item_on_target": {
         "item": "oteryn:item.tibia.i3231",
         "count": 1,
-        "replacement": null,
+        "replacement": "oteryn:item.tibia.i3243",
         "target_replacement": null
       },
       "return_on_failure": false,
       "failure_message": null,
-      "effects": {
-        "item_reward": {
-          "item": "oteryn:item.tibia.i3243",
-          "count": 1,
-          "contents": []
-        }
-      },
+      "effects": {},
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/actions/other/others/quest_system2.lua:2-484:sha256:04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635"
       ]
@@ -69,18 +63,12 @@
       "item_on_target": {
         "item": "oteryn:item.tibia.i3231",
         "count": 1,
-        "replacement": null,
+        "replacement": "oteryn:item.tibia.i3243",
         "target_replacement": null
       },
       "return_on_failure": false,
       "failure_message": null,
-      "effects": {
-        "item_reward": {
-          "item": "oteryn:item.tibia.i3243",
-          "count": 1,
-          "contents": []
-        }
-      },
+      "effects": {},
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/actions/other/others/quest_system2.lua:2-484:sha256:04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635"
       ]

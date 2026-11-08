@@ -4899,12 +4899,13 @@
       "take": [],
       "give": null,
       "outfit": null,
-      "achievement": null,
+      "achievement": "oteryn:achievement/efreet_ally",
       "reply": [
         "But that's in the future. For now, I will confine myself to give you the permission to trade with my people whenever you want to. ..."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/malor.lua:142:sha256:abcae4a2c7ba46ea369355a0c31e905189a3489c18bba843d06f9a0310cc09ec"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/malor.lua:142:sha256:abcae4a2c7ba46ea369355a0c31e905189a3489c18bba843d06f9a0310cc09ec",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/malor.lua:147:sha256:abcae4a2c7ba46ea369355a0c31e905189a3489c18bba843d06f9a0310cc09ec"
       ],
       "requires": [
         {
@@ -5629,12 +5630,13 @@
       "take": [],
       "give": null,
       "outfit": null,
-      "achievement": null,
+      "achievement": "oteryn:achievement/marid_ally",
       "reply": [
         "Know, that from now on you are considered one of us and are welcome to trade with Haroun and Nah'bob whenever you want to!"
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gabel.lua:131:sha256:4691a0a07d65bc9972acc3641e8c89fc0476c7a3033c128a51801e19fdbedeaa"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gabel.lua:131:sha256:4691a0a07d65bc9972acc3641e8c89fc0476c7a3033c128a51801e19fdbedeaa",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gabel.lua:136:sha256:4691a0a07d65bc9972acc3641e8c89fc0476c7a3033c128a51801e19fdbedeaa"
       ],
       "requires": [
         {
