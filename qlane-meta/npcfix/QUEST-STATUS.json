@@ -8934,110 +8934,165 @@
     "cumulative_npcs": 232
   },
   "active_name_work": {
-    "state": "QUALIFIED",
+    "name": "npcfix-source-placement-qualification-46",
+    "state": "COMPILES; current-unit and focused PostgreSQL reruns pending",
     "entries": [
-      "Guardian of the Deep Seas",
-      "Hemor, the guard",
-      "Humnog, the guard",
-      "Lesser Messenger of Heaven",
-      "Nah'Bob",
-      "One-Eyed Joe"
+      "G Ezkho",
+      "Gnome Trooper",
+      "Grof, The Guard",
+      "H.L.",
+      "Captain Marie-Denise Banner",
+      "Eldoran the Ambitious"
     ],
-    "fixture_prerequisite_red": {
-      "error": "PlacementsNotAscending",
-      "seconds": 306.37,
-      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "log": "/tmp/npcfix-evidence/six-name-fixture-order-red.log"
-    },
-    "fix": "Only new case points sorted by exact runtime order(floor,y,x); both Lesser Messenger anchors retained and checked against frozen retail positions. No Rust, runtime ordering guard, prior case or canonical NPC data changed. Fresh name RED rerun active.",
+    "source_base": "03973dc93ecb361d394a261043cc8e001705f4c5",
+    "new_native_repairs": 5,
+    "prior_repairs_preserved": 60,
+    "new_anchors": 11,
     "postgres_red": {
-      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 162.13,
-      "error": "Guardian Of The Deep Seas != Guardian of the Deep Seas",
-      "log": "/tmp/npcfix-evidence/six-name-pg-red.log",
-      "sha256": "42bb5395379ed378c5e56f3bc0199721d79496d48c3bfca95f4d3639d7048f77"
+      "exit": 101,
+      "seconds": 109.308,
+      "marker_present": true,
+      "binary_source": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+      "binary_sha256": "144d9920eac5dcf94d8ef0e1c3e4ec441bd6681f6ba94d389425b280f3478434",
+      "incoming_main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+      "new_cases": 6,
+      "new_anchors": 11,
+      "case_packet_restored": true,
+      "log_sha256": "dd6a464a29ee0efb8a2987d42b66aa9b5bba953ffed88700d35d19e7dc56b7df",
+      "exact_red": "Captain Marie Denise Banner != Captain Marie-Denise Banner",
+      "state": "ACTUAL_PG_RED; five exact source display fields still not applied"
     },
-    "source_packet": {
-      "repairs": 60,
-      "original54_preserved": true,
-      "sha256": "0ba41960fed44d4535c0b494e2b6fb158c7481f4da08d0f18e7bd99caf629a66"
+    "unit_plan": "Replace superseded c54 partial run with fresh current changed-package units after generation. Earlier client-assets10, game-server578 (+3 inherited ignores), ops7 passed; no full-unit green claim.",
+    "source_delta": {
+      "base": "03973dc93ecb361d394a261043cc8e001705f4c5",
+      "preserved_npcs": 1285,
+      "changed_npcs": [
+        "oteryn:npc.captain_marie_denise_banner",
+        "oteryn:npc.eldoran_the_ambitious",
+        "oteryn:npc.g_ezkho",
+        "oteryn:npc.grof_the_guard",
+        "oteryn:npc.h_l"
+      ],
+      "only_change": "one exact source display-name Text field per NPC; all prior fields, identity, dialogue and services unchanged",
+      "original_repairs_preserved": 60,
+      "repair_count": 65,
+      "packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950"
     },
-    "compile_proof": "Current cargo-run materializer executable is running against predecessor and output temporary roots after packet60/digest refresh. No Rust behavior change beyond repo-generated packet digest/count; canonical name RED162.13s retained; authoring tests and full generation active.",
-    "authoring_tests": "4 exact-before/atomicity tests PASS0.22s",
-    "materialization": "All protected predecessor stages and eleven legacy documents completed; inventory pins refreshed through repository tooling. Six canonical names emitted; prey-model build and remaining generation/check/Clippy gates running.",
-    "postgres_green": {
-      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 111.62,
-      "log": "/tmp/npcfix-evidence/six-name-pg-green.log",
-      "sha256": "c810f32a37c60f33e17b94e8c8735974eee84c2e7f5f2e78a75e7183d7662f3b"
-    },
-    "content_delta": {
-      "items": {
-        "records": 34111,
-        "preserved_exactly": true
-      },
-      "trade": {
-        "records": 327,
-        "preserved_exactly": true
-      },
-      "creatures": {
-        "records": 1863,
-        "preserved_exactly": true
-      },
-      "spawns": {
-        "records": 54684,
-        "preserved_exactly": true
-      },
-      "placements": {
-        "records": 345,
-        "preserved_exactly": true
-      },
-      "native": {
-        "records": 3628,
-        "preserved_exactly": true
-      },
-      "fluid_items": {
-        "records": 2,
-        "preserved_exactly": true
-      },
-      "terrain": {
-        "records": 8618,
-        "preserved_exactly": true
-      },
-      "npcs": {
-        "records": 1290,
-        "changed_only_display_name": [
-          "oteryn:npc.guardian_of_the_deep_seas",
-          "oteryn:npc.hemor_the_guard",
-          "oteryn:npc.humnog_the_guard",
-          "oteryn:npc.lesser_messenger_of_heaven",
-          "oteryn:npc.nah_bob",
-          "oteryn:npc.one_eyed_joe"
-        ]
-      }
-    },
-    "canonical_order_fix": {
-      "old_packet_sha256": "0ba41960fed44d4535c0b494e2b6fb158c7481f4da08d0f18e7bd99caf629a66",
-      "new_packet_sha256": "bde7214723c91671cf00238d9db6b8de64c58323c5591de0cd7b1ed3c44bfcae",
-      "original54_unchanged": true,
-      "all6_after_records_equal_existing_legacy_records": true,
-      "fix": "Canonical field_path ordering in only six new after-records; no canonical data or test assertion changed."
-    },
-    "catalogue": "Fresh NPC catalogue target compiled and passed55.83s after canonical field order correction",
-    "world_pin": {
-      "inputs_digest": "3f6980e2c46edc44d3cccf4e9204b49cd242c50855c0b45f91154535f1a8f307",
-      "pins": [
+    "generation": {
+      "full_world": "PASS documented --no-stage --skip-checks generation; materializer, catalogue, placements and authoring stages completed",
+      "final_stages": [
         {
-          "bytes": 31822062,
-          "digest": "bebbda21662d3b0e37b68a718b5b11b9903e2647e5b7f40173842a3916e06e27",
-          "world": "oteryn"
+          "name": "delta",
+          "command": [
+            "python3",
+            "/tmp/npcfix-evidence/verify-next-six-native-delta.py"
+          ],
+          "exit": 0,
+          "seconds": 0.25
+        },
+        {
+          "name": "audit",
+          "command": [
+            "python3",
+            "tools/contracts/update_item_audit_tags.py"
+          ],
+          "exit": 0,
+          "seconds": 0.027
+        },
+        {
+          "name": "matrix",
+          "command": [
+            "python3",
+            "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+          ],
+          "exit": 0,
+          "seconds": 1.055
+        },
+        {
+          "name": "bindings",
+          "command": [
+            "python3",
+            "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+          ],
+          "exit": 0,
+          "seconds": 23.61
+        },
+        {
+          "name": "weapon",
+          "command": [
+            "python3",
+            "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+          ],
+          "exit": 0,
+          "seconds": 0.524
+        },
+        {
+          "name": "crystal",
+          "command": [
+            "python3",
+            "tools/content-census/g4_item_crystal_binding_generator.py"
+          ],
+          "exit": 0,
+          "seconds": 2.452
+        },
+        {
+          "name": "pins",
+          "command": [
+            "cargo",
+            "run",
+            "--locked",
+            "--release",
+            "-p",
+            "oteryn-world-bundle-compiler",
+            "--",
+            "pin-refresh",
+            "."
+          ],
+          "exit": 0,
+          "seconds": 46.799
+        },
+        {
+          "name": "native-check",
+          "command": [
+            "python3",
+            "tools/content-migration/register_spell_families.py",
+            "--check"
+          ],
+          "exit": 0,
+          "seconds": 125.011
+        },
+        {
+          "name": "duplicates",
+          "command": [
+            "bash",
+            ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+          ],
+          "exit": 0,
+          "seconds": 0.715
         }
-      ]
+      ],
+      "map_binary_changes": 0,
+      "prey_docs": "Only input SHA changed; numeric results unchanged",
+      "equipment_profiles": 3818
     },
-    "name": "npcfix-exact-displayed-names-43",
-    "checks": "PASS: PG RED162.13s/GREEN111.62s; full generator including repository5 tests125.91s; final game-server alltargets/allfeatures check and strict Clippy; canonical-order authoring4 tests; catalogue55.83s; fmt; duplicate migration check; independent regenerated world pin.",
-    "cumulative_npcs": 238,
-    "cumulative_native_actors": 240
+    "publication_gates": [
+      {
+        "name": "check",
+        "exit": 0,
+        "seconds": 344.05
+      },
+      {
+        "name": "fmt",
+        "exit": 0,
+        "seconds": 19.086
+      },
+      {
+        "name": "clippy",
+        "exit": 0,
+        "seconds": 150.323
+      }
+    ],
+    "publication": "PREPUSH-2 compiling checkpoint; no new qualifications. Fresh six-package units plus physical/atomic/state PostgreSQL pending."
   },
   "active_shop_work": {
     "state": "FIVE_PORTABLE_PROFILES_AND_OPTIONAL_FLUID_FIX_RESTORED_AFTER_MAIN; FULL_DEPENDENT_PG_PENDING; NO_PROMOTION",

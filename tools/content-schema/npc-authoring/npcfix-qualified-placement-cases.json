@@ -2965,6 +2965,100 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "npcfix-source-placement-qualification-46",
+      "before_commit": "03973dc93ecb361d394a261043cc8e001705f4c5",
+      "source": "tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json: reviewed complete retail positions and pinned Wiki revision for each owned NPC; qualification only, no terrain or collision changes.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.g_ezkho",
+          "name": "G'Ezkho",
+          "expected": {
+            "x": 34052,
+            "y": 32485,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.gnome_trooper",
+          "name": "Gnome Trooper",
+          "expected": {
+            "x": 32153,
+            "y": 32522,
+            "floor": -15
+          },
+          "before": null,
+          "additional": [
+            {
+              "x": 32264,
+              "y": 32708,
+              "floor": -15
+            },
+            {
+              "x": 32296,
+              "y": 32505,
+              "floor": -14
+            },
+            {
+              "x": 32170,
+              "y": 32662,
+              "floor": -14
+            },
+            {
+              "x": 32333,
+              "y": 32590,
+              "floor": -13
+            },
+            {
+              "x": 32169,
+              "y": 32651,
+              "floor": -13
+            }
+          ]
+        },
+        {
+          "npc": "oteryn:npc.grof_the_guard",
+          "name": "Grof, The Guard",
+          "expected": {
+            "x": 32373,
+            "y": 32184,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.h_l",
+          "name": "H.L.",
+          "expected": {
+            "x": 32643,
+            "y": 32212,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.captain_marie_denise_banner",
+          "name": "Captain Marie-Denise Banner",
+          "expected": {
+            "x": 33837,
+            "y": 32137,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.eldoran_the_ambitious",
+          "name": "Eldoran the Ambitious",
+          "expected": {
+            "x": 33862,
+            "y": 32104,
+            "floor": -2
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

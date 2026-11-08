@@ -24,7 +24,7 @@
     },
     "Dialogue": {
       "index": "content/dialogues/definitions/index.json",
-      "records": 836
+      "records": 839
     },
     "Document": {
       "index": "content/documents/index.json",
@@ -60,7 +60,7 @@
     },
     "NPC": {
       "index": "content/npcs/definitions/index.json",
-      "records": 1282
+      "records": 1290
     },
     "Presentation": {
       "index": "content/presentations/definitions/index.json",
@@ -92,11 +92,11 @@
     },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
-      "records": 324
+      "records": 327
     },
     "Service.Travel": {
       "index": "content/services/travel/index.json",
-      "records": 56
+      "records": 59
     },
     "StarterKit": {
       "index": "content/starter/index.json",
@@ -346,7 +346,7 @@
       "path": "content/dialogues/definitions/dialogues-00000-00499.json"
     },
     {
-      "path": "content/dialogues/definitions/dialogues-00500-00835.json"
+      "path": "content/dialogues/definitions/dialogues-00500-00838.json"
     },
     {
       "path": "content/dialogues/definitions/index.json"
@@ -655,7 +655,7 @@
       "path": "content/npcs/definitions/npcs-00500-00999.json"
     },
     {
-      "path": "content/npcs/definitions/npcs-01000-01281.json"
+      "path": "content/npcs/definitions/npcs-01000-01289.json"
     },
     {
       "path": "content/presentations/bindings/client-ids.json"
@@ -751,13 +751,13 @@
       "path": "content/services/trade/index.json"
     },
     {
-      "path": "content/services/trade/trade-00000-00323.json"
+      "path": "content/services/trade/trade-00000-00326.json"
     },
     {
       "path": "content/services/travel/index.json"
     },
     {
-      "path": "content/services/travel/travel-00000-00055.json"
+      "path": "content/services/travel/travel-00000-00058.json"
     },
     {
       "path": "content/spells.manifest.json"
@@ -942,7 +942,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "29eabbfcfeb2e0a70e14a78d09295ceae252d7e2dd5e4aa4607012a84aaf665b"
+          "sha256": "1d397255ace772b964a84f0507518a86c7de0a4e254c6c7ee1571d9979c17606"
         },
         {
           "creates_canonical_identities": false,
