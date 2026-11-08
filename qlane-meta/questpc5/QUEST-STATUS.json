@@ -4,7 +4,7 @@
     "title": "20 Years a Cook Quest",
     "mechanism": "native_actor_use_stepin_bindings",
     "status": "UNFINISHED",
-    "blocker": "The Draccoon trashcan entry and Ratha soul-container chain have no admitted native actor/USE binding in the selected authored recipe.",
+    "blocker": "Cheaty/Draccoon contacts and actual source trashcan are GREEN. Remaining: selected Ratha essence programme, live rival-cook catapult relocation, Bulltaur reconnaissance and final report.",
     "from_lanes": [
       "questpc4"
     ],
@@ -114,14 +114,15 @@
       "main": "c77d436d8",
       "proof": "cloud-mainc77-integration-proof.json",
       "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md"
   },
   {
     "canonical": "oteryn:quest.tutorial",
     "title": "Tutorial",
     "mechanism": "native_actor_use_stepin_bindings",
     "status": "UNFINISHED",
-    "blocker": "The wounded Cave Draptor treatment, tutorial hole and crystal exit have unresolved native action/actor bindings; this is the pinned Tutorial title, not excluded Dawnport.",
+    "blocker": "Source10HP/150XP wounded actor and rope3003/torch2920 identities are resolved; author the finite route/actor and reuse native kill goals. Actual claimant-fenced loot credit is requested in ENGINE-REQUESTS.md. No excluded Dawnport quest.",
     "from_lanes": [
       "questpc4"
     ],
@@ -151,7 +152,8 @@
       "existing_reuse": "native_kill_goals already supplies bounded once-only kill counters;1005carried-use proof covers tool consumption, not creature-death loot ingress",
       "where": "gameplay-dispatch quick_loot/corpse settlement and gameplay-quests callback admission",
       "rule": "Do not substitute an inventory presence check or kill alone for the selected kill-and-loot objective. No generic engine implementation in this lane."
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md"
   },
   {
     "canonical": "oteryn:quest.newhaven_legion_helmet_quest",
@@ -340,7 +342,7 @@
     "title": "Nomads Land Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Identities resolved to parchment2814 and stolen jewel case7527. Selected cabinet delivery needs the existing mint-plan readable text surfaced on shared ItemReward; ENGINE-REQUEST sent, QENGINE2parent predicate188ab6f79 available for reuse.",
+    "blocker": "Book2814, case7527 and source layout are resolved. Author selected route using existing pickup/inventory/drop; mutable Ground stack predicate and readable reward text requests are recorded in ENGINE-REQUESTS.md.",
     "from_lanes": [
       "questpc2"
     ],
@@ -374,7 +376,8 @@
       "main": "c77d436d8",
       "proof": "cloud-mainc77-integration-proof.json",
       "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md"
   },
   {
     "canonical": "oteryn:quest.authored.nomads_mini_world_change",
@@ -482,7 +485,7 @@
     "title": "Opticording Sphere Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "The authored sphere target is ambiguous, multiple vision targets have no Native identity, and final Monolith Kit33330 is not materializable. Bigfoot prerequisite alone cannot make these targets authoritative.",
+    "blocker": "Three exact sphere material profiles passed real PostgreSQL RED then GREEN. Whole15-stage selected programme, boss data and source bindings remain to author.",
     "from_lanes": [
       "questpc2"
     ],
@@ -505,17 +508,19 @@
       ],
       "source_unit_tests": "3PASS9.580s",
       "producer_registered": true,
-      "postgres": "3realPG RED before native registration; profiles now registered; GREEN build queued behind workspace/Clippy",
+      "postgres": "3PASS PostgreSQL18.6; 43.240674663s/43.276256365s/43.406213542s; no seeded quest progress",
       "proof": "cloud-opticording-source-resolution.json",
       "generated_checks": "49nativefiles,3exactnewprofiles,3841existingunchanged,equipment3879,equivalence/pins/duplicatesPASS"
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "prerequisite_work": "Exact torches and selected order drafted; not registered. Foreign rank prerequisite needs read-only admission alongside a local transition; preserve would create a forbidden foreign effect."
   },
   {
     "canonical": "oteryn:quest.oramond_quest",
     "title": "Oramond Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Root identity resolved to donor Item21291; daily authored callback restart requested from qengine2 while native collection/tool bindings remain to author.",
+    "blocker": "Exact roots21291 are admitted. Author remaining daily plant/tool/pollen/probe/sewer programme; reuse existing transaction clock operations. Cycle-scoped World reward MINT is requested in ENGINE-REQUESTS.md.",
     "from_lanes": [
       "questpc2"
     ],
@@ -549,7 +554,8 @@
       "reused_clock": "reward_callbacks/state_ops.rs:StateCondition::ElapsedAtLeast + StateMutation::SetNow, authoritative transaction clock already implemented",
       "missing": "World USE ItemReward needs cycle-scoped repeatable MINT; give_world passes false at reward_claim_mint/quest.rs:469",
       "rule": "No synthetic payment or reused old roots to bypass five new plant rewards."
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md"
   },
   {
     "canonical": "oteryn:quest.ornamented_shield_quest",
@@ -595,14 +601,15 @@
       "main": "c77d436d8",
       "proof": "cloud-mainc77-integration-proof.json",
       "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md"
   },
   {
     "canonical": "oteryn:quest.overhunting_world_change",
     "title": "Overhunting World Change",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Own scope is selected personal five-trap daily route only; global population/counter/server-save changes belong world lanes. Daily callback restart requested from qengine2; personal capture contacts remain to bind.",
+    "blocker": "Existing wolf/trap capture and Benevola World handover are reusable. Author personal daily programme; capture/pickup attribution is requested in ENGINE-REQUESTS.md. No duplicate World counter.",
     "from_lanes": [
       "questpc2"
     ],
@@ -641,7 +648,8 @@
       ],
       "missing": "Claimant-attributed personal quest progress from capture/pickup event; retain daily run admission",
       "rule": "Do not rebuild traps, global World counter or Benevola source handover."
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md"
   },
   {
     "canonical": "oteryn:quest.power_ring_quest",
@@ -715,7 +723,7 @@
     "title": "Targuna Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Remaining complete route: Sterling treasure and Emiliana storyline actor/action bindings.",
+    "blocker": "Exact Ram object53439, turnip53073, mount identity and source rule are resolved. Author personal errands and reuse requested guarded object taming; no Creature substitution.",
     "from_lanes": [
       "questpc4"
     ],
@@ -746,7 +754,8 @@
       "main": "c77d436d8",
       "proof": "cloud-mainc77-integration-proof.json",
       "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md"
   },
   {
     "canonical": "oteryn:quest.the_explorer_society_quest",
@@ -775,7 +784,8 @@
       "main": "c77d436d8",
       "proof": "cloud-mainc77-integration-proof.json",
       "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md"
   },
   {
     "canonical": "oteryn:quest.the_queen_of_the_banshees_quest",
@@ -1071,7 +1081,8 @@
       "main": "c77d436d8",
       "proof": "cloud-mainc77-integration-proof.json",
       "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
-    }
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md"
   },
   {
     "canonical": "oteryn:quest.serpentine_tower_quest",

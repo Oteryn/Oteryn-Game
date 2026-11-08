@@ -1,6 +1,6 @@
 {
   "quest": "oteryn:quest.opticording_sphere_quest",
-  "state": "THREE_PHYSICAL_PROFILES_REGISTERED_PG_GREEN_PENDING",
+  "state": "THREE_PHYSICAL_PROFILES_PG_GREEN_WHOLE_ROUTE_PENDING",
   "physical_selection": {
     "19063": "initial opticording sphere,200centioz",
     "23573": "broken opticording sphere,180centioz",
@@ -68,7 +68,18 @@
       "markers": "POSTGRES_CASE_STARTED opticording_material_custody item=<id> server_version=18.6",
       "log": "/tmp/questpc5-greeting-and-opticording-red-pg2.log",
       "registration_hook_authored": true,
-      "generated_native_profiles": "not regenerated while other PG cases remain running"
+      "generated_native_profiles": "Registered through canonical producer before GREEN",
+      "green": {
+        "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "duration_seconds": {
+          "23572": 43.240674663,
+          "23573": 43.276256365,
+          "19063": 43.406213542
+        },
+        "summary": "3 passed, 86.716s",
+        "log": "/tmp/questpc5-opticording-green-pg2.log",
+        "scope": "Actual native backpack custody only; zero quest progress states; not whole-quest qualification"
+      }
     },
     "generated_native_files": 49,
     "unchanged_existing_profiles": 3841,
