@@ -1045,9 +1045,9 @@
   "src": "TIBAUD-1",
   "area": "Training",
   "feature": "Offline / exercise / multi-character dialog",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Komendy offline/exercise są; brak pełnego multi-character wyboru treningu.",
-  "evidence": "apps/client/src/features/local-character-selection/native.rs:145 + training_selection_enters_the_owned_character_and_opens_training; remaining: bulk multi-character offline training",
+  "evidence": "apps/client/src/reentry.rs:204 + training_batch_reentry_advances_only_after_confirmation_and_cancel_clears_the_queue; apps/client/src/native_entry/authorize.rs:71 + training_batch_admits_each_owned_character_with_a_fresh_ticket",
   "lane": "cg_analytics"
  },
  {

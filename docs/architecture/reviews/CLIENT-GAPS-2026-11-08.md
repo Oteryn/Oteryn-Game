@@ -48,7 +48,7 @@ Zasady przeciw dublowaniu:
 | T029 | Party | Team Finder assemble/join | DONE | Social Join/Assemble, filtrowana lista i operacje na uchwycie widocznego lidera. evidence: crates/client-ui/src/features/0232-team-finder-members/view.rs:10 + social_team_filters_join_the_visible_leader |
 | T026 | Social | Friends, main character, zaproszenia | PARTIAL | Są zgody/status VIP; brak pełnego kontowego Friends i main character. |
 | T027 | Social | Badges: widoczność i filtry | PARTIAL | Odczyt jest; brak edycji publicznej widoczności i filtrów locked/hidden/public. |
-| T140 | Training | Offline / exercise / multi-character dialog | PARTIAL | Komendy offline/exercise są; brak pełnego multi-character wyboru treningu. evidence: apps/client/src/features/local-character-selection/native.rs:145 + training_selection_enters_the_owned_character_and_opens_training; remaining: bulk multi-character offline training |
+| T140 | Training | Offline / exercise / multi-character dialog | DONE | Wielokrotny wybór własnych postaci; kolejka osobnych sesji treningowych, świeży ticket i roster dla każdej postaci, przejście dalej po potwierdzeniu offline, anulowanie zatrzymuje kolejkę. evidence: apps/client/src/reentry.rs:204 + training_batch_reentry_advances_only_after_confirmation_and_cancel_clears_the_queue; apps/client/src/native_entry/authorize.rs:71 + training_batch_admits_each_owned_character_with_a_fresh_ticket |
 
 ## cg_cyclo
 
