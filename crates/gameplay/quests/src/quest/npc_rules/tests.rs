@@ -659,6 +659,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.a_father_s_burden_quest",
         "oteryn:quest.a_pirates_tail",
         "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.blood_brothers_quest",
         "oteryn:quest.dangerous_depths_quest",
         "oteryn:quest.draconia_quest",
         "oteryn:quest.elemental_spheres_quest",
@@ -750,8 +751,8 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    // Dream Courts, Tamoril and Gnomus source defaults remain registered.
-    assert_eq!(defaults, BTreeMap::from([(-1, 203), (0, 54)]));
+    // Dream Courts, Tamoril, Gnomus, Julius and Citizen scopes remain registered.
+    assert_eq!(defaults, BTreeMap::from([(-1, 204), (0, 54)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -984,6 +985,52 @@ fn elemental_spheres_live_eligibility_selects_each_source_vocation_reward()
         input.premium_current = false;
         assert!(catalog.plan_item_exchange(&input)?.is_none());
     }
+    Ok(())
+}
+
+#[test]
+fn m54_source_completion_does_not_complete_shared_canonical_quest() -> Result<(), NpcRuleError> {
+    let marker = "oteryn:quest-progress/source-completion/test_npc/rook";
+    let rule = fixture_rule(
+        "rook",
+        serde_json::json!([
+            {"kind":"complete_source", "track":marker}
+        ]),
+    );
+    let mut document = fixture_document(vec![rule]);
+    document["tracks"][0]["key"] = marker.into();
+    document["tracks"][0]["initial"] = 0.into();
+    document["tracks"][0]["min"] = 0.into();
+    document["tracks"][0]["max"] = 1.into();
+    let catalog = fixture_catalog(&document)?;
+    let mut facts = Facts::empty();
+    facts.tracks.insert(
+        "oteryn:quest-progress/source-completion/test_npc/mainland".into(),
+        1,
+    );
+    let plan = catalog
+        .plan_storage(&facts.input("oteryn:npc.test", "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("source completion plan".into()))?;
+    assert!(!plan.completes);
+    assert_eq!(
+        plan.track_changes,
+        vec![NpcTrackChange {
+            key: marker.into(),
+            before: 0,
+            after: 1
+        }]
+    );
+    facts.tracks.insert(marker.into(), 1);
+    assert!(
+        catalog
+            .plan_storage(&facts.input("oteryn:npc.test", "mission", 0))?
+            .is_none()
+    );
+    document["rules"][0]["completes"] = true.into();
+    assert!(fixture_catalog(&document).is_err());
+    document["rules"][0]["completes"] = false.into();
+    document["rules"][0]["effects"][0]["track"] = "oteryn:quest-progress/test/value".into();
+    assert!(fixture_catalog(&document).is_err());
     Ok(())
 }
 
