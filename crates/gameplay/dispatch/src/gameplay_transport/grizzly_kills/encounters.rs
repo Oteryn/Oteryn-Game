@@ -138,6 +138,80 @@ impl GrizzlyCaptureCache {
     }
 }
 
+/// Freeze only the exact native source run; social-party membership cannot add recipients.
+pub(super) fn capture(
+    runtime: &ChannelRuntimeV1,
+    entry: &PendingKillSettlement,
+    snapshots: &[TaskSnapshot],
+    runs: &[EncounterRun],
+    principal_present: bool,
+) -> Vec<crate::gameplay_transport::quest_kills::Recipient> {
+    use crate::durability::quest_state::{
+        encounter_deaths::EncounterDeathContext,
+        native_kills::{NativeDeathSource, NativeQuestDeath},
+    };
+    if !principal_present {
+        return Vec::new();
+    }
+    let principal = entry.facts.principal;
+    let (scope, generation) = runtime.encounter_owner_scope();
+    let mut recipients = Vec::new();
+    for run in runs {
+        if !run.roster.defenders().contains(&entry.target)
+            || !run.participants.iter().any(|participant| {
+                participant.actor == principal.actor
+                    && participant.session == principal.session
+                    && participant.character == *principal.character.as_bytes()
+                    && participant.lease_generation == principal.lease_generation
+            })
+        {
+            continue;
+        }
+        for participant in &run.participants {
+            let Some(snapshot) = snapshots.iter().find(|snapshot| {
+                snapshot.actor == participant.actor
+                    && snapshot.session == participant.session
+                    && snapshot.character == participant.character
+                    && snapshot.lease_generation == participant.lease_generation
+                    && snapshot.observed_revision >= participant.admission_revision
+            }) else {
+                continue;
+            };
+            for counter in &snapshot.native_counters {
+                if counter.creature != entry.creature
+                    || counter.encounter_source.as_deref() != Some(run.source.as_str())
+                    || counter.definition_hash != Some(run.definition_hash)
+                {
+                    continue;
+                }
+                recipients.push(crate::gameplay_transport::quest_kills::Recipient {
+                    actor: participant.actor,
+                    session: participant.session,
+                    character: participant.character,
+                    lease_generation: participant.lease_generation,
+                    death: NativeQuestDeath {
+                        transition: counter.transition.clone(),
+                        creature: entry.creature.clone(),
+                        observed_revision: participant.admission_revision,
+                        definition_hash: Some(run.definition_hash),
+                        source: NativeDeathSource::Encounter(EncounterDeathContext {
+                            source: run.source.clone(),
+                            scope,
+                            scope_generation: generation.get(),
+                            character: participant.character,
+                            session: participant.session,
+                            lease_generation: participant.lease_generation,
+                            participant: participant.actor.placement_identity(),
+                            defender: entry.target.corpse_identity(),
+                        }),
+                    },
+                });
+            }
+        }
+    }
+    recipients
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

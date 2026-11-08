@@ -4,6 +4,7 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NativeDeathSource {
     Party(Arc<crate::foundation::PartySnapshot>),
+    Encounter(super::encounter_deaths::EncounterDeathContext),
     Source(super::source_deaths::SourceDeathContext),
 }
 
@@ -48,6 +49,19 @@ impl NativeQuestDeath {
                             }
                     })
                 }
+                NativeDeathSource::Encounter(source) => {
+                    oteryn_gameplay_quests::quest::native_kills::counter_for(
+                        catalogue,
+                        &self.transition,
+                    )
+                    .is_some_and(|counter| {
+                        counter.creature == self.creature
+                            && counter.encounter_source == Some(source.source.as_str())
+                            && self.definition_hash.is_some_and(|hash| {
+                                catalogue.definition_hash(counter.quest) == Some(hash)
+                            })
+                    })
+                }
                 NativeDeathSource::Source(_) => {
                     self.definition_hash.is_none()
                         && oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
@@ -59,7 +73,7 @@ impl NativeQuestDeath {
     pub(super) fn party(&self) -> Option<&crate::foundation::PartySnapshot> {
         match &self.source {
             NativeDeathSource::Party(source) => Some(source.as_ref()),
-            NativeDeathSource::Source(_) => None,
+            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) => None,
         }
     }
 
@@ -67,6 +81,7 @@ impl NativeQuestDeath {
         match &self.source {
             NativeDeathSource::Party(source) => super::grizzly::bind_party(binding, source)?,
             NativeDeathSource::Source(source) => source.bind(binding),
+            NativeDeathSource::Encounter(source) => source.bind(binding),
         }
         let mut digest = Sha256::new()
             .chain_update(*binding)
@@ -90,6 +105,11 @@ impl NativeQuestDeath {
     ) -> StoredResult<bool> {
         if let NativeDeathSource::Source(source) = &self.source {
             return source.admit(tx, fence, self).await;
+        }
+        if let NativeDeathSource::Encounter(source) = &self.source
+            && !source.matches(fence)
+        {
+            return Ok(false);
         }
         let character = fence.character_id;
         let counter =

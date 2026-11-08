@@ -95,12 +95,12 @@ impl GrizzlyCaptureCache {
         &mut self,
         target: ExactActorRef,
         occurrence: [u8; 16],
-        captured: impl FnOnce(&[TaskSnapshot]) -> FrozenGrizzlyDeath,
+        captured: impl FnOnce(&[TaskSnapshot], &[encounters::EncounterRun]) -> FrozenGrizzlyDeath,
     ) -> Arc<FrozenGrizzlyDeath> {
         if let Some((_, _, death)) = self.deaths.iter().find(|(_, id, _)| *id == occurrence) {
             return Arc::clone(death);
         }
-        let frozen = Arc::new(captured(&self.sessions));
+        let frozen = Arc::new(captured(&self.sessions, &self.encounters));
         self.deaths.push((target, occurrence, Arc::clone(&frozen)));
         frozen
     }
@@ -160,7 +160,7 @@ fn freeze(
             continue;
         }
         for counter in &snapshot.native_counters {
-            if counter.creature == creature {
+            if counter.creature == creature && counter.encounter_source.is_none() {
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -296,42 +296,50 @@ pub(super) fn capture(
         .flatten()
         .filter(|source| source.world == *runtime.binding().world_id().as_bytes())
         .cloned();
-    entry.grizzly = Some(
-        cache.remember(entry.target, entry.facts.occurrence, |snapshots| {
-            let live: Vec<_> = snapshots
-                .iter()
-                .filter(|snapshot| {
-                    runtime
-                        .bound_attacker_lease(snapshot.actor, snapshot.session)
-                        .is_ok_and(|lease| {
-                            lease.character_id().as_bytes() == &snapshot.character
-                                && lease.generation() == snapshot.lease_generation
-                        })
-                })
-                .cloned()
-                .collect();
-            let mut frozen = freeze(
-                source,
-                *principal.character.as_bytes(),
-                principal_present,
-                &entry.creature,
-                &live,
-            );
-            frozen.native.extend(super::quest_batch3_c::capture(
-                runtime,
-                entry,
-                live.iter().map(|snapshot| super::quest_batch3_c::Snapshot {
-                    actor: snapshot.actor,
-                    session: snapshot.session,
-                    character: snapshot.character,
-                    lease_generation: snapshot.lease_generation,
-                    observed_revision: snapshot.observed_revision,
-                    objectives: snapshot.source_objectives.clone(),
-                }),
-            ));
-            frozen
-        }),
-    );
+    entry.grizzly =
+        Some(
+            cache.remember(entry.target, entry.facts.occurrence, |snapshots, runs| {
+                let live: Vec<_> = snapshots
+                    .iter()
+                    .filter(|snapshot| {
+                        runtime
+                            .bound_attacker_lease(snapshot.actor, snapshot.session)
+                            .is_ok_and(|lease| {
+                                lease.character_id().as_bytes() == &snapshot.character
+                                    && lease.generation() == snapshot.lease_generation
+                            })
+                    })
+                    .cloned()
+                    .collect();
+                let mut frozen = freeze(
+                    source,
+                    *principal.character.as_bytes(),
+                    principal_present,
+                    &entry.creature,
+                    &live,
+                );
+                frozen.native.extend(encounters::capture(
+                    runtime,
+                    entry,
+                    &live,
+                    runs,
+                    principal_present,
+                ));
+                frozen.native.extend(super::quest_batch3_c::capture(
+                    runtime,
+                    entry,
+                    live.iter().map(|snapshot| super::quest_batch3_c::Snapshot {
+                        actor: snapshot.actor,
+                        session: snapshot.session,
+                        character: snapshot.character,
+                        lease_generation: snapshot.lease_generation,
+                        observed_revision: snapshot.observed_revision,
+                        objectives: snapshot.source_objectives.clone(),
+                    }),
+                ));
+                frozen
+            }),
+        );
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {

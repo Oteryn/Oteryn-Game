@@ -552,6 +552,7 @@ pub(super) fn report_refused_experience(
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
 mod collection;
+pub mod encounter_deaths;
 pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
