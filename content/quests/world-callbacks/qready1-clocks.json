@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/qready1-bewitched-contribution",
+      "quest": "oteryn:quest.authored.bewitched",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32769,
+          "y": 32026,
+          "floor": -8
+        },
+        "appearance": 12023,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 32769,
+            "y": 32026,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 12023
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qready1-clock/qready1-bewitched-contribution",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86400
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32769,
+            "y": 32025,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i8031",
+          "count": 3
+        },
+        {
+          "position": {
+            "x": 32769,
+            "y": 32027,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i11982",
+          "count": 3
+        }
+      ],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You cannot do that again yet, or the required items are missing.",
+      "sources": [
+        "oteryn:authored:bewitched/s4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/qready1-threatened-raven-herb",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33497,
+          "y": 32196,
+          "floor": -7
+        },
+        "appearance": 25783,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qready1-clock/qready1-threatened-raven-herb",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 1800000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You cannot do that again yet, or the required items are missing.",
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/threatened_dreams_quest/event_raven_herb_bush.lua:36-52"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i5953",
+          "count": 1,
+          "contents": []
+        },
+        "item_reward_cycle": "oteryn:quest-progress/qready1-clock/qready1-threatened-raven-herb"
+      }
+    }
+  ]
+}

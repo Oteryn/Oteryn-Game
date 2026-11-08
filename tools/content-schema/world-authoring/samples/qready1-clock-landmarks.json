@@ -1,0 +1,15 @@
+{
+  "schema": "OTERYN_AUTHORED_QUEST_LANDMARK/v1",
+  "basis": "CHOSEN_OTERYN_APPROXIMATION",
+  "quest": "oteryn:quest.authored.bewitched",
+  "position": [
+    32769,
+    32026,
+    -8
+  ],
+  "source_item_id": 12023,
+  "base_ground": 1210,
+  "native_ordinal": 1,
+  "area": "oteryn:content.area.subregion.green_claw_swamp",
+  "note": "Chosen walkable room one floor beneath Green Claw Swamp; source map and Item are retained, placement is Oteryn-authored."
+}

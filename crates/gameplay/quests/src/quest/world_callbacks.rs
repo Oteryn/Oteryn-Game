@@ -262,6 +262,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qready1-clocks.json"
+    ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
@@ -346,7 +349,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (callback.actor_kind == ActorKind::Monster
                 && (callback.selector.position.is_none()
                     || callback.trigger == Trigger::Use
-                    || !!callback.has_personal_state()
+                    || callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.teleport.is_some()
@@ -383,7 +386,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .iter()
                 .any(|r| !valid_pos(r.position) || r.appearance == 0)
             || (!callback.world_requirements.is_empty()
-                && (!!callback.has_personal_state()
+                && (callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
@@ -413,7 +416,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         || callback.passages.len() != 1
                         || callback.lever.is_none()
                         || !callback.reversible
-                        || !!callback.has_personal_state()
+                        || callback.has_personal_state()
                         || callback.teleport.is_some()
                         || callback.item_on_target.is_some()
                         || !callback.offerings.is_empty()
@@ -451,7 +454,10 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.sources.is_empty()
             || !callback.sources.iter().any(|source| {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                (source == "oteryn:authored:bewitched/s4"
+                    && callback.quest == "oteryn:quest.authored.bewitched"
+                    && callback.key == "oteryn:quest-callback/qready1-bewitched-contribution")
+                    || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                     || (callback.effects.outfit_reward.is_some()
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))

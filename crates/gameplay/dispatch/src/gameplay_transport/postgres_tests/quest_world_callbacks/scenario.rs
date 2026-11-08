@@ -607,7 +607,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if mead {
+        if name.starts_with("qready1-") {
+            super::super::qready1_world_clocks::exercise(&owner, &mut admitted, &h, &callback).await?;
+        } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
                 .await?;
         } else if reward_fluids {

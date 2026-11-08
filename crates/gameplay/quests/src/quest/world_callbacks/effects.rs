@@ -207,7 +207,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     && !state.increment
                     && !state.at_least
                     && state.minimum >= 0
-            })
+            }) && !callback.clock_reward_epoch(track)
     }) {
         return false;
     }
@@ -239,10 +239,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
         };
         callback.trigger != Trigger::Use
             || !callback.has_personal_state()
-            || callback
+            || (callback
                 .storage
                 .iter()
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                && !callback.state_ops.iter().any(|operation| {
+                    matches!(
+                        operation.effect,
+                        crate::quest::reward_callbacks::StateMutation::SetNow
+                            | crate::quest::reward_callbacks::StateMutation::Add { value: 1.. }
+                            | crate::quest::reward_callbacks::StateMutation::Add { value: ..=-1 }
+                    )
+                }))
             || !item(&reward.item, reward.count)
             || !reward.valid_literal_text()
             || reward.additional.len() > 19

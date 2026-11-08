@@ -1184,6 +1184,9 @@ def build(
     qready2_chest_bindings.overlay_outputs(
         out, capture_bytes=blobs.get(qready2_chest_bindings.CAPTURE)
     )
+    import qready1_clock_landmarks
+
+    qready1_clock_landmarks.overlay_outputs(out)
     if quest_access_bindings.CAPTURE not in blobs:
         import quest_startup_bindings
 
