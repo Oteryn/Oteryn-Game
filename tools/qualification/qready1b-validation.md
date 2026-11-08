@@ -5,6 +5,18 @@ Decision (2026-11-08): preserve PR 3037's frozen qready1 head
 `claude/happy-davinci-ijz3wy-qready1b`, as instructed for work after freeze.
 Do not adopt additional quests or change another lane's content.
 
+The owner subsequently reopened qready1 to repair PR 3037's main conflict.
+Reuse this branch's proof work in that repair: main `98d6ae8ce` was merged
+with regenerated world outputs in `942633128`, then main `47baa7bb8` was
+merged in `07d1bc07a`. The latter contains the identical floor-transform
+permit fix, so durability now has no delta against main. Its two provisioning
+tests passed in 0.089 seconds.
+
+The original checkout remains detached at `39a47f16e` so already-running
+checks kept consistent inputs. Integration authoring and the reopened qready1
+branch are in the separate `Oteryn-Game-qready1b` worktree. Results below are
+labeled by snapshot; an earlier result is not represented as a merged-head run.
+
 At continuation start, the matrix had `REWARD_CLAIM_USE_ENABLED` for all 17 owned quests.
 Beggar Outfits Quest and Druid Outfits Quest are `SKIP-OWNED qengine2` under
 the coordinator's confirmed allocation; their pending states are not qready1
@@ -19,16 +31,44 @@ This is authoring tooling only, with no new shared runtime feature.
 
 Remaining validation entries:
 
-- Dispatch crate unit tests, with all features: pending.
-- Durability crate unit tests: pending.
+- Dispatch crate unit tests, with all features: merged-head run pending;
+  the incomplete 39a run was superseded by the Soulpit runtime merge and is
+  not counted as a completed suite.
+- Durability crate unit tests: superseded by upstream reuse; no remaining
+  durability changes against main `47baa7bb8`.
 - Post-merge qready1 PostgreSQL cases: complete, 17/17 passed in 856.02 seconds,
   with all 17 successful completion markers from the fresh all-features build.
-- Combined qready2 PostgreSQL cases against the same fresh build: pending.
+- Combined qready2 PostgreSQL cases on snapshot 39a: complete, 21/21 claim
+  cases in 774.02 seconds and 3/3 Purple Tome cases in 108.73 seconds;
+  all 24 completion markers printed.
 - Register the fresh qready1 proof and regenerate its matrix states: complete,
   23 claim keys across 24 placements; all 17 owned quests are now
   `REWARD_CLAIM_USE_VERIFIED`.
-- Full quest-authoring Python unit suite: running; focused proof/matrix tests
-  passed 17/17 in 1.487 seconds.
+- Full quest-authoring Python unit suite on snapshot 39a: 1,118 tests passed
+  in 1,526.452 seconds (8 existing skips). Focused proof/matrix tests passed
+  17/17 in 1.487 seconds. The merged-head suite also passed all 1,118 tests
+  in 992.264 seconds (8 existing skips).
+
+Main integration: all world-authoring job commands passed, including converter
+freshness, validators, materialized game tree, world/base unit tests, startup
+bindings, and qready2 binding fixtures. The new world compiler regenerated the
+combined pin in 301.933 seconds. Migrations 1140-1141 came from main unchanged;
+the migration-number duplicate check passed. Merged-head workspace check
+passed in 913.438 seconds and formatting in 16.052 seconds.
+
+The final merged-world pin check passed in 176.605 seconds. Merged-head
+client-assets units passed 10/10 in 0.53 seconds. An incremental-cache cleanup
+affected a clippy invocation; its cache-write errors are infrastructure errors,
+not a passing lint result. The recovered lint invocation passed in 326.014
+seconds against the unchanged source. No interrupted or partial suite is
+counted as complete.
+
+Publication checkpoint under PREPUSH-2's cadence exception: main `47baa7bb8`
+is included; affected generators, world job, pin check, Python units, workspace
+check, clippy, fmt, and client-assets units pass. The fresh dispatch test build
+is running; merged-head dispatch units and PG refresh remain pending and will
+continue after publication. Earlier PG measurements below retain their explicit
+snapshot label.
 
 The fresh runtime build is from frozen `ad3a63611`; this continuation changes
 only authoring tooling, generated proof/matrix data, and this record. All-features
@@ -50,7 +90,7 @@ crate unit tests without the PG route, so they do not start the full PG suite;
 route-less early returns do not count as PostgreSQL proof. Keep full command
 logs outside Git and record counts, completion markers, and durations here.
 
-## Owned quest results
+## Owned quest results (snapshot 39a)
 
 | Quest | Status | Claim keys | PG seconds |
 | --- | --- | ---: | ---: |
