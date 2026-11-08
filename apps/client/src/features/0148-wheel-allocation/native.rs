@@ -28,6 +28,7 @@ const SWITCH: usize = 115;
 const DISMANTLE: usize = 116;
 const GRADE: usize = 117;
 const RETRY: usize = 118;
+const PRESETS: usize = 121;
 
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 
@@ -44,7 +45,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             if !actions.is_null() && (*actions).0.len() < 32
                 && ((matches!(id, SLOTS | GEMS | MODIFIERS) && notification == LBN_SELCHANGE as usize)
                     || (matches!(id, QUALITY | DOMAIN) && notification == CBN_SELCHANGE as usize)
-                    || (matches!(id, APPLY | SAVE | RESET | REFRESH | SOCKET | UNSOCKET | REVEAL | LOCK | SWITCH | DISMANTLE | GRADE | RETRY)
+                    || (matches!(id, APPLY | SAVE | RESET | REFRESH | SOCKET | UNSOCKET | REVEAL | LOCK | SWITCH | DISMANTLE | GRADE | RETRY | PRESETS)
                         && notification == BN_CLICKED as usize))
             {
                 (*actions).0.push(id);
@@ -87,7 +88,8 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
         let list_style = LBS_NOTIFY as u32 | WS_VSCROLL | WS_TABSTOP | WS_BORDER;
         let combo_style = CBS_DROPDOWNLIST as u32 | WS_VSCROLL | WS_TABSTOP;
-        let title = control(hwnd, "STATIC", "Edit points and vessels, then Save Wheel. Atelier operations apply immediately.", 120, [10, 10, 950, 22], 0);
+        let title = control(hwnd, "STATIC", "Edit points and vessels, then Save Wheel. Atelier operations apply immediately.", 120, [10, 10, 760, 22], 0);
+        let presets = control(hwnd, "BUTTON", "Build presets", PRESETS, [790, 6, 170, 28], WS_TABSTOP);
         let slots = control(hwnd, "LISTBOX", "", SLOTS, [10, 40, 300, 330], list_style);
         let points = control(hwnd, "EDIT", "0", POINTS, [10, 380, 120, 26], ES_NUMBER as u32 | WS_TABSTOP | WS_BORDER);
         let apply = control(hwnd, "BUTTON", "Set slot points", APPLY, [140, 380, 170, 28], WS_TABSTOP);
@@ -109,7 +111,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let description = control(hwnd, "EDIT", "", 119, [10, 500, 950, 190],
             ES_MULTILINE as u32 | ES_READONLY as u32 | ES_AUTOVSCROLL as u32 | WS_VSCROLL | WS_BORDER | WS_TABSTOP);
         if [title, slots, points, apply, save, reset, gems, modifiers, quality, reveal, lock_button,
-            switch, dismantle, grade, domain, socket, unsocket, refresh, retry, description].iter().any(|h| h.is_null())
+            switch, dismantle, grade, presets, domain, socket, unsocket, refresh, retry, description].iter().any(|h| h.is_null())
         {
             DestroyWindow(hwnd); close(&weak); return;
         }
@@ -132,6 +134,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             let mut mailbox = lock(&shared);
             if mailbox.wheel_shutdown { break; }
             for action in std::mem::take(&mut actions.0) {
+                if action == PRESETS {
+                    drop(mailbox);
+                    super::presets::open_shared(&shared, &commands);
+                    mailbox = lock(&shared);
+                    continue;
+                }
                 let intent = match action {
                     SLOTS => {
                         if let Ok(slot) = usize::try_from(SendMessageW(slots, LB_GETCURSEL, 0, 0))
