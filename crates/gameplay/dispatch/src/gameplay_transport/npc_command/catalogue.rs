@@ -10,6 +10,8 @@ use crate::foundation::{CommandId, CommandRef};
 use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleTrigger};
 use std::sync::Arc;
 
+pub(in crate::gameplay_transport) mod teleport;
+
 type Context = (u64, u64, String);
 #[derive(Clone, PartialEq, Eq)]
 pub(super) struct Conversation {
@@ -28,6 +30,7 @@ pub(super) enum Pending {
         intent: NpcTalkIntent,
         next: Conversation,
         fallback_lines: Vec<String>,
+        teleport: bool,
     },
 }
 pub(super) enum Step {
@@ -47,6 +50,8 @@ pub(super) struct CommitStep {
     next: Conversation,
     request: NpcProgramRequest,
     fallback_lines: Vec<String>,
+    teleport: Option<oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition>,
+    magic: usize,
 }
 
 pub(super) fn prepare(
@@ -189,14 +194,31 @@ pub(super) fn prepare(
     } else {
         npc_program::NpcEligibility::default()
     };
-    let plan = match npc_program::preview_with_player_name(
-        &request,
-        &tracks,
-        catalogue,
-        now,
-        &eligibility,
-        player_name.as_deref(),
-    ) {
+    let teleport =
+        npc_program::teleport::preview_teleport(&request, &tracks, catalogue, now, &eligibility)
+            .ok()
+            .flatten();
+    if teleport.as_ref().is_some_and(|p| {
+        !matches!(
+            p.source.quest.as_str(),
+            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+        )
+    }) {
+        return Some(Step::Refused);
+    }
+    let plan = match teleport
+        .as_ref()
+        .map(|p| Ok(Some(p.source.clone())))
+        .unwrap_or_else(|| {
+            npc_program::preview_with_player_name(
+                &request,
+                &tracks,
+                catalogue,
+                now,
+                &eligibility,
+                player_name.as_deref(),
+            )
+        }) {
         Ok(Some(plan)) => plan,
         Ok(None) => {
             if greeting {
@@ -222,7 +244,11 @@ pub(super) fn prepare(
     {
         return Some(Step::Refused);
     }
-    if plan.track_changes.is_empty() && !plan.completes && request.npc != "oteryn:npc.pemaret" {
+    if teleport.is_none()
+        && plan.track_changes.is_empty()
+        && !plan.completes
+        && request.npc != "oteryn:npc.pemaret"
+    {
         let end = plan
             .effects
             .iter()
@@ -265,6 +291,8 @@ pub(super) fn prepare(
         next,
         request,
         fallback_lines,
+        magic: teleport.as_ref().map_or(0, |p| p.magic.len()),
+        teleport: teleport.map(|p| p.destination),
     })))
 }
 
@@ -355,6 +383,8 @@ pub(super) async fn apply(
         next,
         request,
         fallback_lines,
+        teleport,
+        magic,
     } = match step {
         Step::Reply {
             lines,
@@ -444,7 +474,34 @@ pub(super) async fn apply(
             intent: intent.clone(),
             next: next.clone(),
             fallback_lines: fallback_lines.clone(),
+            teleport: teleport.is_some(),
         });
+    }
+    if let Some(destination) = teleport {
+        let started = {
+            let mut runtime = admission.runtime.lock().await;
+            teleport::start(
+                admission,
+                actor,
+                command,
+                teleport::DepartureProof {
+                    request,
+                    catalogue: Arc::clone(catalogue),
+                    intent,
+                    context: next.context.clone(),
+                    magic,
+                },
+                destination,
+                &mut runtime,
+            )
+        };
+        drop(slot);
+        drop(item_permit);
+        if started.is_none() {
+            install(admission, command.game_session_id, None);
+            return rejected();
+        }
+        return resume(admission, command).await.unwrap_or_else(unknown);
     }
     let moves_items = (request.npc == "oteryn:npc.pemaret"
         && request.transition_key.ends_with("/deliver"))
@@ -549,6 +606,7 @@ pub(in crate::gameplay_transport) async fn resume(
         intent,
         next,
         fallback_lines,
+        teleport,
     } = pending
     else {
         return None;
@@ -560,6 +618,32 @@ pub(in crate::gameplay_transport) async fn resume(
         )
     {
         return None;
+    }
+    let quest_hold = admission
+        .states
+        .newhaven_travel
+        .holds
+        .lock()
+        .ok()?
+        .get(&command.game_session_id)
+        .is_some_and(|h| matches!(h.route, super::super::newhaven_travel::Departure::Quest(_)));
+    if quest_hold {
+        match admission
+            .reconcile_newhaven_travel(next.actor, command.game_session_id)
+            .await
+        {
+            None => {
+                return Some(NpcTalkOutcome {
+                    unknown: true,
+                    ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                });
+            }
+            Some(false) => admission
+                .states
+                .newhaven_travel
+                .forget(command.game_session_id),
+            Some(true) => {}
+        }
     }
     let moves_items = (request.npc == "oteryn:npc.pemaret"
         && request.transition_key.ends_with("/deliver"))
@@ -573,10 +657,13 @@ pub(in crate::gameplay_transport) async fn resume(
             .await
         {
             Ok(Some(commit)) => {
+                let engaged = !teleport
+                    || admission.states.chat.engaged(command.game_session_id)
+                        == Some(next.npc_actor);
                 install(
                     admission,
                     command.game_session_id,
-                    (!commit.end_conversation).then_some(Conversation {
+                    (!commit.end_conversation && engaged).then_some(Conversation {
                         topic: commit.next_topic,
                         ..next.clone()
                     }),
@@ -595,7 +682,7 @@ pub(in crate::gameplay_transport) async fn resume(
                     },
                 );
                 response.inventory_changed = commit.inventory_changed || moves_items;
-                if commit.end_conversation {
+                if commit.end_conversation || !engaged {
                     end_response(
                         admission,
                         command.game_session_id,

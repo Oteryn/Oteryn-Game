@@ -769,6 +769,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-m37-peter" {
+        return super::questpc8_npc_teleport_story::exercise(owner, admitted, h, authority).await;
+    }
     if name.starts_with("qengine-rewards-m09-tower-") {
         return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
     }
