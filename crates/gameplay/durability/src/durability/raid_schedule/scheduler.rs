@@ -137,8 +137,8 @@ impl DurabilityRoot {
             crate::durability::raid_runner::reconcile_deadlines(&mut tx, request.world, request.now_ms).await?;
             let last_end: i64 = sqlx::query_scalar("SELECT last_end_at_ms FROM game_world_raid_scheduler_clocks WHERE world_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
-                .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND f.raid_key<>$2 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
+                .bind(request.world.as_bytes().as_slice()).bind(super::FEROXA_KEY).fetch_one(&mut *tx).await?;
             let world_changes = if request.candidates.iter().any(|candidate| requirements.contains_key(candidate.key.as_str())) {
                 crate::durability::world_event::changes::load(&mut tx, request.world, request.reset_epoch).await?
             } else { None };
@@ -151,8 +151,9 @@ impl DurabilityRoot {
                 }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };
-                if (source_kind == 1 && legacy_running)
-                    || (source_kind != 1 && !candidate.eligible)
+                let legacy = source_kind == 1 && candidate.key.as_str() != super::FEROXA_KEY;
+                if (legacy && legacy_running)
+                    || (!legacy && !candidate.eligible)
                 { continue; }
                 super::lock(&mut tx, &recovery, request.world, &candidate.key).await
                     .map_err(|_| DurabilityError::Unavailable)?;
@@ -225,7 +226,7 @@ impl DurabilityRoot {
                 } else {
                     let margin_end = last_end.checked_add(i64::from(candidate.global_margin_ms))
                         .ok_or(DurabilityError::InvalidStoredState)?;
-                    if request.now_ms < margin_end { continue; }
+                    if legacy && request.now_ms < margin_end { continue; }
                     RaidAction::Check {
                         now_ms: request.now_ms, eligible: candidate.eligible, calendar: candidate.calendar,
                         firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
@@ -241,7 +242,7 @@ impl DurabilityRoot {
                         .bind(candidate.firing_id.as_slice()).bind(request.world.as_bytes().as_slice())
                         .execute(&mut *tx).await?;
                     if targets.rows_affected() == 0 { return Err(DurabilityError::InvalidStoredState); }
-                    if source_kind == 1 { legacy_running = true; }
+                    if legacy { legacy_running = true; }
                     fired.push((candidate.firing_id, candidate.key));
                 }
             }

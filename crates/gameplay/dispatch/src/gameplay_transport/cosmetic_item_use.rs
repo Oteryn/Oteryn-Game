@@ -414,6 +414,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
+            // M20 recipe admission remains closed until the exact second operand is supplied.
+            .filter(|c| c.carried_target.is_none())
             .collect::<Vec<_>>();
         if bound.is_empty() {
             return Ok(None);
@@ -523,6 +525,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let use_ = QuestCarriedUse {
             source,
+            recipe_target: None,
             intent: encoded,
         };
         let result = revision
