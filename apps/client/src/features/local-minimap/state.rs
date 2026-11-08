@@ -2,7 +2,7 @@
 use oteryn_session::world_map::WorldMapViewSnapshot;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     io::{self, Read, Write},
     path::PathBuf,
     time::{Duration, Instant},
@@ -119,16 +119,52 @@ impl Minimap {
                 self.feedback = format!("Could not load minimap: {error}");
             }
         }
-        for tile in &map.tiles {
-            let p = tile.position;
-            let key = (p.floor, p.x, p.y);
+        // The snapshot is authoritative only within its visible window. Retain distant
+        // exploration, but remove cleared cells and item-only tiles from remembered ground.
+        use oteryn_session::world_map::{
+            VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH, floors_in_view, in_window,
+        };
+        let origin = map.header.origin;
+        let observed: BTreeSet<_> = map
+            .tiles
+            .iter()
+            .filter(|tile| {
+                tile.ground_speed > 0
+                    && tile.position.floor <= map.header.first_visible_floor
+                    && in_window(origin, tile.position)
+            })
+            .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
+            .collect();
+        if let Some(floors) = floors_in_view(origin.floor) {
+            for floor in floors.filter(|f| *f <= map.header.first_visible_floor) {
+                let shift = i64::from(floor) - i64::from(origin.floor);
+                for y in 0..VIEW_HEIGHT {
+                    for x in 0..VIEW_WIDTH {
+                        let (Ok(x), Ok(y)) = (
+                            i32::try_from(
+                                i64::from(origin.x) - i64::from(VIEW_LEFT) + shift + i64::from(x),
+                            ),
+                            i32::try_from(
+                                i64::from(origin.y) - i64::from(VIEW_TOP) + shift + i64::from(y),
+                            ),
+                        ) else {
+                            continue;
+                        };
+                        let key = (floor, x, y);
+                        if !observed.contains(&key) && self.cells.remove(&key).is_some() {
+                            self.dirty = true;
+                        }
+                    }
+                }
+            }
+        }
+        for key in observed {
             if self.cells.len() >= MAX_CELLS && !self.cells.contains_key(&key) {
                 self.feedback =
                     "Local exploration limit reached; existing exploration is retained".into();
                 continue;
             }
-            let color = if tile.ground_speed > 0 { 55 } else { 86 };
-            if self.cells.insert(key, color) != Some(color) {
+            if self.cells.insert(key, 55) != Some(55) {
                 self.dirty = true;
             }
         }
@@ -281,9 +317,12 @@ impl Minimap {
         {
             return Err(io::Error::other("Invalid minimap file"));
         }
+        // Older caches recorded gray item-only cells. They are not persistent terrain.
+        self.dirty |= saved.cells.iter().any(|cell| cell[3] == 86);
         self.cells = saved
             .cells
             .into_iter()
+            .filter(|cell| cell[3] == 55)
             .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
             .collect();
         self.markers = saved.markers;
@@ -331,6 +370,9 @@ mod tests {
         };
         map.observe(&snapshot);
         map.edit_marker(100, 200, -7, "Home".into(), 1)?;
+        // Legacy item-only cells must not return as terrain when an older cache is reopened.
+        map.cells.insert((-7, 999, 999), 86);
+        map.dirty = true;
         map.save()?;
         let binding = map.binding;
         let mut restored = Minimap::default();
@@ -339,6 +381,7 @@ mod tests {
         restored.observe(&snapshot);
         assert_eq!(restored.markers[0].label, "Home");
         assert!(restored.cells.contains_key(&(-7, 100, 200)));
+        assert!(!restored.cells.contains_key(&(-7, 999, 999)));
         snapshot.header.reset_epoch += 1;
         restored.observe(&snapshot);
         assert!(restored.markers.is_empty());
@@ -368,5 +411,46 @@ mod tests {
         map.remove_marker(100, 200, -7)?;
         assert!(map.markers.is_empty());
         Ok(())
+    }
+    #[test]
+    fn authoritative_window_clears_ground_but_preserves_distant_exploration() {
+        use oteryn_session::{
+            ActorPosition,
+            world_map::{MapTile, MapViewHeader, WorldMapViewSnapshot},
+        };
+        let snapshot = |x, ground_speed| {
+            let position = ActorPosition {
+                x,
+                y: 200,
+                floor: -7,
+            };
+            WorldMapViewSnapshot {
+                header: MapViewHeader {
+                    content_generation: [1; 32],
+                    bundle_digest: [2; 32],
+                    reset_epoch: 1,
+                    origin: position,
+                    first_visible_floor: -7,
+                },
+                tiles: vec![MapTile {
+                    position,
+                    ground_speed,
+                    more: false,
+                    items: vec![],
+                }],
+            }
+        };
+        let mut map = Minimap::default();
+        map.observe(&snapshot(100, 100));
+        map.observe(&snapshot(1000, 100));
+        assert!(map.cells.contains_key(&(-7, 100, 200)));
+        assert!(map.cells.contains_key(&(-7, 1000, 200)));
+        let mut cleared = snapshot(1000, 100);
+        cleared.tiles.clear();
+        map.observe(&cleared);
+        assert!(map.cells.contains_key(&(-7, 100, 200)));
+        assert!(!map.cells.contains_key(&(-7, 1000, 200)));
+        map.observe(&snapshot(100, 0));
+        assert!(!map.cells.contains_key(&(-7, 100, 200)));
     }
 }

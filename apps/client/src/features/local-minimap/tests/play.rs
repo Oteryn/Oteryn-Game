@@ -99,7 +99,7 @@ fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(),
     let mut empty = map;
     empty.tiles.clear();
     play.set_live_map(&empty)?;
-    assert_eq!(mini(&play).len(), 31 * 25 + 3); // Creature and locally explored terrain remain.
+    assert_eq!(mini(&play).len(), 31 * 25 + 2); // Creature remains; the authoritative clear removes terrain.
     Ok(())
 }
 
@@ -205,7 +205,9 @@ fn minimap_rectangle_captures_clicks_before_world_selection() -> Result<(), Batc
 fn persistent_minimap_pan_zoom_and_floor_selection_share_the_click_projection()
 -> Result<(), BatchError> {
     let mut play = minimap_view()?;
-    play.set_live_map(&snapshot(100))?;
+    let mut ground = snapshot(100);
+    ground.tiles[0].ground_speed = 100;
+    play.set_live_map(&ground)?;
     play.set_live_map(&snapshot(1000))?;
     {
         let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
