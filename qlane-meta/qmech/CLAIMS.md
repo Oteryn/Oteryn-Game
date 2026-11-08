@@ -28,3 +28,4 @@
 | Quest-guarded object taming with atomic quest progress | SRV7 | none planned; retained own range 0992–0993 only | Targuna Quest (Reliable Ram step; preceding stages remain separate) | CLAIMED |
 
 | Source-bound native boss-death quest adapter: frozen personal/room recipients and replay-safe fenced progress | SRVENC | 1108 reserved if a forward schema extension is needed; retained range 1100–1109 | Heart of Destruction (six boss deaths); The Order of the Stag (Court Warlock); Tower Defence (Goblin Leader); The Primal Ordeal (Magma Bubble only) | CLAIMED |
+| Quest item-look disguise and exact exit restoration through the existing condition/appearance owner | srvgap1108 | 1669–1670 reserved if required; retained original range 1660–1679 | Wrath of the Emperor (carried crate USE and restoration step); reusable adapter for Last Creep Standing, whose form/portal identities remain unresolved | CLAIMED |
