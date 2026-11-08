@@ -205,17 +205,49 @@ fn sauce_completion_grants_one_bonus_use_without_inventing_order_requirement()
 fn cooking_confirmation_requires_live_level_35_and_premium() -> Result<(), NpcRuleError> {
     let hot = HotCuisineProgram::load()?;
     let catalogue = catalogue()?;
-    let generic = catalogue.program(QUEST).ok_or_else(|| NpcRuleError::Invalid("test program".into()))?;
+    let generic = catalogue
+        .program(QUEST)
+        .ok_or_else(|| NpcRuleError::Invalid("test program".into()))?;
     let mut progress = tracks(generic);
     progress.insert(hot.quest_start_track.clone(), 1);
     progress.insert(hot.current_dish_track.clone(), 1);
     let inventory = ingredients(&hot.recipes[0]);
     let outfits = BTreeMap::new();
-    for (level, premium, accepted) in [(34,true,false),(35,false,false),(35,true,true)] {
+    for (level, premium, accepted) in [(34, true, false), (35, false, false), (35, true, true)] {
         let mut input = input(&progress, &inventory, &outfits, hot.recipes[0].topic);
         input.level = level;
         input.premium_current = premium;
         assert_eq!(hot.plan(generic, &input, &calendar())?.is_some(), accepted);
     }
+    Ok(())
+}
+
+#[test]
+fn hot_cuisine_rejects_forged_current_year_before_bonus_grant() -> Result<(), NpcRuleError> {
+    let hot = HotCuisineProgram::load()?;
+    let catalogue = catalogue()?;
+    let generic = catalogue
+        .program(QUEST)
+        .ok_or_else(|| NpcRuleError::Invalid("programme".into()))?;
+    let mut progress = tracks(generic);
+    progress.insert(hot.quest_start_track.clone(), 1);
+    progress.insert(hot.current_dish_track.clone(), 15);
+    let carried = ingredients(&hot.recipes[14]);
+    let outfits = BTreeMap::new();
+    let input = input(&progress, &carried, &outfits, 33);
+    let mut forged = calendar();
+    forged.current.year += 1;
+    assert!(hot.plan(generic, &input, &forged).is_err());
+    let actual = hot.calendar_snapshot_utc(&input)?;
+    assert_eq!(actual.current.year, 2026);
+    let committed = hot
+        .plan(generic, &input, &actual)?
+        .ok_or_else(|| NpcRuleError::Invalid("source year plan".into()))?;
+    assert!(
+        committed
+            .track_changes
+            .iter()
+            .any(|change| change.key == hot.bonus_year_track && change.after == 2026)
+    );
     Ok(())
 }

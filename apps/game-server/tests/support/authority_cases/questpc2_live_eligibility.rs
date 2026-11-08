@@ -19,7 +19,9 @@ const RULE: &str = "oteryn:quest-npc/eligibility_fixture/accept";
 
 struct Content(bool);
 impl ItemWeightLookup for Content {
-    fn wheel_premium_current(&self, account: [u8; 16]) -> bool { self.0 && account == fixture::id(40) }
+    fn wheel_premium_current(&self, account: [u8; 16]) -> bool {
+        self.0 && account == fixture::id(40)
+    }
     fn generation_digest(&self) -> [u8; 32] {
         [1; 32]
     }
@@ -37,7 +39,8 @@ impl ItemLoopContent for Content {
 }
 
 #[test]
-fn questpc2_live_level_vocation_premium_are_fenced_atomic_and_replay_bound() -> fixture::TestResult {
+fn questpc2_live_level_vocation_premium_are_fenced_atomic_and_replay_bound() -> fixture::TestResult
+{
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -48,7 +51,8 @@ fn questpc2_live_level_vocation_premium_are_fenced_atomic_and_replay_bound() -> 
                 .map_err(fixture::debug)?
                 .block_on(async {
                     let started = std::time::Instant::now();
-                    let h = fixture::Harness::create(admin, "questpc2_live_eligibility", true).await?;
+                    let h =
+                        fixture::Harness::create(admin, "questpc2_live_eligibility", true).await?;
                     let result = exercise(&h).await;
                     h.cleanup().await?;
                     result?;
@@ -67,7 +71,9 @@ fn questpc2_live_level_vocation_premium_are_fenced_atomic_and_replay_bound() -> 
 }
 
 async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
-    let version: String = sqlx::query_scalar("SHOW server_version_num").fetch_one(&h.pool).await?;
+    let version: String = sqlx::query_scalar("SHOW server_version_num")
+        .fetch_one(&h.pool)
+        .await?;
     eprintln!("M08_POSTGRES_VERSION={version}");
     let reference = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13";
     let text = serde_json::json!({"schema":1,"quest":QUEST,
@@ -162,13 +168,33 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     // Historical progression setup only; tested commands retain all triggers.
     for level in [49_i64, 50] {
         let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-        sqlx::query("UPDATE game_character_progression_state SET level=$1").bind(level).execute(&mut *tx).await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("UPDATE game_character_progression_state SET level=$1")
+            .bind(level)
+            .execute(&mut *tx)
+            .await?;
         tx.commit().await?;
         if level == 49 {
-            let refused = h.root.commit_fixture_npc_program(&authority, &h.node, &permit,
-                fence, request(9503)?, catalog.clone(), &Content(true), &source).await.map_err(fixture::debug)?;
-            assert!(matches!(refused.transition, QuestTransitionOutcome::Refused(_)));
+            let refused = h
+                .root
+                .commit_fixture_npc_program(
+                    &authority,
+                    &h.node,
+                    &permit,
+                    fence,
+                    request(9503)?,
+                    catalog.clone(),
+                    &Content(true),
+                    &source,
+                )
+                .await
+                .map_err(fixture::debug)?;
+            assert!(matches!(
+                refused.transition,
+                QuestTransitionOutcome::Refused(_)
+            ));
             assert_eq!(h.root_revision().await?, "1");
         }
     }

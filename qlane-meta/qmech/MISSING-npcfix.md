@@ -20,3 +20,9 @@ These are NPCFIX audit interactions. Their canonical quest files/steps have not 
 | Anna — tutorial continuation | Server: admitted continuation to Targuna | Quest/stage mapping pending. Checked `crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs`; `crates/gameplay/content/src/content/npc_catalogue/travel.rs` still holds `captain_bluebear/targuna`. No Anna continuation binding identified in those checked owners. | Partly: continuation, not existing Main selection |
 
 Environment prerequisite, not a mechanic: all18 whole node-boot variants (six profiles × fixture/world/full_manifest) stop with `NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing` (exit2), required Platform3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05. Authored identity/ground variants remain retained but not enabled as finished stories.
+
+## M38 implementation progress
+
+Coordinator-assigned new migration range: **2140–2149** (historical1230-range NPCFIX migrations are unchanged). The first engine slice supplies reusable `ConditionalNpcActor`: committed availability is projected per exact actor occurrence; turning off one placement cannot remove another quest's same-key NPC. Real PG RED233.289ms -> GREEN355.733ms plus the full entities crate tests, strict Clippy and fmt passed. Event/content bindings remain work in progress.
+
+Audit correction for the Beregar row: the native source rules `content/dialogues/quest-rules/quest-batch3-a-the_hidden_city_of_beregar.json` already include Maris's `hidden-path` and `hidden-path-repeat` branches; `NpcRuleCatalog::runtime` admits Beregar. Absence from the shared reward registries alone is not a missing native mechanic. Its new focused PG story is retained in the legacy handoff stash and is not claimed executed yet.
