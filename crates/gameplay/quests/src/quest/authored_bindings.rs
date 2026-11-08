@@ -6,6 +6,7 @@ pub mod collection;
 pub(crate) mod embedded;
 mod imported_recipe;
 pub mod kills;
+mod state_operations;
 pub use kills::KillCounter;
 
 use super::reward_callbacks::RewardCallback;
@@ -33,6 +34,8 @@ pub struct Track {
 pub enum Trigger {
     NpcDialogue {
         callback: Box<RewardCallback>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        alternatives: Vec<RewardCallback>,
     },
     CarriedUse {
         callback: Box<RewardCallback>,
@@ -103,7 +106,16 @@ impl Bindings {
                 .count()
                 > kills::MAX_KILL_BINDINGS
             || self.quests.len() > MAX_BOUND_QUESTS
-            || self.quests.iter().map(|q| q.stages.len()).sum::<usize>() > MAX_BOUND_STAGES
+            || self
+                .quests
+                .iter()
+                .flat_map(|q| &q.stages)
+                .map(|s| match &s.trigger {
+                    Trigger::NpcDialogue { alternatives, .. } => 1 + alternatives.len(),
+                    _ => 1,
+                })
+                .sum::<usize>()
+                > MAX_BOUND_STAGES
         {
             return Err("authored binding bounds/schema".into());
         }
@@ -145,6 +157,40 @@ impl Bindings {
                 {
                     return Err("authored stage identity".into());
                 }
+                if let Trigger::NpcDialogue { alternatives, .. } = &stage.trigger {
+                    if alternatives.len() >= 32 {
+                        return Err("TALK callback group bound".into());
+                    }
+                    for callback in stage.trigger.reward_callbacks() {
+                        super::reward_callbacks::validate_callbacks(std::slice::from_ref(
+                            callback,
+                        ))?;
+                        if callback.quest != quest.quest
+                            || !transitions.insert(&callback.key)
+                            || callback.carried_item.is_some()
+                            || !callback.participants.is_empty()
+                            || callback
+                                .state_ops
+                                .iter()
+                                .any(|op| !state_operations::valid(quest, op))
+                            || callback.storage.is_empty()
+                            || callback.storage.iter().any(|s| {
+                                s.increment
+                                    || s.at_least
+                                    || quest.tracks.iter().find(|t| t.key == s.track).is_none_or(
+                                        |t| {
+                                            s.minimum < t.minimum
+                                                || s.maximum > t.maximum
+                                                || !(t.minimum..=t.maximum).contains(&s.set)
+                                        },
+                                    )
+                            })
+                        {
+                            return Err("native TALK foreign or unsupported stage".into());
+                        }
+                    }
+                    continue;
+                }
                 if let Trigger::Collect { collection } = &stage.trigger {
                     collection.validate(quest)?;
                     if !transitions.insert(&collection.key) {
@@ -161,7 +207,7 @@ impl Bindings {
                 }
                 let (key, owner, storage) = match &stage.trigger {
                     Trigger::Kill { .. } | Trigger::Collect { .. } => continue,
-                    Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
+                    Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
                         super::reward_callbacks::validate_callbacks(std::slice::from_ref(
                             callback.as_ref(),
                         ))?;
@@ -214,6 +260,24 @@ impl Bindings {
 
     /// Compose explicit bindings with existing state. Every binding contributes to its quest hash.
     pub fn attach(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+        let mut normalized = self.clone();
+        for quest in &mut normalized.quests {
+            for stage in &mut quest.stages {
+                if let Trigger::NpcDialogue {
+                    callback,
+                    alternatives,
+                } = &mut stage.trigger
+                {
+                    callback.completes = stage.completes;
+                    for other in alternatives {
+                        other.completes = stage.completes;
+                    }
+                }
+            }
+        }
+        normalized.attach_normalized(base)
+    }
+    fn attach_normalized(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
         self.validate()?;
         if let Some(evidence) = &base.native_recipe_evidence {
             evidence.verify(self)?;
@@ -232,6 +296,13 @@ impl Bindings {
             }
             for stage in &quest.stages {
                 transitions.push(stage.transition(&quest.quest)?);
+                if let Trigger::NpcDialogue { alternatives, .. } = &stage.trigger {
+                    for callback in alternatives {
+                        let mut transition = super::reward_callbacks::primary_transition(callback)?;
+                        transition.completes = stage.completes;
+                        transitions.push(transition);
+                    }
+                }
             }
         }
         let mut catalogue =
@@ -285,12 +356,7 @@ impl Bindings {
         self.quests
             .iter()
             .flat_map(|q| &q.stages)
-            .filter_map(|s| match &s.trigger {
-                Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
-                    Some(callback.as_ref())
-                }
-                _ => None,
-            })
+            .flat_map(|s| s.trigger.reward_callbacks())
     }
     pub fn world_callbacks(&self) -> impl Iterator<Item = &Callback> {
         self.quests
@@ -308,7 +374,7 @@ impl Bindings {
 impl Stage {
     pub(in crate::quest) fn transition(&self, quest: &str) -> Result<QuestTransition, String> {
         let mut transition = match &self.trigger {
-            Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
+            Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
                 super::reward_callbacks::primary_transition(callback)?
             }
             Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
@@ -342,3 +408,17 @@ mod collection_tests;
 
 #[cfg(test)]
 mod composition_tests;
+
+impl Trigger {
+    fn reward_callbacks(&self) -> impl Iterator<Item = &RewardCallback> {
+        let (first, others): (Option<&RewardCallback>, &[RewardCallback]) = match self {
+            Self::NpcDialogue {
+                callback,
+                alternatives,
+            } => (Some(callback.as_ref()), alternatives),
+            Self::CarriedUse { callback } => (Some(callback.as_ref()), &[]),
+            _ => (None, &[]),
+        };
+        first.into_iter().chain(others.iter())
+    }
+}

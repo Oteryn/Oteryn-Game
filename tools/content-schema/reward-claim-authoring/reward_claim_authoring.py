@@ -278,6 +278,10 @@ def legacy_uid_checks(records: list) -> list[dict]:
 def chest_transitions() -> set[str]:
     """The keys of the chest transitions the QuestState lowering constructed."""
     return {
+        TRANSITION_PREFIX + marker + "/chest"
+        for rule in load_json(ROOT / "content/quests/claim-sets.json").values()
+        for group in rule["groups"] for marker in group
+    } | {
         t["key"]
         for quest in load_json(ROOT / QUEST_STATE_REL)["quests"]
         for t in quest["transitions"]

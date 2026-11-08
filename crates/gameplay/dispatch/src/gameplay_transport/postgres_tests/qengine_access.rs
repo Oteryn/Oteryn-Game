@@ -812,6 +812,7 @@ async fn wardrobe(
         map_mark: None,
         world_claim: None,
         carried_item: None,
+        carried_target: None,
         peer_requires: None,
         creature_target: None,
         minimum_level: None,

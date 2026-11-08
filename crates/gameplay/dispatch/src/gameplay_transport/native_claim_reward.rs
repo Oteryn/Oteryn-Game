@@ -173,6 +173,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     creature_use: None,
                     peer_use: None,
                 }),
+                &self.premium_coordinator,
             )
             .await;
         #[cfg(test)]
