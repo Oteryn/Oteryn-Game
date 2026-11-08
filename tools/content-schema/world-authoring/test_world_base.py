@@ -323,6 +323,17 @@ class ConvertAndValidateTest(unittest.TestCase):
         ):
             convert.build(blobs, ITEMS_BY_SERVER_ID)
 
+    def test_default_qready2_capture_still_requires_all_committed_rows(self):
+        import qready2_chest_bindings as qready2
+
+        blobs = {
+            key: value for key, value in self.blobs.items() if key != qready2.CAPTURE
+        }
+        with self.assertRaisesRegex(
+            ValueError, "quest access capture did not bind completely"
+        ):
+            convert.build(blobs, ITEMS_BY_SERVER_ID)
+
     def test_fixture_converts_to_a_valid_family(self):
         self.assertEqual(self.errors(), [])
         index = self.index()
