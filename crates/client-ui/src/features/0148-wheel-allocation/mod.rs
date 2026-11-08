@@ -14,3 +14,10 @@ pub use view::{domain_name, gem_label, modifier_label, panel_text, slot_label};
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/e2e_p06.rs"]
+mod e2e_p06;
+#[cfg(test)]
+#[path = "tests/e2e_p07.rs"]
+mod e2e_p07;

@@ -10,5 +10,8 @@ pub use protocol::{Intent, apply_result, request};
 pub use state::BossEncounterPanel;
 pub use view::panel_text;
 #[cfg(test)]
+#[path = "tests/e2e_p02.rs"]
+mod e2e_p02;
+#[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;

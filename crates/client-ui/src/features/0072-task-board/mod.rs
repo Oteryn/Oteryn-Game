@@ -199,3 +199,10 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_p04.rs"]
+mod e2e_p04;
+#[cfg(test)]
+#[path = "tests/e2e_p05.rs"]
+mod e2e_p05;
