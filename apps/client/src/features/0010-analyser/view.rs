@@ -36,6 +36,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Apply item price",
                 "Resolve item info",
                 "Export (replace file)",
+                "Refresh party hunt",
+                "Party supply price",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.analyser;

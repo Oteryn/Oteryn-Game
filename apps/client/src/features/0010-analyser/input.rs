@@ -102,6 +102,15 @@ pub(in crate::play) fn submit(
                 Err(_) => "Session export failed; choose a writable file path",
             },
         );
+    } else if action == tools + 5 {
+        refresh_party(mailbox, commands);
+    } else if action == tools + 6
+        && let [_, item, price, ..] = values.as_slice()
+    {
+        let tool = mailbox.analyser.tool;
+        mailbox.analyser.tool = Tool::Supplies;
+        oteryn_client_ui::analyser::set_item_price(&mut mailbox.analyser, item, price);
+        mailbox.analyser.tool = tool;
     }
 }
 
@@ -116,7 +125,27 @@ pub(in crate::play) fn save_session(
     std::fs::write(path, oteryn_client_ui::analyser::session_text(panel))
 }
 
+pub(in crate::play) fn refresh_party(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+) {
+    if !mailbox.party.selected {
+        mailbox.analyser.party_feedback = Some("Party membership is unavailable in this session");
+        return;
+    }
+    if let Some(command) =
+        oteryn_client_ui::analyser::protocol::party_request(&mut mailbox.analyser)
+        && commands.send(PlayCommand::Feature(command)).is_err()
+    {
+        mailbox.analyser.party_pending = false;
+        mailbox.analyser.party_feedback = Some("Session ended");
+    }
+}
+
 impl PlayLink {
+    pub fn analyser_party_refresh(&self) {
+        refresh_party(&mut lock(&self.mailbox), &self.commands);
+    }
     pub fn analyser_save_session(&self, path: &std::path::Path) -> std::io::Result<()> {
         save_session(&lock(&self.mailbox).analyser, path)
     }

@@ -18,7 +18,7 @@ pub fn panel_text(panel: &Panel) -> String {
         super::Tool::Impact => impact_text(panel, panel.clock.seconds()),
         super::Tool::Input => input_text(panel, panel.clock.seconds()),
         super::Tool::Session => session_text(panel),
-        super::Tool::Party => "Party Hunt\r\nNo party accounting received".into(),
+        super::Tool::Party => super::party::text(panel),
         super::Tool::LootTracker => format!("Loot Tracker\r\nLoot: {} items", panel.loot_items),
         super::Tool::Kills => format!("Kill Tracker\r\nKills: {}", panel.kills),
     };

@@ -61,6 +61,9 @@ pub fn set_item_price(panel: &mut super::Panel, item: &str, price: &str) -> bool
         return false;
     }
     prices.insert(item, price);
+    panel.party.clear();
+    panel.party_revision = panel.party_revision.saturating_add(1);
+    panel.party_feedback = Some("Prices changed; refresh party accounting");
     panel.price_input = [item.to_string(), price.to_string()];
     panel.feedback = None;
     true

@@ -99,6 +99,12 @@ pub fn reset(panel: &mut Panel) {
         .map(|goal| goal.saturating_sub(panel.gained_xp));
     *panel = Panel {
         tool: panel.tool,
+        // Party counters use server connection intervals, independent of this local reset.
+        party: std::mem::take(&mut panel.party),
+        party_pending: panel.party_pending,
+        party_feedback: panel.party_feedback,
+        party_revision: panel.party_revision,
+        party_pending_revision: panel.party_pending_revision,
         export_path: std::mem::take(&mut panel.export_path),
         loot_prices: std::mem::take(&mut panel.loot_prices),
         supply_prices: std::mem::take(&mut panel.supply_prices),
@@ -184,4 +190,11 @@ pub fn catalogue_result(
     }
     panel.feedback = Some("Item identities unavailable; unresolved values remain excluded");
     false
+}
+
+/// Build the bounded confirmed-party query.
+pub fn party_request(
+    panel: &mut Panel,
+) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    super::party::request(panel)
 }

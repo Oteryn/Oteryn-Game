@@ -22,6 +22,8 @@ struct Stream {
     actor: ExactActorRef,
     generation: u64,
     pending: AnalyserPendingQueue,
+    totals: super::analyser_party::Totals,
+    started: std::time::Instant,
     items: Option<Arc<crate::content::item_ref::ItemDefinitionIndex>>,
 }
 
@@ -54,6 +56,8 @@ impl AnalyserStreams {
                 actor,
                 generation,
                 pending: AnalyserPendingQueue::default(),
+                totals: Default::default(),
+                started: std::time::Instant::now(),
                 items,
             },
         );
@@ -70,9 +74,24 @@ impl AnalyserStreams {
         if let Ok(mut streams) = self.0.lock()
             && let Some(held) = streams.get_mut(&session).filter(|held| held.actor == actor)
         {
+            held.totals.observe(&fact);
             // Enrichment must never reject the gameplay outcome it observes.
             let _ = held.pending.push(&fact);
         }
+    }
+
+    pub(super) fn accounting(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<super::analyser_party::AccountingSnapshot> {
+        let streams = self.0.lock().ok()?;
+        let held = streams.get(&session).filter(|held| held.actor == actor)?;
+        Some((
+            held.started.elapsed().as_secs(),
+            held.totals.clone(),
+            held.items.clone(),
+        ))
     }
 
     pub(super) fn next(

@@ -1,5 +1,7 @@
 //! oteryn-choice: native local view of confirmed server facts, with no gameplay authority.
 mod input;
+#[path = "state/party.rs"]
+pub mod party;
 pub mod protocol;
 mod state;
 mod view;

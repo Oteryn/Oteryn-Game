@@ -1,5 +1,17 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
+    pub(in crate::play) fn analyser_result(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_session::GatedCommandResult,
+    ) {
+        match command.kind {
+            731 => self.analyser_catalogue_result(result),
+            732 => oteryn_client_ui::analyser::party::result(&mut lock(&self.0).analyser, result),
+            _ => {}
+        }
+    }
+
     pub(in crate::play) fn analyser_catalogue_result(
         &self,
         result: &oteryn_session::GatedCommandResult,

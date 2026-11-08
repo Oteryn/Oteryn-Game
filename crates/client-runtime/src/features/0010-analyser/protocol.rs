@@ -4,3 +4,8 @@ pub use oteryn_session::analyser_transport::{
 };
 
 pub use oteryn_session::analyser_catalogue::*;
+
+/// Confirmed party accounting through the session boundary.
+pub mod party {
+    pub use oteryn_session::analyser_party::*;
+}

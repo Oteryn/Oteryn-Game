@@ -8,6 +8,11 @@ pub use measurements::{Clock, Series, chart_values, eta_seconds, per_hour};
 #[derive(Debug, Clone, Default)]
 pub struct Panel {
     pub tool: Tool,
+    pub party: Vec<oteryn_client_runtime::analyser::party::Member>,
+    pub party_pending: bool,
+    pub party_feedback: Option<&'static str>,
+    pub party_revision: u64,
+    pub party_pending_revision: u64,
     pub clock: Clock,
     pub xp_chart: Series,
     pub raw_xp_chart: Series,

@@ -196,3 +196,68 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
     assert!(!report.contains("old report"));
     Ok(())
 }
+
+#[test]
+fn analyser_party_query_and_confirmed_table_use_production_mailbox()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::analyser::party::{Member, decode_request, encode_reply};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.analyser_initialize(true);
+    link.analyser_party_refresh();
+    assert!(commands.try_recv().is_err());
+    crate::play::mailbox::lock(&link.mailbox).party.selected = true;
+    link.analyser_party_refresh();
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("party query".into());
+    };
+    assert_eq!((command.capability, command.kind), (10, 732));
+    assert!(decode_request(&command.payload)?.is_empty());
+    let result = oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: encode_reply(&[
+            Member {
+                handle: 1,
+                name: "Scout".into(),
+                available: true,
+                loot_value: 100,
+                ..Default::default()
+            },
+            Member {
+                handle: 2,
+                name: "Healer".into(),
+                available: true,
+                supply_cost: 20,
+                ..Default::default()
+            },
+        ])?,
+    };
+    outbox.analyser_result(&command, &result);
+    assert!(link.analyser_select("party"));
+    let text = oteryn_client_ui::analyser::panel_text(&link.analyser_panel());
+    assert!(text.contains("Scout pays Healer: 60 gold"));
+    assert!(!link.analyser_panel().party_pending);
+    link.party_request(oteryn_client_ui::party::Intent::Refresh);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Party(_)
+    ));
+    let party_view = oteryn_session::party::encode_party_result(
+        &oteryn_session::party::PartyResult::refused(oteryn_session::party::PartyDisposition::Ok),
+    )
+    .map_err(|_| "party view fixture")?;
+    outbox.party_result(&oteryn_client_runtime::party::PartyResponse {
+        status: oteryn_session::CommandStatus::Accepted,
+        operation: party_view.clone(),
+        view: Some(party_view),
+    });
+    assert!(link.analyser_panel().party.is_empty());
+    assert_eq!(
+        link.analyser_panel().party_feedback,
+        Some("Party changed; refresh party accounting")
+    );
+    outbox.logged_out();
+    assert!(link.analyser_panel().party.is_empty());
+    Ok(())
+}

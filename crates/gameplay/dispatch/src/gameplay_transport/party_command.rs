@@ -10,6 +10,8 @@ use std::collections::BTreeMap;
 #[derive(Default)]
 pub struct SessionPartyView {
     handles: BTreeMap<u64, (u8, [u8; 16])>,
+    pub(super) hunt_prices: Vec<oteryn_protocol_oteryn::analyser_party::Price>,
+    pub(super) hunt_reply: Option<Vec<u8>>,
 }
 const MAX_HANDLES: usize = 4096;
 impl SessionPartyView {
@@ -90,7 +92,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let intent = if command_type == COMMAND_TYPE_PARTY_QUERY {
+        let hunt = command_type
+            == oteryn_protocol_oteryn::analyser_party::COMMAND_TYPE_ANALYSER_PARTY_QUERY;
+        if hunt && !admitted.continuity.selected_capabilities.contains(10) {
+            return None;
+        }
+        let intent = if command_type == COMMAND_TYPE_PARTY_QUERY || hunt {
             if !payload.is_empty() {
                 return None;
             }
@@ -270,9 +277,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         effects.insert(member_id, member_party_spell_durations(state, now));
                     }
                 }
+                let hunt_members = if hunt {
+                    source.members.clone()
+                } else {
+                    Vec::new()
+                };
                 let Some(projected) = view.project(admitted, source, &effects) else {
                     return bytes(PartyDisposition::Unavailable);
                 };
+                if hunt
+                    && let Some(index) =
+                        super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                {
+                    view.hunt_reply = super::analyser_party::project(
+                        &runtime,
+                        &self.states.analyser,
+                        &hunt_members,
+                        &projected,
+                        index,
+                        &view.hunt_prices,
+                    );
+                }
                 encode_party_result(&projected)
                     .ok()
                     .or_else(|| bytes(PartyDisposition::Unavailable))
