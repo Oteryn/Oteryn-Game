@@ -179,7 +179,7 @@
   "status": "DONE",
   "gap": "Jedna mapa bindingów; brak nazwanych presetów i dwóch kontekstów czatu.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:116 + named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate"
+  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:116; apps/client/src/features/local-reference-preferences/profiles_native.rs:84 + named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate (existing implementation 5807f5d61; current branch validated against origin/main 2033ddc54)"
  },
  {
   "id": "T041",
