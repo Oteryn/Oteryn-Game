@@ -10816,5 +10816,129 @@
     "workspace_check": "cargo check --workspace --all-targets --keep-going PASS8m19s; /tmp/questpc4-b386-workspace-check.log",
     "duplicate_migrations": 0,
     "publication": "One pending authorized push includes CI repair3c104f740 and normal main merge14a8f69b1. Fresh fetch behindmain0; retained lane diff309files/+58056/-704 before final notes."
+  },
+  "qmech_m06": {
+    "mechanic": "M06",
+    "state": "QUALIFIED_LOCAL",
+    "branch": "claude/happy-davinci-ijz3wy-qm-questpc4",
+    "base": "9717d72993fbca66a241371d81f1075b481e58a7",
+    "scope": "Standalone Waterskin completion shares the native parent reward receipt, fence, revision and PostgreSQL transaction; parent Ice Islands remains incomplete.",
+    "migration": {
+      "file": "apps/game-server/migrations/2060_quest_world_child_completion.sql",
+      "sha384": "3a4e5252cf6a10cf5fa8446b1d62e1e0e6f006a9dc03213d02e6248015aeafa47d9b4a5041347c96e5053c9b4655d577",
+      "installed_checksum_asserted_by_pg": true
+    },
+    "postgres": {
+      "version": "18.6",
+      "cases": [
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9204_native_custody_and_replay",
+          "seconds": 56.529
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_mead::l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag",
+          "seconds": 63.369
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9616_native_custody_and_replay",
+          "seconds": 59.221
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9617_native_custody_and_replay",
+          "seconds": 57.287
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9618_native_custody_and_replay",
+          "seconds": 57.3
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9619_native_custody_and_replay",
+          "seconds": 54.13
+        }
+      ],
+      "log": "/tmp/questpc4-M06-own-pg.log"
+    },
+    "tests": {
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_mead.rs": "16d5862ef5aa7e760532f75a81269e7a8758c07cc167393e5a94dda8a03b6d71",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_treasure_rewards.rs": "fa3ca3e87ce6441d92c125c29af680b8671a2677f732d719f5768022277e86b5"
+    },
+    "validation": {
+      "clippy": "quests,durability,dispatch --all-targets -D warnings PASS",
+      "focused_units": "two child-plan cases and unchanged published-parent baseline PASS",
+      "authoring": {
+        "checks": "M06_CHECKS_PASS duration=300s",
+        "units": "M06_UNITS_PASS duration=504s",
+        "tree": "M06_TREE_PASS duration=203s"
+      },
+      "fmt": "PASS",
+      "generation": "repo tools PASS",
+      "extra_dispatch_cases": [
+        {
+          "test": "gameplay_transport::module_registration_block_is_sorted_and_complete",
+          "seconds": 0.021
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9204_native_custody_and_replay",
+          "seconds": 56.529
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_mead::l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag",
+          "seconds": 63.369
+        },
+        {
+          "test": "gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+          "seconds": 68.008
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9616_native_custody_and_replay",
+          "seconds": 59.221
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9617_native_custody_and_replay",
+          "seconds": 57.287
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::quest_callbacks::quest_callbacks_binding_and_coverage_require_exact_source_witnesses",
+          "seconds": 0.239
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9618_native_custody_and_replay",
+          "seconds": 57.3
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9619_native_custody_and_replay",
+          "seconds": 54.13
+        }
+      ]
+    },
+    "assertions": [
+      "direct and renamed child completion refused",
+      "wrong source, missing mission, stale fence and absent Premium refuse",
+      "full inventory and missing child admission roll back all value/progress",
+      "source reward and child proof/state share the native receipt transaction",
+      "duplicate/repeat receipts add no reward or completion",
+      "Ice Islands stays incomplete while standalone Waterskin completes"
+    ],
+    "transfer": {
+      "profiles": 5,
+      "ids": [
+        9204,
+        9616,
+        9617,
+        9618,
+        9619
+      ],
+      "whole_treasure_hunt_done": false,
+      "source": "n2 61a1f24af source tools/tests restored; packet regenerated from pinned local donor"
+    }
+  },
+  "qmech_m07": {
+    "status": "IN_PROGRESS",
+    "slice": "Bound native world predicates and own-quest completion",
+    "code_commit": "96a1d1cfb",
+    "red": "/tmp/questpc4-m07-red.log: 2 failed (invalid callback; unknown effect)",
+    "green": "/tmp/questpc4-m07-green2.log: 15 passed, including 3 M07 tests",
+    "clippy": "/tmp/questpc4-m07-clippy.log: all targets passed 12.29s",
+    "remaining": "Source-specific lifecycle projection, five quest bindings and PG scenarios"
   }
 }

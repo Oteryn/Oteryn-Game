@@ -366,10 +366,10 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+    let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
         .ok()
         .is_some_and(|callbacks| callbacks.iter().any(|c| c.key == request.transition_key));
-    let fee_payment = if oteryn_gameplay_quests::quest::reward_callbacks::load()
+    let fee_payment = if oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
         .ok()
         .and_then(|callbacks| {
             callbacks
