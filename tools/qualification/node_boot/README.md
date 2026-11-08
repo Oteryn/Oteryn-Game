@@ -13,6 +13,11 @@ Channel's existing first-entry start to Thais temple `(32369, 32238, -7)`. The p
 remains preproduction; this runner does not enable production Worlds. Each pass
 creates and cleans up its own Platform/PostgreSQL/node topology.
 
+Before World admissions, the disposable administrator initializes epoch zero through
+`game_world_reset_initialize`, binding the compiled bundle to the operator's issued
+content activation. An exact replay must be idempotent. Runtime Cyclopedia and daily
+boost preparation require this admitted epoch; schema installation does not create it.
+
 The World client reads the join snapshot and drives real commands for town
 navigation, browse field, daily boost, depot search, combat, loot, death and
 recovery. Inventory prerequisites come from production starter grants. Missing

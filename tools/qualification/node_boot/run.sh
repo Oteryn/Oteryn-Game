@@ -531,6 +531,20 @@ SQL
   ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty || code=$?
   [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
   [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    # World admission prepares Cyclopedia/boost state against the admitted epoch.
+    # A fresh database has none: initialize through the existing Control owner,
+    # with the actual bundle and issued content, before any Character admission.
+    local epoch_result
+    epoch_result="$({
+      echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
+      cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
+    } | psql_admin oteryn_node_boot)"
+    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
+    evidence "world_epoch=0 source=control_initializer bundle=compiled content=issued replay=idempotent"
+  fi
   [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
   [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
   evidence "world_boot_seconds=$((SECONDS - boot_started)) world_bundle=$NODE_BOOT_WORLD"
