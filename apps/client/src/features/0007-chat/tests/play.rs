@@ -152,3 +152,40 @@ fn channel_logs_save_replace_and_append_confirmed_channel_contents() -> Result<(
     );
     Ok(())
 }
+
+#[test]
+fn console_channel_reply_releases_only_the_matching_composer() {
+    use oteryn_client_runtime::chat_public_channels::ChatRoom;
+    let (link, _incoming, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    link.chat_console(
+        oteryn_client_ui::chat::ConsoleTab::Public(ChatRoom::Help),
+        oteryn_client_ui::chat::ComposerMode::On,
+        Default::default(),
+    );
+    link.chat_text("hello".into());
+    link.chat_request(Mode::Say, "");
+    let outcome = ChatOutcome {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        disposition: ChatDisposition::Ok,
+        wait_seconds: 0,
+        result_server_sequence: 1,
+    };
+    outbox.chat_result(
+        &ChatIntent::Room {
+            room: ChatRoom::World,
+            text: "other".into(),
+        },
+        &outcome,
+    );
+    assert!(link.chat_panel().pending);
+    outbox.chat_result(
+        &ChatIntent::Room {
+            room: ChatRoom::Help,
+            text: "hello".into(),
+        },
+        &outcome,
+    );
+    assert!(!link.chat_panel().pending);
+}

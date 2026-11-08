@@ -41,6 +41,7 @@ pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<Cha
         if panel.console.mode == super::ComposerMode::Temporary {
             panel.console.mode = super::ComposerMode::Off;
         }
+        panel.console.pending = Some(intent.clone());
         return Some(intent);
     } else if mode == Mode::Private {
         let name = recipient.trim();
@@ -66,6 +67,7 @@ pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<Cha
     if panel.console.mode == super::ComposerMode::Temporary {
         panel.console.mode = super::ComposerMode::Off;
     }
+    panel.console.pending = Some(intent.clone());
     panel.pending = true;
     panel.feedback = None;
     Some(intent)

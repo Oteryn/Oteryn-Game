@@ -41,6 +41,7 @@ pub struct ConsoleFilter {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Console {
+    pub pending: Option<oteryn_client_runtime::chat::ChatIntent>,
     pub tab: ConsoleTab,
     pub mode: ComposerMode,
     pub filters: BTreeMap<ConsoleTab, ConsoleFilter>,

@@ -12,6 +12,10 @@ impl Outbox {
         intent: &oteryn_session::ChatIntent,
         outcome: &oteryn_session::ChatOutcome,
     ) {
+        let console_reply = lock(&self.0).chat.console.pending.as_ref() == Some(intent);
+        if console_reply {
+            self.local_chat_result(outcome);
+        }
         if self.chat_private_result(intent, outcome) {
             return;
         }
@@ -23,7 +27,9 @@ impl Outbox {
                 | oteryn_session::ChatIntent::Private { .. }
                 | oteryn_session::ChatIntent::Guild { .. }
         ) {
-            self.local_chat_result(outcome);
+            if lock(&self.0).chat.console.pending.is_none() {
+                self.local_chat_result(outcome);
+            }
         } else {
             self.chat_public_result(outcome);
         }

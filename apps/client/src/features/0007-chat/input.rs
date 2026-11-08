@@ -54,6 +54,7 @@ pub(in crate::play) fn enqueue(
     if let Some(intent) = request(&mut mailbox.chat, mode, recipient) {
         super::super::feature_0233_player_typing::input::composer(mailbox, commands, false);
         if commands.send(PlayCommand::ChatPublic(intent)).is_err() {
+            mailbox.chat.console.pending = None;
             mailbox.chat.pending = false;
             mailbox.chat.feedback = Some("The session has ended".into());
         }
