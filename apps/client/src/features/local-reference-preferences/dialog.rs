@@ -34,6 +34,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            console,
             layout,
             arcs,
             interface,
@@ -127,6 +128,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            console.show(state.page == SettingsPage::Console);
             layout.show(state.page == SettingsPage::Status);
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
@@ -251,6 +253,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    if let Err(error) = console.read(&mut preferences) {
+                        state.feedback = error;
+                        continue;
+                    }
                     if let Err(error) = layout.read(&mut preferences) {
                         state.feedback = error;
                         continue;
@@ -289,6 +295,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                console.refresh(&state.preferences);
                 layout.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);

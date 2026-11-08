@@ -1,6 +1,21 @@
 use super::*;
 
 #[test]
+fn console_font_preference_reaches_the_live_panel_mailbox() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _, _) = play_channel();
+    let mut settings = crate::play::SettingsState::new(None);
+    let mut preferences = settings.preferences.clone();
+    preferences.console_font_px = 20;
+    settings.apply(preferences);
+    settings.sync_local_preferences(&link);
+    assert_eq!(crate::play::mailbox::lock(&link.mailbox).local_preferences.console_font_px, 20);
+    let mut invalid = settings.preferences.clone();
+    invalid.console_font_px = 33;
+    assert!(view()?.set_preferences(invalid).is_err());
+    Ok(())
+}
+
+#[test]
 fn compact_status_style_projects_confirmed_vitals_only() -> Result<(), Box<dyn std::error::Error>> {
     let mut play = view()?;
     play.vitals = Some(oteryn_session::ActorVitals { health: 50, max_health: 100, mana: 20, max_mana: 40, ..Default::default() });
@@ -291,5 +306,5 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 10);
+    assert_eq!(SettingsPage::ALL.len(), 11);
 }
