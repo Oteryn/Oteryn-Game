@@ -1945,3 +1945,26 @@ real rowless-ledger loss; retaining the native damage shares fixes those
 without qualifying XP, loot or corpse Items. Build retries resolved memory
 pressure by stopping concurrent Python runners, and disk pressure by deleting
 inactive lane compiler caches; normal repository profiles were preserved.
+
+Final M24 correction-packet checks: dispatch all-feature/all-target Clippy
+with `-D warnings` PASS252.836s; workspace all-target check PASS290.055s;
+three source-boss catalogue/boundary/counter tests PASS3.19s; native-provider
+regeneration through `regenerate_content.py --native-only` PASS228.403s.
+Equipment5791/cohort-union, seasonal inventory, Grizzly30/30 room pins,
+materialized tree97/97, M24 generated bindings, migration duplication and
+format checks passed. The full authoring checks/unit runner also passed on
+the unchanged M24 quest inputs (308.581s /489.307s); no pinned reward-USE
+test source was modified.
+
+The optional additional Grizzly filter did not execute when its unrelated
+normal-profile rebuild exhausted disk; it is not counted as a passing test.
+All13 required M24 PG cases above actually executed and passed. Inactive
+compiler caches were removed and the required format/tree/pin checks rerun.
+
+## Next QMECH work queue item
+
+After publishing M24 code, the first OPEN/unclaimed INDEX row is M02, exact
+mutable Ground stack/custody/quantity/order admission for Nomads Land s4.
+Claimed for SRVENC in INDEX only; CLAIMS.md remains coordinator-owned.
+No migration or new numeric registry entry has been allocated. Any required
+forward schema change remains restricted to assigned range2180–2189.
