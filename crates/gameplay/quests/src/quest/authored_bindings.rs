@@ -1,6 +1,7 @@
 //! M01a: explicit NPC TALK bindings, admitted against the canonical chosen recipe.
 pub(crate) mod embedded;
 mod imported_recipe;
+mod state_operations;
 use super::reward_callbacks::RewardCallback;
 use super::{QuestStateCatalogue, QuestTrack};
 use serde::{Deserialize, Serialize};
@@ -21,7 +22,29 @@ pub struct Track {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Trigger {
-    NpcDialogue { callback: Box<RewardCallback> },
+    NpcDialogue {
+        callback: Box<RewardCallback>,
+        /// Other exact NPCs participating in this same chosen TALK stage.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        alternatives: Vec<RewardCallback>,
+    },
+}
+
+impl Trigger {
+    fn callbacks(&self) -> impl Iterator<Item = &RewardCallback> {
+        let Self::NpcDialogue {
+            callback,
+            alternatives,
+        } = self;
+        std::iter::once(callback.as_ref()).chain(alternatives.iter())
+    }
+    fn callbacks_mut(&mut self) -> impl Iterator<Item = &mut RewardCallback> {
+        let Self::NpcDialogue {
+            callback,
+            alternatives,
+        } = self;
+        std::iter::once(callback.as_mut()).chain(alternatives.iter_mut())
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -61,7 +84,7 @@ impl Bindings {
     pub fn validate(&self) -> Result<(), String> {
         if self.schema != 1
             || self.quests.len() > MAX_BOUND_QUESTS
-            || self.quests.iter().map(|q| q.stages.len()).sum::<usize>() > MAX_BOUND_STAGES
+            || self.reward_callbacks().count() > MAX_BOUND_STAGES
         {
             return Err("native TALK schema/bounds".into());
         }
@@ -93,33 +116,41 @@ impl Bindings {
             }
             let mut stages = BTreeSet::new();
             for stage in &quest.stages {
-                let Trigger::NpcDialogue { callback } = &stage.trigger;
-                super::reward_callbacks::validate_callbacks(std::slice::from_ref(
-                    callback.as_ref(),
-                ))?;
                 if stage.key.is_empty()
                     || stage.key.len() > 128
                     || !stage.key.is_ascii()
                     || !stages.insert(&stage.key)
-                    || callback.quest != quest.quest
-                    || !keys.insert(&callback.key)
-                    || callback.carried_item.is_some()
-                    || !callback.participants.is_empty()
-                    || !callback.state_ops.is_empty()
-                    || callback.storage.is_empty()
-                    || callback.storage.iter().any(|s| {
-                        quest
-                            .tracks
-                            .iter()
-                            .find(|t| t.key == s.track)
-                            .is_none_or(|t| {
-                                s.minimum < t.minimum
-                                    || s.maximum > t.maximum
-                                    || !(t.minimum..=t.maximum).contains(&s.set)
-                            })
-                    })
+                    || stage.trigger.callbacks().count() > 32
                 {
-                    return Err("native TALK foreign or unsupported stage".into());
+                    return Err("native TALK stage identity/bound".into());
+                }
+                for callback in stage.trigger.callbacks() {
+                    super::reward_callbacks::validate_callbacks(std::slice::from_ref(callback))?;
+                    if callback.quest != quest.quest
+                        || !keys.insert(&callback.key)
+                        || callback.carried_item.is_some()
+                        || !callback.participants.is_empty()
+                        || callback
+                            .state_ops
+                            .iter()
+                            .any(|operation| !state_operations::valid(quest, operation))
+                        || callback.storage.is_empty()
+                        || callback.storage.iter().any(|s| {
+                            s.increment
+                                || s.at_least
+                                || quest
+                                    .tracks
+                                    .iter()
+                                    .find(|t| t.key == s.track)
+                                    .is_none_or(|t| {
+                                        s.minimum < t.minimum
+                                            || s.maximum > t.maximum
+                                            || !(t.minimum..=t.maximum).contains(&s.set)
+                                    })
+                        })
+                    {
+                        return Err("native TALK foreign or unsupported stage".into());
+                    }
                 }
             }
         }
@@ -145,9 +176,10 @@ impl Bindings {
                 max: t.maximum,
             }));
             for stage in &mut quest.stages {
-                let Trigger::NpcDialogue { callback } = &mut stage.trigger;
-                callback.completes = stage.completes;
-                transitions.push(super::reward_callbacks::primary_transition(callback)?);
+                for callback in stage.trigger.callbacks_mut() {
+                    callback.completes = stage.completes;
+                    transitions.push(super::reward_callbacks::primary_transition(callback)?);
+                }
             }
         }
         let mut catalogue =
@@ -182,9 +214,9 @@ impl Bindings {
         Ok(catalogue)
     }
     pub fn reward_callbacks(&self) -> impl Iterator<Item = &RewardCallback> {
-        self.quests.iter().flat_map(|q| &q.stages).map(|s| {
-            let Trigger::NpcDialogue { callback } = &s.trigger;
-            callback.as_ref()
-        })
+        self.quests
+            .iter()
+            .flat_map(|q| &q.stages)
+            .flat_map(|s| s.trigger.callbacks())
     }
 }
