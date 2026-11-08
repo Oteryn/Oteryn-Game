@@ -282,7 +282,7 @@ impl DurabilityRoot {
         let reward_callbacks =
             oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
                 .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        let world_callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()
+        let world_callbacks = oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_quest_inner_resolved(
             authority,
@@ -350,7 +350,9 @@ impl DurabilityRoot {
             || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
                 .is_some();
         if native_key != native.is_some()
-            || native.as_ref().is_some_and(|death| !death.valid(&request))
+            || native
+                .as_ref()
+                .is_some_and(|death| !death.valid(&request, &catalogue))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -386,6 +388,21 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        let collection = catalogue
+            .authored_bindings()
+            .and_then(|bindings| {
+                bindings
+                    .quests
+                    .iter()
+                    .flat_map(|quest| &quest.stages)
+                    .find_map(|stage| match &stage.trigger {
+                        oteryn_gameplay_quests::quest::authored_bindings::Trigger::Collect {
+                            collection,
+                        } if collection.key == request.transition_key => Some(collection.as_ref()),
+                        _ => None,
+                    })
+            })
+            .cloned();
         let reward_callback = reward_callbacks
             .into_iter()
             .find(|c| c.key == request.transition_key);
@@ -398,7 +415,8 @@ impl DurabilityRoot {
         }
         // Ownership survives a caller removing or renaming a bound effect.
         if let Some(transition) = catalogue.transition(&request.transition_key) {
-            oteryn_gameplay_quests::quest::admission_binding::validate(
+            oteryn_gameplay_quests::quest::admission_binding::validate_for_catalogue(
+                &catalogue,
                 transition,
                 context.is_some(),
             )
@@ -820,6 +838,12 @@ impl DurabilityRoot {
                         }
                         stored.insert(key, row.try_get("value")?);
                     }
+                    let refusal = if refusal.is_none() {
+                        if let Some(collection) = &collection {
+                            (!super::collection::admit(&mut tx, fence, &request, collection).await?)
+                                .then_some(QuestRefusal::StageMismatch)
+                        } else { None }
+                    } else { refusal };
                     // Parent guards use the same root lock and sorted track locks as
                     // owned writes. A conversation snapshot cannot authorize value.
                     let refusal = refusal.or_else(|| {
@@ -832,7 +856,8 @@ impl DurabilityRoot {
                             .then_some(QuestRefusal::StageMismatch)
                     });
                     let refusal=if refusal.is_none() {
-                        if let Some(death)=&native {(!death.admit(&mut tx,fence).await?).then_some(QuestRefusal::StageMismatch)} else {None}
+                        if let Some(death)=&native {(!death.admit(&mut tx,fence,&catalogue).await?).then_some(QuestRefusal::StageMismatch)} else {None}
+
                     } else {refusal};
                     let mut grizzly_plan = None;
                     let refusal = if let (None, Some(action)) = (refusal, &grizzly_action) {
@@ -1103,7 +1128,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
-                    let completes = catalogue.completes_after(transition, &stored, &changes);
+                    let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     let (cause_id, ordinal) = request.cause.key();
                     let track_keys: Vec<&str> =
                         changes.iter().map(|change| change.track.as_str()).collect();

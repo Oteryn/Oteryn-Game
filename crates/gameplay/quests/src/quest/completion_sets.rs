@@ -16,7 +16,7 @@ pub struct CompletionSet {
 }
 
 impl QuestStateCatalogue {
-    pub fn completes_after(
+    pub fn completes_after_claim_sets(
         &self,
         transition: &QuestTransition,
         stored: &BTreeMap<String, i64>,
@@ -24,7 +24,7 @@ impl QuestStateCatalogue {
     ) -> bool {
         self.completion_sets
             .get(&transition.quest)
-            .map_or(transition.completes, |rule| {
+            .map_or(self.completes_after(transition, changes), |rule| {
                 rule.groups.iter().all(|group| {
                     group.iter().any(|key| {
                         changes
@@ -152,9 +152,9 @@ mod tests {
             let changes = catalogue
                 .evaluate(transition, &stored, 0)
                 .map_err(|e| format!("{e:?}"))?;
-            assert!(catalogue.completes_after(transition, &stored, &changes));
+            assert!(catalogue.completes_after_claim_sets(transition, &stored, &changes));
         }
-        assert!(!catalogue.completes_after(transition, &BTreeMap::new(), &[]));
+        assert!(!catalogue.completes_after_claim_sets(transition, &BTreeMap::new(), &[]));
         Ok(())
     }
 
@@ -176,7 +176,7 @@ mod tests {
                 .evaluate(transition, &stored, 0)
                 .map_err(|e| format!("{e:?}"))?;
             assert_eq!(
-                catalogue.completes_after(transition, &stored, &changes),
+                catalogue.completes_after_claim_sets(transition, &stored, &changes),
                 index == 2
             );
             for change in changes {
