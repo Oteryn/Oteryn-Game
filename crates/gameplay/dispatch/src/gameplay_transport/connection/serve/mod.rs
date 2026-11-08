@@ -46,7 +46,7 @@ struct ServeState {
     push_due: Option<tokio::time::Instant>,
     chase_yielded: bool,
     chase_due: Option<tokio::time::Instant>,
-    held: std::collections::VecDeque<(Vec<u8>, bool)>,
+    held: std::collections::VecDeque<(Vec<u8>, bool, tokio::time::Instant)>,
     buffered: Option<BufferedStep>,
     step_wait_receipts: bool,
     step_holder: std::sync::Arc<()>,
