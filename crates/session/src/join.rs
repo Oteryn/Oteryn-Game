@@ -83,6 +83,19 @@ impl<S: SessionStream> Session<S> {
             appearance_items,
             None,
         )?;
+        if let Some(row) = gated_snapshots
+            .iter()
+            .find(|row| row.domain_id == activity_scope::STATE_DOMAIN_ACTIVITY_SCOPE)
+        {
+            let receipt = activity_scope::decode_activity_scope(&row.payload)
+                .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+            if receipt.requires_ack
+                || receipt.session != *accepted_fields.game_session_id.as_bytes()
+                || receipt.connection_generation != session_generation
+            {
+                return Err(FoundationProtocolError::MalformedEnvelope.into());
+            }
+        }
         let snapshot = JoinSnapshot {
             game_session_id: accepted_fields.game_session_id,
             world_spatial: world_spatial_observation.ok_or(SessionError::MissingDomain(

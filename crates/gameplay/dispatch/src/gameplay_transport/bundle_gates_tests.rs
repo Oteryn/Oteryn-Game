@@ -772,8 +772,8 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 const CONSTRUCTIONS: &[(&str, usize)] = &[
     // Qualified activity content inherits the origin gate, checked below.
     ("gameplay_transport/activity_content.rs", 2),
-    // ActivityRuntimeAssets borrows the selected pair without constructing a qualified room.
-    ("gameplay_transport/activity_runtime.rs", 1),
+    // Scoped activity assets explicitly withhold qualification, checked below.
+    ("gameplay_transport/activity_runtime.rs", 3),
     ("gameplay_transport/composed_test_owner.rs", 2),
     ("gameplay_transport/item_use/item_use_postgres_tests.rs", 1),
     (
@@ -785,7 +785,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         1,
     ),
     ("gameplay_transport/kill_reward_postgres_e2e_tests.rs", 1),
-    ("gameplay_transport/mod.rs", 3),
+    ("gameplay_transport/mod.rs", 5),
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
@@ -840,6 +840,12 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/s10_wandering.rs", 1),
     // I14 special-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/special_potions.rs", 1),
+    // Soulpit's production owner and PG fixture both withhold qualification.
+    ("gameplay_transport/soulpit/content.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/soulpit_shared_entry/native.rs",
+        2,
+    ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
     ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),
@@ -882,17 +888,29 @@ fn inherits_origin_qualification(expr: &syn::Expr) -> bool {
     let syn::Expr::MethodCall(gate) = &*map.receiver else {
         return false;
     };
-    let syn::Expr::Field(rooms) = &*gate.receiver else {
-        return false;
+    let origin_rooms = match &*gate.receiver {
+        syn::Expr::Field(rooms) => {
+            rooms.attrs.is_empty()
+                && matches!(&rooms.member, syn::Member::Named(name) if name == "rooms")
+                && matches!(&*rooms.base, syn::Expr::Path(path) if path.path.is_ident("self"))
+        }
+        // Soulpit supplies private Instance assets through the scoped accessor.
+        // Its new constructions are separately required to keep qualification None.
+        syn::Expr::MethodCall(rooms) => {
+            rooms.attrs.is_empty()
+                && rooms.method == "rooms"
+                && rooms.args.is_empty()
+                && rooms.turbofish.is_none()
+                && matches!(&*rooms.receiver, syn::Expr::Path(path) if path.path.is_ident("self"))
+        }
+        _ => false,
     };
     map.method == "map"
         && map.attrs.is_empty()
         && gate.method == "gate_source_world"
         && gate.args.is_empty()
         && gate.attrs.is_empty()
-        && rooms.attrs.is_empty()
-        && matches!(&rooms.member, syn::Member::Named(name) if name == "rooms")
-        && matches!(&*rooms.base, syn::Expr::Path(path) if path.path.is_ident("self"))
+        && origin_rooms
         && matches!(
             map.args.iter().collect::<Vec<_>>().as_slice(),
             [syn::Expr::Closure(select)]
@@ -912,4 +930,47 @@ fn an_activity_instance_preserves_the_origin_room_gate() {
             if call.args.first().is_some_and(inherits_origin_qualification)),
         "activity content must inherit the origin room gate; qualifying a template cannot open unrelated bundle gates"
     );
+}
+
+#[test]
+fn private_activity_room_constructions_withhold_qualification() {
+    // These new production constructions may supply combat geometry, never a
+    // qualified source room. Keep an exact construction count at each site.
+    for file in [
+        "src/gameplay_transport/mod.rs",
+        "src/gameplay_transport/activity_runtime.rs",
+        "src/gameplay_transport/soulpit/content.rs",
+    ] {
+        let source = parse_source(file);
+        let mut constructions = Constructions::default();
+        constructions.visit_file(&source);
+        assert!(
+            matches!(constructions.0.as_slice(), [call]
+                if matches!(call.args.first(), Some(syn::Expr::Path(path))
+                    if path.path.is_ident("None"))),
+            "{file}: a private activity must not qualify source-room mechanics"
+        );
+    }
+}
+
+#[test]
+fn inherited_qualification_recognizer_rejects_widened_room_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    for expression in [
+        "self.rooms.gate_source_world().map(|_| room)",
+        "self.rooms().gate_source_world().map(|_| room)",
+    ] {
+        assert!(inherits_origin_qualification(&syn::parse_str(expression)?));
+    }
+    for expression in [
+        "Some(room)",
+        "other.rooms().gate_source_world().map(|_| room)",
+        "self.rooms(other).gate_source_world().map(|_| room)",
+        "self.rooms().gate_attack_target().map(|_| room)",
+        "self.rooms().gate_source_world().map(|_| other)",
+        "self.rooms().gate_source_world().or(Some(room))",
+    ] {
+        assert!(!inherits_origin_qualification(&syn::parse_str(expression)?));
+    }
+    Ok(())
 }

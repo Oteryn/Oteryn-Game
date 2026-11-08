@@ -193,11 +193,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     runtime,
                     door,
                     ActivityRuntimeAssets {
+                        activity_room: None,
                         movement_cells: room.movement_cells(),
                         // Keep the origin qualification gate: a private Instance
                         // cannot open source-room mechanics for a bundle origin.
                         rooms: SeamRooms::new(
-                            self.rooms.gate_source_world().map(|_| room),
+                            self.rooms().gate_source_world().map(|_| room),
                             Some(room),
                         ),
                     },
