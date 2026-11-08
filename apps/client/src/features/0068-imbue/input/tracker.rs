@@ -65,7 +65,18 @@ pub(in crate::play) fn enqueue(
     }
     true
 }
+pub(in crate::play) fn set_filter(mailbox: &mut Mailbox, value: &str) -> bool {
+    if value.len() > 128 || value.chars().any(char::is_control) {
+        return false;
+    }
+    mailbox.imbue.tracker_minutes = value.to_owned();
+    value.trim().is_empty() || value.trim().parse::<u32>().is_ok()
+}
 impl PlayLink {
+    pub fn imbue_tracker_filter(&self, value: &str) -> bool {
+        set_filter(&mut lock(&self.mailbox), value)
+    }
+
     pub fn imbue_tracker_refresh(&self) -> bool {
         enqueue(&mut lock(&self.mailbox), &self.commands, true)
     }

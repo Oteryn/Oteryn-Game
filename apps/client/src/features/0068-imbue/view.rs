@@ -49,7 +49,7 @@ impl PlayLink {
                     set_open: |m, value| m.imbue.tracker_open = value,
                     submit: |m, commands, action, values| {
                         if let Some(value) = values.first() {
-                            m.imbue.tracker_minutes.clone_from(value);
+                            super::input::tracker::set_filter(m, value);
                         }
                         if action == 1 {
                             super::input::tracker::enqueue(m, commands, true);

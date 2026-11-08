@@ -128,7 +128,11 @@ fn time_alert(remaining_ms: u32) -> &'static str {
 
 /// The shrine protocol currently confirms one item, so label that scope explicitly.
 pub fn tracker_text(panel: &ImbuePanel) -> String {
-    let mut text = String::from("Imbuement time tracker — selected item snapshot\r\n");
+    let mut text = String::from(if panel.equipment.available {
+        "Equipped imbuement tracker\r\n"
+    } else {
+        "Imbuement time tracker — selected item snapshot\r\n"
+    });
     let limit = if panel.tracker_minutes.trim().is_empty() {
         0
     } else {

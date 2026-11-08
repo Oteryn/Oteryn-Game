@@ -1340,9 +1340,10 @@
   "src": "OTCAUD1108",
   "area": "Trackers",
   "feature": "Tracker czasu imbuementów wyposażenia",
-  "status": "PARTIAL",
-  "gap": "Brakuje stale widocznego trackera wszystkich wyposażonych imbuementów z filtrami czasu; czas jest pokazany tylko dla przedmiotu w oknie imbuingu.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0068-imbue/input/tracker.rs:76 + equipped_imbuement_widget_shortcut_and_time_filters_use_the_confirmed_feed"
  },
  {
   "id": "O033",
