@@ -52,3 +52,5 @@
 | M29 — Primal Ordeal Instance corpse stage/deadline and party prerequisite refusal | encx | 2200 reserved; coordinator-assigned 2200–2209 only | The Primal Ordeal | CLAIMED; party refusal fix transferred in ed8f218de, Instance corpse deadline implementation next |
 
 | M39: NPC any_topic offers and inventory quantity/absence predicates with refusal dialogue | questl2 | none planned; owner allocation 2020–2029 reserved | Tomes of Knowledge; Into The Bone Pit | CLAIMED |
+
+| M01a — imported-route native TALK stage bindings through preflight and server consumer | qengine2 | none planned; assigned QMECH range 2040–2049 | 44 TALK quests listed in MISSING-questpc-pc2.md; ASSIGN.md M01a | CLAIMED |
