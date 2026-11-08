@@ -27,4 +27,4 @@
 
 | Quest-guarded object taming with atomic quest progress | SRV7 | none planned; retained own range 0992–0993 only | Targuna Quest (Reliable Ram step; preceding stages remain separate) | CLAIMED |
 
-| Source-bound native boss-death quest adapter: frozen personal/room recipients and replay-safe fenced progress | SRVENC | 1108 reserved if a forward schema extension is needed; retained range 1100–1109 | Heart of Destruction (six boss deaths); The Order of the Stag (Court Warlock); Tower Defence (Goblin Leader); The Primal Ordeal (Magma Bubble only) | CLAIMED |
+| M24 — source-bound native boss/monster death quest progress, exact room recipients and personal kill counters | SRVENC | none used; coordinator-assigned QMECH range 2180–2189 only (prior 1108 reservation released) | Heart of Destruction; The Order of the Stag; Tower Defence; The Primal Ordeal (Magma Bubble); A Piece of Cake (20 Cake Golems); Ancient Tombs (seven pharaoh stages) | CLAIMED |
