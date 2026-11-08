@@ -30,8 +30,8 @@ pub enum Trigger {
 mod clock;
 mod counterparts;
 mod effects;
-mod imported_explore;
 mod ground_stack;
+mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
@@ -1636,7 +1636,7 @@ mod qn1_lifecycle_tests {
 }
 
 #[cfg(test)]
-mod srv7_mount_reward_tests {
+mod srv7_mount_reward_replay_tests {
     #[test]
     fn srv7_world_mount_reward_requires_once_only_progress() -> Result<(), String> {
         let mut value: serde_json::Value = serde_json::from_str(include_str!(

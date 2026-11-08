@@ -2051,11 +2051,16 @@ mod tests {
         let (controller, _) = activated_with_loot_tables(world, None);
         let generation = controller.active().unwrap();
         let native = generation.native_gameplay().unwrap();
-        let profile = native.item_policy("oteryn:item.tibia.i17400", "definition-r1").unwrap();
+        let profile = native
+            .item_policy("oteryn:item.tibia.i17400", "definition-r1")
+            .unwrap();
         let row = profile.record();
         assert_eq!(row.attributes.blocks_movement, Some(false));
         assert_eq!(row.attributes.blocks_projectile, Some(false));
-        assert_eq!(row.admission.legal_destinations, vec![NativeItemDestination::Ground]);
+        assert_eq!(
+            row.admission.legal_destinations,
+            vec![NativeItemDestination::Ground]
+        );
         assert_eq!(row.attributes.always_on_top_order, Some(1));
     }
 
