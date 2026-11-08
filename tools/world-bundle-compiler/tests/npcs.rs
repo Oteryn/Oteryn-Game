@@ -645,3 +645,6 @@ mod m38_mistrock;
 
 #[path = "npcs/m38_stationary.rs"]
 mod m38_stationary;
+
+#[path = "npcs/m38_zarifan.rs"]
+mod m38_zarifan;

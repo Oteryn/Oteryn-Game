@@ -768,7 +768,15 @@ fn npcs_with(
         .iter()
         .map(|placement| {
             admission(families, &placement.npc)
-                .or_else(|| cell_reason(&facts.get(&placement.cell).copied().unwrap_or_default()))
+                .or_else(|| {
+                    let mut cell = facts.get(&placement.cell).copied().unwrap_or_default();
+                    // A reviewed source contact may occupy a solid object. This does not
+                    // make the tile walkable or waive walls, teleports, or floor changes.
+                    if families.npc_block_solid_contacts.contains(&placement.key) {
+                        cell.block_solid = false;
+                    }
+                    cell_reason(&cell)
+                })
                 .or_else(|| {
                     spawn_cells
                         .contains(&placement.cell)

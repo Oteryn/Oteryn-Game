@@ -6,7 +6,10 @@ NPC keys of npc_placement_scope.json, and only those that the NPC catalogue admi
 with another placement is held (SCHEDULE_VARIANT, SHARED_CELL) instead of written; one NPC listed
 twice at one cell and direction is one record. A wiki-origin placement has no direction in the
 source and is written as north. Optional placement_cells narrows a scoped NPC to
-a distinct subset of its candidate cells; it cannot introduce coordinates or bypass holds. The source is OTS_HYPOTHESIS_ONLY migration evidence: only
+a distinct subset of its candidate cells; it cannot introduce coordinates or bypass sharing holds.
+Optional block_solid_contacts explicitly admits source-backed contacts occupying solid objects;
+the compiler still checks walls, floor changes and other terrain hazards.
+The source is OTS_HYPOTHESIS_ONLY migration evidence: only
 normalized facts are written. Fails closed on an unadmitted key or an out-of-range position.
 
     python convert_placements.py [--check]
@@ -115,6 +118,9 @@ def convert() -> dict[str, str]:
 
     # A candidate can include both the Global world and an example map. Scope
     # may select known cells, but never introduce a cell or bypass sharing rules.
+    contacts = scope.get("block_solid_contacts", [])
+    if not isinstance(contacts, list) or not set(contacts) <= set(npcs):
+        sys.exit("block_solid_contacts names an unscoped NPC")
     selections = scope.get("placement_cells", {})
     if not isinstance(selections, dict) or not set(selections) <= set(npcs):
         sys.exit("placement_cells names an unscoped NPC")
@@ -183,6 +189,9 @@ def convert() -> dict[str, str]:
                     "provenance": rows,
                 }
             }
+    for record in records.values():
+        if record["declaration"]["npc"] in contacts:
+            record["declaration"]["block_solid_contact"] = True
     placed = {r["declaration"]["npc"] for r in records.values()}
     for npc in npcs:
         if npc not in placed and not any(h["npc"] == npc for h in held):
