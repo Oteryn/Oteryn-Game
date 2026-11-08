@@ -39,4 +39,4 @@
 
 | Remove-only native map-target consequence for reusable carried-tool quest USE, atomic with progress and replay | qworld | none planned; retained range 1320–1329 | Their Master's Voice World Change (fungus-cleaning stage) | RELEASED: pinned donor Gobbler_onUse transforms target to12065; existing target_replacement supports it, so remove-only is unnecessary |
 
-| World-change conditions on the existing personal native-death counter adapter, with Fury/Werewolf/Mad Mage registrations | qworld | none planned; retained range1320–1329 | Fury Gates Mini World Change (10 Fury); Grimvale Mini World Change (10 Werewolf); Their Master's Voice World Change (Mad Mage stage) | CLAIMED; preceding personal stages remain separate bindings |
+| M32: world-change conditions on the existing personal native-death counter adapter, with authored Fury/Werewolf registrations | qworld | none planned; coordinator QMECH range2110–2119 | Fury Gates Mini World Change (10 Fury); Grimvale Mini World Change (10 Werewolf) | CLAIMED; preceding personal stages remain M31 bindings |
