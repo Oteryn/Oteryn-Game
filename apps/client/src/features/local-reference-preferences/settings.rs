@@ -10,11 +10,14 @@ use std::sync::Arc;
 
 #[path = "bindings.rs"]
 mod bindings;
+#[path = "profiles.rs"]
+mod profiles;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
 mod sync;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
+pub use profiles::HotkeyProfiles;
 pub use store::PreferenceStore;
 pub use sync::SettingsState;
 
@@ -62,6 +65,10 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub keybindings: std::collections::BTreeMap<String, String>,
     #[serde(default)]
+    pub secondary_keybindings: std::collections::BTreeMap<String, String>,
+    #[serde(default)]
+    pub hotkey_profiles: HotkeyProfiles,
+    #[serde(default)]
     pub english: bool,
     /// Requested world zoom percentage, fitted to the current viewport when projected.
     #[serde(default = "default_scale")]
@@ -77,6 +84,8 @@ impl Default for ReferencePreferences {
             skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout::default(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
+            secondary_keybindings: std::collections::BTreeMap::new(),
+            hotkey_profiles: HotkeyProfiles::default(),
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),

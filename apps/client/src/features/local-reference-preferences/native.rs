@@ -21,6 +21,8 @@ use winit::{
 };
 
 type Shared = SettingsState;
+#[path = "profiles_native.rs"]
+mod profile_window;
 fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
     shared
         .lock()
@@ -76,8 +78,14 @@ impl Settings {
     pub(super) fn input(
         &mut self,
         events: &[oteryn_input_actions::NormalizedInputEvent],
+        link: Option<&oteryn_client::play::PlayLink>,
     ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
-        let (events, requested) = lock(&self.shared).input(events);
+        let mut state = lock(&self.shared);
+        let (events, requested) = match link {
+            Some(link) => state.input_from_play(events, link),
+            None => state.input_in_context(events, false),
+        };
+        drop(state);
         if requested {
             spawn_window(Arc::clone(&self.shared));
         }
@@ -164,7 +172,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113)
+                && matches!(id, 103 | 106 | 110..=113 | 120)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -291,6 +299,14 @@ fn run(shared: Arc<Mutex<Shared>>) {
             BS_AUTOCHECKBOX as u32,
         );
         let apply = control(hwnd, "BUTTON", "Apply", 106, [380, 145, 110, 26], 0);
+        let profiles = control(
+            hwnd,
+            "BUTTON",
+            "Hotkey profiles...",
+            120,
+            [510, 145, 210, 26],
+            0,
+        );
         let transfer_label = control(
             hwnd,
             "STATIC",
@@ -344,6 +360,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             volume,
             mute,
             apply,
+            profiles,
             feedback,
             transfer_label,
             transfer_path,
@@ -388,6 +405,13 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == 120 {
+                    drop(state);
+                    profile_window::open(Arc::clone(&shared), hwnd);
+                    state = lock(&shared);
+                    held = None;
+                    continue;
+                }
                 if (110..=113).contains(&action) {
                     drop(state);
                     let confirmed = action == 111
@@ -439,6 +463,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                SetWindowTextW(help, wide(&format!("Profile: {} / chat {} editor.\r\nProfiles configures both key slots and saved presets.", state.preferences.hotkey_profiles.selected, if state.preferences.hotkey_profiles.chat_on { "on" } else { "off" })).as_ptr());
                 let selection = selected.max(0) as usize;
                 SendMessageW(list, CB_RESETCONTENT, 0, 0);
                 for binding in &bindings {

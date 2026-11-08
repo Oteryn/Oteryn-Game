@@ -16,7 +16,9 @@ impl Application {
                 return;
             }
         }
-        let routed = self.settings.input(events);
+        let routed = self
+            .settings
+            .input(events, self.play.as_ref().map(|play| &play.link));
         let events = routed.as_slice();
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);

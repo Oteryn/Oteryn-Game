@@ -21,6 +21,9 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn character_scope(&self) -> Option<[u8; 16]> {
+        self.character
+    }
     pub fn scope_label(&self) -> &'static str {
         if self.character.is_some() {
             "Character settings"
@@ -135,9 +138,25 @@ impl SettingsState {
     }
 
     pub fn input(&mut self, events: &[NormalizedInputEvent]) -> (Vec<NormalizedInputEvent>, bool) {
+        self.input_in_context(events, self.preferences.hotkey_profiles.chat_on)
+    }
+
+    pub fn input_from_play(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        link: &crate::play::PlayLink,
+    ) -> (Vec<NormalizedInputEvent>, bool) {
+        self.input_in_context(events, link.preference_chat_open())
+    }
+
+    pub fn input_in_context(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        chat_on: bool,
+    ) -> (Vec<NormalizedInputEvent>, bool) {
         let routed = self
             .input
-            .route(&self.preferences, events)
+            .route_chat(&self.preferences, events, chat_on)
             .unwrap_or_default();
         if oteryn_client_ui::reference_preferences::open_key(&routed) {
             (Vec::new(), self.request_open())
@@ -212,5 +231,11 @@ impl SettingsState {
             view.set_preferences(self.preferences.clone())?;
         }
         Ok(())
+    }
+}
+
+impl crate::play::PlayLink {
+    pub fn preference_chat_open(&self) -> bool {
+        crate::play::mailbox::lock(&self.mailbox).chat.open
     }
 }
