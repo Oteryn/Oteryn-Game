@@ -1880,35 +1880,6 @@ path as it already does on materialized and Soulpit entries. This grants no
 XP, corpse, loot or personal reward eligibility. The tests keep their exact
 source-stage and receipt-count assertions.
 
-
-## QMECH M24 source-bound death continuations
-
-The shared QMECH package owns this work. The coordinator assigned migration
-range **2180–2189**; this implementation allocates no migration, command,
-capability or ordinal. The earlier report-only 1108 reservation is released.
-
-The native lethal queue captures exact room recipients for six Heart of
-Destruction bosses and Court Warlock, and damaging players for Goblin Leader,
-Magma Bubble, Cake Golem and seven Ancient Tombs pharaohs. Source URLs and
-file:line evidence are retained in `content-prep/qmech-m24/source-notes.md`.
-Primal Menace remains with its existing atomic Hazard writer. Cake uses the
-chosen twenty personal kills, with the unavailable bridge unchanged.
-
-Captured scope, generation, character, lease and session are independently
-checked by the current fenced quest writer. Replay uses the existing death
-receipt identity. Cumulative kills guard the predecessor mission epoch rather
-than the changing counter, allowing multiple queued deaths without accepting
-a death captured before mission acceptance. Source-bound transition keys
-require native evidence; generic transition requests cannot mint this credit.
-
-The real PG red cases exposed an existing rowless-entry asymmetry: without
-a qualified corpse Item, the queue constructor discarded `damage_shares`.
-Room rules still worked, while damage-only quest steps received no eligible
-recipients. The producer now retains the actual native lethal ledger on this
-path as it already does on materialized and Soulpit entries. This grants no
-XP, corpse, loot or personal reward eligibility. The tests keep their exact
-source-stage and receipt-count assertions.
-
 M24 rule-level donor references (Crystal revision
 `201189f871d23597b82caf88fd611454a2ddefb8`):
 
