@@ -147,6 +147,8 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub hotkey_profiles: HotkeyProfiles,
     #[serde(default)]
+    pub bar_actions: crate::play::feature_local_spell_action_bar::view::BarActions,
+    #[serde(default)]
     pub item_hotkeys: crate::play::feature_0179_hotkey_equip::view::ItemHotkeys,
     #[serde(default)]
     pub english: bool,
@@ -187,6 +189,7 @@ impl Default for ReferencePreferences {
             secondary_keybindings: std::collections::BTreeMap::new(),
             hotkey_profiles: HotkeyProfiles::default(),
             item_hotkeys: Default::default(),
+            bar_actions: Default::default(),
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),
@@ -197,6 +200,9 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        if !self.bar_actions.valid() {
+            return Err(PreferenceError);
+        }
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {
                 !WINDOW_ACTIONS.iter().any(|(key, _)| key == id)

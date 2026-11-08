@@ -1,5 +1,14 @@
+#[path = "assignments.rs"]
+mod assignments;
 use crate::play::PlayView;
 use crate::spell::SPELL_SLOTS;
+pub(crate) use assignments::BarActionsState;
+#[cfg(any(windows, test))]
+pub(in crate::play) use assignments::activate_shared as activate_extra_shared;
+#[cfg(windows)]
+pub(in crate::play) use assignments::set_action as set_extra;
+pub use assignments::{BarAction, BarActions, PassiveAbility};
+pub(in crate::play) use assignments::{activate as activate_extra, clear_extra};
 
 impl PlayView {
     #[must_use]
@@ -68,14 +77,18 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
             labels: &[
                 "Slot number (1–12)",
                 "Server cast index (see live catalogue)",
+                "Carried item definition (equip)",
+                "Text to say",
             ],
-            buttons: &["Assign spell", "Clear slot", "Cast slot"],
+            buttons: &[
+                "Spell", "Clear", "Use", "Equip", "Text", "Instinct", "Harmony", "Serene",
+            ],
             snapshot: |mailbox| {
                 let panel = &mailbox.spell_bar;
                 (
                     panel.open,
                     false,
-                    vec!["1".into(), String::new()],
+                    vec!["1".into(), String::new(), String::new(), String::new()],
                     format!(
                         "{}\r\n{}\r\n{}",
                         oteryn_client_ui::spell_action_bar::panel_text(
@@ -106,10 +119,16 @@ impl crate::play::PlayLink {
     pub fn spell_slot_labels(&self) -> Vec<String> {
         let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
         crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(&mut mailbox);
-        oteryn_client_ui::spell_action_bar::slot_labels(
+        let mut labels = oteryn_client_ui::spell_action_bar::slot_labels(
             &mailbox.spell_bar,
             &mailbox.spell_catalog.catalog,
-        )
+        );
+        for (slot, action) in &mailbox.bar_actions.saved.0 {
+            if let Some(label) = labels.get_mut(*slot) {
+                *label = format!("{}: {}", slot + 1, assignments::label(&mailbox, action));
+            }
+        }
+        labels
     }
     pub fn cast_spell_slot(&self, slot: std::num::NonZeroU32) {
         super::input::send_cast(self, slot);

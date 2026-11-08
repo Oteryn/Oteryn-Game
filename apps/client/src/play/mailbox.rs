@@ -111,6 +111,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) bar_actions: super::feature_local_spell_action_bar::view::BarActionsState,
     pub(super) battle_lists: super::feature_0017_attack::view::BattleListsState,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
@@ -418,6 +419,7 @@ impl Outbox {
         mailbox.mechanics_status = Default::default();
         mailbox.rest_status = Default::default();
         mailbox.battle_instinct_status = Default::default();
+        mailbox.bar_actions = Default::default();
         mailbox.skill_progress = Default::default();
         mailbox.party_effects = Default::default();
         mailbox.potion_durations = Default::default();
@@ -466,6 +468,7 @@ impl Outbox {
         mailbox.mechanics_status = Default::default();
         mailbox.rest_status = Default::default();
         mailbox.battle_instinct_status = Default::default();
+        mailbox.bar_actions = Default::default();
         mailbox.skill_progress = Default::default();
         mailbox.party_effects = Default::default();
         mailbox.potion_durations = Default::default();

@@ -113,6 +113,7 @@ pub(super) fn assign(mailbox: &SharedMailbox, row: usize, slot: usize) -> bool {
         entry.spell.name,
         slot + 1
     );
+    crate::play::feature_local_spell_action_bar::view::clear_extra(&mut mailbox, slot);
     true
 }
 pub(super) fn clear(mailbox: &SharedMailbox, slot: usize) -> bool {
@@ -124,6 +125,7 @@ pub(super) fn clear(mailbox: &SharedMailbox, slot: usize) -> bool {
     *target = ArchiveSlot::Empty;
     state.archive_edit = crate::play::feature_0017_attack::view::next_edit();
     state.feedback = format!("Cleared slot {}", slot + 1);
+    crate::play::feature_local_spell_action_bar::view::clear_extra(&mut mailbox, slot);
     true
 }
 impl PlayLink {
@@ -220,6 +222,7 @@ pub(in crate::play) fn assign_cast_index(
     };
     *target = binding;
     mailbox.spellbook_details.archive_edit = crate::play::feature_0017_attack::view::next_edit();
+    crate::play::feature_local_spell_action_bar::view::clear_extra(mailbox, slot);
     resolve(mailbox);
     true
 }

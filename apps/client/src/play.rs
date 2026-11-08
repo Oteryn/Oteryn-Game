@@ -139,6 +139,7 @@ pub use feature_local_reference_preferences::settings::{
 
 pub use feature_0004_item_view_move::state::GroundItem;
 pub use feature_local_minimap::view::{MinimapBinding, MinimapMark, MinimapMemory};
+pub use feature_local_spell_action_bar::view::{BarAction, PassiveAbility};
 
 pub use feature_0023_presentation::state::*;
 
