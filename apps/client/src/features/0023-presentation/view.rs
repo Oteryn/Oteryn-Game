@@ -455,3 +455,18 @@ fn draw_tutorial(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod icon_palette_tests {
+    use super::*;
+    #[test]
+    fn o021_skull_palette_preserves_server_meanings() {
+        assert_eq!(party_icon_rgb(1, true), [5, 5, 0]);
+        assert_eq!(party_icon_rgb(2, true), [2, 5, 2]);
+        assert_eq!(party_icon_rgb(3, true), [5, 5, 5]);
+        assert_eq!(party_icon_rgb(4, true), [5, 0, 0]);
+        assert_eq!(party_icon_rgb(5, true), [0, 0, 0]);
+        assert_eq!(party_icon_rgb(6, true), [5, 3, 0]);
+        assert_eq!(party_icon_rgb(11, false), [4, 4, 4]);
+    }
+}
