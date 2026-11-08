@@ -856,6 +856,7 @@ impl DurabilityRoot {
                         .iter()
                         .map(|effect| effect.track.as_str())
                         .collect();
+                    keys.extend(catalogue.completion_tracks(quest));
                     let grizzly_keys = grizzly_action.as_ref().map(|_| {
                         oteryn_gameplay_quests::quest::grizzly_adams::storage_keys()
                     }).unwrap_or_default();
@@ -938,7 +939,9 @@ impl DurabilityRoot {
                     // Reading all Grizzly inputs does not reserve capacity for untouched tracks.
                     let written_keys: Vec<&str> = grizzly_plan.as_ref().map_or_else(
                         || keys.iter().copied().filter(|key| reward_callback.as_ref().is_none_or(|c|
-                            !c.requires.iter().any(|r| r.track == *key))).collect(),
+                            !c.requires.iter().any(|r| r.track == *key)))
+                            .filter(|key| transition.effects.iter().any(|effect| effect.track.as_str() == *key)
+                                || !catalogue.completion_tracks(quest).any(|read| read == *key)).collect(),
                         |plan| plan.changes.iter().map(|change| change.track.as_str()).collect(),
                     );
                     let new_tracks = written_keys.iter().filter(|key| !stored.contains_key(**key)).count();
@@ -1177,6 +1180,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
+                    let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     let (cause_id, ordinal) = request.cause.key();
                     let track_keys: Vec<&str> =
                         changes.iter().map(|change| change.track.as_str()).collect();
@@ -1212,7 +1216,7 @@ impl DurabilityRoot {
                     .bind(binding.as_slice())
                     .bind(&pin)
                     .bind(hash.as_slice())
-                    .bind(catalogue.completes_after(transition,&changes))
+                    .bind(completes)
                     .bind(&track_keys)
                     .bind(&before)
                     .bind(&after)
@@ -1256,7 +1260,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
-                    let completed = catalogue.completes_after(transition,&changes).then_some(committed.as_str());
+                    let completed = completes.then_some(committed.as_str());
                     let written = if stored_state.is_some() {
                         sqlx::query(
                             "UPDATE game_character_quest_states \
@@ -1373,7 +1377,7 @@ impl DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                         pinned_content_revision: pin,
                         definition_hash: hash,
-                        completes: catalogue.completes_after(transition,&changes),
+                        completes,
                         changes,
                         experience,
                     };

@@ -1,0 +1,5 @@
+{
+  "oteryn:quest.bear_room_quest": {
+    "groups": [["kv/bear_chest1"], ["kv/bear_chest2"], ["kv/bear_chest3"]]
+  }
+}

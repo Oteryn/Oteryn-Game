@@ -24,6 +24,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !runtime
             .player_control_facts(actor, session)
             .is_ok_and(|f| f.control_loss.is_none())
+            || (callback.requires_live_drunk()
+                && !states.get(runtime, actor, session).is_some_and(|state| {
+                    state.owned_conditions().has_status(
+                        oteryn_gameplay_domain::domain::condition::StatusKind::Drunk,
+                        self.owner_now().get(),
+                    )
+                }))
             || states.is_dead(actor)
             || !states.spell_idle(runtime, actor, session)
             || super::super::item_ref_admission::pinned_index(runtime, self.active_generation)
@@ -62,6 +69,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
+        }
+        if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
+            callback,
+            after.appearance_id,
+        ) {
+            return UseDisposition::NothingToUse;
         }
         let close = callback.trigger == Trigger::StepOut
             || callback
@@ -521,9 +534,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if !callback.has_personal_state()
-            && world_callbacks::world_change_requirement(&callback.key).is_some()
-        {
+        if stateless_observation_required(callback) {
             let Some(observed) = observed_world else {
                 return UseDisposition::Rejected;
             };
