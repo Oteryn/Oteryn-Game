@@ -1,0 +1,7 @@
+# Weapon proficiency shaping state v1
+
+Capability 448 requires capability 195. Command 732 reads one currently pinned weapon definition (four-byte nonzero big-endian u32). It never writes progression or changes controller authority. The current admission item fence and actor/session generation are checked before and after the bounded durable read.
+
+Result: definition u32, committed track revision u64, two optional slots, two modify-dust u32 amounts, ten rank-step-dust u32 amounts, reshape-dust u32, clear-dust u32 and orb-count u32. All numbers are big endian. Each slot has present-byte 0/1; when present: level u8 (0..6), rank u8 (0..10), offer count u8 (0 or 3), current/next/maximum descriptions and offer descriptions. Each UTF-8 description is prefixed by u16 byte length (1..256, no NUL). The complete reply is bounded to 4096 bytes. Unknown fields, trailing bytes, invalid flags and truncation are refused. Revision zero means an absent committed track and requires both slots absent. Existing capability-195 commands and replies retain their bytes.
+
+Projection descriptions and costs come from the existing pinned shaping catalogue. They are observations, never mutation authority. The existing modification commands retain their revision compare-and-swap and all durable value, session and replay checks. The client refreshes this observation after each modification instead of guessing or incrementing revisions.

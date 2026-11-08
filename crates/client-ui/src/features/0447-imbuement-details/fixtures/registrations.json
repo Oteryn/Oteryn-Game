@@ -1,0 +1,20 @@
+[
+  {
+    "mechanic": "0447-imbuement-details",
+    "kind": "handlers",
+    "id": "0447-imbuement-details-query",
+    "status": "supported",
+    "commands": [
+      731
+    ],
+    "direction": "client_to_server",
+    "capability": 447,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "state": "The existing 0068 shrine panel stores the optional item-bound material quote.",
+      "view": "The existing shrine selected-offer preview displays materials, cost and guaranteed success.",
+      "input": "The shrine automatically requests details after each confirmed window; no new shortcut.",
+      "settings": "Material requirements and success rules are server-owned."
+    }
+  }
+]

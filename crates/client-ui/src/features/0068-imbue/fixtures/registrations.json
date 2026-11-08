@@ -28,6 +28,6 @@
     "kind": "panels",
     "id": "0068-imbue-panel",
     "status": "supported",
-    "entry": "mod.rs::panel_text"
+    "entry": "view.rs::panel_text"
   }
 ]

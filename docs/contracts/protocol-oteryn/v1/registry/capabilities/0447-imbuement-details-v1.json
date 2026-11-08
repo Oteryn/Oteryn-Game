@@ -1,0 +1,15 @@
+{
+  "id": 447,
+  "name": "IMBUEMENT_DETAILS_V1",
+  "owner_decision": "CLIENTGAP-SYSTEMS L159",
+  "owner": "Game imbuement shrine",
+  "requires": [
+    68
+  ],
+  "command_types": [
+    731
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only, filtered without active native gameplay. Requires IMBUE_V1 and uses its admitted item query gates."
+}

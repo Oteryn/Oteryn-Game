@@ -128,6 +128,7 @@ impl Panels {
 impl Outbox {
     pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
         let mut shared = lock(&self.0);
+        shared.imbue.details_selected = session.feature_selected(447);
         shared.properties.house.initialize(session.feature_selected(49));
         shared.properties.staff = super::super::feature_0051_staff::state::Panel {
             selected: session.feature_selected(51),
@@ -208,6 +209,10 @@ impl Outbox {
         result: &GatedCommandResult,
     ) {
         let mut shared = lock(&self.0);
+        if command.capability == 447 {
+            oteryn_client_ui::imbue::details::apply(&mut shared.imbue, command, result);
+            return;
+        }
         match command.capability {
             49 => shared.properties.house.model.apply(command, result),
             51 | 330 => super::super::feature_0051_staff::protocol::apply(

@@ -20,7 +20,7 @@ unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPAR
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, 4);
             return 0;
         }
-        if message == WM_COMMAND && (1..=4).contains(&(w & 0xffff)) {
+        if message == WM_COMMAND && (1..=5).contains(&(w & 0xffff)) {
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (w & 0xffff) as isize);
             return 0;
         }
@@ -131,6 +131,14 @@ pub(super) fn select(
             WS_TABSTOP,
         );
         let cancel = control(hwnd, "BUTTON", "Cancel", 4, [420, 295, 100, 32], WS_TABSTOP);
+        let services = control(
+            hwnd,
+            "BUTTON",
+            "Bazaar / account services",
+            5,
+            [15, 345, 280, 32],
+            WS_TABSTOP,
+        );
         if [
             label,
             list,
@@ -140,6 +148,7 @@ pub(super) fn select(
             create,
             refresh,
             cancel,
+            services,
         ]
         .iter()
         .any(|handle| handle.is_null())
@@ -222,6 +231,7 @@ pub(super) fn select(
                 2 => break SelectionAction::Create,
                 3 => break SelectionAction::Refresh,
                 4 => break SelectionAction::Cancel,
+                5 => break SelectionAction::AccountServices,
                 _ => {}
             }
             std::thread::sleep(std::time::Duration::from_millis(30));

@@ -11,3 +11,11 @@ pub use view::panel_text;
 #[cfg(test)]
 #[path = "tests/view.rs"]
 mod tests;
+
+#[path = "state/tracker.rs"]
+mod tracker;
+pub use tracker::{QuestTracker, TrackerFilter, tracker_lines, tracker_query};
+
+#[cfg(test)]
+#[path = "tests/tracker.rs"]
+mod tracker_tests;

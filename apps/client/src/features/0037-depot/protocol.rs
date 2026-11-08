@@ -10,6 +10,7 @@ impl Outbox {
     }
     pub(in crate::play) fn depot_publish(&self, session: &impl Stepper) {
         lock(&self.0).depot.items = session.depot_items();
+        self.imbue_items_changed();
     }
     pub(in crate::play) async fn depot_container_run(
         &self,
