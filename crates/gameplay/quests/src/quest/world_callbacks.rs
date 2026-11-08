@@ -279,6 +279,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
+    callbacks.push(super::barbarian_mead::callback()?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {

@@ -629,7 +629,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m01b_explore {
+        if name == "barbarian-test-mead" {
+            super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
+        } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
