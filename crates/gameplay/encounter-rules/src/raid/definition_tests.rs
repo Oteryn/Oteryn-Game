@@ -146,3 +146,43 @@ fn raid_definition_capacity_and_deadline_boundaries() -> Result<(), Box<dyn std:
     assert_eq!(d.announcement_sequence(i64::MAX), Err(RaidError::Exhausted));
     Ok(())
 }
+
+#[test]
+fn qn5_feroxa_requires_moon_and_has_source_boss_death_or_twenty_hour_end()
+-> Result<(), Box<dyn std::error::Error>> {
+    let catalogue = RaidCatalogue::embedded()?;
+    let key = ProductionKey::new("raid:edron.feroxa")?;
+    let record = catalogue.get(&key).ok_or("Feroxa source record")?;
+    let requirement = record
+        .requires_world_change
+        .as_ref()
+        .ok_or("Feroxa moon prerequisite")?;
+    assert!(!requirement.satisfied_by(&[]));
+    assert!(!requirement.satisfied_by(&["grimvale/ordinary".into()]));
+    assert!(requirement.satisfied_by(&["grimvale/full_moon".into()]));
+    let mut substituted = record.clone();
+    substituted.key = "raid:badger".into();
+    assert_eq!(substituted.validate(), Err(RaidError::InvalidDefinition));
+    let selected = record.select([7; 32], [9; 16])?;
+    assert!(!selected.boss_entries.is_empty());
+    assert_eq!(selected.definition.despawn_after_ms, Some(72_000_000));
+    assert_eq!(
+        selected.end_policy,
+        RaidEndPolicy::BossDeathOrTimeout {
+            after_last_wave_ms: 72_000_000
+        }
+    );
+    assert_eq!(
+        selected.end_policy.decide(1_000, 1_001, true, 1, 0)?,
+        RaidEndDecision::Complete { cleanup: true }
+    );
+    assert_eq!(
+        selected.end_policy.decide(1_000, 72_000_999, true, 1, 1)?,
+        RaidEndDecision::Running
+    );
+    assert_eq!(
+        selected.end_policy.decide(1_000, 72_001_000, true, 1, 1)?,
+        RaidEndDecision::Complete { cleanup: true }
+    );
+    Ok(())
+}
