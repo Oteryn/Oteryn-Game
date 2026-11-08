@@ -118,9 +118,9 @@ impl RecipeEvidence {
         }
         let mut recipes = BTreeMap::new();
         for (key, definition) in definitions {
-            if definition["definition_profile"] != "oteryn_authored_v1" {
+            let Some(selected) = super::imported_recipe::select(&definition)? else {
                 continue;
-            }
+            };
             let missing = definition["missing_data"]
                 .as_array()
                 .ok_or("canonical Quest missing-data codes")?;
@@ -131,11 +131,11 @@ impl RecipeEvidence {
                         "quest_native_lowering_missing"
                             | "authored_trigger_and_delivery_bindings_missing"
                     )
-                )
+                ) && !(selected.original_source_gaps
+                    && entry["code"].as_str() == Some("reported_source_gap"))
             });
-            let digest = definition
-                .get("recipe")
-                .filter(|recipe| recipe.is_object())
+            let digest = selected
+                .recipe
                 .map(|recipe| {
                     let bytes = serde_json::to_vec(recipe).map_err(|error| error.to_string())?;
                     Ok::<String, String>(
@@ -150,7 +150,7 @@ impl RecipeEvidence {
                 key,
                 Recipe {
                     digest,
-                    complete: definition["data_complete"] == true,
+                    complete: selected.complete,
                     data_holds,
                 },
             );

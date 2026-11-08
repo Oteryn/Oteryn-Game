@@ -5,7 +5,7 @@ use super::ComposedFreshAdmission;
 use super::connection::{EarnedNotice, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, generation_item_facts, pinned_index};
 use super::world_map::{MapViewSource, resolve_map_target};
-use crate::content::world_reward_claims::bind_embedded_reward_claims;
+use crate::content::world_reward_claims::{REWARD_CLAIM_SHARDS, bind_reward_claims};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::reward_claim_mint::{
     RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
@@ -42,10 +42,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &crate::map::boot::BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        self.use_bundle_chest_from_shards(actor, command, map, target, &REWARD_CLAIM_SHARDS)
+            .await
+    }
+
+    /// Server-authored claim documents enter the same binding and durable USE
+    /// path as the embedded catalogue. Shards are server content, never wire input.
+    pub(super) async fn use_bundle_chest_from_shards(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        map: &crate::map::boot::BundleMap,
+        target: &WorldObjectTarget,
+        shards: &[&str],
+    ) -> Option<UseOutcome> {
         let native = self.active_generation?.native_gameplay()?;
         // This is a bounded, immutable Content pass over the embedded claim catalogue.
         // Unsupported shapes and unadmitted rewards remain closed in the existing binder.
-        let report = bind_embedded_reward_claims(map.overlay.base().as_ref(), &|item| {
+        let report = bind_reward_claims(map.overlay.base().as_ref(), shards, &|item| {
             generation_item_facts(native, &item_ref(item)).is_ok_and(|facts| {
                 facts.container_capacity.is_none_or(|capacity| capacity > 0)
                     && !matches!(

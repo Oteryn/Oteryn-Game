@@ -160,6 +160,13 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
         "l1-warmaster-tribal" => &["tribal crest"],
         "l1-wayfarer-hat" => &["hat"],
+        "l2-wizard-start" => &["outfit", "yes"],
+        "l2-wizard-shield" => &["shield"],
+        "l2-wizard-mail" => &["mail"],
+        "l2-wizard-legs" => &["legs"],
+        "l2-wizard-skull" => &["ring"],
+        "l2-wizard-flowers-start" => &["addon", "yes"],
+        "l2-wizard-flowers" => &["orchid"],
         "l2-battle-mage-book" | "l2-battle-mage-epaulettes" => &["addon", "yes", "yes"],
         "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
         "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
@@ -791,6 +798,9 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-authored-bindings" {
         return super::authored_quest_bindings::exercise(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-authored-imported-talk" {
+        return super::qengine_m01a_imported_talk::exercise(owner, admitted, h).await;
     }
     if name == "qengine-rewards-l13-rift-story" {
         return super::qengine_endgame_stories::rift(owner, admitted, h, authority).await;

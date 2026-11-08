@@ -3,6 +3,7 @@
 //! A binding set belongs to the same immutable catalogue as its tracks and transitions.
 //! The ordinary NPC/world/kill owners remain the only execution and durable-write paths.
 pub(crate) mod embedded;
+mod imported_recipe;
 pub mod kills;
 pub use kills::KillCounter;
 

@@ -25,6 +25,70 @@ fn evidence(index: &Value, shard: &Value) -> Result<RecipeEvidence, String> {
 }
 
 #[test]
+fn imported_chosen_recipe_admission_preserves_original_source_holds() -> Result<(), String> {
+    let (mut bindings, index, mut shard) = canonical_inputs()?;
+    let quest = "oteryn:quest.in_service_of_yalahar_quest";
+    bindings.quests[0].quest = quest.into();
+    for stage in &mut bindings.quests[0].stages {
+        if let super::super::Trigger::NpcDialogue { callback }
+        | super::super::Trigger::CarriedUse { callback } = &mut stage.trigger
+        {
+            callback.quest = quest.into();
+        }
+    }
+    let definition = &mut shard["records"][0]["definition"];
+    definition["identity"]["key"] = quest.into();
+    let recipe = definition["recipe"].take();
+    let identity = definition["identity"].clone();
+    definition
+        .as_object_mut()
+        .ok_or("definition")?
+        .remove("definition_profile");
+    definition
+        .as_object_mut()
+        .ok_or("definition")?
+        .remove("data_complete");
+    definition["missing_data"] = serde_json::json!([
+        {"code":"reported_source_gap","field":"interactions_with_gaps","count":14},
+        {"code":"quest_native_lowering_missing"}
+    ]);
+    definition["oteryn_recipe"] = serde_json::json!({
+        "profile":"chosen_source_completion_v1",
+        "chosen_data_complete":true,
+        "source_fidelity":"ORIGINAL_HOLDS_PRESERVED",
+        "payload":{"identity":identity,"recipe":recipe}
+    });
+    evidence(&index, &shard)?.verify(&bindings)?;
+    for mutation in 0..5 {
+        let mut refused = shard.clone();
+        let definition = &mut refused["records"][0]["definition"];
+        match mutation {
+            0 => definition["oteryn_recipe"]["chosen_data_complete"] = false.into(),
+            1 => definition["oteryn_recipe"]["profile"] = "unregistered_profile".into(),
+            2 => {
+                definition["oteryn_recipe"]["payload"]["identity"]["key"] =
+                    "oteryn:quest.foreign".into()
+            }
+            3 => {
+                definition["missing_data"] =
+                    serde_json::json!([{"code":"chosen_recipe_data_missing"}])
+            }
+            _ => {
+                definition["oteryn_recipe"]["payload"]["recipe"]["summary"] =
+                    "Changed after binding".into()
+            }
+        }
+        assert!(
+            evidence(&index, &refused)
+                .and_then(|proof| proof.verify(&bindings))
+                .is_err(),
+            "imported admission accepted mutation {mutation}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn canonical_admission_rejects_stale_recipes_and_unresolved_data_holds() -> Result<(), String> {
     let (bindings, index, shard) = canonical_inputs()?;
     evidence(&index, &shard)?.verify(&bindings)?;

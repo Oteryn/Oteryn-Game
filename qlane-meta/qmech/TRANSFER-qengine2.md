@@ -22,7 +22,10 @@ Reusable APIs carried by the snapshot:
   authoring for multiple outputs is separate from this primitive; qready2's
   claim remains its own work and should reuse this participant.
 
-Migrations imported from the assigned QENGINE2 range: 1550, 1551, 1552.
+The unmerged source migrations 1550, 1551 and 1552 are numbered 2040, 2041
+and 2042 in this package, following the coordinator's explicit QMECH range
+2040–2049. Their SQL bodies are unchanged; historical proofs retain source
+commit numbering. No new schema is planned for M01a.
 Existing package migrations 1600 and 1641 and their owners are retained.
 Package integration preserves sixteen-track NPC/reward transactions, literal
 reward text, the injected quest clock, and current seasonal behavior.

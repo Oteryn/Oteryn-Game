@@ -2276,6 +2276,137 @@
       ]
     },
     {
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "legs",
+        "crown legs"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Is it your true wish to sacrifice this to Zathroth?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "mail",
+        "dragon scale mail"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Is it your true wish to sacrifice this to Zathroth?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "outfit",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Are you willing to prove your loyalty through these sacrifices?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "ring",
+        "ring of the sky"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Is it your true wish to sacrifice this to Zathroth?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "shield",
+        "medusa shield"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Is it your true wish to sacrifice this to Zathroth?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Are you willing to prove your loyalty through these sacrifices?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.lynda",
       "keywords": [
         "angelina"
@@ -3857,6 +3988,64 @@
           "minimum": 0,
           "maximum": 0
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Could you please bring me 50 holy orchids?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "keywords": [
+        "orchid",
+        "holy orchid"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Have you really brought me 50 holy orchids?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Could you please bring me 50 holy orchids?"
       ]
     },
     {

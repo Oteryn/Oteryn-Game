@@ -376,6 +376,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.lugri",
+      "greet": "What is it that you {want}, |PLAYERNAME|?",
+      "farewell": "Bye.",
+      "walkaway": "Bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:203:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:204:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:205:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
       "npc": "oteryn:npc.lynda",
       "greet": "Welcome in the name of the gods, pilgrim |PLAYERNAME|!",
       "farewell": "Be careful on your journeys.",
@@ -571,6 +582,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_first_dragon.lua:149:sha256:645852a73164653b3ae894eaeba26c31f672ca6802223ee9ac47a35c74a0c8aa",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "greet": "Be greeted, dear visitor. Come and {stay} ... a while.",
+      "farewell": "We will meet again, |PLAYERNAME|.",
+      "walkaway": "Yes, flee from death. But know it shall be always one step behind you.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_queen_of_the_banshees.lua:217:sha256:4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_queen_of_the_banshees.lua:218:sha256:4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_queen_of_the_banshees.lua:219:sha256:4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71"
       ]
     },
     {

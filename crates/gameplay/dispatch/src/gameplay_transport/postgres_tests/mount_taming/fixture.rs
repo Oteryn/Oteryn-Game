@@ -3,6 +3,7 @@ use super::*;
 
 pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
     let tag = match cases {
+        Cases::Construction => "mount_taming_construction",
         Cases::Outcomes => "mount_taming_wire",
         Cases::Items => "mount_taming_items",
         Cases::MusicBox => "mount_taming_music",
@@ -187,6 +188,7 @@ pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
     }
     runtime_role(&harness.root).await?;
     match cases {
+        Cases::Construction => construction::run(&owner, &harness, actor, session, index).await?,
         Cases::Outcomes | Cases::StockOutcomes => {
             outcomes::run(&owner, &harness, actor, session, index).await?
         }
