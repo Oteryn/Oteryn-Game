@@ -669,6 +669,18 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     Ok(Some(Sha256::digest(bytes).into()))
 }
 
+/// Recipe receipts have their own selected-input proof, separate from one-input tools.
+/// Legacy tool plans retain their exact serialized shape.
+pub fn durable_plan(callback: &RewardCallback) -> Result<serde_json::Value, String> {
+    let mut value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+    if callback.carried_target.is_some() {
+        let object = value.as_object_mut().ok_or("recipe plan")?;
+        let source = object.remove("carried_item").ok_or("recipe source")?;
+        object.insert("recipe_source".into(), source);
+    }
+    Ok(value)
+}
+
 pub fn participant_key(callback: &str, index: usize) -> String {
     format!("{callback}/participant/{index}")
 }
