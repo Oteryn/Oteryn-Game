@@ -18,7 +18,7 @@
 | Literal readable text on NPC/World quest Item rewards through the existing MINT owner | questpc5 | none planned; own range 1270–1279 retained | Nomads Land Quest (book reward step only; window puzzle remains) | CLAIMED |
 | Literal readable text on quest-reward root Items through the existing fenced mint owner (NPC/world bridge) | qready1 | none | Nomads Land Quest | RELEASED: questpc5 claimed first during push race; no code written |
 | NPC carried/bank payment composed atomically with amulet-piece hand-in and quest progress (reuse existing fee-burn owner) | QNPCFX | none planned; reserved 1310-1319 only | Koshei the Deathless Quest (paid amulet assembly step) | CLAIMED |
-| Source NPC quest teleport composed with fenced dialogue progress, admitted destination and command replay | PGSPEED | none planned; QMECH reserve 2220–2229 if needed | The Paradox Tower Quest (Riddler); In Service of Yalahar Quest (NPC teleport steps only; other blockers remain) | CLAIMED |
+| Source NPC quest teleport composed with fenced dialogue progress, admitted destination and command replay | PGSPEED | 2220 reserved; own QMECH range 2220–2229 | The Paradox Tower Quest (Riddler); In Service of Yalahar Quest (NPC teleport steps only; other blockers remain) | CLAIMED |
 # QMECH claims
 
 | mechanic | lane | migrations | quests it unblocks | state |
@@ -45,5 +45,6 @@
 
 | Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | CLAIMED |
 | Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
+| M36 — NPC outfit/addon grants and real outfit snapshot | engoutfit | none planned; 1820–1829 reserved | In Service of Yalahar; Rock Steady / Deepling | CLAIMED |
 
 | M29 — Primal Ordeal Instance corpse stage/deadline and party prerequisite refusal | encx | 2200 reserved; coordinator-assigned 2200–2209 only | The Primal Ordeal | CLAIMED; party refusal fix transferred in ed8f218de, Instance corpse deadline implementation next |
