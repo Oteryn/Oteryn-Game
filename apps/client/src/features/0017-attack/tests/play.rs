@@ -275,3 +275,6 @@ fn active_named_battle_list_survives_character_switches() -> Result<(), Box<dyn 
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[path = "metadata.rs"]
+mod metadata;

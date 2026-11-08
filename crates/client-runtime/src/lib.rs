@@ -325,7 +325,7 @@ pub mod chat_public_channels;
 /// Protocol codecs consumed by the native controls for the CUI-3 feature set.
 pub mod cui3 {
     pub use oteryn_session::{
-        browse_field, container_tree, daily_boost, depot_search, hotkey_equip, item_forge,
-        item_view, store,
+        battle_metadata, browse_field, container_tree, daily_boost, depot_search, hotkey_equip,
+        item_forge, item_view, store,
     };
 }

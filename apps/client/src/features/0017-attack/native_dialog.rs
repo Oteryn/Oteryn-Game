@@ -111,9 +111,14 @@ pub(super) fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayComm
         ] {
             SendMessageW(sort, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
-        let apply = control(hwnd, "BUTTON", "Save list", 307, (10, 540, 220, 30), 0);
-        let add = control(hwnd, "BUTTON", "Add list", 308, (250, 540, 220, 30), 0);
-        let remove = control(hwnd, "BUTTON", "Remove list", 309, (490, 540, 230, 30), 0);
+        let apply = control(hwnd, "BUTTON", "Save list", 307, (10, 665, 220, 30), 0);
+        let add = control(hwnd, "BUTTON", "Add list", 308, (250, 665, 220, 30), 0);
+        let remove = control(hwnd, "BUTTON", "Remove list", 309, (490, 665, 230, 30), 0);
+        let Some(metadata_filters) = super::metadata_controls::MetadataControls::new(hwnd) else {
+            DestroyWindow(hwnd);
+            close(&weak);
+            return;
+        };
         let controls: Vec<_> = lists
             .iter()
             .copied()
@@ -166,6 +171,7 @@ pub(super) fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayComm
             if mailbox.battle.shutdown || !mailbox.battle.open {
                 break;
             }
+            crate::play::feature_0017_attack::view::metadata::refresh(&mut mailbox, &commands);
             for id in std::mem::take(&mut actions.0) {
                 if id == 300 || (307..=309).contains(&id) {
                     let state = &mut mailbox.battle_lists;
@@ -186,7 +192,10 @@ pub(super) fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayComm
                                     Some("Enter a maximum HP percentage from 0 to 100");
                                 continue;
                             };
+                            let (vocation, guild) = metadata_filters.values();
                             candidate[selected] = BattleListPreferences {
+                                vocation,
+                                guild,
                                 name: read_text(title).trim().into(),
                                 search: read_text(search).trim().into(),
                                 players: SendMessageW(players, BM_GETCHECK, 0, 0) == 1,
@@ -281,7 +290,7 @@ pub(super) fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayComm
                         0,
                         wide(&config.name).as_ptr() as isize,
                     );
-                    let rows = config.rows(&panel.rows);
+                    let rows = config.rows_with_metadata(&panel.rows, &panel.metadata.values);
                     SendMessageW(lists[i], LB_RESETCONTENT, 0, 0);
                     for row in &rows {
                         SendMessageW(
@@ -302,6 +311,7 @@ pub(super) fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayComm
                 SendMessageW(active, CB_SETCURSEL, selected, 0);
                 if held_lists.as_ref() != Some(&list_state) {
                     let config = &list_state.preferences[selected];
+                    metadata_filters.set(config);
                     SetWindowTextW(title, wide(&config.name).as_ptr());
                     SetWindowTextW(search, wide(&config.search).as_ptr());
                     SetWindowTextW(maximum, wide(&config.max_health.to_string()).as_ptr());
@@ -322,7 +332,10 @@ pub(super) fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayComm
                         )
                     },
                 );
-                SetWindowTextW(text, wide(&status).as_ptr());
+                SetWindowTextW(
+                    text,
+                    wide(&format!("{status}\r\n{}", panel.metadata.status())).as_ptr(),
+                );
                 for &control in &controls {
                     windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
                         control,

@@ -1,10 +1,14 @@
+#[path = "metadata.rs"]
+mod metadata;
 use crate::play::{PlayLink, mailbox::lock};
 #[path = "preferences.rs"]
 mod preferences;
 #[cfg(test)]
 pub use preferences::BattleSort;
 pub(crate) use preferences::next_edit;
-pub use preferences::{BattleListPreferences, BattleListsState, default_lists, validate_lists};
+pub use preferences::{
+    BattleListPreferences, BattleListsState, GuildFilter, default_lists, validate_lists,
+};
 impl PlayLink {
     pub fn battle_panel(&self) -> oteryn_client_ui::battle::BattlePanel {
         lock(&self.mailbox).battle.clone()

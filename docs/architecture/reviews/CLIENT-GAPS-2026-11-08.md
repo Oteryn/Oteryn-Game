@@ -106,7 +106,7 @@ Zasady przeciw dublowaniu:
 | T044 | Action bars | Bottom/left/right, lock, drag/drop, scroll | DONE | evidence: apps/client/src/features/local-spell-action-bar/layout.rs:44 + docked_bars_lock_swaps_scroll_and_persist_all_rows |
 | O011 | Action bars | Konfigurowalne paski akcji | DONE | evidence: apps/client/src/features/local-spell-action-bar/layout.rs:44 + third_bar_last_slot_uses_the_same_real_cast_caller |
 | T015 | Battle list | Wiele list, sort/filter, rename | DONE | evidence: apps/client/src/features/0017-attack/view.rs:25 + named_battle_lists_filter_sort_save_and_attack_live_entities; active_named_battle_list_survives_character_switches |
-| O014 | Battle list | Battle list i wybór celu | PARTIAL | Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora. |
+| O014 | Battle list | Battle list i wybór celu | DONE | evidence: apps/client/src/features/0017-attack/metadata.rs:41; apps/client/src/features/0017-attack/metadata_native.rs:9; crates/gameplay/dispatch/src/gameplay_transport/battle_metadata.rs:23 + battle_profession_and_guild_filters_query_real_metadata_and_attack_the_filtered_actor; battle_metadata_route_enforces_selection_and_bounded_request |
 | T010 | Game window | HUD i sidebar: dock/show/hide/order/layout | PARTIAL | Osobne okna Win32 zamiast pełnego dokowania i zapisu rozmiarów/kolejności paneli. |
 | T011 | Game window | HP/mana, soul/stamina, conditions/rest | PARTIAL | Dane i teksty są; brak pełnej konfigurowalnej prezentacji pasków/łuków/ikon. |
 | T012 | Game window | Światło i efekty wizualne | PARTIAL | Światło i zdarzenia są; brak całego zestawu widocznych efektów i konfiguracji referencji. |

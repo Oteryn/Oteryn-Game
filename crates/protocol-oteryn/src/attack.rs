@@ -1,4 +1,5 @@
 //! Attack target, fight mode and actor combat state typed payloads (ATTACK-WIRE-1).
+//! O014 adds read-only query 736 on this existing capability; see `battle_metadata`.
 //!
 //! Schema: `docs/contracts/protocol-oteryn/v1/attack_v1.proto`, from ATTACK-0 §3. Capability 17
 //! `ATTACK_V1` (requires 6 `WORLD_SPATIAL_ENTITIES`), command types 11 `ATTACK_TARGET_INTENT` and

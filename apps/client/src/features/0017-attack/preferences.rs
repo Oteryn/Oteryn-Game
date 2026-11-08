@@ -18,6 +18,13 @@ pub enum BattleSort {
     Identity,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum GuildFilter {
+    #[default]
+    Any,
+    SameGuild,
+    OutsideGuild,
+}
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct BattleListPreferences {
@@ -27,6 +34,8 @@ pub struct BattleListPreferences {
     pub search: String,
     pub max_health: u8,
     pub sort: BattleSort,
+    pub vocation: Option<u8>,
+    pub guild: GuildFilter,
 }
 
 impl Default for BattleListPreferences {
@@ -38,6 +47,8 @@ impl Default for BattleListPreferences {
             search: String::new(),
             max_health: 100,
             sort: BattleSort::Name,
+            vocation: None,
+            guild: GuildFilter::Any,
         }
     }
 }
@@ -55,6 +66,7 @@ pub fn validate_lists(lists: &[BattleListPreferences]) -> bool {
                 && list.search.len() <= 64
                 && !list.search.chars().any(char::is_control)
                 && list.max_health <= 100
+                && list.vocation.is_none_or(|family| family <= 5)
                 && !lists[..i]
                     .iter()
                     .any(|other| other.name.eq_ignore_ascii_case(&list.name))
@@ -144,5 +156,38 @@ impl BattleListsState {
         self.dirty = true;
         self.edit = next_edit();
         true
+    }
+}
+
+impl BattleListPreferences {
+    pub fn needs_metadata(&self) -> bool {
+        self.vocation.is_some() || self.guild != GuildFilter::Any
+    }
+    pub fn rows_with_metadata(
+        &self,
+        entities: &[WorldSpatialEntity],
+        metadata: &std::collections::BTreeMap<
+            oteryn_session::EntityRef,
+            oteryn_client_runtime::cui3::battle_metadata::PlayerMetadata,
+        >,
+    ) -> Vec<WorldSpatialEntity> {
+        self.rows(entities)
+            .into_iter()
+            .filter(|row| {
+                if row.kind != EntityKind::Player || !self.needs_metadata() {
+                    return true;
+                }
+                let Some(facts) = metadata.get(&row.entity) else {
+                    return false;
+                };
+                self.vocation
+                    .is_none_or(|vocation| facts.vocation == Some(vocation))
+                    && match self.guild {
+                        GuildFilter::Any => true,
+                        GuildFilter::SameGuild => facts.same_guild == Some(true),
+                        GuildFilter::OutsideGuild => facts.same_guild == Some(false),
+                    }
+            })
+            .collect()
     }
 }

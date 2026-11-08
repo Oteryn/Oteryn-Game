@@ -29,6 +29,7 @@ pub async fn run_session<T: Stepper>(
         return;
     }
     outbox.spell_bar_initialize(session.feature_snapshot(20));
+    outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
     outbox.appearance_initialize(&session);
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
@@ -186,6 +187,7 @@ pub async fn run_session<T: Stepper>(
                             98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
                             9 => outbox.highscores_result(&response),
                             14 => outbox.browse_field_result(&response),
+                            17 if request.command_type==736 => outbox.battle_metadata_result(&response),
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),
                             154 => outbox.store_result(&response),

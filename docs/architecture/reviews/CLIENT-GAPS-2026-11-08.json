@@ -1279,9 +1279,10 @@
   "src": "OTCAUD1108",
   "area": "Battle list",
   "feature": "Battle list i wybór celu",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0017-attack/metadata.rs:41; apps/client/src/features/0017-attack/metadata_native.rs:9; crates/gameplay/dispatch/src/gameplay_transport/battle_metadata.rs:23 + battle_profession_and_guild_filters_query_real_metadata_and_attack_the_filtered_actor; battle_metadata_route_enforces_selection_and_bounded_request"
  },
  {
   "id": "O015",

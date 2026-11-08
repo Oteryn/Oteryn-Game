@@ -8,7 +8,8 @@
   "acceptance_requires": true,
   "commands": [
     11,
-    12
+    12,
+    736
   ],
   "domains": [
     10

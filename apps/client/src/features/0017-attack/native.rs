@@ -2,6 +2,8 @@
 #![allow(unsafe_code)]
 #[path = "native_dialog.rs"]
 mod dialog;
+#[path = "metadata_native.rs"]
+mod metadata_controls;
 use super::preferences::{BattleListPreferences, BattleSort, row_label, validate_lists};
 use crate::combat_input::PlayCommand;
 use crate::play::{
