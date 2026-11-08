@@ -15,6 +15,9 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[path = "qengine_rewards/questl2_n2_regalia.rs"]
+mod questl2_n2_regalia;
+
 pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -152,6 +155,8 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.ends_with("/l2-regalia-combine") { return &["regalia of suon"]; }
+
     match key.rsplit('/').next().unwrap_or(key) {
         "knight-sword" => &["forge"],
         "l1-warmaster-crest" => &["crest"],
@@ -758,6 +763,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-l2-regalia" {
+        return questl2_n2_regalia::exercise(owner,admitted,h).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
     }

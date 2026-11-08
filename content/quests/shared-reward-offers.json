@@ -4168,6 +4168,18 @@
       ]
     },
     {
+      "npc": "oteryn:npc.yonan",
+      "keywords": [
+        "regalia of suon"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [],
+      "reply": [
+        "You have all parts of the famous Regalia of Suon! Only a few of them were ever forged, back in the times of the old empire. You are holding a very rare and precious treasure, my friend. ... As you have all four pieces, I could combine them into the full insignia. Shall I do this for you?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.zoltan",
       "keywords": [
         "proof"

@@ -596,6 +596,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.yonan",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Well, bye then.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yonan.lua:218:sha256:ab32c38fec7fc99be97b91ed19d79e64880c9ff955d58d8eee3504282f6e3848"
+      ]
+    },
+    {
       "npc": "oteryn:npc.zoltan",
       "greet": "Welcome |PLAYERNAME|, student of the arcane arts. I teach the fiercest {spells} available.",
       "farewell": "Use your knowledge wisely, |PLAYERNAME|.",

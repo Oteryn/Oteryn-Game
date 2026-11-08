@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "tracks": [],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/l2-regalia-combine",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "npc": "oteryn:npc.yonan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i31572",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i31573",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i31574",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i31575",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31576",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Well then, let me have a look."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yonan.lua:198-209:sha256:ab32c38fec7fc99be97b91ed19d79e64880c9ff955d58d8eee3504282f6e3848"
+      ]
+    }
+  ]
+}

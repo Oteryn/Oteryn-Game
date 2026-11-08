@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "lane": "L2",
+  "branch": "claude/happy-davinci-ijz3wy-questl2-n2",
+  "base_main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
+  "packet_total": 51,
+  "entries": [
+    {
+      "title": "Kilmaresh",
+      "status": "QUALIFIED",
+      "mechanic": "Yonan four-part Regalia assembly",
+      "reused_from": "be6626b49508c33b062c097480ed173472a8bdba",
+      "red": {
+        "postgresql": "18.6",
+        "duration_seconds": 4.603184268,
+        "error": "complete native journey bindings absent: [\"/l2-regalia-combine\"]"
+      },
+      "green": {
+        "postgresql": "18.6",
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-regalia",
+        "duration_seconds": 134.307211869,
+        "test_case_seconds": 143.888,
+        "passed": true,
+        "equipment_regression_seconds": 68.36
+      }
+    }
+  ],
+  "migrations": [],
+  "validation": {
+    "authoring_checks": "PASS",
+    "authoring_unit_modules": 104,
+    "authoring_unit_tests": 1121,
+    "authoring_preexisting_skips": 8,
+    "content_tree_seconds": 153.6957944970054,
+    "workspace_check_seconds": 436.7071759029932,
+    "clippy_seconds": 318.49964497599285,
+    "cargo_fmt_all_check": "PASS",
+    "duplicate_migrations": "PASS",
+    "content_units": {
+      "passed": 324,
+      "failed": 0,
+      "preexisting_ignored": 1,
+      "seconds": 510.99
+    },
+    "pending_unit_crates": [
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests"
+    ],
+    "publication_rule": "PREPUSH-2 cadence exception while the remaining crate unit run completes"
+  }
+}
