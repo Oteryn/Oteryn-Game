@@ -1994,3 +1994,8 @@ Baseline qmech 5b960aa2a, with only the ground_stack:None compile repair and
 without any M03 source changes: reward_callbacks filter reproduced the same
 3 FAIL / 21 PASS in 3.96 s (wall 16.011 s). Thus these reward fixture failures predate
 this slice; reward code and assertions are unchanged.
+Workspace checking also exposed existing missing creature_use:None fields in
+engitem_oramond.rs and questpc5_map_marks.rs admission fixtures. Both are repaired
+without changing assertions. M03's PG test uses the existing harness's explicit
+noncanonical pre-routing behavior when PG is absent; only the real configured PG
+execution is counted as validation evidence.
