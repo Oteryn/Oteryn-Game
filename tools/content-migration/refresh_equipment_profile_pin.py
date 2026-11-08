@@ -91,6 +91,10 @@ def main():
         original,
         json.loads((ROOT / "tools/content-schema/native-gameplay/questpc4-treasure-reward-profiles.json").read_bytes()),
     )
+    # A stale preceding owner already determines --check; refuse without touching
+    # its file or requiring unrelated owner inputs to be admitted first.
+    if args.check and source != original:
+        raise SystemExit("equipment cohort pin is stale")
     from qnpcfx_item_profiles import cohort_receipt
     source = cohort_receipt(source, json.loads((ROOT / paths[3]).read_bytes()))
     generated, count = regenerate(
