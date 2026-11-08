@@ -34,3 +34,34 @@ impl Panel {
         self.feedback = message.into();
     }
 }
+
+impl Panel {
+    /// Browse only outfits granted by the current server catalogue.
+    pub fn cycle_outfit(&mut self, forward: bool) -> bool {
+        if self.pending || !self.selected {
+            return false;
+        }
+        let Some(catalogue) = &self.catalogue else {
+            return false;
+        };
+        if catalogue.outfits.is_empty() {
+            return false;
+        }
+        let current = catalogue
+            .outfits
+            .iter()
+            .position(|outfit| outfit.key == self.fields[0]);
+        let index = current.map_or(0, |index| {
+            if forward {
+                (index + 1) % catalogue.outfits.len()
+            } else {
+                (index + catalogue.outfits.len() - 1) % catalogue.outfits.len()
+            }
+        });
+        let outfit = &catalogue.outfits[index];
+        self.fields[0].clone_from(&outfit.key);
+        let addons = self.fields[1].parse::<u8>().unwrap_or(0) & outfit.permitted_addons;
+        self.fields[1] = addons.to_string();
+        true
+    }
+}

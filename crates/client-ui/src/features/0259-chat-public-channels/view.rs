@@ -41,6 +41,9 @@ pub fn panel_text(panel: &ChatPanel) -> String {
         let _ = writeln!(text, "{}: {state}", room_name(room));
     }
     for line in &panel.lines {
+        if !panel.console.communication.visible(line) {
+            continue;
+        }
         if let Some(line) = line_text(line) {
             let _ = writeln!(text, "{line}");
         }
