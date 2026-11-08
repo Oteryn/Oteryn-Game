@@ -27,6 +27,8 @@ pub enum Trigger {
     StepOut,
 }
 
+#[cfg(test)]
+mod admission_tests;
 mod clock;
 mod counterparts;
 mod effects;
@@ -161,9 +163,23 @@ pub struct WorldRequirement {
     pub ground_stack: Option<Vec<GroundStackEntry>>,
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Admission {
+    #[serde(default)]
+    pub regular_blessings: bool,
+    #[serde(default)]
+    pub promotion: bool,
+    #[serde(default)]
+    pub premium: bool,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
+    /// Live Character predicates, evaluated by the fenced receipt owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission: Option<Admission>,
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
@@ -468,6 +484,13 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .minimum_level
                 .is_some_and(|level| level == 0 || !callback.has_personal_state())
+            || callback.admission.as_ref().is_some_and(|a| {
+                (!a.regular_blessings && !a.promotion && !a.premium)
+                    || callback.actor_kind != ActorKind::Player
+                    || !callback.has_personal_state()
+                    || callback.reversible
+                    || callback.opening_only
+            })
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -717,6 +740,9 @@ mod clock_tests;
 
 #[cfg(test)]
 mod literal_text_tests;
+
+#[cfg(test)]
+mod ground_stack_tests;
 
 #[cfg(test)]
 mod cycle_tests;

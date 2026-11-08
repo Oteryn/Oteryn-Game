@@ -149,6 +149,7 @@ impl<'a> Staged<'a> {
                     "unresolved native effect".into(),
                 ));
             }
+            NpcRuleEffect::CompleteSource { track } => self.set_track(track, 1)?,
             NpcRuleEffect::Set { track, value } => self.set_track(track, *value)?,
             NpcRuleEffect::Add { track, value } => {
                 let result = self
@@ -374,6 +375,13 @@ fn plan_with_teleport(
                     break;
                 }
             }
+            for effect in &rule.effects {
+                if let NpcRuleEffect::CompleteSource { track } = effect
+                    && state.track(track)? == 1
+                {
+                    eligible = false;
+                }
+            }
             if !eligible {
                 continue;
             }
@@ -386,7 +394,8 @@ fn plan_with_teleport(
                         ))
                     && !matches!(
                         effect,
-                        NpcRuleEffect::Set { .. }
+                        NpcRuleEffect::CompleteSource { .. }
+                            | NpcRuleEffect::Set { .. }
                             | NpcRuleEffect::Add { .. }
                             | NpcRuleEffect::SetNowPlus { .. }
                             | NpcRuleEffect::SetTopic { .. }
