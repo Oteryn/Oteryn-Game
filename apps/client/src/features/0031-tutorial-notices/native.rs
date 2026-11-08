@@ -89,15 +89,11 @@ fn run(weak: WeakMailbox) {
             return;
         }
         SendMessageW(tabs[0], BM_SETCHECK, 1, 0);
-        let mut guide = oteryn_client_ui::guide::Guide::default();
         let mut held_tab = usize::MAX;
         let updates = std::env::current_exe()
             .ok()
-            .and_then(|p| p.parent().map(std::path::Path::to_owned))
-            .map(|path| crate::bulletin::Browser::load(&path))
-            .transpose()
-            .map(|browser| browser.unwrap_or_default().news())
-            .unwrap_or_else(|error| format!("Updates unavailable: {error}"));
+            .and_then(|path| path.parent().map(super::compendium_updates))
+            .unwrap_or_else(|| "Updates unavailable: cannot locate the client package.".into());
         let list = CreateWindowExW(
             0,
             wide("EDIT").as_ptr(),
@@ -142,21 +138,8 @@ fn run(weak: WeakMailbox) {
                 .position(|tab| SendMessageW(*tab, BM_GETCHECK, 0, 0) == 1)
                 .unwrap_or(0);
             if held.as_ref() != Some(&mailbox.notices) || held_tab != tab {
-                let text = super::compendium_text(&mailbox.notices, tab).unwrap_or_else(|| {
-                    use oteryn_client_ui::guide::Page;
-                    guide.select(match tab {
-                        1 => Page::Basics,
-                        2 => Page::Recommendations,
-                        3 => Page::Updates,
-                        4 => Page::Features,
-                        _ => Page::Help,
-                    });
-                    if tab == 3 {
-                        format!("Updates\r\n\r\n{updates}")
-                    } else {
-                        guide.text()
-                    }
-                });
+                let text = super::compendium_page_text(&mailbox.notices, tab, &updates)
+                    .unwrap_or_default();
                 SetWindowTextW(list, wide(&text).as_ptr());
                 held_tab = tab;
                 held = Some(mailbox.notices.clone());

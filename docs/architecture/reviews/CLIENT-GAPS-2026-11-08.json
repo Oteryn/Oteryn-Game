@@ -1293,9 +1293,10 @@
   "src": "OTCAUD1108",
   "area": "Tutorial",
   "feature": "Kompendium: poradnik, aktualizacje i pomoc",
-  "status": "MISSING",
-  "gap": "Brakuje okna kompendium z kategoriami poradnika, aktualizacji, informacji o funkcjach i pomocy.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Compendium zawiera Guide, Recommendations, Updates z ograniczonego pliku bulletin.json pakietu, Features i Help. Pomoc opisuje raporty, zgodę i zrzuty ekranu; błędny feed ma jawny komunikat.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0031-tutorial-notices/view.rs:48 + compendium_caller_loads_package_updates_and_support_pages"
  },
  {
   "id": "O021",

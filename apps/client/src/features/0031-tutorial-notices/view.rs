@@ -35,3 +35,35 @@ pub(super) fn compendium_text(
     });
     Some(guide.text())
 }
+
+/// Read the same bounded package bulletin used by the sign-in news browser.
+#[cfg(any(windows, test))]
+pub(super) fn compendium_updates(directory: &std::path::Path) -> String {
+    crate::bulletin::Browser::load(directory)
+        .map(|browser| browser.news())
+        .unwrap_or_else(|error| format!("Updates unavailable: {error}"))
+}
+
+#[cfg(any(windows, test))]
+pub(super) fn compendium_page_text(
+    panel: &oteryn_client_ui::tutorial_notices::NoticePanel,
+    tab: usize,
+    updates: &str,
+) -> Option<String> {
+    if tab <= 2 {
+        return compendium_text(panel, tab);
+    }
+    if !panel.open {
+        return None;
+    }
+    if tab == 3 {
+        return Some(format!("Updates\r\n\r\n{updates}"));
+    }
+    let mut guide = oteryn_client_ui::guide::Guide::default();
+    guide.select(match tab {
+        4 => oteryn_client_ui::guide::Page::Features,
+        5 => oteryn_client_ui::guide::Page::Help,
+        _ => return None,
+    });
+    Some(guide.text())
+}
