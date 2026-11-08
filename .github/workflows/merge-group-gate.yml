@@ -13,7 +13,9 @@ permissions: {}
 # candidate job widens the qualified range back to the last main SHA whose gate succeeded.
 concurrency:
   group: game-merge-group-${{ github.event_name == 'push' && format('push-{0}', github.ref) || github.event.merge_group.head_sha }}
-  cancel-in-progress: true
+  # A post-merge push run is never cancelled by the next merge: it finishes and
+  # qualifies its commit, while only the newest later push waits in the queue.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
   candidate:
