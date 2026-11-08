@@ -25,7 +25,7 @@ async fn count(h: &Harness, track: &str) -> TestResult<i64> {
     .fetch_one(&h.pool)
     .await?)
 }
-async fn death(
+pub(super) async fn death(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     creature: &str,
