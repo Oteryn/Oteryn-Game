@@ -174,6 +174,7 @@ fn scenario_case(
             eprintln!("POSTGRES_CASE_STARTED {name} after PostgreSQL fixture initialization");
         }
         if name == "authored-wrath-hunt" { super::super::questpc8_wrath_hunt::require_bindings()?; }
+        if name == "nx6-wayfarer" { super::super::questpc8_wrath_source_dragon::require_bindings()?; }
         let mut callback = if native_signs || diprath_room {
             callback("ancient-tombs-diprath-sign-1")?
         } else if native_flames {
@@ -332,7 +333,9 @@ fn scenario_case(
         if name == "qengine-rewards-questpc4-puzzle-ladder" {
             callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
         }
-        let world = if name == "authored-wrath-hunt" {
+        let world = if name == "nx6-wayfarer" {
+            super::super::questpc8_wrath_source_dragon::world()?
+        } else if name == "authored-wrath-hunt" {
             super::super::questpc8_wrath_hunt::world()?
         } else if matches!(name, "authored-wrath-opening" | "authored-colours-opening") {
             super::super::questpc8_wrath_opening::world()?

@@ -1,0 +1,139 @@
+{
+  "state": "COMPILE_GREEN_NATIVE_RETEST_PENDING",
+  "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+  "red": {
+    "postgres_seconds": 35.339,
+    "marker": "WRATH_SOURCE_DRAGON_PLACEMENT_RED: source NPC is absent from native placement index",
+    "log": "/tmp/questpc8b-source-dragon-red.log"
+  },
+  "checks": {
+    "workspace": {
+      "exit": 0,
+      "seconds": 189.8979475649976
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.562718740999117
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.302623362003942
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 185.7467176640057
+    }
+  },
+  "regeneration": {
+    "placement-check": {
+      "exit": 0,
+      "seconds": 0.326648361995467
+    },
+    "proof": {
+      "exit": 0,
+      "seconds": 0.4124688680021791
+    },
+    "tree": {
+      "exit": 0,
+      "seconds": 36.91715431799821
+    },
+    "claims": {
+      "exit": 0,
+      "seconds": 3.4299296620010864
+    },
+    "bindings": {
+      "exit": 0,
+      "seconds": 15.024022264013183
+    },
+    "completion": {
+      "exit": 0,
+      "seconds": 5.190988300993922
+    },
+    "matrix": {
+      "exit": 0,
+      "seconds": 0.5659857970022131
+    },
+    "native": {
+      "exit": 0,
+      "seconds": 330.0119419870025
+    },
+    "audit": {
+      "exit": 0,
+      "seconds": 0.022683388990117237
+    },
+    "pins": {
+      "exit": 0,
+      "seconds": 115.2149846629909
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.30642421799711883
+    },
+    "chosen": {
+      "exit": 0,
+      "seconds": 0.2973525309935212
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.539472527001635
+    }
+  },
+  "placement_tests": {
+    "passed": 14,
+    "conversion_seconds": 0.369,
+    "overrides_and_authored": "Both2-case groups PASS"
+  },
+  "existing_quest_unit_proof": "main-c77-validation.json:355PASS41.48s; quest code and callback data unchanged in this placement-only slice",
+  "source": {
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-npc.xml",
+    "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+    "center": [
+      33243,
+      31213,
+      10
+    ],
+    "offset": [
+      -1,
+      0
+    ],
+    "npc_cell": [
+      33242,
+      31213,
+      10
+    ],
+    "old_wiki_hypothesis": [
+      33243,
+      31219,
+      10
+    ],
+    "facing": "Explicit NPC engine defaultNORTH; not recovered from XML"
+  },
+  "native_approach": [
+    33242,
+    31214,
+    10
+  ],
+  "placement_preservation": {
+    "old_records": 81,
+    "new_records": 82,
+    "old_npcs": 71,
+    "new_npcs": 72,
+    "all_previous_records_identical": true
+  },
+  "review": "Independent source position/provenance/fixture review: no findings",
+  "scope": "Actual source-map Sleeping Dragon placement; existing NX6 dialogue/finale/receipt regression uses generated record and real source B3 cells. No new quest reward or rule.",
+  "own_migrations": "1300-1308 unchanged; no new migration",
+  "qengine_audit": {
+    "head": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
+    "carried_use_live_player_quest_predicate": "QUEUED",
+    "item_look_disguise_restore": "QUEUED"
+  },
+  "pending": [
+    "remaining dispatch full unit coverage: CI scope; not claimed complete",
+    "focused2PG tests remain in active driver; clippy alreadyPASS; pending-step3 cadence exception"
+  ],
+  "whole_quests": {
+    "qualified": 21,
+    "total": 23
+  }
+}

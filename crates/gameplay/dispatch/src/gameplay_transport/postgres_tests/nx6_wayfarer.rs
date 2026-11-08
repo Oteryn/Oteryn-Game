@@ -1,5 +1,5 @@
 //! NX-6: the actual NPC route must commit the dream and Wayfarer together.
-use super::classic_quests::{install, progress, talk};
+use super::classic_quests::{progress, talk};
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -7,8 +7,8 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
-    world_callbacks::Position, wrath_sleeping_dragon as quest,
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, world_callbacks::Position,
+    wrath_sleeping_dragon as quest,
 };
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use std::sync::Arc;
@@ -22,9 +22,9 @@ fn nx6_wayfarer_real_npc_atomic_finale_replay_and_fences() -> TestResult {
         super::quest_world_callbacks::scenario(
             "nx6-wayfarer",
             Position {
-                x: 33294,
-                y: 31677,
-                floor: -15,
+                x: 33243,
+                y: 31214,
+                floor: -10,
             },
             false,
         )
@@ -51,21 +51,36 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let started = std::time::Instant::now();
-    let [dragon] = install(owner, admitted, [quest::NPC]).await?;
+    let dragon = super::questpc8_wrath_source_dragon::install(owner, admitted).await?;
     let canonical = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    let keys = [quest::QUESTLINE, quest::MISSION, quest::POTION, super::questpc8_wrath_dream::STAGE];
+    let keys = [
+        quest::QUESTLINE,
+        quest::MISSION,
+        quest::POTION,
+        super::questpc8_wrath_dream::STAGE,
+    ];
     // Only prerequisites are seeded. The real NPC must earn the dream receipt.
     let setup_key = "oteryn:quest-transition/nx6-fixture-dream-ready";
-    let catalogue = Arc::new(canonical.with_fixture_transition(QuestTransition {
-        world_change: None,
-        key: setup_key.into(),
-        quest: quest::QUEST.into(),
-        effects: keys.into_iter().zip([27, 1, 1, 6]).map(|(key, value)| QuestEffect {
-            track: key.into(), from: QuestComparison::Any, effect: QuestEffectKind::Set(value),
-        }).collect(),
-        completes: false,
-        experience: None,
-    }).map_err(debug)?);
+    let catalogue = Arc::new(
+        canonical
+            .with_fixture_transition(QuestTransition {
+                world_change: None,
+                key: setup_key.into(),
+                quest: quest::QUEST.into(),
+                effects: keys
+                    .into_iter()
+                    .zip([27, 1, 1, 6])
+                    .map(|(key, value)| QuestEffect {
+                        track: key.into(),
+                        from: QuestComparison::Any,
+                        effect: QuestEffectKind::Set(value),
+                    })
+                    .collect(),
+                completes: false,
+                experience: None,
+            })
+            .map_err(debug)?,
+    );
     owner.quest_catalogue = Some(catalogue.clone());
     let fence = owner
         .current_quest_fence(admitted.game_session_id)

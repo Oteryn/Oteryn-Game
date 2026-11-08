@@ -1431,9 +1431,9 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
-        "qengine2": "2ddd4f9cddb9df593aed9cbad5c63a9380f29602",
-        "result": "Both requested capabilities explicitly QUEUED; no large replacement authored in this lane."
+        "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+        "qengine2": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
+        "result": "Both requested capabilities stillQUEUED; quest-specific work continues without duplicate engine."
       }
     },
     "collector_handoff": {
@@ -1462,8 +1462,8 @@
     },
     "main_sync": {
       "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-      "state": "NATIVE_POSTGRES_GREEN",
-      "proof": "wrath-imperial-validation.json"
+      "state": "COMPILE_GREEN_NATIVE_RETEST_PENDING",
+      "proof": "wrath-source-dragon-validation.json"
     },
     "authoring_round_trip": "Published envelope/self-mark rows restored to canonical author input; opening PG revalidation included in wrath-dream-validation.json"
   },
@@ -1718,9 +1718,9 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
-        "qengine2": "2ddd4f9cddb9df593aed9cbad5c63a9380f29602",
-        "result": "Both requested capabilities explicitly QUEUED; no large replacement authored in this lane."
+        "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+        "qengine2": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
+        "result": "Both requested capabilities stillQUEUED; quest-specific work continues without duplicate engine."
       }
     },
     "active_validation": {
@@ -1753,8 +1753,8 @@
     },
     "main_sync": {
       "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-      "state": "NATIVE_POSTGRES_GREEN",
-      "proof": "wrath-imperial-validation.json"
+      "state": "COMPILE_GREEN_NATIVE_RETEST_PENDING",
+      "proof": "wrath-source-dragon-validation.json"
     },
     "dream_slice": {
       "state": "NATIVE_POSTGRES_GREEN",
@@ -1769,6 +1769,15 @@
         "hunt": 100.044,
         "dream": 69.897
       }
+    },
+    "source_dragon_placement": {
+      "state": "COMPILE_GREEN_NATIVE_RETEST_PENDING",
+      "proof": "wrath-source-dragon-validation.json",
+      "cell": [
+        33242,
+        31213,
+        10
+      ]
     }
   },
   {

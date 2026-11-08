@@ -867,3 +867,15 @@ loot becomes a grant and no test count or refusal assertion is relaxed.
   kill uses plain native ground33083/33084,31217, avoiding NPC overlap. The
   floor3 hunt's33079/33080,31192 cells have admitted walkable ground/borders.
   No source cell, provisional-entry policy or collision test was weakened.
+
+- Scope the actual Sleeping Dragon NPC in the native World. The committed
+  promotion candidate has only an older Wiki hypothesis33243,31219,z10. Pinned
+  Crystal201189f world-npc.xml instead places center33243,31213 with offsetx=-1:
+  exact source33242,31213,z10. The existing explicit placement-override mechanism
+  records that XML URL/revision/sha256 and replaces only the old position. XML
+  supplies no facing: choose the engine default NORTH, not a recovered direction.
+  Native B3/compiler probing identifies33242,31214 as admitted ground/border for
+  the player's approach; the NPC stays at its actual source cell. The existing
+  NX6 dialogue/rollback/fence/replay and chosen report test now uses these real
+  source cells and obtains the NPC position from the generated placement index.
+  No provisional tile is made passable and no source binding is fabricated.

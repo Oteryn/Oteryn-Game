@@ -1,3 +1,17 @@
+# Latest checkpoint: Wrath source Sleeping Dragon COMPILE_GREEN_NATIVE_RETEST_PENDING
+
+Source NPC33242,31213,z10 is now scoped by existing placement overrides with
+pinned Crystal201189f XML provenance. Its older Wiki-only candidate was at
+33243,31219,z10. NORTH is the explicit engine default, not a recovered direction.
+The existing32-step dream/atomic finale/receipt regression now obtains the
+NPC from the generated native placement index and uses actual B3 approach
+33242,31214. All rollback, fencing, replay and chosen-report assertions remain.
+PG RED35.339s proved missing source placement. Current state:COMPILE_GREEN_NATIVE_RETEST_PENDING.
+All81 prior native placement records are unchanged; one NPC added. Measured
+checks/commands: wrath-source-dragon-validation.json. No reward, quest rule,
+new engine feature or migration was introduced. Whole quest count stays21/23.
+Fresh QENGINE2 head3babb30bd still queues both colour-peer and crate-look requests.
+
 # Latest checkpoint: Wrath imperial hunt native PostgreSQL GREEN
 
 Zlak's captured source placement33082,31220,z7 is now scoped. Selected Wrath
