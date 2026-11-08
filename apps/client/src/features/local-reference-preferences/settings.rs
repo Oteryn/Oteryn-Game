@@ -50,6 +50,10 @@ fn default_scale() -> u16 {
     100
 }
 
+fn default_rotation_modifier() -> String {
+    "CTRL".into()
+}
+
 fn default_panels() -> Vec<String> {
     ["battle", "chat", "inventory", "minimap"]
         .into_iter()
@@ -61,6 +65,12 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_rotation_modifier")]
+    pub rotation_modifier: String,
+    #[serde(default)]
+    pub swap_mouse_buttons: bool,
+    #[serde(default)]
+    pub keyboard_delay_ms: u16,
     /// Saved HUD position and size in client pixels; editable through settings transfer.
     #[serde(default = "default_hud_bounds")]
     pub hud_bounds: [u16; 4],
@@ -74,6 +84,10 @@ pub struct ReferencePreferences {
     pub show_harmony: bool,
     #[serde(default = "enabled")]
     pub show_serene: bool,
+    #[serde(default)]
+    pub creature_bars: bool,
+    #[serde(default)]
+    pub health_circle: bool,
     #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
@@ -90,12 +104,17 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            rotation_modifier: default_rotation_modifier(),
+            swap_mouse_buttons: false,
+            keyboard_delay_ms: 0,
             hud_bounds: default_hud_bounds(),
             hud_bars: true,
             show_effects: true,
             show_lights: true,
             show_harmony: true,
             show_serene: true,
+            creature_bars: false,
+            health_circle: false,
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             english: false,
@@ -108,7 +127,9 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
-        if self.hud_bounds[2] < 120
+        if !matches!(self.rotation_modifier.as_str(), "CTRL" | "ALT" | "SHIFT")
+            || self.keyboard_delay_ms > 1000
+            || self.hud_bounds[2] < 120
             || self.hud_bounds[3] < 24
             || self.hud_bounds.iter().any(|value| *value > 4096)
             || self.audio.master_volume > 100

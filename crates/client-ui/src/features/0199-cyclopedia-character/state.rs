@@ -1,6 +1,9 @@
 use oteryn_client_runtime::cyclopedia_character::CharacterTab;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CyclopediaCharacterPanel {
+    pub badges: Option<Vec<u8>>,
+    pub badge_filter: BadgeFilter,
+    pub hidden_badges: std::collections::BTreeSet<u8>,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -29,6 +32,9 @@ pub struct CyclopediaCharacterPanel {
 impl Default for CyclopediaCharacterPanel {
     fn default() -> Self {
         Self {
+            badges: None,
+            badge_filter: Default::default(),
+            hidden_badges: Default::default(),
             selected: false,
             open: false,
             pending: false,
@@ -69,6 +75,8 @@ impl CyclopediaCharacterPanel {
     pub fn change_target(&mut self, target: Option<[u8; 16]>) {
         if self.target != target {
             self.target = target;
+            self.badges = None;
+            self.hidden_badges.clear();
             self.profile_generation = self.profile_generation.saturating_add(1);
             self.achievements = Default::default();
             self.achievement_profile = None;
@@ -83,4 +91,20 @@ impl CyclopediaCharacterPanel {
             self.misc_resources_due = false;
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum BadgeFilter {
+    #[default]
+    All,
+    Earned,
+    Locked,
+    Hidden,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BadgeRow {
+    pub id: u8,
+    pub name: &'static str,
+    pub earned: bool,
+    pub hidden: bool,
 }

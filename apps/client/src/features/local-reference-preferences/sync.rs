@@ -57,6 +57,7 @@ pub struct SettingsState {
     pub open: bool,
     pub shutdown: bool,
     pub page: SettingsPage,
+    last_key: std::collections::BTreeMap<oteryn_input_actions::KeyCode, std::time::Instant>,
 }
 
 impl SettingsState {
@@ -131,6 +132,7 @@ impl SettingsState {
             shutdown: false,
             input: PreferenceInput::default(),
             page: SettingsPage::default(),
+            last_key: Default::default(),
         }
     }
 
@@ -143,10 +145,33 @@ impl SettingsState {
     }
 
     pub fn input(&mut self, events: &[NormalizedInputEvent]) -> (Vec<NormalizedInputEvent>, bool) {
-        let routed = self
+        let mut routed = self
             .input
             .route(&self.preferences, events)
             .unwrap_or_default();
+        use oteryn_input_actions::{ButtonState, MouseButton};
+        let now = std::time::Instant::now();
+        routed.retain_mut(|event| {
+            match event {
+                NormalizedInputEvent::MouseButton { button, .. } if self.preferences.swap_mouse_buttons => {
+                    *button = match *button {
+                        MouseButton::PRIMARY => MouseButton::SECONDARY,
+                        MouseButton::SECONDARY => MouseButton::PRIMARY,
+                        other => other,
+                    };
+                }
+                NormalizedInputEvent::Key { code, state: ButtonState::Pressed, repeat, .. } => {
+                    if *repeat && self.last_key.get(code).is_some_and(|last| now.duration_since(*last).as_millis() < u128::from(self.preferences.keyboard_delay_ms)) {
+                        return false;
+                    }
+                    self.last_key.insert(*code, now);
+                }
+                NormalizedInputEvent::Key { code, state: ButtonState::Released, .. } => { self.last_key.remove(code); }
+                NormalizedInputEvent::FocusChanged { focused: false } | NormalizedInputEvent::DeviceLost => self.last_key.clear(),
+                _ => {}
+            }
+            true
+        });
         if oteryn_client_ui::reference_preferences::open_key(&routed) {
             (Vec::new(), self.request_open())
         } else {

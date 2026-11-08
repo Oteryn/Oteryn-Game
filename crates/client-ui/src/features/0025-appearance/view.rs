@@ -30,5 +30,10 @@ pub fn panel_text(panel: &Panel) -> String {
             ));
         }
     }
+    if let Some(colours) = panel.preview_colours() {
+        text.push_str(&format!(
+            "Palette RGB (head/body/legs/feet): {colours:?}\r\n"
+        ));
+    }
     text
 }
