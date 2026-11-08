@@ -144,12 +144,17 @@ pub(super) async fn consume_reward_inputs(
     reward_inputs::apply(tx, fence, request, callback, carried_use, &inputs).await
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the existing fenced participant also receives the exact locked quest plan"
+)]
 pub(super) async fn consume(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
+    changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
     context: &QuestWorldContext,
     scope_guard: (
         &crate::character_recovery_fence::CharacterRecoveryFenceV1,
@@ -214,7 +219,7 @@ pub(super) async fn consume(
         return Ok(true);
     }
     consume_inputs(
-        tx, permit, fence, request, callback, context, command, world_id, channel_id,
+        tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
     )
     .await
 }
@@ -283,6 +288,7 @@ async fn consume_inputs(
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
+    changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
     context: &QuestWorldContext,
     command: crate::foundation::CommandRef,
     world_id: crate::foundation::WorldId,
@@ -359,7 +365,26 @@ async fn consume_inputs(
         // Retained tools still require a positive quantity, live custody and the
         // same location lock. The enclosing Quest receipt binds this read to the
         // action without inventing an item consumption or changing its identity.
-        if !required.reusable {
+        let consume = match callback.native_rule {
+            Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint {
+                seal,
+            }) => {
+                use oteryn_gameplay_quests::quest::ice_islands_seals;
+                if required.item != ice_islands_seals::PAINT
+                    || required.count != 1
+                    || !required.reusable
+                    || required.replacement.is_some()
+                    || required.target_replacement.is_some()
+                    || !required.alternatives.is_empty()
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                ice_islands_seals::consumes_paint(seal, changes)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?
+            }
+            _ => !required.reusable,
+        };
+        if consume {
             inputs.push(input);
         }
     }

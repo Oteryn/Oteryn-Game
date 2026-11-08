@@ -1,5 +1,5 @@
 //! Real Root qualification of the three-track seal planner. The immutable fixture
-//! starts at the NPC's painting phase; it does not qualify map/tool admission.
+//! starts at the NPC's painting phase; it does not qualify map admission.
 use crate::bestiary_postgres_harness as f;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::durability::quest_world_callback::QuestWorldContext;
@@ -11,30 +11,41 @@ use std::sync::Arc;
 
 #[test]
 fn engnpc2_ice_seals_postgres_distinct_atomic_completion_and_replay() -> f::TestResult {
+    run_case(false)
+}
+
+#[test]
+fn engnpc2_ice_seals_postgres_paint_retained_until_atomic_completion() -> f::TestResult {
+    run_case(true)
+}
+
+fn run_case(with_paint: bool) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
     };
     std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
         f::runtime().map_err(f::debug)?.block_on(async {
             let started = std::time::Instant::now();
-            let h = f::Harness::create(admin, "engnpc2_ice_seals", true).await?;
-            let result = exercise(&h).await;
+            let label = if with_paint { "engnpc2_ice_seals_paint" } else { "engnpc2_ice_seals_progress" };
+            let h = f::Harness::create(admin, label, true).await?;
+            let result = exercise(&h, with_paint).await;
             h.cleanup().await?;
             result?;
             assert!(started.elapsed().as_secs_f64() > 0.01);
-            eprintln!("ENGNPC2_ICE_SEALS_PG_EXECUTED distinct_atomic_completion_and_replay duration={:?}", started.elapsed());
+            eprintln!("ENGNPC2_ICE_SEALS_PG_EXECUTED distinct_atomic_completion_and_replay with_paint={with_paint} duration={:?}", started.elapsed());
             Ok::<(), Box<dyn std::error::Error>>(())
         }).map_err(f::debug)
     })?.join().map_err(|_| "seal PG thread failed")?.map_err(Into::into)
 }
 
-fn callback(seal: u16) -> f::TestResult<Callback> {
+fn callback(seal: u16, with_paint: bool) -> f::TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
         "key":format!("oteryn:quest-callback/engnpc2-fixture/seal-{seal}"),
         "quest":seals::QUEST,"trigger":"use","selector":{"position":{"x":1,"y":1,"floor":-1}},
         "lever":null,"reversible":false,"passages":[],"teleport":null,
         "storage":seals::TRACKS.into_iter().zip([(8,8),(0,(1_i64<<48)-1),(-1,2)]).map(|(track,(minimum,maximum))| serde_json::json!({"track":track,"minimum":minimum,"maximum":maximum,"set":0,"increment":false,"preserve":true})).collect::<Vec<_>>(),
         "native_rule":{"kind":"ice_seal_paint","seal":seal},
+        "item_on_target":with_paint.then(|| serde_json::json!({"item":"oteryn:item.tibia.i7253","count":1,"replacement":null,"target_replacement":null,"reusable":true})),
         "offerings":[],"return_on_failure":false,"failure_message":null,
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_paint.lua:15-21"]
     }))?)
@@ -50,8 +61,12 @@ fn request(callback: &Callback, ordinal: u64) -> f::TestResult<QuestTransitionRe
     })
 }
 
-async fn exercise(h: &f::Harness) -> f::TestResult {
-    let callbacks = [callback(183)?, callback(2)?, callback(63)?];
+async fn exercise(h: &f::Harness, with_paint: bool) -> f::TestResult {
+    let callbacks = [
+        callback(183, with_paint)?,
+        callback(2, with_paint)?,
+        callback(63, with_paint)?,
+    ];
     let tracks = seals::TRACKS
         .into_iter()
         .zip([(8, -1, 9), (0, 0, (1_i64 << 48) - 1), (1, -1, 2)])
@@ -109,6 +124,28 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             .is_err()
     );
     assert_eq!(h.root_revision().await?, "1");
+    if with_paint {
+        let missing = h
+            .root
+            .commit_fixture_ground_callback(
+                &authority,
+                &h.node,
+                fence,
+                request(&callbacks[0], 9799)?,
+                catalogue.clone(),
+                Some((&permit, context.clone())),
+                callbacks[0].clone(),
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(
+            matches!(missing, QuestTransitionOutcome::Refused(_)),
+            "{missing:?}"
+        );
+        assert_eq!(h.root_revision().await?, "1");
+        assert_eq!(h.count("game_character_quest_tracks").await?, 0);
+        seed_paint(h).await?;
+    }
     for (index, callback) in callbacks.iter().enumerate() {
         let ordinal = 9801 + u64::try_from(index)?;
         let outcome = h
@@ -142,6 +179,9 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             after(seals::MISSION04),
             Some(if index == 2 { 2 } else { 1 })
         );
+        if with_paint {
+            assert_paint(h, index < 2).await?;
+        }
         let revision = h.root_revision().await?;
         // A fresh command cannot reuse the revision from before this commit.
         let stale = h
@@ -205,5 +245,47 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(packed, 3 | (64 << 16) | (184 << 32));
+    if with_paint {
+        assert_paint(h, false).await?;
+        let atomic: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions c JOIN game_character_quest_receipts r USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.created_xact_id=r.created_xact_id")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(atomic, 1);
+    }
+    Ok(())
+}
+
+async fn seed_paint(h: &f::Harness) -> f::TestResult {
+    // Historical NPC-granted stock only. Real tested calls retain every trigger
+    // and use the existing Root consumption participant, never direct Item writes.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (seed, key) in [
+        (91, "oteryn:item.tibia.i1988"),
+        (92, "oteryn:item.tibia.i7253"),
+    ] {
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
+            .bind(f::id(seed).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(key).bind(f::id(seed + 10).as_slice()).execute(&mut *tx).await?;
+    }
+    sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+        .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(91).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(f::id(111).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($5,'hex')::uuid)")
+        .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(91).as_slice()).bind(f::id(92).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(f::id(112).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn assert_paint(h: &f::Harness, retained: bool) -> f::TestResult {
+    let state: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(f::id(92).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(state, if retained { (1, 1) } else { (0, 2) });
+    let custody: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(f::id(92).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(custody, i64::from(retained));
+    assert_eq!(
+        h.count("game_quest_callback_consumptions").await?,
+        i64::from(!retained)
+    );
     Ok(())
 }

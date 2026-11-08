@@ -6,8 +6,11 @@
 //! changes progress only; its caller owns tool custody and map-object authority.
 use super::{QuestRefusal, distinct_targets};
 
+mod custody;
+pub use custody::consumes_paint;
 pub mod targets;
 
+pub const PAINT: &str = "oteryn:item.tibia.i7253";
 pub const QUEST: &str = "oteryn:quest.the_ice_islands_quest";
 pub const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
 pub const TARGETS: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/painted_seal_targets";
