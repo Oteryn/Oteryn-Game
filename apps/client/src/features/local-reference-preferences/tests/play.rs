@@ -383,3 +383,40 @@ fn t012_visual_preferences_control_live_effect_projection() -> Result<(), Box<dy
     assert!(play.scene().sprites().lighting.sources.is_empty());
     Ok(())
 }
+
+#[test]
+fn t162_monk_hud_has_independent_visibility() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.vitals = Some(oteryn_session::ActorVitals {
+        harmony: 3,
+        serene: true,
+        ..Default::default()
+    });
+    play.rebuild()?;
+    let shown = play.scene().sprites().len();
+    let mut json = serde_json::to_value(play.preferences())?;
+    json["show_harmony"] = serde_json::json!(false);
+    play.set_preferences(serde_json::from_value(json.clone())?)?;
+    assert_eq!(play.scene().sprites().len() + 5, shown);
+    json["show_serene"] = serde_json::json!(false);
+    play.set_preferences(serde_json::from_value(json)?)?;
+    assert_eq!(play.scene().sprites().len() + 6, shown);
+    Ok(())
+}
+
+#[test]
+fn o010_menu_uses_live_window_inputs_after_rebinding() -> Result<(), Box<dyn std::error::Error>> {
+    let mut state = crate::play::SettingsState::new(None);
+    state
+        .preferences
+        .rebind("0287-actor-spell-catalog-open", "Alt+U")?;
+    assert!(state.queue_window("0287-actor-spell-catalog-open"));
+    assert!(!state.queue_window("unknown"));
+    let raw = state.take_window_events();
+    let (events, _) = state.input(&raw);
+    let (link, _, _) = crate::play::play_channel();
+    assert!(link.spell_catalog_input(&events));
+    assert!(link.spell_catalog_panel().open);
+    assert!(state.take_window_events().is_empty());
+    Ok(())
+}

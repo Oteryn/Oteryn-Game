@@ -74,3 +74,22 @@ fn house_changes_require_confirmation_and_current_catalogue()
     assert!(panel.model.page.rows.is_empty());
     Ok(())
 }
+
+#[test]
+fn door_editor_uses_catalogue_revision_without_manual_revision() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_0049_house::{input::prepare, state::Panel};
+    use oteryn_client_runtime::house::{Action, Row};
+    let mut panel = Panel::default();
+    panel.model.selected = true;
+    panel.fields[0] = "01010101-0101-7101-8101-010101010101".into();
+    panel.fields[1] = "oteryn:content.area.city.thais".into();
+    prepare(&mut panel, 0)?;
+    panel.model.pending = None;
+    panel.model.page.rows.push(Row { house: "oteryn:house.test".into(), acl_revision: 37, ..Row::default() });
+    panel.fields[2] = "1".into();
+    panel.fields[5] = "100 200 -7".into();
+    panel.fields[6] = "CONFIRM".into();
+    let command = prepare(&mut panel, 5)?;
+    assert_eq!(command, oteryn_client_runtime::house::mutation(panel.model.world, "oteryn:house.test", 37, &Action::Door { x: 100, y: 200, floor: -7, revision: 37, members: vec![] })?);
+    Ok(())
+}
