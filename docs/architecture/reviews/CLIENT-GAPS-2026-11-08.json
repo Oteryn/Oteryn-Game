@@ -657,9 +657,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Store Summary / services/hirelings",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnego wizualnego zestawienia usług.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0199-cyclopedia-character/view/character_window.rs:218 + crates/client-ui/src/features/0199-cyclopedia-character/view.rs:210 + crates/client-ui/src/features/0199-cyclopedia-character/tests/services.rs:4 store_summary_cards_and_blessings_come_from_the_validated_reply"
  },
  {
   "id": "T095",
