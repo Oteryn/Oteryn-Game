@@ -288,6 +288,15 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("WORLDCHG", 40),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
+    // BEGIN GENERATED QREADY PROFILE ADDITIONS
+    // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
+    // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json
+    // Source-qualified zero speed: 3068, 3323, 3383, 3579, 3734, 4871.
+    ("QREADY1", 6),
+    // tools/content-migration/qready2_native_profiles.py
+    // Source-qualified zero speed: 2822, 2823, 2848, 3310, 3587, 21982.
+    ("QREADY2", 6),
+    // END GENERATED QREADY PROFILE ADDITIONS
 ];
 
 #[test]

@@ -132,7 +132,9 @@ def overlay_region(raw, palette, bindings):
     return (codec.encode_region(z, rx, ry, sectors) if changed else raw), imported
 
 
-def overlay_outputs(outputs, capture_bytes=None, *, capture_path=CAPTURE, source_name="quest_access"):
+def overlay_outputs(
+    outputs, capture_bytes=None, *, capture_path=CAPTURE, source_name="quest_access"
+):
     if capture_bytes is None:
         capture_bytes = (ROOT / CAPTURE).read_bytes()
     capture = json.loads(capture_bytes)

@@ -1181,7 +1181,9 @@ def build(
     qready1_chest_bindings.overlay_outputs(out)
     import qready2_chest_bindings
 
-    qready2_chest_bindings.overlay_outputs(out)
+    qready2_chest_bindings.overlay_outputs(
+        out, capture_bytes=blobs.get(qready2_chest_bindings.CAPTURE)
+    )
     return out
 
 
