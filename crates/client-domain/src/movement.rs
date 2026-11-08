@@ -8,9 +8,21 @@ pub enum StepDir {
     East,
     South,
     West,
+    NorthEast,
+    SouthEast,
+    SouthWest,
+    NorthWest,
 }
 
 impl StepDir {
+    #[must_use]
+    pub const fn is_diagonal(self) -> bool {
+        matches!(
+            self,
+            Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest
+        )
+    }
+
     #[must_use]
     pub const fn from(self, tile: TileCoord) -> TileCoord {
         let (dx, dy) = match self {
@@ -18,6 +30,10 @@ impl StepDir {
             Self::East => (1, 0),
             Self::South => (0, 1),
             Self::West => (-1, 0),
+            Self::NorthEast => (1, -1),
+            Self::SouthEast => (1, 1),
+            Self::SouthWest => (-1, 1),
+            Self::NorthWest => (-1, -1),
         };
         TileCoord::new(tile.x.saturating_add(dx), tile.y.saturating_add(dy))
     }

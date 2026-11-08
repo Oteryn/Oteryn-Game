@@ -39,6 +39,7 @@ pub async fn run_session<T: Stepper>(
         session.container_views(),
         session.feature_selected(446),
     );
+    outbox.diagonal_initialize(session.feature_selected(449));
     outbox.target_walk_initialize(session.feature_selected(64));
     outbox.vitals(session.actor_vitals());
     outbox.channel_list_initialize(session.feature_snapshot(48));

@@ -68,12 +68,7 @@ impl SourceStepProof<'_> {
         MovementLocalPosition,
         MovementFacing,
     ) {
-        let facing = match self.direction {
-            CardinalStep::North => MovementFacing::North,
-            CardinalStep::East => MovementFacing::East,
-            CardinalStep::South => MovementFacing::South,
-            CardinalStep::West => MovementFacing::West,
-        };
+        let facing = self.direction.facing();
         (self.actor, self.expected, self.destination, facing)
     }
 }
@@ -258,16 +253,11 @@ fn destination_with_lookup<'a>(
     direction: CardinalStep,
     mut lookup: impl FnMut(MovementLocalPosition) -> Result<Option<TileView<'a>>, MovementError>,
 ) -> Result<MovementLocalPosition, MovementError> {
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = direction.delta();
     let mut next = shifted(origin, dx, dy, 0)?;
     // game.cpp2048..2079 uses source z8/7 boundaries and height3.
     let origin_tile = lookup(origin)?.ok_or(MovementError::Blocked)?;
-    if origin.floor != -8 && has_height(&origin_tile)? {
+    if !direction.is_diagonal() && origin.floor != -8 && has_height(&origin_tile)? {
         let above = lookup(shifted(origin, 0, 0, 1)?)?;
         if above.is_none_or(|t| !t.ground_present() && !t.solid)
             && let Some(upper) = lookup(shifted(next, 0, 0, 1)?)?
@@ -278,7 +268,7 @@ fn destination_with_lookup<'a>(
             next = shifted(next, 0, 0, 1)?;
         }
     }
-    if origin.floor != -7 && origin.floor == next.floor {
+    if !direction.is_diagonal() && origin.floor != -7 && origin.floor == next.floor {
         let here = lookup(next)?;
         if here.is_none_or(|t| !t.ground_present() && !t.solid)
             && let Some(lower) = lookup(shifted(next, 0, 0, -1)?)?
@@ -521,15 +511,7 @@ mod tests {
             let after = runtime.commit_source_step(proof).unwrap();
             assert_eq!(after.revision(), before.revision() + 1);
             floors.insert(after.position().floor);
-            assert_eq!(
-                after.facing(),
-                Some(match dir {
-                    CardinalStep::North => MovementFacing::North,
-                    CardinalStep::East => MovementFacing::East,
-                    CardinalStep::South => MovementFacing::South,
-                    CardinalStep::West => MovementFacing::West,
-                })
-            );
+            assert_eq!(after.facing(), Some(dir.facing()));
         }
         assert_eq!(runtime.read_actor_position(actor).unwrap().position(), goal);
         assert_eq!(floors, std::collections::BTreeSet::from([-7, -6, -5]));

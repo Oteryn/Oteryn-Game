@@ -350,6 +350,10 @@ fn cardinal(direction: StepDirection) -> (CardinalStep, MovementFacing) {
         StepDirection::East => (CardinalStep::East, MovementFacing::East),
         StepDirection::South => (CardinalStep::South, MovementFacing::South),
         StepDirection::West => (CardinalStep::West, MovementFacing::West),
+        StepDirection::NorthEast => (CardinalStep::NorthEast, MovementFacing::East),
+        StepDirection::SouthEast => (CardinalStep::SouthEast, MovementFacing::East),
+        StepDirection::SouthWest => (CardinalStep::SouthWest, MovementFacing::West),
+        StepDirection::NorthWest => (CardinalStep::NorthWest, MovementFacing::West),
     }
 }
 
@@ -414,7 +418,7 @@ fn resolve_destination(
         )?;
         return Ok((destination, destination.floor != origin.floor));
     }
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     let destination = MovementLocalPosition {
         x: origin
             .x

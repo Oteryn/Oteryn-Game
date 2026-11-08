@@ -20,6 +20,8 @@ pub mod charm_progression;
 pub mod container_sort;
 #[path = "features/0057-cyclopedia-map/mod.rs"]
 pub mod cyclopedia_map;
+#[path = "features/0449-diagonal-movement/mod.rs"]
+pub mod diagonal_movement;
 #[path = "features/0055-guild-bank/mod.rs"]
 pub mod guild_bank;
 #[path = "features/0103-guild-war/mod.rs"]

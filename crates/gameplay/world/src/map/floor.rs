@@ -338,12 +338,7 @@ fn resolve_landing_with_teleports(
     teleport: impl Fn(TilePos) -> Option<TilePos>,
     suppress_teleport: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = direction.delta();
     let next = (origin.0 + dx, origin.1 + dy, origin.2);
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
@@ -716,12 +711,7 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
         MovementLocalPosition,
         MovementFacing,
     ) {
-        let facing = match self.direction {
-            CardinalStep::North => MovementFacing::North,
-            CardinalStep::East => MovementFacing::East,
-            CardinalStep::South => MovementFacing::South,
-            CardinalStep::West => MovementFacing::West,
-        };
+        let facing = self.direction.facing();
         (self.actor, self.expected, self.destination, facing)
     }
 }

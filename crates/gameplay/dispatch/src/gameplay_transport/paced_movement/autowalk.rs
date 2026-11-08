@@ -321,6 +321,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::movement::CardinalStep::East => StepDirection::East,
                     crate::movement::CardinalStep::South => StepDirection::South,
                     crate::movement::CardinalStep::West => StepDirection::West,
+                    crate::movement::CardinalStep::NorthEast => StepDirection::NorthEast,
+                    crate::movement::CardinalStep::SouthEast => StepDirection::SouthEast,
+                    crate::movement::CardinalStep::SouthWest => StepDirection::SouthWest,
+                    crate::movement::CardinalStep::NorthWest => StepDirection::NorthWest,
                 })
                 .collect(),
         }))
@@ -347,12 +351,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read(actor)
             .ok()
             .filter(|current| {
-                let (dx, dy) = match direction {
-                    StepDirection::North => (0, -1),
-                    StepDirection::East => (1, 0),
-                    StepDirection::South => (0, 1),
-                    StepDirection::West => (-1, 0),
-                };
+                let (dx, dy) = direction.delta();
                 expected.revision().checked_add(1) == Some(current.revision())
                     && expected.context() == current.context()
                     && expected.position().x.checked_add(dx) == Some(current.position().x)

@@ -746,9 +746,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         let facing = match direction {
             StepDirection::North => MovementFacing::North,
-            StepDirection::East => MovementFacing::East,
+            StepDirection::East | StepDirection::NorthEast | StepDirection::SouthEast => {
+                MovementFacing::East
+            }
             StepDirection::South => MovementFacing::South,
-            StepDirection::West => MovementFacing::West,
+            StepDirection::West | StepDirection::NorthWest | StepDirection::SouthWest => {
+                MovementFacing::West
+            }
         };
         movement.commit_turn(expected, facing).is_ok()
     }

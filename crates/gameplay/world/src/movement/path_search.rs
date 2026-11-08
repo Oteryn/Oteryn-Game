@@ -58,12 +58,7 @@ struct SearchBounds {
 }
 
 pub const fn delta(step: CardinalStep) -> (i32, i32) {
-    match step {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    }
+    step.delta()
 }
 
 pub fn chebyshev(from: MovementLocalPosition, to: MovementLocalPosition) -> i64 {

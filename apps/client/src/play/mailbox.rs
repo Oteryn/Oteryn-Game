@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 mod activity_scope;
+mod diagonal;
 
 /// What the session task reports to the shell.
 #[derive(Debug)]
@@ -111,6 +112,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) diagonal_selected: bool,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
     pub(super) creature_push_selected: bool,
@@ -465,7 +467,8 @@ pub struct PlayLink {
 impl PlayLink {
     pub fn request(&self, direction: StepDir) {
         let mailbox = lock(&self.mailbox);
-        if mailbox.world_input_blocked() {
+        if mailbox.world_input_blocked() || (direction.is_diagonal() && !mailbox.diagonal_selected)
+        {
             return;
         }
         // A closed task has already reported or will report `Ended`.
