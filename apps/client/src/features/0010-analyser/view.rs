@@ -63,7 +63,7 @@ fn form() -> crate::play::feature_0115_mail::view::native::Form {
             "XP still needed for your level goal (blank disables)",
             "Item / creature race number, or boss death id",
             "Unit item value (gold) or kill target",
-            "Session export file path",
+            "Session export / party summary file path",
         ],
         buttons: &[
             "Overview",
@@ -98,6 +98,8 @@ fn form() -> crate::play::feature_0115_mail::view::native::Form {
             "Refresh boss drop chests",
             "Next boss drop chests",
             "Inspect / next drop items",
+            "Import party summary",
+            "Export party summary (replace file)",
         ],
         snapshot: |mailbox| {
             let panel = &mailbox.analyser;

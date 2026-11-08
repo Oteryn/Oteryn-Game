@@ -6,6 +6,8 @@ mod input;
 pub mod kills;
 #[path = "state/party.rs"]
 pub mod party;
+#[path = "state/party_import.rs"]
+pub mod party_import;
 pub mod protocol;
 mod state;
 #[path = "state/tracking.rs"]
@@ -28,3 +30,6 @@ mod boss_tracker_tests;
 #[cfg(test)]
 #[path = "tests/kills.rs"]
 mod kill_tracker_tests;
+#[cfg(test)]
+#[path = "tests/party_import.rs"]
+mod party_import_tests;

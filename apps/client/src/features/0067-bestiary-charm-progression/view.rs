@@ -23,6 +23,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Complete",
                 "Previous race",
                 "Next race",
+                "Previous charm",
+                "Next charm",
+                "Previous eligible race",
+                "Next eligible race",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.charm_progression;
@@ -33,7 +37,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     format!(
                         "{}\r\n{}",
                         oteryn_client_ui::charm_progression::bestiary_text(panel),
-                        oteryn_client_ui::charm_progression::panel_text(panel)
+                        oteryn_client_ui::charm_progression::charms_text(panel)
                     ),
                 )
             },
@@ -50,6 +54,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         6 => panel.race_filter = RaceFilter::InProgress,
                         7 => panel.race_filter = RaceFilter::Complete,
                         8 | 9 => panel.select_race(action == 8),
+                        10 | 11 => panel.select_charm(action == 10),
+                        12 | 13 => panel.select_assignment_race(action == 12),
                         _ => {}
                     }
                     return;

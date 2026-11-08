@@ -49,6 +49,7 @@ pub struct Scene {
     own_draws: Option<Vec<Draw>>,
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
+    name_visibility: [bool; 3],
 }
 
 impl Scene {
@@ -117,6 +118,7 @@ impl Scene {
             own_draws: None,
             actor_draws: Vec::new(),
             names: Vec::new(),
+            name_visibility: [true; 3],
         };
         scene.rebuild_sprites()?;
         Ok(scene)

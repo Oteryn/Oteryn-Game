@@ -15,6 +15,8 @@ use tokio::sync::mpsc::UnboundedSender;
 #[cfg(any(windows, test))]
 #[path = "input/bosses.rs"]
 mod bosses;
+#[path = "input/party_import.rs"]
+mod party_import;
 impl PlayLink {
     pub fn analyser_xp_goal(&self, value: &str) -> bool {
         oteryn_client_ui::analyser::set_xp_goal(
@@ -141,6 +143,12 @@ pub(in crate::play) fn submit(
             action - tools - 13,
             values.get(1).map(String::as_str),
         );
+    } else if (tools + 18..=tools + 19).contains(&action) {
+        party_import::submit(
+            mailbox,
+            action == tools + 18,
+            values.get(3).map(String::as_str),
+        );
     }
 }
 
@@ -159,6 +167,7 @@ pub(in crate::play) fn refresh_party(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
 ) {
+    mailbox.analyser.party_import = None;
     if !mailbox.party.selected {
         mailbox.analyser.party_feedback = Some("Party membership is unavailable in this session");
         return;
