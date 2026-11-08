@@ -6,6 +6,20 @@ pub fn panel_text(panel: &ChatPanel) -> String {
     let mut text = String::from("Local Chat — Say / Whisper / Yell / Private\n");
     text.push_str(&crate::chat_guild_room::panel_text(panel));
     for line in &panel.lines {
+        if !panel.console.show_messages {
+            continue;
+        }
+        use crate::chat::ConsoleTab;
+        if !matches!(
+            (panel.console.tab, line),
+            (ConsoleTab::All, _)
+                | (ConsoleTab::Local, ChatLine::Local { .. })
+                | (ConsoleTab::Private, ChatLine::Private { .. })
+                | (ConsoleTab::Guild, ChatLine::Guild(_))
+                | (_, ChatLine::Dropped)
+        ) {
+            continue;
+        }
         match line {
             ChatLine::Local {
                 speaker_name,
