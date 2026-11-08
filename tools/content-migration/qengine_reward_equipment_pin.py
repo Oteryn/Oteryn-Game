@@ -25,6 +25,11 @@ def refresh(source, packet):
     result, count = re.subn(pattern, lambda _: block, source, flags=re.S)
     if count != 1:
         raise ValueError('QENGINE_REWARD_IDENTITY_WITNESS_SHAPE')
+    result = re.sub(
+        r'\("qengine-reward-item-profiles\.json", [0-9_]+\)',
+        f'("qengine-reward-item-profiles.json", {len(expected)})',
+        result,
+    )
     return result.replace(
         '    // QENGINE2 captures 53 shared Items plus seven portable QUESTPC4 Items.',
         "    // QENGINE2: generated witness of the producer's explicit IDS set.",

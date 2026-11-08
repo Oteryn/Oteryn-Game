@@ -8,6 +8,7 @@ class RewardIdentityPin(unittest.TestCase):
     SOURCE = '''    assert!(added_keys.insert(key));
     assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     assert_eq!(added_keys.len(), 60);
+    let packets = [("qengine-reward-item-profiles.json", 60)];
 '''
 
     def packet(self):
@@ -17,6 +18,7 @@ class RewardIdentityPin(unittest.TestCase):
     def test_every_declared_source_identity_is_pinned_without_removing_raw_checks(self):
         result = refresh(self.SOURCE, self.packet())
         self.assertIn(f'assert_eq!(added_keys.len(), {len(IDS)});', result)
+        self.assertIn(f'("qengine-reward-item-profiles.json", {len(IDS)})', result)
         for i in IDS:
             self.assertIn(f'"oteryn:item.tibia.i{i}"', result)
         self.assertIn('assert!(added_keys.insert(key));', result)
