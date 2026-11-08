@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "objectives": [
+    {
+      "transition": "oteryn:quest-transition/native-kills/qworld-fury",
+      "creature": "oteryn:creature.fury",
+      "quest": "oteryn:quest.fury_gates_mini_world_change",
+      "track": "oteryn:quest-progress/qworld/fury/kills",
+      "gate": "oteryn:quest-progress/qworld/fury/hunt",
+      "maximum": 10,
+      "world_change": "fury_gates"
+    },
+    {
+      "transition": "oteryn:quest-transition/native-kills/qworld-werewolf",
+      "creature": "oteryn:creature.werewolf",
+      "quest": "oteryn:quest.grimvale_mini_world_change",
+      "track": "oteryn:quest-progress/qworld/grimvale/kills",
+      "gate": "oteryn:quest-progress/qworld/grimvale/hunt",
+      "maximum": 10,
+      "world_change": "grimvale"
+    }
+  ],
+  "sources": [
+    "oteryn:production/content/quests/definitions/quests-00100-00199.json#records/48/definition/oteryn_recipe/payload/recipe/stages/s3",
+    "oteryn:production/content/quests/definitions/quests-00100-00199.json#records/54/definition/oteryn_recipe/payload/recipe/stages/s2"
+  ]
+}

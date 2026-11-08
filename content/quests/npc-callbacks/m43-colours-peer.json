@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "tracks": [],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/chosen/colours/pair-yellow",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "npc": "oteryn:npc.nathaniel",
+      "carried_item": "oteryn:item.tibia.i12228",
+      "peer_requires": {
+        "track": "oteryn:quest-progress/chosen/colours/colour",
+        "minimum": 2,
+        "maximum": 2
+      },
+      "keywords": ["colours pair-yellow"],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {"track": "oteryn:quest-progress/chosen/colours/stage", "minimum": 2, "maximum": 2, "set": 3},
+        {"track": "oteryn:quest-progress/chosen/colours/colour", "minimum": 1, "maximum": 1, "set": 3}
+      ],
+      "take": [{"item": "oteryn:item.tibia.i12228", "count": 1}],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": ["The blue-and-yellow pairing is green. Report to Nathaniel."],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f/data/items/items.xml",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen green branch s3; blue=1, yellow=2, green=3; read-only peer; requires the separately packaged mark-blue opening owner."
+      ]
+    }
+  ]
+}

@@ -3,11 +3,20 @@ use super::*;
 use oteryn_gameplay_quests::quest::npc_rules::{
     NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRulePlan, NpcRuleTrigger,
 };
+mod achievements;
 mod equipped;
 mod fathers_burden;
 mod items;
 mod marlin_trophy;
 mod rewards;
+
+/// Advisory for preview; the receipt owner reloads every fact under the Character fence.
+#[derive(Clone, Debug, Default)]
+pub struct NpcEligibility {
+    pub level: u32,
+    pub vocation: String,
+    pub premium_current: bool,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NpcProgramRequest {
@@ -69,18 +78,20 @@ pub fn preview(
     tracks: &BTreeMap<String, i64>,
     catalogue: &QuestStateCatalogue,
     now: i64,
+    eligibility: &NpcEligibility,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    match evaluate_source(&source, request, tracks, catalogue, now, None) {
+    match evaluate_source(&source, request, tracks, catalogue, now, eligibility, None) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
             &source,
             request,
             tracks,
             catalogue,
             now,
+            eligibility,
             Some(&fathers_burden::optimistic_inventory()),
         ),
         Err(_) if marlin_trophy::owns(request) => evaluate_source(
@@ -89,6 +100,7 @@ pub fn preview(
             tracks,
             catalogue,
             now,
+            eligibility,
             Some(&marlin_trophy::optimistic_inventory()),
         ),
         Err(error) => match source
@@ -96,7 +108,7 @@ pub fn preview(
             .or_else(|| source.optimistic_equipped_inventory(&request.npc))
         {
             Some(inventory) => {
-                evaluate_source(&source, request, tracks, catalogue, now, Some(&inventory))
+                evaluate_source(&source, request, tracks, catalogue, now, eligibility, Some(&inventory))
             }
             None => Err(error),
         },
@@ -110,6 +122,7 @@ fn evaluate_source(
     tracks: &BTreeMap<String, i64>,
     catalogue: &QuestStateCatalogue,
     now: i64,
+    eligibility: &NpcEligibility,
     inventory: Option<&NpcInventorySnapshot>,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
@@ -155,8 +168,9 @@ fn evaluate_source(
         inventory: inventory.unwrap_or(&empty),
         now_epoch_seconds: now,
         calendar_month: utc_calendar_month(now)?,
-        level: 0,
-        vocation: "",
+        premium_current: eligibility.premium_current,
+        level: eligibility.level,
+        vocation: &eligibility.vocation,
         sex: 0,
         outfits: &BTreeMap::new(),
     };
@@ -321,7 +335,23 @@ impl DurabilityRoot {
             } else if let Some(keys) = plain_keys.filter(|_| generic_items) {
                 Some(fathers_burden::inventory_for(&mut tx, fence, &keys).await?)
             } else { None };
-            let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref());
+            let vocation: Option<String> = sqlx::query_scalar("SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+                .bind(id).fetch_optional(&mut **tx).await?;
+            // 0030: no build row is the canonical no-vocation chain seed.
+            let vocation = match vocation.as_deref().unwrap_or("none") {
+                "elite_knight" => "knight", "royal_paladin" => "paladin",
+                "master_sorcerer" => "sorcerer", "elder_druid" => "druid",
+                "exalted_monk" => "monk", value => value,
+            };
+            let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
+                .bind(id).fetch_one(&mut **tx).await?;
+            let account: [u8;16] = account.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
+            let eligibility = NpcEligibility {
+                level: u32::try_from(state.try_get::<i64,_>("level")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                vocation: format!("oteryn:vocation.{vocation}"),
+                premium_current: content.wheel_premium_current(account),
+            };
+            let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,&eligibility,inventory.as_ref());
             if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !rewards::has_experience(&plan.effects) {
                 let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan) };
                 tx.commit(deadline).await?;
@@ -332,6 +362,7 @@ impl DurabilityRoot {
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
             let experience = rewards::experience(&plan.effects)?;
+            let achievement_keys = achievements::keys(&plan.effects)?;
             if father_items && fathers_burden::experience(&plan)? != experience { return Err(DurabilityError::InvalidStoredState); }
             if experience > 0 {
                 let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=encode($1,'hex')::uuid")
@@ -399,6 +430,7 @@ impl DurabilityRoot {
             }
             sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer)")
                 .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).execute(&mut **tx).await?;
+            achievements::grant(&mut tx, character, &request, &achievement_keys).await?;
             if experience > 0 {
                 insert_xp_obligation(&mut tx, character, &q, experience, &pin).await?;
             }

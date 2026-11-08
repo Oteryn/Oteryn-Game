@@ -55,7 +55,8 @@ fn registry() -> Result<&'static Registry, String> {
             }
             let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {
-                let protect = world_callbacks::gated_binding(&callback)?.is_some();
+                let protect = world_callbacks::gated_binding(&callback)?.is_some()
+                    || !callback.state_ops.is_empty();
                 let transition = if callback.key == super::rotten_blood::SACRIFICE {
                     super::rotten_blood::altar_transition()
                 } else if let Some(operation) = shared_world.transition(&callback.key) {
@@ -69,6 +70,12 @@ fn registry() -> Result<&'static Registry, String> {
             // Their specialised writer already requires an exact native-death proof.
             for counter in super::native_kills::COUNTERS {
                 add(counter.transition(), false, true)?;
+            }
+            // M24 source deaths may share questline tracks with existing NPC
+            // stages. Register the exact canonical operation; the writer also
+            // requires its independently fenced native-death context.
+            for rule in super::source_deaths::rules().map_err(str::to_owned)? {
+                add(rule.transition()?, false, false)?;
             }
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
