@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 
+#[path = "arcs.rs"]
+mod arcs;
+pub use arcs::{ArcLayout, ArcPreferences};
 #[path = "basic.rs"]
 mod basic;
 pub use basic::{BASIC_GROUPS, BasicOptions};
@@ -72,6 +75,8 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub arcs: ArcPreferences,
+    #[serde(default)]
     pub frames: FramePreferences,
     #[serde(default)]
     pub archive_bindings: crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings,
@@ -110,6 +115,7 @@ impl Default for ReferencePreferences {
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
             frames: Default::default(),
+            arcs: Default::default(),
             minimap: Default::default(),
             shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
@@ -133,6 +139,7 @@ impl ReferencePreferences {
             || !self.spellbook_filter.valid()
             || !self.archive_bindings.valid()
             || !self.frames.valid()
+            || !self.arcs.valid()
             || !self.minimap.valid()
             || !shortcuts::valid(&self.shortcuts)
             || !self.controls.valid()

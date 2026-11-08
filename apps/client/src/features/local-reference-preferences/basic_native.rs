@@ -4,6 +4,13 @@
     reason = "Win32 controls are accessed only on their creating thread"
 )]
 use super::{Shared, control, lock, text, wide};
+#[path = "arcs_options.rs"]
+mod arcs_window;
+#[derive(Default)]
+struct Pending {
+    apply: bool,
+    arcs: bool,
+}
 use oteryn_client::play::{BASIC_GROUPS, BasicOptions, MousePreset, MovementKeys};
 use std::{
     ptr::{null, null_mut},
@@ -20,10 +27,14 @@ use windows_sys::Win32::{
 };
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
-        if msg == WM_COMMAND && w & 0xffff == 901 && w >> 16 == BN_CLICKED as usize {
-            let pending = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut bool;
+        if msg == WM_COMMAND && matches!(w & 0xffff, 901 | 909) && w >> 16 == BN_CLICKED as usize {
+            let pending = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Pending;
             if !pending.is_null() {
-                *pending = true;
+                if w & 0xffff == 901 {
+                    (*pending).apply = true;
+                } else {
+                    (*pending).arcs = true;
+                }
             }
             return 0;
         }
@@ -50,8 +61,12 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             return;
         }
         EnableWindow(parent, 0);
-        let mut pending = Box::new(false);
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, (&mut *pending as *mut bool) as isize);
+        let mut pending = Box::<Pending>::default();
+        SetWindowLongPtrW(
+            hwnd,
+            GWLP_USERDATA,
+            (&mut *pending as *mut Pending) as isize,
+        );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
         let mut controls = Vec::new();
         for (name, y) in BASIC_GROUPS.into_iter().zip([12, 127, 224, 338]) {
@@ -94,6 +109,14 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             "World zoom (80–180%, fitted to the game window)",
             0,
             [34, 156, 450, 28],
+            0,
+        ));
+        controls.push(control(
+            hwnd,
+            "BUTTON",
+            "Health and mana arcs...",
+            909,
+            [34, 188, 320, 25],
             0,
         ));
         let zoom = control(
@@ -198,9 +221,16 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                 .as_ref()
                 .is_some_and(|old: &(Option<[u8; 16]>, _)| old.0 != snapshot.0)
             {
-                *pending = false;
+                pending.apply = false;
             }
-            if std::mem::take(&mut *pending) {
+            if std::mem::take(&mut pending.arcs) {
+                drop(state);
+                arcs_window::open(Arc::clone(&shared), hwnd);
+                state = lock(&shared);
+                pending.apply = false;
+                held = None;
+            }
+            if std::mem::take(&mut pending.apply) {
                 match (
                     text(zoom).parse::<u16>(),
                     text(foreground).parse::<u16>(),

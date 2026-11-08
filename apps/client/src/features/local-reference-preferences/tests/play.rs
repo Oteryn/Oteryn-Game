@@ -603,3 +603,60 @@ fn actor_placement_does_not_select_a_character_preference_file()
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[test]
+fn hud_arcs_project_server_vitals_and_persist_geometry_controls()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _, outbox) = crate::play::play_channel();
+    let mut play = view()?;
+    let mut prefs = play.preferences().clone();
+    prefs.arcs = crate::play::ArcPreferences {
+        health: true,
+        mana: true,
+        distance: 25,
+        size: 60,
+        opacity: 50,
+    };
+    play.set_preferences(prefs.clone())?;
+    assert!(play.hud_arc_layout().is_none());
+    outbox.vitals(Some(oteryn_session::ActorVitals {
+        health: 50,
+        max_health: 100,
+        mana: 25,
+        max_mana: 100,
+        ..Default::default()
+    }));
+    play.tick(&link).map_err(|_| "tick")?;
+    let layout = play.hud_arc_layout().ok_or("arc layout")?;
+    assert_eq!(layout.alpha, 127);
+    assert_eq!((layout.width, layout.height), (186, 136));
+    assert_eq!(layout.strokes.len(), 2);
+    assert_eq!(layout.strokes[0].filled_segments, 40);
+    assert_eq!(layout.strokes[1].filled_segments, 20);
+    assert!(
+        layout
+            .strokes
+            .iter()
+            .flat_map(|stroke| &stroke.points)
+            .all(|p| p[0] >= 0 && p[1] >= 0 && p[0] <= layout.width && p[1] <= layout.height)
+    );
+    let path = std::env::temp_dir().join(format!("arc-preferences-{}.json", std::process::id()));
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    settings.apply(prefs.clone());
+    assert_eq!(
+        crate::play::SettingsState::new(Some(path.clone()))
+            .preferences
+            .arcs,
+        prefs.arcs
+    );
+    let mut invalid = prefs.clone();
+    invalid.arcs.opacity = 101;
+    settings.apply(invalid);
+    assert_eq!(settings.preferences, prefs);
+    prefs.arcs.health = false;
+    prefs.arcs.mana = false;
+    play.set_preferences(prefs)?;
+    assert!(play.hud_arc_layout().is_none());
+    std::fs::remove_file(path)?;
+    Ok(())
+}

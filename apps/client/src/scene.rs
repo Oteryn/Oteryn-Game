@@ -330,6 +330,8 @@ mod tests;
 mod live_entities;
 #[path = "features/local-minimap/scene.rs"]
 mod minimap;
+#[path = "features/local-reference-preferences/scene_hud.rs"]
+mod reference_hud;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;

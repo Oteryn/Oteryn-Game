@@ -10,9 +10,12 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use winit::window::Window;
 
+#[path = "../local-reference-preferences/arcs_native.rs"]
+mod arcs;
 #[path = "../local-reference-preferences/shortcut_strip.rs"]
 mod shortcuts;
 pub(super) struct Hud {
+    arcs: arcs::ArcHud,
     status: HWND,
     shortcuts: shortcuts::ShortcutStrip,
 }
@@ -53,7 +56,14 @@ impl Hud {
             }
             return None;
         };
+        let Some(arcs) = arcs::ArcHud::new(handle.hwnd.get() as HWND) else {
+            unsafe {
+                DestroyWindow(hwnd);
+            }
+            return None;
+        };
         Some(Self {
+            arcs,
             status: hwnd,
             shortcuts,
         })
@@ -87,6 +97,7 @@ impl super::Application {
                 play.link.movement_feedback().unwrap_or("")
             );
             if let Some(hud) = &mut self.hud {
+                hud.arcs.update(play.view.hud_arc_layout());
                 for id in hud
                     .shortcuts
                     .update(Some(&play.view.preferences().shortcuts))
@@ -107,6 +118,7 @@ impl super::Application {
         if self.play.is_none()
             && let Some(hud) = &mut self.hud
         {
+            hud.arcs.update(None);
             hud.shortcuts.update(None);
             hud.update(None);
         }
