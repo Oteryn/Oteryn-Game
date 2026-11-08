@@ -112,6 +112,7 @@ impl ClientBootstrap {
         let view = admitted.play_view().map_err(|_error| unavailable())?;
         let (link, commands, events) = play::play_channel();
         link.party_own_character(admitted.character_name());
+        link.house_world(admitted.world_id());
         self.runtime
             .spawn(play::run_session(admitted.into_session(), commands, events))
             .map_err(|_error| unavailable())?;
