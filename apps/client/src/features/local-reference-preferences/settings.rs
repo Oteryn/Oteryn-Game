@@ -44,6 +44,8 @@ fn enabled() -> bool {
     true
 }
 
+fn default_arc_opacity() -> u8 { 100 }
+
 fn default_console_font() -> u16 { 14 }
 
 fn default_arc_distance() -> u16 {
@@ -87,6 +89,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_arc_opacity")]
+    pub arc_opacity: u8,
     #[serde(default)]
     pub chat_context_hotkeys: bool,
     #[serde(default = "default_console_font")]
@@ -151,6 +155,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            arc_opacity: 100,
             chat_context_hotkeys: false,
             console_font_px: 14,
             compact_status: false,
@@ -203,7 +208,8 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
-        if !(10..=32).contains(&self.console_font_px)
+        if self.arc_opacity > 100
+            || !(10..=32).contains(&self.console_font_px)
             || !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || self.arc_distance > 80
             || !(1..=8).contains(&self.arc_size)

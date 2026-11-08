@@ -290,10 +290,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / HUD: arcs/distance/size/opacity",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak konfigurowalnych łuków HP/mana.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/arc_controls.rs:10 + hud_arc_geometry_uses_configured_distance_and_size; Arc opacity remains."
+  "evidence": "apps/client/src/features/0023-presentation/resources.rs:110 + hud_arc_opacity_reaches_renderer_upload_without_dimming_other_quads + hud_arc_geometry_uses_configured_distance_and_size; Native arc enable, distance, size and opacity controls reach confirmed-vitals geometry and alpha-blended GPU upload."
  },
  {
   "id": "T053",

@@ -10,6 +10,7 @@ pub(super) struct Options {
     health_circle: bool,
     distance: u16,
     size: u16,
+    opacity: u8,
 }
 impl From<&ReferencePreferences> for Options {
     fn from(preferences: &ReferencePreferences) -> Self {
@@ -20,6 +21,7 @@ impl From<&ReferencePreferences> for Options {
             health_circle: preferences.health_circle,
             distance: preferences.arc_distance,
             size: preferences.arc_size,
+            opacity: preferences.arc_opacity,
         }
     }
 }
@@ -38,6 +40,7 @@ pub(super) fn draw(
         health_circle,
         distance,
         size,
+        opacity,
     } = options;
     if bars && let Some(vitals) = vitals {
         for (row, value, max, color) in [
@@ -104,6 +107,7 @@ pub(super) fn draw(
         }
     }
     if health_circle && let Some(vitals) = vitals {
+        let start = batch.len();
         let [x, y] = view.tile_to_screen(own);
         let half = view.tile_px() as f32 / 2.0;
         let radius = half + f32::from(distance);
@@ -141,6 +145,8 @@ pub(super) fn draw(
                 )?;
             }
         }
+        let end = batch.len();
+        batch.lighting.set_opacity(start..end, opacity)?;
     }
     Ok(())
 }

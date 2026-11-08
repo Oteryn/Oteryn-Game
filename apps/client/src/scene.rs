@@ -282,6 +282,7 @@ impl Scene {
             }
         }
         sprites.lighting.clone_from(&self.sprites.lighting);
+        sprites.lighting.opacity.clear();
         self.sprites = sprites;
         if self.minimap {
             self.draw_minimap()?;
