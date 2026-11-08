@@ -2115,3 +2115,15 @@ RED: missing owned predicate, E0425. GREEN real PG:5.10s, testing wrong run,
 wrong deadline, exact expiry and the existing contention/rollback checks.
 Durability + dispatch clippy -D warnings:122.612s; fmt PASS. No new migration.
 M51 remains PARTIAL: native pillar/portal projection and lifecycle closure follow.
+
+## M51: retain the kick timer while waiting at a victory portal
+
+Restored phase-2 matches now retain a live timer without spawning another
+opponent. Phase changes update that projection instead of reusing a fighting
+projection solely by run/pit. Only active phases before the original deadline
+can recover a timer; victory never grants another 600 seconds.
+Source: Crystal data-global/lib/quests/svargrond_arena.lua:259-313.
+RED: m51_restored_victory_keeps_the_original_kick_deadline, E0599 (12.245s).
+GREEN: four focused M51 durability tests, 29.645s including real PG execution
+4.85s. Durability/dispatch clippy -D warnings:34.850s. No SQL/content changes.
+M51 remains PARTIAL pending native pillar/portal projection and reset closure.

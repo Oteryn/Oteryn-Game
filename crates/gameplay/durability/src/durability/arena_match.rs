@@ -34,6 +34,18 @@ pub struct MatchState {
     pub run: [u8; 16],
 }
 impl MatchState {
+    /// Crystal svargrond_arena.lua:259-313: victory does not renew the pit's
+    /// kick timer. Recovery must retain its original deadline in either phase.
+    pub fn projection_remaining_ms(&self, now_ms: i64) -> Option<u64> {
+        if !matches!(self.phase, 1 | 2) {
+            return None;
+        }
+        let remaining = self.deadline_ms.checked_sub(now_ms)?;
+        (remaining > 0)
+            .then(|| u64::try_from(remaining).ok())
+            .flatten()
+    }
+
     /// M51: project the state committed by pit custody/fee admission, never a
     /// refused next-pit proposal. Source arena_kill.lua:37 preserves a credited
     /// victory even when movements_arena_pit.lua:52-56 refuses the next room.

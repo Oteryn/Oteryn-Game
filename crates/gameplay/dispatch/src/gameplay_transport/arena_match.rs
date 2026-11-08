@@ -46,7 +46,7 @@ pub(in crate::gameplay_transport) struct Matches {
 #[derive(Clone)]
 struct LiveMatch {
     actor: ExactActorRef,
-    opponent: ExactActorRef,
+    opponent: Option<ExactActorRef>,
     state: MatchState,
     deadline: Instant,
 }
@@ -128,7 +128,9 @@ pub(in crate::gameplay_transport) fn tick(
         if present && inside && !expired && !dead {
             return true;
         }
-        let _ = runtime.remove_arena_opponent(live.opponent);
+        if let Some(opponent) = live.opponent {
+            let _ = runtime.remove_arena_opponent(opponent);
+        }
         if present
             && inside
             && expired
@@ -268,18 +270,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition = if expired { D::TimedOut } else { D::WrongState };
         } else if after.phase == 1
             && let Some(current) = &live
+            && let Some(opponent) = current.opponent
         {
             let mut runtime = self.runtime.lock().await;
             let death_owner = runtime.borrow_combat_death();
-            let dead = death_owner.projected_death(current.opponent).is_ok()
+            let dead = death_owner.projected_death(opponent).is_ok()
                 && death_owner
-                    .top_damage_character(current.opponent)
+                    .top_damage_character(opponent)
                     .is_ok_and(|winner| {
                         winner.is_some_and(|id| id.as_bytes() == fence.character_id.as_bytes())
                     });
             if dead {
                 victory = death_owner
-                    .projected_death(current.opponent)
+                    .projected_death(opponent)
                     .ok()
                     .map(|(key, _)| key);
                 after.phase = 2;
@@ -501,9 +504,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .get(&session)
             .cloned();
         if existing.as_ref().is_some_and(|live| {
-            live.state.run == state.run
-                && live.state.pit == state.pit
-                && matches!(state.phase, 1 | 2)
+            live.actor == actor
+                && live.state == *state
+                && state.projection_remaining_ms(now_ms).is_some()
         }) {
             return Some(());
         }
@@ -517,12 +520,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        if matches!(state.phase, 1 | 2) && state.deadline_ms > now_ms {
+        if let Some(remaining_ms) = state.projection_remaining_ms(now_ms) {
             let destination = center(state.pit)?;
             if !walkable(self, &runtime, destination) {
                 return None;
             }
             if state.phase == 2 {
+                // Crystal svargrond_arena.lua:285-313: waiting at the victory
+                // portal still owns the original kick timer, including recovery.
+                if let Some(opponent) = existing.and_then(|old| old.opponent) {
+                    let _ = runtime.remove_arena_opponent(opponent);
+                }
+                self.states.arena_matches.live.lock().ok()?.insert(
+                    session,
+                    LiveMatch {
+                        actor,
+                        opponent: None,
+                        state: state.clone(),
+                        deadline: Instant::now() + Duration::from_millis(remaining_ms),
+                    },
+                );
                 return Some(());
             }
             let current = runtime.read_actor_position(actor).ok()?.position();
@@ -543,17 +560,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = runtime.remove_arena_opponent(target);
                 return None;
             }
-            if let Some(old) = existing {
-                let _ = runtime.remove_arena_opponent(old.opponent);
+            if let Some(opponent) = existing.and_then(|old| old.opponent) {
+                let _ = runtime.remove_arena_opponent(opponent);
             }
             self.states.arena_matches.live.lock().ok()?.insert(
                 session,
                 LiveMatch {
                     actor,
-                    opponent: target,
+                    opponent: Some(target),
                     state: state.clone(),
-                    deadline: Instant::now()
-                        + Duration::from_millis(u64::try_from(state.deadline_ms - now_ms).ok()?),
+                    deadline: Instant::now() + Duration::from_millis(remaining_ms),
                 },
             );
         } else if state.phase == 3 || state.rank == 0 {
@@ -565,8 +581,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && current.x.abs_diff(reward_room.x) <= 20
                     && current.y.abs_diff(reward_room.y) <= 30)
             {
-                if let Some(old) = self.states.arena_matches.live.lock().ok()?.remove(&session) {
-                    let _ = runtime.remove_arena_opponent(old.opponent);
+                if let Some(old) = self.states.arena_matches.live.lock().ok()?.remove(&session)
+                    && let Some(opponent) = old.opponent
+                {
+                    let _ = runtime.remove_arena_opponent(opponent);
                 }
                 let before = runtime.read_actor_position(actor).ok()?;
                 runtime

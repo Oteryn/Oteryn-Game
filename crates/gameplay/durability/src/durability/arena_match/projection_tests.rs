@@ -41,3 +41,23 @@ fn m51_busy_or_unfunded_entry_cannot_project_an_unpaid_opponent() {
         assert_eq!(proposal, before);
     }
 }
+
+#[test]
+fn m51_restored_victory_keeps_the_original_kick_deadline() {
+    let mut state = MatchState {
+        rank: 1,
+        pit: 3,
+        phase: 2,
+        deadline_ms: 600_000,
+        ..MatchState::default()
+    };
+    assert_eq!(state.projection_remaining_ms(599_999), Some(1));
+    assert_eq!(state.projection_remaining_ms(600_000), None);
+    assert_eq!(state.projection_remaining_ms(600_001), None);
+    state.phase = 1;
+    assert_eq!(state.projection_remaining_ms(599_000), Some(1_000));
+    state.phase = 3;
+    assert_eq!(state.projection_remaining_ms(599_000), None);
+    state.phase = 0;
+    assert_eq!(state.projection_remaining_ms(599_000), None);
+}
