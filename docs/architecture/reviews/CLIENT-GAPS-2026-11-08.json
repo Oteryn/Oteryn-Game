@@ -456,9 +456,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Screenshots: backlog i event triggers",
-  "status": "MISSING",
-  "gap": "Brak bufora wstecznego i automatycznych screenshotów zdarzeń.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/screenshot_backlog.rs:38 + screenshot_backlog_and_death_trigger_follow_server_vitals; screenshot_advance_triggers_use_decoded_server_skill_display"
  },
  {
   "id": "T072",

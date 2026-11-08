@@ -9,17 +9,30 @@ use std::io;
 use windows_sys::Win32::{Graphics::Gdi::*, Storage::Xps::PrintWindow};
 
 impl Settings {
-    pub(crate) fn screenshots(&self, renderer: &mut WindowsRenderer<Arc<Window>>, scene: &Scene) {
+    pub(crate) fn screenshots(
+        &self,
+        renderer: &mut WindowsRenderer<Arc<Window>>,
+        scene: &Scene,
+        link: Option<&oteryn_client::play::PlayLink>,
+    ) {
         let mut source = NativeCapture {
             renderer,
             scene,
             hwnd: self.parent,
         };
         let mut state = lock(&self.shared);
-        match state.take_screenshot(&mut source) {
-            Ok(Some(path)) => state.feedback = format!("Screenshot saved: {}", path.display()),
+        match state.process_screenshots(std::time::Instant::now(), link, &mut source) {
+            Ok(paths) if !paths.is_empty() => {
+                state.feedback = format!(
+                    "Saved {} screenshot(s): {}",
+                    paths.len(),
+                    paths
+                        .last()
+                        .map_or_else(String::new, |p| p.display().to_string())
+                )
+            }
             Err(error) => state.feedback = format!("Screenshot failed: {error}"),
-            Ok(None) => {}
+            Ok(_) => {}
         }
     }
 }

@@ -20,7 +20,11 @@ impl Application {
             {
                 self.fail(event_loop, ShellError::RendererRender);
             } else {
-                self.settings.screenshots(renderer, scene);
+                self.settings.screenshots(
+                    renderer,
+                    scene,
+                    self.play.as_ref().map(|play| &play.link),
+                );
             }
         }
     }

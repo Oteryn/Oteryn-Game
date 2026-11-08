@@ -64,6 +64,7 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 ];
 
 pub struct SettingsState {
+    pub(super) screenshot_runtime: super::screenshot::ScreenshotRuntime,
     pub(super) screenshot_requested: bool,
     window_action: Option<&'static str>,
     battle_edit: u64,
@@ -142,6 +143,7 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            screenshot_runtime: Default::default(),
             screenshot_requested: false,
             window_action: None,
             battle_edit: 0,

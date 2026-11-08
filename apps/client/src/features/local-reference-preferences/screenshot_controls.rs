@@ -2,7 +2,7 @@
 use super::*;
 use oteryn_client::play::ReferencePreferences;
 
-pub(crate) struct ScreenshotControls([HWND; 5]);
+pub(crate) struct ScreenshotControls([HWND; 10]);
 impl ScreenshotControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
@@ -40,6 +40,46 @@ impl ScreenshotControls {
                     0,
                 ),
                 control(hwnd, "BUTTON", "Capture now", 251, [330, 180, 300, 30], 0),
+                control(
+                    hwnd,
+                    "STATIC",
+                    "Pre-event frames (0–10 seconds, max 64 MiB)",
+                    0,
+                    [10, 225, 530, 26],
+                    0,
+                ),
+                control(
+                    hwnd,
+                    "EDIT",
+                    "0",
+                    254,
+                    [560, 225, 70, 26],
+                    WS_BORDER | ES_NUMBER as u32,
+                ),
+                control(
+                    hwnd,
+                    "BUTTON",
+                    "Capture on death",
+                    255,
+                    [10, 265, 700, 26],
+                    BS_AUTOCHECKBOX as u32,
+                ),
+                control(
+                    hwnd,
+                    "BUTTON",
+                    "Capture on level advance",
+                    256,
+                    [10, 300, 700, 26],
+                    BS_AUTOCHECKBOX as u32,
+                ),
+                control(
+                    hwnd,
+                    "BUTTON",
+                    "Capture on trained skill advance",
+                    257,
+                    [10, 335, 700, 26],
+                    BS_AUTOCHECKBOX as u32,
+                ),
             ];
             SendMessageW(handles[1], EM_SETLIMITTEXT, 240, 0);
             (!handles.iter().any(|h| h.is_null())).then_some(Self(handles))
@@ -54,6 +94,17 @@ impl ScreenshotControls {
     }
     pub(crate) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
         unsafe {
+            SetWindowTextW(
+                self.0[6],
+                wide(&preferences.screenshots.backlog_frames.to_string()).as_ptr(),
+            );
+            for (handle, enabled) in self.0[7..].iter().zip([
+                preferences.screenshots.on_death,
+                preferences.screenshots.on_level,
+                preferences.screenshots.on_skill,
+            ]) {
+                SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
+            }
             SetWindowTextW(self.0[1], wide(&preferences.screenshots.folder).as_ptr());
             SendMessageW(
                 self.0[2],
@@ -69,6 +120,18 @@ impl ScreenshotControls {
         }
         unsafe {
             let mut preferences = state.preferences.clone();
+            let Ok(frames) = text(self.0[6]).parse::<u8>() else {
+                state.feedback = "Enter 0 to 10 backlog frames".into();
+                return true;
+            };
+            if frames > 10 {
+                state.feedback = "Enter 0 to 10 backlog frames".into();
+                return true;
+            }
+            preferences.screenshots.backlog_frames = frames;
+            preferences.screenshots.on_death = SendMessageW(self.0[7], BM_GETCHECK, 0, 0) == 1;
+            preferences.screenshots.on_level = SendMessageW(self.0[8], BM_GETCHECK, 0, 0) == 1;
+            preferences.screenshots.on_skill = SendMessageW(self.0[9], BM_GETCHECK, 0, 0) == 1;
             preferences.screenshots.folder = text(self.0[1]);
             preferences.screenshots.game_only = SendMessageW(self.0[2], BM_GETCHECK, 0, 0) == 1;
             state.apply(preferences);

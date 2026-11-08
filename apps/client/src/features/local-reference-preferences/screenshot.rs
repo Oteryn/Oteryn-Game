@@ -1,5 +1,8 @@
 //! Screenshot requests share the settings caller on every platform; native capture supplies pixels.
 use super::SettingsState;
+#[path = "screenshot_backlog.rs"]
+mod backlog;
+pub(super) use backlog::ScreenshotRuntime;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::OpenOptions,
@@ -13,6 +16,10 @@ use std::{
 pub struct ScreenshotPreferences {
     pub folder: String,
     pub game_only: bool,
+    pub backlog_frames: u8,
+    pub on_death: bool,
+    pub on_level: bool,
+    pub on_skill: bool,
 }
 
 impl Default for ScreenshotPreferences {
@@ -25,6 +32,10 @@ impl Default for ScreenshotPreferences {
                 .to_string_lossy()
                 .into_owned(),
             game_only: true,
+            backlog_frames: 0,
+            on_death: false,
+            on_level: false,
+            on_skill: false,
         }
     }
 }

@@ -184,6 +184,9 @@ impl Default for ReferencePreferences {
 
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
+        if self.screenshots.backlog_frames > 10 {
+            return Err(PreferenceError);
+        }
         self.validate_bindings()?;
         self.validate_profiles()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
