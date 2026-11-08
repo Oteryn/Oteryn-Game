@@ -813,3 +813,19 @@ Source pattern UNKNOWN values may refine recursively only when ordered pattern
 identities match; known facts and differing pattern IDs remain conflicts.
 One-way non-lever passages may restore on departure only when both explicit
 replacement IDs exist. Existing durable-departure refusals remain unchanged.
+
+## Main integration completion and greeting repairs
+The real Kingsday PG case failed main1254's deferred exact-completion guard:
+authored Stage.completes was true while its new RewardCallback field defaulted
+false. Reuse QENGINE2's qualified normalization before attach (15 lines), keeping
+the owning SQL guard and recipe unchanged. Whole-binding test equality now uses
+the explicit canonical value and additionally verifies preservation through
+extension; no other source field, assertion, deadline or case is relaxed.
+The four NPC baseline failures share one duplicate greeting: L6's authored Lubo
+quest hint conflicts with the already qualified native Citizen handler. Preserve
+the captured native handler as the global greeting. A 27-line local helper accepts
+only this exact pair; other conflicting rows still fail closed, and the existing
+256 bound stays intact. Source: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lubo.lua#L156
+The authored Paradox quest keeps its own keyword callbacks and replies; no quest
+content belonging to that lane is rewritten. Both Citizen PG stories are added
+to the complete original six-case PG rerun to prove this composition.

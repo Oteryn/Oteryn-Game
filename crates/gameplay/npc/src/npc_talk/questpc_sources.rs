@@ -1,4 +1,5 @@
 //! Local questpc source identities and literal greetings.
+pub(super) mod greetings;
 pub(super) const CALLBACKS: &[&str] = &[
     include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),

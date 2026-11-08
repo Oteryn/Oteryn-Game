@@ -60,7 +60,8 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
             }
             for row in document.npcs {
                 if !keys.insert(row.npc.clone()) {
-                    return None;
+                    questpc_sources::greetings::replace_authored_lubo(&mut rows, row)?;
+                    continue;
                 }
                 rows.push(row);
             }

@@ -174,6 +174,21 @@ impl Bindings {
 
     /// Compose explicit bindings with existing state. Every binding contributes to its quest hash.
     pub fn attach(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+        let mut normalized = self.clone();
+        for quest in &mut normalized.quests {
+            for stage in &mut quest.stages {
+                match &mut stage.trigger {
+                    Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
+                        callback.completes = stage.completes;
+                    }
+                    _ => {}
+                }
+            }
+        }
+        normalized.attach_normalized(base)
+    }
+
+    fn attach_normalized(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
         self.validate()?;
         let mut tracks: Vec<_> = base.tracks.values().cloned().collect();
         let mut transitions: Vec<_> = base.transitions.values().cloned().collect();

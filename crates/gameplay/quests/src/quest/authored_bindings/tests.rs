@@ -76,7 +76,19 @@ fn extending_catalogue_preserves_bound_identity_and_runtime_callbacks() -> Resul
         extended.definition_hash(QUEST),
         catalogue.definition_hash(QUEST)
     );
-    assert_eq!(extended.authored_bindings(), Some(&binding));
+    // The stage owns completion; runtime callback plans use its canonical value.
+    // Retain whole-binding equality so every other input member is preserved.
+    let mut expected = binding.clone();
+    let Trigger::NpcDialogue { callback } = &mut expected.quests[0].stages[0].trigger else {
+        return Err("dialogue fixture".into());
+    };
+    assert!(
+        !callback.completes,
+        "the caller's omitted field defaults false"
+    );
+    callback.completes = true;
+    assert_eq!(extended.authored_bindings(), Some(&expected));
+    assert_eq!(extended.authored_bindings(), catalogue.authored_bindings());
     assert!(
         super::super::reward_callbacks::load_for(&extended)?
             .iter()

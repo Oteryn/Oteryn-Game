@@ -1,0 +1,93 @@
+{
+  "state": "compiling repair checkpoint; all affected units and publication compile/content gates GREEN; eight-case PostgreSQL confirmation building",
+  "base_origin_head": "ca32e1a335d48bd54ff286f881c84b77c2433920",
+  "baseline_units": {
+    "selected": 2875,
+    "passed": 2871,
+    "failed": 4,
+    "seconds": 1887.959,
+    "failures": [
+      "oteryn-gameplay-npc npc_talk::tests::draconia_reward_npc_opens_only_its_source_conversation",
+      "oteryn-gameplay-npc npc_talk::tests::qengine_reward_npcs_open_only_source_conversations",
+      "oteryn-gameplay-npc npc_talk::tests::worldchg_shared_native_benevola_and_orockle_shop_are_closed",
+      "oteryn-gameplay-npc npc_talk::tests::worldchg_trader_yasir_closed_native_book_and_keywords"
+    ],
+    "log": "/tmp/questpc-main-integrated-units.log",
+    "sha256": "8c17c715a848ac86856b62a144342d7536f726de45828cec803a35b783f1ee1c"
+  },
+  "root_causes": [
+    {
+      "kind": "completion plan/receipt mismatch",
+      "pg_red_seconds": 207.392333459,
+      "guard_unchanged": "1254_quest_reward_completion.sql",
+      "repair": "Reuse QENGINE authored callback completion normalization before attach",
+      "reuse_ref": "64b3597c1ae76c936bb80dd3b5b85a01e0761fb6",
+      "reuse_source": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+      "reused_production_lines": 15
+    },
+    {
+      "kind": "duplicate Lubo greeting rejects whole reward greeting registry",
+      "repair": "27-line local helper replaces only the exact authored Lubo hint with the captured native handler; every other conflict and the 256 bound remain fail-closed",
+      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lubo.lua#L156",
+      "helper": "crates/gameplay/npc/src/npc_talk/questpc_sources/greetings.rs"
+    }
+  ],
+  "test_contract_update": "Retain whole-binding equality against explicit canonical expected binding; additionally compare extended and attached catalogues. Assert omitted callback field defaults false before normalization. No assertions, guards, cases or deadlines removed.",
+  "changed_crates": [
+    "oteryn-gameplay-quests",
+    "oteryn-gameplay-npc"
+  ],
+  "validation_scope": "Owner PREPUSH-2: full unit suites of both changed crates (384 tests), plus all six original focused PG cases and both Citizen source stories; workspace all-targets, strict clippy, fmt and generated files. CI owns broader dependent suites.",
+  "pending": [
+    "eight focused PostgreSQL cases including both Citizen source stories"
+  ],
+  "units_green": {
+    "selected": 384,
+    "passed": 384,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 389.497,
+    "crates": [
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-npc"
+    ],
+    "log": "/tmp/questpc-completion-greetings-units-final.log",
+    "sha256": "fb43041ecc355c21c82bb1e73861e4253fa4fd4285523574b9721e74ad15ffec"
+  },
+  "authoring": {
+    "result": "Kingsday source/recipe checks PASS",
+    "log": "/tmp/questpc-completion-greetings-authoring.log",
+    "sha256": "62e16ad02654293e5e8a02a801ad2cc2983c5005e7868bad951058462448c8e0"
+  },
+  "regeneration": {
+    "result": "PASS native families,166 lane profiles/3911 union,33 mint sites",
+    "log": "/tmp/questpc-completion-greetings-regeneration.log",
+    "sha256": "6012c3f04d7b71f587dc99f91606b3c3f51aa4dcba345e40810d0d63e90b5745"
+  },
+  "workspace": {
+    "result": "PASS 6m16s workspace all-targets",
+    "log": "/tmp/questpc-completion-greetings-workspace.log",
+    "sha256": "d21a98887058a0511b4db9d51730face706fcd9c4b0cfcbda6bd9553745bc2f3"
+  },
+  "clippy": {
+    "result": "PASS strict all-target/all-feature changed crates 1m25s",
+    "log": "/tmp/questpc-completion-greetings-clippy.log",
+    "sha256": "bc5ff020431c4d05b0b930fd32368d346d0cd953e4e02bbc788ea670ab28c2a7"
+  },
+  "fmt": {
+    "result": "PASS",
+    "log": "/tmp/questpc-completion-greetings-fmt.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "duplicates": {
+    "result": "PASS",
+    "log": "/tmp/questpc-completion-greetings-dup.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "pin_refresh": {
+    "result": "PASS unchanged 6e61347f digest",
+    "log": "/tmp/questpc-completion-greetings-pin.log",
+    "sha256": "a4fd9aa7ba6be8a8929f85832a21a5c47a7e53a756c7f451e5836c413efb789b"
+  },
+  "publication_rule": "Owner PREPUSH-2 cadence exception; explicit PG pending; no claim of PR readiness before PG confirmation"
+}

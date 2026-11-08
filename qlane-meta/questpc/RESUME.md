@@ -1,3 +1,38 @@
+## Publish compiling repair checkpoint; eight-case PG confirmation building
+All384 affected NPC+Quest units PASS389.497s,0skipped. Three Kingsday recipe/
+source checks PASS0.531s. Final workspace all-targets PASS6m16s; strict changed
+crate all-target/all-feature Clippy PASS1m25s; fmt, duplicate migrations, native/
+equipment/mint generation and official release pin-refresh PASS (same6e61347f).
+Both baseline causes are repaired together: exact qualified QENGINE completion
+normalization and27-line local Lubo canonical greeting precedence. Whole-binding
+assertions retained/strengthened, SQL guard and all old cases/deadlines intact.
+Publish source under PREPUSH-2 pending-test exception, then collect all eight PG
+cases currently building: /tmp/questpc-completion-greetings-pg.log. The script
+/tmp/questpc-run-integrated-pg.sh now selects the six original cases plus both
+Citizen source stories. Require real PG markers, nonzero durations and8PASS.
+No PR-readiness or new quest qualification claim before PG confirmation. Keep
+all old RED and baseline proof; next commit should record complete PG GREEN or
+fix the complete returned failure list. Main must be freshly fetched/merged.
+
+## Both baseline root causes repaired locally; verification running
+Current origin ca32e1a335d48bd54ff286f881c84b77c2433920. Full baseline units
+2871PASS/4NPC FAIL1887.959s; all four share conflicting Lubo greeting rows.
+King PG remains recorded RED207.392s (completion plan false/receipt true).
+Reused QENGINE's 15-line normalized completion attach; added27-line local exact
+Lubo source-precedence helper. SQL guard, bounds and other conflicts stay intact.
+First affected384 run383PASS/1expected-canonical-binding assertion failed;
+whole-object equality is retained against explicit canonical expected value,
+with extra extension equality and original-default assertion. Final384 run is
+session50364, /tmp/questpc-completion-greetings-units-final.log.
+Publication gates/regeneration/check/clippy/fmt/pins are sequential session38501,
+logs/tmp/questpc-completion-greetings-*.log. After its gates.status appears and
+unit results pass, publish compiling fix under cadence exception if PG pending.
+Then run/tmp/questpc-run-integrated-pg.sh (NOW8cases inclbothCitizen stories),
+collect all markers/durations, fix all failures together and push green proof.
+Use cached RELEASE world compiler; never overlap pin work with compiler codegen.
+Main must be freshly fetched/merged before each push; coordinator owns PR/heavyCI.
+No new quest count; restore current readiness of previously qualified scopes.
+
 ## Proof checkpoint: source unchanged, one exact PG regression remains
 Own six PG run: five PASS, Kingsday RED (completion plan false versus owning
 receipt true; deferred main1254 guard). Exact existing QENGINE normalization
