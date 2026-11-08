@@ -117,6 +117,9 @@ pub struct SourceAppearanceTarget<'a> {
 pub enum PlayerHitKind {
     /// Existing source without a qualified element; grants no elemental resistance.
     Mitigated,
+    /// Crystal src/game/game.cpp:8142: a real Undefined hit retains mitigation but
+    /// bypasses mana shield. It is distinct from an absent/unqualified element.
+    Undefined,
     Physical,
     Energy,
     Fire,
@@ -130,6 +133,7 @@ pub enum PlayerHitKind {
 impl PlayerHitKind {
     pub fn from_element(element: Option<&str>) -> Self {
         match element {
+            Some("undefined") => Self::Undefined,
             Some("physical") => Self::Physical,
             Some("energy") => Self::Energy,
             Some("fire") => Self::Fire,
@@ -166,7 +170,7 @@ impl PlayerHitKind {
             Self::Death => Some("Death Resistance"),
             Self::LifeDrain => Some("Life Drain Resistance"),
             Self::ManaDrain => Some("Mana Drain Resistance"),
-            Self::Mitigated => None,
+            Self::Mitigated | Self::Undefined => None,
         }
     }
 }
