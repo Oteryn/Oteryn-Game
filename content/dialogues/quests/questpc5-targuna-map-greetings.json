@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.sterling",
+      "greet": "Ahoyyy there, you might be just who I'm looking for. I need some help on an adventure ...",
+      "farewell": "Safe travels, adventurer!",
+      "walkaway": "Safe travels, adventurer!"
+    }
+  ]
+}

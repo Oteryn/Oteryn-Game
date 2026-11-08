@@ -73,6 +73,15 @@ pub(super) fn prepare(
         return None;
     }
     offers.offers.extend(authored.offers);
+    let map_offers: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/npc-offers/questpc5-targuna-map.json"
+    ))
+    .ok()?;
+    if map_offers.schema != 1 {
+        return None;
+    }
+    offers.offers.extend(map_offers.offers);
+
     let markers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/npc-offers/m16-targuna-marker.json"
     ))
