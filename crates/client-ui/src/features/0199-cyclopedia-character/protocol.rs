@@ -15,6 +15,7 @@ pub enum Intent {
     Badges,
     ProfileBadges,
     ProfileInspection,
+    SpellAugments(super::AugmentIntent),
     MiscResources,
     Tab,
     SelectTab(cyclopedia_character::CharacterTab),
@@ -30,6 +31,11 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         p.feedback = Some("Waiting for the server");
         return None;
     }
+    if let Intent::SpellAugments(intent) = intent {
+        return super::augment_request(p, intent);
+    }
+    p.augments.open = false;
+    p.augments.requested = None;
     p.profile_pending = false;
     if matches!(intent, Intent::Achievements) {
         p.tab = cyclopedia_character::CharacterTab::Achievements;
@@ -69,7 +75,10 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         _ => {}
     }
     let (kind, payload) = match intent {
-        Intent::Achievements | Intent::ProfileBadges | Intent::ProfileInspection => return None,
+        Intent::Achievements
+        | Intent::ProfileBadges
+        | Intent::ProfileInspection
+        | Intent::SpellAugments(_) => return None,
         Intent::Badges => (387, Vec::new()),
         Intent::Tab
         | Intent::SelectTab(_)
@@ -121,6 +130,9 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     })
 }
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
+    if p.augments.requested.is_some() {
+        return super::augments::apply(p, r);
+    }
     if p.achievement_pending {
         return super::achievements::apply(p, r);
     }

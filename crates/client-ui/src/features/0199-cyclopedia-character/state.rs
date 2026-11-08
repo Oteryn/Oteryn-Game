@@ -4,6 +4,7 @@ pub struct CyclopediaCharacterPanel {
     pub badges: Option<Vec<u8>>,
     pub badge_filter: BadgeFilter,
     pub hidden_badges: std::collections::BTreeSet<u8>,
+    pub augments: super::AugmentPanel,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -38,6 +39,7 @@ impl Default for CyclopediaCharacterPanel {
             badges: None,
             badge_filter: Default::default(),
             hidden_badges: Default::default(),
+            augments: Default::default(),
             selected: false,
             open: false,
             pending: false,
@@ -87,6 +89,7 @@ impl CyclopediaCharacterPanel {
             self.achievements = Default::default();
             self.achievement_profile = None;
             self.profile = None;
+            self.augments = Default::default();
             self.profile_pending = false;
             self.achievement_pending = false;
             self.result = None;

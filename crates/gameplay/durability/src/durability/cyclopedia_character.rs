@@ -8,6 +8,8 @@ pub mod profile;
 
 #[path = "cyclopedia_character/combat.rs"]
 pub mod combat;
+#[path = "cyclopedia_character/offence.rs"]
+pub mod offence;
 
 use super::DurabilityRoot;
 use super::character_authority::{

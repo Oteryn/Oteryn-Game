@@ -1,7 +1,13 @@
 //! Native cyclopedia character panel and admitted command mapping.
 #[path = "protocol/achievements.rs"]
 mod achievements;
+#[path = "view/augments.rs"]
+mod augment_view;
+#[path = "protocol/augments.rs"]
+mod augments;
 mod input;
+pub use augment_view::{AugmentRow, augment_heading, augment_rows};
+pub use augments::{AugmentIntent, AugmentPanel, request as augment_request};
 #[path = "view/profile.rs"]
 mod profile;
 mod protocol;

@@ -49,6 +49,11 @@ pub(super) fn refresh_intent(
 ) -> oteryn_client_ui::cyclopedia_character::Intent {
     use oteryn_client_runtime::cyclopedia_character::CharacterTab;
     use oteryn_client_ui::cyclopedia_character::Intent;
+    if p.augments.open && p.tab == CharacterTab::Offence {
+        return Intent::SpellAugments(
+            oteryn_client_ui::cyclopedia_character::AugmentIntent::Refresh,
+        );
+    }
     if p.tab == CharacterTab::Inspection {
         if p.badges_open {
             Intent::ProfileBadges

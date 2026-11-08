@@ -188,5 +188,7 @@ mod profile;
 #[path = "history.rs"]
 mod history;
 
+#[path = "augments.rs"]
+mod augments;
 #[path = "offence.rs"]
 mod offence;

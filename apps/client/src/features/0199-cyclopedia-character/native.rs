@@ -30,6 +30,9 @@ pub(in crate::play) fn submit(
     if p.pending || !p.selected {
         return None;
     }
+    if matches!(id, 180..=185) || (p.augments.open && matches!(id, 112 | 113)) {
+        return augment_input::submit(p, id, values[2]);
+    }
     if matches!(id, 114..=116) {
         use oteryn_client_runtime::cyclopedia_character::KillStatus;
         p.kill_filter = match id {
@@ -81,6 +84,8 @@ pub(in crate::play) fn submit(
     )
 }
 
+#[path = "view/augment_input.rs"]
+mod augment_input;
 #[path = "view/target.rs"]
 mod target;
 use target::parse_target;
@@ -105,3 +110,6 @@ mod profile_table;
 #[cfg(windows)]
 #[path = "view/character_paint.rs"]
 mod character_paint;
+#[cfg(windows)]
+#[path = "view/offence_table.rs"]
+mod offence_table;

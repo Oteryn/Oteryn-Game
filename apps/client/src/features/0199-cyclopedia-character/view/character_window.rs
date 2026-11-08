@@ -25,7 +25,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 32
-                && matches!(id, 101..=117 | 140 | 145..=150)
+                && matches!(id, 101..=117 | 140 | 145..=150 | 180..=185)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);

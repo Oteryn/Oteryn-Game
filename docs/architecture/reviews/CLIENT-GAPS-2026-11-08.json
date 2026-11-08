@@ -593,10 +593,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Offence / źródła i spell augments",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Tekstowy odczyt; brak pełnego układu i interaktywnych opisów źródeł.",
   "lane": "cg_cyclo",
-  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:136 + offence_sources_reach_the_native_table_through_the_real_adapter; completed: typed Offence table and interactive source contributions; left: named spell-augment breakdown"
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/cyclopedia_augments.rs:114 + t087_offence_augments_postgres_real_capture_privacy_replay_and_fences + spell_augments_reach_the_native_view_through_real_playlink_and_outbox + offence_sources_reach_the_native_table_through_the_real_adapter"
  },
  {
   "id": "T088",

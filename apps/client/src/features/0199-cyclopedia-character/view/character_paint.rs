@@ -20,6 +20,7 @@ pub(super) struct Tables {
     store: String,
     tab: Option<CharacterTab>,
     profile: Vec<ProfileRow>,
+    augments: Vec<oteryn_client_ui::cyclopedia_character::AugmentRow>,
 }
 pub(super) unsafe fn paint(
     panel: &CyclopediaCharacterPanel,
@@ -28,6 +29,14 @@ pub(super) unsafe fn paint(
     cards: &[HWND],
     state: &mut Tables,
 ) {
+    if panel.augments.open {
+        state.tab = None;
+        unsafe {
+            super::offence_table::paint(panel, hwnd, handles, cards, &mut state.augments);
+        }
+        return;
+    }
+    super::offence_table::hide(hwnd, panel.tab == CharacterTab::Offence);
     let [output, stamina_bar, training_bar, heading, detail, history] = handles;
     unsafe {
         let badges = panel.command_kind == 387;

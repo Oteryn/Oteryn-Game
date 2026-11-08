@@ -7,6 +7,7 @@ pub mod achievements;
 
 #[path = "cyclopedia_character/combat.rs"]
 pub mod combat;
+pub mod offence;
 #[path = "cyclopedia_character/profile.rs"]
 pub mod profile;
 
