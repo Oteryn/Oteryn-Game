@@ -9,6 +9,9 @@ mod coin_shop_entry;
 mod config;
 pub(crate) use coin_shop_entry::open as open_coin_shop;
 #[cfg(test)]
+#[path = "native_entry/tests/queue_progress.rs"]
+mod queue_progress_tests;
+#[cfg(test)]
 mod test_support;
 #[cfg(test)]
 mod tests;

@@ -4,18 +4,20 @@
   "src": "TIBAUD-1",
   "area": "Login",
   "feature": "Połączenie, re-entry i logout",
-  "status": "PARTIAL",
-  "gap": "Obsługa sesji jest; brak pełnego zestawu okien kolejki i ponawiania jak w referencji.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Widoczna ponowna próba, odliczanie admission i anulowanie pojedynczej próby bez zatrzymania runtime (`68169ce25`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/native_entry/tests/queue_progress.rs:11 + capacity_progress_and_cancel_cross_real_gateway_and_tls_admission; apps/client/src/reentry.rs:324 + cancel_before_poll_overrides_an_already_queued_admission_result"
  },
  {
   "id": "T003",
   "src": "TIBAUD-1",
   "area": "Login",
   "feature": "Pozycja kolejki i odliczanie",
-  "status": "MISSING",
-  "gap": "Brak ekranu kolejki i ponownej próby po jej odliczeniu.",
-  "lane": "cg_ui"
+  "status": "PARTIAL",
+  "gap": "Odliczanie, automatyczne ponowienie i anulowanie są podłączone do istniejącej odmowy capacity; brak autorytatywnej pozycji kolejki oraz jej producenta/protokołu na serwerze (`68169ce25`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/native_entry/tests/queue_progress.rs:11 + capacity_progress_and_cancel_cross_real_gateway_and_tls_admission; apps/client/src/native_entry/tests.rs:213 + capacity_exceeded_retries_once; Pozostaje: autorytatywna pozycja kolejki i producent/protokół serwera."
  },
  {
   "id": "T004",
