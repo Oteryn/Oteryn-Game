@@ -338,8 +338,9 @@ the original trade scenario in 133.988 seconds, inspection in 86.158 seconds,
 account deletion in 15.430 seconds and upstream VIP replay in 16.354 seconds.
 Final workspace all-target checking passed in 11m27s; formatting passed;
 changed-crate all-target clippy with warnings denied passed in 9m21s.
-Content's 322 unit tests and game-server's unit library passed. The remaining
-broad unit run is still in progress and is not claimed complete here.
+Content's library selection passed 321 tests with one pre-existing ignore;
+game-server's library selection passed 488 with three pre-existing ignores.
+The remaining broad unit run is still in progress and is not claimed complete here.
 
 The complete focused PostgreSQL rerun passed 20/20 cases in 1551.003s
 combined execution time (individual durations 6.840–1036.811s).
@@ -347,3 +348,42 @@ This includes forced/original trade, inspection, account deletion, VIP,
 field runes and all fourteen selected authority cases. The broad unit run
 remains pending under the owner's PREPUSH-2 cadence exception; content and
 game-server unit libraries are green. No new PUBPROJ numbers were allocated.
+
+### Validation closure after PR 3031 merged (2026-11-08)
+
+PR 3031 merged at b3864f14a0035a582ef80f1da7d2a931691dd035 from
+623b5fa11f465326c1ab1b4cd9987f20f3de49ba. The previously pending ten-crate
+library run completed with 4,504 passed tests, zero failures and 24
+pre-existing ignores; no ignore attributes or test assertions were relaxed.
+This supersedes the pending-library statements above. Library validation used
+the unit route; real PostgreSQL execution is the separate 20-case run recorded
+above (all cases exceeded 0.1 seconds). These results describe the PR candidate,
+not subsequent changes on main.
+
+Completed library execution durations:
+
+- `oteryn-gameplay-content`: 832.251s, exit 0.
+- `oteryn-game-server`: 679.638s, exit 0.
+- `oteryn-gameplay-dispatch`: 3514.591s, exit 0.
+- `oteryn-gameplay-durability`: 113.879s, exit 0.
+- `oteryn-gameplay-entities`: 6.674s, exit 0.
+- `oteryn-gameplay-foundation`: 8.004s, exit 0.
+- `oteryn-gameplay-monster-ai`: 27.706s, exit 0.
+- `oteryn-gameplay-native-admission-source`: 0.182s, exit 0.
+- `oteryn-gameplay-spell`: 36.682s, exit 0.
+- `oteryn-gameplay-world`: 19.861s, exit 0.
+
+Decision: PUBPROJ A, B and D have no remaining implementation entries. G-12
+world_daily remains assigned to its separate lane, and the other original
+exclusions remain outside this package. No new mechanic or number is added.
+The merged/frozen PR branch is preserved; this evidence closure is recorded
+on the authorized pubprojb continuation branch based on the PR head. Current
+main is incorporated before publication; its existing single house_ids
+implementation is retained after additive merge reconciliation.
+
+Closure validation against main 6f61ac15d: workspace all-target checking
+passed in 9m22s; formatting, architecture and duplicate-migration checks
+passed. Native-content regeneration, the three PUBPROJ fixture generators,
+world pin-refresh and pin-check passed without changing generated files.
+The closure differs from main only in this note, so it changes no crate
+and introduces no new unit or PostgreSQL case.

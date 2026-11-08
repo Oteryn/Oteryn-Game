@@ -19,8 +19,9 @@ LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
 ITEMHOLD_ADMISSIONS = frozenset({
     "oteryn:reward-claim.kv.ornamentedshield",
     "oteryn:reward-claim.kv.powerring2",
-    "oteryn:reward-claim.kv.triangletower",
 })
+# Triangle now has the canonical source-placement PG reward witness and leaves
+# this pending-route inventory; the two remaining ITEMHOLD routes stay blocked.
 EXPECTED_DENOMINATOR = 297 + len(ITEMHOLD_ADMISSIONS)
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",

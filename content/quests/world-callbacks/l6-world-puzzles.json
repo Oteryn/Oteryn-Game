@@ -1,0 +1,856 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/l6/paradox-food-four",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31905,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/paradox-food-four-openings",
+          "minimum": -1,
+          "maximum": 65534,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32476,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3593",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32477,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3587",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32478,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3590",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32479,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3585",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32480,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3592",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32481,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3589",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_four_floor_lever.lua:1-49"
+      ],
+      "opening_only": true,
+      "effects": {
+        "item_presence": {
+          "position": {
+            "x": 32476,
+            "y": 31904,
+            "floor": -4
+          },
+          "appearance": 1948
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-food-five",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32478,
+          "y": 31904,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/paradox-food-five-openings",
+          "minimum": -1,
+          "maximum": 65534,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32478,
+            "y": 31903,
+            "floor": -3
+          },
+          "item": "oteryn:item.tibia.i3537",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32479,
+            "y": 31903,
+            "floor": -3
+          },
+          "item": "oteryn:item.tibia.i3543",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_fifth_floor_lever.lua:1-41"
+      ],
+      "opening_only": true,
+      "effects": {
+        "item_presence": {
+          "position": {
+            "x": 32479,
+            "y": 31904,
+            "floor": -3
+          },
+          "appearance": 1948
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-floor-four-arrived",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32478,
+          "y": 31905,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/floor-four-arrived",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_four_floor_lever.lua:19-37"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-first-grass-stair",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32481,
+          "y": 31905,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32478,
+            "y": 31902,
+            "floor": -7
+          },
+          "appearance": 1791,
+          "replacement": 1947
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_first_floor_stair.lua:1-42"
+      ],
+      "effects": {},
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32478,
+            "y": 31920,
+            "floor": -7
+          },
+          "appearance": 3696
+        },
+        {
+          "position": {
+            "x": 32479,
+            "y": 31920,
+            "floor": -7
+          },
+          "appearance": 3696
+        },
+        {
+          "position": {
+            "x": 32478,
+            "y": 31921,
+            "floor": -7
+          },
+          "appearance": 3696
+        },
+        {
+          "position": {
+            "x": 32479,
+            "y": 31921,
+            "floor": -7
+          },
+          "appearance": 3696
+        },
+        {
+          "position": {
+            "x": 32478,
+            "y": 31922,
+            "floor": -7
+          },
+          "appearance": 3696
+        },
+        {
+          "position": {
+            "x": 32479,
+            "y": 31922,
+            "floor": -7
+          },
+          "appearance": 3696
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-first-exit-32478",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": {
+          "x": 32478,
+          "y": 31906,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32478,
+            "y": 31902,
+            "floor": -7
+          },
+          "appearance": 1791,
+          "replacement": 1947
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_first_floor_stair.lua:30-36"
+      ],
+      "effects": {}
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-first-exit-32479",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31906,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32478,
+            "y": 31902,
+            "floor": -7
+          },
+          "appearance": 1791,
+          "replacement": 1947
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_first_floor_stair.lua:30-36"
+      ],
+      "effects": {}
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-second-switch-32476",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32476,
+          "y": 31900,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2773
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_second_floor_lever.lua:1-8"
+      ],
+      "effects": {}
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-second-switch-32477",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32477,
+          "y": 31900,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2773
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_second_floor_lever.lua:1-8"
+      ],
+      "effects": {}
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-second-switch-32478",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32478,
+          "y": 31900,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2773
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_second_floor_lever.lua:1-8"
+      ],
+      "effects": {}
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-second-switch-32479",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31900,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2773
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_second_floor_lever.lua:1-8"
+      ],
+      "effects": {}
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-second-switch-32480",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32480,
+          "y": 31900,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2773
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_second_floor_lever.lua:1-8"
+      ],
+      "effects": {}
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-second-switch-32481",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32481,
+          "y": 31900,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2773
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_second_floor_lever.lua:1-8"
+      ],
+      "effects": {}
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-second-main-pattern",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31905,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_second_floor_lever.lua:10-42"
+      ],
+      "effects": {
+        "item_presence": {
+          "position": {
+            "x": 32476,
+            "y": 31904,
+            "floor": -6
+          },
+          "appearance": 1948
+        }
+      },
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32476,
+            "y": 31900,
+            "floor": -6
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32477,
+            "y": 31900,
+            "floor": -6
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32478,
+            "y": 31900,
+            "floor": -6
+          },
+          "appearance": 2772
+        },
+        {
+          "position": {
+            "x": 32479,
+            "y": 31900,
+            "floor": -6
+          },
+          "appearance": 2772
+        },
+        {
+          "position": {
+            "x": 32480,
+            "y": 31900,
+            "floor": -6
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32481,
+            "y": 31900,
+            "floor": -6
+          },
+          "appearance": 2772
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-ghoul-switch",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32481,
+          "y": 31904,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 9125
+      },
+      "lever": [
+        9125,
+        9126
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_third_floor_lever.lua:11-28"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 32479,
+                "y": 31900,
+                "floor": -5
+              },
+              "creature": "oteryn:creature.ghoul"
+            }
+          ],
+          "room_min": {
+            "x": 32476,
+            "y": 31900,
+            "floor": -5
+          },
+          "room_max": {
+            "x": 32481,
+            "y": 31901,
+            "floor": -5
+          },
+          "timing": {
+            "spawn_after_ms": 2000,
+            "reset_after_ms": 100000
+          }
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-ghoul-plate-step_in",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31900,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_third_floor_ghoul.lua:1-37"
+      ],
+      "effects": {
+        "transform": 430,
+        "item_presence": {
+          "position": {
+            "x": 32478,
+            "y": 31904,
+            "floor": -5
+          },
+          "appearance": 1948
+        }
+      },
+      "actor_kind": "monster"
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-ghoul-plate-step_out",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31900,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_third_floor_ghoul.lua:1-37"
+      ],
+      "effects": {
+        "transform": 431,
+        "item_presence": {
+          "position": {
+            "x": 32478,
+            "y": 31904,
+            "floor": -5
+          },
+          "appearance": 1948
+        }
+      },
+      "actor_kind": "monster"
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-climb-complete",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31905,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/floor-four-arrived",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/paradox-food-four-openings",
+          "minimum": 0,
+          "maximum": 65535,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/paradox-food-five-openings",
+          "minimum": 0,
+          "maximum": 65535,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/climb-complete",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": 30,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have climbed the Paradox Tower.",
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_fifth_floor_lever.lua:1-41"
+      ]
+    }
+  ]
+}

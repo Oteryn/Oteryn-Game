@@ -85,6 +85,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 return;
             };
             self.checkpoint_timed_equipment(actor, session, false).await;
+            self.drain_quest_timers(actor, session).await;
         }
         let converters: Vec<GameSessionId> = {
             let mut active = self.states.timed_items.magic_converters.lock().await;

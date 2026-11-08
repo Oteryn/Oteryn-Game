@@ -252,6 +252,8 @@ pub(super) async fn exercise(
         assert_eq!(
             trade.take,
             vec![ItemAmount {
+                fluid_subtype: None,
+
                 item: "oteryn:item.tibia.i12517".into(),
                 count: 1
             }]
@@ -377,6 +379,8 @@ pub(super) async fn exercise(
             assert_eq!(
                 callback.take,
                 vec![ItemAmount {
+                    fluid_subtype: None,
+
                     item: format!("oteryn:item.tibia.i{token}"),
                     count
                 }]
@@ -438,6 +442,8 @@ pub(super) async fn exercise(
             assert_eq!(
                 callback.take,
                 vec![ItemAmount {
+                    fluid_subtype: None,
+
                     item: "oteryn:item.tibia.i16128".into(),
                     count: 2
                 }]
