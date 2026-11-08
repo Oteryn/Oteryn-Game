@@ -12,10 +12,12 @@ TARGET = ROOT / 'apps/game-server/tests/content_npc_service_model.rs'
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--check', action='store_true')
 args = parser.parse_args()
-env = {**os.environ, 'OTERYN_CAPTURE_NPC_SERVICE_COUNTS': '1'}
-result = subprocess.run(['cargo', 'test', '--locked', '-p', 'oteryn-game-server',
-    '--test', 'content_npc_service_model', '--', '--nocapture'], cwd=ROOT, env=env,
+env = os.environ.copy()
+result = subprocess.run(['cargo', 'run', '--locked', '-p', 'oteryn-game-server',
+    '--example', 'npc_service_counts'], cwd=ROOT, env=env,
     text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+if result.returncode:
+    raise SystemExit(result.stdout)
 records = re.findall(r'^NPC_SERVICE_COUNTS (\{.*\})$', result.stdout, re.M)
 if len(records) != 1:
     raise SystemExit(result.stdout)

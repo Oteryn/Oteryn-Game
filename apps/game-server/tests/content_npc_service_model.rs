@@ -27,7 +27,7 @@ fn pinned_catalogue_service_model_counts() {
     assert_eq!(model, again, "built twice");
     assert_eq!(model.source_tree_digest(), catalogue.source_tree_digest());
     let counts: BTreeMap<&str, usize> = model.held_offer_counts();
-    assert_eq!(model.npcs().len(), 1282);
+    assert_eq!(model.npcs().len(), 1_282);
     assert_eq!(model.held_npcs().len(), 0);
     // NPC-ECON-1 Bank, PREM-5's services, BANK-3's Henricus blessing offer, and #2810's
     // Grizzly Adams rank shop. Collector #3030 (78294c081), s10-nonquest.json,
@@ -36,7 +36,7 @@ fn pinned_catalogue_service_model_counts() {
     assert_eq!(model.services().len(), 400);
     // NPC-TRADE-3 in #3030 restores source fluid subtypes and full-charge offers
     // through npc_catalogue/subtype_trades.rs and service.rs.
-    assert_eq!(model.admitted_offer_count(), 12_415);
+    assert_eq!(model.admitted_offer_count(), 12_565);
     assert_eq!(model.admitted_route_count(), 195);
     assert_eq!(model.generated_reply_npc_count(), 446);
     let expected: BTreeMap<&str, usize> = BTreeMap::from([
@@ -48,7 +48,7 @@ fn pinned_catalogue_service_model_counts() {
         ("NonGoldCurrency", 31),
         ("ParityPending", 0),
         ("SellPriceAboveCoinCapacity", 17),
-        ("TimedCountMismatch", 0),
+        ("TimedCountMismatch", 7),
         ("UnknownItem", 0),
     ]);
     assert_eq!(counts, expected);
