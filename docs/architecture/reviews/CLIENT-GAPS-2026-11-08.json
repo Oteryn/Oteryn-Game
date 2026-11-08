@@ -139,9 +139,10 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Umiejętności, progress, loyalty",
-  "status": "PARTIAL",
-  "gap": "Dane/progress są; brak pełnego Skills widget z belkami i konfiguracją statystyk.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Natywne belki ośmiu umiejętności, wybór widocznych statystyk i potwierdzone level/progress/loyalty są podłączone do panelu.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/play/status_window.rs:20 + nx7_complete_skills_native_play_queue_decode_and_display + t031_skill_widget_projects_confirmed_progress_and_configures_rows"
  },
  {
   "id": "T032",
@@ -1309,9 +1310,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Okręgi HP/MP i status mnicha",
-  "status": "PARTIAL",
-  "gap": "Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Zapisane opcje okręgów HP/MP; projekcja potwierdzonych zasobów i status mnicha są podłączone do widoku świata.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/view/methods.rs:101 + o025_session_vitals_drive_health_circle_in_live_tick"
  },
  {
   "id": "O028",

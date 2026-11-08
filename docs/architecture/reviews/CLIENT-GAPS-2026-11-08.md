@@ -113,7 +113,7 @@ Zasady przeciw dublowaniu:
 | T162 | Game window | Monk harmony/serene/combo i HUD controls | PARTIAL | Harmony/serene tekstowo są; brak pełnych pasków/combo i niezależnych ustawień HUD mnicha. |
 | O010 | Game window | Górne menu i przyciski okien | PARTIAL | Brakuje wspólnego paska przycisków otwierających okna i zarządzającego ich stanem; Oteryn udostępnia okna przez skróty. |
 | O021 | Game window | Nazwy, zdrowie i ikony nad stworzeniami | PARTIAL | Brakuje pełnego zestawu pasków zdrowia i ikon party/skull nad postacią w widoku świata; potwierdzone tarcze/czaszki są prezentowane w osobnym panelu. |
-| O025 | Game window | Okręgi HP/MP i status mnicha | PARTIAL | Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD. |
+| O025 | Game window | Okręgi HP/MP i status mnicha | DONE | Zapisane opcje okręgów HP/MP; projekcja potwierdzonych zasobów i status mnicha są podłączone do widoku świata. evidence: apps/client/src/features/0023-presentation/view/methods.rs:101 + o025_session_vitals_drive_health_circle_in_live_tick |
 | O033 | Game window | Układ interfejsu i okna boczne | PARTIAL | Brakuje dokowanych, przeciąganych i zapamiętywanych miniokien w kolumnach interfejsu; istnieją osobne okna Win32 i przełączniki widoczności. |
 | O037 | Game window | Główny panel skrótów funkcji | PARTIAL | Brakuje zwijanego głównego panelu ikon funkcji gry z utrwalonym układem; funkcje są otwierane skrótami. |
 | T040 | Hotkeys | Profile, chat on/off, primary/secondary | PARTIAL | Jedna mapa bindingów; brak nazwanych presetów i dwóch kontekstów czatu. |
@@ -151,7 +151,7 @@ Zasady przeciw dublowaniu:
 | T074 | Options | Help: minimap import/export | MISSING | Brak narzędzia wymiany trwałych map/markerów. |
 | O005 | Options | Lokalizacja interfejsu | PARTIAL | Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN. |
 | O006 | Options | Opcje i ustawienia | PARTIAL | Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji. |
-| T031 | Skills | Umiejętności, progress, loyalty | PARTIAL | Dane/progress są; brak pełnego Skills widget z belkami i konfiguracją statystyk. |
+| T031 | Skills | Umiejętności, progress, loyalty | DONE | Natywne belki ośmiu umiejętności, wybór widocznych statystyk i potwierdzone level/progress/loyalty są podłączone do panelu. evidence: apps/client/src/play/status_window.rs:20 + nx7_complete_skills_native_play_queue_decode_and_display + t031_skill_widget_projects_confirmed_progress_and_configures_rows |
 | T032 | Skills | Spell list / spellbook | PARTIAL | Jest katalog po name/words; brak wszystkich filtrów vocation/level/premium/group i pełnej książki czarów. |
 | T033 | Skills | Magical Archive i przypisanie czaru | PARTIAL | Katalog i sloty są; brak osobnego pełnego archiwum i graficznego przypisywania. |
 | O059 | Skills | Lista czarów i wyszukiwanie | PARTIAL | Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły. |

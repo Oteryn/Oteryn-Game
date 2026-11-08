@@ -1,0 +1,219 @@
+unsafe fn create_settingscontrols(hwnd: HWND) -> SettingsControls {
+    // SAFETY: called on the window's creating thread; Win32 copies control labels.
+    unsafe {
+        let pages = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            220,
+            [10, 10, 720, 240],
+            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
+        );
+        for page in SettingsPage::ALL {
+            SendMessageW(pages, CB_ADDSTRING, 0, wide(page.label()).as_ptr() as isize);
+        }
+        SendMessageW(pages, CB_SETCURSEL, 0, 0);
+        let help = control(
+            hwnd,
+            "STATIC",
+            "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse buttons follow the selected preset. Conflicts include all registered actions.",
+            0,
+            [10, 50, 720, 45],
+            0,
+        );
+        let list = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            101,
+            [10, 100, 440, 280],
+            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
+        );
+        let chord = control(
+            hwnd,
+            "EDIT",
+            "",
+            102,
+            [460, 100, 140, 26],
+            WS_BORDER | ES_AUTOHSCROLL as u32,
+        );
+        let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
+        let mouse_preset = control(
+            hwnd,
+            "BUTTON",
+            "Swap primary / secondary mouse buttons",
+            221,
+            [10, 150, 360, 26],
+            BS_AUTOCHECKBOX as u32,
+        );
+        let delay_label = control(
+            hwnd,
+            "STATIC",
+            "Keyboard repeat delay ms (0–1000)",
+            0,
+            [10, 185, 360, 26],
+            0,
+        );
+        let delay = control(
+            hwnd,
+            "EDIT",
+            "",
+            222,
+            [380, 185, 100, 26],
+            WS_BORDER | ES_NUMBER as u32,
+        );
+        let controls_apply = control(
+            hwnd,
+            "BUTTON",
+            "Apply controls",
+            223,
+            [500, 185, 180, 26],
+            0,
+        );
+        let rotation_label = control(
+            hwnd,
+            "STATIC",
+            "Turn modifier (CTRL / ALT / SHIFT)",
+            0,
+            [10, 225, 360, 26],
+            0,
+        );
+        let rotation = control(
+            hwnd,
+            "EDIT",
+            "",
+            224,
+            [380, 225, 100, 26],
+            WS_BORDER | ES_AUTOHSCROLL as u32,
+        );
+        let label = control(
+            hwnd,
+            "STATIC",
+            "World zoom % (80–180, fitted to window)",
+            0,
+            [10, 110, 700, 25],
+            0,
+        );
+        let scale = control(
+            hwnd,
+            "EDIT",
+            "",
+            104,
+            [10, 145, 100, 26],
+            WS_BORDER | ES_NUMBER as u32,
+        );
+        let volume = control(
+            hwnd,
+            "EDIT",
+            "",
+            105,
+            [130, 145, 100, 26],
+            WS_BORDER | ES_NUMBER as u32,
+        );
+        let mute = control(
+            hwnd,
+            "BUTTON",
+            "Mute",
+            107,
+            [250, 145, 100, 26],
+            BS_AUTOCHECKBOX as u32,
+        );
+        let apply = control(hwnd, "BUTTON", "Apply", 106, [380, 145, 110, 26], 0);
+        let transfer_label = control(
+            hwnd,
+            "STATIC",
+            "Settings transfer file (JSON). Import/defaults save a recoverable backup.",
+            0,
+            [10, 195, 720, 25],
+            0,
+        );
+        let transfer_path = control(
+            hwnd,
+            "EDIT",
+            "",
+            114,
+            [10, 225, 710, 26],
+            WS_BORDER | ES_AUTOHSCROLL as u32,
+        );
+        SendMessageW(transfer_path, EM_SETLIMITTEXT, 240, 0);
+        let import = control(hwnd, "BUTTON", "Import...", 110, [10, 265, 150, 30], 0);
+        let export = control(
+            hwnd,
+            "BUTTON",
+            "Export new file",
+            111,
+            [175, 265, 160, 30],
+            0,
+        );
+        let backup = control(
+            hwnd,
+            "BUTTON",
+            "Restore backup...",
+            112,
+            [350, 265, 170, 30],
+            0,
+        );
+        let defaults = control(
+            hwnd,
+            "BUTTON",
+            "Restore defaults...",
+            113,
+            [535, 265, 185, 30],
+            0,
+        );
+        let hud_checks = [
+            "HP / MP bars",
+            "Harmony",
+            "Serene",
+            "Light effects",
+            "Combat effects",
+            "Creature health / icons",
+            "HP / MP circle",
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(index, label)| {
+            control(
+                hwnd,
+                "BUTTON",
+                label,
+                120 + index,
+                [
+                    10 + (index % 4) as i32 * 175,
+                    310 + (index / 4) as i32 * 30,
+                    170,
+                    26,
+                ],
+                BS_AUTOCHECKBOX as u32,
+            )
+        })
+        .collect::<Vec<_>>();
+        let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
+        SettingsControls {
+            pages,
+            help,
+            list,
+            chord,
+            rebind,
+            mouse_preset,
+            delay_label,
+            delay,
+            controls_apply,
+            rotation_label,
+            rotation,
+            label,
+            scale,
+            volume,
+            mute,
+            apply,
+            transfer_label,
+            transfer_path,
+            import,
+            export,
+            backup,
+            defaults,
+            hud_checks,
+            feedback,
+        }
+    }
+}

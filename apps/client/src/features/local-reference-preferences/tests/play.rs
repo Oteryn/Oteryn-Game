@@ -79,48 +79,7 @@ fn basic_options_navigate_without_changing_preferences() {
     assert_eq!(SettingsPage::ALL.len(), 5);
 }
 
-#[test]
-fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
-{
-    use crate::play::{PreferenceStore, ReferencePreferences, SettingsState};
-    let root = std::env::temp_dir().join(format!("clientgap-transfer-{}", std::process::id()));
-    std::fs::create_dir_all(&root)?;
-    let path = root.join("settings.json");
-    let export = root.join("export.json");
-    let mut state = SettingsState::new(Some(path.clone()));
-    let mut changed = state.preferences.clone();
-    changed.ui_scale = 125;
-    changed.audio.master_volume = 37;
-    state.apply(changed.clone());
-    state.export_to(&export)?;
-    assert!(state.export_to(&export).is_err()); // Never overwrite an existing export.
-    state.reset_defaults()?;
-    assert_eq!(state.preferences, ReferencePreferences::default());
-    assert_eq!(
-        PreferenceStore::load(path.clone())?.preferences(),
-        &state.preferences
-    );
-    state.restore_backup()?;
-    assert_eq!(state.preferences, changed);
-    state.reset_defaults()?;
-    state.import_from(&export)?;
-    assert_eq!(SettingsState::new(Some(path.clone())).preferences, changed);
-    std::fs::write(root.join("bad.json"), br#"{"ui_scale":181}"#)?;
-    let before = std::fs::read(&path)?;
-    assert!(state.import_from(&root.join("bad.json")).is_err());
-    assert_eq!(state.preferences, changed);
-    assert_eq!(std::fs::read(&path)?, before);
-    std::fs::write(root.join("huge.json"), vec![b' '; (1 << 20) + 1])?;
-    assert!(state.import_from(&root.join("huge.json")).is_err());
-    // Backup failure must prevent a destructive replacement.
-    std::fs::remove_file(path.with_extension("backup.json"))?;
-    std::fs::create_dir(path.with_extension("backup.json"))?;
-    assert!(state.reset_defaults().is_err());
-    assert_eq!(state.preferences, changed);
-    assert_eq!(std::fs::read(&path)?, before);
-    std::fs::remove_dir_all(root)?;
-    Ok(())
-}
+include!("play_settings_transfer_backup_and_defaults_survive_restart_1.rs");
 
 #[test]
 fn reference_preferences_are_local_and_reject_unknown_panel_ids()
@@ -164,97 +123,11 @@ fn preferences_are_restored_when_scene_rebuild_fails() -> Result<(), BatchError>
     Ok(())
 }
 
-#[test]
-fn settings_rebind_conflicts_routes_and_survives_restart() -> Result<(), Box<dyn std::error::Error>>
-{
-    use crate::play::{PreferenceStore, preference_bindings};
-    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
-    let path = std::env::temp_dir().join(format!("oteryn-c25-{}.json", std::process::id()));
-    let _ = std::fs::remove_file(&path);
-    let mut store = PreferenceStore::load(path.clone())?;
-    let bindings = preference_bindings()?;
-    let highscores = "0009-highscores-open";
-    assert!(bindings.iter().any(|binding| binding.id == highscores));
-    let mut changed = store.preferences().clone();
-    assert!(changed.rebind(highscores, "Ctrl+L").is_err());
-    assert!(changed.rebind(highscores, "F10").is_err());
-    changed.rebind(highscores, "Alt+H")?;
-    changed.ui_scale = 125;
-    store.apply(changed)?;
-    let restored = PreferenceStore::load(path.clone())?;
-    assert_eq!(restored.preferences(), store.preferences());
-    let event = NormalizedInputEvent::Key {
-        code: KeyCode::new(11)?,
-        state: ButtonState::Pressed,
-        modifiers: Modifiers::one(oteryn_input_actions::Modifier::Alt),
-        repeat: false,
-    };
-    let routed = restored.preferences().route_input(&[event])?;
-    assert!(oteryn_client_ui::highscores::open_key(&routed));
-    let old = NormalizedInputEvent::Key {
-        code: KeyCode::new(11)?,
-        state: ButtonState::Pressed,
-        modifiers: Modifiers::one(oteryn_input_actions::Modifier::Control),
-        repeat: false,
-    };
-    assert!(restored.preferences().route_input(&[old])?.is_empty());
-    let mut play = view()?;
-    play.set_preferences(restored.preferences().clone())?;
-    assert_eq!(play.scene().view().tile_px(), 49);
-    play.set_world_viewport([600, 330])?;
-    assert_eq!(play.scene().view().tile_px(), 30);
-    assert_eq!(play.preferences().ui_scale, 125);
-    std::fs::remove_file(path)?;
-    Ok(())
-}
+include!("play_settings_rebind_conflicts_routes_and_survives_restart_1.rs");
 
-#[test]
-fn every_registered_binding_conflicts_and_invalid_saves_leave_preferences_unchanged()
--> Result<(), Box<dyn std::error::Error>> {
-    use crate::play::{PreferenceStore, ReferencePreferences, preference_bindings};
-    let original = ReferencePreferences::default();
-    for binding in preference_bindings()? {
-        if binding.id == "0009-highscores-open" {
-            continue;
-        }
-        let mut preferences = original.clone();
-        assert!(
-            preferences
-                .rebind("0009-highscores-open", binding.default_chord)
-                .is_err(),
-            "{}",
-            binding.id
-        );
-        assert_eq!(preferences, original);
-    }
-    let mut preferences = original.clone();
-    assert!(preferences.rebind("unknown", "ALT+H").is_err());
-    assert!(
-        preferences
-            .rebind("0009-highscores-open", "CTRL+CTRL+H")
-            .is_err()
-    );
-    let path = std::env::temp_dir().join(format!("oteryn-c25-invalid-{}", std::process::id()));
-    let _ = std::fs::remove_file(&path);
-    let mut store = PreferenceStore::load(path.clone())?;
-    preferences.ui_scale = 181;
-    assert!(store.apply(preferences).is_err());
-    assert_eq!(store.preferences(), &original);
-    assert!(!path.exists());
-    std::fs::write(&path, b"invalid-json")?;
-    assert!(PreferenceStore::load(path.clone()).is_err());
-    assert_eq!(std::fs::read(&path)?, b"invalid-json");
-    std::fs::remove_file(&path)?;
-    std::fs::create_dir(&path)?;
-    let mut blocked = PreferenceStore::defaults(path.clone());
-    let mut changed = original.clone();
-    changed.audio.master_volume = 35;
-    assert!(blocked.apply(changed).is_err());
-    assert_eq!(blocked.preferences(), &original);
-    assert!(!path.with_extension("json.tmp").exists());
-    std::fs::remove_dir(path)?;
-    Ok(())
-}
+include!(
+    "play_every_registered_binding_conflicts_and_invalid_saves_leave_preferences_unchanged_1.rs"
+);
 
 #[test]
 fn rebound_spell_releases_after_modifier_and_preference_changes()
@@ -435,49 +308,7 @@ fn o010_menu_uses_live_window_inputs_after_rebinding() -> Result<(), Box<dyn std
     Ok(())
 }
 
-#[test]
-fn o021_live_health_and_party_marks_project_at_entity_position()
--> Result<(), Box<dyn std::error::Error>> {
-    let mut play = view()?;
-    let mut json = serde_json::to_value(play.preferences())?;
-    json["creature_bars"] = serde_json::json!(false);
-    play.set_preferences(serde_json::from_value(json.clone())?)?;
-    let entity = oteryn_session::EntityRef {
-        identity: [8; 16],
-        generation: 2,
-    };
-    play.entities.push(oteryn_session::WorldSpatialEntity {
-        entity,
-        display_name: None,
-        kind: oteryn_session::EntityKind::Creature,
-        position: oteryn_session::ActorPosition {
-            x: 101,
-            y: 200,
-            floor: 0,
-        },
-        detail: oteryn_session::EntityDetail::Actor {
-            direction: oteryn_session::StepDirection::South,
-            appearance_ref: 1,
-            health_percent: 50,
-        },
-    });
-    play.rebuild()?;
-    let baseline = play.scene().sprites().len();
-    json["creature_bars"] = serde_json::json!(true);
-    play.set_preferences(serde_json::from_value(json)?)?;
-    assert_eq!(play.scene().sprites().len(), baseline + 2);
-    play.party_icons = vec![oteryn_client_runtime::party_skull::PartyIcon {
-        entity,
-        shield: 3,
-        skull: 4,
-    }];
-    play.rebuild()?;
-    assert!(play.scene().sprites().len() > baseline + 2);
-    play.party_icons[0].entity.generation += 1;
-    play.rebuild()?;
-    assert_eq!(play.scene().sprites().len(), baseline + 2);
-    Ok(())
-}
+include!("play_o021_live_health_and_party_marks_project_at_entity_position_1.rs");
 
 #[test]
 fn o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals()
@@ -532,3 +363,5 @@ fn o037_shortcut_panel_collapse_and_order_survive_restart() -> Result<(), Box<dy
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+include!("health_circle.rs");

@@ -18,53 +18,7 @@ fn occurrence(byte: u8) -> [u8; 16] {
     id
 }
 
-fn current(revision: u64) -> (wheel::WheelAllocationReply, atelier::AtelierReply) {
-    (
-        wheel::WheelAllocationReply {
-            refused: false,
-            revision,
-            points: [0; 36],
-            vessels: None,
-        },
-        atelier::AtelierReply {
-            refused: false,
-            revision,
-            gems: vec![atelier::GemView {
-                id: [17; 16],
-                quality: 2,
-                domain: 0,
-                locked: false,
-                vessel: false,
-                modifiers: vec![31, 0, 5],
-            }],
-            grades: vec![atelier::GradeView {
-                kind: 1,
-                mod_id: 5,
-                grade: 1,
-            }],
-            quality_quotes: (0..3)
-                .map(|quality| atelier::QualityQuote {
-                    quality,
-                    reveal_gold: 123_456 + u64::from(quality),
-                    switch_gold: 654_321,
-                    fragment_kind: u8::from(quality == 2),
-                    fragment_min: 9,
-                    fragment_max: 11,
-                })
-                .collect(),
-            grade_quotes: (0..2)
-                .flat_map(|kind| {
-                    (1..4).map(move |grade| atelier::GradeQuote {
-                        kind,
-                        grade,
-                        gold: 222_222,
-                        fragments: 777,
-                    })
-                })
-                .collect(),
-        },
-    )
-}
+include!("state_current_1.rs");
 
 fn panel() -> WheelPanel {
     let (wheel, atelier) = current(4);
@@ -142,51 +96,7 @@ fn reset_and_unsocket_use_the_existing_allocation_owner() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-fn atelier_controls_send_only_intent_and_current_revision() -> Result<(), Error> {
-    for (intent, mutation) in [
-        (Intent::Reveal, atelier::Mutation::Reveal { quality: 2 }),
-        (
-            Intent::SwitchDomain,
-            atelier::Mutation::SwitchDomain { gem: [17; 16] },
-        ),
-        (
-            Intent::Dismantle,
-            atelier::Mutation::Dismantle { gem: [17; 16] },
-        ),
-        (
-            Intent::GradeUp,
-            atelier::Mutation::GradeUp { kind: 1, mod_id: 5 },
-        ),
-    ] {
-        let mut panel = panel();
-        panel.quality = 2;
-        panel.modifier = Some((1, 5));
-        let command = request(&mut panel, intent, occurrence(7)).ok_or("mutation")?;
-        assert_eq!(command.kind, 424);
-        assert_eq!(
-            wire(atelier::decode_mutate(&command.payload))?,
-            atelier::MutateRequest {
-                occurrence: occurrence(7),
-                expected_revision: 4,
-                mutation,
-            }
-        );
-    }
-    let mut panel = panel();
-    let command = request(&mut panel, Intent::ToggleLock, occurrence(6)).ok_or("lock")?;
-    assert_eq!(command.kind, 309);
-    assert_eq!(
-        wire(atelier::decode_set_lock(&command.payload))?,
-        atelier::SetLockRequest {
-            occurrence: occurrence(6),
-            expected_revision: 4,
-            gem: [17; 16],
-            locked: true,
-        }
-    );
-    Ok(())
-}
+include!("state_atelier_controls_send_only_intent_and_current_revision_1.rs");
 
 #[test]
 fn paid_actions_require_live_quotes_and_unresolved_changes_remain_blocked() -> Result<(), Error> {
@@ -350,49 +260,7 @@ fn stale_or_incomplete_live_queries_never_partially_replace_the_view() -> Result
     Ok(())
 }
 
-#[test]
-fn uncertain_outcome_retains_exact_request_across_refresh_and_retry() -> Result<(), Error> {
-    let mut panel = panel();
-    let command = request(&mut panel, Intent::Reveal, occurrence(1)).ok_or("reveal")?;
-    let (wheel, atelier) = current(5);
-    let expired = response(
-        424,
-        CommandStatus::DuplicateOutcomeExpired,
-        vec![],
-        &wheel,
-        &atelier,
-    )?;
-    assert!(apply_result(&mut panel, &expired));
-    assert_eq!(panel.retry.as_ref(), Some(&command));
-    assert!(request(&mut panel, Intent::Reveal, occurrence(2)).is_none());
-    request(&mut panel, Intent::Refresh, [0; 16]).ok_or("refresh")?;
-    assert!(apply_result(
-        &mut panel,
-        &response(
-            161,
-            CommandStatus::Accepted,
-            wire(wheel::encode_wheel_reply(&wheel))?,
-            &wheel,
-            &atelier
-        )?
-    ));
-    assert_eq!(panel.retry.as_ref(), Some(&command));
-    let retry = request(&mut panel, Intent::Retry, occurrence(99)).ok_or("retry")?;
-    assert_eq!(retry, command);
-    assert!(apply_result(
-        &mut panel,
-        &response(
-            424,
-            CommandStatus::DuplicateReplay,
-            wire(atelier::encode_reply(&atelier))?,
-            &wheel,
-            &atelier
-        )?
-    ));
-    assert!(panel.retry.is_none());
-    assert!(panel.ready());
-    Ok(())
-}
+include!("state_uncertain_outcome_retains_exact_request_across_refresh_and_retry_1.rs");
 
 #[test]
 fn panel_displays_server_quotes_and_the_matching_modifier_grade() {
