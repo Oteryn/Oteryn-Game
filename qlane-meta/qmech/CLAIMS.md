@@ -8,3 +8,4 @@
 | mechanic | lane tag | migration numbers | quests it unblocks | state |
 |---|---|---|---|---|
 | Fenced live-player quest predicate for selected carried USE | questpc8 | none planned; own range remains 1300–1309 | The Colours of Magic | CLAIMED |
+| Atomic multiple independent Item reward outputs in one once-only quest receipt (no invented reward container) | qready2 | 1440 reserved; retain own range 1440–1449 | The Rookie Guard Quest; Treasure Hunt Quest (reward-output steps only; other reported blockers remain) | CLAIMED |
