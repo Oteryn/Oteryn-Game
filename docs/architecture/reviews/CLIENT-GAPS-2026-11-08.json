@@ -1,0 +1,1514 @@
+[
+ {
+  "id": "T002",
+  "src": "TIBAUD-1",
+  "area": "Login",
+  "feature": "Połączenie, re-entry i logout",
+  "status": "PARTIAL",
+  "gap": "Obsługa sesji jest; brak pełnego zestawu okien kolejki i ponawiania jak w referencji.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T003",
+  "src": "TIBAUD-1",
+  "area": "Login",
+  "feature": "Pozycja kolejki i odliczanie",
+  "status": "MISSING",
+  "gap": "Brak ekranu kolejki i ponownej próby po jej odliczeniu.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T004",
+  "src": "TIBAUD-1",
+  "area": "Login",
+  "feature": "News i kalendarz zdarzeń",
+  "status": "PARTIAL",
+  "gap": "Raid schedule i world events są; brak news feed oraz kalendarza z opisami wydarzeń.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T005",
+  "src": "TIBAUD-1",
+  "area": "Login",
+  "feature": "Launcher, wersja, kontrola/aktualizacja pakietów",
+  "status": "PARTIAL",
+  "gap": "Launcher i wersja są; brak dowodu równoważnego UI aktualizacji/naprawy pakietów.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T010",
+  "src": "TIBAUD-1",
+  "area": "Game window",
+  "feature": "HUD i sidebar: dock/show/hide/order/layout",
+  "status": "PARTIAL",
+  "gap": "Osobne okna Win32 zamiast pełnego dokowania i zapisu rozmiarów/kolejności paneli.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T011",
+  "src": "TIBAUD-1",
+  "area": "Game window",
+  "feature": "HP/mana, soul/stamina, conditions/rest",
+  "status": "PARTIAL",
+  "gap": "Dane i teksty są; brak pełnej konfigurowalnej prezentacji pasków/łuków/ikon.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T012",
+  "src": "TIBAUD-1",
+  "area": "Game window",
+  "feature": "Światło i efekty wizualne",
+  "status": "PARTIAL",
+  "gap": "Światło i zdarzenia są; brak całego zestawu widocznych efektów i konfiguracji referencji.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T015",
+  "src": "TIBAUD-1",
+  "area": "Battle list",
+  "feature": "Wiele list, sort/filter, rename",
+  "status": "PARTIAL",
+  "gap": "Jedna lista; brak zarządzania wieloma listami, filtrowania i ich nazw.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T017",
+  "src": "TIBAUD-1",
+  "area": "PvP",
+  "feature": "Unjustified points i skull timer",
+  "status": "PARTIAL",
+  "gap": "Są stany PvP/warunki; brak pełnego Unjustified Points widget.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T022",
+  "src": "TIBAUD-1",
+  "area": "Chat",
+  "feature": "Tabbed console, chat on/off i filtry",
+  "status": "PARTIAL",
+  "gap": "Transport jest; brak pełnej konsoli z niezależnymi filtrami i kontekstami chat-on/off.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T023",
+  "src": "TIBAUD-1",
+  "area": "Chat",
+  "feature": "Save / append channel log",
+  "status": "MISSING",
+  "gap": "Brak zapisu i dopisywania treści kanału do pliku.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T024",
+  "src": "TIBAUD-1",
+  "area": "Chat",
+  "feature": "Ignore / whitelist / blacklist",
+  "status": "MISSING",
+  "gap": "Brak dedykowanych list komunikacji i wyjątków.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T026",
+  "src": "TIBAUD-1",
+  "area": "Social",
+  "feature": "Friends, main character, zaproszenia",
+  "status": "PARTIAL",
+  "gap": "Są zgody/status VIP; brak pełnego kontowego Friends i main character.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T027",
+  "src": "TIBAUD-1",
+  "area": "Social",
+  "feature": "Badges: widoczność i filtry",
+  "status": "PARTIAL",
+  "gap": "Odczyt jest; brak edycji publicznej widoczności i filtrów locked/hidden/public.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T029",
+  "src": "TIBAUD-1",
+  "area": "Party",
+  "feature": "Team Finder assemble/join",
+  "status": "PARTIAL",
+  "gap": "Ogłoszenia i operacje członka są; brak pełnej kompozycji Social, filtrów i listy zespołów.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T031",
+  "src": "TIBAUD-1",
+  "area": "Skills",
+  "feature": "Umiejętności, progress, loyalty",
+  "status": "PARTIAL",
+  "gap": "Dane/progress są; brak pełnego Skills widget z belkami i konfiguracją statystyk.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T032",
+  "src": "TIBAUD-1",
+  "area": "Skills",
+  "feature": "Spell list / spellbook",
+  "status": "PARTIAL",
+  "gap": "Jest katalog po name/words; brak wszystkich filtrów vocation/level/premium/group i pełnej książki czarów.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T033",
+  "src": "TIBAUD-1",
+  "area": "Skills",
+  "feature": "Magical Archive i przypisanie czaru",
+  "status": "PARTIAL",
+  "gap": "Katalog i sloty są; brak osobnego pełnego archiwum i graficznego przypisywania.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T038",
+  "src": "TIBAUD-1",
+  "area": "Containers",
+  "feature": "Managed containers i loot destinations",
+  "status": "PARTIAL",
+  "gap": "Listy/destination/nearby loot są; brak pełnego menu managed containers i przenoszenia całej zawartości.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T040",
+  "src": "TIBAUD-1",
+  "area": "Hotkeys",
+  "feature": "Profile, chat on/off, primary/secondary",
+  "status": "PARTIAL",
+  "gap": "Jedna mapa bindingów; brak nazwanych presetów i dwóch kontekstów czatu.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T041",
+  "src": "TIBAUD-1",
+  "area": "Hotkeys",
+  "feature": "Object equip / smart equip",
+  "status": "PARTIAL",
+  "gap": "Komenda equip jest; brak pełnego selektora obiektów i opcji smart UI.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T042",
+  "src": "TIBAUD-1",
+  "area": "Action bars",
+  "feature": "Spell slots i cooldown",
+  "status": "PARTIAL",
+  "gap": "Cztery sloty w formularzu; brak pełnych rzędów i wskaźników cooldown/amount.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T043",
+  "src": "TIBAUD-1",
+  "area": "Action bars",
+  "feature": "Object/text/passive ability assignments",
+  "status": "PARTIAL",
+  "gap": "Brak spójnego przypisywania wszystkich typów akcji w barze.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T044",
+  "src": "TIBAUD-1",
+  "area": "Action bars",
+  "feature": "Bottom/left/right, lock, drag/drop, scroll",
+  "status": "PARTIAL",
+  "gap": "Brak dokowanych wielorzędowych barów, przenoszenia slotów i blokady układu.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T045",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Basic Options",
+  "status": "PARTIAL",
+  "gap": "Jeden mały Settings zamiast zbiorczej strony Gameplay/Interface/Graphics/Sound.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T046",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Controls / General: mouse preset, movement, rotation, keyboard delay",
+  "status": "PARTIAL",
+  "gap": "Rebinding jest; brak presetów myszy, rotation modifier i keyboard delay.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T047",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Controls / General Hotkeys",
+  "status": "PARTIAL",
+  "gap": "Brak równoważnej strony i presetów chat-on/chat-off.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T048",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Controls / Action Bar Hotkeys",
+  "status": "PARTIAL",
+  "gap": "Brak kompletnej konfiguracji wszystkich rzędów.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T049",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Controls / Custom Hotkeys",
+  "status": "PARTIAL",
+  "gap": "Brak pełnego edytora własnych object/text/passive actions i profili.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T050",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / General: language/scale, cursor i tooltips",
+  "status": "PARTIAL",
+  "gap": "Skala mapy i pole języka są; brak pełnej skali UI, kursora i tooltip controls.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T051",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / HUD: player/creature names, HP/mana, marks, NPC icons",
+  "status": "MISSING",
+  "gap": "Brak osobnych przełączników dla owner i pozostałych aktorów.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T052",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / HUD: arcs/distance/size/opacity",
+  "status": "MISSING",
+  "gap": "Brak konfigurowalnych łuków HP/mana.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T053",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / HUD: status bars/panel, style, skills/condition order",
+  "status": "PARTIAL",
+  "gap": "Dane statusu są; brak edytora stylu, pozycji i kolejności.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T054",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / Console: font/time/seconds/level",
+  "status": "MISSING",
+  "gap": "Brak kontrolek fontów, timestamps i poziomów.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T055",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / Console: info/event/status/private/store filters",
+  "status": "MISSING",
+  "gap": "Brak niezależnych filtrów i opcji private tab.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T056",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / Game Window: own/other spells, text, loot messages",
+  "status": "PARTIAL",
+  "gap": "Zdarzenia są; brak przełączników według źródła i klasy tekstu.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T057",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / Game Window: target/PvP frame, banner, loot highlight",
+  "status": "PARTIAL",
+  "gap": "Cel jest wybierany; brak konfiguracji ramek/banerów/kolorowania loot.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T058",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / Action Bars: rows/amounts/labels/tooltips/cooldowns/auto-insert spells",
+  "status": "PARTIAL",
+  "gap": "Brak pełnej strony ustawień barów.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T059",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Interface / Shortcuts: available/displayed, add/remove/order",
+  "status": "PARTIAL",
+  "gap": "Rejestr akcji i visible_panels są; brak selektora i ustalania kolejności przycisków.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T060",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Graphics: engine, AA, fullscreen, VSync, integral scaling",
+  "status": "MISSING",
+  "gap": "Brak strony konfiguracji obsługiwanych parametrów renderera/okna.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T061",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Graphics: foreground/background FPS i FPS/latency indicator",
+  "status": "MISSING",
+  "gap": "Brak równoważnych kontrolek limitów i wskaźników w Settings.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T062",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Graphics / Effects: ambient/separator/indoor/cloud attenuation",
+  "status": "PARTIAL",
+  "gap": "Światło jest; brak grupy ambient/separator/attenuation.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T063",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Graphics / Effects: own/other/creature/boss-area opacity",
+  "status": "MISSING",
+  "gap": "Brak ustawień opacity według źródła efektu.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T064",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Sound: master/mute/device/music/ambient/items/events/UI",
+  "status": "PARTIAL",
+  "gap": "Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T065",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Sound / Battle Sounds: own/others/creatures, attack/heal/support",
+  "status": "PARTIAL",
+  "gap": "Playback istnieje; brak suwaków i filtrów walki.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T066",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Sound / UI Sounds: interactions/party/VIP/chat channels",
+  "status": "MISSING",
+  "gap": "Brak filtrów dźwięków UI, party, VIP i kanałów.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T067",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Miscellaneous: confirmations, stay logged in, quick login",
+  "status": "PARTIAL",
+  "gap": "Pojedyncze confirmation istnieją; brak wspólnej strony sesji/potwierdzeń.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T068",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Miscellaneous: optimise connection stability",
+  "status": "MISSING",
+  "gap": "Brak ustawienia optymalizacji połączenia i jego konsumenta w panelu Settings.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T069",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Miscellaneous / Gameplay: inspect/chase cancel/nearby loot scheme",
+  "status": "PARTIAL",
+  "gap": "Inspect/loot/walk są osobno; brak pełnej strony i chase cancel/mouse loot controls.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T070",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Miscellaneous / Screenshots: folder, game-only i manual capture",
+  "status": "MISSING",
+  "gap": "Brak systemu zrzutów i strony wyboru katalogu/zakresu.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T071",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Miscellaneous / Screenshots: backlog i event triggers",
+  "status": "MISSING",
+  "gap": "Brak bufora wstecznego i automatycznych screenshotów zdarzeń.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T072",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Miscellaneous / Help: FAQ/manual/client help/reports",
+  "status": "PARTIAL",
+  "gap": "Raportowanie jest osobno; brak kompletnej strony pomocy/nawigacji.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T073",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Help: settings import/export/backup/reset/defaults",
+  "status": "PARTIAL",
+  "gap": "Jest zapis i walidacja preferencji; brak UI import/export, backup i pełnego reset/defaults.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T074",
+  "src": "TIBAUD-1",
+  "area": "Options",
+  "feature": "Help: minimap import/export",
+  "status": "MISSING",
+  "gap": "Brak narzędzia wymiany trwałych map/markerów.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T076",
+  "src": "TIBAUD-1",
+  "area": "Minimap",
+  "feature": "Exploration/markers/labels, floor/zoom/pan",
+  "status": "PARTIAL",
+  "gap": "Bieżący server window zamiast pełnej trwałej mapy i edytora markerów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T077",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia",
+  "feature": "Wspólne okno i nawigacja",
+  "status": "PARTIAL",
+  "gap": "Fasada i osobne panele nie tworzą zintegrowanego CyclopediaDialog.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T078",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia",
+  "feature": "Items: kategorie/search/statystyki/źródła",
+  "status": "PARTIAL",
+  "gap": "Inspect/catalogue/market są; brak kompletnej encyklopedii Items i jej filtrów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T079",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia",
+  "feature": "Map: areas/subareas/passages/PoI/NPC",
+  "status": "PARTIAL",
+  "gap": "Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T080",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia",
+  "feature": "Bestiary: katalog/filter/combat/loot",
+  "status": "PARTIAL",
+  "gap": "Są kills/stage/thresholds; brak pełnego katalogu, ilustracji i danych resistance/loot.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T081",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia",
+  "feature": "Charms: points/unlock/assign/remove/reset",
+  "status": "PARTIAL",
+  "gap": "Operacje są; wybór wymaga indeksów, brak pełnego selektora i opisów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T082",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia",
+  "feature": "Bosstiary: kategorie/points/progress",
+  "status": "PARTIAL",
+  "gap": "Jest postęp i boss key; brak galerii, filtrów kategorii i pełnej prezentacji etapów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T083",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia",
+  "feature": "Boss Slots: equip/remove/bonus",
+  "status": "PARTIAL",
+  "gap": "Komendy są; brak pełnego selektora bossów i prezentacji bonusów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T084",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia",
+  "feature": "Houses: browse/details/auction/map",
+  "status": "PARTIAL",
+  "gap": "Są wire/state i osobny transfer; house/controller.rs jest montowany tylko w teście, bez play.json i produkcyjnego okna Houses/mapy.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T085",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia",
+  "feature": "Analytics selector",
+  "status": "PARTIAL",
+  "gap": "Jeden panel zbiorczy zamiast selektora i osobnych narzędzi.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T086",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Overview / General Stats",
+  "status": "PARTIAL",
+  "gap": "Brak pełnego wizualnego overview i układu statystyk.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T087",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Offence / źródła i spell augments",
+  "status": "PARTIAL",
+  "gap": "Tekstowy odczyt; brak pełnego układu i interaktywnych opisów źródeł.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T088",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Defence / mitigation/resistance",
+  "status": "PARTIAL",
+  "gap": "Brak pełnej tabeli/układu i interaktywnych szczegółów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T089",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Misc Stats / skills/stamina",
+  "status": "PARTIAL",
+  "gap": "Dane tekstowe; brak pełnej prezentacji i pasków.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T090",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Recent Deaths",
+  "status": "PARTIAL",
+  "gap": "Stronicowanie jest; brak pełnej tabeli szczegółów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T091",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Recent PvP Kills / Battle Results",
+  "status": "PARTIAL",
+  "gap": "Brak pełnej tabeli i filtrów rodzajów zabójstw.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T092",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Achievements",
+  "status": "PARTIAL",
+  "gap": "Brak pełnego sort/filter regular/secret.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T093",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Appearances / outfits/mounts/familiars",
+  "status": "PARTIAL",
+  "gap": "Tekstowy odczyt; brak galerii wyglądów/mountów/familiarów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T094",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Store Summary / services/hirelings",
+  "status": "PARTIAL",
+  "gap": "Brak pełnego wizualnego zestawienia usług.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T095",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Item Summary / inventory/depot/stash/inboxes",
+  "status": "PARTIAL",
+  "gap": "Jest Inspection/item summary; brak grid/list/filter wszystkich lokacji.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T096",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Titles: unlock/select/filter",
+  "status": "PARTIAL",
+  "gap": "Operacje istnieją; brak pełnego selektora i filtrów tytułów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T097",
+  "src": "TIBAUD-1",
+  "area": "Cyclopedia / Character",
+  "feature": "Badges / cudza postać / inspection",
+  "status": "PARTIAL",
+  "gap": "Odczyt/zgody są; brak spójnego pełnego profilu i zakładki badges.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T098",
+  "src": "TIBAUD-1",
+  "area": "Trackers",
+  "feature": "Bestiary tracker",
+  "status": "PARTIAL",
+  "gap": "Add/remove/read po creature key; brak pełnego widżetu sort/config.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T099",
+  "src": "TIBAUD-1",
+  "area": "Trackers",
+  "feature": "Bosstiary tracker",
+  "status": "PARTIAL",
+  "gap": "Wspólny edytor z checkbox Bosstiary; brak osobnego widżetu z konfiguracją.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T100",
+  "src": "TIBAUD-1",
+  "area": "Trackers",
+  "feature": "Boss cooldowns",
+  "status": "PARTIAL",
+  "gap": "Odczyt cooldowns w zbiorczym formularzu; brak samodzielnego widget.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T101",
+  "src": "TIBAUD-1",
+  "area": "Trackers",
+  "feature": "Imbuement remaining time",
+  "status": "PARTIAL",
+  "gap": "Stan imbuement/timed items jest; brak dedykowanego trackera wyposażenia i alertów.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T102",
+  "src": "TIBAUD-1",
+  "area": "Analytics",
+  "feature": "XP Analyser",
+  "status": "PARTIAL",
+  "gap": "Brak XP/h, estymacji do level, wykresów i celu; są raw/gained XP.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T103",
+  "src": "TIBAUD-1",
+  "area": "Analytics",
+  "feature": "Loot Analyser",
+  "status": "PARTIAL",
+  "gap": "Brak rozbicia per item, wyceny, rate/h i graph; są sumy loot/gold.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T104",
+  "src": "TIBAUD-1",
+  "area": "Analytics",
+  "feature": "Supply Analyser",
+  "status": "PARTIAL",
+  "gap": "Brak listy zużytych itemów, cen, rate/h i graph; jest supplies total.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T105",
+  "src": "TIBAUD-1",
+  "area": "Analytics",
+  "feature": "Impact Analyser",
+  "status": "PARTIAL",
+  "gap": "Brak źródeł, DPS/HPS i gauge/graph; są damage/healing totals.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T106",
+  "src": "TIBAUD-1",
+  "area": "Analytics",
+  "feature": "Input Analyser",
+  "status": "PARTIAL",
+  "gap": "Brak typów/źródeł obrażeń, tempa i wykresów; jest received total.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T107",
+  "src": "TIBAUD-1",
+  "area": "Analytics",
+  "feature": "Hunting Session Analyser",
+  "status": "PARTIAL",
+  "gap": "Brak zegara, XP/h, profit/balance, kills/loot breakdown i save/export sesji.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T108",
+  "src": "TIBAUD-1",
+  "area": "Analytics",
+  "feature": "Party Hunt Analyser",
+  "status": "PARTIAL",
+  "gap": "Brak tabeli członków i rozliczenia loot/supplies/cost split.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T109",
+  "src": "TIBAUD-1",
+  "area": "Analytics",
+  "feature": "Loot Tracker",
+  "status": "PARTIAL",
+  "gap": "Brak listy śledzonych itemów i historii dropów/config.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T110",
+  "src": "TIBAUD-1",
+  "area": "Analytics",
+  "feature": "Kill / Hunting Task Tracker",
+  "status": "PARTIAL",
+  "gap": "Brak samodzielnego trackera; postęp pozostaje w Task Board.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T113",
+  "src": "TIBAUD-1",
+  "area": "Hunting tasks",
+  "feature": "Bounty, rewards, shop i talisman",
+  "status": "PARTIAL",
+  "gap": "Główne operacje są; brak pełnej prezentacji sklepu/drzewa ulepszeń i odbioru wszystkich nagród jak w referencji.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T114",
+  "src": "TIBAUD-1",
+  "area": "Hunting tasks",
+  "feature": "Soul Seals fight dialog",
+  "status": "PARTIAL",
+  "gap": "Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T115",
+  "src": "TIBAUD-1",
+  "area": "Imbuing",
+  "feature": "Shrine: apply/clear, sloty i materiały/szansa",
+  "status": "PARTIAL",
+  "gap": "Komendy/lista są; brak pełnego interaktywnego widoku slotów i szczegółów koszt/szansa.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T116",
+  "src": "TIBAUD-1",
+  "area": "Forge",
+  "feature": "Fusion/convergence i transfer/convergence",
+  "status": "PARTIAL",
+  "gap": "Numeric operation/item handles/occurrence zamiast selektora i podglądu przedmiotów.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T117",
+  "src": "TIBAUD-1",
+  "area": "Forge",
+  "feature": "Dust/slivers/cores/limit i historia",
+  "status": "PARTIAL",
+  "gap": "Odczyt/mutacje/historia są; brak pełnego confirmation/result dialog.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T118",
+  "src": "TIBAUD-1",
+  "area": "Exaltation",
+  "feature": "Tier effects i rezultat exaltation",
+  "status": "PARTIAL",
+  "gap": "Są wyniki forge i item effects; brak pełnej prezentacji tier bonuses i wyniku.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T119",
+  "src": "TIBAUD-1",
+  "area": "Wheel",
+  "feature": "Punkty, slots/perks i reset",
+  "status": "PARTIAL",
+  "gap": "Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T120",
+  "src": "TIBAUD-1",
+  "area": "Wheel",
+  "feature": "Presets i copy/import code/URL",
+  "status": "PARTIAL",
+  "gap": "Save allocation jest; brak nazwanych presetów i wymiany buildów code/URL.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T121",
+  "src": "TIBAUD-1",
+  "area": "Gems",
+  "feature": "Reveal/socket/unsocket/dismantle/enhance",
+  "status": "PARTIAL",
+  "gap": "Komendy/selektory są; brak kompletnej wizualnej prezentacji gem/mod i atelier.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T123",
+  "src": "TIBAUD-1",
+  "area": "Proficiency",
+  "feature": "Weapon perks/rank i shape/reshape",
+  "status": "PARTIAL",
+  "gap": "Operacje/katalog są; ręczne id/perk index/slot/revision zamiast pełnego wyboru wizualnego.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T124",
+  "src": "TIBAUD-1",
+  "area": "Market",
+  "feature": "Browse/buy/sell/create/cancel/history",
+  "status": "PARTIAL",
+  "gap": "Handel/anonimowość są; brak pełnego katalogu filtrów, statystyk cen i tabel UI.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T125",
+  "src": "TIBAUD-1",
+  "area": "Market",
+  "feature": "Coin market / transaction details",
+  "status": "PARTIAL",
+  "gap": "Zwykły market nie dowodzi pełnej historii/detail monet; to nie zakup real-money.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T127",
+  "src": "TIBAUD-1",
+  "area": "Depot",
+  "feature": "Search/details po item/tier, retrieve",
+  "status": "PARTIAL",
+  "gap": "Search/details są; brak pełnego widżetu wyników i widocznych działań retrieve-all.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T128",
+  "src": "TIBAUD-1",
+  "area": "Stash",
+  "feature": "Stow/withdraw/paging i search/filter/sort",
+  "status": "PARTIAL",
+  "gap": "Stow/withdraw/paging są; brak pełnej wyszukiwarki, filtrów trader/category i sort stock/name.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T130",
+  "src": "TIBAUD-1",
+  "area": "Store",
+  "feature": "Katalog/search/buy/confirmation/result",
+  "status": "PARTIAL",
+  "gap": "Zakup jest; brak pełnej nawigacji kategorii, sortów, preview i layoutu.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T131",
+  "src": "TIBAUD-1",
+  "area": "Store",
+  "feature": "Purchase history i coins history",
+  "status": "PARTIAL",
+  "gap": "Odczyt historii istnieje; brak pełnych filtrów, szczegółów i wszystkich rodzajów transakcji.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T132",
+  "src": "TIBAUD-1",
+  "area": "Store",
+  "feature": "Transfer/gift monet w grze",
+  "status": "PARTIAL",
+  "gap": "Catalogue/purchase nie dowodzi kompletnego gift recipient/amount/confirm workflow.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T134",
+  "src": "TIBAUD-1",
+  "area": "House",
+  "feature": "Guest/subowner/door ACL, bid/leave/notice",
+  "status": "PARTIAL",
+  "gap": "Controller i wire są; brak play.json i produkcyjnego wywołania controller::submit (montaż tylko apps/client/tests/gap_house.rs:21).",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T135",
+  "src": "TIBAUD-1",
+  "area": "House",
+  "feature": "Transfer/move-out/furniture wrapping",
+  "status": "PARTIAL",
+  "gap": "Operacje są; brak pełnego wyboru i wszystkich potwierdzeń referencji.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T136",
+  "src": "TIBAUD-1",
+  "area": "House",
+  "feature": "Podium: outfit/mount/creature/item",
+  "status": "PARTIAL",
+  "gap": "Set/projection są; brak preview i kompletu przełączników creature podium.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T137",
+  "src": "TIBAUD-1",
+  "area": "House",
+  "feature": "Hireling jobs/name/sex/outfit config",
+  "status": "PARTIAL",
+  "gap": "Banker/management są; brak jednolitego pełnego okna konfiguracji/podglądu.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T139",
+  "src": "TIBAUD-1",
+  "area": "NPC",
+  "feature": "Buy/sell/amount/backpack/capacity/filters",
+  "status": "PARTIAL",
+  "gap": "Sklep istnieje; brak pełnej listy opcji ignore capacity/equipped/backpack i prezentacji.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T140",
+  "src": "TIBAUD-1",
+  "area": "Training",
+  "feature": "Offline / exercise / multi-character dialog",
+  "status": "PARTIAL",
+  "gap": "Komendy offline/exercise są; brak pełnego multi-character wyboru treningu.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "T142",
+  "src": "TIBAUD-1",
+  "area": "Quest",
+  "feature": "Tracker auto-add/remove i filters",
+  "status": "PARTIAL",
+  "gap": "Track quest jest; brak pełnego osobnego trackera, auto-reguł i hide/completed filters.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T143",
+  "src": "TIBAUD-1",
+  "area": "Highscores",
+  "feature": "Kategorie/world/vocation, paging/show-me",
+  "status": "PARTIAL",
+  "gap": "Są category/vocation/refresh/previous/next; brak world selector i show-me; BattlEye wykluczone.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T144",
+  "src": "TIBAUD-1",
+  "area": "Rewards",
+  "feature": "Daily wall/streak/jokers/claim/pick items",
+  "status": "PARTIAL",
+  "gap": "30-day wall/claim są; brak pełnego kalendarza, historii i pick-items dialog.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T145",
+  "src": "TIBAUD-1",
+  "area": "Rewards",
+  "feature": "Returner reward",
+  "status": "MISSING",
+  "gap": "Brak dedykowanego przepływu i notyfikacji nagrody powrotnej.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T147",
+  "src": "TIBAUD-1",
+  "area": "Rewards",
+  "feature": "Boosted creature/boss i daily boost",
+  "status": "PARTIAL",
+  "gap": "Status/komendy są; brak pełnego daily spotlight z prezentacją boosted creature/boss.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T148",
+  "src": "TIBAUD-1",
+  "area": "Achievements",
+  "feature": "Account list/points/notices",
+  "status": "PARTIAL",
+  "gap": "Odczyt/notices są; brak pełnego filter/sort regular/secret i wizualnej listy.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T149",
+  "src": "TIBAUD-1",
+  "area": "Appearance",
+  "feature": "Outfits/mounts/addons/colors",
+  "status": "PARTIAL",
+  "gap": "Apply przez klucze/mask/colors/revision; brak galerii i preview.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T150",
+  "src": "TIBAUD-1",
+  "area": "Appearance",
+  "feature": "Outfit Memorial golden/token outfits",
+  "status": "MISSING",
+  "gap": "Brak zakładek token exchange i preview memorial outfits.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T151",
+  "src": "TIBAUD-1",
+  "area": "Support",
+  "feature": "Bug report map/technical/typo/other",
+  "status": "PARTIAL",
+  "gap": "Komenda bug i pozycja są; brak pełnego prowadzenia po kategoriach/diagnostyce.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T152",
+  "src": "TIBAUD-1",
+  "area": "Support",
+  "feature": "Violation name/statement/bot/reasons",
+  "status": "PARTIAL",
+  "gap": "Komenda jest; brak pełnego wyboru powodów/examples/translation/confirmation.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T153",
+  "src": "TIBAUD-1",
+  "area": "Support",
+  "feature": "Crash report i zgoda",
+  "status": "MISSING",
+  "gap": "Brak lokalnego workflow raportu awarii; nie wymaga kontaktu z CipSoft.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T154",
+  "src": "TIBAUD-1",
+  "area": "Support",
+  "feature": "About/version i survey invitation",
+  "status": "PARTIAL",
+  "gap": "Jest wersja; brak pełnego About i własnego workflow ankiety/zgody.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T155",
+  "src": "TIBAUD-1",
+  "area": "Tutorial",
+  "feature": "Hints/markers/mouse trail i server-save notice",
+  "status": "PARTIAL",
+  "gap": "Notice panel jest; brak kontekstowego overlay, markerów i mouse trail.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T156",
+  "src": "TIBAUD-1",
+  "area": "Tutorial",
+  "feature": "Player Guide / compendium / recommendations",
+  "status": "MISSING",
+  "gap": "Brak Player Guide i zakładek zaleceń w grze.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T158",
+  "src": "TIBAUD-1",
+  "area": "Modal dialogs",
+  "feature": "Amount/text/edit/confirm/dont-show-again",
+  "status": "PARTIAL",
+  "gap": "Są count confirmation/formularze; brak pełnego wspólnego zestawu text editor i trwałego dont-show-again.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T159",
+  "src": "TIBAUD-1",
+  "area": "Modal dialogs",
+  "feature": "Server choices/buttons i show-image",
+  "status": "MISSING",
+  "gap": "Brak ogólnego modal UI sterowanego serwerem; zwykłe okna mechanik go nie zastępują.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T160",
+  "src": "TIBAUD-1",
+  "area": "Modal dialogs",
+  "feature": "Blessings / death protection overview",
+  "status": "PARTIAL",
+  "gap": "Stan i death notices są; brak pełnego dedykowanego Blessings dialog.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "T162",
+  "src": "TIBAUD-1",
+  "area": "Game window",
+  "feature": "Monk harmony/serene/combo i HUD controls",
+  "status": "PARTIAL",
+  "gap": "Harmony/serene tekstowo są; brak pełnych pasków/combo i niezależnych ustawień HUD mnicha.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "T163",
+  "src": "TIBAUD-1",
+  "area": "Boss",
+  "feature": "Difficulty selection / preview/start/cancel",
+  "status": "PARTIAL",
+  "gap": "Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T164",
+  "src": "TIBAUD-1",
+  "area": "Boss",
+  "feature": "Hazard level i encounter entry",
+  "status": "PARTIAL",
+  "gap": "Query/select/entry są; brak pełnego wizualnego panelu zagrożenia i prowadzenia wejścia.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "T165",
+  "src": "TIBAUD-1",
+  "area": "Account",
+  "feature": "Premium status/features i expiry",
+  "status": "PARTIAL",
+  "gap": "Dane account/store są; brak dedykowanego Premium Panel z feature list i expiry; real-money zakup wykluczony.",
+  "lane": "cg_account"
+ },
+ {
+  "id": "T166",
+  "src": "TIBAUD-1",
+  "area": "Modal dialogs",
+  "feature": "Nagging / balancing / generic notices",
+  "status": "PARTIAL",
+  "gap": "Wiadomości serwera są; brak dedykowanych interaktywnych dialogów i dont-show-again.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "O002",
+  "src": "OTCAUD1108",
+  "area": "Login",
+  "feature": "Kalendarz wydarzeń i ekran nowości",
+  "status": "PARTIAL",
+  "gap": "Brakuje przeglądanego miesiącami kalendarza zaplanowanych wydarzeń i ekranu nowości; dostępny jest tylko bieżący komunikat wydarzenia.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "O005",
+  "src": "OTCAUD1108",
+  "area": "Options",
+  "feature": "Lokalizacja interfejsu",
+  "status": "PARTIAL",
+  "gap": "Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O006",
+  "src": "OTCAUD1108",
+  "area": "Options",
+  "feature": "Opcje i ustawienia",
+  "status": "PARTIAL",
+  "gap": "Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O010",
+  "src": "OTCAUD1108",
+  "area": "Game window",
+  "feature": "Górne menu i przyciski okien",
+  "status": "PARTIAL",
+  "gap": "Brakuje wspólnego paska przycisków otwierających okna i zarządzającego ich stanem; Oteryn udostępnia okna przez skróty.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O011",
+  "src": "OTCAUD1108",
+  "area": "Action bars",
+  "feature": "Konfigurowalne paski akcji",
+  "status": "PARTIAL",
+  "gap": "Brakuje wielu konfigurowalnych pasków z akcjami przedmiotu/tekstu i układem slotów; natywny pasek obsługuje cztery przypisania czarów.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O012",
+  "src": "OTCAUD1108",
+  "area": "Analytics",
+  "feature": "Analizery polowania, XP, łupu, zapasów, obrażeń i drużyny",
+  "status": "PARTIAL",
+  "gap": "Brakuje osobnych analizatorów z wykresami/stawkami w czasie, party hunt i boss cooldown/drop tracker; istnieje jeden panel sum kill/XP/loot/supply/damage/heal.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "O014",
+  "src": "OTCAUD1108",
+  "area": "Battle list",
+  "feature": "Battle list i wybór celu",
+  "status": "PARTIAL",
+  "gap": "Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O015",
+  "src": "OTCAUD1108",
+  "area": "Cyclopedia / Character",
+  "feature": "Błogosławieństwa i ochrona po śmierci",
+  "status": "PARTIAL",
+  "gap": "Brakuje panelu prognozy kary XP/PvP i utraty ekwipunku przed śmiercią; dostępne są listy błogosławieństw i ich zużycia po śmierci.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "O017",
+  "src": "OTCAUD1108",
+  "area": "Tutorial",
+  "feature": "Kompendium: poradnik, aktualizacje i pomoc",
+  "status": "MISSING",
+  "gap": "Brakuje okna kompendium z kategoriami poradnika, aktualizacji, informacji o funkcjach i pomocy.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "O021",
+  "src": "OTCAUD1108",
+  "area": "Game window",
+  "feature": "Nazwy, zdrowie i ikony nad stworzeniami",
+  "status": "PARTIAL",
+  "gap": "Brakuje pełnego zestawu pasków zdrowia i ikon party/skull nad postacią w widoku świata; potwierdzone tarcze/czaszki są prezentowane w osobnym panelu.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O022",
+  "src": "OTCAUD1108",
+  "area": "Cyclopedia",
+  "feature": "Cyklopedia: nawigacja między działami",
+  "status": "PARTIAL",
+  "gap": "Brakuje wspólnego okna Cyklopedii łączącego działy; Oteryn otwiera oddzielne formularze postaci, bestiariusza, mapy i inspekcji.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "O025",
+  "src": "OTCAUD1108",
+  "area": "Game window",
+  "feature": "Okręgi HP/MP i status mnicha",
+  "status": "PARTIAL",
+  "gap": "Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O028",
+  "src": "OTCAUD1108",
+  "area": "Hotkeys",
+  "feature": "Skróty klawiszowe i akcje przedmiotów",
+  "status": "PARTIAL",
+  "gap": "Brakuje menedżera dowolnych skrótów tekstowych i użycia przedmiotów na self/target/cursor; istnieją przypisania akcji klienta, czarów i formularz equip.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O030",
+  "src": "OTCAUD1108",
+  "area": "Trackers",
+  "feature": "Tracker czasu imbuementów wyposażenia",
+  "status": "PARTIAL",
+  "gap": "Brakuje stale widocznego trackera wszystkich wyposażonych imbuementów z filtrami czasu; czas jest pokazany tylko dla przedmiotu w oknie imbuingu.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "O033",
+  "src": "OTCAUD1108",
+  "area": "Game window",
+  "feature": "Układ interfejsu i okna boczne",
+  "status": "PARTIAL",
+  "gap": "Brakuje dokowanych, przeciąganych i zapamiętywanych miniokien w kolumnach interfejsu; istnieją osobne okna Win32 i przełączniki widoczności.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O035",
+  "src": "OTCAUD1108",
+  "area": "Mobile",
+  "feature": "Mobilny joystick ruchu",
+  "status": "MISSING",
+  "gap": "Brakuje ekranowego joysticka dotykowego do sterowania ruchem.",
+  "lane": "OWNER"
+ },
+ {
+  "id": "O036",
+  "src": "OTCAUD1108",
+  "area": "Analytics",
+  "feature": "Kalkulator podziału łupu drużyny",
+  "status": "MISSING",
+  "gap": "Brakuje kalkulatora importującego podsumowanie sesji i wyliczającego przelewy wyrównujące bilans członków drużyny.",
+  "lane": "cg_analytics"
+ },
+ {
+  "id": "O037",
+  "src": "OTCAUD1108",
+  "area": "Game window",
+  "feature": "Główny panel skrótów funkcji",
+  "status": "PARTIAL",
+  "gap": "Brakuje zwijanego głównego panelu ikon funkcji gry z utrwalonym układem; funkcje są otwierane skrótami.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O039",
+  "src": "OTCAUD1108",
+  "area": "Minimap",
+  "feature": "Minimapa i nawigacja",
+  "status": "PARTIAL",
+  "gap": "Brakuje trwałej mapy odkrytych terenów, edytowanych znaczników, przewijania i zmiany pięter/zoomu minimapy; nakładka pokazuje bieżące okno świata.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "O040",
+  "src": "OTCAUD1108",
+  "area": "Modal dialogs",
+  "feature": "Ogólne dialogi modalne serwera",
+  "status": "MISSING",
+  "gap": "Brakuje ogólnego handlera dialogu z identyfikatorem, listą wyborów i przyciskami oraz odpowiedzią wyboru do serwera.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "O041",
+  "src": "OTCAUD1108",
+  "area": "Game window",
+  "feature": "Banery i powiadomienia gry",
+  "status": "PARTIAL",
+  "gap": "Brakuje ogólnego systemu konfigurowalnych banerów/okienek zdarzeń; dostępne są komunikaty samouczka i HUD.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "O043",
+  "src": "OTCAUD1108",
+  "area": "Appearance",
+  "feature": "Wybór stroju, dodatków i kolorów",
+  "status": "PARTIAL",
+  "gap": "Brakuje wizualnego podglądu stroju i selektorów palety/addonów; obecny formularz wymaga klucza stroju, maski dodatków i czterech indeksów kolorów.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "O050",
+  "src": "OTCAUD1108",
+  "area": "Quest",
+  "feature": "Dziennik zadań i śledzenie",
+  "status": "PARTIAL",
+  "gap": "Brakuje wyszukiwania i sortowania dziennika; istnieją wybór zadania/misji, opis i przełączanie śledzenia.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "O056",
+  "src": "OTCAUD1108",
+  "area": "Mobile",
+  "feature": "Mobilny pasek skrótów",
+  "status": "MISSING",
+  "gap": "Brakuje ekranowego paska mobilnych skrótów dotykowych wybierających tryb attack/look/follow/use.",
+  "lane": "OWNER"
+ },
+ {
+  "id": "O059",
+  "src": "OTCAUD1108",
+  "area": "Skills",
+  "feature": "Lista czarów i wyszukiwanie",
+  "status": "PARTIAL",
+  "gap": "Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O066",
+  "src": "OTCAUD1108",
+  "area": "PvP",
+  "feature": "Unjustified points i limity fragów",
+  "status": "PARTIAL",
+  "gap": "Brakuje liczników dziennych/tygodniowych/miesięcznych fragów, czasu czaszki i otwartych sytuacji PvP; obecny panel pokazuje tylko tarcze i czaszki.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "O071",
+  "src": "OTCAUD1108",
+  "area": "Support",
+  "feature": "Zrzuty ekranu i automatyczne wyzwalacze",
+  "status": "MISSING",
+  "gap": "Brakuje zapisu zrzutu ekranu, wyboru zakresu przechwytywania i automatycznych wyzwalaczy zdarzeń; same nazwy preferencji nie mają implementacji.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "O072",
+  "src": "OTCAUD1108",
+  "area": "Cyclopedia",
+  "feature": "Cyklopedia: bestiariusz i charmy",
+  "status": "PARTIAL",
+  "gap": "Brakuje przeglądarki kategorii i kart potworów ze statystykami, odpornościami i łupem; formularz pokazuje indeksy ras, zabicia i progi.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "O074",
+  "src": "OTCAUD1108",
+  "area": "Boss",
+  "feature": "Cyklopedia: bosstiariusz",
+  "status": "PARTIAL",
+  "gap": "Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "O077",
+  "src": "OTCAUD1108",
+  "area": "Cyclopedia",
+  "feature": "Cyklopedia: katalog przedmiotów",
+  "status": "PARTIAL",
+  "gap": "Brakuje katalogu przedmiotów z kategoriami i wyszukiwaniem oraz powiązanych ofert/dropów; istnieje inspekcja wybranego przedmiotu i osobny rynek.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "O078",
+  "src": "OTCAUD1108",
+  "area": "Cyclopedia",
+  "feature": "Cyklopedia: mapa i odkrywanie",
+  "status": "PARTIAL",
+  "gap": "Brakuje graficznej mapy Cyklopedii z warstwami, regionami i filtrami; formularz pokazuje tekstowy stan odkrywania oraz POI/donacji.",
+  "lane": "cg_cyclo"
+ },
+ {
+  "id": "O079",
+  "src": "OTCAUD1108",
+  "area": "House",
+  "feature": "Cyklopedia: katalog domów i aukcje",
+  "status": "PARTIAL",
+  "gap": "Brakuje podłączenia katalogu i aukcji domów do sesji oraz natywnego okna; kontroler 0049 i model odpowiedzi istnieją, ale nie są zamontowane w aplikacji.",
+  "lane": "cg_ui"
+ },
+ {
+  "id": "O080",
+  "src": "OTCAUD1108",
+  "area": "Skills",
+  "feature": "Cyklopedia: Magical Archive",
+  "status": "PARTIAL",
+  "gap": "Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci.",
+  "lane": "cg_options"
+ },
+ {
+  "id": "O083",
+  "src": "OTCAUD1108",
+  "area": "House",
+  "feature": "Edycja list gości, współwłaścicieli i drzwi",
+  "status": "PARTIAL",
+  "gap": "Brakuje natywnego edytora list domowych i podłączonej wymiany wyników HouseResult; istnieją jedynie kontroler i model ACL.",
+  "lane": "cg_ui"
+ }
+]

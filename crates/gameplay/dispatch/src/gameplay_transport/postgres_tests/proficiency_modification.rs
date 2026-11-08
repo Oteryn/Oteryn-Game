@@ -7,9 +7,9 @@ use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_proficiency::ProficiencyDefinitions;
 use crate::foundation::MovementLocalPosition;
-use crate::map::boot::tests::{floor_items, floor_pins, teleport_bundle};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue;
+use crate::map::boot::tests::{floor_items, floor_pins, teleport_bundle};
 use oteryn_gameplay_domain::domain::weapon_proficiency::PROFICIENCY_FIRST_MODIFICATION_LEVEL;
 use oteryn_protocol_oteryn::weapon_proficiency::{
     ModificationOperation, ModificationReply, ModificationRequest, ModificationResult,
@@ -33,8 +33,14 @@ fn proficiency_modification_spends_dust_burns_an_orb_and_clears() -> TestResult 
         .map_err(Into::into)
 }
 
-#[allow(clippy::too_many_lines)]
 fn scenario() -> TestResult {
+    scenario_with_state(false)
+}
+pub(super) fn state_scenario() -> TestResult {
+    scenario_with_state(true)
+}
+#[allow(clippy::too_many_lines)]
+fn scenario_with_state(project_state: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "proficiency_modification", false, false)
@@ -189,32 +195,79 @@ fn scenario() -> TestResult {
             .fetch_one(pool)
             .await
         };
-        let send = async |command_id, operation, expected_revision| -> TestResult<ModificationReply> {
-            // Each step stands in its own second of PROF1B-RL-03 (two occurrences a second).
-            owner
-                .states
-                .proficiencies
-                .lock()
-                .map_err(|_| "states")?
-                .entry(session)
-                .or_default()
-                .modification_cap = Default::default();
-            FreshAdmissionAuthority::weapon_proficiency_modify(
-                &owner,
-                actor,
-                command(command_id),
-                ModificationRequest {
-                    definition: sword,
-                    slot: 1,
-                    operation,
-                    expected_revision,
-                },
-            )
-            .await
-            .ok_or_else(|| "modification reply".into())
-        };
+        let send =
+            async |command_id, operation, expected_revision| -> TestResult<ModificationReply> {
+                // Each step stands in its own second of PROF1B-RL-03 (two occurrences a second).
+                owner
+                    .states
+                    .proficiencies
+                    .lock()
+                    .map_err(|_| "states")?
+                    .entry(session)
+                    .or_default()
+                    .modification_cap = Default::default();
+                FreshAdmissionAuthority::weapon_proficiency_modify(
+                    &owner,
+                    actor,
+                    command(command_id),
+                    ModificationRequest {
+                        definition: sword,
+                        slot: 1,
+                        operation,
+                        expected_revision,
+                    },
+                )
+                .await
+                .ok_or_else(|| "modification reply".into())
+            };
         let modify = async |command_id, operation| -> TestResult<ModificationReply> {
             send(command_id, operation, track_revision().await?).await
+        };
+
+        let projection = if project_state {
+            deps.runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    actor,
+                    session,
+                    crate::foundation::CharacterLease::new(
+                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                            .map_err(debug)?,
+                        fence.character_lease_generation,
+                    )
+                    .map_err(debug)?,
+                )
+                .map_err(debug)?;
+            let projected = super::weapon_proficiency_state::admission(admitted, fence)?;
+            assert!(
+                crate::gameplay_transport::battle_instinct_status::actor_is_current(
+                    &*deps.runtime.lock().await,
+                    projected,
+                )
+            );
+            Some(projected)
+        } else {
+            None
+        };
+        let observed_revision = if let Some(projected) = projection {
+            let before =
+                super::weapon_proficiency_state::observe(&owner, projected, sword.get()).await?;
+            assert_eq!(before.revision, track_revision().await?);
+            super::weapon_proficiency_state::advance_other_track(
+                &owner, actor, session, &catalogue, SWORD,
+            )
+            .await?;
+            let after =
+                super::weapon_proficiency_state::observe(&owner, projected, sword.get()).await?;
+            assert_eq!(
+                before.revision, after.revision,
+                "an unrelated root revision must not change track CAS"
+            );
+            super::weapon_proficiency_state::assert_fences(&owner, projected, sword.get()).await?;
+            Some(after.revision)
+        } else {
+            None
         };
 
         // PROF-EFFECT-0: the retained read carries the slot's row, and the command refreshed the
@@ -262,6 +315,68 @@ fn scenario() -> TestResult {
         assert_eq!((slot.level, slot.rank, slot.pending_offer), (0, 0, None));
         assert_eq!(dust().await?, 750);
         live_agrees(Some(0)).await?;
+        if let Some(projected) = projection {
+            let state =
+                super::weapon_proficiency_state::observe(&owner, projected, sword.get()).await?;
+            assert_eq!(state.slots[0].as_ref().map(|slot| slot.rank), Some(0));
+            let old = observed_revision.ok_or("initial state revision")?;
+            assert!(state.revision > old);
+            assert_eq!(
+                send(90, ModificationOperation::RankUp, old).await?.result,
+                ModificationResult::StaleRevision
+            );
+            assert_eq!(dust().await?, 750);
+            assert_eq!(
+                send(91, ModificationOperation::ReshapeOffer, state.revision)
+                    .await?
+                    .result,
+                ModificationResult::Accepted
+            );
+            let offered =
+                super::weapon_proficiency_state::observe(&owner, projected, sword.get()).await?;
+            let offers = &offered.slots[0].as_ref().ok_or("slot")?.offers;
+            assert_eq!(offers.len(), 3);
+            assert!(offers.iter().all(|label| !label.is_empty()));
+            assert_eq!(
+                send(
+                    92,
+                    ModificationOperation::ReshapeChoose { choice: Some(1) },
+                    offered.revision
+                )
+                .await?
+                .result,
+                ModificationResult::Accepted
+            );
+            let chosen =
+                super::weapon_proficiency_state::observe(&owner, projected, sword.get()).await?;
+            let chosen_slot = chosen.slots[0].as_ref().ok_or("chosen slot")?;
+            assert_eq!(chosen_slot.current, offers[1]);
+            assert!(chosen_slot.offers.is_empty());
+            assert_eq!(
+                send(93, ModificationOperation::RankUp, chosen.revision)
+                    .await?
+                    .result,
+                ModificationResult::Accepted
+            );
+            let ranked =
+                super::weapon_proficiency_state::observe(&owner, projected, sword.get()).await?;
+            assert_eq!(ranked.slots[0].as_ref().map(|slot| slot.rank), Some(1));
+            assert_eq!(ranked.revision, track_revision().await?);
+            assert_eq!(dust().await?, 375);
+            assert!(
+                super::proficiency_select_perk::connection(&owner, projected, async |client| {
+                    let wire =
+                        super::weapon_proficiency_state::wire_query(client, sword.get()).await?;
+                    assert_eq!(wire, ranked);
+                    Ok(())
+                })
+                .await?
+            );
+            eprintln!(
+                "weapon_proficiency_state: real SQL read, track-CAS, unrelated root write, stale refusal, reshape choices and wire executed"
+            );
+            return Ok(());
+        }
         // shaping-r2 admits the donor-evidenced 0→1 step and spends its 125 dust.
         let ranked_once = modify(11, ModificationOperation::RankUp).await?;
         assert_eq!(ranked_once.result, ModificationResult::Accepted);
@@ -299,7 +414,10 @@ fn scenario() -> TestResult {
 
         // CLEAR is free and frees the slot (TibiaWiki Updates/15.30.a30dad).
         let cleared = modify(14, ModificationOperation::Clear).await?;
-        assert_eq!((cleared.result, cleared.slot), (ModificationResult::Accepted, None));
+        assert_eq!(
+            (cleared.result, cleared.slot),
+            (ModificationResult::Accepted, None)
+        );
         // CLEAR refunds nothing: the 125 dust of the shaping-r2 RANK_UP above stays spent.
         assert_eq!(dust().await?, 625);
         live_agrees(None).await?;
@@ -316,7 +434,10 @@ fn scenario() -> TestResult {
             ModificationResult::Accepted
         );
         assert_eq!(burns().await?, 2);
-        assert_eq!(modify(17, ModificationOperation::Clear).await?.result, ModificationResult::Accepted);
+        assert_eq!(
+            modify(17, ModificationOperation::Clear).await?.result,
+            ModificationResult::Accepted
+        );
         assert_eq!(
             modify(18, ModificationOperation::Modify { level: 0 })
                 .await?

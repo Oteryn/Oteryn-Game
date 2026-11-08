@@ -10,6 +10,7 @@ use oteryn_client_runtime::{
 use std::num::NonZeroU32;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    State,
     Browse,
     NextPage,
     PreviousPage,
@@ -31,6 +32,41 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
     if p.pending {
         p.feedback = Some("Waiting for the server");
         return None;
+    }
+    if p.mutation_uncertain
+        && matches!(
+            intent,
+            Intent::SelectPerk
+                | Intent::Modify
+                | Intent::RankUp
+                | Intent::OrbRank
+                | Intent::ReshapeOffer
+                | Intent::ReshapeChoose
+                | Intent::DeclineOffer
+                | Intent::Clear
+        )
+    {
+        p.feedback = Some(
+            "The previous modification result was not decoded. Reconnect before changing proficiency again",
+        );
+        return None;
+    }
+    if intent == Intent::State {
+        if !p.state_selected || p.weapon == 0 {
+            p.feedback = Some("Shaping state is unavailable in this session");
+            return None;
+        }
+        p.shaping = None;
+        p.revision = 0;
+        p.pending = true;
+        p.command_kind = 732;
+        p.state_refresh_needed = false;
+        p.feedback = None;
+        return Some(FeatureCommand {
+            capability: 448,
+            kind: 732,
+            payload: p.weapon.to_be_bytes().to_vec(),
+        });
     }
     if matches!(
         intent,
@@ -96,7 +132,8 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
             },
             Intent::DeclineOffer => ModificationOperation::ReshapeChoose { choice: None },
             Intent::Clear => ModificationOperation::Clear,
-            Intent::SelectPerk
+            Intent::State
+            | Intent::SelectPerk
             | Intent::Catalogue
             | Intent::Browse
             | Intent::NextPage
@@ -130,8 +167,30 @@ pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult)
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
+        if matches!(p.command_kind,378..=380|392..=395) {
+            p.invalidate_observation();
+        }
         p.feedback = Some("The server refused the proficiency action");
         return false;
+    }
+    if p.command_kind == 732 {
+        let Some(state) =
+            oteryn_client_runtime::weapon_proficiency_state::State::decode(&result.payload)
+                .filter(|state| state.definition == p.weapon)
+        else {
+            p.feedback = Some("The server returned invalid shaping state");
+            return false;
+        };
+        p.revision = state.revision;
+        p.shaping = Some(state);
+        p.feedback = if p.mutation_uncertain {
+            Some(
+                "The previous modification result was not decoded. Reconnect before changing proficiency again",
+            )
+        } else {
+            None
+        };
+        return true;
     }
     if p.command_kind == 641 {
         match oteryn_client_runtime::weapon_proficiency::ProficiencyPage::decode(&result.payload) {
@@ -158,13 +217,33 @@ pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult)
         if page.offset != p.catalogue_offset {
             return false;
         }
+        if !page
+            .entries
+            .iter()
+            .any(|entry| entry.definition == p.weapon)
+        {
+            p.weapon = 0;
+            p.shaping = None;
+            p.revision = 0;
+            p.state_refresh_needed = false;
+        }
         p.catalogue = Some(page);
         p.feedback = None;
         return true;
     }
     let text = if p.command_kind == 378 {
-        SelectPerkReply::decode(&result.payload)
-            .map(|v| format!("Selection: {:?}; levels: {:?}", v.result, v.selections))
+        SelectPerkReply::decode(&result.payload).map(|v| {
+            if let Some(entry) = p.catalogue.as_mut().and_then(|page| {
+                page.entries
+                    .iter_mut()
+                    .find(|entry| entry.definition == p.weapon)
+            }) {
+                for (level, selection) in entry.levels.iter_mut().zip(&v.selections) {
+                    level.selected = *selection;
+                }
+            }
+            format!("Selection: {:?}; levels: {:?}", v.result, v.selections)
+        })
     } else {
         ModificationReply::decode(&result.payload)
             .map(|v| format!("Modification: {:?}; slot: {:?}", v.result, v.slot))
@@ -172,11 +251,22 @@ pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult)
     match text {
         Some(v) => {
             p.result = Some(v);
+            p.shaping = None;
+            p.revision = 0;
+            p.state_refresh_needed = p.state_selected;
             p.feedback = None;
             true
         }
         None => {
-            p.feedback = Some("The server returned an invalid proficiency reply");
+            if matches!(p.command_kind, 379 | 380 | 392..=395) {
+                p.mutation_uncertain = true;
+                p.invalidate_observation();
+                p.feedback = Some(
+                    "The modification result was not decoded. Reconnect before making another change",
+                );
+            } else {
+                p.feedback = Some("The server returned an invalid proficiency reply");
+            }
             false
         }
     }

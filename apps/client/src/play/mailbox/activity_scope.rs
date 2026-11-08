@@ -23,7 +23,7 @@ impl Mailbox {
         self.potion_durations.pending = Default::default();
         self.item_forge.pending = Default::default();
         self.store.pending = Default::default();
-        self.weapon_proficiency.pending = Default::default();
+        self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();
         self.wheel.pending = Default::default();
         self.exiva.pending = Default::default();
@@ -41,7 +41,7 @@ impl Mailbox {
         self.npc_shop.live.pending = false;
         self.dialogue.pending = false;
         self.prey.pending = Default::default();
-        self.imbue.pending = Default::default();
+        self.imbue.invalidate_item_scope();
         self.player_trade.pending = Default::default();
         self.player_trade.items.pending = false;
         self.vip.pending = Default::default();

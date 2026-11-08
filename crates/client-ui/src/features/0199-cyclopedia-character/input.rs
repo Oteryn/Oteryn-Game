@@ -27,7 +27,7 @@ pub fn set_target(p: &mut super::CyclopediaCharacterPanel, text: &str) -> bool {
         }
         Some(id)
     };
-    p.target = target;
+    p.change_target(target);
     p.offset = 0;
     p.result = None;
     p.feedback = None;

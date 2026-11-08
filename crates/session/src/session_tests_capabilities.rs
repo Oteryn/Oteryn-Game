@@ -206,9 +206,11 @@ fn derived_gated_routes_match_previous_table() {
         (382, &[664], &[]),
         (383, &[], &[]),
         (384, &[669], &[]),
+        (448, &[732], &[]),
         (207, &[402], &[]),
         (445, &[730], &[]),
         (446, &[], &[]),
+        (447, &[731], &[]),
         // CL25J: native feature adapters now use these existing gated wire routes.
         (151, &[177], &[]),
         (152, &[181, 668], &[]),
@@ -475,4 +477,16 @@ pub(super) fn admission_with(supported: &'static [u32]) -> Result<Admission<'sta
 fn gap_cl1_advertises_existing_character_tab_capability() {
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&199));
     assert!(gated_routes().any(|(id, commands, _)| id == 199 && commands.contains(&388)));
+}
+
+#[test]
+fn proficiency_state_is_advertised_and_uses_the_real_gated_command_route()
+-> Result<(), &'static str> {
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&448));
+    let route = gated_routes()
+        .find(|(capability, _, _)| *capability == 448)
+        .ok_or("missing proficiency state route")?;
+    assert_eq!(route.1, &[732]);
+    assert!(route.2.is_empty());
+    Ok(())
 }
