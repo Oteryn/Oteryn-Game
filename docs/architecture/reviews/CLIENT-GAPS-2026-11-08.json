@@ -24,10 +24,10 @@
   "src": "TIBAUD-1",
   "area": "Login",
   "feature": "News i kalendarz zdarzeń",
-  "status": "PARTIAL",
-  "gap": "Rzeczywisty caller HTTP/Gateway/TLS odbiera opcjonalny dokument ServerAccepted 21 i aktualizuje news/kalendarz; jest bezpieczny podgląd podczas gry. Pozostaje test i publikacja producenta pliku operatora po stronie serwera.",
+  "status": "DONE",
+  "gap": "Istniejący wspólny producent O002 przekazuje żywe news i przyszłe wydarzenia z opisami przez ServerAccepted 21 do kalendarza miesiąc/rok; pełny caller HTTP/Gateway/TLS i odczyt pliku operatora są przetestowane.",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/native_entry/tests/live_bulletin.rs:7 + live_operator_bulletin_crosses_gateway_tls_session_and_calendar_caller; Pozostaje: test i publikacja producenta pliku operatora na serwerze."
+  "evidence": "apps/client/src/native_entry/tests/live_bulletin.rs:7 + live_operator_bulletin_crosses_gateway_tls_session_and_calendar_caller; crates/gameplay/dispatch/src/gameplay_transport/connection/tests/admission.rs:321 + operator_publication_reloads_through_the_authenticated_connection_writer"
  },
  {
   "id": "T005",
