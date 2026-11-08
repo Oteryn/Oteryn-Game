@@ -506,11 +506,7 @@ mod window {
                 }
                 drop(mailbox);
                 if analytics {
-                    PlayLink {
-                        mailbox: shared.clone(),
-                        commands: commands.clone(),
-                    }
-                    .analyser_open();
+                    crate::play::feature_0010_analyser::view::open_shared(&shared, &commands);
                 }
                 std::thread::sleep(Duration::from_millis(25));
             }

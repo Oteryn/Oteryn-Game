@@ -194,3 +194,17 @@ impl PlayLink {
         refresh_tasks(&mut lock(&self.mailbox), &self.commands);
     }
 }
+
+/// Prepare a window without constructing a second session-owning PlayLink.
+#[cfg(any(windows, test))]
+pub(in crate::play) fn begin_shared_window(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+) -> bool {
+    if mailbox.analyser.open {
+        return false;
+    }
+    resolve_items(mailbox, commands);
+    mailbox.analyser.open = true;
+    true
+}

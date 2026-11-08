@@ -304,3 +304,33 @@ fn analyser_loot_tracking_controls_filter_real_confirmed_drops() {
 
 #[path = "tasks.rs"]
 mod task_tracker;
+
+#[test]
+fn auxiliary_analyser_launch_preserves_session_owner_and_existing_measurements() {
+    let (link, _incoming, outbox) = play_channel();
+    outbox.analyser_initialize(true);
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 1,
+        new_revision: 2,
+        value: vec![AnalyserFact::Kill { race: None }],
+    })]);
+    let handles = std::sync::Arc::strong_count(&link.mailbox);
+    assert!(crate::play::feature_0010_analyser::view::open_shared(
+        &link.mailbox,
+        &link.commands
+    ));
+    assert!(!crate::play::feature_0010_analyser::view::open_shared(
+        &link.mailbox,
+        &link.commands
+    ));
+    {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert!(!mailbox.cyclopedia_character_shutdown);
+    }
+    assert_eq!(std::sync::Arc::strong_count(&link.mailbox), handles);
+    assert_eq!(link.analyser_panel().kills, 1);
+    assert!(link.analyser_panel().open && link.analyser_panel().selected);
+    outbox.logged_out();
+    assert!(!link.analyser_panel().open);
+}
