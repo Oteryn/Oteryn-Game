@@ -50,3 +50,5 @@ approaches and house0. Both keep Current Premium admission, once-only visit
 flags, no teleport/items/XP and no whole-quest completion effect. Sources:
 https://tibia.fandom.com/index.php?curid=27120&oldid=748545
 https://tibia.fandom.com/index.php?curid=69447&oldid=1192599
+
+Koshei s1 counts four distinct chosen source-placement approaches,not four visits to one fragment. The pinned claims are in samples/chests/claims.json under canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_amulet_part1..4; sourcehttps://github.com/opentibiabr/canary/tree/04b83b51 . Each approach is Manhattan-adjacent on the same source floor and verified against retained B3. Native callbacks grant no fragment item or teleport; existing claim/assembly owners retain those steps. Current Premium and durablelevel40 remain required. The PGfixture reuses QENGINE's server positioning between disconnected floors;actual credits require nativeSTEP.

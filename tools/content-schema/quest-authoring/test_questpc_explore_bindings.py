@@ -21,6 +21,12 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_koshei_activation_contains_all_four_fragment_visits(self):
+        callbacks = [c for c in explore.callbacks(ROOT)
+                     if c['quest'] == 'oteryn:quest.koshei_the_deathless_quest']
+        self.assertEqual(len(callbacks), 4, 'all four Koshei visits are activated together')
+        self.assertEqual({c['storage'][1]['maximum'] for c in callbacks}, {3})
+
     def test_complete_koshei_fragment_set_has_four_distinct_native_visits(self):
         bindings = tuple(('oteryn:quest.koshei_the_deathless_quest', 's1',
                           'claim:canary:reward-claim/quest/u8_1/koshei_the_deathless/'

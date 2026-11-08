@@ -14,9 +14,10 @@
       "Alawar's Vault Quest",
       "Elvenbane Quest",
       "Edron Goblin Quest",
-      "Lion's Rock Quest"
+      "Lion's Rock Quest",
+      "Koshei the Deathless Quest"
     ],
-    "wired_explore_stages": 7,
+    "wired_explore_stages": 8,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -25,7 +26,8 @@
       "Elvenbane Quest",
       "Edron Goblin Quest",
       "Lion's Rock Quest"
-    ]
+    ],
+    "wired_native_visit_anchors": 11
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -56,9 +58,11 @@
     "entrance_batch_postgres": "PASS Elvenbane60.850052123s;EdronGoblin60.838902318s;LionsRock61.484863385s. Actual native STEP;Premium provider refusal/replay tested on both gated entries.",
     "fragment_planner": "RED incomplete-set error8.800s -> GREEN15Python tests10.636s;4Koshei native B3 approach tiles verified;missing/duplicate/foreign claims rejected;active JSON unchanged",
     "entrance_batch_pg_commands": "cargo test dispatch --lib m01b_elvenbane_;same compiled libtest binary then selected m01b_edron_goblin_ and m01b_lions_rock_ together:2passed122.32s",
-    "clippy_current": "RERUN PENDING after final2Premium PG cases;earlier strict2crate runPASS7m03s"
+    "clippy_current": "PASS quests+dispatch all-targets strict4m17s on seven-entry snapshot;Koshei PG source added afterwards",
+    "koshei_activation": "RED0of4active callbacks13.214s -> GREEN16Python tests17.186s;Rust profile5passed0.04s with all11callbacks",
+    "koshei_postgres": "PENDING:four-native-visit/level39refusal/level40fresh-credit/replay/revisit case building"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "7wired stages now PG-proven. Finish currentClippy;implement native4visit Koshei proof before activation;continue39routes/49stages. M01b PARTIAL."
+  "continuation": "Finish Koshei native PG proof;38routes/48stages still unwired.8wired,7PG-proven;M01b PARTIAL."
 }

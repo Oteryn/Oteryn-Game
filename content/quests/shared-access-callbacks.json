@@ -418,6 +418,230 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/koshei-the-deathless/s1/koshei_amulet_part1",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33195,
+          "y": 32458,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 408,
+        "native": {
+          "position": {
+            "x": 33195,
+            "y": 32458,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 408
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/277",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 40
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/koshei-the-deathless/s1/koshei_amulet_part2",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33304,
+          "y": 32277,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410,
+        "native": {
+          "position": {
+            "x": 33304,
+            "y": 32277,
+            "floor": -10
+          },
+          "ordinal": 0,
+          "appearance": 410
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/278",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 40
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/koshei-the-deathless/s1/koshei_amulet_part3",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33211,
+          "y": 32593,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231,
+        "native": {
+          "position": {
+            "x": 33211,
+            "y": 32593,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 231
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/279",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 40
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/koshei-the-deathless/s1/koshei_amulet_part4",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33054,
+          "y": 32468,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409,
+        "native": {
+          "position": {
+            "x": 33054,
+            "y": 32468,
+            "floor": -11
+          },
+          "ordinal": 0,
+          "appearance": 409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part4",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/280",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 40
+    },
+    {
       "key": "oteryn:quest-callback/m01b/lions-rock/s1/entry",
       "quest": "oteryn:quest.lions_rock",
       "trigger": "step_in",
