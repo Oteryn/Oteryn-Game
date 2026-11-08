@@ -1240,12 +1240,16 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     replace = summary.get("replace", {})
     rework = summary.get("edron", {})
     drafted = summary.get("draft", {})
+    from qready1_clock_landmarks import donor_delta
+
+    authored_clock_items = donor_delta(summary)
 
     def count(row: dict, key: str) -> int:
         return row.get(key, 0)
 
     return {
         "items": totals["items"]
+        - authored_clock_items
         - count(fill, "items_added")
         - count(replace, "items_added")
         - count(rework, "items_added")

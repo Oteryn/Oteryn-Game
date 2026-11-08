@@ -162,9 +162,15 @@ pub(super) async fn exercise(
             if callback.offerings.is_empty() { 0 } else { 12 }
         )
     );
-    assert_eq!(
-        use_command(owner, admitted, &first_target, 2 - offset).await?,
-        UseDisposition::Committed
+    // A new transport retains its sequence, not its retired response cache.
+    // SQL replay after reconnect is covered by qready1_world_clock_rewards.
+    let replay = use_command(owner, admitted, &first_target, 2 - offset).await;
+    assert!(
+        replay
+            .as_ref()
+            .err()
+            .is_some_and(|error| error.to_string().contains("CommandOutcomeExpired")),
+        "expired historical wire command must close the transport"
     );
     assert_eq!(
         snapshot(h, callback).await?,
