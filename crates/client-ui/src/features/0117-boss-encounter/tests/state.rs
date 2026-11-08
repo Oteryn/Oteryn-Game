@@ -359,3 +359,38 @@ fn primal_party_level_refusal_has_native_participant_feedback() {
         "a refusal cannot manufacture accepted boss state"
     );
 }
+
+#[test]
+fn primal_party_size_and_position_refusals_are_actionable_and_retryable() {
+    for (reason, message) in [
+        (
+            10,
+            "The party does not meet this encounter's size requirement",
+        ),
+        (11, "A party member is not on a required entry tile"),
+    ] {
+        let mut panel = BossEncounterPanel {
+            selected: true,
+            snapshot: Some(oteryn_client_runtime::boss_encounter::Snapshot::default()),
+            ..Default::default()
+        };
+        panel.fields[0] = "oteryn:boss.the_primal_menace".into();
+        let confirmed = panel.snapshot.clone();
+        assert!(request(&mut panel, Intent::Enter).is_some());
+        assert!(apply_result(
+            &mut panel,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Rejected,
+                payload: vec![8, 2, 32, reason],
+            }
+        ));
+        assert!(panel_text(&panel).contains(message));
+        assert_eq!(panel.snapshot, confirmed);
+        assert!(
+            request(&mut panel, Intent::Enter).is_some(),
+            "entry can be retried after fixing the party requirement"
+        );
+    }
+}

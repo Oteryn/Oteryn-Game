@@ -1245,3 +1245,7 @@ instead of showing the raw enum name. It does not infer a threshold or alter
 server admission. A rejected encoded reply is tested through the real client
 handler and panel projection, with pending cleared and no fabricated snapshot.
 No command, capability, migration, content input or generated registry changes.
+The same native presentation now explains server-provided `PartyCount` and
+`Position` refusals without guessing a roster size or coordinates. The encoded
+reply regression proves confirmed boss state is preserved and entry can be
+retried after either refusal; the existing Cooldown presentation is unchanged.
