@@ -19,3 +19,8 @@
 | Literal readable text on quest-reward root Items through the existing fenced mint owner (NPC/world bridge) | qready1 | none | Nomads Land Quest | RELEASED: questpc5 claimed first during push race; no code written |
 | NPC carried/bank payment composed atomically with amulet-piece hand-in and quest progress (reuse existing fee-burn owner) | QNPCFX | none planned; reserved 1310-1319 only | Koshei the Deathless Quest (paid amulet assembly step) | CLAIMED |
 | Source NPC quest teleport composed with fenced dialogue progress, admitted destination and command replay | PGSPEED | none planned; QMECH reserve 2220–2229 if needed | The Paradox Tower Quest (Riddler); In Service of Yalahar Quest (NPC teleport steps only; other blockers remain) | CLAIMED |
+# QMECH claims
+
+| mechanic | lane | migrations | quests it unblocks | state |
+|---|---|---|---|---|
+| Native authored RewardClaim placement/allocation admission through shared binder | engclaim | none; 1830–1839 reserved if required | Kormarak, Magic Sword, Mastermind Potion, Mystery of the Valley (engine prerequisite; exact native bindings remain) | IN PROGRESS |
