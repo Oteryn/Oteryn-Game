@@ -69,6 +69,14 @@ pub(super) async fn exercise(
     };
     assert_eq!((position.x, position.y, position.floor), (32640, 31437, 7));
     assert_eq!(
+        owner
+            .session_premium_gate(admitted.game_session_id)
+            .await
+            .premium_current(),
+        premium,
+        "drive the current entitlement refresh used by live admission"
+    );
+    assert_eq!(
         super::classic_quests::progress(owner, admitted, authority, TRACK).await?,
         0
     );

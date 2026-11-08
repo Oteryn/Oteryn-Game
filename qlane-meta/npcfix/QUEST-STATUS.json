@@ -92,5 +92,39 @@
     "fmt": "PASS",
     "merged_qmech": "a8c2bf20c",
     "clippy_seconds": 523.514
-  }
+  },
+  "mistrock_slice": {
+    "state": "PARTIAL_PG_REPLAY_PENDING",
+    "source_cell": [
+      32640,
+      31437,
+      7
+    ],
+    "scope": "Reuses existing Beregar native rules; publishes the missing contact and tests guarded progress and replay",
+    "red": {
+      "authoring": "0 != 1 published placements",
+      "compiler_seconds": 28.86,
+      "compiler_error": "M38 Mistrock source placement is not published"
+    },
+    "green": {
+      "authoring_tests": 11,
+      "authoring_seconds": 0.444,
+      "compiler_tests": 1,
+      "compiler_seconds": 29.89,
+      "pin_refresh_seconds": 64.08
+    },
+    "pg_cases": [
+      "npcfix_m38_mistrock_source_dialogue_commits_once_and_replays_postgres",
+      "npcfix_m38_mistrock_requires_current_premium_postgres"
+    ],
+    "pg_state": "building on committed qmech0326dc2e5 merge",
+    "premium_policy": "Existing questpc2_live_eligibility prerequisite preserved",
+    "migration": "none",
+    "pg_no_entitlement_seconds": 134.828247516,
+    "pg_last_red": "eligible case returned 0 dialogue lines; expected 2",
+    "pg_fix": "refresh and assert current session premium gate before NPC talk; rerun building",
+    "world_pin_refresh_seconds": 64.08,
+    "publication": "Owner requested immediate compiling WIP push; no full-green claim"
+  },
+  "merge_policy": "Owner override: no more qmech/main merges; committed merge3f5d54a83 retained"
 }

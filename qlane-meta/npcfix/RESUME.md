@@ -15,3 +15,7 @@ Full18 node-boot variants remain pending. Exact Platform3bc2d0e923db7472ec1f9b53
 Other M38 work remains: event contacts/returns; remaining stationary/source-cell contacts; Captain Jack permission/fines; Petros daily ticket/last-port return; Anna's Targuna continuation. Reuse existing owners and source bindings; do not mark M38 DONE for a slice.
 
 Legacy NPCFIX handoff remains saved on local branch claude/happy-davinci-ijz3wy-npcfix at9bacece303995f3f70fdc1dd6a1b882f58a0cd76 and named stash in QUEST-STATUS. Its old canonical generator processes306230/306272 are paused: never resume against the current checkout. Do not merge the failed npcfix-qmech-report worktree history.
+
+In-progress Mistrock slice cce633048: captured point32640,31437,7 published; authoring RED0!=1 -> GREEN11 tests0.444s; real-map RED28.86s -> GREEN29.89s. Existing premium policy preserved; own entitled/no-current-entitlement PG cases still building. Committed qmech0326dc2e5 merge3f5d54a83 retained. Latest owner override: do not merge qmech/main again; coordinator owns integration. Native and World pin regenerators ran, World pin refresh64.08s. Do not claim M38 DONE or PG execution until markers appear.
+
+Immediate owner-requested Mistrock partial push: source point and compiler/authoring tests GREEN; no-current-entitlement PG PASS134.828247516s. Eligible PG last RED0 dialogue lines vs2. Fixture now calls session_premium_gate and asserts current eligibility before talk; rerun is building. Do not claim eligible/replay story GREEN yet. No new merges.
