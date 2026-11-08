@@ -809,6 +809,10 @@ async fn wardrobe(
         .clone()
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
+        repeatable: false,
+        required_claims: Vec::new(),
+        counter: None,
+        requirements: None,
         completes: false,
         required_receipts: vec![],
         experience: None,
@@ -885,6 +889,7 @@ async fn wardrobe(
             ),
             placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
             reset_epoch: owner.reset_epoch,
+            party: Vec::new(),
             actor_placement: actor.placement_identity(),
             movement_revision: runtime
                 .read_actor_position(actor)

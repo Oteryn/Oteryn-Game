@@ -23,7 +23,7 @@ def capture_sources(source_root):
     import lua_tables
 
     requested = {
-        "lever.lua": {"LeverUnique": {30004, 30005, 30025, 30034}},
+        "lever.lua": {"LeverUnique": {30004, 30005, 30025, 30030, 30034}},
         "tile.lua": {"TileUnique": {25010}, "TileAction": {50022}},
         "teleport.lua": {"TeleportAction": {50022}},
     }

@@ -1,0 +1,598 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.questpc2-henricus-inquisition",
+  "quest": "oteryn:quest.the_inquisition_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/grof_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:65-225"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/kulag_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:65-225"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/miles_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:65-225"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:65-225"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 25,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:65-225"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/tim_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:65-225"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/walter_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:65-225"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/inquisitor",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "inquisitor"
+      ],
+      "guards": [],
+      "reply": [
+        "The churches of the gods entrusted me with the enormous and responsible task to lead the inquisition. I leave the field work to inquisitors who I recruit from fitting people that cross my way."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:65-66"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/join-offer",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "join"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Do you want to join the inquisition?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:67-71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/join-noop",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "join"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:67-71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/bless-refuse",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "blessing",
+        "bless"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "ne",
+          "value": 25
+        }
+      ],
+      "reply": [
+        "You cannot get this blessing unless you have completed The Inquisition Quest."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:72-79"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/flask-refuse",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "flask",
+        "special flask"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "lt",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "You do not need this flask right now."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:80-87"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/mission-offer",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "report"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Do you want to join the inquisition?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:88-91"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/mission-start",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "report"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Let's see if you are worthy. Take an inquisitor's field guide from the box in the back room. ...",
+        "Follow the instructions in the guide to talk to the Thaian guards that protect the walls and gates of the city and test their loyalty. Then report to me about your {mission}."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:92-99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/mission-report",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "report"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Your current mission is to investigate the reliability of certain guards. Are you done with that mission?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:100-102"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/join-accept",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "So be it. Now you are a member of the inquisition. You might ask me for a {mission} to raise in my esteem."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:203-207"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/report-accept",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/walter_guard",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/kulag_guard",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/grof_guard",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/miles_guard",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/tim_guard",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Indeed, this is exactly what my other sources told me. Of course I knew the outcome of this investigation in advance. This was just a test. ...",
+        "Well, now that you've proven yourself as useful, you can ask me for another mission. Let's see if you can handle some field duty, too."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:208-225"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/report-missing-walter_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/walter_guard",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You haven't done your mission yet."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:208-225"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/report-missing-kulag_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/kulag_guard",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You haven't done your mission yet."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:208-225"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/report-missing-grof_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/grof_guard",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You haven't done your mission yet."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:208-225"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/report-missing-miles_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/miles_guard",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You haven't done your mission yet."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:208-225"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/report-missing-tim_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/tim_guard",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You haven't done your mission yet."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:208-225"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/decline",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Then no."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:286-290"
+      ],
+      "topics": [
+        2,
+        3
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/henricus.lua",
+      "sha256": "1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    }
+  ]
+}

@@ -45,8 +45,34 @@ pub(super) fn source_world_positions(
     choices: &[(u16, u16, u16)],
     appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_positions_with_door(chest, choices, appearance, None)
+}
+
+pub(super) fn source_world_choices_with_door(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_positions_with_door(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, unique)| (*x, chest.1, *unique))
+            .collect::<Vec<_>>(),
+        appearance,
+        native,
+    )
+}
+
+pub(super) fn source_world_positions_with_door(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     let rows: Vec<_> = choices.iter().map(|(_, y, _)| (*y, appearance)).collect();
-    source_world_rectangle_positions(chest, choices, appearance, 1, 2, &[], &rows)
+    source_world_rectangle_positions(chest, choices, appearance, 1, 2, &[], &rows, native)
 }
 
 pub(super) fn source_world_rectangle(
@@ -92,9 +118,15 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
         .iter()
         .flat_map(|(x, unique)| rows.iter().map(move |(y, _)| (*x, *y, *unique)))
         .collect();
-    source_world_rectangle_positions(chest, &positions, appearance, height, west, prefix, rows)
+    source_world_rectangle_positions(
+        chest, &positions, appearance, height, west, prefix, rows, None,
+    )
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture composes source geometry with the admitted door owner"
+)]
 fn source_world_rectangle_positions(
     chest: (u16, u16, i8),
     choices: &[(u16, u16, u16)],
@@ -103,11 +135,27 @@ fn source_world_rectangle_positions(
     west: u16,
     prefix: &[u16],
     rows: &[(u16, u16)],
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    source_world_position_rows(chest, choices, appearance, height, west, prefix, rows)
+    source_world_position_rows(
+        chest, choices, appearance, height, west, prefix, rows, native,
+    )
 }
 
-fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], appearance: u16, height:u16, west:u16, prefix:&[u16], rows:&[(u16,u16)]) -> TestResult<crate::map::boot::BundleWorld> {
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture composes source geometry with the admitted door owner"
+)]
+fn source_world_position_rows(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -125,6 +173,20 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
             blocks_projectile: None,
         }),
     });
+    if let Some(native) = native {
+        let reference = native
+            .item_index()
+            .and_then(|index| {
+                index.definition_ref("Item", "oteryn:item.tibia.i5113", "definition-r1")
+            })
+            .ok_or("native reward door definition")?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:item.tibia.i5113".into(),
+            family: bundle::Family::Item,
+            id: reference.get() - 1,
+            terrain: None,
+        });
+    }
     for appearance in prefix {
         data.manifest.palette.push(bundle::PaletteEntry {
             key: format!("oteryn:terrain.tibia.i{appearance}"),
@@ -151,14 +213,25 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
         } else {
             let id = u32::try_from(data.manifest.palette.len()).map_err(debug)?;
             data.manifest.palette.push(bundle::PaletteEntry {
-                key, family: bundle::Family::Terrain, id,
-                terrain: Some(bundle::Terrain { blocks_projectile: None, kind: bundle::TerrainKind::Common, walkable: None, ground_speed: None }),
+                key,
+                family: bundle::Family::Terrain,
+                id,
+                terrain: Some(bundle::Terrain {
+                    blocks_projectile: None,
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
             });
             id
         };
         row_palettes.push((*row, palette));
     }
-    for (_, y, _) in choices { if !row_palettes.iter().any(|(row, _)| row == y) { row_palettes.push((*y, 1)); } }
+    for (_, y, _) in choices {
+        if !row_palettes.iter().any(|(row, _)| row == y) {
+            row_palettes.push((*y, 1));
+        }
+    }
     let row_palettes = row_palettes.as_slice();
     let ground = || sector::Item {
         palette: 0,
@@ -181,12 +254,14 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
         .iter()
         .map(|(_, y, _)| *y)
         .min()
-        .ok_or("source choices")?.min(chest.1);
+        .ok_or("source choices")?
+        .min(chest.1);
     let max_y = choices
         .iter()
         .map(|(_, y, _)| *y)
         .max()
-        .ok_or("source choices")?.max(chest.1 + height - 1);
+        .ok_or("source choices")?
+        .max(chest.1 + height - 1);
     data.manifest.world = bundle::Extent {
         min_x,
         min_y,
@@ -202,7 +277,19 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
                 flags: 0,
                 house: 0,
                 zones: Vec::new(),
-                items: if let Some((_, _, unique)) = choices
+                items: if native.is_some() && x == chest.0 - 1 && y == chest.1 {
+                    vec![
+                        ground(),
+                        sector::Item {
+                            palette: 2,
+                            depth: 0,
+                            attrs: sector::Attrs {
+                                action: Some(10102),
+                                ..Default::default()
+                            },
+                        },
+                    ]
+                } else if let Some((_, _, unique)) = choices
                     .iter()
                     .find(|(placed, py, _)| (*placed, *py) == (x, y))
                     && let Some((_, row_palette)) = row_palettes.iter().find(|(row, _)| *row == y)
@@ -257,14 +344,33 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
             start: crate::map::overlay::TilePos {
-                x: chest.0 - 1,
+                x: if native.is_some() {
+                    chest.0
+                } else {
+                    chest.0 - 1
+                },
                 y: chest.1,
                 floor: chest.2,
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-        |_| None,
+        |key| {
+            use crate::content::{ReferenceItemField, ReferenceItemType};
+            let native = native?;
+            let policy = native.item_policy(key, "definition-r1")?.record();
+            Some(crate::map::facts::ItemDefinition {
+                reference: native
+                    .item_index()?
+                    .definition_ref("Item", key, "definition-r1")?,
+                solid: policy.attributes.blocks_movement,
+                blocks_projectile: policy.attributes.blocks_projectile.unwrap_or(true),
+                pickupable: matches!(&policy.semantics.physical, ReferenceItemField::Known(p)
+                    if p.pickupable == ReferenceItemField::Known(true)),
+                door: matches!(&policy.semantics.classification, ReferenceItemField::Known(c)
+                    if c.item_type == ReferenceItemField::Known(ReferenceItemType::Door)),
+            })
+        },
     )
     .map_err(debug)
 }
@@ -285,6 +391,20 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
         .filter(|chest| chest["status"] != "not_playable")
         .map(|chest| chest["claim"].as_str().ok_or("claim"))
         .collect::<Result<_, _>>()?;
+    // Falcon's repeatable sources use the dedicated native handler, not the
+    // one-shot binder. Keep its closed runtime catalogue in the coverage proof.
+    let dedicated: BTreeSet<_> = oteryn_gameplay_quests::quest::falcon::CHESTS
+        .into_iter()
+        .map(|chest| chest.key())
+        .collect();
+    assert_eq!(dedicated.len(), 6);
+    let dedicated_refs: BTreeSet<_> = dedicated.iter().map(String::as_str).collect();
+    let declared_dedicated: BTreeSet<_> = supported
+        .iter()
+        .copied()
+        .filter(|key| key.starts_with(oteryn_gameplay_quests::quest::falcon::CLAIM_PREFIX))
+        .collect();
+    assert_eq!(declared_dedicated, dedicated_refs);
     // Timed random chests have their own durable cycle owner; the generic
     // once-claim binder must never admit them as ordinary once-only rewards.
     let falcon_keys: Vec<_> = oteryn_gameplay_quests::quest::falcon::CHESTS
@@ -324,9 +444,10 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
         assert!(candidates.is_disjoint(&falcon));
         for &claim in &falcon {
             assert!(
-                report.left_out.iter().any(|(key, reason)| {
-                    key == claim && *reason == LeftOut::Variant
-                }),
+                report
+                    .left_out
+                    .iter()
+                    .any(|(key, reason)| { key == claim && *reason == LeftOut::Variant }),
                 "timed claim must remain excluded from the once binder: {claim}"
             );
         }

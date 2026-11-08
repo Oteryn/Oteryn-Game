@@ -1,0 +1,3 @@
+        callback(if elvenbane {
+            "elvenbane-basement-entry"
+        } else if name == "triangle-tower-wall" {

@@ -1,0 +1,11 @@
+apps/game-server/src/node/serve/bundle_npcs.rs:354:            talk: Arc::new(NpcTalkBook::from_model_with_native_quests(
+crates/gameplay/npc/src/npc_talk.rs:38:pub struct NpcTalkEntry {
+crates/gameplay/npc/src/npc_talk.rs:56:impl NpcTalkEntry {
+crates/gameplay/npc/src/npc_talk.rs:135:        Self::from_model_with_native_quests(model, &[])
+crates/gameplay/npc/src/npc_talk.rs:140:    pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
+crates/gameplay/npc/src/npc_talk.rs:330:                NpcTalkEntry {
+crates/gameplay/npc/src/npc_talk.rs:552:        let book = NpcTalkBook::from_model_with_native_quests(&model, &keys);
+crates/gameplay/npc/src/npc_talk.rs:647:    fn entry(name: &str, topic: Option<&str>) -> NpcTalkEntry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:401:        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model_with_native_quests(
+crates/gameplay/dispatch/src/gameplay_transport/npc_talk.rs:11:pub(super) fn hireling_bank_entry() -> NpcTalkEntry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs:70:        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),

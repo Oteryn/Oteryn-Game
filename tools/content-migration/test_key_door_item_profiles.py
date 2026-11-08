@@ -13,9 +13,13 @@ class KeyDoorProfileTests(unittest.TestCase):
         rows = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())['records']
         profiles = {r['production_definition']['production_key']: r for r in rows}
         for item, kind, solid in [(1628, 'DOOR', True), (1629, 'DOOR', True),
-                                  (1630, 'DOOR', False), (1646, 'DOOR', True),
-                                  (1647, 'DOOR', False), (2967, 'KEY', False),
-                                  (2968, 'KEY', False), (5102, 'DOOR', True), (5103, 'DOOR', False)]:
+                                  (1630, 'DOOR', False), (1631, 'DOOR', True),
+                                  (1632, 'DOOR', True), (1633, 'DOOR', False), (1646, 'DOOR', True),
+                                  (1647, 'DOOR', False), (1648, 'DOOR', True),
+                                  (1649, 'DOOR', False), (2967, 'KEY', False),
+                                  (2968, 'KEY', False), (5102, 'DOOR', True),
+                                  (5103, 'DOOR', False), (6264, 'DOOR', True),
+                                  (6265, 'DOOR', False)]:
             with self.subTest(item=item):
                 row = profiles.get(f'oteryn:item.tibia.i{item}')
                 self.assertIsNotNone(row, f'Production native profile missing: {item}')

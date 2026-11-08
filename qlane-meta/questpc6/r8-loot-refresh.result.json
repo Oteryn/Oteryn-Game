@@ -1,0 +1,5 @@
+{
+  "command": "python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py --refresh-loot-tables",
+  "exit": 0,
+  "duration_seconds": 5.352
+}

@@ -1,0 +1,214 @@
+{
+  "task_id": "questpc",
+  "state": "AUTHORING",
+  "head": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+  "frozen_sha": null,
+  "scope": "A..M reward qualification and bounded NPC repairs; no full-quest, deployed-World or current-head CI claim",
+  "changed_files": [
+    "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs",
+    "crates/gameplay/npc/src/npc_talk.rs",
+    "docs/agents/evidence/quest-claim-qualification.json",
+    "docs/repository/QUEST_CALLBACK_COVERAGE.json",
+    "tools/content-schema/quest-authoring/check_quest_claim_qualification.py",
+    "tools/content-schema/quest-authoring/quest_callback_coverage.py",
+    "tools/content-schema/quest-authoring/test_quest_claim_qualification.py"
+  ],
+  "source_sha256": {
+    "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs": "81c9e16504c093c1961b7a32ecfb10351c4085bda852d0e0dd029e62a3d465da",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs": "7a75fb58a98d4685a50e716934dd523bdb2bbb69ca6404a04f7f16f709fd1715",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs": "ce2010cf61f9269218c6b4c7c90af073b76f45fd2aa590e7f61879b90ebde4e6",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs": "a49ce8b8773ae0072648cb020706c7ce1d64571e4b99a3a9e571159eb901c8aa",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs": "bb4111f3a16a530e1f37888ff76fcefa86efe8c9979d1675dc05ee13541429e1",
+    "crates/gameplay/npc/src/npc_talk.rs": "7d555634fe95cbd4c80c7b00e9c4a7cefa860ba959fc832986d68cf98cc83f87",
+    "docs/agents/evidence/quest-claim-qualification.json": "8d823d4d459b9ba6d34ba779c01cfe5042778a2499692fc792acbaf40a8dd76a",
+    "docs/repository/QUEST_CALLBACK_COVERAGE.json": "ccacabc63d46adbaa3105e18b656113f9b1710d51686c7b9a47eb7fdf3d68ca0",
+    "tools/content-schema/quest-authoring/check_quest_claim_qualification.py": "40fe1c346a3ac09f9bf5f3d21a31a1d77226c4439d08b5bf5eeda98a4c697924",
+    "tools/content-schema/quest-authoring/quest_callback_coverage.py": "6493e912d8828d7c4c1ffc2d6ecdd796c649e942133fd0f6c6d19db43c6e3be3",
+    "tools/content-schema/quest-authoring/test_quest_claim_qualification.py": "5bb8a0f098d3575a3fbc4b5a7cf37f0650a5f5b7be03027417eda8d63576bad6"
+  },
+  "phase_a": {
+    "passed_cohorts": 12,
+    "reward_sets": 56,
+    "claims": 104,
+    "source_placements": 106,
+    "newly_qualified_claims": 88,
+    "proofs": [
+      ".questpc/restart-phase-a-pg-2.qualified.json",
+      ".questpc/restart-phase-a-pg-3.qualified.json"
+    ],
+    "original_source_snapshot": ".questpc/restart2-phase-a-source-11.rs"
+  },
+  "inventory_global": {
+    "dispatch_pg_qualified": 127,
+    "not_playable": 2,
+    "supported_unqualified": 207
+  },
+  "unit_tests": {
+    "quests": 255,
+    "content_reward_binding": 9,
+    "durable_mint": 10,
+    "npc": 25,
+    "total_rust": 299,
+    "qualification_python": 7,
+    "governance_python": 129
+  },
+  "additional_pg_passes": {
+    "viola_mission_yes_book_handin_is_atomic_and_survives_restart": "141.53087234s",
+    "viola_mission_yes_nested_book_refuses_full_bag_without_consuming": "119.676870263s",
+    "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction": "93.515309753s",
+    "catalogue_npc_father_legacy_hash_preserves_defaults_and_restart_receipts": "89.460936624s",
+    "hero_of_rathleton_pipe_greeting_commits_access_once_and_replays": "81.139063654s"
+  },
+  "unfinished": [
+    "catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic: command2603 hi toJeanPierre Rejected != Ok (classic_quests.rs:168); native calendar-gated owner absent; test retained active and strict",
+    "Full NPC hand-ins, storylines/outfits and per-World access paths outside proven slices; concrete storage-only owner boundaries in restart2-phase-b-c-blockers.md",
+    "Inherited Newhaven/Corruptor findings remain unqualified; not changed by this restart",
+    "Coordinator Worldpin staged-input refresh, migration allocation check, independent exact-candidate review, CI/publication remain pending; no Git mutation authorized"
+  ],
+  "results": {
+    "restart2-phase-a-clippy": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-content -p oteryn-gameplay-durability -p oteryn-gameplay-quests -p oteryn-gameplay-social -p oteryn-gameplay-dispatch -p oteryn-gameplay-combat -p oteryn-gameplay-encounters -p oteryn-gameplay-npc -p oteryn-game-server --all-targets --all-features --quiet -- -D warnings",
+      "exit": 0,
+      "duration_seconds": 272.031
+    },
+    "restart2-phase-a-units": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-quests -p oteryn-gameplay-content -p oteryn-gameplay-durability --lib --quiet -- quest:: world_reward_claims:: reward_claim_mint::tests --test-threads=2",
+      "exit": 0,
+      "duration_seconds": 119.472
+    },
+    "restart2-phase-a-fmt": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check",
+      "exit": 0,
+      "duration_seconds": 19.243
+    },
+    "restart2-lost-wisdom-pg-before": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib viola_mission_yes -- --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 392.83
+    },
+    "restart2-lost-wisdom-contention-red": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib viola_mission_yes_book_handin_is_atomic_and_survives_restart -- --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 214.662
+    },
+    "restart2-lost-wisdom-pg-repaired": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib viola_mission_yes -- --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 480.813
+    },
+    "restart2-lost-wisdom-rollback-pg-final": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib viola_mission_yes_book_handin_is_atomic_and_survives_restart -- --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 278.533
+    },
+    "restart2-npc-starts-pg-before": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-npc -p oteryn-gameplay-dispatch --all-features --no-fail-fast --lib -- native_quest_book_admits_only_requested_source_greetings catalogue_npc_father_ catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 305.9
+    },
+    "restart2-hero-greetings-pg-repaired": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-npc -p oteryn-gameplay-dispatch --all-features --no-fail-fast --lib -- native_quest_book_admits_only_requested_source_greetings hero_of_rathleton_pipe_greeting_commits_access_once_and_replays catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 537.517
+    },
+    "restart2-hero-scoped-six-slots-pg-final": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- hero_of_rathleton_pipe_greeting_commits_access_once_and_replays catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 255.744
+    },
+    "restart2-final-clippy": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-npc -p oteryn-gameplay-dispatch --all-targets --all-features --quiet -- -D warnings",
+      "exit": 0,
+      "duration_seconds": 125.838
+    },
+    "restart2-final-npc-units": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-npc --all-features --lib --quiet -- --test-threads=2",
+      "exit": 0,
+      "duration_seconds": 216.677
+    },
+    "restart2-explicit-fmt-check": {
+      "command": "rustup run 1.99.1 rustfmt --edition 2024 --check --config skip_children=true crates/gameplay/npc/src/npc_talk.rs crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs",
+      "exit": 0,
+      "duration_seconds": 0.04
+    },
+    "restart2-exact-tree-dispatch-clippy": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-dispatch --all-targets --all-features --quiet -- -D warnings",
+      "exit": 0,
+      "duration_seconds": 75.643
+    },
+    "restart2-expanded-phase-a-dispatch-clippy": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-dispatch --all-targets --all-features --quiet -- -D warnings",
+      "exit": 0,
+      "duration_seconds": 17.063
+    },
+    "restart2-expanded-phase-a-fmt-check": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check",
+      "exit": 0,
+      "duration_seconds": 7.802
+    },
+    "phase-a-pg-2": {
+      "log": ".questpc/restart-phase-a-pg-2.log",
+      "log_sha256": "47b2475cd4943c87df73cca9e4a45df82391ece354cdbaa38d561cf2d6922292",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "quest_catalogue_chests_phase_a_",
+        "--",
+        "--test-threads=2",
+        "--nocapture"
+      ],
+      "exit": 0,
+      "duration_seconds": 1003.407,
+      "test_results": {
+        "quest_catalogue_chests_phase_a_02_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_01_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_03_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_04_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_06_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_05_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_08_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_07_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_09_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_10_use_replay_and_refusal": "ok",
+        "quest_catalogue_chests_phase_a_11_use_replay_and_refusal": "ok"
+      },
+      "qualified_cohorts": 11,
+      "qualified_quests": 54
+    },
+    "phase-a-pg-3": {
+      "log": ".questpc/restart-phase-a-pg-3.log",
+      "log_sha256": "241351a8d51bbb5cce47acf5d1b6b6523eaa211768733d3b607a0a7d649d5abb",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "--",
+        "quest_catalogue_chests_phase_a_12_use_replay_and_refusal",
+        "--test-threads=2",
+        "--nocapture"
+      ],
+      "exit": 0,
+      "duration_seconds": 189.941,
+      "test_results": {
+        "quest_catalogue_chests_phase_a_12_use_replay_and_refusal": "ok"
+      },
+      "qualified_cohorts": 1,
+      "qualified_quests": 2
+    }
+  }
+}

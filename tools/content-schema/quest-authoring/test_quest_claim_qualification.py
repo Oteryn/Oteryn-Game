@@ -33,10 +33,40 @@ class QualificationTests(unittest.TestCase):
         # source claims remain in their separate coverage categories.
         self.assertEqual(sum(counts.values()), 162)
 
+        # 189 source claims have focused dispatch PG proof; only the
+        # two Dawnport claims are excluded. Keep exact denominator detection.
+        self.assertEqual(sum(counts.values()), qualification.EXPECTED_DENOMINATOR)
+        coverage = qualification.read_json(qualification.COVERAGE)
+        self.assertEqual(coverage['counts'], {
+            'dispatch_pg_qualified': 189, 'not_playable': 2, 'supported_unqualified': 145})
+        self.assertEqual(sum(coverage['counts'].values()), 336)
+        selected = {
+            'oteryn:reward-claim.kv.nightmare_teddy_quest',
+            'oteryn:reward-claim.kv.purpletome1',
+            'oteryn:reward-claim.kv.purpletome2',
+            'oteryn:reward-claim.kv.purpletome3',
+            'oteryn:reward-claim.quest.key.id4055',
+        }
+        claims = {c['claim']: c for q in coverage['quests'] for c in q['chests']}
+        for key in selected:
+            self.assertEqual(claims[key]['status'], 'dispatch_pg_qualified')
+            self.assertTrue(claims[key]['reason'])
+            self.assertTrue(all(source['reward_matches_current_source']
+                                for placement in claims[key]['placements']
+                                for source in placement['sources']))
+        ledger = qualification.read_json(qualification.LEDGER)
+        for key in qualification.ITEMHOLD_ADMISSIONS:
+            self.assertNotIn(key, ledger["claims"])
+            coverage = qualification.read_json(qualification.COVERAGE)
+            matches = [chest for quest in coverage["quests"]
+                       for chest in quest.get("chests", []) if chest.get("claim") == key]
+            self.assertEqual(len(matches), 1)
+            self.assertEqual(matches[0]["status"], "dispatch_pg_qualified")
+            self.assertTrue(matches[0]["reason"])
+            self.assertTrue(matches[0]["placements"])
+
     def test_missing_row_is_rejected(self):
-        # Every still-pending row must remain in the ledger. The collected
-        # ITEMHOLD claims now have real dispatch proof and leave this inventory.
-        for key in self.ledger["claims"]:
+        for key in sorted(self.ledger["claims"]):
             with self.subTest(claim=key):
                 ledger = copy.deepcopy(self.ledger)
                 del ledger["claims"][key]

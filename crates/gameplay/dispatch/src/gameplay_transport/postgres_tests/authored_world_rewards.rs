@@ -50,6 +50,7 @@ pub(super) fn placeholder(at: Position) -> TestResult<Callback> {
         unique: Some(63001),
         action: None,
         appearance: Some(100),
+        position_aliases: Vec::new(),
     };
     callback.lever = None;
     callback.reversible = false;
@@ -64,6 +65,8 @@ pub(super) fn placeholder(at: Position) -> TestResult<Callback> {
         maximum: 0,
         set: 1,
         preserve: false,
+        set_if: None,
+        add: None,
     }];
     callback.minimum_level = None;
     callback.world_change = None;

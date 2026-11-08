@@ -107,6 +107,18 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
         self.assertIn('assert_eq!(later_main_profiles, 3);', fixed)
         self.assertIn('assert_eq!(baseline, 3663);', fixed)
 
+    def test_declared_pick_overlap_requires_both_source_owners(self):
+        source = self.SOURCE.replace(
+            'ORIGINAL_PROFILES: usize = 1', 'ORIGINAL_PROFILES: usize = 2')
+        source += '\n- 1 // the pick already belongs to the base provider\n'
+        pick = 'oteryn:item.tibia.i3456'
+        _, count = regenerate(source, document(pick, 1, 2, 3),
+                              document(4), document(pick), document(1))
+        self.assertEqual(count, 5)
+        with self.assertRaisesRegex(ValueError, 'pick overlap'):
+            regenerate(source, document(0, 1, 2, 3),
+                       document(4), document(pick), document(1))
+
     def test_duplicate_profile_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate production key"):
             self.generate(base=document(0, 0, 1, 2, 3))

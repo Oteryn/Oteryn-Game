@@ -24,7 +24,17 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
         super::quest_world_callbacks::scenario(
             name,
             if name == "qengine-rewards-l2-white-raven" {
-                Position { x:32248,y:31866,floor:-8 }
+                Position {
+                    x: 32248,
+                    y: 31866,
+                    floor: -8,
+                }
+            } else if name.starts_with("qengine-rewards-fibula-completion") {
+                Position {
+                    x: 32219,
+                    y: 32401,
+                    floor: -10,
+                }
             } else if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
                 super::l6_paradox_upper::start(name)
             } else if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
@@ -119,7 +129,7 @@ fn qengine_l1_legacy_decaying_entitlement_remains_selectable() -> TestResult {
     scenario("qengine-rewards-l1-legacy-decaying")
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -165,13 +175,24 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         };
     }
 
-    if key.ends_with("/l2-white-raven-brooch") { return &["brooch", "yes"]; }
-    if key.ends_with("/l2-white-raven-catacombs") { return &["fugio"]; }
-    if key.ends_with("/l2-white-raven-diary") { return &["diary"]; }
+    if key.ends_with("/l2-white-raven-brooch") {
+        return &["brooch", "yes"];
+    }
+    if key.ends_with("/l2-white-raven-catacombs") {
+        return &["fugio"];
+    }
+    if key.ends_with("/l2-white-raven-diary") {
+        return &["diary"];
+    }
 
     match key.rsplit('/').next().unwrap_or(key) {
+        "fibula-key-first" | "fibula-key-repeat" => &["key"],
+        "fibula-complete" => &["expedition"],
         "l13-rift-first" | "l13-rift-second" => &["addon"],
         "knight-sword" => &["forge"],
+        "questpc7-golden-base" => &["base outfit"],
+        "questpc7-golden-gloves" => &["boots and gloves"],
+        "questpc7-golden-helmet" => &["golden helmet"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
         "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
@@ -319,7 +340,7 @@ pub(super) async fn acknowledge_probe(
 
 // A conversation spans several commands on ONE connection. Re-opening the
 // one-command movement helper correctly clears conversation engagement.
-async fn wire_grant(
+pub(super) async fn wire_grant(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -776,6 +797,15 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-fibula-completion") {
+        return super::questpc6_fibula_completion::exercise(owner, admitted, h, name).await;
+    }
+    if name == "qengine-rewards-fibula-native-goals" {
+        return super::questpc6_native_goals::exercise(owner, admitted, h).await;
+    }
+    if name.starts_with("qengine-rewards-fibula-key-") {
+        return super::questpc6_fibula_purchase::exercise(owner, admitted, h, name).await;
+    }
     if name == "qengine-rewards-l2-white-raven" {
         return questl2_passages::white_raven(owner, admitted, h).await;
     }
@@ -804,16 +834,35 @@ pub(super) async fn exercise(
         return super::l6_spirit::exercise(owner, admitted, h, authority).await;
     }
     if name.starts_with("qengine-rewards-world-clock") {
-        return super::world_callback_clocks::exercise(owner, admitted, h, name.ends_with("-full")).await;
+        return super::world_callback_clocks::exercise(owner, admitted, h, name.ends_with("-full"))
+            .await;
     }
     if name == "qengine-rewards-authored-native-admission" {
         return super::authored_world_rewards::exercise_native_admission(owner, admitted, h).await;
     }
-    if matches!(name,"qengine-rewards-authored-world-rewards" | "qengine-rewards-authored-world-rewards-full") {
-        return super::authored_world_rewards::exercise(owner, admitted, h, name.ends_with("-full")).await;
+    if matches!(
+        name,
+        "qengine-rewards-authored-world-rewards" | "qengine-rewards-authored-world-rewards-full"
+    ) {
+        return super::authored_world_rewards::exercise(
+            owner,
+            admitted,
+            h,
+            name.ends_with("-full"),
+        )
+        .await;
     }
-    if matches!(name,"qengine-rewards-authored-kills" | "qengine-rewards-authored-kills-burst") {
-        return super::authored_kill_bindings::exercise(owner, admitted, h, name.ends_with("-burst")).await;
+    if matches!(
+        name,
+        "qengine-rewards-authored-kills" | "qengine-rewards-authored-kills-burst"
+    ) {
+        return super::authored_kill_bindings::exercise(
+            owner,
+            admitted,
+            h,
+            name.ends_with("-burst"),
+        )
+        .await;
     }
     if name == "qengine-rewards-authored-bindings" {
         return super::authored_quest_bindings::exercise(owner, admitted, h).await;
@@ -885,8 +934,10 @@ pub(super) async fn exercise(
         setup
             .storage
             .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+                set_if: None,
                 read_only: false,
                 at_least: false,
+                add: None,
                 increment: false,
                 track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision"
                     .into(),

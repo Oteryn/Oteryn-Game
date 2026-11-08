@@ -1,6 +1,7 @@
 //! Quest exchanges borrow the existing complete backpack MINT and custody owners.
 
 use super::*;
+mod questpc7_counter_claim;
 use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
 use crate::durability::account_achievement::{
     AchievementCatalogueLookup, AchievementGrantRequest, AchievementSourceEvent,
@@ -203,6 +204,16 @@ pub(crate) async fn apply(
         let level:Option<i64>=sqlx::query_scalar("SELECT level::bigint FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
             .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
         if level.is_none_or(|level| level < i64::from(minimum)) {
+            return Ok(false);
+        }
+    }
+    if !callback.required_claims.is_empty() {
+        let earned: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claims c JOIN game_reward_claim_mint_receipts r ON r.transaction_id=c.claimed_transaction_id WHERE c.character_id=encode($1,'hex')::uuid AND c.claim_family='RewardClaim' AND c.claim_production_key=ANY($2::text[]) AND r.character_id=c.character_id AND r.claim_family=c.claim_family AND r.claim_production_key=c.claim_production_key")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(&callback.required_claims).fetch_one(&mut **tx).await?;
+        if earned
+            != i64::try_from(callback.required_claims.len())
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+        {
             return Ok(false);
         }
     }
@@ -446,7 +457,7 @@ pub(crate) async fn give_world(
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<bool, DurabilityError> {
     let (super::super::quest_state::QuestCause::Use(command), Some(reward)) =
-        (request.cause, callback.effects.item_reward.as_ref())
+        (request.cause, callback.item_reward())
     else {
         return Ok(false);
     };
@@ -532,7 +543,13 @@ async fn mint(
     // The MINT owner still permits each claim exactly once. A repeatable paid
     // exchange supplies its own stable per-command occurrence, not a bypass of
     // the claim ledger or its pending/reservation checks.
-    let claim_key = if callback.is_paid_exchange() {
+    let claim_key = if callback.counter.is_some() {
+        questpc7_counter_claim::key(
+            &callback.key,
+            command.game_session_id().as_bytes(),
+            command.command_id().get(),
+        )
+    } else if callback.repeatable || callback.is_paid_exchange() {
         let digest = Sha256::new()
             .chain_update(b"oteryn:quest-exchange:v1\0")
             .chain_update(fence.character_id.as_bytes())
@@ -615,6 +632,24 @@ async fn mint_with_source(
         )
         .map_err(|_| DurabilityError::InvalidStoredState)
     };
+    if reward.key_number.is_some() {
+        use oteryn_gameplay_content::content::{ReferenceItemField, ReferenceItemType};
+        let id = reward
+            .item
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u32>().ok())
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let policy = admission
+            .native
+            .item_policy_for_source_id(id)
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .record();
+        if !matches!(&policy.semantics.classification, ReferenceItemField::Known(c)
+            if c.item_type == ReferenceItemField::Known(ReferenceItemType::Key))
+        {
+            return Ok(None);
+        }
+    }
     let backpack:Option<String>=sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF s,i").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(backpack) = backpack else {
         return Ok(None);
@@ -629,6 +664,9 @@ async fn mint_with_source(
             .map(|b| format!("{b:02x}"))
             .collect::<String>()
     );
+    // The MINT owner still permits each claim exactly once. A repeatable paid
+    // exchange supplies its own stable per-command occurrence, not a bypass of
+    // the claim ledger or its pending/reservation checks.
     let request = RewardClaimMintRequest {
         backpack_outputs: !reward.backpack_outputs.is_empty(),
         command,
@@ -666,7 +704,7 @@ async fn mint_with_source(
                 fluid_subtype: i.fluid_subtype,
                 item: resolve(&i.item)?,
                 quantity: u32::from(i.count),
-                key_number: None,
+                key_number: reward.key_number,
                 text: None,
                 charges_remaining: None,
             })

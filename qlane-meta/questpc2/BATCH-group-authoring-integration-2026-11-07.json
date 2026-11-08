@@ -1,0 +1,17 @@
+{
+  "batch_id": "group-authoring-integration-2026-11-07",
+  "state": "GREEN",
+  "integrated_head": "c63c6cc71234772960bebb68d0e9bf5fa62d8a6c",
+  "scope": "Reuse the delivered inert pinned group-source authoring and canonical key correction; no active callback data, native Rust, database, regeneration hooks or second runtime owner.",
+  "whole_quest_qualifications": 0,
+  "validation": {
+    "python_cases": 3,
+    "failed": 0,
+    "log": "/tmp/questpc2-group-authoring-merge-tests.log",
+    "runtime_and_content_unchanged_since": "464bdc05f",
+    "postgres": "Prior seven-case actual PostgreSQL proof applies unchanged; this inert tool-only delta has no PostgreSQL execution path.",
+    "check_clippy_fmt": "Changed-crate checks from464bdc05f apply unchanged; no Rust bytes changed."
+  },
+  "reuse_correction": "The fetched source tool names group_encounter, but qengine2 effects.encounter already implements this same atomic entry and is merged here with real native/PG proof. Reuse its existing schema/carrier/dispatcher; do not activate a parallel group-entry writer. Adapt only source authoring as needed.",
+  "next": "Push integrated green head FF, then complete owned whole encounter/escape/door/reward paths; no entry-only whole qualification."
+}

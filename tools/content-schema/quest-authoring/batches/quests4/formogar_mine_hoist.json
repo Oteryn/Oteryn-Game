@@ -27,14 +27,14 @@
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         },
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         }
       ],
       "offerings": [],
@@ -49,6 +49,67 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:926",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:927"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/formogar-hoist-3060",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 3060,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32157,
+        "y": 31125,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You must first find the hoist instruction before using it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:18-23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:926",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:927"
+      ],
+      "remote_teleport": {
+        "position": {
+          "x": 32156,
+          "y": 31125,
+          "floor": -10
+        },
+        "appearance": 2772,
+        "destination": {
+          "x": 32157,
+          "y": 31125,
+          "floor": -11
+        }
+      }
     },
     {
       "key": "oteryn:quest-callback/formogar-hoist-3061",
@@ -74,14 +135,14 @@
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         },
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         }
       ],
       "offerings": [],

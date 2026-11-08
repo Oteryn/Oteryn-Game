@@ -1,0 +1,75 @@
+{
+  "batch": "albinius-four-offerings-and-gnomus-confirmation-boundary",
+  "base": "5dd600a26f00530797109358ea7bbbdcfdcca333",
+  "main": "f5b584ef1",
+  "whole_quests_newly_qualified": 0,
+  "scope": "Four exact fifty-item Albinius payments/access flags, not portal traversal; Gnomus local confirmation policy, not measurement/escort/reward completion.",
+  "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "postgres_version_num": 180006,
+  "postgres_red": {
+    "portals_seconds": [
+      113.939089504,
+      117.430764882
+    ],
+    "portals_error": "missing source prerequisite refusal:[]",
+    "gnomus_seconds": 67.749949589,
+    "gnomus_error": "unsupported measurements must invalidate the old ordnance confirmation; actual1 expected0"
+  },
+  "postgres_green": {
+    "questpc2-albinius-five-tomes": 56.813418026,
+    "questpc2-albinius-combined": 58.389316982,
+    "questpc2-albinius-four-tomes": 50.097247512,
+    "questpc2-albinius-portals-combined": 50.313772801,
+    "questpc2-albinius-portals-exact": 52.269847124,
+    "questpc2-gnomus-ordnance": 50.80569068
+  },
+  "postgres_total_seconds": 159.635,
+  "quest_units": {
+    "passed": 324,
+    "seconds": 25.12
+  },
+  "authorer_units": {
+    "albinius": {
+      "passed": 3,
+      "seconds": 1.602
+    },
+    "gnomus": {
+      "passed": 3,
+      "seconds": 1.284
+    }
+  },
+  "workspace_all_targets": "Final regenerated tree PASS4m48s",
+  "clippy": "PASS2m30s quests+dispatch alltargets/allfeatures-Dwarnings",
+  "dispatch_unit_selection": {
+    "passed": 1613,
+    "seconds": 723.98,
+    "proof": "BATCH-portals-complete-dispatch-2026-11-08.json"
+  },
+  "log_sha256": {
+    "/tmp/questpc2b-portals-green-pg.log": "b3d2263db7c9c08d89c77b0c949595e9826dc8f1c1fa7c82f688a200d49145c2",
+    "/tmp/questpc2b-albinius-portals-red-pg.log": "7e4c05fe9b44a8bae3e28206e01f79c208602bceae5cfa38e8fed2e802765735",
+    "/tmp/questpc2b-gnomus-stale-task-red-pg.log": "bc1c7c05b88d89cf7399c889853abcb71181c77d4d1585e5754e1a0db4e55b26",
+    "/tmp/questpc2b-portals-quest-units.log": "a7b3216a2d130fe89b1fadf59839019a26af6fc8ff8bd4cac1cdb747b3edc864",
+    "/tmp/questpc2b-portals-workspace-check.log": "90d79d49392e40fdcd34f897f38c415cabbca3f656da6a46a30c3131e5b8c3c9",
+    "/tmp/questpc2b-portals-albinius-authorer.log": "7b422dae4a4271a1bc768af46f0bdf3ed90ac1bcabbd7745cec9956f1f6b355c",
+    "/tmp/questpc2b-portals-gnomus-authorer.log": "223e407d970b6335afb53932df63314e26d2e55a6f0f0771e377d81784d02504",
+    "/tmp/questpc2b-gnomus-dispatch-units.log": "0797092c852074b92cf38afbf48572bd6cec3e6dbdc2532deb51ed9b86d0c428",
+    "/tmp/questpc2b-retro-final-checks.log": "71b106a11ef70d210ee77a6c8299c51d1e65576acf2159ae3d827dbc6f854e69",
+    "/tmp/questpc2b-retro-final-units.log": "094b02ed90a576364c6e169af2a0670c1ab1000b335c4d95bf2fb443b0bc64b9",
+    "/tmp/questpc2b-retro-final-content-tree.log": "e7137dc7c7d6d37cf00c63b7763bca60c944c6910f27423e081c89fefce5d28c",
+    "/tmp/questpc2b-retro-final-workspace.log": "99210e49cf8538cb97a3ad815598f50be6648e1e0053fea774701c697f696f92",
+    "/tmp/questpc2b-retro-final-quest-units.log": "85b9e92b0c571f270b34dfe593cfaffd6bcb767aa479a93a56576115206079ca",
+    "/tmp/questpc2b-retro-final-regeneration.log": "2e937e930f2e378aa794dd4baa6203fdcc8c78c8332ef439a95406668759b0bc"
+  },
+  "generation": "Full README dependency pipeline including variant packet, source receipt, all quest packets/links/matrix, equipment/audit and worldpins PASS; digest unchanged2f5895585a",
+  "fmt_generation_pins_duplicates": "PASS; refreshed main CI-only merge follows",
+  "main_merge": "Clean CI-only merge; incoming main has no gameplay/data changes",
+  "authoring_checks": "PASS exact CI --part checks, without skip flags",
+  "authoring_unit_runner": {
+    "modules_passed": 114,
+    "reported_tests": 1142,
+    "existing_skips": 8,
+    "quest_tree_seconds": 289.147
+  },
+  "content_tree": "PASS34111Items/252Mounts/336RewardClaims"
+}

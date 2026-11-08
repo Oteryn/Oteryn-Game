@@ -1,0 +1,19 @@
+{
+  "command": [
+    "rustup",
+    "run",
+    "1.99.1",
+    "rustfmt",
+    "--edition",
+    "2024",
+    "--check",
+    "--config",
+    "skip_children=true",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_reward_slices.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs",
+    "crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs"
+  ],
+  "exit": 0,
+  "duration_seconds": 0.077
+}

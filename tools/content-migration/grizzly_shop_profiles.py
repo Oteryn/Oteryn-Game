@@ -8,8 +8,8 @@ import argparse
 import copy
 import hashlib
 import json
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -162,6 +162,83 @@ def capture(source_root, root=ROOT):
             'canonical_inputs': inputs, 'records': records, 'rejected': rejected}
 
 
+def refresh_canonical_inputs(base_ref='HEAD', root=ROOT, qualify_custody=False):
+    """Rebind unchanged selected definitions or explicitly qualified custody facts.
+
+    The retained descriptor must match an actual Git base blob; a changed shop
+    fact still requires source qualification. The opt-in custody path compares
+    the exact unchanged, Git-bound source profile; no profile/rejection changes.
+    """
+    overlay = json.loads((root / PATH).read_bytes())
+    keys, catalogue_sha = selected(root)
+    if overlay['catalogue'] != {'path': CATALOGUE, 'sha256': catalogue_sha}:
+        raise ValueError('GRIZZLY_SHOP_CATALOGUE_SET')
+    base = subprocess.run(
+        ['git', '-C', str(root), 'rev-parse', '--verify', '--end-of-options', base_ref + '^{commit}'],
+        check=True, capture_output=True, text=True).stdout.strip()
+    baseline = json.loads(subprocess.run(
+        ['git', '-C', str(root), 'show', base + ':' + PATH],
+        check=True, capture_output=True).stdout)
+    if ({k: v for k, v in overlay.items() if k != 'canonical_inputs'}
+            != {k: v for k, v in baseline.items() if k != 'canonical_inputs'}):
+        raise ValueError('GRIZZLY_SHOP_SOURCE_CAPTURE_DRIFT')
+    if [d['path'] for d in overlay['canonical_inputs']] != [d['path'] for d in baseline['canonical_inputs']]:
+        raise ValueError('GRIZZLY_SHOP_CANONICAL_INPUT_SET')
+    expected = {d['path']: d['sha256'] for d in baseline['canonical_inputs']}
+
+    def selected_definitions(raw):
+        rows = [r['definition'] for r in json.loads(raw)['records']
+                if r['definition']['identity']['key'] in keys]
+        indexed = {d['identity']['key']: d for d in rows}
+        if len(indexed) != len(rows):
+            raise ValueError('GRIZZLY_SHOP_CANONICAL_DUPLICATE')
+        return indexed
+
+    for descriptor in overlay['canonical_inputs']:
+        path = descriptor['path']
+        parts = Path(path).parts
+        if len(parts) != 4 or parts[:3] != ('content', 'items', 'definitions') or not path.endswith('.json'):
+            raise ValueError('GRIZZLY_SHOP_CANONICAL_PATH')
+        current_path = root / path
+        if current_path.is_symlink() or not current_path.resolve().is_relative_to(root.resolve()):
+            raise ValueError('GRIZZLY_SHOP_CANONICAL_PATH')
+        before = subprocess.run(['git', '-C', str(root), 'show', base + ':' + path],
+                                check=True, capture_output=True).stdout
+        if hashlib.sha256(before).hexdigest() != expected[path]:
+            raise ValueError('GRIZZLY_SHOP_CANONICAL_BASE_DRIFT')
+        current = current_path.read_bytes()
+        selected_before = selected_definitions(before)
+        selected_current = selected_definitions(current)
+        if selected_before != selected_current:
+            if qualify_custody:
+                # Explicitly qualify only additive custody facts already owned by
+                # the unchanged, Git-base-bound shop source capture. Combat,
+                # physical, charge and all other canonical facts still must match.
+                profiles = {r['production_definition']['production_key']: r
+                            for r in overlay['records']}
+                selected_before = json.loads(json.dumps(selected_before))
+                for key, definition in selected_before.items():
+                    if key not in profiles or definition == selected_current.get(key):
+                        continue
+                    profile = profiles[key]
+                    if (not profile['admission']['materializable']
+                            or profile['admission']['legal_destinations'] != ['CharacterInventory', 'Ground']):
+                        raise ValueError('GRIZZLY_SHOP_CUSTODY_CONFLICT')
+                    for group in ('stack', 'container'):
+                        if known_conflict(definition['semantics'][group], profile['semantics'][group]):
+                            raise ValueError('GRIZZLY_SHOP_CUSTODY_CONFLICT')
+                        definition['semantics'][group] = accepted_first(
+                            definition['semantics'][group], profile['semantics'][group])
+                    if definition['stack_class'] not in ('Unknown', profile['admission']['stack_class']):
+                        raise ValueError('GRIZZLY_SHOP_CUSTODY_CONFLICT')
+                    definition['stack_class'] = profile['admission']['stack_class']
+                    definition['materializable'] = profile['admission']['materializable']
+            if selected_before != selected_current:
+                raise ValueError('GRIZZLY_SHOP_SELECTED_CANONICAL_DRIFT')
+        descriptor['sha256'] = hashlib.sha256(current).hexdigest()
+    return overlay
+
+
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     overlay = json.loads((root / PATH).read_bytes())
     keys, catalogue_sha = selected(root)
@@ -225,18 +302,21 @@ def refresh_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source-root', type=Path)
-    parser.add_argument('--refresh-canonical-inputs-from', metavar='GIT_REF')
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--source-root', type=Path)
+    mode.add_argument('--refresh-canonical-inputs', action='store_true')
+    mode.add_argument('--refresh-canonical-inputs-from', metavar='GIT_REF')
+    parser.add_argument('--base-ref', default='HEAD')
+    parser.add_argument('--qualify-custody-inputs', action='store_true')
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     if args.refresh_canonical_inputs_from:
-        if args.source_root or args.check:
+        if args.check:
             parser.error('canonical repinning is a separate operation')
         refresh_canonical_input_pins(ROOT, args.refresh_canonical_inputs_from)
         raise SystemExit(0)
-    if args.source_root is None:
-        parser.error('--source-root is required for capture')
-    raw = encode(capture(args.source_root))
+    raw = encode(refresh_canonical_inputs(args.base_ref, qualify_custody=args.qualify_custody_inputs) if args.refresh_canonical_inputs
+                 else capture(args.source_root))
     target = ROOT / PATH
     if args.check:
         if target.read_bytes() != raw:

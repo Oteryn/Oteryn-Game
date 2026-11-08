@@ -195,6 +195,19 @@ HOUSE-CUSTODY-0 item-level exclusivity guard.
 
 ChannelRuntime/InstanceRuntime may own immediate ground/corpse/transient-item simulation under FND-03. DUR-03 preserves that owner while requiring durable value safety.
 
+Physical creature-death MINT retains the native death's tagged runtime scope.
+An Instance death carries its `InstanceId` and no `ChannelId`; its origin Channel
+is not a custody or mutation authority. Reservation and receipt equality includes
+the scope namespace, World, local scope ID, ownership generation, actor ID and
+actor generation, followed by the existing loot definition, purpose and draw.
+The current assignment and node incarnation are independently proved before a
+fresh commit. Historical receipts retain their existing replay semantics.
+Ground custody, corpse attribution, reservation and durable audit must commit
+through the existing MINT owner and proof chain. The audit death reference adds
+optional field 6 (`instance_id`); Channel deaths omit it and retain their existing
+semantic binding and encoding. Both the envelope and Ground destination repeat
+the exact death scope. A same-byte Channel/Instance substitution is refused.
+
 Binding separation:
 
 ```text
@@ -1147,8 +1160,15 @@ the structurally non-reused key means none can. Receipt schema and retention
 duration remain owner and registry gates.
 
 **Actual native Ground context.** MINT establishes the item in the actual typed
-Ground for the same `WorldId` and `ChannelId` that own the native runtime
-placement. The binding includes the accepted map and content revisions, native
+Ground for the same `WorldId` and closed `RuntimeScopeRefV1` that own the
+native runtime placement: either Channel or Activity Instance. An Instance
+never substitutes its origin Channel. The complete creature-death cause includes
+the scope discriminator and actual scope identity; its reservation, receipt,
+current assignment fence, corpse-parent equality and capacity lock use that same
+namespace. Channel cause keys and protobuf bytes retain their prior encoding;
+Instance death provenance omits Channel and carries the optional Instance UUID.
+The event envelope and Ground destination repeat that exact namespace. The
+binding includes the accepted map and content revisions, native
 room/placement context, and typed spatial position under their owning Content,
 FND and runtime contracts. Corpse association is provenance/projection only,
 never a competing item location. A fixture coordinate, caller-selected room,

@@ -1,0 +1,227 @@
+{
+  "state": "SUPERSEDED_BY_OWNER_REQUIRED_MAIN_MERGE",
+  "log": "/tmp/questpc7-full-nextest-4.log",
+  "source": "main merge snapshot compiled before alias repairs; not final qualification evidence",
+  "completed": 1315,
+  "scheduled": 8417,
+  "preexisting_ignored_topology_tests": 44,
+  "new_test_skips": 0,
+  "pg_version_observed": "180006",
+  "failures": [
+    {
+      "test": "oteryn-client map::tests::the_temple_area_resolves_to_real_cells_inside_the_atlas",
+      "status": "FAIL",
+      "duration": "0.594s",
+      "root": "placement_index_pin",
+      "errors": [
+        "Error: \"placement index: sha256 does not match the pinned digest\""
+      ]
+    },
+    {
+      "test": "oteryn-client map::tutorial_notice_tests::tutorial_map_window_is_decoded_at_the_real_join_position",
+      "status": "FAIL",
+      "duration": "0.592s",
+      "root": "placement_index_pin",
+      "errors": [
+        "Error: \"placement index: sha256 does not match the pinned digest\""
+      ]
+    },
+    {
+      "test": "oteryn-client play::tests::feature_local_world_view::the_map_is_drawn_only_on_the_join_floor",
+      "status": "FAIL",
+      "duration": "0.578s",
+      "root": "placement_index_pin",
+      "errors": [
+        "Error: \"placement index: sha256 does not match the pinned digest\""
+      ]
+    },
+    {
+      "test": "oteryn-client scene::tests::the_start_area_draws_real_sprites_around_the_player",
+      "status": "FAIL",
+      "duration": "0.629s",
+      "root": "placement_index_pin",
+      "errors": [
+        "Error: \"placement index: sha256 does not match the pinned digest\""
+      ]
+    },
+    {
+      "test": "oteryn-client-assets world::tests::the_pinned_placement_index_digest_matches_the_repository",
+      "status": "FAIL",
+      "duration": "0.118s",
+      "root": "placement_index_pin",
+      "errors": [
+        "thread 'world::tests::the_pinned_placement_index_digest_matches_the_repository' (538672) panicked at crates/client-assets/src/world/tests.rs:12:5:",
+        "left: \"67e96ea4b355a8ec54747a0940f8988e096336d306f37f7af4dd20deea87c24b\"",
+        "right: \"245f6eb6dec4687b047d9fc860beb34a3c8d93231b1b65eb20809013eadb7cd1\""
+      ]
+    },
+    {
+      "test": "oteryn-game-server bundle_spawn_owner_tests::a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn",
+      "status": "FAIL",
+      "duration": "0.011s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "thread 'bundle_spawn_owner_tests::a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn' (538705) panicked at crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs:11:51:"
+      ]
+    },
+    {
+      "test": "oteryn-game-server lifted_tests_auto::node_boot_world_loader::node_boot_qualification_world_loader",
+      "status": "FAIL",
+      "duration": "40.825s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: \"invalid evidence artifact: native gameplay provisioning file bounds\""
+      ]
+    },
+    {
+      "test": "oteryn-game-server lifted_tests_auto::shipped_capability_offers::shipped_world_offers_field_runes_and_coin_conversion",
+      "status": "FAIL",
+      "duration": "0.013s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: \"invalid evidence artifact: native gameplay provisioning file bounds\""
+      ]
+    },
+    {
+      "test": "oteryn-game-server node::serve::daily_world_changes::tests::sp02_grimvale_boot_activates_only_the_days_creatures",
+      "status": "FAIL",
+      "duration": "0.010s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "thread '<unnamed>' (542753) panicked at crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs:11:51:",
+        "thread 'node::serve::daily_world_changes::tests::sp02_grimvale_boot_activates_only_the_days_creatures' (542751) panicked at apps/game-server/src/node/serve/daily_world_changes.rs:637:14:"
+      ]
+    },
+    {
+      "test": "oteryn-game-server node::serve::qualification_fixture::tests::qualification_items_resolve_from_the_real_served_catalogue",
+      "status": "FAIL",
+      "duration": "0.010s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: Content(InvalidArtifact(\"native gameplay provisioning file bounds\"))"
+      ]
+    },
+    {
+      "test": "oteryn-game-server node::serve::daily_world_changes::tests::sp02_sv07_postgres_epoch_and_restart",
+      "status": "FAIL",
+      "duration": "3.571s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "thread '<unnamed>' (542856) panicked at crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs:11:51:",
+        "thread '<unnamed>' (542793) panicked at apps/game-server/src/node/serve/daily_world_changes.rs:637:14:",
+        "Error: \"SP02 PostgreSQL thread failed\""
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::client_spell_journey::tests::spell_journey_resolves_words_from_pinned_catalog",
+      "status": "FAIL",
+      "duration": "0.011s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: InvalidArtifact(\"native gameplay provisioning file bounds\")"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::client_world::full_e2ef5::continuation_three_tests::companion_cost_is_the_current_game_creature_cost",
+      "status": "FAIL",
+      "duration": "0.010s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: InvalidArtifact(\"native gameplay provisioning file bounds\")"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::client_world::full_e2ef5::continuation_two_tests::combat_spells_resolve_real_selected_player_recipes",
+      "status": "FAIL",
+      "duration": "0.012s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: InvalidArtifact(\"native gameplay provisioning file bounds\")"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::client_world::full_e2ef5::rune_tests::barrier_lifetimes_and_item_pairs_come_from_selected_rune_profiles",
+      "status": "FAIL",
+      "duration": "0.009s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: InvalidArtifact(\"native gameplay provisioning file bounds\")"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::client_world::full_e2ef5::rune_tests::paralyze_speed_trial_matches_the_selected_condition_lifetime_and_formula",
+      "status": "FAIL",
+      "duration": "0.009s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: InvalidArtifact(\"native gameplay provisioning file bounds\")"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::client_world::full_e2ef5::tests::illusion_speech_resolves_both_real_and_negative_parameters",
+      "status": "FAIL",
+      "duration": "0.009s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: InvalidArtifact(\"native gameplay provisioning file bounds\")"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::client_world::full_e2ef5::tests::pinned_haste_profiles_have_distinct_observable_speed_cadences",
+      "status": "FAIL",
+      "duration": "0.012s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: InvalidArtifact(\"native gameplay provisioning file bounds\")"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::client_world::full_e2ef5::tile_item_tests::item_illusion_uses_the_pinned_two_hundred_second_lifetime",
+      "status": "FAIL",
+      "duration": "0.010s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: InvalidArtifact(\"native gameplay provisioning file bounds\")"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::client_world::full_e2ef7::continuation_tests::journey_spell_indices_resolve_against_the_pinned_book",
+      "status": "FAIL",
+      "duration": "0.011s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "Error: InvalidArtifact(\"native gameplay provisioning file bounds\")"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::spell_book_sweep_tests::directional_wave_damage_reduces_the_adjacent_creature",
+      "status": "FAIL",
+      "duration": "0.009s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "thread 'qualification::spell_book_sweep_tests::directional_wave_damage_reduces_the_adjacent_creature' (544167) panicked at apps/game-server/src/spell_book_sweep_tests.rs:47:10:"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::spell_book_sweep_tests::self_centred_area_damage_reduces_the_adjacent_creature",
+      "status": "FAIL",
+      "duration": "0.008s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "thread 'qualification::spell_book_sweep_tests::self_centred_area_damage_reduces_the_adjacent_creature' (544169) panicked at apps/game-server/src/spell_book_sweep_tests.rs:47:10:"
+      ]
+    },
+    {
+      "test": "oteryn-game-server qualification::spell_book_sweep_tests::whole_book_is_castable_or_refused_with_golden_counts",
+      "status": "FAIL",
+      "duration": "0.008s",
+      "root": "cosmetics_authoring_provisioning_bound",
+      "errors": [
+        "thread 'qualification::spell_book_sweep_tests::whole_book_is_castable_or_refused_with_golden_counts' (544171) panicked at apps/game-server/src/spell_book_sweep_tests.rs:47:10:"
+      ]
+    }
+  ],
+  "updated_utc": "2026-11-07T17:08:05Z",
+  "superseding_main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "reason": "Owner explicitly required immediate integration of merged PR3020 and a new full prevention run afterwards"
+}

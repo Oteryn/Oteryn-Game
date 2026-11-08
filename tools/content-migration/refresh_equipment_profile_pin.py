@@ -26,6 +26,13 @@ def keys(document):
     return set(rows)
 
 
+def questpc2_additions(source):
+    if "questpc2_source_profile_cohort::IDS.len()" not in source:
+        return 0
+    from questpc2_equipment_cohort import declared_additions
+    return declared_additions(TEST.with_name("questpc2_source_profile_cohort.rs"))
+
+
 def frozen_union():
     sys.path.insert(0, str(ROOT / "tools/contracts"))
     from refresh_quest_custody_equipment import composition
@@ -102,7 +109,13 @@ def regenerate(source, base, updates, qengine, npc, starting=None, custody=None,
             + sum(counts.values())
             + len(qengine["records"]) - registered_engine
             + sum(map(int, extra.groups()))
+            + questpc2_additions(source)
         )
+    overlap = '- 1 // the pick already belongs to the base provider' in source
+    if overlap:
+        pick = 'oteryn:item.tibia.i3456'
+        if pick not in keys(base) or pick not in keys(qengine):
+            raise ValueError('declared pick overlap lacks both source owners')
     actual = keys(base) | keys(updates) | keys(starting or {"records": []})
     if frozen is not None and actual != expected:
         raise ValueError("generated profile keys differ from frozen published union")
@@ -113,6 +126,8 @@ def regenerate(source, base, updates, qengine, npc, starting=None, custody=None,
         raise ValueError("unproven source cohort overlap")
     if custody is None and frozen is None:
         declared -= len(overlap_keys)
+    if overlap:
+        declared -= 1
     if declared != len(actual):
         raise ValueError(
             f"declared cohorts={declared}, generated profile union={len(actual)}"

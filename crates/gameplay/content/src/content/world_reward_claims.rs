@@ -1167,7 +1167,6 @@ mod container_tests {
             "quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet",
             "quest.u15_24.targuna.silver_amulet_chest",
             "quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield",
-            "kv.ornamentedshield",
             "kv.goblintemple2",
             "quest.u7_9.dreamers_challenge.chests_wine",
             "kv.present_box",
@@ -1241,6 +1240,32 @@ mod container_tests {
                     "{suffix}: invalid {field} must not fall back to default state"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn ornamented_shield_preserves_the_full_definition_charge_choice() {
+        // ITEMHOLD-Q: the exact Wiki-selected Garlic Necklace has its full
+        // definition state. No timed-state override means full charges, not one.
+        let source = authored("kv.ornamentedshield").expect("Ornamented Shield source");
+        let parsed = candidate(source.as_object().expect("definition"), &|_| true)
+            .expect("decoded")
+            .expect("exact full-charge recipe");
+        assert_eq!(parsed.placements.len(), 1);
+        let child = &parsed.placements[0].contents[2];
+        assert_eq!(child.item.key().as_str(), "oteryn:item.tibia.i3083");
+        assert_eq!(child.count, 1);
+        assert_eq!(child.charges_remaining, None);
+        assert!(source["native_contents"].get("source_difference").is_none());
+        for field in ["schema", "source_sha256"] {
+            let mut changed = source.clone();
+            changed["native_contents"][field] = "invalid".into();
+            assert!(
+                candidate(changed.as_object().expect("definition"), &|_| true)
+                    .expect("decoded")
+                    .is_err(),
+                "invalid {field}"
+            );
         }
     }
 

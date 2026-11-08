@@ -29,6 +29,8 @@ use crate::domain::currency::{COIN_DEFINITION_FAMILY, COIN_STACK_MAXIMUM, Coin, 
 use prost::Message;
 use sha2::{Digest, Sha256};
 mod hireling;
+mod obsidian_knife;
+mod pick_exchange;
 pub use hireling::{OneItemHirelingPackageV1, OneItemHouseFurnitureKitV1};
 
 /// BUY rows (NPC-0 §5.5): 20 coin BURN lines, 2 change MINTs and the item MINT.
@@ -80,6 +82,8 @@ pub use oteryn_gameplay_economy::npc_trade::{
 
 pub const SIDE_BUY: u32 = 1;
 pub const SIDE_SELL: u32 = 2;
+/// Server-side item exchange; command 7 never projects this as a wire trade offer.
+pub const SIDE_EXCHANGE: u32 = 3;
 pub const LINE_COIN_BURN: u32 = 1;
 pub const LINE_COIN_MINT: u32 = 2;
 pub const LINE_ITEM_BURN: u32 = 3;
@@ -229,6 +233,8 @@ fn check_npc_trade_usage(
             SELL_ALL_RL06_PARTICIPANTS_MAX,
             SELL_ALL_RL06_EFFECT_WORK_UNITS_MAX,
         )
+    } else if side == SIDE_EXCHANGE {
+        (6, 6, 6, 15)
     } else if side == SIDE_BUY {
         (
             BUY_RL01_TOUCHED_ITEM_INSTANCES_MAX,
@@ -374,6 +380,12 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
         _ => return Err(AuditError::InvalidInput),
     }
     let side = cause.side;
+    if side == SIDE_EXCHANGE {
+        if cause.npc_key == "oteryn:npc.uzgod" { obsidian_knife::check(value)?; }
+        else if cause.npc_key == "oteryn:npc.seymour" {
+            pick_exchange::check_recipe(value, "oteryn:npc.seymour", "oteryn:item.tibia.i2856", "oteryn:item.tibia.i3374")?;
+        } else { pick_exchange::check(value)?; }
+    }
     let hireling_sell = sell_hireling::audit_source(value);
     if side == SIDE_SELL && value.house_key.is_some() && !hireling_sell {
         return Err(AuditError::InvalidInput);
@@ -393,6 +405,7 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
                 NPC_TRADE_SELL_GOLD_UNITS_MAX
             },
         ),
+        SIDE_EXCHANGE => (LINE_ITEM_BURN, [LINE_ITEM_MINT, LINE_ITEM_MINT], 0),
         _ => return Err(AuditError::InvalidInput),
     };
     let sell_all = value.sell_all;

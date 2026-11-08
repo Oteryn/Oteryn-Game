@@ -1,0 +1,409 @@
+{
+  "quest": "oteryn:quest.hidden_threats_quest",
+  "mechanism": "world item reward and atomic direct main-backpack outputs",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "test": "questpc7_hidden_full_native_route_and_atomic_valuables",
+    "seconds": 43.512682362,
+    "log": "/tmp/questpc7-hidden-red.log",
+    "marker": "QUESTPC7_NATIVE_DEATHS POSTGRES_STARTED",
+    "failure": "all valuables belong directly in the main backpack:3040, actual0 expected2"
+  },
+  "status": "QUALIFIED",
+  "scope": [
+    "fresh subject state",
+    "native chamber entry",
+    "five native lethal occurrences with duplicate suppression",
+    "physical chest USE",
+    "exact direct carried outputs",
+    "completion and exact USE replay",
+    "17 distinct occupied main-backpack slots refuse all4 output entries atomically",
+    "ordinary native fish consumption frees a slot for retry",
+    "explicit phase overlay preserves original source chest interactions"
+  ],
+  "assumptions": [
+    "Select standard Gold Nugget3040 from ambiguous duplicate name; CONTRACT-NOTES cites retained XML and bounded403 lookup."
+  ],
+  "reuse": {
+    "branch": "questpc8",
+    "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+    "preserved": [
+      "native NPC exchanges",
+      "source monetary fees",
+      "bounded repeat counters",
+      "exact charge matching",
+      "Father11-track atomic write"
+    ]
+  },
+  "green": {
+    "seconds": 43.335733047,
+    "test": "questpc7_hidden_full_native_route_and_atomic_valuables",
+    "log": "/tmp/questpc7-hidden-green.log",
+    "marker": "QUESTPC7_HIDDEN_STORY POSTGRES_CASE_COMPLETED",
+    "scope": "native entry/five deaths/physical chest/exact four direct output entries/completion/exact command replay"
+  },
+  "fixture_repairs": [
+    {
+      "seconds": 43.392939986,
+      "log": "/tmp/questpc7-hidden-capacity-green.log",
+      "reason": "Repeated ordinary apple transfers merge into one stack; initial fixture did not occupy17 slots.",
+      "correction": "Use distinct nonstackable empty bags plus one apple; assert17 actual carried container entries before capacity refusal. No production guard or expected result weakened."
+    },
+    {
+      "seconds": 45.682087394,
+      "log": "/tmp/questpc7-hidden-capacity-fixed-green.log",
+      "reason": "Exact17 occupied slots and atomic capacity refusal pass. Apple is physically admitted but has no active native food consumption action, so retry returnsNothingToUse.",
+      "correction": "Use existing admitted fish3578 and its retained native wire consumption owner; do not add or weaken product food rules."
+    }
+  ],
+  "expanded_green": {
+    "seconds": 46.515011045,
+    "log": "/tmp/questpc7-hidden-capacity-fish-green.log",
+    "marker": "QUESTPC7_HIDDEN_STORY POSTGRES_CASE_COMPLETED",
+    "postgres": "18.6",
+    "scope": [
+      "17 actual occupied slots",
+      "four-output capacity refusal",
+      "no partial item, source or quest advance",
+      "native fish consumption frees one slot",
+      "all outputs, completion and exact USE replay"
+    ]
+  },
+  "author_tests": {
+    "count": 21,
+    "seconds": 9.872,
+    "log": "/tmp/questpc7-hidden-author-final.log"
+  },
+  "world_units": {
+    "count": 20,
+    "seconds": 3.57,
+    "log": "/tmp/questpc7-hidden-world-unit-early.log"
+  },
+  "retained_regression": {
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "seconds": 97.67,
+    "log": "/tmp/questpc7-hidden-retained-story-rewards-pg.log",
+    "failure": "Unconditional selected overlay intercepts original key_fragment01 source chest; original accepted USE becomesRejected.",
+    "fix": "Generic activation must exactly match a non-preserved durable storage guard; route the overlay only at personal programme1. Original source routing remains reachable outside that phase.",
+    "state": "Fixed; retained story source claims GREEN110.64s, including all3 Hidden Threats source rewards."
+  },
+  "phase_fix_green": {
+    "seconds": 45.593580772,
+    "log": "/tmp/questpc7-hidden-phase-green.log",
+    "postgres": "18.6",
+    "marker": "QUESTPC7_HIDDEN_STORY POSTGRES_CASE_COMPLETED",
+    "scope": "Complete native route,17-slot atomic refusal, fish use frees one slot, exact outputs, completion and replay with explicit active-phase routing."
+  },
+  "build_repairs": [
+    {
+      "error": "E0063 missingbackpack_outputs in apps/game-server/src/node/serve/qualification_fixture.rs:154",
+      "fix": "Every game-server qualification/test initializer explicitly retains false legacy layout; added server check and strict all-target/all-feature clippy.",
+      "boundary": "No assertions or product rules weakened; all18 validation gates GREEN."
+    }
+  ],
+  "environment_repairs": [
+    "After strict gameplay clippy, verified no active compiler before clearing inactive incremental caches; retained focused PG cache and restored12253167616 free bytes."
+  ],
+  "checks": [
+    {
+      "check": "loader-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "loader::tests::"
+      ],
+      "seconds": 4.71,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-loader-units.log"
+    },
+    {
+      "check": "world-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 2.584,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-world-units.log"
+    },
+    {
+      "check": "author",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/quest-authoring",
+        "-p",
+        "test_qengine_rewards.py"
+      ],
+      "seconds": 8.75,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-author.log"
+    },
+    {
+      "check": "retained-story-rewards-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_story_rewards_use_replay_and_refusal",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 166.922,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-retained-story-rewards-pg.log"
+    },
+    {
+      "check": "father-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "fathers_burden_eight_handins_cape_experience_and_replay",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 76.534,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-father-pg.log"
+    },
+    {
+      "check": "sam-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "qengine_rewards_backpack_exchange",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 75.269,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-sam-pg.log"
+    },
+    {
+      "check": "reward-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "reward_callbacks::"
+      ],
+      "seconds": 1.401,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-reward-units.log"
+    },
+    {
+      "check": "mint-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "reward_claim_mint::tests::"
+      ],
+      "seconds": 104.348,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-mint-units.log"
+    },
+    {
+      "check": "generation",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/qengine_rewards.py",
+        "--check"
+      ],
+      "seconds": 7.286,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-generation.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-social"
+      ],
+      "seconds": 85.383,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-social",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 191.009,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-clippy.log"
+    },
+    {
+      "check": "server-check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-game-server"
+      ],
+      "seconds": 2.181,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-server-check.log"
+    },
+    {
+      "check": "server-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 139.858,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-server-clippy.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 15.337,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 49.765,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 117.629,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-hidden-pin-check"
+      ],
+      "seconds": 126.982,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 10.784,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hidden-fmt.log"
+    }
+  ],
+  "retained_source_markers": [
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward1 (32349, 32194, -9) native_source=true duration=5.176739865s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward2 (32382, 32368, -9) native_source=true duration=5.229705036s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward3 (32287, 32119, -7) native_source=true duration=5.134888154s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward4 (32389, 32001, -6) native_source=true duration=4.870025149s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward5 (32449, 32109, -8) native_source=true duration=4.836532524s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ghostsilver_lantern_quest (32825, 31664, -9) native_source=true duration=4.961918777s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.imbuing_crystal_quest (33026, 31662, -14) native_source=true duration=4.874426778s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.painting_of_agirl_quest (32883, 31686, -10) native_source=true duration=4.776570332s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones (33393, 32373, -11) native_source=true duration=4.827374153s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night (33384, 32323, -12) native_source=true duration=4.886641929s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth (33408, 32396, -11) native_source=true duration=4.787582618s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01 (33080, 32014, -13) native_source=true duration=4.702556786s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02 (33031, 32050, -13) native_source=true duration=4.743484215s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file (33078, 31980, -13) native_source=true duration=4.942929646s",
+    "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow (32369, 32795, -10) native_source=true duration=4.831316931s"
+  ],
+  "retained_source_case_count": 15
+}

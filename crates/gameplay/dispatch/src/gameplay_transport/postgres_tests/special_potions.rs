@@ -17,7 +17,7 @@ use std::num::{NonZeroU32, NonZeroU64};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: super::AdmittedSession,
     command_id: u64,

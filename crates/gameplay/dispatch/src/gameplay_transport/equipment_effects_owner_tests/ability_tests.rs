@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "questpc2_source_profile_cohort.rs"]
+mod questpc2_source_profile_cohort;
+
 #[test]
 fn equipment_effects_owner_regeneration_reads_worn_item_in_own_slot_only() -> TestResult {
     use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
@@ -185,6 +188,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:9970-9986
     // and data-global/startup/tables/chest.lua:806-811 confirm the single reward and
     // no speed attribute (speed_bonus=0); boots 3554 and shield 3420 already exist.
+    (
+        "QUESTPC2-SOURCE-CLOSURE",
+        questpc2_source_profile_cohort::IDS.len()
+            - questpc2_source_profile_cohort::SHARED_WITH_MAIN.len(),
+    ),
     ("QUESTS3-DEMON-HELMET", 1),
     // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
@@ -302,6 +310,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("WORLDCHG", 40),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
+    ("QUESTPC7-HOT-CORPSES", 8),
+    ("QUESTPC7-HOT-FISHBURGER", 1),
+    ("QUESTPC7-SMITH-CORPSES", 4),
+    ("QUESTPC7-SMITH", 1),
+    ("QUESTPC7-SLUG-CORPSES", 4),
+    ("QUESTPC7-MARSH-CORPSES", 4),
     // BEGIN GENERATED QREADY PROFILE ADDITIONS
     // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
     // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json
@@ -311,6 +325,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Source-qualified zero speed: 2822, 2823, 2848, 3310, 21982.
     ("QREADY2", 5),
     // END GENERATED QREADY PROFILE ADDITIONS
+    // Merged source/custody cohorts, refreshed by questpc7_merge_audit_inventories.py.
+    ("QUESTPC7-REGISTERED-UNION", 97),
     // SEASON W18:2126 exact initialized House source profiles. Relative to the
     // frozen9668e0a04 base (including loadout/SRX updates),1959 keys are new.
     // Source: house-decoration-profiles.json, Crystal201189f items.xml and
@@ -331,9 +347,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 71 independently captured physical quest Items.
-    // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
-    // data. All retain qualified zero speed; merged owner cohorts overlap.
+    // Source-pinned physical quest Items retain existing mechanic owners.
+    // In particular the pre-existing pick keeps its unknown equipment speed;
+    // custody completion must not replace that owner with a fabricated zero.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
@@ -356,9 +372,14 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             .find(|row| row.production_definition.production_key == key)
             .ok_or_else(|| format!("missing QENGINE2 source profile {key}"))?;
         assert!(profile.admission.materializable, "{key}");
-        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+        let expected = if key == "oteryn:item.tibia.i3456" {
+            None
+        } else {
+            Some(0)
+        };
+        assert_eq!(profile.attributes.speed_bonus, expected, "{key}");
     }
-    assert_eq!(added_keys.len(), 71);
+    assert_eq!(added_keys.len(), 128);
     for id in [3029, 3035, 3205, 3212, 3234, 3607] {
         assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
     }
@@ -412,6 +433,24 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
 
+    // Independently enumerated source admissions already carried by this lane.
+    let source_ids = questpc2_source_profile_cohort::IDS;
+    assert_eq!(
+        source_ids
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        source_ids.len()
+    );
+    for id in source_ids {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing questpc2 source profile {key}"))?;
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
     let later_main_profiles = PROFILE_ADDITIONS
         .iter()
         .filter(|(name, _)| {
@@ -436,7 +475,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     // BASE1ae39c7f has53 QENGINE2 records. Main's seven QUESTPC4 records
     // are already enumerated in the generated custody delta, not in that base.
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 18);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 75);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES

@@ -7,7 +7,7 @@ use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn use_bundle_ladder(
+    pub(super) async fn use_native_bundle_ladder(
         &self,
         actor: ExactActorRef,
         command: UseCommand,

@@ -1,0 +1,23 @@
+crates/gameplay/domain/src/domain/soulpit/passages.rs:13:pub enum SoulpitPassage {
+tools/game-atlas-creature-gameplay/export.py:696:def _require_state(section: dict[str, Any], label: str) -> str:
+tools/game-atlas-creature-gameplay/export.py:738:    _require_state(shop, "npc shop"); _validate_reason_codes(shop, "npc shop")
+tools/game-atlas-creature-gameplay/export.py:757:    _require_state(services, "npc services"); _validate_reason_codes(services, "npc services")
+tools/game-atlas-creature-gameplay/export.py:763:    _require_state(travel, "npc travel"); _validate_reason_codes(travel, "npc travel")
+tools/game-atlas-creature-gameplay/export.py:790:    _require_state(loot, "monster loot"); _validate_reason_codes(loot, "monster loot")
+tools/game-atlas-creature-gameplay/export.py:804:    state = _require_state(stats, "monster stats"); _validate_reason_codes(stats, "monster stats")
+tools/game-atlas-creature-gameplay/export.py:813:    _require_state(resistances, "monster resistances"); _validate_reason_codes(resistances, "monster resistances")
+crates/gameplay/quests/src/quest/world_callbacks.rs:40:pub struct Passage {
+crates/gameplay/quests/src/quest/world_callbacks.rs:48:    pub require_state: bool,
+crates/gameplay/quests/src/quest/world_callbacks.rs:256:                    || (p.require_state
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:78:        for passage_definition in &callback.passages {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:79:            let passage = passage_definition;
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:113:                        || passage.replacement == Some(f.appearance_id))
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:123:            if passage_definition.require_state && map.facts.base_hidden(*passage) != close {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:126:            if let Some(appearance) = passage_definition.replacement {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:130:                        passage_definition.appearance
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs:331:        if let Some(replacement) = passage.replacement {
+tools/content-schema/quest-authoring/test_quest_batch4.py:52:            'appearance': 389, 'require_state': True,
+tools/content-schema/quest-authoring/test_quest_batch4.py:58:                bad['passages'][0]['require_state'] = 1
+tools/content-schema/quest-authoring/quest_batch4.py:273:        fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement', 'require_state'}, key + ': passage')
+tools/content-schema/quest-authoring/quest_batch4.py:278:        require(type(passage.get('require_state', False)) is bool, key + ': invalid passage state guard')
+tools/content-schema/quest-authoring/quest_batch4.py:279:        if passage.get('require_state', False):

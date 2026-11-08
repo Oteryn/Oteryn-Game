@@ -82,6 +82,36 @@ struct Facts {
     inventory: NpcInventorySnapshot,
     outfits: BTreeMap<u16, u8>,
 }
+
+#[test]
+fn inventory_planner_refuses_value_only_rules_and_unowned_character_guards()
+-> Result<(), NpcRuleError> {
+    let fixture = include_str!("test-fixtures/hero_greeting.json");
+    for value_only in [true, false] {
+        let mut document: serde_json::Value =
+            serde_json::from_str(fixture).map_err(|error| NpcRuleError::Json(error.to_string()))?;
+        if value_only {
+            document["rules"][0]["effects"] = serde_json::json!([
+                {"kind": "give_item", "item": "oteryn:item.tibia.i3031", "count": 1}
+            ]);
+        } else {
+            document["rules"][0]["guards"] = serde_json::json!([
+                {"kind": "level", "op": "ge", "value": 0}
+            ]);
+        }
+        let encoded = serde_json::to_string(&document)
+            .map_err(|error| NpcRuleError::Json(error.to_string()))?;
+        let catalogue = NpcRuleCatalog::from_json_documents(&[&encoded])?;
+        let facts = Facts::empty();
+        let mut input = facts.input("oteryn:npc.strange_pipe", "hi", 0);
+        input.trigger = NpcRuleTrigger::Greet;
+        assert!(matches!(
+            catalogue.plan_inventory(&input),
+            Err(NpcRuleError::MissingNativeResolution(_))
+        ));
+    }
+    Ok(())
+}
 impl Facts {
     fn empty() -> Self {
         Self {
@@ -586,12 +616,17 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.a_father_s_burden_quest",
         "oteryn:quest.a_pirates_tail",
         "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.demon_oak",
+        "oteryn:quest.cults_of_tibia_quest",
+        "oteryn:quest.dangerous_depths_quest",
         "oteryn:quest.draconia_quest",
+        "oteryn:quest.forgotten_knowledge_quest",
         "oteryn:quest.hero_of_rathleton_quest",
         "oteryn:quest.hot_cuisine_quest",
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
         "oteryn:quest.the_hidden_city_of_beregar_quest",
+        "oteryn:quest.the_inquisition_quest",
         "oteryn:quest.the_order_of_the_stag_quest",
         "oteryn:quest.tibia_tales",
     ]);
@@ -945,6 +980,32 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     // Canonical main adds the exact source cohort checked above; schema2
     // Mystery has no fabricated legacy definition or absent-value mapping.
     assert_eq!(active.npc_legacy.len(), 9);
+    // Main adds independently owned programmes; retain the exact original lane set.
+    let original = [
+        "oteryn:quest.a_father_s_burden_quest",
+        "oteryn:quest.a_pirates_tail",
+        "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.hero_of_rathleton_quest",
+        "oteryn:quest.hot_cuisine_quest",
+        "oteryn:quest.in_service_of_yalahar_quest",
+        "oteryn:quest.the_order_of_the_stag_quest",
+    ];
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .filter(|p| original.contains(&p.document.quest.as_str()))
+            .count(),
+        7
+    );
+    assert_eq!(
+        active
+            .npc_legacy
+            .keys()
+            .filter(|q| original.contains(&q.as_str()))
+            .count(),
+        6
+    );
     let mut defaults = BTreeMap::new();
     for track in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
@@ -1016,6 +1077,15 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .catalogue()
             .npc_legacy
             .contains_key("oteryn:quest.authored.mystery_of_the_valley_quest")
+    );
+    assert_eq!(
+        loaded
+            .catalogue()
+            .npc_legacy
+            .keys()
+            .filter(|quest| original.contains(&quest.as_str()))
+            .count(),
+        6
     );
     Ok(())
 }

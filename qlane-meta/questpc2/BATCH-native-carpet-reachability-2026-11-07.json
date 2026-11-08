@@ -1,0 +1,66 @@
+{
+  "id": "native-carpet-reachability-2026-11-07",
+  "lifecycle": "AUTHORING",
+  "whole_quest_qualified": false,
+  "state": "GREEN_MECHANIC_SLICE",
+  "latest_red_pg": {
+    "server_version_num": 180006,
+    "seconds": 134.1,
+    "log": "/tmp/questpc2-upper-six-chase-diagnostic-pg.log",
+    "player": [
+      32589,
+      31642,
+      3
+    ],
+    "defender_origin": [
+      32592,
+      31644,
+      3
+    ],
+    "chase": "None"
+  },
+  "source_profiles": {
+    "ids": [
+      2572,
+      2573,
+      2574,
+      2575,
+      2576,
+      2577,
+      2578,
+      2579,
+      2580
+    ],
+    "old_records": 3629,
+    "new_records": 3638,
+    "all_existing_records_unchanged": true,
+    "preservation": "/tmp/questpc2-carpet-profile-preservation.json"
+  },
+  "source_tests": {
+    "cases": 5,
+    "red_seconds": 12.202,
+    "green_seconds": 12.977
+  },
+  "native_generation": "43write+43check PASS",
+  "check_seconds": 18.84,
+  "fmt": "PASS",
+  "pending": [],
+  "green_pg": {
+    "server_version_num": 180006,
+    "seconds": 94.83,
+    "subcase_millis": 18508,
+    "log": "/tmp/questpc2-carpet-upper-six-green-pg.log",
+    "earned_native_origin_credits": 6,
+    "earned_recipe_counter_caps": [
+      1,
+      1,
+      1,
+      2
+    ]
+  },
+  "world_digest": "56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306",
+  "pins": "repo refresh/check PASS",
+  "clippy_all_targets_all_features_deny_warnings_seconds": 40.71,
+  "duplicate_migrations": "HEAD PASS",
+  "next": "Whole quest still needs four source treasure claims, replay/capacity/exit/journal."
+}

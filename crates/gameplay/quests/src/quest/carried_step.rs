@@ -141,7 +141,7 @@ pub fn recipe(key: &str) -> Option<&'static Recipe> {
 }
 
 pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
-    RECIPES.iter().map(|recipe| Callback {
+    RECIPES.iter().map(|recipe| Callback { failure_teleport: None,
         use_range: 1, disguise: None, completes: false, premium_required: false, present: Vec::new(), required_travel: Vec::new(),
 
         state_operations: Vec::new(),
@@ -150,7 +150,7 @@ world_change: None,
         world_requirements: Vec::new(),
         key: recipe.key.into(), quest: "oteryn:quest.the_ancient_tombs_quest".into(),
         trigger: Trigger::StepIn,
-        selector: Selector {
+        selector: Selector { position_aliases: Vec::new(),
  ordinal: None,
  native: None, position: None, unique: Some(recipe.unique), action: None, appearance: None },
         lever: None, reversible: false, passages: Vec::new(),
@@ -159,7 +159,13 @@ world_change: None,
         offerings: Vec::new(), item_on_target: None, return_on_failure: true,
         failure_message: None, success_message: None, native_rule: None,
         sources: vec![format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:{}", recipe.source_line)],
-    })
+achievements: Vec::new(),
+activation: None,
+item_reward: None,
+remote_teleport: None,
+requirements: None,
+reward_bundle: false,
+})
 }
 
 /// An exact native counterpart of a source UID omitted by the B3 import.

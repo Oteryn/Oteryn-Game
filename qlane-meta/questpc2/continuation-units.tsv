@@ -1,0 +1,4 @@
+continuation-committed-selectors	0	quest_reward_claims_committed_map_selectors_match_source
+continuation-source-selectors	0	quest_reward_claims_source_selectors_bind_exactly
+continuation-world-facts	0	map::facts
+continuation-content-claims	0	world_reward_claims

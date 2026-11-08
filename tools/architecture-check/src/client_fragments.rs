@@ -178,6 +178,7 @@ pub(crate) fn scan(root: &Path) -> Result<(Vec<Value>, Vec<Value>), String> {
             .filter(|entry| entry["kind"] == "handlers" && entry["status"] == "supported")
         {
             if handler["commands"].as_array().is_some_and(Vec::is_empty)
+                && handler["direction"] == "server_to_client"
                 && !discovered
                     .iter()
                     .any(|entry| entry["kind"] == "panels" && entry["status"] == "supported")

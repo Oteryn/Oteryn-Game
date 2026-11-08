@@ -80,15 +80,15 @@
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
-      "records": 2
+      "records": 1
     },
     "Service.Blessing": {
       "index": "content/services/blessings/index.json",
-      "records": 10
+      "records": 4
     },
     "Service.Promotion": {
       "index": "content/services/promotion/index.json",
-      "records": 7
+      "records": 4
     },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
@@ -292,12 +292,6 @@
       "path": "content/cosmetics/mounts/mounts-00000-00251.json"
     },
     {
-      "path": "content/cosmetics/outfits/authoring.json"
-    },
-    {
-      "path": "content/cosmetics/outfits/native-cosmetics.json"
-    },
-    {
       "path": "content/craft/index.json"
     },
     {
@@ -398,9 +392,6 @@
     },
     {
       "path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
-    },
-    {
-      "path": "content/items/authored-static-admissions.json"
     },
     {
       "path": "content/items/definitions/items-00000-00499.json"
@@ -613,12 +604,6 @@
       "path": "content/items/definitions/spell-native-profiles.json"
     },
     {
-      "path": "content/items/definitions/srx1-item-updates.json"
-    },
-    {
-      "path": "content/items/definitions/starting-loadout-profiles.json"
-    },
-    {
       "path": "content/items/index.json"
     },
     {
@@ -733,13 +718,13 @@
       "path": "content/quests/definitions/quests-00300-00351.json"
     },
     {
-      "path": "content/services/bank/bank-00000-00001.json"
+      "path": "content/services/bank/bank-00000-00000.json"
     },
     {
       "path": "content/services/bank/index.json"
     },
     {
-      "path": "content/services/blessings/blessing-00000-00009.json"
+      "path": "content/services/blessings/blessing-00000-00003.json"
     },
     {
       "path": "content/services/blessings/index.json"
@@ -748,7 +733,7 @@
       "path": "content/services/promotion/index.json"
     },
     {
-      "path": "content/services/promotion/promotion-00000-00006.json"
+      "path": "content/services/promotion/promotion-00000-00003.json"
     },
     {
       "path": "content/services/trade/index.json"
@@ -853,9 +838,6 @@
       "path": "rulesets/progression/wheel-of-destiny/spell-profile.json"
     },
     {
-      "path": "tools/content-schema/native-gameplay/loot-tables.json"
-    },
-    {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
     }
   ],
@@ -942,7 +924,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "a051499f90d192d83f93cbeaed6efcaf45650b66ed261f661d5e9889aad9c149"
+          "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"
         },
         {
           "creates_canonical_identities": false,
@@ -1013,7 +995,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3890,
+          "record_count": 3692,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1021,20 +1003,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "959bc6e12d77ab53b4cd397a5b66b98d8c0b83d41712169c5935d5b81128cbef"
-        },
-        {
-          "creates_canonical_identities": false,
-          "path": "content/items/definitions/starting-loadout-profiles.json",
-          "record_count": 10,
-          "representation": "native_profile_overlay",
-          "runtime_activation": false,
-          "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
-          "schema_contract": {
-            "kind": "rust_serde",
-            "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
-          },
-          "sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a"
+          "sha256": "c6571ce2bc6e27663c7df63221643edf49713f3be49761c88ed287b1f300d968"
         }
       ],
       "Presentation": [

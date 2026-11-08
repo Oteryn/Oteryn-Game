@@ -160,7 +160,29 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
-        if players.is_empty() || players.len() > 8 || monsters.is_empty() || monsters.len() > 8 {
+        if monsters.is_empty() {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.commit_source_group(players, monsters, project)
+    }
+
+    /// The same bounded carrier transaction for a source party rite that has
+    /// no summoned monsters. Encounter admission keeps its nonempty-monster gate.
+    pub fn commit_source_steps_and_project<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        self.commit_source_group(players, &[], project)
+    }
+
+    fn commit_source_group<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        if players.is_empty() || players.len() > 8 || monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
         }
         for proof in &players {

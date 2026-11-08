@@ -3,7 +3,7 @@ import hashlib
 import json
 
 PATH = 'tools/content-schema/native-gameplay/tool-item-profiles.json'
-IDS = {593, 594, 606, 608, 609, 615, 867, 868, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
+IDS = {593, 594, 606, 608, 609, 615, 867, 868, 1791, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
@@ -15,9 +15,17 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or len(keys) != len(IDS) or set(keys) != {f'oteryn:item.tibia.i{i}' for i in IDS}):
         raise ValueError('TOOL_ITEM_PROFILE_SET')
     document = json.loads(generated[profile_path])
-    if {row['production_definition']['production_key'] for row in document['records']} & set(keys):
-        raise ValueError('TOOL_ITEM_PROFILE_DUPLICATE')
-    document['records'] = sorted(document['records'] + records, key=order)
+    existing = {row['production_definition']['production_key']: row for row in document['records']}
+    additions = []
+    for record in records:
+        key = record['production_definition']['production_key']
+        if key in existing:
+            from questpc2_ladder_composition import stationary_tool
+            if stationary_tool(existing[key], record) is None:
+                raise ValueError('TOOL_ITEM_PROFILE_DUPLICATE')
+        else:
+            additions.append(record)
+    document['records'] = sorted(document['records'] + additions, key=order)
     data = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
     generated[profile_path] = data
     manifest = json.loads(generated[manifest_path])

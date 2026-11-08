@@ -1,0 +1,342 @@
+{
+  "scope": "Whole selected13-stage personal Grimvale programme; original global event and optional source form/raid fidelity outside selected recipe",
+  "test": "questpc7_grimvale_whole_native_investigation_and_rewards",
+  "postgres": "18.6",
+  "red_seconds": 42.299587316,
+  "red_point": "No native programme entry after actual PostgreSQL fixture initialization",
+  "red_log": "/tmp/questpc7-grimvale-story-red.log",
+  "green": "PASS; whole selected programme",
+  "callback_count": 24,
+  "native_death_objectives": 9,
+  "subject_state_seeded": false,
+  "assumptions": "qlane-meta/questpc7/CONTRACT-NOTES.md",
+  "expanded_red": {
+    "seconds": 45.058490792,
+    "log": "/tmp/questpc7-grimvale-story-green3.log",
+    "point": "missing active native werewolf after five real carried blossoms and phase1 admission",
+    "passed": [
+      "fresh Premium entry refusal",
+      "five physical22082 MINTs from distinct once-only native plots",
+      "first harvest fresh Premium refusal",
+      "exact native teleport destinations and flower counters"
+    ]
+  },
+  "authoring_tests": 27,
+  "transport": "Existing fenced preserve-state transition retains fresh requirements; legacy read-only requirements remain refused.",
+  "guardian_diagnostic": {
+    "seconds": 44.73,
+    "log": "/tmp/questpc7-grimvale-story-green4.log",
+    "result": "InvalidCreatureTarget because new fixture omitted standard native policy bootstrap",
+    "correction": "Reusable prepare_native_hunter installs activated native policies and binds admitted attacker; no policy/progress changes"
+  },
+  "expanded_red_after_native_bootstrap": {
+    "seconds": 120.196789455,
+    "log": "/tmp/questpc7-grimvale-story-green6.log",
+    "passed": [
+      "all35 required native deaths with exact quotas",
+      "physical blossoms and silvered trap consumption/replay",
+      "four distinct leaders",
+      "Rhargu conversation",
+      "twenty Werehyaenas and earned Domizian approach"
+    ],
+    "point": "AlreadyPlaced when fixture attempted second NPC-table installation",
+    "correction": "Install both existing contacts once; charge exact six-actor peak; reuse Domizian actor"
+  },
+  "current_run": {
+    "log": "/tmp/questpc7-grimvale-story-green8.log",
+    "state": "PASS"
+  },
+  "green_seconds": 92.470203109,
+  "green_log": "/tmp/questpc7-grimvale-story-grimvale-pg.log",
+  "scope_proved": [
+    "fresh Current Premium at entry, harvesting, trap, final rewards and earned travel",
+    "five actual carried22082 blossoms from once-only native sites",
+    "exact10 afflicted kills and four distinct native leaders",
+    "closed silvered trap22074 MINT, exact consumption and command replay",
+    "native Feroxa and20 Werehyaena deaths;35 total",
+    "Rhargu and Domizian conversations with distinct retained real actors",
+    "both Oskayaat native investigation sites",
+    "atomic27565 amulet, two achievements, completion and typed access",
+    "exact final command replay without duplicate grants",
+    "actual earned native exit/reentry without changing final grants/completion"
+  ],
+  "ritual_binding_correction": {
+    "red_seconds": 92.474344974,
+    "point": "ambiguous USE on shared altar cell",
+    "fix": "earned exit moved to adjacent actual ground33001,32933,-8 appearance38069; ritual remains sole altar USE"
+  },
+  "pending": [],
+  "canonical_track_witness": {
+    "red": "Existing callback unit demanded source_track metadata for new item-on-target tracks; original assertion unchanged",
+    "fix": "Register canonical recipe citations after legacy NPC alias compilation; retain all donor bindings with entry.or_insert",
+    "loader_tests": 10,
+    "world_callback_tests": 22,
+    "postgres_after_fix_seconds": 92.470203109,
+    "postgres_after_fix_log": "/tmp/questpc7-grimvale-story-grimvale-pg.log"
+  },
+  "checks": [
+    {
+      "check": "ferumbras-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_ferumbras_full_native_seals_and_reward_bundle",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 149.967,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-ferumbras-pg.log"
+    },
+    {
+      "check": "grimvale-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_grimvale_whole_native_investigation_and_rewards",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 208.489,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-grimvale-pg.log"
+    },
+    {
+      "check": "loader-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "loader::tests::"
+      ],
+      "seconds": 4.326,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-loader-units.log"
+    },
+    {
+      "check": "world-callback-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 2.9,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-world-callback-units.log"
+    },
+    {
+      "check": "author",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/quest-authoring",
+        "-p",
+        "test_qengine_rewards.py"
+      ],
+      "seconds": 19.169,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-author.log"
+    },
+    {
+      "check": "item-author",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_qengine_reward_item_profiles.py"
+      ],
+      "seconds": 0.219,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-item-author.log"
+    },
+    {
+      "check": "item-generation",
+      "command": [
+        "python3",
+        "tools/content-migration/register_spell_families.py",
+        "--check"
+      ],
+      "seconds": 73.242,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-item-generation.log"
+    },
+    {
+      "check": "generation",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/qengine_rewards.py",
+        "--check"
+      ],
+      "seconds": 10.053,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-generation.log"
+    },
+    {
+      "check": "placements",
+      "command": [
+        "python3",
+        "tools/content-schema/npc-authoring/convert_placements.py",
+        "--check"
+      ],
+      "seconds": 0.268,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-placements.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 101.143,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 196.953,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-clippy.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 122.438,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-grimvale-story-pin-check"
+      ],
+      "seconds": 128.79,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-pin-check.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 160.169,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 48.813,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-world.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 10.998,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-story-fmt.log"
+    }
+  ],
+  "initial_green_seconds": 93.008242622,
+  "unit_results": {
+    "loader-units": [
+      10
+    ],
+    "world-callback-units": [
+      22
+    ],
+    "content": [
+      123
+    ],
+    "world": [
+      5
+    ]
+  },
+  "retained_ferumbras_pg": {
+    "seconds": 51.67813782,
+    "version": "18.6",
+    "result": "PASS"
+  }
+}

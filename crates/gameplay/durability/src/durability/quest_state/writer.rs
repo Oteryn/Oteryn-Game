@@ -106,6 +106,81 @@ impl DurabilityRoot {
         .await
     }
 
+    /// A content-bound world callback uses the same fenced quest writer and receipt.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_native_and_gate<
+        G: grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, native, None)),
+            None,
+            None,
+            None,
+            gate,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+    }
+
+    /// World value grants borrow the existing MINT and native Premium participants.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one fenced world transaction binds its source occurrence and admitted participants"
+    )]
+    pub async fn commit_character_world_callback_with_reward_and_gate<
+        G: grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        admission: QuestRewardAdmission<'_>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, Some(admission.native), Some(admission))),
+            None,
+            None,
+            None,
+            premium,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+    }
+
     /// World value grants borrow the existing MINT and native Premium participants.
     #[allow(
         clippy::too_many_arguments,
@@ -335,9 +410,7 @@ impl DurabilityRoot {
         } else {
             None
         };
-        let world_reward = callback
-            .as_ref()
-            .and_then(|c| c.effects.item_reward.as_ref());
+        let world_reward = callback.as_ref().and_then(|c| c.item_reward().as_ref());
         if (reward_callback.is_some() != reward_admission.is_some())
             || (world_reward.is_some()
                 && context
@@ -396,7 +469,7 @@ impl DurabilityRoot {
                                 || c.disguise.is_some()
                                 || !c.present.is_empty()
                                 || !c.required_travel.is_empty()
-                                || c.effects.item_reward.is_some()
+                                || c.item_reward().is_some()
                                 || c.effects.outfit_reward.is_some()
                                 || c.effects.scene.is_some())
                     }))
@@ -509,7 +582,7 @@ impl DurabilityRoot {
                         && let QuestCause::Command(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
-                    if callback.as_ref().is_some_and(|c|c.effects.item_reward.is_some())
+                    if callback.as_ref().is_some_and(|c|c.item_reward().is_some())
                         && let QuestCause::Use(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
@@ -550,6 +623,12 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
+                    if let Some(callback) = &callback
+                        && !super::super::quest_world_callback::completion_claims_are_current(&mut tx, fence, callback).await?
+                    { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if let (Some(callback), Some((_, context, _, _))) = (&callback, &context)
+                        && !super::super::quest_world_callback::party_is_current(&mut tx, &node, fence, callback, context).await?
+                    { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     let id = character.as_bytes().as_slice();
                     let state = sqlx::query(
                         "SELECT character_revision::text, level, total_experience, \
@@ -580,6 +659,41 @@ impl DurabilityRoot {
                         || content_revision != catalogue.content_revision()
                     {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                    }
+                    if let Some(requirements) = reward_callback.as_ref().and_then(|callback| callback.requirements.as_ref())
+                        .or_else(|| callback.as_ref().and_then(|callback| callback.requirements.as_ref())) {
+                        if state.try_get::<i64,_>("level")? < i64::from(requirements.min_level) {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if requirements.premium {
+                            let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                                .bind(id).fetch_one(&mut *tx).await?;
+                            let account: [u8;16] = account.try_into().map_err(|_|DurabilityError::InvalidStoredState)?;
+                            if !grizzly_gate.task_permitted(&mut tx, account).await? {
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                        }
+                        if !requirements.owned_items.is_empty()
+                            && !super::owned_items::holds(&mut tx,fence,&requirements.owned_items).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if !requirements.owned_cosmetics.is_empty()
+                            && !super::owned_cosmetics::holds(&mut tx, fence.character_id,
+                                reward_admission.as_ref().map(|admission| admission.native).or_else(|| context.as_ref().and_then(|(_,_,_,admission)| admission.map(|a|a.native)))
+                                    .or_else(|| context.as_ref().and_then(|(_,_,native,_)|*native)),
+                                &requirements.owned_cosmetics).await?
+                        {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        // The Character root lock serializes every quest write for this owner.
+                        // These existing completion facts remain read-only prerequisites.
+                        if !requirements.completed_quests.is_empty() {
+                            let completed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=ANY($2::text[]) AND completed_character_revision IS NOT NULL")
+                                .bind(id).bind(&requirements.completed_quests).fetch_one(&mut *tx).await?;
+                            if completed != i64::try_from(requirements.completed_quests.len()).map_err(|_|DurabilityError::InvalidStoredState)? {
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                        }
                     }
                     if request.transition_key==oteryn_gameplay_quests::quest::rotten_blood::RESTORE_DOOR
                         && state.try_get::<i64, _>("level")? < i64::from(oteryn_gameplay_quests::quest::rotten_blood::REQUIRED_LEVEL)
@@ -914,7 +1028,7 @@ impl DurabilityRoot {
                             &mut tx, fence.character_id, &occurrence, reward).await?;
                     }
                     if let Some(world) = &callback
-                        && world.effects.item_reward.is_some() {
+                        && world.item_reward().is_some() {
                         let Some(admission) = context.as_ref().and_then(|(_, _, _, admission)| *admission) else {
                             tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
@@ -982,6 +1096,13 @@ impl DurabilityRoot {
                         if !matches!(credited,super::super::world_event::changes::counters::CreditOutcome::Applied{..}) {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
+                    }
+                    if let Some(world) = &callback && !world.achievements.is_empty() {
+                        let (cause, ordinal) = request.cause.key();
+                        let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key)).map_err(|_| DurabilityError::InvalidStoredState)?;
+                        let occurrence = sha2::Sha256::digest(&occurrence);
+                        let keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
+                        super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
                     }
                     let committed_revision = root
                         .revision

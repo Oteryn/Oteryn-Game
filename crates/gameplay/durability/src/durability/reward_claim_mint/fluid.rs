@@ -16,7 +16,13 @@ pub(super) async fn initialize(
     initialize_state(tx, root, item, transaction, subtype).await
 }
 
-async fn initialize_state(tx: &mut Transaction<'_, Postgres>, root: &Reservation, item: [u8;16], transaction:[u8;16], subtype:u8) -> std::result::Result<(), DurabilityError> {
+async fn initialize_state(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &Reservation,
+    item: [u8; 16],
+    transaction: [u8; 16],
+    subtype: u8,
+) -> std::result::Result<(), DurabilityError> {
     sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid)")
         .bind(item.as_slice()).bind(root.world_id.as_slice()).bind(i16::from(subtype))
         .bind(transaction.as_slice()).execute(&mut **tx).await?;
@@ -86,6 +92,10 @@ pub(super) async fn apply(
             .enumerate()
             .map(|(index, child)| (index + 1, child.fluid_subtype)),
     ) {
+        // Direct children initialize with their existing MINT/audit owner in contents::apply.
+        if ordinal != 0 {
+            continue;
+        }
         let Some(subtype) = subtype else {
             continue;
         };

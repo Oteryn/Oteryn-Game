@@ -1,0 +1,163 @@
+{
+  "log": ".questpc/restart4-story-reward-pg-3.log",
+  "test_source_sha256": "eb90983db0b5c1ce087ecf5648df72ff05c7547cb7661fbcd4e383e356cf2c8e",
+  "manifest_sha256": "6fd393eaf7df3f05146ec4fcecccf6e78ce3943cf4506d465c1601b4338b744e",
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "--",
+    "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "qualified": {
+    "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/hidden_threats_quest",
+        "canary:quest/hunter_outfits_quest",
+        "canary:quest/knight_outfits_quest",
+        "canary:quest/koshei_the_deathless_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01 (33080, 32014, -13) native_source=true duration=5.043438154s",
+            "duration": "5.043438154s",
+            "position": [
+              33080,
+              32014,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02 (33031, 32050, -13) native_source=true duration=5.697229324s",
+            "duration": "5.697229324s",
+            "position": [
+              33031,
+              32050,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file (33078, 31980, -13) native_source=true duration=6.022256843s",
+            "duration": "6.022256843s",
+            "position": [
+              33078,
+              31980,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow (32369, 32795, -10) native_source=true duration=6.435422783s",
+            "duration": "6.435422783s",
+            "position": [
+              32369,
+              32795,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest (32860, 32516, -11) native_source=true duration=5.971801627s",
+            "duration": "5.971801627s",
+            "position": [
+              32860,
+              32516,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1 (33194, 32458, -7) native_source=true duration=4.270704111s",
+            "duration": "4.270704111s",
+            "position": [
+              33194,
+              32458,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2 (33305, 32277, -10) native_source=true duration=4.208655745s",
+            "duration": "4.208655745s",
+            "position": [
+              33305,
+              32277,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3 (33212, 32593, -7) native_source=true duration=3.827924448s",
+            "duration": "3.827924448s",
+            "position": [
+              33212,
+              32593,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4 (33053, 32468, -11) native_source=true duration=4.133266656s",
+            "duration": "4.133266656s",
+            "position": [
+              33053,
+              32468,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold (33273, 32470, -11) native_source=true duration=5.164991023s",
+            "duration": "5.164991023s",
+            "position": [
+              33273,
+              32470,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs (33261, 32444, -12) native_source=true duration=4.03780137s",
+            "duration": "4.03780137s",
+            "position": [
+              33261,
+              32444,
+              12
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum (33261, 32448, -12) native_source=true duration=4.053713422s",
+            "duration": "4.053713422s",
+            "position": [
+              33261,
+              32448,
+              12
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

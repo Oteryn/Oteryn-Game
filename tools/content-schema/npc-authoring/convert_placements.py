@@ -115,7 +115,7 @@ def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str],
         if (row.get("basis") != "CHOSEN_OTERYN_APPROXIMATION"
                 or hashlib.sha256(raw).hexdigest() != row.get("recipe_sha256")):
             raise ValueError("authored placement recipe pin")
-        recipes = [recipe for recipe in json.loads(raw)["recipes"]
+        recipes = [recipe for recipe in json.loads(raw).get("recipes", [record["recipe"] for record in json.loads(raw).get("records", [])])
                    if recipe["wiki_title"] == row["recipe_title"]]
         normalize = lambda value: re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
         if (len(recipes) != 1 or not any(
@@ -142,6 +142,7 @@ def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str],
             }],
         }
     return result
+
 
 
 def provenance(candidate: dict, placement: dict) -> list[dict]:

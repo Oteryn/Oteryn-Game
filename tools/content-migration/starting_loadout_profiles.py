@@ -8,6 +8,8 @@ import hashlib
 import json
 import sys
 
+from native_profile_composition import merge_fact
+
 IDS = {3571, 3572, 7773, 7774, 7991, 7992, 8095, 50171}
 INPUT = 'tools/content-schema/native-gameplay/starting-loadout-appearance-facts.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -48,6 +50,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     document = json.loads(generated[profile_path])
     existing = {row['production_definition']['production_key']: row
                 for row in document['records']}
+    if len(existing) != len(document['records']):
+        raise ValueError('STARTING_LOADOUT_PROFILE_DUPLICATE')
     additions = []
     for record in bound:
         key = record['production_definition']['production_key']
@@ -68,12 +72,18 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             raise ValueError(f'STARTING_LOADOUT_PROTECTION_CONFLICT:{key}')
         if protection.get('state') == 'KNOWN':
             previous['semantics']['protection'] = protection
+        for group, fact in record['semantics'].items():
+            old = previous['semantics'].get(group, {'state': 'UNKNOWN'})
+            if group == 'presentation' and old.get('state') != 'UNKNOWN':
+                continue
+            previous['semantics'][group] = merge_fact(old, fact, f'{key}/{group}')
     # Separate providers must never repeat an identity. The legacy provider
     # retains existing owners; only missing source-derived records enter this one.
     records = sorted(additions, key=order)
     raw = ('{\n  "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",\n  "records": [\n'
            + ',\n'.join('    ' + json.dumps(row, sort_keys=True, separators=(',', ':')) for row in records)
            + '\n  ]\n}\n').encode()
+    # Publish only after every overlap has passed identity and known-fact checks.
     generated[FRAGMENT] = raw
     profile_raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
     if additions != bound:

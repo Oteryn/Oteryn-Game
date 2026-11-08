@@ -1,0 +1,3 @@
+                    &crate::gameplay_transport::spell_premium_coordinator::QuestRewardPremium(
+                        self.premium_coordinator,
+                    ),

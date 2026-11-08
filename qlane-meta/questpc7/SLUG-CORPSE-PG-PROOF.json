@@ -1,0 +1,44 @@
+{
+  "scope": "Ordinary native Slug death produces its fresh corpse; no odour USE or whole quest completion claim",
+  "postgres": "18.6",
+  "red_seconds": 91.212731681,
+  "red_error": "kill_reward_refused reason=corpse_item_inadmissible creature=oteryn:creature.slug",
+  "red_log": "/workspace/scratch/questpc7-slug-red.log",
+  "green": {
+    "duration_seconds": 72.27338302,
+    "postgres": "18.6",
+    "marker": "QUESTPC7_GOBLIN_SLUG POSTGRES_CASE_COMPLETED duration=72.27338302s success=true",
+    "log": "/workspace/scratch/questpc7-slug-green.log"
+  },
+  "sources": {
+    "xml": "imports/canary/items-xml/items.xml:30254,30290,30296,30301",
+    "xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "client_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "loot_table_sha256": "33d8e78abf88d73215915d918746f31f6c6cf1566dfc91bd5f1af7cd51352c3c"
+  },
+  "changes": {
+    "profiles_added": [
+      12526,
+      12533,
+      12534,
+      12535
+    ],
+    "all_prior_profiles_unchanged": true,
+    "only_loot_fact_changed": 12526,
+    "capacity": 10,
+    "all_tables_and_creature_bindings_unchanged": true,
+    "closed_inventory_residual": 130
+  },
+  "checks": {
+    "workspace_all_targets": "PASS4m19s",
+    "fmt": "PASS",
+    "duplicate_migrations": "PASS",
+    "regeneration": "PASS; Prey15cases776creatures,46registeredfiles, closed auditinventories",
+    "official_pin_refresh": "PASS unchanged8e4be229...",
+    "clippy": "PASS strict content/dispatch all-targets11m01s including queue",
+    "content_dispatch_units": "Build-only rerun interrupted before tests to prioritize owner fresh-main candidate; rerun on merged candidate under PREPUSH-2 budget",
+    "own_actual_pg_green": "PASS72.27338302s",
+    "equipment_closed_inventory_unit": "PASS1test40.24s using freshly built dispatch test binary"
+  },
+  "publication": "Native fresh-corpse production slice QUALIFIED; whole Goblin ACTIVE; ordered corpse USE remains qengine2"
+}

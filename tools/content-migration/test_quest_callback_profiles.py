@@ -153,6 +153,41 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertEqual(rows['oteryn:item.tibia.i5952']['semantics']['physical']['value']['weight'],
                          {'state': 'KNOWN', 'value': 120})
 
+    def test_static_reward_carriers_retain_source_physics_and_reject_conflicts(self):
+        document = {'records': []}
+        profiles.admit_map_carriers(ROOT, document)
+        self.assertEqual(len(document['records']), 5)
+        for row in document['records']:
+            physical = row['semantics']['physical']['value']
+            box = row['production_definition']['production_key'] == 'oteryn:item.tibia.i2473'
+            self.assertEqual(physical['pickupable'], {'state': 'KNOWN', 'value': box})
+            self.assertEqual(row['attributes']['blocks_movement'], not box)
+            self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+        retained = copy.deepcopy(document)
+        profiles.admit_map_carriers(ROOT, document)
+        self.assertEqual(document, retained)
+        document['records'][0]['attributes']['blocks_movement'] = not document['records'][0]['attributes']['blocks_movement']
+        with self.assertRaisesRegex(ValueError, 'QUEST_CHEST_ITEM_PROFILE_CONFLICT'):
+            profiles.admit_map_carriers(ROOT, document)
+
+    def test_selected_nightmare_teddy_chest_admits_its_exact_canonical_reward(self):
+        key = 'oteryn:item.tibia.i21982'
+        document = json.loads(self.generated[PROFILE])
+        document['records'] = [r for r in document['records']
+                               if r['production_definition']['production_key'] != key]
+        self.generated[PROFILE] = json.dumps(document).encode()
+        self.admit()
+        rows = [r for r in json.loads(self.generated[PROFILE])['records']
+                if r['production_definition']['production_key'] == key]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['production_binding']['target']['key'], key)
+        self.assertEqual(rows[0]['production_binding']['disposition'], 'EXACT')
+        self.assertEqual(rows[0]['admission'], {
+            'materializable': True, 'stack_class': 'NonStackable',
+            'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(rows[0]['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 590})  # items.xml, not the chest's capacity hint
+
     def test_rotten_blood_rust_callback_admits_the_canonical_bloody_tear_once(self):
         # Rotten Blood's fixed callback is authored in Rust, so the JSON callback
         # inventory cannot supply this already admitted source Item by itself.
@@ -221,6 +256,23 @@ class QuestCallbackProfiles(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_ITEM_MISSING'):
             self.admit()
 
+    def test_charged_child_requires_an_exact_existing_native_charge_proof(self):
+        for change in ('partial', 'foreign_target', 'missing'):
+            document = copy.deepcopy(self.document)
+            row = next(r for r in document['records']
+                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i3084')
+            if change == 'partial':
+                row['semantics']['charges']['value']['count']['value'] = 249
+            elif change == 'foreign_target':
+                row['production_binding']['target']['revision'] = 'foreign'
+            else:
+                document['records'].remove(row)
+            self.generated[PROFILE] = json.dumps(document).encode()
+            before = dict(self.generated)
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_ITEM_NOT_ADMITTED'):
+                self.admit()
+            self.assertEqual(self.generated, before, 'refused charge proof must not partially update generated outputs')
+
     def test_grizzly_icon_and_every_complete_chest_child_have_native_profiles(self):
         self.admit()
         rows = {row['production_definition']['production_key']: row
@@ -234,6 +286,14 @@ class QuestCallbackProfiles(unittest.TestCase):
         # Complete charged/fluid/key/text recipes add thirty identities to the
         # original 130-Item closure, including the fixed Holy Icon entitlement.
         self.assertEqual(len(expected), 160)
+        # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
+        # 3083), with 3083 also used by Triangle Tower; retain the full merged closure.
+        self.assertEqual(len(expected), 160)
+        # Desert2 adds exactly its three previously absent child identities;
+        # the existing canonical root and fourth child were already in this closure.
+        self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
+                         'oteryn:item.tibia.i3077'} <= expected)
+
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (2859, 2949, 3053, 3083)} <= expected)
         # Full-charge bags add Triangle Tower's Garlic Necklace and Desert's
         # Protection Amulet, Ring of Healing and Magic Light Wand.

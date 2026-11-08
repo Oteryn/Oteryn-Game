@@ -10,6 +10,7 @@ from pathlib import Path
 
 import container_native
 import charge_native
+import poison_daggers
 import itemhold_charge_precedence
 import reward_claim_variant_migration as migration
 
@@ -184,7 +185,8 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                 if (semantic_digest({k: v for k, v in source.items() if k != 'progress_write'}) != case['source_claim_sha256']
                         or semantic_digest(items[case['item_identity']['key']]) != case['item_definition_sha256']):
                     raise ValueError('selected source/Item stack normalization inputs changed')
-                serialized_item_stacks(reward, items, stack_problem)
+                serialized_item_stacks(reward, claim_items, stack_problem)
+            poison_daggers.correct_canonical(source['identity']['key'], placement['position'], reward)
             for qi, quantity in enumerate(reward.get('items', [])):
                 problem = stack_problem(claim_items[quantity['item']['key']], quantity['count'])
                 if problem:

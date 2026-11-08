@@ -102,6 +102,14 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             },
             self.result["summary"]["implementation_state"],
         )
+        # Native Item qualification can resolve a live claim without rewriting
+        # its historical SOURCE witness or declaring the whole quest playable.
+        draconia = by_title["Draconia Quest"]
+        self.assertEqual(draconia["reward_claim_owner"]["state"],
+                         "REWARD_CLAIM_IMPLEMENTATION_PENDING")
+        self.assertIn("claim_item_semantics_missing",
+                      draconia["canonical"][0]["missing_data_codes"])
+        self.assertEqual(draconia["playable_verification"], "NOT_ASSESSED")
         # QUEST-FINISH admits eight additional exact full-default charge claims.
         # Resolving the remaining fluid Items moves two reward-only owners from
         # data pending to implementation pending; SOURCE and runtime stay distinct.

@@ -1,0 +1,105 @@
+{
+  "scope": "Exact native source wells and level50 expertise gate; source loot regression. Expertise portal and eight-death/final completion remain active work.",
+  "source_capture": "tools/content-schema/world-authoring/samples/quest-key-door-bindings.json",
+  "postgres": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "red": [
+      {
+        "case": "raw well without seeded action",
+        "duration_seconds": 48.75,
+        "failure": "NothingToUse instead of Committed"
+      },
+      {
+        "case": "source expertise gate",
+        "duration_seconds": 48.31,
+        "failure": "ItemReference for missing native1648"
+      }
+    ],
+    "green": {
+      "level_gate": {
+        "cases": 1,
+        "duration_seconds": 48.01,
+        "marker_seconds": 44.074331965,
+        "proof": "Native XP owner sets49/50; coherent source admission facts initialize live projection; framed USE locked49/open50/replay unchanged revision1."
+      },
+      "wells_markers_seconds": [
+        45.248547973,
+        46.881649131
+      ],
+      "source_claims": {
+        "cases": 6,
+        "cohort_duration_seconds": 167.11,
+        "cohort_marker_seconds": 167.058484999,
+        "key3980_marker_seconds": 5.875597231,
+        "proof": "Both source well variants plus all six original reward inventories through actual framed USE/replay/refusal; source chest3980 retains exact native key custody."
+      }
+    },
+    "fixture_decisions": "Discarded context mismatch and classed live-refresh attempts. Fresh source Character has no vocation; use the coherent Character-owned facts to reconstruct the admission projection after each committed XP level, without inventing level/vocation."
+  },
+  "checks": {
+    "check": "all-target world/dispatch passed 1m10s",
+    "clippy": "world/dispatch all-target/all-feature -D warnings passed59.57s; final dispatch after fixture correction passed35.97s",
+    "units": "source binding unit cases3 passed",
+    "python_profiles": "2 passed0.170s",
+    "python_rewards": "12 passed9.748s",
+    "content": "123 passed3.20s",
+    "world_repository": "5 passed69.22s",
+    "pin_check": "passed; World77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0 unchanged",
+    "format": "world/dispatch and mounted test files passed"
+  },
+  "semantic_review": "Only native1648/1649 added; every prior item profile and key binding unchanged. Three new exact route bindings exclude House/wrong item/nearby/conflicting attributes. Binary map data unchanged. Reward and native item producers now share canonical manifest serialization; manifest parsed values unchanged by that fix.",
+  "logs": {
+    "route-red": {
+      "path": "/tmp/questpc6-root-fibula-route-red.log",
+      "sha256": "9c4eddd72e65c114d9e0591f0cfdbb54177f49a73e562e6897f6879744a8375e"
+    },
+    "level-red": {
+      "path": "/tmp/questpc6-root-fibula-level-red.log",
+      "sha256": "aada675fb271d96ce272aee13b9feeea0cace78f215fde82cf8ca603864cf4c9"
+    },
+    "level-admission-green": {
+      "path": "/tmp/questpc6-root-fibula-level-admission-green.log",
+      "sha256": "ee1d45b405281a69824d452c592eef4788f4fd2502ba305f442cedf523022bd8"
+    },
+    "route-green": {
+      "path": "/tmp/questpc6-root-fibula-route-green.log",
+      "sha256": "69cc3e4993215376447c6106319b985d474bfb0a56320bfad65d8950227cdf61"
+    },
+    "route-check": {
+      "path": "/tmp/questpc6-root-fibula-route-check.log",
+      "sha256": "1a140e60024832addca80b99b12df1b535ab8098c2213a9a4969e30656ef6c0e"
+    },
+    "route-clippy": {
+      "path": "/tmp/questpc6-root-fibula-route-clippy.log",
+      "sha256": "558747a8bb3ae0f8f7b9fc09cd3ca47cc89c7023d54778aa0dac9a7404b1cae1"
+    },
+    "route-units": {
+      "path": "/tmp/questpc6-root-fibula-route-units.log",
+      "sha256": "c20754173396ad11fb083f132379ea31b8d385f5fc6cc126d63090fcca63963c"
+    },
+    "route-content": {
+      "path": "/tmp/questpc6-root-fibula-route-content.log",
+      "sha256": "6569b33a59d128889e26e31c08ec447745603e6d04d6b3efc8e642e8ed68a78b"
+    },
+    "route-world": {
+      "path": "/tmp/questpc6-root-fibula-route-world.log",
+      "sha256": "504ef93fe964bd5ea8d956a8d201d80adc04671891c5dec480e41d14b810a242"
+    },
+    "route-python-rewards": {
+      "path": "/tmp/questpc6-root-fibula-route-python-rewards.log",
+      "sha256": "0a94769691c213b6f2b801803a17048cab3a3493bef3076476dc54f1f13a8bc8"
+    },
+    "route-pin-refresh": {
+      "path": "/tmp/questpc6-root-fibula-route-pin-refresh.log",
+      "sha256": "6653fdac3154a44af6c6cb35cfbc979ffc5b199f31c74a368f0cc3ad09cedf83"
+    },
+    "route-pin-check": {
+      "path": "/tmp/questpc6-root-fibula-route-pin-check.log",
+      "sha256": "456b00ff9a18b84b48680508b96ae70e0bb07cc58b9f0e538d00f9ed34345bca"
+    },
+    "route-clippy-final": {
+      "path": "/tmp/questpc6-root-fibula-route-clippy-final.log",
+      "sha256": "e581ed61e084203578c4ec9492c8ed74d602914640920cbd41425085320ccb3e"
+    }
+  }
+}

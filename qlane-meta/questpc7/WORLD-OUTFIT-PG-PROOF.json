@@ -1,0 +1,192 @@
+{
+  "status": "shared world-outfit mechanism QUALIFIED; all selected checks GREEN; no local whole quest relabelled",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 41.719169904,
+    "log": "/tmp/questpc7-world-outfit-red.log",
+    "assertion": "Committed real world USE lacked its compatible outfit grant (actual0, expected1)"
+  },
+  "initial_green": {
+    "seconds": 43.658567297,
+    "log": "/tmp/questpc7-world-outfit-green.log"
+  },
+  "green": {
+    "seconds": 42.659470583,
+    "log": "/tmp/questpc7-world-outfit-final-green.log",
+    "checks": [
+      "generic writer cannot bypass the world participant",
+      "missing admitted native generation refuses without progress or grant",
+      "real native-map wardrobe USE grants one compatible base",
+      "exact command replay returns its receipt without another grant"
+    ]
+  },
+  "fixture_boundary": "The retained Warmaster wardrobe exercises the shared engine. Its independently owned prior mission is arranged through a fenced fixture transition. This does not qualify that quest or any questpc7 whole entry.",
+  "authoring_checks": [
+    "15 qengine reward tests PASS",
+    "16 batch4 tests PASS",
+    "qengine repository generation/check PASS"
+  ],
+  "remaining_checks": [],
+  "fixture_repair": "Added negative test initially held its SpellLanePermit across the subsequent transport USE, producing a10-second timeout/no-command-result after52.896s. Releasing the permit before transport fixes the fixture; product grant code unchanged.",
+  "checks": [
+    {
+      "check": "hoist-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_formorgar_hoist_read_only_step",
+        "--",
+        "--nocapture"
+      ],
+      "seconds": 235.145,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-world-outfit-recovered-hoist-pg.log"
+    },
+    {
+      "check": "world-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 11.798,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-world-outfit-recovered-world-units.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 182.531,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-world-outfit-recovered-clippy.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 86.009,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-world-outfit-recovered-check.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 138.834,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-world-outfit-recovered-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 69.771,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-world-outfit-recovered-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 115.487,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-world-outfit-recovered-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-world-outfit-pin-check"
+      ],
+      "seconds": 127.742,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-world-outfit-recovered-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.454,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-world-outfit-recovered-fmt.log"
+    }
+  ],
+  "retained_hoist": {
+    "log": "/tmp/questpc7-world-outfit-recovered-hoist-pg.log",
+    "postgres": "18.6",
+    "cases": [
+      {
+        "name": "formogar-hoist-3059",
+        "seconds": 46.061217847
+      },
+      {
+        "name": "formogar-hoist-3060",
+        "seconds": 45.907779804
+      },
+      {
+        "name": "formogar-hoist-3061",
+        "seconds": 45.272586336
+      }
+    ],
+    "scope": "Every trip checks both flags and remote lever state without changing quest state, receipts or revisions."
+  },
+  "world_and_deployment_pin": "842187e5493a9d04849d13d8062398f6120f250c116b0fc094c87387e611e0a3",
+  "world_pin_change": "unchanged; repository refresh/check confirm identical compiled world geometry"
+}

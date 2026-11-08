@@ -1,0 +1,65 @@
+{
+  "at": "2026-11-08T12:06:50.200255+00:00",
+  "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
+  "local_merge_head": "ff18477ad12961d7fa38543619a57f52a54b5bc5",
+  "authoring_unit_modules": 106,
+  "authoring_unit_cases_run": 1151,
+  "authoring_unit_failed_modules": [],
+  "authoring_checks": "PASS exact CI checks runner; checks6 exit0",
+  "content_tree": "PASS full group with repaired nested replay rerun; all251 managed files",
+  "state": "COMPILING_WIP_PG_COUNTER_COMPLETION_FIXES_PENDING",
+  "node_boot": "all six profile calls failed Docker frontend registry networking; full-manifest whole script queued",
+  "remaining": [
+    "Complete five-case PostgreSQL requalification (first L6 fluid case GREEN 93.030637369s, actual PG18.6)",
+    "Strict clippy on four runtime crates running",
+    "Remaining durability/dispatch unit tests queued",
+    "Fresh unchanged-content authoring checks and units running",
+    "Whole node-boot full_manifest retry queued after disk cleanup"
+  ],
+  "quests_unit_tests": {
+    "passed": 335,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 27.569
+  },
+  "client_assets_unit_tests": {
+    "passed": 10,
+    "failed": 0,
+    "seconds": 0.52
+  },
+  "cargo_check_workspace_all_targets": {
+    "result": "PASS",
+    "seconds": 139
+  },
+  "clippy": "PASS eleven changed crates all-targets/all-features; quests and generated client-assets rechecked after final changes",
+  "world_pin": "3100fafd589a608f7334d383fb3d6daacea324696fa672228339f6a77f953c7c",
+  "delegated_runtime_exclusion": {
+    "key": "oteryn:quest-callback/questpc7-feaster-purification-entry",
+    "owner": "qengine2",
+    "reason": "unqualified second-phase route duplicates the original STEP selector; authoring retained; strict registry unchanged"
+  },
+  "authoring_unit_preexisting_skips": 8,
+  "runtime_repairs": [
+    "Remove duplicate fresh-session setup before main scenario admission",
+    "Preserve 256 callbacks per registered document while admitting combined greeting inventory",
+    "Include service counter effect in bound primary transition",
+    "Set exact flat completion flag for legacy world reward plan"
+  ],
+  "quests_and_npc_unit_tests": {
+    "passed": 369,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 212.956
+  },
+  "pg_red_before_repairs": {
+    "friends_seconds": 68.509770041,
+    "friends_error": "quest reward commit: InvalidInput",
+    "hidden_seconds": 38.095162264,
+    "hidden_error": "23514 quest reward completion lacks exact owning receipt/state"
+  },
+  "pg_partial_green": {
+    "l6_reward_fluids_seconds": 93.030637369,
+    "postgres": "18.6",
+    "result": "PASS"
+  }
+}

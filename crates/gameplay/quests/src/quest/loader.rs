@@ -246,6 +246,13 @@ pub(super) fn lower_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
+    // Native goals own their zero-based counters before callbacks add read-only guards.
+    lowered.catalogue =
+        super::native_kill_goals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::kill_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend(
         super::reward_callbacks::declare_tracks(lowered.catalogue).map_err(QuestLoadError::Json)?,
     )
@@ -302,6 +309,7 @@ pub(super) fn lower_embedded_quest_state(
     }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
     // This tool-owned auxiliary flag is outside the captured NPC track inventory.
     lowered.source_tracks.insert(
@@ -310,6 +318,30 @@ pub(super) fn lower_embedded_quest_state(
     );
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
+    // Authored world programmes lower their tracks from the pinned canonical recipe.
+    // Register that evidence after legacy NPC alias compilation, retaining every
+    // existing donor storage binding and never presenting a new track as Lua storage.
+    for callback in super::world_callbacks::load().map_err(QuestLoadError::Json)? {
+        if let Some(source) = callback
+            .sources
+            .iter()
+            .find(|source| source.starts_with("canonical:"))
+        {
+            for storage in &callback.storage {
+                if lowered
+                    .catalogue
+                    .track(&storage.track)
+                    .is_some_and(|track| track.quest == callback.quest)
+                {
+                    lowered
+                        .source_tracks
+                        .entry(storage.track.clone())
+                        .or_insert_with(|| source.clone());
+                }
+            }
+        }
+    }
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.
     let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
@@ -521,6 +553,7 @@ mod tests {
         }
         expected.insert(crate::quest::schrodinger_island::callback().key);
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        expected.insert(crate::quest::schrodinger_island::callback().key);
         // Collector main adds these exact native World cohorts; no donor
         // exclusion becomes an automatic admission through a loaded key.
         let before_native = expected.len();
@@ -816,6 +849,36 @@ mod tests {
                 .iter()
                 .any(|change| change.track.ends_with("/visitor") && change.after == 1)
         );
+        Ok(())
+    }
+    #[test]
+    fn authored_world_tracks_retain_canonical_witness_without_replacing_donor_storage()
+    -> Result<(), String> {
+        let original = parse_quest_state(EMBEDDED, "content-1").map_err(|e| format!("{e:?}"))?;
+        let lowered = load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+        for (key, source) in original.source_tracks {
+            if lowered.catalogue.track(&key).is_some() {
+                assert_eq!(
+                    lowered.source_track(&key),
+                    Some(source.as_str()),
+                    "donor binding {key}"
+                );
+            }
+        }
+        for key in [
+            "oteryn:quest-progress/questpc7/grimvale/programme",
+            "oteryn:quest-progress/questpc7/grimvale/feroxa",
+        ] {
+            let source = lowered
+                .source_track(key)
+                .ok_or("canonical source witness")?;
+            assert!(source.starts_with("canonical:content/quests/definitions/"));
+            assert!(source.contains("#/records/55/definition:sha256:"));
+            assert_eq!(
+                lowered.catalogue.track(key).ok_or("track")?.quest,
+                "oteryn:quest.grimvale_quest"
+            );
+        }
         Ok(())
     }
 }

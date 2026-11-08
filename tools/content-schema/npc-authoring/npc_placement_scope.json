@@ -73,7 +73,33 @@
     "oteryn:npc.zalamon",
     "oteryn:npc.zethra",
     "oteryn:npc.zirella",
-    "oteryn:npc.zlak"
+    "oteryn:npc.zlak",
+    "oteryn:npc.a_strange_chalice",
+    "oteryn:npc.a_sweaty_cyclops",
+    "oteryn:npc.amanda",
+    "oteryn:npc.brewster",
+    "oteryn:npc.domizian",
+    "oteryn:npc.elane",
+    "oteryn:npc.gamon",
+    "oteryn:npc.henricus",
+    "oteryn:npc.isimov",
+    "oteryn:npc.ivalisse",
+    "oteryn:npc.jorge",
+    "oteryn:npc.kasmir",
+    "oteryn:npc.king_tibianus",
+    "oteryn:npc.maealil",
+    "oteryn:npc.marina",
+    "oteryn:npc.para_norbert",
+    "oteryn:npc.quentin",
+    "oteryn:npc.rahkem",
+    "oteryn:npc.rhargu",
+    "oteryn:npc.the_forgemaster",
+    "oteryn:npc.tibra",
+    "oteryn:npc.tyrias",
+    "oteryn:npc.yana",
+    "oteryn:npc.yberius",
+    "oteryn:npc.rafzan",
+    "oteryn:npc.dermot"
   ],
   "position_conflicts": [],
   "placement_cells": {
@@ -88,6 +114,13 @@
       {
         "x": 32801,
         "y": 31188,
+        "z": 7
+      }
+    ],
+    "oteryn:npc.dermot": [
+      {
+        "x": 32165,
+        "y": 32437,
         "z": 7
       }
     ]
@@ -108,6 +141,54 @@
       "recipe_path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
       "recipe_sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
       "recipe_title": "Mystery of the Valley Quest"
+    },
+    "oteryn:npc.rhargu": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+      "recipe_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "recipe_title": "Grimvale Quest",
+      "placements": [
+        {
+          "position": {
+            "x": 33138,
+            "y": 32353,
+            "z": 5
+          },
+          "direction": "SOUTH"
+        }
+      ]
+    },
+    "oteryn:npc.domizian": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+      "recipe_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "recipe_title": "Grimvale Quest",
+      "placements": [
+        {
+          "position": {
+            "x": 33140,
+            "y": 32353,
+            "z": 5
+          },
+          "direction": "SOUTH"
+        }
+      ]
+    },
+    "oteryn:npc.para_norbert": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+      "recipe_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "recipe_title": "Feaster of Souls Quest",
+      "placements": [
+        {
+          "position": {
+            "x": 32628,
+            "y": 32076,
+            "z": 7
+          },
+          "direction": "SOUTH"
+        }
+      ]
     }
   },
   "placement_overrides": {

@@ -1,0 +1,238 @@
+{
+  "status": "QUALIFIED complete selected Formal Dress native exhibition route; generic world requirements and immediate quest-copy projection fully GREEN",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "log": "/tmp/questpc7-formal-red-fresh.log",
+    "seconds": 74.63448665,
+    "assertion": "Display committed without current Premium coordinator; expected Rejected."
+  },
+  "fixture_boundary": "Fresh subject programme; no quest progress seeds. Native published level20, existing Current Premium fixture, admitted palace appearances. Native NPC owner conversation and real StepIn, display USE, item consumption and appearance wire.",
+  "fixture_repairs": [
+    "Model admitted ground464 as walkable with speed150 rather than the common passage wall default.",
+    "Read absent programme tracks as -1 directly; the old helper defaults missing tracks to0.",
+    "Wait210ms between display attempts: the unchanged production200ms world-action cooldown intentionally survives refused actions. First fixed-writer run proved Premium rejection, then encountered Exhausted on an immediate retry."
+  ],
+  "remaining_checks": [],
+  "reuse_review": {
+    "branch": "origin/claude/happy-davinci-ijz3wy-qengine2",
+    "sha": "de9bb8bace9236656fabf1517161bb26d5a7a158",
+    "decision": "Existing Premium NPC support was reviewed; reuse the established Current Premium coordinator and gate trait, extending the existing world callback writer generically rather than adding another Premium owner."
+  },
+  "additional_red": {
+    "postgres": "18.6",
+    "seconds": 75.162314318,
+    "assertion": "After display commit and durable programme2, next King button request returned Ok without minting; item count0 rather than1.",
+    "fix": "Apply existing committed quest-copy projection generically after world callbacks, preserving durable recovery refresh."
+  },
+  "green": {
+    "log": "/tmp/questpc7-formal-green-complete.log",
+    "seconds": 76.808861878,
+    "postgres": "18.6",
+    "scope": [
+      "fresh programme without quest-state seeds",
+      "native level20 and Current Premium",
+      "initial display refusal before admission",
+      "real world StepIn exploration",
+      "fresh Premium authority refusal without effects",
+      "native display base grant",
+      "immediate world-to-NPC stage visibility",
+      "premature second token and completion refused",
+      "actual button and plume item consumption",
+      "durable completion and Sharp Dressed achievement",
+      "normal full-outfit appearance selection"
+    ]
+  },
+  "authoring": {
+    "tests": 17,
+    "seconds": 9.515,
+    "result": "PASS",
+    "log": "/tmp/questpc7-formal-authoring-expanded.log"
+  },
+  "generator_check": {
+    "result": "PASS",
+    "log": "/tmp/questpc7-formal-generator-check.log"
+  },
+  "hoist_regression": {
+    "seconds": [
+      45.667452491,
+      46.191058183,
+      45.834607011
+    ],
+    "log": "/tmp/questpc7-formal-hoist-pg.log",
+    "result": "PASS"
+  },
+  "lint_repair": "Strict clippy flagged only needless Ok(...?) in the test display helper. Return Result directly; behavior unchanged. Retain prior PG proof and rerun strict clippy plus remaining checks.",
+  "checks": [
+    {
+      "check": "formal-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_formal_exhibition_display_and_consumptive_accessories",
+        "--",
+        "--nocapture"
+      ],
+      "seconds": 133.674,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-formal-pg.log"
+    },
+    {
+      "check": "hoist-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "formorgar_hoist",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 137.956,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-hoist-pg.log"
+    },
+    {
+      "check": "world-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 4.692,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-world-units.log"
+    },
+    {
+      "check": "reward-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "reward_callbacks::"
+      ],
+      "seconds": 1.399,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-reward-units.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 85.993,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 119.621,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-clippy.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 133.913,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 47.843,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 114.806,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-formal-pin-check"
+      ],
+      "seconds": 124.619,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.378,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-formal-fmt.log"
+    }
+  ]
+}

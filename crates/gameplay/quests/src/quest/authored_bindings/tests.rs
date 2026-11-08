@@ -123,7 +123,6 @@ fn native_program_hashes_and_predecessors_survive_authored_attachment() -> Resul
     base.predecessors.insert(
         other.into(),
         vec![super::super::NpcDefinitionPredecessor {
-            npc_legacy: base.npc_legacy.clone(),
             hash: [2; 32],
             defaults,
         }],
@@ -173,7 +172,6 @@ fn changed_authored_quest_does_not_inherit_an_npc_only_revision_allowance() -> R
     base.predecessors.insert(
         QUEST.into(),
         vec![super::super::NpcDefinitionPredecessor {
-            npc_legacy: base.npc_legacy.clone(),
             hash: [2; 32],
             defaults: std::collections::BTreeMap::new(),
         }],

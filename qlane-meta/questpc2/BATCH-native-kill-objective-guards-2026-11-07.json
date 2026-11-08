@@ -1,0 +1,52 @@
+{
+  "batch_id": "native-kill-objective-guards-2026-11-07",
+  "base_sha": "5c7d32296",
+  "scope": "Five content-bound personal native kill objectives, native capture/quest writer integration, protected API guard proof. This is not whole Elvenbane qualification.",
+  "implementation": [
+    "Accepted authored Dragon-first stage and Orc Shaman/Minotaur Mage/Elf Arcanist/two Demon Skeleton counter bounds; exact source tower coordinates/floors are recorded in CONTRACT-NOTES.md.",
+    "Capture coherent Character quest eligibility and actual carrier-projected corpse position on the lethal turn. Retain exact actor/session/lease, sealed scoped death and original snapshot on existing bounded kill queue.",
+    "Use the existing Quest writer, recovery/session/root revision fences and receipts. Require native principal/member/creature/death audit and matching scope generation; shared-XP bystanders and generic command/death IDs cannot supply the native predecessor.",
+    "Derive stable Character/death cause identity and bind source position/phase/revision into request receipts. Drain after accepted ordinary rewards and before final corpse release; unavailable writes retain retry.",
+    "Resolve authored Spellbook choice to existing3059; all seven future reward item identities already have native profiles. No source geometry, runtime limits or test assertions changed."
+  ],
+  "red": {
+    "log": "/tmp/questpc2-elvenbane-objectives-recovered-red-pg.log",
+    "postgres_version": 180006,
+    "duration_seconds": 3.78,
+    "failure": "Missing production Dragon objective binding."
+  },
+  "green": {
+    "postgres_guard_log": "/tmp/questpc2-native-objectives-authority-recovered-pg.log",
+    "postgres_version": 180006,
+    "duration_seconds": 4.03,
+    "elapsed_marker_ms": 4021,
+    "coverage": "Embedded production objective binding loads; generic command and arbitrary death-occurrence calls refuse before any Quest receipt. Does not claim positive native objective completion.",
+    "kernel_unit_log": "/tmp/questpc2-native-objective-kernel-unit.log",
+    "kernel_unit_seconds": 1.17,
+    "coverage_state": "Dragon-first ordering, exact positive carrier floors and tower footprint, all five bindings, two skeletons and no excess credit.",
+    "annihilator_regression": {
+      "log": "/tmp/questpc2-native-objective-annihilator-regression-pg.log",
+      "postgres_version": 180006,
+      "duration_seconds": 103.86,
+      "elapsed_marker_ms": 103297,
+      "result": "Complete existing earned reward/replay/exit/re-entry path remains green."
+    },
+    "check_log": "/tmp/questpc2-native-objective-final-check.log",
+    "check_seconds": 9.36,
+    "clippy_log": "/tmp/questpc2-native-objective-recovered-clippy.log",
+    "clippy_seconds": 122,
+    "clippy_scope": "quests, durability, dispatch; all-targets/all-features; -D warnings",
+    "formatting": "cargo fmt --all --check; explicit mounted fixture rustfmt; git diff --check: PASS"
+  },
+  "review": {
+    "kind": "Self-review in AUTHORING; no PR/freeze/full-lane readiness claim",
+    "result": "Read all changed code, optional writer call sites, native capture/drain and fixtures. Bounded existing owners/locks/receipts retained. Fixed carrier-floor sign and required carrier-derived corpse position. No significant remaining finding in this guarded slice.",
+    "not_claimed": "Positive native kill-objective acceptance, full source traversal and seven-item terminal reward remain to be exercised by the continuous Elvenbane route. No external review run.",
+    "next_required_before_route_activation": "Compose objective settlement with the native XP transaction or durable obligation recovery before enabling route phase callbacks, so a crash between ordinary rewards and deferred quest credit cannot lose progress. Current production content has no entry callback that activates the new phase track."
+  },
+  "lane_counts": {
+    "qualified": 2,
+    "unfinished": 33,
+    "blocked": 0
+  }
+}

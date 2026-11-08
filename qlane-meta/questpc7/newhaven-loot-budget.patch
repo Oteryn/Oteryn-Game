@@ -1,0 +1,15 @@
+--- a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
+@@ -2809,6 +2809,12 @@
+                 no_progression: false,
+             };
+         };
++        if let Some(claim) = &tutorial_corruptor
++            && !admission.states.attack.lock().await.kills()
++                .reserve_extra_loot_mints(entry.facts.death, claim.items().len())
++        {
++            return SettleReport { verdict: SettleVerdict::Retry, no_progression: false };
++        }
+         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
+             tutorial_corruptor,
+             corpse_item: row.corpse_item.clone(),

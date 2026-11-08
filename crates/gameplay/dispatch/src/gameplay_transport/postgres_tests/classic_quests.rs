@@ -49,6 +49,24 @@ pub(super) async fn install<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
 ) -> TestResult<[EntityRef; N]> {
+    install_with_positions(owner, admitted, keys, None).await
+}
+
+pub(super) async fn install_positions<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    positions: [Position; N],
+) -> TestResult<[EntityRef; N]> {
+    install_with_positions(owner, admitted, keys, Some(positions)).await
+}
+
+async fn install_with_positions<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    positions: Option<[Position; N]>,
+) -> TestResult<[EntityRef; N]> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"),
@@ -56,8 +74,19 @@ pub(super) async fn install<const N: usize>(
     )
     .map_err(debug)?;
     let model = catalogue.service_model_for_project().map_err(debug)?;
+    let source =
+        oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?;
+    let native_npcs = source
+        .programs()
+        .iter()
+        .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+        .chain(std::iter::once("oteryn:npc.viola"))
+        .chain(keys.iter().copied())
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
     owner.states.chat.install_npc_talk(std::sync::Arc::new(
-        NpcTalkBook::from_model_with_native_quests(&model, &keys),
+        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
     ));
     owner
         .states
@@ -91,12 +120,27 @@ pub(super) async fn install<const N: usize>(
         .into_iter()
         .enumerate()
         .map(|(i, key)| {
+            let p = if let Some(positions) = positions.as_ref() {
+                positions[i]
+            } else {
+                Position {
+                    x: u16::try_from(
+                        at.x + if N > 5 {
+                            i32::try_from(i % 5)? - 2
+                        } else {
+                            i32::try_from(i)?
+                        },
+                    )?,
+                    y: u16::try_from(at.y + if N > 5 { 1 + i32::try_from(i / 5)? } else { 1 })?,
+                    floor: -i8::try_from(at.floor)?,
+                }
+            };
             Ok(NpcPlacements {
                 key: key.into(),
                 placements: vec![NpcPlacement {
-                    x: u16::try_from(at.x + i32::try_from(i)?)?,
-                    y: u16::try_from(at.y + 1)?,
-                    floor: -i8::try_from(at.floor)?,
+                    x: p.x,
+                    y: p.y,
+                    floor: p.floor,
                     direction: MovementFacing::South,
                 }],
             })
@@ -528,10 +572,17 @@ pub(super) async fn exercise_step(
             let expected = runtime.read_actor_position(actor).map_err(debug)?;
             let doors = crate::map::floor::BundleDoors(world.facts().doors());
             let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
-                &runtime, owner.movement_cells(), actor, admitted.game_session_id,
-                expected, origin, false, &doors,
+                &runtime,
+                owner.movement_cells(),
+                actor,
+                admitted.game_session_id,
+                expected,
+                origin,
+                false,
+                &doors,
                 None,
-            ).map_err(debug)?;
+            )
+            .map_err(debug)?;
             runtime.commit_source_step(proof).map_err(debug)?;
         }
         owner.clock_origin = owner

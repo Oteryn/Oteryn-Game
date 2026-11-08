@@ -47,7 +47,8 @@ use oteryn_gameplay_quests::quest::falcon::{CHESTS, Chest, REWARDS, draw_index};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
-pub(super) fn falcon_chests_postgres_real_use_frozen_draw_refusal_restart_and_fences() -> TestResult {
+pub(super) fn falcon_chests_postgres_real_use_frozen_draw_refusal_restart_and_fences() -> TestResult
+{
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -196,7 +197,7 @@ fn scenario(
         if full {
             for index in 0..20 {
                 let request = RewardClaimMintRequest {
-            backpack_outputs: false,
+                    backpack_outputs: false,
                     command: CommandRef::new(
                         admitted.game_session_id,
                         CommandId::new(100 + index).map_err(debug)?,

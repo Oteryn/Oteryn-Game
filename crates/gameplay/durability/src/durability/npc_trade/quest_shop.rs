@@ -12,6 +12,13 @@ pub(super) async fn permitted(
 ) -> std::result::Result<bool, sqlx::Error> {
     let direction = match request.cause.side {
         NpcTradeSide::Buy => ProjectV2ServiceOfferDirection::SellToPlayer,
+        // These exchanges have their own pinned source and custody guards.
+        NpcTradeSide::Exchange => {
+            return Ok(matches!(
+                request.cause.npc_key.as_str(),
+                "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
+            ));
+        }
         NpcTradeSide::Sell => ProjectV2ServiceOfferDirection::BuyFromPlayer,
     };
     let item = ProjectV2DefinitionRef {

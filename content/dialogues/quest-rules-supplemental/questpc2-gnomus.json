@@ -1,0 +1,550 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.questpc2-gnomus-ordnance",
+  "quest": "oteryn:quest.dangerous_depths_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/crawlers_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:119-176"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnomes_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:119-176"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:119-176"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_ordnance",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:119-176"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:119-176"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/cooldown",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "ordnance"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_ordnance",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I don't need your help for now. Come back later."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:119-123"
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "suspicious device",
+        "status",
+        "gnomes",
+        "dwarves",
+        "scouts"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/repeat-offer",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "ordnance"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_ordnance",
+          "op": "le",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I am constantly waiting for ordnance to arrive. A lot of gnomes intend to travel out here to help us but the main access path to our base is not safe anymore. ...",
+        "Tragically we lost several gnomes after an outbreak of what I can only describe as a force from below. We were completely surprised by their onslaught and retreated to this outpost. ...",
+        "All our reinforcements arrive at the crystal teleporter to the east of the cave system. We need someone to navigate the new arrivals through the hazards of the dangerous caves. ...",
+        "Hideous creatures and hot lava makes travelling extremely dangerous. And on top of that there is also the constant danger from falling rocks in the area. ...",
+        "Are you willing to help?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 22
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:124-133"
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "suspicious device",
+        "status",
+        "gnomes",
+        "dwarves",
+        "scouts"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/initial-offer",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "ordnance"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I am constantly waiting for ordnance to arrive. A lot of gnomes intend to travel out here to help us but the main access path to our base is not safe anymore. ...",
+        "Tragically we lost several gnomes after an outbreak of what I can only describe as a force from below. We were completely surprised by their onslaught and retreated to this outpost. ...",
+        "All our reinforcements arrive at the crystal teleporter to the east of the cave system. We need someone to navigate the new arrivals through the hazards of the dangerous caves. ...",
+        "Hideous creatures and hot lava makes travelling extremely dangerous. And on top of that there is also the constant danger from falling rocks in the area. ...",
+        "Are you willing to help?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 22
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:134-142"
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "suspicious device",
+        "status",
+        "gnomes",
+        "dwarves",
+        "scouts"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/pending-first",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "ordnance"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Come back when you have finished your job."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:143-145"
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "suspicious device",
+        "status",
+        "gnomes",
+        "dwarves",
+        "scouts"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/pending-escort",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "ordnance"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnomes_count",
+          "op": "lt",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Come back when you have finished your job."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:143-145"
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "suspicious device",
+        "status",
+        "gnomes",
+        "dwarves",
+        "scouts"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/accept-first",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Excellent, just follow the path to east until you reach a dead end, there is a hole that leads to a small cave underneath which will bring you right to the old trail. ...",
+        "Help whoever you can and return them to the save cave exit - oh, and while you're at it... some of them will have pack animals. If you can rescue those as well, I'll hand you a bonus. Good luck!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnomes_count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/crawlers_count",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:165-176"
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "suspicious device",
+        "status",
+        "gnomes",
+        "dwarves",
+        "scouts",
+        "ordnance"
+      ],
+      "topics": [
+        22
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/accept-later",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Excellent, just follow the path to east until you reach a dead end, there is a hole that leads to a small cave underneath which will bring you right to the old trail. ...",
+        "Help whoever you can and return them to the save cave exit - oh, and while you're at it... some of them will have pack animals. If you can rescue those as well, I'll hand you a bonus. Good luck!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnomes_count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/crawlers_count",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:165-176"
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "suspicious device",
+        "status",
+        "gnomes",
+        "dwarves",
+        "scouts",
+        "ordnance"
+      ],
+      "topics": [
+        22
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-0",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-1",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "charting"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-2",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "suspicious device"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-3",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "status"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-4",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "gnomes"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-5",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "dwarves"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/unsupported-task-6",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "scouts"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomus.lua:63-307"
+      ],
+      "exclude_keywords": []
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/gnomus.lua",
+      "sha256": "04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    }
+  ]
+}

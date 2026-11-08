@@ -11,6 +11,8 @@ mod effects;
 mod encounter;
 mod execute;
 pub(super) mod monsters;
+mod party_transfer;
+mod reward_door;
 mod rewards;
 mod scene;
 mod scene_actors;
@@ -51,6 +53,7 @@ struct Pending {
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
     ingress_settled: bool,
+    participants: Vec<GameSessionId>,
 }
 
 struct ReadOnlyGate {
@@ -268,10 +271,13 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let selector = &callback.selector;
     // A position-registered USE acts on the resolved object the player clicked;
     // its native placement may be above ground. STEP still selects the floor.
-    selector.position.is_none_or(|p| tile(p) == pos)
-        && selector
-            .ordinal
-            .is_none_or(|expected| expected == u16::from(ordinal))
+    selector.matches_position(Position {
+        x: pos.x,
+        y: pos.y,
+        floor: pos.floor,
+    }) && selector
+        .ordinal
+        .is_none_or(|expected| expected == u16::from(ordinal))
         && (selector.position.is_none()
             || selector.unique.is_some()
             || selector.action.is_some()
@@ -363,8 +369,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             callbacks().iter().any(|callback| {
                 callback.key == pending.callback
                     && callback
-                        .effects
-                        .item_reward
+                        .item_reward()
                         .as_ref()
                         .is_some_and(|reward| reward.premium)
             })
@@ -388,32 +393,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            let native = self.active_generation.and_then(|g| g.native_gameplay());
-            let weights = native.map(|n| {
-                crate::gameplay_transport::item_ref_admission::NativeItemWeights(n)
-                    .with_wheel(self.premium_coordinator)
-            });
-            let admission = callbacks()
-                .iter()
-                .find(|c| c.key == pending.callback)
-                .filter(|c| c.effects.item_reward.is_some())
-                .and_then(|_| native.zip(weights.as_ref()))
-                .map(|(native, weights)| {
+            let world = oteryn_gameplay_quests::quest::world_callbacks::load()
+                .ok()
+                .and_then(|rows| rows.into_iter().find(|c| c.key == pending.callback));
+            let outcome = if world.as_ref().is_some_and(|c| c.item_reward().is_some()) {
+                let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                    return false;
+                };
+                let weights =
+                    crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+                        .with_wheel(self.premium_coordinator);
+                slot.commit_world_callback_with_reward_and_gate(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: pending.callback.clone(),
+                        cause: pending.cause,
+                    },
+                    std::sync::Arc::clone(catalogue),
+                    &permit,
+                    context,
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        native,
+                        weights: &weights,
+                        fee_payment: None,
                         actor_conditions: None,
                         carried_use: None,
-
-                        native,
-                        weights,
-                        fee_payment: None,
-                    }
-                });
-            let disposition = match slot.commit_world_callback_with_items(self.root, self.character, self.holder, fence,
-                QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), &permit, context,
-                self.active_generation.and_then(|generation| generation.native_gameplay()),
-                admission,
-            ).await {
+                    },
+                    &crate::gameplay_transport::spell_premium_coordinator::QuestRewardPremium(
+                        self.premium_coordinator,
+                    ),
+                )
+                .await
+            } else {
+                slot.commit_world_callback_with_native_and_gate(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: pending.callback,
+                        cause: pending.cause,
+                    },
+                    std::sync::Arc::clone(catalogue),
+                    &permit,
+                    context,
+                    self.active_generation
+                        .and_then(|generation| generation.native_gameplay()),
+                    &crate::gameplay_transport::spell_premium_coordinator::QuestRewardPremium(
+                        self.premium_coordinator,
+                    ),
+                )
+                .await
+            };
+            let disposition = match outcome {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
                 Ok(_) | Err(_) => UseDisposition::Rejected,
@@ -454,7 +489,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .quest_callbacks
                 .records
                 .lock()
-                .map_or(true, |p| p.contains_key(&session))
+                .map_or(true, |p| {
+                    p.contains_key(&session)
+                        || p.values()
+                            .any(|pending| pending.participants.contains(&session))
+                })
     }
 
     pub(super) fn callback_content(&self) -> &[Callback] {
@@ -512,6 +551,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(UseDisposition::StaleState);
             }
             let context = QuestWorldContext {
+                party: Vec::new(),
                 map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                 content_revision: format!(
                     "sha256:{}",
@@ -572,6 +612,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.reconcile_grizzly_boss(session).await {
             return false;
         }
+        let session = match self.states.quest_callbacks.records.lock() {
+            Ok(records) => records
+                .iter()
+                .find_map(|(owner, pending)| {
+                    pending.participants.contains(&session).then_some(*owner)
+                })
+                .unwrap_or(session),
+            Err(_) => return false,
+        };
         if !self.reconcile_quest_callback_receipts(session).await {
             return false;
         }
@@ -766,6 +815,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
                     && matches(map, c, resolved.placement_key)
+                    && c.activation.as_ref().is_none_or(|activation| {
+                        self.states
+                            .quest_sessions
+                            .lock()
+                            .ok()
+                            .and_then(|sessions| {
+                                sessions
+                                    .get(&command.game_session_id)
+                                    .and_then(|s| s.copy.as_ref())
+                                    .and_then(|copy| copy.tracks().get(&activation.track))
+                                    .copied()
+                            })
+                            .is_some_and(|value| {
+                                (activation.minimum..=activation.maximum).contains(&value)
+                            })
+                    })
             })
             .collect::<Vec<_>>();
         let callback = if let [callback] = selected.as_slice() {
@@ -789,8 +854,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             callback
         };
         if callback
-            .effects
-            .item_reward
+            .item_reward()
             .as_ref()
             .is_some_and(|reward| reward.premium)
         {
@@ -803,7 +867,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(permit) = self.spell_lane_permit().await else {
                 return UseDisposition::Rejected;
             };
-            let fence = if !callback.has_state() && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
+            let fence = if !callback.has_state() && callback.effects.reward_door.is_none() && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none()
                 && world_callbacks::world_change_requirement(&callback.key).is_none() {
@@ -848,6 +912,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Exhausted;
                     }
                     let context = QuestWorldContext {
+                        party: Vec::new(),
                         map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                         content_revision: format!("sha256:{}", hex(&runtime.content_pin().server_artifact_digest())),
                         placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
@@ -1061,6 +1126,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none()
+                && callback.effects.reward_door.is_none()
                 && world_callbacks::world_change_requirement(&callback.key).is_none()
             {
                 None
@@ -1089,6 +1155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 reset_epoch: self.reset_epoch,
                                 actor_placement: actor.placement_identity(),
                                 movement_revision: entered.revision(),
+                                party: Vec::new(),
                             }
                         })
                     };
@@ -1195,6 +1262,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match tokio::time::timeout(std::time::Duration::from_secs(10), operation).await {
             Ok(snapshot) => snapshot,
+            Err(_) if callback.is_read_only() => {
+                // This path cannot have a durable commit to reconcile. A cancelled
+                // read returns to the step origin rather than reserving a write.
+                let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+                let mut runtime = self.runtime.lock().await;
+                let mut states = self.states.spell_states.lock().await;
+                if runtime.read_actor_position(actor) == Ok(entered) {
+                    self.refuse_quest_step(
+                        optional_pvp,
+                        &mut runtime,
+                        &mut states,
+                        actor,
+                        session,
+                        map,
+                        callback,
+                        entered,
+                        origin,
+                    );
+                }
+                runtime.read_actor_position(actor).unwrap_or(entered)
+            }
             Err(_) => {
                 if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
                     let pending = records.entry(session).or_insert(Pending {
@@ -1208,6 +1296,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         origin: Some(origin),
                         context: None,
                         ingress_settled: false,
+                        participants: Vec::new(),
                     });
                     pending.origin = Some(origin);
                 }
@@ -1243,7 +1332,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor,
             session,
             entered,
-            origin.position(),
+            callback.failure_teleport.map_or(origin.position(), local),
             blocked,
             &closed,
             None,

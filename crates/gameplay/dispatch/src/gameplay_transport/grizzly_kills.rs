@@ -1,9 +1,10 @@
-//! Grizzly death capture on the existing kill queue. The most-damage principal and
+//! Grizzly and personal native-goal capture on the existing kill queue. The most-damage principal and
 //! the task runs observed at death never change while a delayed settlement is retried.
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
 use std::sync::Arc;
 mod guardians;
+pub(super) mod native_goals;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
 
@@ -27,6 +28,7 @@ struct TaskSnapshot {
     observed_revision: u64,
     active_tasks: Vec<u8>,
     native_counters: Vec<NativeCounterCapture>,
+    active_goals: Vec<String>,
     objective_keys: Vec<String>,
 }
 
@@ -70,13 +72,14 @@ struct Recipient {
     objective_actions: Vec<String>,
 }
 
-/// At most the native PartySnapshot bound (50) recipients, each with at most the
-/// source active-task bound (3) plus one boss action. This belongs to the queued death.
+/// At most 50 source-party recipients with three tasks and one boss action each,
+/// plus one personal native principal with at most 16 goals. Retained by the queued death.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct FrozenGrizzlyDeath {
     source: Option<PartySnapshot>,
     recipients: Vec<Recipient>,
     pub(super) native: Vec<super::quest_kills::Recipient>,
+    native_goals: Option<native_goals::Recipient>,
 }
 
 impl FrozenGrizzlyDeath {
@@ -240,6 +243,7 @@ fn freeze_at(
         source: Some(source),
         recipients,
         native,
+        native_goals: None,
     }
 }
 
@@ -270,18 +274,20 @@ pub(super) fn tracks_native_creature(queue: &KillSettlementQueue, creature: &str
 }
 
 pub(super) fn tracks_creature(creature: &str) -> bool {
-    oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives| {
-        objectives
-            .iter()
-            .any(|objective| objective.creature == creature)
-    }) || quest::catalogue().is_ok_and(|catalogue| {
-        catalogue.bosses.iter().any(|boss| {
-            boss.creature_key == creature || boss.creature_name.eq_ignore_ascii_case(creature)
-        }) || catalogue
-            .tasks
-            .iter()
-            .any(|task| task.creatures.iter().any(|member| member.matches(creature)))
-    })
+    native_goals::tracks_creature(creature)
+        || oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives| {
+            objectives
+                .iter()
+                .any(|objective| objective.creature == creature)
+        })
+        || quest::catalogue().is_ok_and(|catalogue| {
+            catalogue.bosses.iter().any(|boss| {
+                boss.creature_key == creature || boss.creature_name.eq_ignore_ascii_case(creature)
+            }) || catalogue
+                .tasks
+                .iter()
+                .any(|task| task.creatures.iter().any(|member| member.matches(creature)))
+        })
 }
 
 /// Runs synchronously under the lethal turn's runtime and attack guards. The existing
@@ -347,14 +353,16 @@ pub(super) fn capture(
                 })
                 .cloned()
                 .collect();
-            freeze_at(
+            let mut frozen = freeze_at(
                 source,
                 *principal.character.as_bytes(),
                 principal_present,
                 &entry.creature,
                 Some(entry.facts.corpse),
                 &live,
-            )
+            );
+            frozen.native_goals = native_goals::freeze(runtime, entry, principal_present, &live);
+            frozen
         }),
     );
 }
@@ -365,6 +373,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// capture it. The durable owner also rejects a task run restarted after this revision.
     pub(super) async fn refresh_grizzly_kill_snapshot(&self, session: GameSessionId) {
         let runtime = self.runtime.lock().await;
+        self.refresh_grizzly_kill_snapshot_in_runtime(&runtime, session)
+            .await;
+    }
+
+    /// Publish capture eligibility while the callback already holds the runtime owner.
+    pub(super) async fn refresh_grizzly_kill_snapshot_in_runtime(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) {
         let snapshot = {
             let sessions = self.states.quest_sessions.lock().ok();
             sessions
@@ -391,6 +409,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         lease_generation: lease.generation(),
                         observed_revision: revision,
                         active_tasks,
+                        active_goals: native_goals::active(copy.tracks()),
                         native_counters: self
                             .quest_catalogue
                             .as_deref()

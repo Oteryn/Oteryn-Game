@@ -1485,6 +1485,10 @@ fn commit_summon_follow(
         crate::movement::CardinalStep::East => (1, 0),
         crate::movement::CardinalStep::South => (0, 1),
         crate::movement::CardinalStep::West => (-1, 0),
+        crate::movement::CardinalStep::NorthEast => (1, -1),
+        crate::movement::CardinalStep::SouthEast => (1, 1),
+        crate::movement::CardinalStep::SouthWest => (-1, 1),
+        crate::movement::CardinalStep::NorthWest => (-1, -1),
     };
     let next = oteryn_gameplay_entities::MovementLocalPosition {
         x: at
@@ -2544,6 +2548,10 @@ fn commit_paced_summon_follow(
         crate::movement::CardinalStep::East => (1, 0),
         crate::movement::CardinalStep::South => (0, 1),
         crate::movement::CardinalStep::West => (-1, 0),
+        crate::movement::CardinalStep::NorthEast => (1, -1),
+        crate::movement::CardinalStep::SouthEast => (1, 1),
+        crate::movement::CardinalStep::SouthWest => (-1, 1),
+        crate::movement::CardinalStep::NorthWest => (-1, -1),
     };
     let onto = crate::content::LogicalCell {
         x: at
@@ -2560,6 +2568,7 @@ fn commit_paced_summon_follow(
     let duration = crate::movement::speed::creature_step_duration(
         runtime, child, source, ground, onto, native_now,
     )
+    .and_then(|duration| duration.checked_mul(facts.direction.pacing_cost()))
     .ok_or(SummonFollowError::MissingSpeed)?;
     if pacer.wait_until(native_now).is_some() {
         return Ok(None);

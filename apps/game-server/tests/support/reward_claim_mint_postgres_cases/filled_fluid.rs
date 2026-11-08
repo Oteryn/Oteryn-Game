@@ -88,7 +88,7 @@ fn filled_fluid_claims_commit_root_and_children_and_replay_without_refilling() -
             present.contents = [Some(1), None, Some(1), None].into_iter().map(|fluid_subtype| RewardClaimMintContent {
                 item: facts(STONE, ItemStackClass::NonStackable), quantity: 1,
                 key_number: None, text: None, fluid_subtype, charges_remaining: None,
-            }).collect();
+}).collect();
             let present_result = match claim_with_contents(&harness, &authority, present.clone()).await.map_err(debug)? {
                 RewardClaimMintOutcome::Committed(result) => result,
                 other => return Err(format!("expected Present fluid commit: {other:?}").into()),

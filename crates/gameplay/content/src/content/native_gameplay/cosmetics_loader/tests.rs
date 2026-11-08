@@ -5,6 +5,8 @@ use super::*;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
+mod outfit_alias_tests;
+
 type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 fn hex(bytes: [u8; 32]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()

@@ -69,8 +69,8 @@ pub(super) async fn exercise(
     let fence = admitted.item_fence.ok_or("current Item fence")?;
     let request = RewardClaimMintRequest {
         backpack_outputs: false,
-        root_fluid_subtype: None,
         root_charges_remaining: None,
+        root_fluid_subtype: None,
         command: CommandRef::new(
             admitted.game_session_id,
             CommandId::new(8000).map_err(debug)?,

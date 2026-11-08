@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal -- --test-threads=1 --nocapture",
+  "exit": 0,
+  "duration_seconds": 78.57
+}

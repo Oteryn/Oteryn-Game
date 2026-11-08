@@ -1,0 +1,70 @@
+{
+  "batch_id": "source-corpse-admission-2026-11-07",
+  "base_sha": "aed0b1aacbd7eb7f17d9c2549bd0eaaf6c52e5c8",
+  "entries": [
+    "Soul War Quest",
+    "Rotten Blood Quest",
+    "Primal Ordeal inherited regression"
+  ],
+  "scope": "Source physical corpse admission and native death composition, not whole source-room or quest qualification.",
+  "whole_quest_qualifications": 0,
+  "source": {
+    "file": "imports/canary/items-xml/items.xml",
+    "lines": [
+      63232,
+      76397
+    ],
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "classification": "OTS_HYPOTHESIS_ONLY"
+  },
+  "changes": [
+    "Admit the exact four Spite and three Bakragore corpse decay stages through pinned tooling; preserve source48/30 capacities and movement flags.",
+    "Accept positive u16 declared capacity independently of actual30-entry corpse/16-entry loot-plan count quotas; budgets unchanged.",
+    "Build separately validated empty physical reward-boss corpse rows. Require explicit native binding, source reward-boss flag and admitted corpse. Ordinary and unknown creatures do not receive this fallback.",
+    "Personal rewards still require the original complete loot row. Missing private loot cannot create a fabricated empty personal chest; existing Primal private value and exact native census remain unchanged.",
+    "Require real Spite/Bakragore death drains to mint one source corpse, bind the exact committed Item into the visible projection, preserve empty physical contents and replay safely.",
+    "Regenerate loot facts, native registration, deterministic Prey model,119 taxonomy evidence hashes and world pins with repository tools. Taxonomy targets/profiles and Grizzly selected source/profile/refusal data remain unchanged. Reapply existing raid registration after base tree generation; its shared manifests return to committed contents."
+  ],
+  "red": [
+    {
+      "log": "/tmp/questpc2-corpse-admission-red.log",
+      "duration_seconds": 73.07,
+      "postgres_version": 180006,
+      "failure": "Spite source native corpse roots=0"
+    },
+    {
+      "log": "/tmp/questpc2-corpse-admission-green-retry.log",
+      "duration_seconds": 180.61,
+      "passed": 3,
+      "failed": 2,
+      "failure": "Spite/Bakragore full loot inadmissibility prevented physical corpse admission"
+    }
+  ],
+  "green": {
+    "postgres_cases": 5,
+    "postgres_duration_seconds": 197.29,
+    "postgres_version": 180006,
+    "content_unit_cases": 1,
+    "content_unit_duration_seconds": 33.57,
+    "python_cases": 17,
+    "content_integration_cases": 123,
+    "world_repository_cases": 5,
+    "zero_test_pg_results_accepted": false,
+    "logs": {
+      "postgres": "/tmp/questpc2-corpse-pg-after-tree.log",
+      "unit": "/tmp/questpc2-corpse-separated-units-lib.log",
+      "python": "/tmp/questpc2-corpse-final-python.log",
+      "check": "/tmp/questpc2-corpse-final-check.log",
+      "clippy": "/tmp/questpc2-corpse-final-clippy.log",
+      "fmt": "/tmp/questpc2-corpse-final-fmt.log",
+      "tree": "/tmp/questpc2-corpse-roundtrip-after-tree.log",
+      "pin": "/tmp/questpc2-corpse-final-pin-check.log",
+      "content": "/tmp/questpc2-corpse-final-content-integration.log",
+      "world": "/tmp/questpc2-corpse-final-world-integration.log"
+    }
+  },
+  "self_review": "Strict full loot/ordinary creature admission remains unchanged; actual resource quotas unchanged. Source fixture proves full private rows still refuse, fallback is empty and scoped to reward bosses, and Primal full row remains admitted. PG proves exact source root/projection identity, progression atomicity, empty physical contents, private chest separation and replay. No source-room or whole-quest qualification inferred.",
+  "environment": "Repeated32GB overlay exhaustion interrupted compilation/linking before tests. Reclaimed superseded and inactive incremental compiler state plus obsolete/truncated test executables; retained source/PG and compiled libraries. No broad clean, profile/RUSTFLAGS changes, skipped/weakened tests, credentials or full suites.",
+  "next": "Continue participant-bound source encounter admission/settlement toward whole Annihilator/Desert Dungeon/Barbarian Arena qualification; check existing lane branches first. Owned source-room/callback/loot work remains implementation work, never an external engine deferral."
+}

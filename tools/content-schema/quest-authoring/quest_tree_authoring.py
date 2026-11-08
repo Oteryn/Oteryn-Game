@@ -85,6 +85,8 @@ def claim_catalogue(root):
         # ITEMHOLD-Q's live Item/charge admissions. Keep canonical holds and native
         # contents intact; only the SOURCE compiler consumes this private view.
         historical = {
+            # Shared encounter Item admissions do not erase Draconia's frozen SOURCE hold.
+            'oteryn:reward-claim.kv.draconia1': ['item'],
             'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
             'oteryn:reward-claim.kv.present_box': ['item'],
             'oteryn:reward-claim.kv.triangletower': ['item'],

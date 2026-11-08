@@ -1,0 +1,2370 @@
+[
+  {
+    "title": "Exchange Quests",
+    "canonical": "oteryn:quest.friends_and_traders",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/47/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "qualification": {
+      "kind": "complete selected Friends and Traders native route",
+      "proof": "qlane-meta/questpc7/FRIENDS-PG-PROOF.json",
+      "test": "questpc7_friends_full_route_and_repeatable_unlocked_services",
+      "postgres": "18.6",
+      "red_seconds": 74.691341078,
+      "green_seconds": 76.609885521,
+      "scope": [
+        "fresh selected programme; no quest-state seeds",
+        "exact3 Bast Skirts and50 Honeycombs consumed",
+        "two royal-steel trades and two yarn trades with distinct bounded counters",
+        "exact5000 Gamon fee, change and wooden-stake delivery",
+        "wrong priest order: no receipt, progress or inventory effect",
+        "all10 named priests in selected order with retained stake",
+        "single blessed-stake exchange and duplicate request without any effect",
+        "once-only programme completion",
+        "earned crafting service usable after completion"
+      ],
+      "bindings": [
+        "content/quests/shared-reward-callbacks.json",
+        "content/dialogues/quests/shared-reward-greetings.json",
+        "content/world/npc-placements/index.json"
+      ],
+      "generic_owner": "bounded Add(1), original fenced input/MINT/fee owners and exact command-scoped claim proof; original one-shot MINT keys retained"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "state": "OWN_THREE_ROUTES_PG_GREEN",
+      "proof": "qlane-meta/questpc7/MAIN3044-PG-PROOF.json",
+      "qualification_change": false,
+      "own_pg_requalification": "PASS5cases actualPG18.6,332.064s; remaining unit/recheck budget explicitly pending"
+    }
+  },
+  {
+    "title": "Falconer Outfits Quest",
+    "canonical": "oteryn:quest.falconer_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/40/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "use",
+      "objective": "Inspect the Task Board and select a chosen weekly hunting assignment.",
+      "targets": [
+        "Task Board"
+      ]
+    },
+    "blocker": {
+      "kind": "owner_exclusion",
+      "dependency": "P23",
+      "missing_piece": "Owner-excluded P23 Prey/Hunting Tasks: the chosen path starts at the Task Board and redeems its Hunting Task Shop outfit/addon offers. The owner exclusions apply even though the task-board catalogue already lists those cosmetics; shop metadata is not a quest completion.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/40/definition",
+        "crates/gameplay/quests/src/quest/task_board_catalogue.rs:39",
+        ".questpc7/OWNER-SCOPE-ALL.md:4"
+      ],
+      "attempts": [
+        "Read the Task Board/kill/shop stages and found the exact Falconer/Feral Trapper offers in the existing catalogue; applied the explicit P23 owner exclusion rather than requalifying that other mechanic."
+      ],
+      "boundary": "Current user explicitly permits this named owner exclusion.",
+      "owner": "owner-excluded P23"
+    }
+  },
+  {
+    "title": "Feaster of Souls Quest",
+    "canonical": "oteryn:quest.feaster_of_souls_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/41/definition",
+    "status": "WAITING-ENGINE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Ring the Death Knell at Carlin Graveyard, Ghostlands and Dark Cathedral.",
+      "targets": [
+        "Death Knell",
+        "Carlin Graveyard",
+        "Ghostlands",
+        "Dark Cathedral"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "Phase-discriminated STEP registration and fenced repeatable world-tool operations",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/41/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane.",
+      "engine_owner": "QENGINE2",
+      "current_evidence": "Actual PG18.6 prefix RED39.777546549s: expected13 callbacks, actual12; runtime excludes duplicate purification-entry selector. world_callbacks.rs validates selectors without phase discrimination."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "current_batch": "First6 selected stages fully authored and native PG prefix compiles. PG18.6 RED44.959359639s: NPC scan233 exceeds measured232 after new directory. +1 exact measured budget and fixture corrections are in working tree/rerun, not this known-compiling checkpoint. No source quest/tool/reward state seeds; whole23-stage quest ACTIVE.",
+    "assumptions": "Feaster contact/quest/Thaian facts closed using Wiki revisions419674,368970,421868,445240; exact XML items retained. See RESUME and forthcoming source/prop contracts.",
+    "mandatory_validation": {
+      "state": "FOCUSED_CHECKS_RUNNING",
+      "scope": "owner speed-first: own PG mechanic tests; workspace all-target check; changed-crate Clippy; fmt; duplicate migrations; repo regeneration",
+      "packages": 25,
+      "main_integrated": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+      "run_log": "/tmp/questpc7-pr3020-own-pg1.log",
+      "push_gate": "focused required gates pass; full suites in CI",
+      "previous_run": "superseded by explicit owner main-merge instruction",
+      "compile_check": "dispatch and game-server PASS32.70s",
+      "shared_migrations": "0999-1008 byte-exact main;1200-1205 removed; own1280-1288"
+    },
+    "integration_validation": {
+      "state": "COMPILE_FMT_PASS_ENGINE_REQUESTS_PENDING",
+      "proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+      "owner_push_rule": "publish compiling state now; do not wait for full tests"
+    },
+    "engine_request": {
+      "id": "feaster-world-rewards",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "thaian_preparation": {
+      "state": "SOURCE_FACTS_AND_CONSERVATIVE_AUTHORED_DRAFT_ONLY",
+      "source": "https://www.tibiawiki.com.br/index.php?title=Thaian&oldid=445240",
+      "page_id": 48123,
+      "health": 50000,
+      "runtime_admission": "NOT_ATTEMPTED",
+      "constructor_reuse": "Existing wiki_authored.bundles invokes canary_batch.Converter.convert on authored temporary Lua and binds Wiki identity.",
+      "draft": "/tmp/questpc7-authored-thaian.lua",
+      "scope": "Boss Thaian is distinct from existing NPC The Thaian; no live corpse/XP or exact combat-source claim."
+    },
+    "thaian_progress": {
+      "state": "NATIVE_ACTOR_ADMISSION_PG_QUALIFIED",
+      "red_seconds": 81.509290862,
+      "red_error": "missing first-party Thaian native profile after real Para Norbert introduction",
+      "source": "https://www.tibiawiki.com.br/index.php?title=Thaian&oldid=445240",
+      "source_packet": "tools/content-schema/quest-authoring/questpc7-thaian-authoring.json",
+      "scope": "native actor admission support only; no boss clear or quest completion claim",
+      "reuse": "normal Converter and Stage/Mapper; exact existing Ghost melee ability/attestation and visual48 as documented approximations",
+      "whole_quest": "ACTIVE",
+      "loader_correction": "Measured reference inventory62869+3 and sources29+1, derived by inventory tooling; no runtime capacity changes.",
+      "workspace_all_targets": "PASS final pin",
+      "unit_failures": "All six fixed together; full content330pass/0fail/1existingignore354.66s",
+      "current_red": null,
+      "red_seconds_latest": 44.285881391,
+      "green_seconds": 67.368691913,
+      "postgres": "18.6",
+      "proof": "qlane-meta/questpc7/THAIAN-PG-PROOF.json",
+      "crate_units": "Full content330/server577/dispatch2775pass; zero failures;22 preexisting ignores; actualPG67.368691913s separate"
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "ACTIVE"
+    },
+    "scope_decision": "All25 restored to questpc7 by owner; no peer ownership exclusion."
+  },
+  {
+    "title": "Feral Trappers Quest",
+    "canonical": "oteryn:quest.feral_trappers_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/74/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "use",
+      "objective": "Accept the authored hunting programme at the Task Board.",
+      "targets": [
+        "Task Board"
+      ]
+    },
+    "blocker": {
+      "kind": "owner_exclusion",
+      "dependency": "P23",
+      "missing_piece": "Owner-excluded P23 Prey/Hunting Tasks: the chosen path starts at the Task Board and redeems its Hunting Task Shop outfit/addon offers. The owner exclusions apply even though the task-board catalogue already lists those cosmetics; shop metadata is not a quest completion.",
+      "evidence": [
+        "content/quests/definitions/quests-00200-00299.json:1#/records/74/definition",
+        "crates/gameplay/quests/src/quest/task_board_catalogue.rs:39",
+        ".questpc7/OWNER-SCOPE-ALL.md:4"
+      ],
+      "attempts": [
+        "Read the Task Board/kill/shop stages and found the exact Falconer/Feral Trapper offers in the existing catalogue; applied the explicit P23 owner exclusion rather than requalifying that other mechanic."
+      ],
+      "boundary": "Current user explicitly permits this named owner exclusion.",
+      "owner": "owner-excluded P23"
+    }
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "canonical": "oteryn:quest.ferumbras_ascension_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/35/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones (33393, 32373, -11) native_source=true duration=5.156270693s",
+        "duration_seconds": 5.156270693,
+        "source_position": [
+          33393,
+          32373,
+          -11
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:361"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night (33384, 32323, -12) native_source=true duration=5.249561645s",
+        "duration_seconds": 5.249561645,
+        "source_position": [
+          33384,
+          32323,
+          -12
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:365"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth (33408, 32396, -11) native_source=true duration=5.888040457s",
+        "duration_seconds": 5.888040457,
+        "source_position": [
+          33408,
+          32396,
+          -11
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:369"
+      }
+    ],
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "qualification": {
+      "kind": "whole selected native Ferumbras Ascension programme",
+      "test": "questpc7_ferumbras_full_native_seals_and_reward_bundle",
+      "proof": "qlane-meta/questpc7/FERUMBRAS-PG-PROOF.json",
+      "postgres": "18.6",
+      "red_seconds": 41.469268453,
+      "green_seconds": 52.479192159,
+      "scope": [
+        "fresh native level150/Premium subject; no quest-state seeds",
+        "zero/short9 ritual refusals with no charge; native pickup, carried merge and drop exact10",
+        "eight actual native species in source arenas, ordered by earned personal passages",
+        "duplicate lethal notifications/drains once; next guardian inactive before its passage",
+        "each actual native passage destination asserted",
+        "fresh Premium refusal grants none of tokens/outfit/achievement",
+        "full20-slot backpack refuses entire bundle with no source/progress/value output",
+        "real native food USE frees one slot before atomic final delivery",
+        "Silver22516x5, all3 native Rift Warrior grant facts, HatHunter and once-only completion",
+        "new command repeat grants no additional value",
+        "exact native command replay does not grant again",
+        "ordinary native appearance command selects earned full Rift Warrior"
+      ],
+      "boundary": "Complete selected finite Oteryn programme. Original raid/global/cooldown/party phases and ordinary corpse loot unchanged; ritual readiness is chosen milestone, not a claim of unsupported Godbreaker crafting.",
+      "generic_mechanisms": [
+        "explicit opt-in once-only completing world item/outfit bundle; legacy mixed field refusal remains",
+        "bounded unique world achievements reuse fenced grant_missing in same transaction; stable32-byte source event",
+        "exact existing item MINT/appearance/achievement owners retained; no migration needed",
+        "fixture Ground MINT now uses real content/frame metadata, preserving production compatibility guard"
+      ],
+      "validation": "14 focused gates GREEN; retained Hero PG53.248s, check/strict clippy3crates, repository generation/pins, content123/world5, fmt"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Festive Outfits Quest",
+    "canonical": "oteryn:quest.festive_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/42/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Collect three Porcelain Masks for the first costume accessory.",
+      "targets": [
+        "Porcelain Mask"
+      ]
+    },
+    "owner": "questpc7",
+    "qualification": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "scope": "Introduction, base and both addons through real NPC commands; exact consumption and normal appearance selection",
+      "postgres_version": "18.6",
+      "case_seconds": 89.658220585,
+      "batch_result": "3 full stories passed in95.79s",
+      "source": "qlane-meta/qengine2/RESUME.md:44; case marker at:54"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    },
+    "reused_component_evidence": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "scope": "Introduction, base and both addons through real NPC commands; exact consumption and normal appearance selection",
+      "postgres_version": "18.6",
+      "case_seconds": 89.658220585,
+      "batch_result": "3 full stories passed in95.79s",
+      "source": "qlane-meta/qengine2/RESUME.md:44; case marker at:54"
+    },
+    "scope_decision": "2026-11-08 owner restores all25 ACTIVE titles; peer ownership does not exclude this quest. Existing peer component evidence is reused, not treated as a local whole-chosen-route proof."
+  },
+  {
+    "title": "Fiend Slayer Outfits Quest",
+    "canonical": "oteryn:quest.fiend_slayer_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/43/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "outfit_item_progress": {
+      "state": "Complete selected route QUALIFIED; all source/content/pin checks GREEN",
+      "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json"
+    },
+    "qualification": {
+      "kind": "complete selected native NPC/token/use/completion/appearance programme",
+      "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json",
+      "test": "questpc7_fiend_personal_tokens_require_actual_native_addons",
+      "postgres": "18.6",
+      "red_seconds": 73.227148735,
+      "green_seconds": 78.262979488,
+      "npc": "oteryn:npc.the_forgemaster",
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.no_rest_for_the_wicked_quest"
+        ]
+      },
+      "fixture_boundary": "Only the completed prerequisite is arranged through its fenced writer. This does not qualify that parent; all subject progress, token MINT/consumption and appearance facts start fresh."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Fire from the Earth Mini World Change",
+    "canonical": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/2/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter the erupting Hellgore volcano on Goroma.",
+      "targets": [
+        "Hellgore",
+        "Goroma"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/2/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Fire-Fighter Outfits Quest",
+    "canonical": "oteryn:quest.fire_fighter_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/44/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "qualification": {
+      "kind": "external lane qualification; owner-directed cross-lane skip",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "commit": "6738c1da7",
+      "test": "qengine_l12_fire_fighter_native_trial_story",
+      "postgres_green_seconds": 95.848776751,
+      "proof": "qlane-meta/questpc7/FIRE-PG-PROOF.json",
+      "boundary": "Peer native Lava Lurker hunting/outfit programme is authoritative. Local independent Fire Elemental prototype discarded; its PG evidence does not claim shipped code."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "canonical": "oteryn:quest.forgotten_knowledge_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward1",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward1 (32349, 32194, -9) native_source=true duration=5.090969993s",
+        "duration_seconds": 5.090969993,
+        "source_position": [
+          32349,
+          32194,
+          -9
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:322"
+      },
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward2",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward2 (32382, 32368, -9) native_source=true duration=4.959183813s",
+        "duration_seconds": 4.959183813,
+        "source_position": [
+          32382,
+          32368,
+          -9
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:330"
+      },
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward3",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward3 (32287, 32119, -7) native_source=true duration=4.791148415s",
+        "duration_seconds": 4.791148415,
+        "source_position": [
+          32287,
+          32119,
+          -7
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:336"
+      },
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward4",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward4 (32389, 32001, -6) native_source=true duration=5.282838658s",
+        "duration_seconds": 5.282838658,
+        "source_position": [
+          32389,
+          32001,
+          -6
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:340"
+      },
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward5",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward5 (32449, 32109, -8) native_source=true duration=5.867407945s",
+        "duration_seconds": 5.867407945,
+        "source_position": [
+          32449,
+          32109,
+          -8
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:345"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ghostsilver_lantern_quest (32825, 31664, -9) native_source=true duration=5.5331575s",
+        "duration_seconds": 5.5331575,
+        "source_position": [
+          32825,
+          31664,
+          -9
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:349"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.imbuing_crystal_quest",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.imbuing_crystal_quest (33026, 31662, -14) native_source=true duration=5.149054894s",
+        "duration_seconds": 5.149054894,
+        "source_position": [
+          33026,
+          31662,
+          -14
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:353"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.painting_of_agirl_quest",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.painting_of_agirl_quest (32883, 31686, -10) native_source=true duration=5.716749517s",
+        "duration_seconds": 5.716749517,
+        "source_position": [
+          32883,
+          31686,
+          -10
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:357"
+      }
+    ],
+    "owner": "questpc7",
+    "assumptions": "Conservative selected bindings and completion-based native learning recorded in CONTRACT-NOTES.md and FORGOTTEN-PG-PROOF.json.",
+    "qualification": {
+      "kind": "complete selected Forgotten Knowledge route and actual native powerful learning",
+      "proof": "qlane-meta/questpc7/FORGOTTEN-PG-PROOF.json",
+      "test": "questpc7_forgotten_whole_native_paths_and_learning",
+      "postgres": "18.6",
+      "red_seconds": 42.191567216,
+      "green_seconds": 88.533725484,
+      "scope": [
+        "No subject quest/item/reward seeds; independent fenced ordinary service inputs only.",
+        "Valid source sword/materials/250000gold/shrine refuse unearned Powerful Strike without consuming anything.",
+        "Current Premium refusal before mission and completion.",
+        "One actual Heavy Old Tome recovered then consumed exactly once; no-item/repeat cannot advance or duplicate.",
+        "All six source terminal native bosses and frozen-once credit counters.",
+        "Existing physical dragon egg4839 selected USE and source Ivalisse/father contacts.",
+        "Actual A Strange Chalice at retained source cell: learned alone refuses, six ordered words supply zzubaran.",
+        "Selected completion and unchanged completion revision on repeat.",
+        "Heart remains incomplete; Forgotten independently licenses actual native Powerful Strike, burns exact materials and250000gold, persists72000000ms."
+      ],
+      "assumptions": [
+        "Chosen personal temple tome recovery site does not claim original spawn.",
+        "Physical egg4839 is selected USE adaptation, not original Frozen Horror creature fight.",
+        "Terminal Soul fights in retained base Dragon King arena; original floor12 spawn has only one clear tile.",
+        "Whole selected completion licenses the seventeen source Forgotten powerful families; no unrelated quest or early original boss flags."
+      ],
+      "bindings": [
+        "content/quests/questpc7-world-callbacks.json",
+        "content/quests/questpc7-death-objectives.json",
+        "content/quests/shared-reward-callbacks.json",
+        "content/quests/imbuement-knowledge.json"
+      ]
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "questpc2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Formal Dress Outfits Quest",
+    "canonical": "oteryn:quest.formal_dress_outfits_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/75/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "world_reward_progress": {
+      "state": "Shared world outfit participant QUALIFIED and fully GREEN; full selected route remains ACTIVE",
+      "proof": "qlane-meta/questpc7/WORLD-OUTFIT-PG-PROOF.json",
+      "remaining": "Compose selected exhibition entry/display, accessory acquisition/use and final achievement/completion here."
+    },
+    "qualification": {
+      "kind": "complete selected Formal Dress native exhibition route",
+      "proof": "qlane-meta/questpc7/FORMAL-PG-PROOF.json",
+      "test": "questpc7_formal_exhibition_display_and_consumptive_accessories",
+      "postgres": "18.6",
+      "red_seconds": 74.63448665,
+      "green_seconds": 76.808861878,
+      "scope": [
+        "fresh programme without quest-state seeds",
+        "native level20 and Current Premium",
+        "initial display refusal before admission",
+        "real world StepIn exploration",
+        "fresh Premium authority refusal without effects",
+        "native display base grant",
+        "immediate world-to-NPC stage visibility",
+        "premature second token and completion refused",
+        "actual button and plume item consumption",
+        "durable completion and Sharp Dressed achievement",
+        "normal full-outfit appearance selection"
+      ],
+      "bindings": [
+        "content/quests/shared-reward-callbacks.json",
+        "content/quests/questpc7-world-callbacks.json"
+      ],
+      "generic_owner": "Fresh fenced world requirements reuse NPC bounds, semantic ownership and existing Current Premium authority; immediate committed quest copy supports world-to-NPC sequences."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Formorgar Mines Hoist Quest",
+    "canonical": "oteryn:quest.formogar_mine_hoist",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/46/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "mechanism_proof": {
+      "test": "questpc7_formorgar_hoist_read_only_step",
+      "scope": "All three source STEP bindings; exact instruction values, destination selection from visible lever appearance, refusal return, and no quest/Character/map write during travel. Does not qualify instruction acquisition or the complete quest.",
+      "head": "06c1349463051f39823a8f8e5d8b4326c120f868",
+      "postgres_version": "18.6",
+      "result": "1 passed; 0 failed; 122.57s",
+      "cases": [
+        {
+          "binding": "formogar-hoist-3059",
+          "duration_seconds": 41.437194015
+        },
+        {
+          "binding": "formogar-hoist-3060",
+          "duration_seconds": 40.474467163
+        },
+        {
+          "binding": "formogar-hoist-3061",
+          "duration_seconds": 40.659716401
+        }
+      ],
+      "log": "/tmp/questpc7-hoist-online.log",
+      "validation_kind": "fresh baseline of inherited implementation; no new RED/GREEN implementation batch claimed"
+    },
+    "qualification": {
+      "kind": "complete selected hoist knowledge/control programme with actual native selector bindings",
+      "proof": "qlane-meta/questpc7/HOIST-STORY-PG-PROOF.json",
+      "test": "questpc7_hoist_full_knowledge_control_completion_and_native_binding",
+      "postgres": "18.6",
+      "red_seconds": 41.109126339,
+      "green_seconds": 51.524086401,
+      "scope": [
+        "fresh subject programme; parent-only fenced prerequisite fixture",
+        "typed ownership of both legacy knowledge tracks",
+        "parent and fresh Current Premium refusal without progress",
+        "native chest/fitting USE acquires both instruction flags",
+        "durable read-only transport admission and destination checked",
+        "real native walking reaches position-bound drawbridge with no donor UID",
+        "legacy first-floor transport to lower control",
+        "control lever USE and durable quest completion",
+        "exact USE replay",
+        "parent completion revision remains unchanged"
+      ],
+      "assumptions": [
+        "The chosen floor plan/instructions are learned knowledge flags, matching the existing hoist predicate; no unverified physical paper Item ID is invented.",
+        "Recover the plan from admitted chest2472 at32154,31116,-9, then read the admitted metal fittings5772 at32156,31125,-9. This is an explicit selected Oteryn acquisition adaptation, not a claim of original donor clue locations.",
+        "Complete at existing lower lever2773 at32156,31125,-10; transform it to2772 through existing lever projection. Preserve legacy remote/asymmetric effects.",
+        "Legacy skeleton/chest track names do not determine ownership; PG asserts both declared owners are the hoist quest.",
+        "The Ice Islands completion is a read-only prerequisite; only that foreign parent is arranged by the fenced fixture. No hoist state is seeded."
+      ],
+      "bindings": [
+        "content/quests/questpc7-world-callbacks.json",
+        "content/quests/native-world-callback-bindings.json"
+      ],
+      "retained_transport": {
+        "floors": [
+          -9,
+          -10,
+          -11
+        ],
+        "seconds": [
+          47.368278739,
+          45.877307756,
+          47.095951736
+        ],
+        "result": "PASS",
+        "boundary": "Original read-only guards and asymmetric remote lever effects retained."
+      }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "questpc5"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Formorgar Mines Quest",
+    "canonical": "oteryn:quest.the_ice_islands_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/27/definition",
+    "status": "WAITING-ENGINE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_formorgar_books_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_formorgar_books_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest (32027, 31104, -11) native_source=true duration=4.973961658s",
+        "duration_seconds": 4.973961658,
+        "source_position": [
+          32027,
+          31104,
+          -11
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:323"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_formorgar_books_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_formorgar_books_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton (32121, 31106, -12) native_source=true duration=4.975769275s",
+        "duration_seconds": 4.975769275,
+        "source_position": [
+          32121,
+          31106,
+          -12
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:331"
+      }
+    ],
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "qualification": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "0cf799d197e3d09cab984c5d68ad6633f7f96e66",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "evidence": {
+        "batch": "L1-05B",
+        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+        "native_owners": [
+          "oteryn:quest.the_ice_islands_quest",
+          "oteryn:quest.outfit_and_addon_quests"
+        ],
+        "identity_resolution": "Original L1 title identity retained;Norseman source outfit stages use shared General owner,Formorgar progress uses existing IceIslands owner. No fabricated dedicated Norseman quest record.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true"
+      },
+      "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented.",
+      "ownership_decision": "QSPLIT L1 outfit entry is explicitly QUALIFIED at the same canonical/title on qengine2. Skip that entry under current owner rule. Peer proof covers the complete Norseman/Formorgar outfit path with other-parent prerequisites, not a new local certification of every Ice Islands recipe stage."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    },
+    "reused_component_evidence": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "0cf799d197e3d09cab984c5d68ad6633f7f96e66",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "evidence": {
+        "batch": "L1-05B",
+        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+        "native_owners": [
+          "oteryn:quest.the_ice_islands_quest",
+          "oteryn:quest.outfit_and_addon_quests"
+        ],
+        "identity_resolution": "Original L1 title identity retained;Norseman source outfit stages use shared General owner,Formorgar progress uses existing IceIslands owner. No fabricated dedicated Norseman quest record.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true"
+      },
+      "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented.",
+      "ownership_decision": "QSPLIT L1 outfit entry is explicitly QUALIFIED at the same canonical/title on qengine2. Skip that entry under current owner rule. Peer proof covers the complete Norseman/Formorgar outfit path with other-parent prerequisites, not a new local certification of every Ice Islands recipe stage."
+    },
+    "scope_decision": "All25 restored to questpc7 by owner; no peer ownership exclusion.",
+    "remaining_work": {
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "Live-creature quest-tool capture/release and three distinct Baby Seal painting operations",
+      "engine_owner": "ENGITEM/ENGNPC",
+      "current_evidence": "Peer Norseman/Formorgar proof covers outfit grants and prerequisite reads, not the chosen nine-stage Ice Islands journey; selected s3/s4 require native actor-bound tool operations."
+    }
+  },
+  {
+    "title": "Fury Gates Mini World Change",
+    "canonical": "oteryn:quest.fury_gates_mini_world_change",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/48/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Locate the chosen active Fury Gate entrance.",
+      "targets": [
+        "Fury Gate"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/48/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Giant Smithhammer Quest",
+    "canonical": "oteryn:quest.giant_smithhammer_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
+        "status": "QUALIFIED",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin (32778, 32253, -8) native_source=true duration=4.573228216s",
+        "duration_seconds": 4.573228216,
+        "source_position": [
+          32778,
+          32253,
+          -8
+        ],
+        "log": ".questpc7/asymmetric-rechecked-pg.log:72",
+        "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
+        "status": "QUALIFIED",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer (32776, 32253, -8) native_source=true duration=4.45732072s",
+        "duration_seconds": 4.45732072,
+        "source_position": [
+          32776,
+          32253,
+          -8
+        ],
+        "log": ".questpc7/asymmetric-rechecked-pg.log:76",
+        "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
+        "status": "QUALIFIED",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon (32774, 32253, -8) native_source=true duration=4.386249664s",
+        "duration_seconds": 4.386249664,
+        "source_position": [
+          32774,
+          32253,
+          -8
+        ],
+        "log": ".questpc7/asymmetric-rechecked-pg.log:80",
+        "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+      }
+    ],
+    "owner": "questpc7",
+    "mechanism_progress": {
+      "asymmetric_lever": {
+        "state": "QUALIFIED_MECHANISM_ONLY",
+        "source": ".questpc7/giant-smithhammer-lever.lua:4-18",
+        "test": "questpc7_giant_smithhammer_asymmetric_lever_all_four_states",
+        "red_log": ".questpc7/asymmetric-red.log",
+        "green_log": ".questpc7/asymmetric-green.log",
+        "green_duration_seconds": 29.695032877,
+        "scope": "Four native lever/rock combinations through real USE, non-zero PG proof. Whole pinned quest stages remain ACTIVE and unqualified.",
+        "final_log": ".questpc7/asymmetric-rechecked-pg.log",
+        "final_duration_seconds": 35.916384503
+      }
+    },
+    "qualification": {
+      "kind": "complete chosen native smith cache programme, minimally reused from questpc8",
+      "proof": "qlane-meta/questpc7/SMITH-N3-PG-PROOF.json",
+      "test": "questpc7_smith_native_guardian_exact_cache_completion",
+      "postgres": "18.6",
+      "red_seconds": 40.344435849,
+      "green_seconds": 43.167823247,
+      "scope": [
+        "fresh subject quest state without quest-progress seeds",
+        "free-account entry without Current Premium authority",
+        "actual native exploration admits exactly one guardian across refresh",
+        "cache refuses before native Giant Spider lethal credit",
+        "one actual native Giant Spider lethal through existing death/corpse/loot owner",
+        "exact carried3208x1,3034x1,3031x100",
+        "durable owned quest completion",
+        "repeat cache use changes no output quantities",
+        "production prop emitted/pinned and selector agrees; all three actual source cells verified clear"
+      ],
+      "reuse": {
+        "lane": "questpc8",
+        "commit": "3b315d18dbb0a3a00149a2a14b9a19fcb42053a1",
+        "retained": [
+          "two callback keys",
+          "owned tracks",
+          "native Giant Spider guardian contract",
+          "exact three reward outputs"
+        ],
+        "adaptation": "Pin a real chest at32777,32254,-8 on verified clear native ground; the peer fixture target32776,32253,-8 has no chest in current main."
+      }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "questpc8"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    },
+    "reused_component_evidence": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-questpc8",
+      "sha": "3b315d18dbb0a3a00149a2a14b9a19fcb42053a1",
+      "status_path": "qlane-meta/questpc8/QUEST-STATUS.json",
+      "evidence": {
+        "scope": "Complete chosen exploration/Giant Spider/cache programme with exact hammer1, Talon1 and gold100 atomic outputs; retained source four-state lever is separately PG-qualified.",
+        "proof": "qlane-meta/questpc8/cloud-smith-cache-proof.json",
+        "components": [
+          {
+            "scope": "source lever mechanism only; not the chosen quest programme",
+            "test": "quest_l7_giant_smithhammer_four_source_states",
+            "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib quest_l7_giant_smithhammer_four_source_states -- --nocapture",
+            "marker": "POSTGRES_CASE_COMPLETED L7 giant-smithhammer four source states via USE",
+            "duration_seconds": 30.16,
+            "log": ".questpc8/l7-smithhammer-final.log",
+            "log_sha256": "fb8e46d5fa3c56c288cb9197df965c03d7ed83b10f86d3afd7592dd68b536fc9",
+            "red_duration_seconds": 27.97,
+            "red_failure": "open+absent lever revision advanced from 1 to 2"
+          },
+          {
+            "scope": "Native guardian, capacity refusal, exact direct backpack outputs, completion and replay",
+            "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+            "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+            "duration_seconds": 26.27184565,
+            "proof": "native-alias-smith-merge-validation.json"
+          },
+          {
+            "scope": "Production guardian activation from active native exploration; exact actor reused across refresh; captured native death plus atomic output programme",
+            "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+            "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+            "duration_seconds": 37.615971969,
+            "proof": "cloud-smith-cache-proof.json"
+          }
+        ]
+      },
+      "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented."
+    },
+    "scope_decision": "2026-11-08 owner restores all25 ACTIVE titles; peer ownership does not exclude this quest. Existing peer component evidence is reused, not treated as a local whole-chosen-route proof."
+  },
+  {
+    "title": "Glooth Engineer Outfits Quest",
+    "canonical": "oteryn:quest.glooth_engineer_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/50/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Present the authored Dark Trails qualification for the base outfit.",
+      "targets": [
+        "Dark Trails completion qualification"
+      ]
+    },
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "qualification": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "aae647c63b9022860699a5e2d31764881f38c472",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "evidence": {
+        "batch": "L1-03",
+        "scope": "Whole owned L1 outfit-grant mechanism; Dark Trails and Glooth Engineer share exactly one source base grant and both addon order paths. Encounter/exploration/voting objectives retain other lane ownership.",
+        "evidence": "3 full source outfit stories passed PostgreSQL18.6 in93.80s; exact per-case markers, source file:line/SHA and checks in batches[L1-03]."
+      }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    },
+    "reused_component_evidence": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "aae647c63b9022860699a5e2d31764881f38c472",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "evidence": {
+        "batch": "L1-03",
+        "scope": "Whole owned L1 outfit-grant mechanism; Dark Trails and Glooth Engineer share exactly one source base grant and both addon order paths. Encounter/exploration/voting objectives retain other lane ownership.",
+        "evidence": "3 full source outfit stories passed PostgreSQL18.6 in93.80s; exact per-case markers, source file:line/SHA and checks in batches[L1-03]."
+      }
+    },
+    "scope_decision": "2026-11-08 owner restores all25 ACTIVE titles; peer ownership does not exclude this quest. Existing peer component evidence is reused, not treated as a local whole-chosen-route proof."
+  },
+  {
+    "title": "Goblin Merchant Quest",
+    "canonical": "oteryn:quest.goblin_merchant_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
+    "status": "WAITING-ENGINE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s3",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s3",
+      "kind": "use",
+      "objective": "Gather slug, swamp-gas, Rotworm and mouldy-cheese odours with the perfume gatherer.",
+      "targets": [
+        "Perfume Gatherer",
+        "Slug",
+        "Black Swamp Gas",
+        "Rotworm",
+        "Mouldy Cheese"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "Fenced quest-tool use on exact live actors: capture and odour sampling with item transformation",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+      ],
+      "attempts": [
+        "Read the chosen Guardcatcher/Adventurer and perfume/trunk stages; compared the single-carried-item map callback schema with the required actor capture operation."
+      ],
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane.",
+      "engine_owner": "ENGITEM/ENGNPC",
+      "current_evidence": "Native tools and distinct kills already proved. world_callbacks.rs forbids monster-actor callbacks from changing quest storage; normal use-with actor owners do not expose a quest capture/sampling participant."
+    },
+    "mandatory_validation": {
+      "state": "FOCUSED_CHECKS_RUNNING",
+      "scope": "owner speed-first: own PG mechanic tests; workspace all-target check; changed-crate Clippy; fmt; duplicate migrations; repo regeneration",
+      "packages": 25,
+      "main_integrated": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+      "run_log": "/tmp/questpc7-pr3020-own-pg1.log",
+      "push_gate": "focused required gates pass; full suites in CI",
+      "previous_run": "superseded by explicit owner main-merge instruction",
+      "compile_check": "dispatch and game-server PASS32.70s",
+      "shared_migrations": "0999-1008 byte-exact main;1200-1205 removed; own1280-1288"
+    },
+    "integration_validation": {
+      "state": "COMPILE_FMT_PASS_ENGINE_REQUESTS_PENDING",
+      "proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+      "owner_push_rule": "publish compiling state now; do not wait for full tests"
+    },
+    "engine_request": {
+      "id": "goblin-live-capture",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "intro_progress": {
+      "state": "NATIVE_INTRO_AND_PAID_TOOLS_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-INTRO-PG-PROOF.json",
+      "runtime_hook": "enabled",
+      "whole_quest": "ACTIVE",
+      "next": "verify native Rafzan world placement, then bind non-capture physical jobs; consume qengine2 live-capture engine when delivered"
+    },
+    "placement_progress": {
+      "state": "SOURCE_PLACEMENT_ADMITTED",
+      "npc": "oteryn:npc.rafzan",
+      "cell": {
+        "x": 33052,
+        "y": 32095,
+        "floor": 6
+      },
+      "sources": [
+        "canary:npc/rafzan:sha256:9f1a480e77c5c63f9daf16a7f01a8959324ae4d4715642650ccd2e2132e4dd4b",
+        "crystal:npc/rafzan:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+      ],
+      "tests": "test_questpc7_rafzan_placement.py: absent-placement RED; both source attestations and native non-house cell GREEN",
+      "whole_quest": "ACTIVE"
+    },
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "sign_progress": {
+      "state": "THREE_NATIVE_SIGN_SITES_PG_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-SIGNS-PG-PROOF.json",
+      "whole_quest": "ACTIVE",
+      "next": "Ordinary Marsh Stalker kills; signs, pond and trunks qualified separately.",
+      "main_merge": "83acbdac3 merge aborted under owner15-minute conflict exception; resume after coherent checkpoint",
+      "postgres": "18.6",
+      "green_seconds": 91.409172094
+    },
+    "pond_progress": {
+      "state": "NATIVE_POND_PERSONAL_USE_PG_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-POND-PG-PROOF.json",
+      "red_seconds": 65.860055344,
+      "green_seconds": 68.421387159,
+      "whole_quest": "ACTIVE",
+      "next": "Native Marsh Stalker5kill job; source-data drafts ready. Capture/Rotworm and shared API convergence remain owner-routed.",
+      "content_unit": "330passed,0failed,1existingignored in491.72s"
+    },
+    "trunk_progress": {
+      "state": "THREE_NATIVE_TRUNKS_PG_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-TRUNKS-PG-PROOF.json",
+      "red_seconds": 64.248140561,
+      "green_seconds": 192.529618224,
+      "whole_quest": "ACTIVE",
+      "next": "Source-bound remaining odours/captures and final reward; reuse qengine2 live actor and canonical callback convergence deliveries."
+    },
+    "stalker_progress": {
+      "state": "FIVE_NATIVE_MARSH_STALKER_KILLS_PG_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-STALKERS-PG-PROOF.json",
+      "red_seconds": 64.581898601,
+      "green_seconds": 267.722714383,
+      "whole_quest": "ACTIVE",
+      "next": "Source-bound remaining odours/captures and final reward; reuse qengine2 live actor and canonical callback convergence deliveries.",
+      "content_units": "330passed,0failed,1preexistingignored in432.68s"
+    },
+    "odour_source_review": {
+      "state": "SOURCE_ORDER_VERIFIED_SUPPORT_ITEMS_NEXT",
+      "source": "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277",
+      "order": [
+        "fresh Slug corpse",
+        "black swamp gas",
+        "live Rotworm",
+        "mouldy cheese"
+      ],
+      "native_static_targets": {
+        "gas": [
+          33092,
+          32061,
+          -7,
+          17681
+        ],
+        "cheese": [
+          33029,
+          32034,
+          -7,
+          3120
+        ]
+      },
+      "dynamic_corpse_request": "goblin-fresh-slug-corpse-use",
+      "item_support_next": [
+        17672,
+        17673,
+        17674,
+        17675,
+        17681,
+        3120
+      ]
+    },
+    "perfume_item_progress": {
+      "state": "SOURCE_ITEM_POLICIES_PG_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-PERFUME-ITEMS-PG-PROOF.json",
+      "red_seconds": 74.325341548,
+      "green_seconds": 86.668771533,
+      "scope": "Supporting source Item admission only; ordered odour interactions remain incomplete",
+      "whole_quest": "ACTIVE"
+    },
+    "fresh_slug_corpse_progress": {
+      "state": "NATIVE_FRESH_CORPSE_PRODUCTION_PG_QUALIFIED",
+      "test": "questpc7_goblin_native_slug_death_materializes_fresh_corpse",
+      "source": "imports/canary/items-xml/items.xml:30254,30290,30296,30301",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "scope": "Native fresh corpse production support only; ordered perfume USE still pending qengine2; whole quest ACTIVE",
+      "red_seconds": 91.212731681,
+      "postgres": "18.6",
+      "red_error": "kill_reward_refused reason=corpse_item_inadmissible creature=oteryn:creature.slug",
+      "frozen_units": "Prior Thaian dispatch full units still running; no production artifact writes until completion",
+      "workspace_all_targets": "PASS4m19s",
+      "proof": "qlane-meta/questpc7/SLUG-CORPSE-PG-PROOF.json",
+      "green_seconds": 72.27338302,
+      "current_red": null
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "questpc2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "ACTIVE"
+    },
+    "scope_decision": "All25 restored to questpc7 by owner; no peer ownership exclusion."
+  },
+  {
+    "title": "Golden Outfits Quest",
+    "canonical": "oteryn:quest.golden_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/52/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "qualification": {
+      "kind": "complete selected native route",
+      "proof": "qlane-meta/questpc7/GOLDEN-PG-PROOF.json",
+      "test": "questpc7_golden_full_commission_charges_exactly_once",
+      "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "red_seconds": 76.55003838,
+      "green_seconds": 85.616165933,
+      "route": "Fresh King Tibianus commission; exact 100000/50000/50000 payments and unfunded refusal, replay, completion, immutable account grants and normal client selection of both addons. No quest-stage seeds.",
+      "bindings": [
+        "content/quests/shared-reward-callbacks.json",
+        "content/quests/shared-reward-offers.json",
+        "content/dialogues/quests/shared-reward-greetings.json",
+        "content/world/npc-placements/index.json"
+      ],
+      "source_contract": "qlane-meta/questpc7/CONTRACT-NOTES.md",
+      "generated_pin_companion": "deploy/synology-game/preprod-topology.toml:46; pin-refresh updated both map_revision and world_bundle.digest to the checked world pin"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Grave Danger Quest",
+    "canonical": "oteryn:quest.grave_danger_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/53/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "qualification": {
+      "kind": "whole selected native Grave Danger journey",
+      "test": "questpc7_grave_whole_native_journey_and_reward",
+      "proof": "qlane-meta/questpc7/GRAVE-PG-PROOF.json",
+      "postgres": "18.6",
+      "red_seconds": 40.799342316,
+      "green_seconds": 56.924504294,
+      "scope": [
+        "fresh native level250/Premium subject; no quest progress seeds",
+        "12 distinct retained physical grave sites, exact native journey destinations",
+        "current Premium refusal at first grave and final reward",
+        "five Lich Knight encounters with both Sirs mandatory",
+        "King Zelos and typed native Zelos-door entitlement earned",
+        "retained Cobra access STEP and flag, selected investigation USE, native Scarlett death",
+        "base Hand of Inquisition, Inquisition's Hand and canonical completion in one transaction",
+        "exact command replay; inactive new-command use preserves native armour behavior with unchanged grants and completion revision",
+        "ordinary appearance command selects earned base outfit"
+      ],
+      "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof.",
+      "validation": "14 focused gates GREEN; retained Ferumbras PG52.553s, check/strict clippy, repository generators/pins, content123/world5, fmt"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Grimvale Mini World Change",
+    "canonical": "oteryn:quest.grimvale_mini_world_change",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/54/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach Grimvale during the authored full-moon encounter.",
+      "targets": [
+        "Grimvale"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/54/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Grimvale Quest",
+    "canonical": "oteryn:quest.grimvale_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "qualification": {
+      "kind": "complete selected personal Grimvale programme",
+      "proof": "qlane-meta/questpc7/GRIMVALE-PG-PROOF.json",
+      "test": "questpc7_grimvale_whole_native_investigation_and_rewards",
+      "postgres": "18.6",
+      "red_seconds": 42.299587316,
+      "green_seconds": 92.470203109,
+      "scope": [
+        "fresh Current Premium at entry, harvesting, trap, final rewards and earned travel",
+        "five actual carried22082 blossoms from once-only native sites",
+        "exact10 afflicted kills and four distinct native leaders",
+        "closed silvered trap22074 MINT, exact consumption and command replay",
+        "native Feroxa and20 Werehyaena deaths;35 total",
+        "Rhargu and Domizian conversations with distinct retained real actors",
+        "both Oskayaat native investigation sites",
+        "atomic27565 amulet, two achievements, completion and typed access",
+        "exact final command replay without duplicate grants",
+        "actual earned native exit/reentry without changing final grants/completion"
+      ],
+      "bindings": [
+        "content/quests/questpc7-world-callbacks.json",
+        "content/quests/questpc7-death-objectives.json",
+        "content/quests/shared-reward-callbacks.json",
+        "content/dialogues/quests/shared-reward-greetings.json",
+        "content/world/npc-placements/index.json"
+      ],
+      "assumptions": "Personal botanical collection plots, selected inspection cells and native Feroxa objective are explicit conservative adaptations; see CONTRACT-NOTES.md. Original global full-moon, source form-chain and optional raid/corpse-loot fidelity are outside the pinned chosen programme."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "questpc2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Hand of the Inquisition Outfits Quest",
+    "canonical": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/56/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "outfit_item_progress": {
+      "state": "Complete selected route QUALIFIED; all source/content/pin checks GREEN",
+      "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json"
+    },
+    "qualification": {
+      "kind": "complete selected native NPC/token/use/completion/appearance programme",
+      "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json",
+      "test": "questpc7_inquisition_personal_tokens_require_actual_native_addons",
+      "postgres": "18.6",
+      "red_seconds": 73.227148735,
+      "green_seconds": 78.216713065,
+      "npc": "oteryn:npc.henricus",
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.grave_danger_quest"
+        ]
+      },
+      "fixture_boundary": "Only the completed prerequisite is arranged through its fenced writer. This does not qualify that parent; all subject progress, token MINT/consumption and appearance facts start fresh."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "canonical": "oteryn:quest.heart_of_destruction_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/57/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "qualification": {
+      "kind": "complete selected Heart of Destruction expedition and actual native powerful learning",
+      "proof": "qlane-meta/questpc7/HEART-PG-PROOF.json",
+      "test": "questpc7_heart_whole_native_breaches_and_rewards",
+      "postgres": "18.6",
+      "red_seconds": 42.197816668,
+      "green_seconds": 81.696754812,
+      "scope": [
+        "source Zao/Farmine entry; fresh Current Premium refusal",
+        "actual8911→8912 destabilizer USE and bound travel",
+        "all6 distinct native bosses in retained arenas with duplicate-death safeguards",
+        "typed progress and once-only native Yana report",
+        "exact5 carried Gold Tokens, Ender of the End, durable completion; repeat unchanged",
+        "actual native Powerful Strike refused with valid gear/materials/gold/shrine before completion; no burns",
+        "fresh Premium still required after learning",
+        "real native Powerful Strike after learning:250000 gold and all source materials burned, slot0/category0,72000000ms",
+        "no subject quest/tool/reward seeds"
+      ],
+      "assumptions": "Selected fixed once-only source-arena sequence; source Anomaly lever8911 is the selected Destruction Destabilizer; retained Farmine/Zao entry binds the chosen regional breach; no original party/lockout/form fidelity claimed. See CONTRACT-NOTES.md.",
+      "bindings": [
+        "content/quests/questpc7-world-callbacks.json",
+        "content/quests/questpc7-death-objectives.json",
+        "content/quests/shared-reward-callbacks.json",
+        "content/quests/imbuement-knowledge.json"
+      ]
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "questpc2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Hero of Rathleton Quest",
+    "canonical": "oteryn:quest.hero_of_rathleton_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/58/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "qualification": {
+      "kind": "whole selected native Hero of Rathleton programme",
+      "test": "questpc7_hero_full_native_investigation",
+      "proof": "qlane-meta/questpc7/HERO-PG-PROOF.json",
+      "postgres": "18.6",
+      "red_seconds": 41.471928342,
+      "green_seconds": 52.375250585,
+      "scope": [
+        "fresh subject, no quest-state seeds",
+        "actual movement voice/evidence/dungeon stage order",
+        "fresh Premium refusal at evidence and reward, zero MINT on refusal",
+        "ten native Glooth Golem lethals, duplicate notification/drain once and bounded respawn",
+        "Professor Maxxen admitted only after ten construct credits",
+        "native Maxxen lethal credit required for final USE",
+        "blueprint21897x1, Glooth Bag21203x4, platinum3035x5 in one atomic reward plan",
+        "once-only programme completion and repeat without additional inventory",
+        "already typed native dungeon-door entitlement is absent initially and granted with final completion"
+      ],
+      "boundary": "Selected finite Oteryn recipe. Original source global machines/FastWay and optional ordinary corpse loot remain outside this programme proof. No new party entitlement is inferred.",
+      "validation": "13 focused gates GREEN; check, strict clippy, repository generators/pins, content123/world5, fmt"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "questpc2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Hidden Threats Quest",
+    "canonical": "oteryn:quest.hidden_threats_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/43/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01 (33080, 32014, -13) native_source=true duration=5.144586582s",
+        "duration_seconds": 5.144586582,
+        "source_position": [
+          33080,
+          32014,
+          -13
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:373"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02 (33031, 32050, -13) native_source=true duration=4.95113004s",
+        "duration_seconds": 4.95113004,
+        "source_position": [
+          33031,
+          32050,
+          -13
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:377"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file (33078, 31980, -13) native_source=true duration=4.98521715s",
+        "duration_seconds": 4.98521715,
+        "source_position": [
+          33078,
+          31980,
+          -13
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:381"
+      }
+    ],
+    "owner": "questpc7",
+    "shared_native_death_mechanism": {
+      "status": "QUALIFIED",
+      "proof": "qlane-meta/questpc7/NATIVE-DEATH-PG-PROOF.json",
+      "red_seconds": 43.393288842,
+      "green_seconds": 42.583370058,
+      "postgres": "18.6",
+      "source_branch": "claude/happy-davinci-ijz3wy-questpc8",
+      "source_sha": "7eeee8fb152806de66af062831f94c2183c915ee"
+    },
+    "qualification": {
+      "kind": "complete selected Hidden Threats native route",
+      "proof": "qlane-meta/questpc7/HIDDEN-PG-PROOF.json",
+      "test": "questpc7_hidden_full_native_route_and_atomic_valuables",
+      "postgres": "18.6",
+      "red_seconds": 43.512682362,
+      "green_seconds": 45.593580772,
+      "scope": [
+        "fresh subject state",
+        "native chamber entry",
+        "five native lethal occurrences with duplicate suppression",
+        "physical chest USE",
+        "exact direct carried outputs",
+        "completion and exact USE replay",
+        "17 distinct occupied main-backpack slots refuse all4 output entries atomically",
+        "ordinary native fish consumption frees a slot for retry",
+        "explicit phase overlay preserves original source chest interactions"
+      ],
+      "assumptions": [
+        "Select standard Gold Nugget3040 from ambiguous duplicate name; CONTRACT-NOTES cites retained XML and bounded403 lookup."
+      ],
+      "source_claim_regression": {
+        "red_seconds": 97.67,
+        "green_seconds": 110.64,
+        "retained_native_source_cases": 15
+      },
+      "checks": "Focused retained PG,loader/world/reward/MINT units,author/generation,check,strict clippy,content123/world5,pins and fmt GREEN."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "state": "OWN_THREE_ROUTES_PG_GREEN",
+      "proof": "qlane-meta/questpc7/MAIN3044-PG-PROOF.json",
+      "qualification_change": false,
+      "own_pg_requalification": "PASS5cases actualPG18.6,332.064s; remaining unit/recheck budget explicitly pending"
+    }
+  },
+  {
+    "title": "Hive Born World Change",
+    "canonical": "oteryn:quest.authored.hive_born_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/3/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Earn fifty Favour Points by completing War Against the Hive tasks.",
+      "targets": [
+        "Favour Points"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/3/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Hive Outpost Mini World Change",
+    "canonical": "oteryn:quest.authored.hive_outpost_mini_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/4/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the Hive outpost west of Liberty Bay on Vandura.",
+      "targets": [
+        "Vandura Hive outpost",
+        "Liberty Bay"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/4/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Horse Station World Change",
+    "canonical": "oteryn:quest.horse_station_world_change",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/59/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Visit the horse station east of Thais and inspect its pasture.",
+      "targets": [
+        "Thaian Horse Station"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/59/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Hot Cuisine Quest",
+    "canonical": "oteryn:quest.hot_cuisine_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/60/definition",
+    "status": "WAITING-ENGINE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "source_binding_queue": {
+      "transitions": 48,
+      "native_binding_count": 0
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather 2 Meat for the Rotworm Stew course.",
+      "targets": [
+        "Meat"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "QENGINE2 guarded HotCuisineProgram adapter: UTC calendar, exact typed hand-ins, real level and Premium. Retained PG18.6 cooking case still Refused(StageMismatch),40.03s.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/60/definition",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/quests/src/quest/mod.rs:21",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs:148"
+      ],
+      "attempts": [
+        "Read the source recipe/bonus calendar planner and the real generic writer; traced the retained Jean Pierre hi rejection to unsupported CalendarMonth rather than interpreting it as an absent test. Did not duplicate qengine2 or activate the test-only cooking planner.",
+        "2026-11-08: confirmed HotCuisineProgram is production-exported via quest/mod.rs; generic npc_program.evaluate_source does not invoke its calendar/recipe planner. Actual PostgreSQL 18.6 native-cook-6 returned StageMismatch (35.881s); requested qengine2 wiring plus real level/Premium admission rather than enabling ungated rewards.",
+        "Fresh qengine2 790996f8e: npc_program.rs:148 still level:0; no HotCuisine planner wiring. Guarded execution request remains open; source-only eight Bat/Chicken profiles drafted but not admitted/qualified."
+      ],
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane.",
+      "source_recipe_requirement": "Each Jean Pierre cooking operation must consume all exact ingredient quantities and fluid subtypes, deliver the dish and commit cooking progress under one receipt/fence."
+    },
+    "mechanism_proof": {
+      "scope": "Mechanism only: recipes 6, 8 and 14; not whole-quest qualification",
+      "test": "npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay",
+      "postgres_version": "18.6",
+      "red": {
+        "result": "complete ingredients refused StageMismatch before writer extension",
+        "seconds": 37.98,
+        "log": "/tmp/questpc7-exchange-red-writer.log"
+      },
+      "green": {
+        "seconds": 38.928897695,
+        "log": "/tmp/questpc7-postrepair-exchange-pg.log"
+      },
+      "assertions": [
+        "exact ingredients and outputs",
+        "missing refusal",
+        "durable response replay",
+        "conflicting request binding",
+        "nine-input capacity rollback",
+        "no partial receipt or audit",
+        "stale lease rejection"
+      ],
+      "reused_source": "origin/claude/happy-davinci-ijz3wy-qengine2@5a6de28c142de185594217ce1e5cbc7f4b6e6e4e:tools/content-migration/qengine_reward_item_profiles.py",
+      "validation": "qlane-meta/questpc7/NPC-EXCHANGE-VALIDATION.json",
+      "current_integration_state": "Historical GREEN superseded: retained cooking case on current main returns Refused(StageMismatch) in actualPG18.6,40.03s. Custody support is GREEN; cooking remains WAITING-ENGINE."
+    },
+    "mandatory_validation": {
+      "state": "FOCUSED_CHECKS_RUNNING",
+      "scope": "owner speed-first: own PG mechanic tests; workspace all-target check; changed-crate Clippy; fmt; duplicate migrations; repo regeneration",
+      "packages": 25,
+      "main_integrated": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+      "run_log": "/tmp/questpc7-pr3020-own-pg1.log",
+      "push_gate": "focused required gates pass; full suites in CI",
+      "previous_run": "superseded by explicit owner main-merge instruction",
+      "compile_check": "dispatch and game-server PASS32.70s",
+      "shared_migrations": "0999-1008 byte-exact main;1200-1205 removed; own1280-1288"
+    },
+    "integration_validation": {
+      "state": "COMPILE_FMT_PASS_ENGINE_REQUESTS_PENDING",
+      "proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+      "owner_push_rule": "publish compiling state now; do not wait for full tests"
+    },
+    "engine_request": {
+      "id": "hot-cuisine-native-eligibility",
+      "state": "WAITING-ENGINE",
+      "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "state": "OWN_THREE_ROUTES_PG_GREEN",
+      "proof": "qlane-meta/questpc7/MAIN3044-PG-PROOF.json",
+      "qualification_change": false,
+      "own_pg_requalification": "PASS5cases actualPG18.6,332.064s; remaining unit/recheck budget explicitly pending"
+    },
+    "latest_engine_review": {
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "native_npc_level": "literal zero at npc_program.rs:148",
+      "decision": "All selected ingredients and dishes now have native profiles; guarded cooking planner integration remains owned by qengine2."
+    },
+    "qualified_support": [
+      {
+        "kind": "source-qualified native Bat/Chicken corpse ingredient policies and ordinary death custody",
+        "proof": "qlane-meta/questpc7/HOT-CORPSE-PG-PROOF.json",
+        "postgres": "18.6",
+        "red_seconds": 40.029096953,
+        "green_seconds": 62.782588758,
+        "item_ids": [
+          4330,
+          4331,
+          4332,
+          4363,
+          4364,
+          4365,
+          6042,
+          6053
+        ],
+        "boundary": "No full quest, timed-decay execution, portable pickup or source-map spawn claim."
+      },
+      {
+        "kind": "source-qualified native Northern Fishburger custody",
+        "proof": "qlane-meta/questpc7/HOT-FISHBURGER-PG-PROOF.json",
+        "postgres": "18.6",
+        "red_seconds": 39.702659393,
+        "green_seconds": 40.78833194,
+        "item_ids": [
+          9088
+        ],
+        "boundary": "Fixture MINT/carried custody only; no cooking reward or whole-quest qualification."
+      }
+    ],
+    "latest_support_validation": "qlane-meta/questpc7/HOT-FISHBURGER-PG-PROOF.json"
+  },
+  {
+    "title": "Hunter Outfits Quest",
+    "canonical": "oteryn:quest.hunter_outfits_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/44/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow (32369, 32795, -10) native_source=true duration=5.093611834s",
+        "duration_seconds": 5.093611834,
+        "source_position": [
+          32369,
+          32795,
+          -10
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:385"
+      }
+    ],
+    "owner": "questpc7",
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "eligibility_progress": {
+      "state": "shared eligibility mechanism QUALIFIED; own native start bound; whole route remains ACTIVE",
+      "proof": "qlane-meta/questpc7/ELIGIBILITY-PG-PROOF.json",
+      "boundary": "Not whole route qualification; finish remaining physical/reward bindings here"
+    },
+    "qualification": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "82278cf6c6ff1ab092121f1074a0b908f98232ad",
+      "implementation_sha": "21140f8fe",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "status_sha256": "ccebd9e52a6b58012edee949894440b97cc40edb022f124cd525b8de098a5dda",
+      "batch": "L1-08",
+      "scope": "Complete Elane introduction, crossbow, two-leather recipe, enchanted wings, three steels, and Legola premium sniper gloves. Both sex-specific source addon permutations, partial recipes, replay, six immutable grants, intermediate and final normal catalogues. No outfit stage seeded.",
+      "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+      "postgres_version": "18.6",
+      "case_seconds": [
+        91.07388077,
+        84.564699197
+      ],
+      "evidence": [
+        "qlane-meta/qengine2/RESUME.md:L1-08 QUALIFIED and closed follow-ons",
+        "qlane-meta/qengine2/CONTRACT-NOTES.md:86-99"
+      ],
+      "boundary": "External complete source NPC story has native General outfit/addon ownership. This records the peer canonical Hunter ledger qualification and skips duplicate implementation; it does not claim this lane authored a new Hunter cache route or renamed the native owner."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    },
+    "reused_component_evidence": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "82278cf6c6ff1ab092121f1074a0b908f98232ad",
+      "implementation_sha": "21140f8fe",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "status_sha256": "ccebd9e52a6b58012edee949894440b97cc40edb022f124cd525b8de098a5dda",
+      "batch": "L1-08",
+      "scope": "Complete Elane introduction, crossbow, two-leather recipe, enchanted wings, three steels, and Legola premium sniper gloves. Both sex-specific source addon permutations, partial recipes, replay, six immutable grants, intermediate and final normal catalogues. No outfit stage seeded.",
+      "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+      "postgres_version": "18.6",
+      "case_seconds": [
+        91.07388077,
+        84.564699197
+      ],
+      "evidence": [
+        "qlane-meta/qengine2/RESUME.md:L1-08 QUALIFIED and closed follow-ons",
+        "qlane-meta/qengine2/CONTRACT-NOTES.md:86-99"
+      ],
+      "boundary": "External complete source NPC story has native General outfit/addon ownership. This records the peer canonical Hunter ledger qualification and skips duplicate implementation; it does not claim this lane authored a new Hunter cache route or renamed the native owner."
+    },
+    "scope_decision": "2026-11-08 owner restores all25 ACTIVE titles; peer ownership does not exclude this quest. Existing peer component evidence is reused, not treated as a local whole-chosen-route proof."
+  },
+  {
+    "title": "Hunting for Tokens Quest",
+    "canonical": "oteryn:quest.hunting_for_tokens",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/61/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "qualification": {
+      "kind": "complete selected Hunting for Tokens native NPC wire route",
+      "proof": "qlane-meta/questpc7/TOKENS-PG-PROOF.json",
+      "test": "questpc7_hunting_for_tokens_exact_twenty_and_once_only_abacus",
+      "postgres": "18.6",
+      "red_seconds": 74.289942757,
+      "green_seconds": 74.80261656,
+      "scope": [
+        "fresh subject programme with no quest progress seeds",
+        "native Jorge admission and native NPC wire conversation",
+        "premature completion cannot bypass exchange",
+        "19 carried tokens refused without debit, output or advancement",
+        "two carried token stacks totaling24 consumed by exactly20",
+        "one native Abacus19151 delivered; four tokens remain",
+        "repeat exchange request creates no second debit or Abacus",
+        "durable selected quest completion through native NPC wire",
+        "repeat completion retains exactly one exchange source receipt"
+      ],
+      "bindings": [
+        "content/quests/shared-reward-callbacks.json",
+        "content/dialogues/quests/shared-reward-greetings.json",
+        "content/world/npc-placements/index.json"
+      ],
+      "generic_owner": "Existing exact carried exchange/MINT/quest transaction; new canonical physical profiles19083/19151 and retained Jorge placement."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "state": "OWN_THREE_ROUTES_PG_GREEN",
+      "proof": "qlane-meta/questpc7/MAIN3044-PG-PROOF.json",
+      "qualification_change": false,
+      "own_pg_requalification": "PASS5cases actualPG18.6,332.064s; remaining unit/recheck budget explicitly pending"
+    }
+  },
+  {
+    "title": "Hydra Egg Quest",
+    "canonical": "oteryn:quest.hydra_egg_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/62/definition",
+    "status": "QUALIFIED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "owner": "questpc7",
+    "qualification": {
+      "kind": "complete selected Hydra Egg native route and ordinary map-reset consumer",
+      "proof": "qlane-meta/questpc7/HYDRA-PG-PROOF.json",
+      "test": "questpc7_hydra_requires_personal_native_nest_pickup",
+      "postgres": "18.6",
+      "red_seconds": 42.847576199,
+      "green_seconds": 43.817053605,
+      "scope": [
+        "fresh subject quest state",
+        "CurrentPremium entry and nest acknowledgement",
+        "one actual native Hydra lethal occurrence",
+        "ordinary map-source command9 pickup",
+        "unrelated carried egg refuses",
+        "exact source pickup milestone survives stack merge",
+        "no fabricated quest chest or reward MINT",
+        "ordinary reset epoch replenishment to be proved",
+        "real native pickup merged into one existing carried stack",
+        "ordinary source replenishes at active reset1 after quest completion",
+        "personal quest completion revision remains unchanged",
+        "shared codec preserves explicit zero and runtime zero eligibility remains strict"
+      ],
+      "assumptions": [
+        "Selected existing1063 is a conservative authored search marker, not a uniquely resolved donor nest type.",
+        "Legacy B3 Item count0 denotes one materialized object; explicit opt-in export adapter preserves codec/runtime strictness."
+      ],
+      "fixture_boundary": "Reset pointer1 is an activated boot/reset-consumer environment precondition, matching existing world-reset map-pickup fixtures; it does not qualify the reset activation writer. No subject quest-stage seed. One unrelated egg through fenced ordinary MINT/transfer is an explicit negative provenance input; the selected reward comes only from ordinary native map pickup.",
+      "physical_item": "Existing accepted native4839 profile retained; no redundant qualifier or inferred use effect.",
+      "checks": "All15 non-empty focused gates GREEN: retained Hidden PG44.066s; loader/callback/reward/pickup/codec/compiler/author units; generation/check/strictclippy; rebuilt compiler pins; content123/world5/fmt.",
+      "verification_audit": "Two ancillary filters matched0 tests and are not evidence. Actual world pickup3 covers strict item zero/101 refusal; compiler bundle13 covers codec/export. HYDRA-PG-PROOF.json records the correction."
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "questpc4"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "QUALIFIED"
+    }
+  },
+  {
+    "title": "Illuminated Warrior Outfits Quest",
+    "canonical": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/5/definition",
+    "status": "WAITING-ENGINE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather scraps for the basic outfit.",
+      "targets": [
+        "Scraps of a Radiant Attire"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "First-party portable Item and cosmetic constructors for source-unresolved identities",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/5/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane.",
+      "engine_owner": "ENGITEM/QENGINE2",
+      "current_evidence": "Selected 2500/1250/1250 newly collected Scraps of a Radiant Attire require a first-party admitted item and cosmetic, without invented Tibia source IDs. Existing numeric-source qualifiers do not provide that constructor."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "eligibility_progress": {
+      "state": "shared eligibility mechanism QUALIFIED; own native start bound; whole route remains ACTIVE",
+      "proof": "qlane-meta/questpc7/ELIGIBILITY-PG-PROOF.json",
+      "boundary": "Not whole route qualification; finish remaining physical/reward bindings here"
+    },
+    "mandatory_validation": {
+      "state": "FOCUSED_CHECKS_RUNNING",
+      "scope": "owner speed-first: own PG mechanic tests; workspace all-target check; changed-crate Clippy; fmt; duplicate migrations; repo regeneration",
+      "packages": 25,
+      "main_integrated": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+      "run_log": "/tmp/questpc7-pr3020-own-pg1.log",
+      "push_gate": "focused required gates pass; full suites in CI",
+      "previous_run": "superseded by explicit owner main-merge instruction",
+      "compile_check": "dispatch and game-server PASS32.70s",
+      "shared_migrations": "0999-1008 byte-exact main;1200-1205 removed; own1280-1288"
+    },
+    "integration_validation": {
+      "state": "COMPILE_FMT_PASS_ENGINE_REQUESTS_PENDING",
+      "proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+      "owner_push_rule": "publish compiling state now; do not wait for full tests"
+    },
+    "engine_request": {
+      "id": "illuminated-first-party-constructors",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
+    },
+    "ownership_decision": {
+      "state": "SKIPPED_OTHER_LANE",
+      "owners": [
+        "qengine2"
+      ],
+      "scope_packet": "qlane-meta/questpc7/LANE-questpc7.json",
+      "historical_status_retained": "ACTIVE"
+    },
+    "scope_decision": "All25 restored to questpc7 by owner; no peer ownership exclusion."
+  }
+]

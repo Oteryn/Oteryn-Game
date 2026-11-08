@@ -1,0 +1,11 @@
+{
+  "previous_full_coverage_and_ledger_hashes_verified": true,
+  "changed_claims": [
+    "oteryn:reward-claim.quest.key.id3620"
+  ],
+  "placements_and_source_association_unchanged": true,
+  "qualified_before": 127,
+  "qualified_after": 128,
+  "remaining_before": 207,
+  "remaining_after": 206
+}

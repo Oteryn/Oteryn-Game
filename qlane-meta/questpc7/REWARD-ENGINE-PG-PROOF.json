@@ -1,0 +1,148 @@
+{
+  "slice": "reused NPC reward/outfit owner integration",
+  "state": "GREEN reusable NPC reward/outfit mechanism; no local whole-quest promotion",
+  "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+  "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+  "postgres_version": "18.6",
+  "red": {
+    "test": "qengine_rewards_knight_outfit",
+    "seconds": 73.19329316,
+    "error": "NoConversation instead of source reward greeting",
+    "log": "/tmp/questpc7-outfit-owner-red.log"
+  },
+  "green": [
+    {
+      "case": "knight outfit and selection",
+      "seconds": 74.707547273
+    },
+    {
+      "case": "backpack exact container exchange",
+      "seconds": 74.63794649
+    },
+    {
+      "case": "outfox capacity rollback",
+      "seconds": 75.423096089
+    },
+    {
+      "case": "Father atomic acceptance and eight hand-ins",
+      "seconds": 77.840778948
+    },
+    {
+      "case": "three ordered Hot Cuisine recipes",
+      "seconds": 43.469673565
+    }
+  ],
+  "logs": [
+    "/tmp/questpc7-outfit-owner-green2.log",
+    "/tmp/questpc7-outfit-final-regression-pg.log"
+  ],
+  "check": "five changed crates passed7.23s",
+  "pin_check": "PASS324f7a5dafd005847cb27854c77d3f47cb61c865c559b1a03356c8c992bd0665",
+  "authoring_tests": 12,
+  "npc_units": "17 retained successes plus corrected exact source qualification case GREEN39.37s",
+  "pending": [],
+  "whole_quests_promoted_locally": 0,
+  "checks": [
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-game-server"
+      ],
+      "exit_code": 0,
+      "seconds": 7.363,
+      "log": "/tmp/questpc7-outfit-final-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-game-server",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "seconds": 210.205,
+      "log": "/tmp/questpc7-outfit-final-clippy.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "exit_code": 0,
+      "seconds": 125.247,
+      "log": "/tmp/questpc7-outfit-final-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "exit_code": 0,
+      "seconds": 68.797,
+      "log": "/tmp/questpc7-outfit-final-world.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 11.111,
+      "log": "/tmp/questpc7-outfit-final-fmt.log"
+    },
+    {
+      "check": "pin-check",
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-final-pin-check.log"
+    }
+  ],
+  "intermediate_test_adaptations": [
+    "Use source fresh-character sex and matching appearance revision in wire fixture",
+    "Palimuth is explicitly qualified: assert exact source replies while retaining unsupported Spectulus refusal"
+  ],
+  "scope_note": "Generic owner reused; none of this lane's24 ACTIVE full quests is promoted from isolated seeded reward cases."
+}

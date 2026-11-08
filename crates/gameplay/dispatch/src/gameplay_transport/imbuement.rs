@@ -2,10 +2,13 @@
 //!
 //! The query reads a main backpack direct entry through the durable item owner and its
 //! slots and allowances from the qualified native item policy. Apply and clear run the
-//! IMBUE-FORGE0 §3 item gates, then shrine access (an imbuing shrine within one tile; the
-//! Canary quest unlock is a declared difference) and Premium for tiers 2 and 3, and then the
+//! IMBUE-FORGE0 §3 item gates, then shrine access (an imbuing shrine within one tile),
+//! source-qualified quest knowledge, and Premium for tiers 2 and 3. The result is
 //! one fenced durable transaction that consumes the recipe materials, burns the gold and writes
 //! or removes the imbuement (PARITY-IMBUE-FORGE-WIRE-1, migration 0196).
+#[path = "imbuement/knowledge.rs"]
+mod knowledge;
+
 use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::{generation_item_facts, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
@@ -533,7 +536,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return encode(&reply(ImbuementResult::NotAllowed)),
         };
-        let (write, premium) = match decision {
+        let (write, premium, learning) = match decision {
             Decision::Reply(reply) => return encode(&reply),
             Decision::Apply { slot, offer } => {
                 let Some(recipe) = imbuement_recipe(offer.family, offer.tier) else {
@@ -578,7 +581,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         materials,
                     }
                 };
-                (write, recipe.requires_premium)
+                (write, recipe.requires_premium, Some((offer.family, offer.tier)))
             }
             Decision::Clear { slot } => (
                 ImbuementWrite::Clear {
@@ -586,6 +589,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gold: IMBUEMENT_CLEAR_GOLD,
                 },
                 false,
+                None,
             ),
         };
         let Some(actor) = admitted.runtime_actor else {
@@ -619,6 +623,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if current.item_fence() != fence {
             return ImbuementReply::Rejected;
+        }
+        if let Some((family, tier)) = learning {
+            let requirement = match knowledge::requirement(family, tier) {
+                Ok(rule) => rule,
+                Err(_) => return ImbuementReply::Unavailable,
+            };
+            if let Some(rule) = requirement {
+                let Ok(copy) = self.root.read_character_quest_state(self.character, current.character_id).await else {
+                    return ImbuementReply::Unavailable;
+                };
+                // The following durable write checks the same Character revision. A
+                // concurrent quest write makes the command stale, never a free grant.
+                if copy.character_revision() != Some(current.expected_character_revision) {
+                    return ImbuementReply::Rejected;
+                }
+                if !rule.permits(|quest|copy.states().get(quest).is_some_and(|state|state.completed)) {
+                    return encode(&reply(ImbuementResult::RequirementNotMet));
+                }
+            }
         }
         let Ok(Some(bag)) = self
             .root

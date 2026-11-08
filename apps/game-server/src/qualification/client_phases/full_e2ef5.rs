@@ -2229,6 +2229,10 @@ async fn orient(
             StepDirection::East => StepDirection::West,
             StepDirection::South => StepDirection::North,
             StepDirection::West => StepDirection::East,
+            StepDirection::NorthEast => StepDirection::SouthWest,
+            StepDirection::SouthEast => StepDirection::NorthWest,
+            StepDirection::SouthWest => StepDirection::NorthEast,
+            StepDirection::NorthWest => StepDirection::SouthEast,
         }
     };
     // TARGET-MOVE-1's oneof field 3 contains the strict STEP direction codec.

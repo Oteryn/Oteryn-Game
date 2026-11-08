@@ -1,0 +1,9 @@
+{
+  "exit_code": 101,
+  "passed": 0,
+  "failed": 1,
+  "test_duration_seconds": 0.31,
+  "markers": 0,
+  "reason": "RevisionMismatch(\"native gameplay input digest\")",
+  "log": ".questpc/r8-catalogue-pg.log"
+}

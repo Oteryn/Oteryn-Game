@@ -39,6 +39,21 @@ class RewardItemAdmissionTests(unittest.TestCase):
         self.assertEqual(definition["semantics"]["stack"]["value"]["stack_max"], UNKNOWN)
         self.assertTrue(definition["materializable"])
 
+    def test_existing_proven_stack_absence_is_not_downgraded_to_unknown(self):
+        entry, appearance, definition = self.fixture()
+        definition['semantics'] = {'stack': known({
+            'stackable': known(False), 'stack_max': {'state': 'NOT_APPLICABLE'}})}
+        enrich(definition, item_facts(entry, appearance), entry['xml'])
+        self.assertEqual(definition['semantics']['stack']['value']['stack_max'],
+                         {'state': 'NOT_APPLICABLE'})
+
+    def test_unknown_source_maximum_does_not_authorize_conflicting_known_value(self):
+        entry, appearance, definition = self.fixture()
+        definition['semantics'] = {'stack': known({
+            'stackable': known(False), 'stack_max': known(50)})}
+        with self.assertRaisesRegex(ValueError, 'EXISTING_FACT_CONFLICT'):
+            enrich(definition, item_facts(entry, appearance), entry['xml'])
+
     def test_b3_stack_maximum_is_100(self):
         entry, appearance, definition = self.fixture({"flags.cumulative": True})
         enrich(definition, item_facts(entry, appearance), entry["xml"])

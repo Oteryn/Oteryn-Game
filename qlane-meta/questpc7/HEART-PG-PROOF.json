@@ -1,0 +1,378 @@
+{
+  "scope": "Whole selected Heart of Destruction programme and native powerful-imbuing knowledge",
+  "test": "questpc7_heart_whole_native_breaches_and_rewards",
+  "postgres": "18.6",
+  "red_seconds": 42.197816668,
+  "red_log": "/tmp/questpc7-heart-red2.log",
+  "red_point": "Missing native Heart entry after actual PG initialization",
+  "green": "PASS; complete selected programme and actual native powerful apply",
+  "mechanisms": {
+    "objective_descriptions": 128,
+    "maximum_live_guardians": 32,
+    "catalogue_guard_tests": 2,
+    "knowledge_parser_identity_tests": 2,
+    "knowledge_families": [
+      1,
+      11,
+      12
+    ],
+    "knowledge_tier": 3,
+    "knowledge_gate": "Native completed quest read under a coherent Character revision; durable write checks the same expected revision",
+    "not_changed": [
+      "basic/intricate allowances",
+      "unconfigured family policy",
+      "filled-scroll/etcher use",
+      "all spatial, source, duplicate, required-count and respawn guards"
+    ]
+  },
+  "current_run": {
+    "state": "PASS",
+    "log": "/tmp/questpc7-heart-green1.log"
+  },
+  "authoring_tests": 29,
+  "physical_bindings": {
+    "entry": [
+      33026,
+      31367,
+      -8,
+      10228
+    ],
+    "destabilizer": [
+      32245,
+      31244,
+      -14,
+      8911
+    ],
+    "lever_after": 8912,
+    "yana": [
+      32200,
+      32304,
+      -6
+    ],
+    "native_arenas": "/tmp/questpc7-heart-native-sites.json"
+  },
+  "service_fixture_boundary": "Normal sword/coins/materials and two source shrines are independent native-service preconditions; no subject progress/reward seeds",
+  "green_seconds": 81.696754812,
+  "green_log": "/tmp/questpc7-heart-green1.log",
+  "scope_proved": [
+    "source Zao/Farmine entry; fresh Current Premium refusal",
+    "actual8911\u21928912 destabilizer USE and bound travel",
+    "all6 distinct native bosses in retained arenas with duplicate-death safeguards",
+    "typed progress and once-only native Yana report",
+    "exact5 carried Gold Tokens, Ender of the End, durable completion; repeat unchanged",
+    "actual native Powerful Strike refused with valid gear/materials/gold/shrine before completion; no burns",
+    "fresh Premium still required after learning",
+    "real native Powerful Strike after learning:250000 gold and all source materials burned, slot0/category0,72000000ms",
+    "no subject quest/tool/reward seeds"
+  ],
+  "pending": [],
+  "checks": [
+    {
+      "check": "basic-imbue-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "imbuement_wire_dispatch_applies_and_clears_at_a_shrine_in_one_fenced_transaction",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 183.584,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-basic-imbue-pg.log"
+    },
+    {
+      "check": "grimvale-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_grimvale_whole_native_investigation_and_rewards",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 136.23,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-grimvale-pg.log"
+    },
+    {
+      "check": "loader-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "loader::tests::"
+      ],
+      "seconds": 13.222,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-loader-units.log"
+    },
+    {
+      "check": "world-callback-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 2.861,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-world-callback-units.log"
+    },
+    {
+      "check": "objective-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "death_objectives::tests::"
+      ],
+      "seconds": 0.122,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-objective-units.log"
+    },
+    {
+      "check": "knowledge-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "imbuement::knowledge::tests::"
+      ],
+      "seconds": 0.247,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-knowledge-units.log"
+    },
+    {
+      "check": "author",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/quest-authoring",
+        "-p",
+        "test_qengine_rewards.py"
+      ],
+      "seconds": 26.822,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-author.log"
+    },
+    {
+      "check": "item-author",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_qengine_reward_item_profiles.py"
+      ],
+      "seconds": 0.237,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-item-author.log"
+    },
+    {
+      "check": "item-generation",
+      "command": [
+        "python3",
+        "tools/content-migration/register_spell_families.py",
+        "--check"
+      ],
+      "seconds": 70.688,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-item-generation.log"
+    },
+    {
+      "check": "generation",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/qengine_rewards.py",
+        "--check"
+      ],
+      "seconds": 9.99,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-generation.log"
+    },
+    {
+      "check": "placements",
+      "command": [
+        "python3",
+        "tools/content-schema/npc-authoring/convert_placements.py",
+        "--check"
+      ],
+      "seconds": 0.27,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-placements.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 100.211,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 188.041,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-clippy.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 117.875,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-heart-pin-check"
+      ],
+      "seconds": 128.078,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-pin-check.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 164.854,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 50.968,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-world.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.657,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-heart-fmt.log"
+    }
+  ],
+  "unit_results": {
+    "loader-units": [
+      10
+    ],
+    "world-callback-units": [
+      22
+    ],
+    "objective-units": [
+      2
+    ],
+    "knowledge-units": [
+      2
+    ],
+    "content": [
+      123
+    ],
+    "world": [
+      5
+    ]
+  },
+  "regressions": [
+    {
+      "case": "basic-imbue-pg",
+      "postgres": "18.6",
+      "seconds": 40.901043364,
+      "result": "PASS"
+    },
+    {
+      "case": "grimvale-pg",
+      "postgres": "18.6",
+      "seconds": 93.001633257,
+      "result": "PASS"
+    }
+  ]
+}

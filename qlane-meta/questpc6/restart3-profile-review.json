@@ -1,0 +1,712 @@
+{
+  "exact_baseline_hash_verified": true,
+  "changes": [
+    {
+      "item": "oteryn:item.tibia.i3066",
+      "groups": [
+        "container"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i3074",
+      "groups": [
+        "container"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i3285",
+      "groups": [
+        "container",
+        "equipment"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i3359",
+      "groups": [
+        "container",
+        "equipment"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "UNKNOWN"
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "TORSO"
+                  },
+                  "vocations": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "TORSO"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i3375",
+      "groups": [
+        "container",
+        "equipment"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "UNKNOWN"
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "HEAD"
+                  },
+                  "vocations": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "HEAD"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i3571",
+      "groups": [
+        "container",
+        "equipment"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "UNKNOWN"
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "TORSO"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "TORSO"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i3572",
+      "groups": [
+        "container",
+        "equipment"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "UNKNOWN"
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "AMULET"
+                  },
+                  "vocations": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "AMULET"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i7991",
+      "groups": [
+        "container",
+        "equipment"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "UNKNOWN"
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "TORSO"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "DRUID",
+                      "SORCERER"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "TORSO"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "DRUID",
+                      "SORCERER"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i50195",
+      "groups": [
+        "container"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i51119",
+      "groups": [
+        "container"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i51760",
+      "groups": [
+        "container",
+        "equipment"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": [
+                      "oteryn:equipment-group.non_quiver_left_hand"
+                    ]
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": [
+                      "oteryn:equipment-group.non_quiver_left_hand"
+                    ]
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "item": "oteryn:item.tibia.i51977",
+      "groups": [
+        "container"
+      ],
+      "before": {
+        "container": {
+          "state": "UNKNOWN"
+        }
+      },
+      "after": {
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    }
+  ]
+}

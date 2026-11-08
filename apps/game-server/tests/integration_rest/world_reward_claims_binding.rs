@@ -698,6 +698,7 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
         );
     }
     assert!(report.served.is_empty());
+    assert!(report.served.is_empty());
     assert_eq!(
         report
             .left_out

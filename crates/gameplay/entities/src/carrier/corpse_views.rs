@@ -1,6 +1,6 @@
 use super::*;
 
-/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The Channel
+/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The runtime
 /// owner binds it once the corpse's MINT has committed: KILL-REWARD part B calls
 /// [`ChannelRuntimeV1::bind_corpse_item`] with the item instance id `commit_corpse_mint` returned
 /// and the corpse's typed definition. Not durable, like the projection it belongs to: an unbound
@@ -130,6 +130,7 @@ impl ChannelRuntimeV1 {
         production_key: &str,
         revision_ref: &str,
     ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
         self.carrier.bind_corpse_item_inner(
             actor,
             RuntimeCorpseItem {

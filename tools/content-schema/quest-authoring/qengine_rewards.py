@@ -40,9 +40,15 @@ def donor_inputs():
               'data-global/startup/tables/item.lua',
               'data-global/scripts/actions/other/others/quest_system2.lua',
               'data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua']
+    paths += ["data-global/npc/dermot.lua"]
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
+        summer_path = 'data-global/npc/wayland_smythers.lua'
+        summer_row = next(r for r in manifest['files'] if r['source'] == 'crystal-summer' and r['revision'] == '00ce02a57ca5a12e48f32a3476e37471167e4c3f' and r['path'] == summer_path)
+        summer_raw = corpus.extractfile(summer_row.get('blob_path', summer_row.get('cache_path'))).read()
+        if sha(summer_raw) != summer_row['sha256']: raise ValueError('Wayland retained source changed')
+        result[summer_path] = summer_raw
         for path in paths:
             row = next(r for r in manifest['files'] if r['source'] == 'crystalserver' and r['revision'] == PIN and r['path'] == path)
             raw = corpus.extractfile(row.get('blob_path', row.get('cache_path'))).read()
@@ -156,6 +162,8 @@ def build():
     mount_population = load_module('qengine_mount_population', 'tools/content-schema/quest-authoring/qengine_mounts.py')
     mounts, mount_mappings = mount_population.populate(ROOT, inputs, looks, mount_source, item_packet)
     mappings.extend(mount_mappings)
+    lane_programmes=load_module('questpc7_costume_sources','tools/content-schema/quest-authoring/questpc7_outfit_programmes.py')
+    lane_programmes.consumptive_mappings(ROOT,outfits,mappings)
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
     palette_path = 'tools/game-atlas-appearances/export.py'
     palette_source = {'reference': palette_path + '#outfit_color', 'revision': 'rounded-hsi-133-v1',
@@ -964,9 +972,14 @@ def build():
         ('l2-white-raven-', 'l2-efreet-', 'l2-marid-'))]
     callbacks = [c for c in callbacks if c not in ready_callbacks]
     ready_callbacks.sort(key=lambda c:c['key'])
+    lane=load_module('questpc7_integration','tools/content-schema/quest-authoring/questpc7_integration.py')
+    lane_data=lane.extend(ROOT,callbacks,offers,inputs,PIN,load_module)
+    fibula_callbacks = []
+    load_module('fibula_reward_authoring', 'tools/content-schema/quest-authoring/fibula_rewards.py').append(fibula_callbacks, offers, inputs)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
+    validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
     native_cosmetics = cosmetics.provisioning_input(
         ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
         authoring_bytes=encoded(author))
@@ -978,6 +991,7 @@ def build():
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
+            'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
         'schema':1,'tracks':[],'callbacks':ready_callbacks})
@@ -1004,7 +1018,7 @@ def build():
         messages={}
         citations=[]
         for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:
-            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs[path].decode()))
+            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs.get(path,inputs['data/npclib/npc_system/npc_handler.lua']).decode()))
             origin=path
             # Conditional NPC messages belong to their functional selectors.
             # Use the source handler's neutral default when no unique static message exists.
@@ -1046,6 +1060,7 @@ def build():
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
     reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,cosmetics.canonical)
+    generated.update(lane.outputs(ROOT,inputs,PIN,load_module,lane_data))
     return generated
 
 
@@ -1090,6 +1105,11 @@ def validate_callbacks(document):
         participant_ops=[s for p in participants for s in p.get('state_ops',[])]
         operations=callback.get('state_ops',[])
         all_keys=[s['track'] for s in storage+operations+participant_storage+participant_ops]
+        counter=callback.get('counter')
+        if counter is not None and (not 1<=counter['maximum']<=1_000_000_000_000
+                or callback.get('completes',False) or counter['track'] in all_keys
+                or counter['track'] in {r['track'] for r in callback.get('requires',[])}):
+            raise ValueError('invalid owned reward counter '+callback['key'])
         if (len(all_keys)>8 or len(all_keys)!=len(set(all_keys))
             or len({p['quest'] for p in participants})!=len(participants)
             or any(p['quest']==callback['quest'] for p in participants)
@@ -1108,7 +1128,12 @@ def validate_callbacks(document):
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or (not value_guard and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
+            or (not value_guard and not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
+            or (callback.get('repeatable',False) and (not callback.get('fee') or not callback.get('give')
+                or callback.get('outfit') or callback.get('achievement') or callback.get('completes',False)
+                or any(not s.get('preserve',False) for s in storage)))
+            or ((callback.get('give') or {}).get('key_number') is not None
+                and (callback['give']['count']!=1 or callback['give'].get('contents')))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):

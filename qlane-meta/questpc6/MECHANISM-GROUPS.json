@@ -1,0 +1,58 @@
+{
+  "ledger_rows": 33,
+  "expected_blocked_from_prompt": 94,
+  "observed_blocked_before": 32,
+  "missing_owner_decisions": true,
+  "groups": {
+    "encounter-and-occurrence": [
+      "Child of Destiny Quest",
+      "Cults of Tibia Quest",
+      "Dangerous Depths Quest",
+      "Elemental Spheres Quest",
+      "Elvenbane Quest"
+    ],
+    "outfit-and-atomic-hand-in": [
+      "Children of the Revolution Quest",
+      "Citizen Outfits Quest",
+      "Citizen Outfits Quest on Rook",
+      "Citizen of Issavi Outfits Quest",
+      "Crystal Warlord Outfits Quest",
+      "Dark Trails Quest",
+      "Decaying Defender Outfits Quest",
+      "Demon Outfits Quest",
+      "Draccoon Herald Outfits Quest",
+      "Dragon Slayer Outfits Quest",
+      "Dream Warden Outfits Quest",
+      "Dream Warrior Outfits Quest",
+      "Druid Outfits Quest",
+      "Druid Outfits Quest on Rook",
+      "Elementalist Outfits Quest"
+    ],
+    "owner-excluded": [
+      "Dawnport Quest"
+    ],
+    "pressure-plates-and-step-out": [
+      "Demon Helmet Quest",
+      "Devil Helmet Quest"
+    ],
+    "atomic-hand-in": [
+      "Demon's Lullaby",
+      "Draconia Quest",
+      "Dreamer's Challenge Quest"
+    ],
+    "world-change-mechanisms-owner-unverified": [
+      "Chakoya Iceberg Mini World Change",
+      "Chyllfroest Mini World Change",
+      "Deeplings World Change",
+      "Demon Wars World Change",
+      "Devovorga's Essence Mini World Change",
+      "Down the Drain Mini World Change"
+    ]
+  },
+  "current_counts": {
+    "UNFINISHED": 31,
+    "BLOCKED": 1,
+    "QUALIFIED": 1
+  },
+  "world_change_owner_note": "No specific in-flight WORLDCHG/ITEMHOLD allocation was established from local evidence; these Game obligations remain with questpc6 rather than being relabelled external blockers."
+}

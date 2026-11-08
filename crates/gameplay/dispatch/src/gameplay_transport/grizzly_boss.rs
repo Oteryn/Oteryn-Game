@@ -170,6 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     reset_epoch: self.reset_epoch,
                     actor_placement: actor.placement_identity(),
                     movement_revision: entered.revision(),
+                    party: Vec::new(),
                 },
             }
         };

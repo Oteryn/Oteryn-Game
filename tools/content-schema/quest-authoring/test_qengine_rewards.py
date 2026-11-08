@@ -411,6 +411,42 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual([r['item'] for r in callbacks['l4-pirate-hat']['take']],
                          ['oteryn:item.tibia.i6101','oteryn:item.tibia.i6102','oteryn:item.tibia.i6100','oteryn:item.tibia.i6099'])
 
+    def test_fibula_source_sales_keep_exact_paid_keys_and_repeat_guard(self):
+        fibula=json.loads(self.outputs['content/quests/npc-callbacks/fibula.json'])
+        sales={c['key'].split('/')[-1]:c for c in fibula['callbacks']
+               if c['key'].split('/')[-1].startswith('fibula-key-')}
+        self.assertEqual(set(sales), {'fibula-key-first', 'fibula-key-repeat'})
+        for name, sale in sales.items():
+            self.assertEqual(sale['fee'], {'gold':2000, 'include_bank':True})
+            self.assertEqual(sale['give'], {'item':'oteryn:item.tibia.i2968',
+                                         'count':1, 'contents':[], 'key_number':3940})
+            self.assertIn('9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d', sale['sources'][0])
+            self.assertEqual(sale.get('repeatable', False), name.endswith('repeat'))
+        repeat=sales['fibula-key-repeat']
+        self.assertTrue(all(s['preserve'] for s in repeat['storage']))
+        for field,value in [('fee',None), ('give',dict(repeat['give'], count=2))]:
+            bad=copy.deepcopy(fibula)
+            target=next(c for c in bad['callbacks'] if c['key']==repeat['key'])
+            if value is None:
+                del target[field]
+            else:
+                target[field]=value
+            with self.assertRaises(ValueError):
+                q.validate_callbacks(bad)
+
+    def test_fibula_terminal_requires_original_receipts_and_native_level_without_duplicate_loot(self):
+        fibula=json.loads(self.outputs['content/quests/npc-callbacks/fibula.json'])
+        terminal,=[c for c in fibula['callbacks'] if c['key'].endswith('/fibula-complete')]
+        self.assertTrue(terminal['completes'])
+        self.assertEqual(terminal['minimum_level'],50)
+        self.assertEqual(set(terminal['required_claims']),
+                         {f'oteryn:reward-claim.kv.deeperfibula{i}' for i in range(1,6)}
+                         | {'oteryn:reward-claim.quest.key.id3980'})
+        self.assertIsNone(terminal['give'])
+        self.assertNotIn('fee',terminal)
+        self.assertTrue(any(s['track'].endswith('/cavern_kills') and s['minimum']==s['maximum']==8
+                            and s['preserve'] for s in terminal['storage']))
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-'))},

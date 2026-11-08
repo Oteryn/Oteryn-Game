@@ -19,6 +19,7 @@ LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
 ITEMHOLD_ADMISSIONS = frozenset({
     "oteryn:reward-claim.kv.ornamentedshield",
     "oteryn:reward-claim.kv.powerring2",
+    "oteryn:reward-claim.kv.triangletower",
 })
 # QUEST-FINISH supports 334 in-scope claims. The 39 previously qualified claims
 # plus 88 Phase A claims, the Mintwallin prison key and 44 further A..M

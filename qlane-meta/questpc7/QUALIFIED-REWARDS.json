@@ -1,0 +1,285 @@
+[
+  {
+    "claim": "oteryn:reward-claim.halls_of_hope.reward1",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward1 (32349, 32194, -9) native_source=true duration=5.090969993s",
+    "duration_seconds": 5.090969993,
+    "source_position": [
+      32349,
+      32194,
+      -9
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:322"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_formorgar_books_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest (32027, 31104, -11) native_source=true duration=4.973961658s",
+    "duration_seconds": 4.973961658,
+    "source_position": [
+      32027,
+      31104,
+      -11
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:323"
+  },
+  {
+    "claim": "oteryn:reward-claim.halls_of_hope.reward2",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward2 (32382, 32368, -9) native_source=true duration=4.959183813s",
+    "duration_seconds": 4.959183813,
+    "source_position": [
+      32382,
+      32368,
+      -9
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:330"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_formorgar_books_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton (32121, 31106, -12) native_source=true duration=4.975769275s",
+    "duration_seconds": 4.975769275,
+    "source_position": [
+      32121,
+      31106,
+      -12
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:331"
+  },
+  {
+    "claim": "oteryn:reward-claim.halls_of_hope.reward3",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward3 (32287, 32119, -7) native_source=true duration=4.791148415s",
+    "duration_seconds": 4.791148415,
+    "source_position": [
+      32287,
+      32119,
+      -7
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:336"
+  },
+  {
+    "claim": "oteryn:reward-claim.halls_of_hope.reward4",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward4 (32389, 32001, -6) native_source=true duration=5.282838658s",
+    "duration_seconds": 5.282838658,
+    "source_position": [
+      32389,
+      32001,
+      -6
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:340"
+  },
+  {
+    "claim": "oteryn:reward-claim.halls_of_hope.reward5",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward5 (32449, 32109, -8) native_source=true duration=5.867407945s",
+    "duration_seconds": 5.867407945,
+    "source_position": [
+      32449,
+      32109,
+      -8
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:345"
+  },
+  {
+    "claim": "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ghostsilver_lantern_quest (32825, 31664, -9) native_source=true duration=5.5331575s",
+    "duration_seconds": 5.5331575,
+    "source_position": [
+      32825,
+      31664,
+      -9
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:349"
+  },
+  {
+    "claim": "oteryn:reward-claim.kv.imbuing_crystal_quest",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.imbuing_crystal_quest (33026, 31662, -14) native_source=true duration=5.149054894s",
+    "duration_seconds": 5.149054894,
+    "source_position": [
+      33026,
+      31662,
+      -14
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:353"
+  },
+  {
+    "claim": "oteryn:reward-claim.kv.painting_of_agirl_quest",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.painting_of_agirl_quest (32883, 31686, -10) native_source=true duration=5.716749517s",
+    "duration_seconds": 5.716749517,
+    "source_position": [
+      32883,
+      31686,
+      -10
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:357"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones (33393, 32373, -11) native_source=true duration=5.156270693s",
+    "duration_seconds": 5.156270693,
+    "source_position": [
+      33393,
+      32373,
+      -11
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:361"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night (33384, 32323, -12) native_source=true duration=5.249561645s",
+    "duration_seconds": 5.249561645,
+    "source_position": [
+      33384,
+      32323,
+      -12
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:365"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth (33408, 32396, -11) native_source=true duration=5.888040457s",
+    "duration_seconds": 5.888040457,
+    "source_position": [
+      33408,
+      32396,
+      -11
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:369"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01 (33080, 32014, -13) native_source=true duration=5.144586582s",
+    "duration_seconds": 5.144586582,
+    "source_position": [
+      33080,
+      32014,
+      -13
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:373"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02 (33031, 32050, -13) native_source=true duration=4.95113004s",
+    "duration_seconds": 4.95113004,
+    "source_position": [
+      33031,
+      32050,
+      -13
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:377"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file (33078, 31980, -13) native_source=true duration=4.98521715s",
+    "duration_seconds": 4.98521715,
+    "source_position": [
+      33078,
+      31980,
+      -13
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:381"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_story_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow (32369, 32795, -10) native_source=true duration=5.093611834s",
+    "duration_seconds": 5.093611834,
+    "source_position": [
+      32369,
+      32795,
+      -10
+    ],
+    "log": ".questpc7/lane-rewards-pg.log:385"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin (32778, 32253, -8) native_source=true duration=4.573228216s",
+    "duration_seconds": 4.573228216,
+    "source_position": [
+      32778,
+      32253,
+      -8
+    ],
+    "log": ".questpc7/asymmetric-rechecked-pg.log:72",
+    "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer (32776, 32253, -8) native_source=true duration=4.45732072s",
+    "duration_seconds": 4.45732072,
+    "source_position": [
+      32776,
+      32253,
+      -8
+    ],
+    "log": ".questpc7/asymmetric-rechecked-pg.log:76",
+    "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+  },
+  {
+    "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
+    "status": "QUALIFIED",
+    "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+    "test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon (32774, 32253, -8) native_source=true duration=4.386249664s",
+    "duration_seconds": 4.386249664,
+    "source_position": [
+      32774,
+      32253,
+      -8
+    ],
+    "log": ".questpc7/asymmetric-rechecked-pg.log:80",
+    "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+  }
+]

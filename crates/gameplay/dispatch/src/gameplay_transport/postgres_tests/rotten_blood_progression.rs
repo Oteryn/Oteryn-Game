@@ -1,9 +1,7 @@
-//! Real native damage/capture proves Primal's admitted corpse settlement and the
-//! remaining bosses' corpse-content refusals. Refused deaths exercise the fenced
-//! party-XP/Quest consumer seam, followed by real NPC mutations and immutable
-//! reconciliation. Per ANSWER6548332205, the refused bosses remain consumer
-//! integration; their native corpse qualification and instance admission remain
-//! owner dependencies.
+//! Real native damage and draining prove Primal's admitted corpse settlement and
+//! Rotten Blood's independently sourced XP/Quest progression despite unavailable
+//! corpse content. Captured-death consumer calls only replay those native writes;
+//! real NPC mutations, cleanse fences and immutable reconciliation remain covered.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -874,19 +872,17 @@ async fn kill_key(
     } else {
         assert_eq!(
             progression_receipts(h).await?,
-            before_physical,
-            "physical corpse refusal must not create a native XP, Hazard or Rotten receipt"
+            (
+                before_physical.0 + 1,
+                before_physical.1 + 1,
+                before_physical.2,
+                before_physical.3 + 1
+            ),
+            "native drain must commit exactly one Rotten, XP and party receipt without granting Hazard"
         );
         eprintln!(
             "ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible"
         );
-        settle_captured_endgame_death(owner, &h.pool, session, &source)
-            .await
-            .map_err(|error| {
-                format!(
-                    "Rotten captured death settlement {creature_key} command {command_id}: {error}"
-                )
-            })?;
     }
     let before_replay = progression_receipts(h).await?;
     settle_captured_endgame_death(owner, &h.pool, session, &source)

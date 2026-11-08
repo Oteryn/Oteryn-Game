@@ -69,12 +69,15 @@ class SourceQuestRewards(unittest.TestCase):
                          if r['definition']['identity']['key'] == 'oteryn:reward-claim.kv.lifering')
         self.assertNotIn('native_contents', life_ring)
         # Full-charge admission must not mutate the source-wide Item catalogue.
-        self.assertFalse(self.items['oteryn:item.tibia.i3083']['materializable'])
+        self.assertTrue(self.items['oteryn:item.tibia.i3083']['materializable'])
+        self.assertEqual(self.items, plain.load_items(), 'source catalogue must remain unchanged')
 
     def test_native_charge_admission_requires_exact_profile_and_all_known_facts(self):
         profiles = plain.load_json(plain.ROOT / 'content/items/definitions/spell-native-profiles.json')
         key = 'oteryn:item.tibia.i3083'
-        item = self.items[key]
+        item = copy.deepcopy(self.items[key])
+        # Test admission of a held item even when the merged canonical item is ready.
+        item['materializable'] = False
         original = next(p for p in profiles['records'] if p['production_definition']['production_key'] == key)
         self.assertTrue(container_native.native_charge_item(item, original)['materializable'])
         for mutation in ('identity', 'binding', 'admission', 'charges', 'physical', 'container', 'temporal'):
@@ -120,11 +123,14 @@ class SourceQuestRewards(unittest.TestCase):
         self.assertEqual(self.merged_items, before)
 
     def test_qualification_changes_only_the_five_owned_claims(self):
-        after = self.build(self.items)
-        variants_after = variant.derive(plain.ROOT, self.items, plain.stack_problem)
+        held_items = copy.deepcopy(self.items)
+        for item in (3082, 3083, 3084, 3085):
+            held_items[f'oteryn:item.tibia.i{item}']['materializable'] = False
+        after = self.build(held_items)
+        variants_after = variant.derive(plain.ROOT, held_items, plain.stack_problem)
         with patch.object(container_native, 'claim_items', side_effect=lambda _key, items: items):
-            before = self.build(self.items)
-            variants_before = variant.derive(plain.ROOT, self.items, plain.stack_problem)
+            before = self.build(held_items)
+            variants_before = variant.derive(plain.ROOT, held_items, plain.stack_problem)
         self.assertEqual({key for key in before if before[key] != after[key]}, {
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',
             'oteryn:reward-claim.kv.weddingring1',

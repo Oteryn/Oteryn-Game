@@ -39,7 +39,7 @@ impl NpcProgramRequest {
         }
     }
 
-    fn binding(&self, character: CharacterId) -> [u8; 33] {
+    pub(in crate::durability) fn binding(&self, character: CharacterId) -> [u8; 33] {
         let mut digest =
             Sha256::new().chain_update(request_binding(character, &self.quest_request()));
         for value in [&self.npc, &self.message] {

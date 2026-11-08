@@ -33,9 +33,9 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         return Ok(Err(RewardClaimMintError::InvalidInput));
     };
     let request = RewardClaimMintRequest {
-        backpack_outputs: false,
-        root_charges_remaining: None,
         root_fluid_subtype: None,
+        root_charges_remaining: None,
+        backpack_outputs: false,
         contents: Vec::new(),
         root_text: None,
         backpack,

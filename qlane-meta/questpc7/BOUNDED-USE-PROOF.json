@@ -1,0 +1,30 @@
+{
+  "scope": "bounded native USE schema/lowering checkpoint; NOT full native sampling settlement or Feaster qualification",
+  "postgres": "18.6",
+  "red_seconds": 41.717713297,
+  "red_error": "unknown field add after SHOW server_version",
+  "green_seconds": 42.65694779,
+  "green_scope": "PostgreSQL-initialized schema admission only",
+  "unit_tests": {
+    "count": 24,
+    "seconds": 3.26,
+    "result": "PASS",
+    "new_cases": [
+      "20 consecutive checked Add1 transitions,21st StageMismatch with cap20",
+      "15 malformed/unbounded/mismatched rules refused"
+    ]
+  },
+  "pending": [
+    "actual native USE with durable counter/item settlement, Premium/tool/refusal/replay/cap proof",
+    "source-backed authored static quest props without committing binary B3",
+    "Feaster whole selected route, missing Thaian creature and final focused gates"
+  ],
+  "native_prefix_attempt": {
+    "postgres": "18.6",
+    "seconds": 44.959359639,
+    "result": "RED",
+    "error": "NPC catalogue scan233 exceeds measured232 entry budget after authored-props directory addition",
+    "compile": "PASS test build2m38s",
+    "scope": "first6 source milestones now implemented; real native counter settlement still pending"
+  }
+}

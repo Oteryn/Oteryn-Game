@@ -1889,6 +1889,711 @@
         ],
         "scope": "All L1 base outfit and addon reward branches; preserve parent QuestState ownership and prerequisite tracks. Actual NPC/USE command dispatch, durable value receipts, atomic source flags, replay, client catalogue and earned appearance selection verified."
       }
+    },
+    {
+      "canonical": "oteryn:quest.afflicted_outfits_quest",
+      "title": "Afflicted Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc5",
+          "sha256": "413957b8b4d0269cc0133404ea4e2b0e038e0f875459a4f94b997bb69ab8f916",
+          "matched_statuses": []
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.assassin_outfit",
+      "title": "Assassin Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc5",
+          "sha256": "413957b8b4d0269cc0133404ea4e2b0e038e0f875459a4f94b997bb69ab8f916",
+          "matched_statuses": []
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.brotherhood_outfits_quest",
+      "title": "Brotherhood Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc5",
+          "sha256": "413957b8b4d0269cc0133404ea4e2b0e038e0f875459a4f94b997bb69ab8f916",
+          "matched_statuses": []
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.cave_explorer_outfits_quest",
+      "title": "Cave Explorer Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc5",
+          "sha256": "413957b8b4d0269cc0133404ea4e2b0e038e0f875459a4f94b997bb69ab8f916",
+          "matched_statuses": []
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+      "title": "Citizen of Issavi Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc6",
+          "sha256": "fa3e48607960f2033187b4243edba4d15d2da85b2ebc725f33a638e43981e9e9",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.crystal_warlord_outfits_quest",
+      "title": "Crystal Warlord Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc6",
+          "sha256": "fa3e48607960f2033187b4243edba4d15d2da85b2ebc725f33a638e43981e9e9",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.decaying_defender_outfits_quest",
+      "title": "Decaying Defender Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc6",
+          "sha256": "fa3e48607960f2033187b4243edba4d15d2da85b2ebc725f33a638e43981e9e9",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+      "title": "Dragon Slayer Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc6",
+          "sha256": "fa3e48607960f2033187b4243edba4d15d2da85b2ebc725f33a638e43981e9e9",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.dream_warden_outfits_quest",
+      "title": "Dream Warden Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc6",
+          "sha256": "fa3e48607960f2033187b4243edba4d15d2da85b2ebc725f33a638e43981e9e9",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.dream_warrior_outfits_quest",
+      "title": "Dream Warrior Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc6",
+          "sha256": "fa3e48607960f2033187b4243edba4d15d2da85b2ebc725f33a638e43981e9e9",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.druid_outfits_quest",
+      "title": "Druid Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc6",
+          "sha256": "fa3e48607960f2033187b4243edba4d15d2da85b2ebc725f33a638e43981e9e9",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.druid_outfits_quest_on_rook",
+      "title": "Druid Outfits Quest on Rook",
+      "status": "QUALIFIED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc6",
+          "sha256": "fa3e48607960f2033187b4243edba4d15d2da85b2ebc725f33a638e43981e9e9",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-06A",
+        "scope": "Complete available Rook Druid source path:literal Tom addon introduction,50bearpaws5896+50wolfpaws5897,paws/yes hand-in,bodyStage1->2,addon1. Partial funding retains first ingredient,replay cannot consume/grant again,exact2immutable account facts,normalmask1appearance succeeds and unearnedmask3refuses. No source stage seeded and no fabricated second reward.",
+        "native_owner_canonical": "oteryn:quest.druid_outfits_quest_on_rook",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=78.473462376s success=true"
+      }
+    },
+    {
+      "canonical": "oteryn:quest.ferumbras_ascension_quest",
+      "title": "Ferumbras' Ascension Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc7",
+          "sha256": "c7100a9ffe5ff35e6c81c7586fd1bf9ac33600e6bd6039c36936341d33147dc1",
+          "matched_statuses": [
+            "ACTIVE"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.fiend_slayer_outfits_quest",
+      "title": "Fiend Slayer Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc7",
+          "sha256": "c7100a9ffe5ff35e6c81c7586fd1bf9ac33600e6bd6039c36936341d33147dc1",
+          "matched_statuses": [
+            "ACTIVE"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.fire_fighter_outfits_quest",
+      "title": "Fire-Fighter Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc7",
+          "sha256": "c7100a9ffe5ff35e6c81c7586fd1bf9ac33600e6bd6039c36936341d33147dc1",
+          "matched_statuses": [
+            "ACTIVE"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.formal_dress_outfits_quest",
+      "title": "Formal Dress Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc7",
+          "sha256": "c7100a9ffe5ff35e6c81c7586fd1bf9ac33600e6bd6039c36936341d33147dc1",
+          "matched_statuses": [
+            "ACTIVE"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.the_ice_islands_quest",
+      "title": "Formorgar Mines Quest",
+      "status": "QUALIFIED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc4",
+          "sha256": "0a1573539f2f3538bbf04500e54796f5953f21ec56fad695d122f06c44218720",
+          "matched_statuses": [
+            "ACTIONABLE"
+          ]
+        },
+        {
+          "lane": "questpc7",
+          "sha256": "c7100a9ffe5ff35e6c81c7586fd1bf9ac33600e6bd6039c36936341d33147dc1",
+          "matched_statuses": [
+            "ACTIVE"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-05B",
+        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+        "native_owners": [
+          "oteryn:quest.the_ice_islands_quest",
+          "oteryn:quest.outfit_and_addon_quests"
+        ],
+        "identity_resolution": "Original L1 title identity retained;Norseman source outfit stages use shared General owner,Formorgar progress uses existing IceIslands owner. No fabricated dedicated Norseman quest record.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true"
+      }
+    },
+    {
+      "canonical": "oteryn:quest.golden_outfits_quest",
+      "title": "Golden Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc7",
+          "sha256": "c7100a9ffe5ff35e6c81c7586fd1bf9ac33600e6bd6039c36936341d33147dc1",
+          "matched_statuses": [
+            "ACTIVE"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.grave_danger_quest",
+      "title": "Grave Danger Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "BLOCKED"
+          ]
+        },
+        {
+          "lane": "questpc7",
+          "sha256": "c7100a9ffe5ff35e6c81c7586fd1bf9ac33600e6bd6039c36936341d33147dc1",
+          "matched_statuses": [
+            "ACTIVE"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "title": "Hand of the Inquisition Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc7",
+          "sha256": "c7100a9ffe5ff35e6c81c7586fd1bf9ac33600e6bd6039c36936341d33147dc1",
+          "matched_statuses": [
+            "ACTIVE"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.hunter_outfits_quest",
+      "title": "Hunter Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc7",
+          "sha256": "c7100a9ffe5ff35e6c81c7586fd1bf9ac33600e6bd6039c36936341d33147dc1",
+          "matched_statuses": [
+            "ACTIVE"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.knight_outfits_quest",
+      "title": "Knight Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc8",
+          "sha256": "8141a1640acfd09cf445b660e55bbd266b9265a5cb6f3a0b22f76ce2ac5c4bd0",
+          "matched_statuses": [
+            "BLOCKED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.outfit_and_addon_quests",
+      "title": "Mage Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED",
+            "UNFINISHED",
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc3",
+          "sha256": "57e13292da8bdec4ccb67cad2d8f719988a69d2c79a9fbace03f3a53bb8a67b7",
+          "matched_statuses": [
+            "IN_PROGRESS",
+            "IN_PROGRESS"
+          ]
+        },
+        {
+          "lane": "questpc4",
+          "sha256": "0a1573539f2f3538bbf04500e54796f5953f21ec56fad695d122f06c44218720",
+          "matched_statuses": [
+            "ACTIONABLE",
+            "ACTIONABLE"
+          ]
+        },
+        {
+          "lane": "questpc5",
+          "sha256": "413957b8b4d0269cc0133404ea4e2b0e038e0f875459a4f94b997bb69ab8f916",
+          "matched_statuses": []
+        },
+        {
+          "lane": "questpc6",
+          "sha256": "fa3e48607960f2033187b4243edba4d15d2da85b2ebc725f33a638e43981e9e9",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc8",
+          "sha256": "8141a1640acfd09cf445b660e55bbd266b9265a5cb6f3a0b22f76ce2ac5c4bd0",
+          "matched_statuses": [
+            "BLOCKED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.makeshift_warrior_outfits_quest",
+      "title": "Makeshift Warrior Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc",
+          "sha256": "78e9d7426268b9bff50e1a1f82277d6782527bf09fa44335a760525eb0ddf4ef",
+          "matched_statuses": [
+            "UNFINISHED"
+          ]
+        },
+        {
+          "lane": "questpc8",
+          "sha256": "8141a1640acfd09cf445b660e55bbd266b9265a5cb6f3a0b22f76ce2ac5c4bd0",
+          "matched_statuses": [
+            "BLOCKED"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "unresolved:questpc2:nightmare_outfits_quest",
+      "title": "Nightmare Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc2",
+          "sha256": "4512354b65aabd413edc94da88861845dddc643e4c129a512315519141f837d6",
+          "matched_statuses": [
+            "IN_PROGRESS"
+          ],
+          "matched_path": "prior_rounds/N-Q-before-L3/quests"
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "unresolved:questpc2:norseman_outfits_quest",
+      "title": "Norseman Outfits Quest",
+      "status": "QUALIFIED",
+      "origin_checks": [
+        {
+          "lane": "questpc2",
+          "sha256": "4512354b65aabd413edc94da88861845dddc643e4c129a512315519141f837d6",
+          "matched_statuses": [
+            "IN_PROGRESS"
+          ],
+          "matched_path": "prior_rounds/N-Q-before-L3/quests"
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-05B",
+        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+        "native_owners": [
+          "oteryn:quest.the_ice_islands_quest",
+          "oteryn:quest.outfit_and_addon_quests"
+        ],
+        "identity_resolution": "Original L1 title identity retained;Norseman source outfit stages use shared General owner,Formorgar progress uses existing IceIslands owner. No fabricated dedicated Norseman quest record.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true"
+      }
+    },
+    {
+      "canonical": "unresolved:questpc2:oriental_outfits_quest",
+      "title": "Oriental Outfits Quest",
+      "status": "QUALIFIED",
+      "origin_checks": [
+        {
+          "lane": "questpc2",
+          "sha256": "4512354b65aabd413edc94da88861845dddc643e4c129a512315519141f837d6",
+          "matched_statuses": [
+            "IN_PROGRESS"
+          ],
+          "matched_path": "prior_rounds/N-Q-before-L3/quests"
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-05A",
+        "resolved_canonical": "oteryn:quest.oriental_outfits_quest",
+        "scope": "Complete female source introductions and all exact hand-ins;both gender paths authored. Wrong-sex direct native commit and standalone participant bypass refuse;foreign Oriental door retains owner/pin and same primary revision;forged late participant rejected by PostgreSQL;replay,3 immutable account facts and ordinary final appearance selection pass. Only external Explorer Society prerequisite arranged.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=79.80126811s success=true"
+      }
+    },
+    {
+      "canonical": "unresolved:questpc2:pirate_outfits_quest",
+      "title": "Pirate Outfits Quest",
+      "status": "QUALIFIED",
+      "origin_checks": [
+        {
+          "lane": "questpc2",
+          "sha256": "4512354b65aabd413edc94da88861845dddc643e4c129a512315519141f837d6",
+          "matched_statuses": [
+            "IN_PROGRESS"
+          ],
+          "matched_path": "prior_rounds/N-Q-before-L3/quests"
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-04C",
+        "scope": "Complete source base, Duncan introductions and three100-item hand-ins, original Morgan sabre, Ariella introduction and four-item hat exchange. Only external Shattered Isles prerequisites seeded;partial recipe refuses atomically;replay,three immutable account facts and ordinary final appearance selection pass.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=81.775046751s success=true",
+        "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+        "identity_resolution": "Original L1 title identity retained;source outfit path belongs to existing shared native quest owner,not a separately admitted dedicated quest record."
+      }
+    },
+    {
+      "canonical": "oteryn:quest.revenant_outfits_quest",
+      "title": "Revenant Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc3",
+          "sha256": "57e13292da8bdec4ccb67cad2d8f719988a69d2c79a9fbace03f3a53bb8a67b7",
+          "matched_statuses": [
+            "IN_PROGRESS"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.rift_warrior_outfits_quest",
+      "title": "Rift Warrior Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc3",
+          "sha256": "57e13292da8bdec4ccb67cad2d8f719988a69d2c79a9fbace03f3a53bb8a67b7",
+          "matched_statuses": [
+            "IN_PROGRESS"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+    },
+    {
+      "canonical": "oteryn:quest.soil_guardian_outfits_quest",
+      "title": "Soil Guardian Outfits Quest",
+      "status": "UNFINISHED",
+      "origin_checks": [
+        {
+          "lane": "questpc3",
+          "sha256": "57e13292da8bdec4ccb67cad2d8f719988a69d2c79a9fbace03f3a53bb8a67b7",
+          "matched_statuses": [
+            "IN_PROGRESS"
+          ]
+        }
+      ],
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
     }
   ],
   "batches": [

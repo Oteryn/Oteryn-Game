@@ -20,6 +20,7 @@ pub(super) async fn permitted(
     }
     let direction = match request.cause.side {
         NpcTradeSide::Buy => ProjectV2ServiceOfferDirection::SellToPlayer,
+        NpcTradeSide::Exchange => return Ok(false),
         NpcTradeSide::Sell => ProjectV2ServiceOfferDirection::BuyFromPlayer,
     };
     let definition = ProjectV2DefinitionRef {

@@ -1,0 +1,52 @@
+{
+  "batch_id": "annihilator-native-source-entry-2026-11-07",
+  "base_sha": "8048f1eaf",
+  "scope": "Continuous captured-map approach, reward door, exact staging and native encounter entry with four genuine Fresh authorities and durable D88 levels; partial whole-quest evidence.",
+  "changes": [
+    "Compile canonical region129,123 with repository source::project_regions/registry and all captured floors; retain actual geometry, flags, doors and selectors. Production static Item defaults match apps/game-server/src/node/serve.rs:2293-2338.",
+    "Generalize test owner borrowing to accept the existing genuine-admission harness root/node; no production owner change.",
+    "Commit four genuine Fresh sessions; bind current leases/transports; award real source-policy level100 experience through D88; load actual Character cast facts and monk state. No actor-fact level overrides or quest progress injection.",
+    "Use the source bundle combat view/frame; four actual wire door USE and corridor walks place the participants on separate exact staging tiles, then literal lever USE atomically enters four players and six native demons. Commands follow each session continuity sequence."
+  ],
+  "red": [
+    {
+      "log": "/tmp/questpc2-route-red.log",
+      "server_version": 180006,
+      "duration_seconds": 70.11,
+      "failure": "Fixture rejected indexed static Items lacking a native profile; corrected to production conservative defaults."
+    },
+    {
+      "log": "/tmp/questpc2-route-green.log",
+      "server_version": 180006,
+      "duration_seconds": 72.55,
+      "failure": "Old fixture monk values incompatible with the actual vocationless build; corrected to durable monk owner read."
+    },
+    {
+      "log": "/tmp/questpc2-route-recovered-final-pg.log",
+      "server_version": 180006,
+      "duration_seconds": 72.88,
+      "failure": "CommandSequenceGap for fixture command100; corrected to actual SessionContinuity.next_command_id."
+    }
+  ],
+  "green": {
+    "postgres_log": "/tmp/questpc2-route-link-inputs-recovered-pg.log",
+    "server_version": 180006,
+    "postgres_cases": 1,
+    "duration_seconds": 86.21,
+    "marker": "ANNIHILATOR_ROUTE POSTGRES_CASE_OBSERVED server_version_num=180006; POSTGRES_CASE_COMPLETED members=4 creatures=6",
+    "check_log": "/tmp/questpc2-route-green-check.log",
+    "check_duration_seconds": 4.23,
+    "clippy_log": "/tmp/questpc2-route-green-clippy.log",
+    "clippy_duration_seconds": 26.19,
+    "clippy_scope": "dispatch and entities; all targets/all features -D warnings",
+    "source_step_unit_log": "/tmp/questpc2-route-green-source-step-unit.log",
+    "source_step_unit_cases": 1,
+    "source_step_unit_build_seconds": 2.06,
+    "source_step_unit_features": "test-support (required by existing fixture)",
+    "fmt_log": "/tmp/questpc2-route-green-fmt.log",
+    "skipped_postgres_results_accepted": false
+  },
+  "recovery": "Several native links failed at disk exhaustion. Retained and SHA256-verified514 temporary object files in a lossless291178385-byte archive, then removed only their temporary copies; latest READY cache retained. The retry linked29.88s and PG passed. No broad clean, profile/RUSTFLAGS/incremental setting change, source/PG data loss or binary commit.",
+  "whole_quest_qualifications": 0,
+  "next": "Extend the same real route through native combat clearance, physical earned chest, source exit and sealed re-entry; reuse existing owners, no invented kill-storage gate or escape timer."
+}

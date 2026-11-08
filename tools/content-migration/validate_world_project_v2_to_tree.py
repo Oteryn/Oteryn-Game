@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from item_taxonomy import build_taxonomy, legacy_profile, taxonomy_inputs
-from world_project_v2_to_tree import apply_primal_item_admissions, apply_summer_item_admissions, capability_relations
+from world_project_v2_to_tree import apply_encounter_corpse_admissions, apply_primal_item_admissions, apply_summer_item_admissions, capability_relations
 
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
@@ -275,11 +275,46 @@ def validate_weapon_relation(row, definition, weapon_rows, admitted_relations):
     require(canonical_bytes(row) == canonical_bytes(expected) == canonical_bytes(admitted_relations[key]), "WEAPON_RELATION_DERIVATION")
 
 
+def source_loot_stack_max(profile: dict[str, Any]) -> int | None:
+    """Only the pinned portable source policy may supersede a historical stack hold."""
+    stack = profile["semantics"]["stack"]
+    if stack.get("state") != "KNOWN":
+        return None
+    value = stack["value"]
+    stackable = value.get("stackable", {})
+    if stackable.get("state") != "KNOWN" or stackable.get("value") is not True:
+        return None
+    maximum = value.get("stack_max", {})
+    require(maximum.get("state") == "KNOWN" and type(maximum.get("value")) is int
+            and maximum["value"] == 100, "SOURCE_LOOT_STACK_BOUND")
+    return maximum["value"]
+
+
+def source_loot_stack_promotions(root: Path) -> dict[str, int]:
+    from encounter_loot_item_admissions import facts
+    profiles = facts(root)  # Existing source-pinned Demon loot admission.
+    sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
+    import native_goal_loot_items
+    import questpc2_soul_loot_items
+    selected_ids = native_goal_loot_items.selected(root) | questpc2_soul_loot_items.selected(root)
+    for key, profile in native_goal_loot_items.profiles(root, selected_ids).items():
+        require(key not in profiles or profiles[key] == profile, "SOURCE_LOOT_STACK_OWNER_CONFLICT")
+        profiles[key] = profile
+    import questpc2_rotten_loot_items
+    for profile in questpc2_rotten_loot_items.source.capture(root, profiles_only=True):
+        key = profile['production_definition']['production_key']
+        require(key not in profiles or profiles[key] == profile, "SOURCE_LOOT_STACK_OWNER_CONFLICT")
+        profiles[key] = profile
+    return {key: maximum for key, profile in profiles.items()
+            if (maximum := source_loot_stack_max(profile)) is not None}
+
+
 def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, batches: list[Any],
                              migrated_authoring: dict[tuple[str, str, str], dict[str, Any]]) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
     from quest_reward_item_semantics import load_admissions
     reward_admissions = load_admissions(ROOT)
+    loot_stack_promotions = source_loot_stack_promotions(ROOT)
     staged = load(ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")
     stats = load(ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json")
     content_path = {"weapon.range_cells": "weapon.range"}
@@ -397,13 +432,14 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         for entry in record["authoring_facts"]:
             authoring_value(legacy_authoring[key], entry["field_path"])
             fact_count += 1
-        # B3 §4.3 supersedes the old maximum hold only for this digest-verified
-        # reward admission's proven stackable items. Other blocked facts stay unknown.
+        # Only digest-verified reward/loot source policies supersede the old stack
+        # maximum hold. Other items and blocked fields remain protected.
         for blocked in ("stack.stack_max",):
             if blocked in known:
                 admitted = reward_admissions.get(key[1])
-                require(admitted is not None and admitted[0]["stackable"] and known[blocked] == 100,
-                        f"BLOCKED_FIELD_PROMOTED:{blocked}")
+                reward_proof = admitted is not None and admitted[0]["stackable"] and known[blocked] == 100
+                loot_proof = key[1] in loot_stack_promotions and known[blocked] == loot_stack_promotions[key[1]]
+                require(reward_proof or loot_proof, f"BLOCKED_FIELD_PROMOTED:{blocked}")
         equipment = superseding.get((key, "equipment.patterns"))
         if equipment is None:
             require(definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN") == "UNKNOWN", "BLOCKED_EQUIPMENT_PROMOTED")
@@ -762,11 +798,15 @@ def main() -> int:
     legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
     apply_summer_item_admissions(legacy_items, ROOT)
     apply_primal_item_admissions(legacy_items, ROOT)
+    apply_encounter_corpse_admissions(legacy_items, ROOT)
     from amber_item_semantics import apply_container_fact
     apply_container_fact(legacy_items, ROOT)
     # I19: the 72 source-qualified enchanting results now admit stacks/charges in the tree.
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
     apply_enchanting_admissions(legacy_items)
+    # Replay the same source-qualified Demon loot packet used by the producer.
+    from encounter_loot_item_admissions import apply_admissions as apply_encounter_loot_admissions
+    apply_encounter_loot_admissions(legacy_items, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(legacy_items, ROOT)
     require(migrated_items == legacy_items and expected_start == 34111, "ITEM_DEFINITION_ROUNDTRIP")

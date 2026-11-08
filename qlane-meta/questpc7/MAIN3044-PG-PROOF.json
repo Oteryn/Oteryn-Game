@@ -1,0 +1,63 @@
+{
+  "at": "2026-11-08T13:18:39.894081+00:00",
+  "tested_head": "036be9914709420b15b605a80489fbbc4aa96179",
+  "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+  "postgres": "18.6 (Debian18.6-1.pgdg13+2)",
+  "cases": [
+    {
+      "name": "Friends and Traders",
+      "green_seconds": 83.877924444,
+      "result": "PASS"
+    },
+    {
+      "name": "Hidden Threats Quest",
+      "green_seconds": 48.168622491,
+      "result": "PASS"
+    },
+    {
+      "name": "Hunting for Tokens Quest",
+      "green_seconds": 82.780138134,
+      "result": "PASS"
+    },
+    {
+      "name": "L6 fluid container",
+      "green_seconds": 43.865439416,
+      "result": "PASS"
+    },
+    {
+      "name": "fluid catalogue six placements",
+      "green_seconds": 73.19,
+      "result": "PASS"
+    }
+  ],
+  "run_seconds": 332.064,
+  "log_sha256": "e13779affcbfeb60065e11a598e3217e3e571fd4e2365aa1c2e43ed9a9c68d95",
+  "log": "/workspace/scratch/questpc7-main-focused-pg8.log",
+  "red_before_fixes": {
+    "friends_seconds": 133.792521729,
+    "friends_error": "quest reward lacks exact native backpack MINT",
+    "hidden_seconds": 38.095162264,
+    "hidden_error": "quest reward completion lacks exact owning receipt/state"
+  },
+  "authoring_units": {
+    "modules": 106,
+    "reported_cases": 1152,
+    "preexisting_skips": 8,
+    "failed_modules": []
+  },
+  "authoring_checks": "PASS exact CI runner",
+  "content_tree": "PASS34111Items/252Mounts/1864Creaturebindings",
+  "workspace_all_targets": "PASS476s after main107625470 merge (includes queue)",
+  "fmt": "PASS",
+  "clippy": "PASS six crates582s; final generated-assets recheck invalidated by disk exhaustion",
+  "migration_duplicates": "NONE",
+  "world_pin": "5e23e39d9479b37a4c0b66a17ecf6bdbc4e8158bc5417e150c5b81ca1c01e79d",
+  "pin_check": "PASS official compiler32892823bytes",
+  "pending_budget_tests": [
+    "Rust quests/NPC/counter unit compilation invalidated by disk full; rerun after cleanup",
+    "Optional content_world_project_repository build interrupted for own-PG/required-check priority",
+    "Generated client-assets final clippy invalidated by disk full; rerun"
+  ],
+  "node_boot": "Whole7variants previously executed; proxy retry reached PHP/Composer pulls then disk full. Stopped and cleaned; serialize next node builds after Rust proof. No node GREEN claimed.",
+  "ownership": "Four titles: three selected routes requalified; Hot Cuisine ACTIVE;21 remote-owned titles skipped"
+}

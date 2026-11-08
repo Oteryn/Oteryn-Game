@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- catalogue_npc_father_ catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic viola_mission_yes viola_book_postgres_real_use_repeat_replay_refusal_and_fences --test-threads=2 --nocapture",
+  "exit": 101,
+  "duration_seconds": 331.58
+}

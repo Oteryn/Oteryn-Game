@@ -96,6 +96,16 @@ Where does a character's quest progress live, and how does it change safely?
   - `effect`: `SET v`, `ADD n` (checked `i64`), or `SET_NOW` (server Unix time), each within the
     track's `[min, max]`. `SET_NOW` and `elapsed` use the database transaction time (`now()`), never
     a node clock.
+- **Owner continuation amendment (2026-11-06, quest/NPC completion):** `SET_IF equals, value`
+  compares the exact locked track value with `equals`, sets `value` on a match, and retains
+  the locked value otherwise. Both literals must lie within the track bounds. Its stable
+  definition-hash tag is 6; existing tags and hashes remain unchanged. World callbacks expose
+  it as optional `storage.set_if`, mutually exclusive with `preserve`, `read_only` and native
+  rules. This is a receipt-bearing effect for an event (including an atomic offering/exit),
+  never a replacement for a pure read-only guard. The retained value is included in the
+  event's receipt even when it does not change. Draconia's source escape resets Dragonfetish
+  only when it equals 1 (`crystalserver@9f5a72c6:data-global/scripts/quests/draconia/movement-escape.lua:17-19`,
+  git blob `8d9e413024dc127b7b26513127b033ec19bfe615`).
 - The 35 `computed: expression` effects have no kind yet: each needs a closed kind added by
   amendment, and until then its transition is `NOT_SUPPORTED`.
 - A transition may carry `completes: true`, which completes its quest (§3).
@@ -412,3 +422,35 @@ governance and repository policy validators. Independent persistence review on t
 **Out of scope.** Callers (QUEST-GATE-1, QUEST-TRIGGER-1, NPC-QUEST-1, QUEST-XP-1), predicates
 (QUEST-PRED-1), content lowering (QUEST-LOWER-1), account completion (QUEST-ACCOUNT-1), random
 draws (CHEST-RANDOM-1), any wire.
+
+### Doors sealed by an existing reward claim
+
+An optional `effects.reward_door` names one exact existing RewardClaim. It is
+exclusive with other callback effects, quest tracks, offerings and item changes.
+The current recovery, node, session, lease and assignment fences guard a read
+of the durable once-claim owner. No shadow progress, claim, receipt or Item is
+created by this gate. A claimed reward refuses both opening and closing.
+
+The native door book remains the only owner of appearance, collision and object
+revision. Opening prepares a sealed movement proof onto the selected door tile
+and commits that move with the final door compare-and-swap. A refused projection
+restores the whole native carrier before the exclusive owner turn ends. Closing
+pushes one occupant east, south, north, then west, refusing when no landing
+qualifies. The native proof follows the source IGNOREBLOCKCREATURE flag.
+Other doors, protection zones and
+movement authority remain part of the normal sealed movement proof.
+
+The Annihilator binding uses action10102 and door5113/5114. Source:
+Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b,
+`data-otservbr-global/scripts/quests/the_annihilator/door.lua:4-25`, retained
+blob1170e128e15ee05582db092987beea7a6935726a, SHA256
+03c6833cf9c9e4c335e2d33716b1180159696eb45cf1772d9e09e6036ef50ca1.
+The shared claim is `oteryn:reward-claim.quest.u7_24.the_annihilator.reward`;
+its four existing reward choices continue to use one durable claim owner.
+
+The close helper is Canary `data/libs/functions/creature.lua:174-210`,
+blob2ab1104989a5d1f50669dbb1e2d2aeef2f7c8dec, SHA256
+a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7.
+If multiple creatures occupy the doorway, the Game refuses rather than closing
+a solid door over the remaining occupants. The existing step-out close owner
+continues to close an empty quest doorway after movement.

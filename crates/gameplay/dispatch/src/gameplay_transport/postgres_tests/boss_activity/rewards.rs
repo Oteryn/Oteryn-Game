@@ -81,6 +81,7 @@ pub(super) async fn settle_and_collect(
     admitted: AdmittedSession,
     policy: &crate::foundation::CompiledCreaturePolicy,
     late: bool,
+    require_corpse: bool,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("actual Instance fence")?;
     let RuntimeScopeRefV1::Instance { instance_id, .. } = fence.runtime_scope else {
@@ -164,6 +165,18 @@ pub(super) async fn settle_and_collect(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
     );
+    if require_corpse {
+        let first = super::instance_corpse::assert_mint(h, owner, admitted, policy).await?;
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Drained
+        );
+        assert_eq!(
+            super::instance_corpse::assert_mint(h, owner, admitted, policy).await?,
+            first,
+            "native replay retains the corpse identity and exact audit bytes"
+        );
+    }
     let retained: (Vec<u8>, i16, Vec<u8>, bool, i64) = sqlx::query_as(
         "SELECT uuid_send(death_id),scope_kind,uuid_send(instance_id),channel_id IS NULL,minted_at FROM game_boss_reward_deaths",
     ).fetch_one(&h.pool).await?;

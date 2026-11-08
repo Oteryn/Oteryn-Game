@@ -1,0 +1,589 @@
+apps/client/src/native_entry/tests.rs:248:fn configuration_is_read_only_when_the_platform_is_set() -> TestResult {
+tools/agents/tests/test_meta_agent_policy_adoption.py:415:            "execution_route: <api_native_authoring | isolated_git | read_only>",
+apps/game-server/src/lifted_tests/auto/forge_postgres_cases.rs:142:fn forge_storage_runtime_read_only_audit_immutable_and_no_truncate() -> TestResult {
+apps/game-server/src/lifted_tests/auto/imbuement_postgres_cases.rs:323:fn imbuement_postgres_runtime_remains_read_only() -> TestResult {
+apps/game-server/src/lifted_tests/foundation_channel_owner_combat_death_tests.rs:915:fn projected_death_is_read_only_from_the_owner_projection() {
+apps/game-server/src/node/serve/qualification_fixture.rs:114:    use crate::durability::reward_claim_mint::{RewardClaimMintOutcome, RewardClaimMintRequest};
+apps/game-server/src/node/serve/qualification_fixture.rs:154:        let request = RewardClaimMintRequest {
+apps/game-server/src/node/serve/qualification_fixture.rs:170:            root_fluid_subtype: None,
+apps/game-server/src/node/serve/qualification_fixture.rs:171:            root_charges_remaining: None,
+tools/monster-lab/test_run.py:13:            config = {'repository': str(root / 'repo'), 'read_only_inputs': {'stage': str(root / 'stage.json')}}
+tools/monster-lab/test_run.py:20:            config = {'repository': str(root / 'repo'), 'read_only_inputs': {'bundles': str(root / 'bundles')}}
+tools/monster-lab/validate_full_population.py:98:    inputs = config['read_only_inputs']
+tools/monster-lab/run.py:28:    stage = Path(config['read_only_inputs']['stage']).resolve()
+tools/monster-lab/run.py:38:    inputs = [Path(p).resolve() for p in config['read_only_inputs'].values()]
+tools/monster-lab/run.py:193:            inputs = config['read_only_inputs']
+tools/monster-lab/run.py:204:            input_config = dict(config, read_only_inputs=dict(inputs, stage=str(merged_path)))
+tools/monster-lab/test_lab.py:32:        self.config = {'read_only_inputs': {'index': str(self.root / 'index.json'),
+tools/monster-lab/test_lab.py:77:        self.config['read_only_inputs']['stage'] = str(self.root / 'absent.json')
+tools/monster-lab/lab.py:35:    inputs = config.get('read_only_inputs', {})
+tools/monster-lab/lab.py:39:        raise LabError('Config requires read_only_inputs: index, stage, bundles') from exc
+tools/monster-lab/lab.py:149:            inputs = config['read_only_inputs']
+tools/monster-lab/config.example.json:3:  "read_only_inputs": {
+apps/game-server/migrations/0136_character_tutorial.sql:55:CREATE TABLE game_tutorial_corruptor_claims (
+apps/game-server/migrations/0136_character_tutorial.sql:64:REVOKE ALL ON game_tutorial_corruptor_claims FROM PUBLIC;
+apps/game-server/migrations/0136_character_tutorial.sql:65:GRANT SELECT, INSERT ON game_tutorial_corruptor_claims TO oteryn_game_runtime;
+tools/content-migration/stage_monster_optional_documents.py:119:    inputs = config['read_only_inputs']
+apps/game-server/migrations/1200_quest_finish.sql:92:        SELECT fluid_subtype,last_transaction_id INTO actual,actual_transaction
+apps/game-server/migrations/1200_quest_finish.sql:111:        NEW.item_instance_id,NEW.world_id,NEW.last_transaction_id,NEW.fluid_subtype)
+apps/game-server/migrations/1200_quest_finish.sql:146:           OR NOT entry ?& ARRAY['ordinal','charges_remaining']
+apps/game-server/migrations/1200_quest_finish.sql:149:           OR jsonb_typeof(entry->'charges_remaining')<>'number'
+apps/game-server/migrations/1200_quest_finish.sql:150:           OR (entry->>'charges_remaining')::NUMERIC<>1 THEN RETURN FALSE; END IF;
+apps/game-server/migrations/1200_quest_finish.sql:187:          AND p_charges=1 AND (f->>'charges_remaining')::INTEGER=p_charges
+apps/game-server/migrations/1200_quest_finish.sql:213:        SELECT (f->>'charges_remaining')::INTEGER INTO expected
+tools/repository/test_validate_game_atlas_semantic_search_triggers.py:504:def _assert_read_only_permissions(workflow: str) -> None:
+tools/repository/test_validate_game_atlas_semantic_search_triggers.py:699:    _assert_read_only_permissions(semantic)
+tools/repository/test_validate_game_atlas_semantic_search_triggers.py:700:    _assert_read_only_permissions(static)
+apps/game-server/migrations/0560_item_fluid_states.sql:16:    fluid_subtype SMALLINT NOT NULL CHECK (fluid_subtype BETWEEN 1 AND 255),
+apps/game-server/migrations/0560_item_fluid_states.sql:43:    v_after SMALLINT := CASE WHEN TG_OP = 'DELETE' THEN 0 ELSE NEW.fluid_subtype END;
+apps/game-server/migrations/0560_item_fluid_states.sql:86:GRANT UPDATE (fluid_subtype, last_transaction_id) ON game_item_fluid_states
+tools/content-migration/test_quest_reward_item_semantics.py:163:    def test_fluid_subtype_is_not_fabricated(self):
+apps/game-server/tests/content_world_project_v2_craft.rs:366:fn item_conversion_transaction_shape_boundaries_and_read_only_map_targets() {
+crates/gameplay/spell/src/spell/cast/wheel.rs:910:    fn focus_window_is_read_only_until_combat_commit_and_consumes_before_rearming()
+tools/content-schema/reward-claim-authoring/container_native.py:266:                child['fluid_subtype'] = selected_fluid[1]
+tools/content-schema/reward-claim-authoring/test_container_native.py:55:                    self.assertEqual([{k: v for k, v in child.items() if k != 'fluid_subtype'}
+tools/content-schema/reward-claim-authoring/test_container_native.py:57:                    self.assertEqual([(container_native.item_id(child['item']), child['fluid_subtype'])
+tools/content-schema/reward-claim-authoring/test_container_native.py:58:                                      for child in placement['contents'] if 'fluid_subtype' in child], fills)
+tools/repository/test_required_status_checks.py:59:        def read_only_request(method, path, **kwargs):
+tools/repository/test_required_status_checks.py:68:                with patch.object(settings, "request", side_effect=read_only_request), \
+tools/repository/test_required_status_checks.py:78:             patch.object(settings, "request", side_effect=read_only_request), \
+tools/content-schema/reward-claim-authoring/test_charge_native.py:30:                self.assertEqual(placement['root_charges_remaining'], 1)
+tools/content-schema/reward-claim-authoring/test_charge_native.py:34:                self.assertEqual([(i, child['charges_remaining'])
+tools/content-schema/reward-claim-authoring/test_charge_native.py:36:                                  if 'charges_remaining' in child],
+tools/content-schema/reward-claim-authoring/reward_claim_variant_authoring.py:66:                    'root_charges_remaining': {'const': 1},
+tools/content-schema/reward-claim-authoring/reward_claim_variant_authoring.py:75:                            'fluid_subtype': {'type': 'integer', 'minimum': 1, 'maximum': 255},
+tools/content-schema/reward-claim-authoring/reward_claim_variant_authoring.py:76:                            'charges_remaining': {'const': 1},
+apps/game-server/migrations/0597_loot_fluid_states.sql:16:    fluid_subtype SMALLINT NOT NULL CHECK (fluid_subtype BETWEEN 1 AND 255),
+apps/game-server/migrations/0597_loot_fluid_states.sql:36:    v_after SMALLINT := CASE WHEN TG_OP = 'DELETE' THEN 0 ELSE NEW.fluid_subtype END;
+apps/game-server/migrations/0597_loot_fluid_states.sql:53:           AND m.fluid_subtype = v_after
+tools/content-schema/reward-claim-authoring/charge_native.py:105:            child['charges_remaining'] = 1
+tools/content-schema/reward-claim-authoring/charge_native.py:111:        projected.update(root=contents[0]['item'], capacity=None, contents=[], root_charges_remaining=1)
+apps/game-server/migrations/0910_item_fluid_splashes.sql:9:    fluid_subtype SMALLINT NOT NULL CHECK (fluid_subtype BETWEEN 1 AND 255),
+apps/game-server/tests/support/combat_bestiary_postgres_cases.rs:73:        tutorial_corruptor: None,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:35:    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:582:        request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:596:        request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:805:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:806:    RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:814:        root_fluid_subtype: None,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:815:        root_charges_remaining: None,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:826:fn coins(command: CommandRef, claim_key: &str, quantity: u32) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1081:        let cases: Vec<(RewardClaimMintRequest, RewardClaimRefusal)> = vec![
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1717:        let key = RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2182:    mut request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2184:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2361:        let request = || -> TestResult<RewardClaimMintRequest> {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2847:    ) -> TestResult<RewardClaimMintRequest> {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:7:    mut request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:53:            root.root_fluid_subtype = Some(9);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:55:            assert_eq!(sqlx::query_scalar::<_, i16>("SELECT fluid_subtype FROM game_item_fluid_states WHERE item_instance_id=encode($1,'hex')::uuid")
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:68:            root.root_fluid_subtype = Some(1);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:73:                key_number: None, text: None, fluid_subtype: Some(2), charges_remaining: None,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:79:            assert_eq!(sqlx::query_scalar::<_, i16>("SELECT f.fluid_subtype FROM game_item_fluid_states f JOIN game_item_nested_entries e USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid")
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:88:            present.contents = [Some(1), None, Some(1), None].into_iter().map(|fluid_subtype| RewardClaimMintContent {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:90:                key_number: None, text: None, fluid_subtype, charges_remaining: None,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:96:            assert_eq!(sqlx::query_as::<_, (i64, Option<i16>)>("SELECT e.placement_ordinal::bigint,f.fluid_subtype FROM game_item_nested_entries e LEFT JOIN game_item_fluid_states f USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid ORDER BY e.placement_ordinal")
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:103:            for (offset, body) in [(6_u64, "RETURN NULL;"), (7, "NEW.fluid_subtype := 7; RETURN NEW;")] {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:109:                bad.root_fluid_subtype = Some(6);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:111:                    bad.root_fluid_subtype = None;
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:115:                        key_number: None, text: None, fluid_subtype: Some(6), charges_remaining: None,
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:114:            "SELECT fluid_subtype FROM game_item_fluid_states \
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:124:fn a_map_source_fill_persists_the_donor_fluid_subtype() -> TestResult {
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:152:            fluid_subtype: MANA,
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:162:            "SELECT fluid_subtype,splash_item_id, expires_at BETWEEN clock_timestamp()+interval '9 seconds' AND clock_timestamp()+interval '10 seconds' FROM game_item_fluid_splashes WHERE transaction_id=encode($1,'hex')::uuid")
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:357:                "INSERT INTO game_item_fluid_states(item_instance_id, world_id, fluid_subtype, \
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:372:                 INSERT INTO game_item_fluid_states(item_instance_id, world_id, fluid_subtype, \
+tools/content-schema/charm-authoring/samples/charm-global-parity-2026-10-01.json:21919:        "baseline_read_only": true,
+tools/content-schema/charm-authoring/samples/charm-global-parity-2026-10-01.json:26394:          "repo_read_only": true,
+tools/content-schema/charm-authoring/samples/charm-global-parity-2026-10-01.json:26395:          "root_chrome_artifacts_read_only": true,
+tools/content-schema/charm-authoring/samples/charm-global-parity-2026-10-01.json:27684:      "baseline_read_only": true,
+tools/content-schema/charm-authoring/samples/charm-global-parity-2026-10-01.json:30304:      "read_only_research": true,
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:8:fn tutorial_corruptor_preparation_preserves_arm_and_rejects_stale_authority() -> TestResult {
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:14:        let h = fixture::Harness::create(admin, "tutorial_corruptor", true).await?;
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:49:                    .prepare_tutorial_corruptor(&authority, &h.node, stale, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:57:                    .prepare_tutorial_corruptor(&authority, &h.node, current, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:62:            assert_eq!(h.count("game_tutorial_corruptor_claims").await?, 0);
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:65:                    .prepare_tutorial_corruptor(&authority, &h.node, current, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:70:            assert_eq!(h.count("game_tutorial_corruptor_claims").await?, 0);
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:80:                    .prepare_tutorial_corruptor(&authority, &h.node, stale, death)
+apps/game-server/tests/support/attack_kill_reward_postgres_cases.rs:576:        tutorial_corruptor: None,
+crates/gameplay/combat/src/combat/death_reward.rs:235:    pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/combat/src/combat/death_reward.rs:477:    tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/combat/src/combat/death_reward.rs:488:    if let Some(claim) = &tutorial_corruptor {
+crates/gameplay/combat/src/combat/death_reward.rs:501:            let purpose = crate::durability::tutorial_corruptor::guarantee_purpose(id);
+crates/gameplay/combat/src/combat/death_reward.rs:555:    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
+crates/gameplay/combat/src/combat/death_reward.rs:582:                    fluid_subtype: entry.fluid_subtype(),
+crates/gameplay/combat/src/combat/death_reward.rs:606:                tutorial_corruptor,
+crates/gameplay/combat/src/combat/death_reward.rs:671:                fluid_subtype: entry.fluid_subtype(),
+crates/gameplay/combat/src/combat/death_reward.rs:844:        input.tutorial_corruptor.clone(),
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:46:#[path = "tutorial_corruptor_postgres_cases.rs"]
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:47:mod tutorial_corruptor;
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:617:        tutorial_corruptor: None,
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:1575:                tutorial_corruptor: None,
+crates/gameplay/dispatch/src/gameplay_transport/item_use.rs:834:                    fluid_subtype: before,
+crates/gameplay/content/src/content/world_reward_claims.rs:113:    pub contents: Vec<RewardContainerItem>,
+crates/gameplay/content/src/content/world_reward_claims.rs:116:    pub root_fluid_subtype: Option<u8>,
+crates/gameplay/content/src/content/world_reward_claims.rs:117:    pub root_charges_remaining: Option<u32>,
+crates/gameplay/content/src/content/world_reward_claims.rs:121:pub struct RewardContainerItem {
+crates/gameplay/content/src/content/world_reward_claims.rs:126:    pub fluid_subtype: Option<u8>,
+crates/gameplay/content/src/content/world_reward_claims.rs:127:    pub charges_remaining: Option<u32>,
+crates/gameplay/content/src/content/world_reward_claims.rs:243:    contents: Vec<RewardContainerItem>,
+crates/gameplay/content/src/content/world_reward_claims.rs:245:    root_fluid_subtype: Option<u8>,
+crates/gameplay/content/src/content/world_reward_claims.rs:246:    root_charges_remaining: Option<u32>,
+crates/gameplay/content/src/content/world_reward_claims.rs:509:                recipe.get("root_charges_remaining").is_some()
+crates/gameplay/content/src/content/world_reward_claims.rs:510:                    || recipe.get("root_fluid_subtype").is_some()
+crates/gameplay/content/src/content/world_reward_claims.rs:513:                            child.get("fluid_subtype").is_some()
+crates/gameplay/content/src/content/world_reward_claims.rs:514:                                || child.get("charges_remaining").is_some()))
+crates/gameplay/content/src/content/world_reward_claims.rs:547:            "root_charges_remaining",
+crates/gameplay/content/src/content/world_reward_claims.rs:618:                    || recipe.get("root_charges_remaining").and_then(Value::as_u64) == Some(1)) =>
+crates/gameplay/content/src/content/world_reward_claims.rs:635:        result.root_charges_remaining = recipe
+crates/gameplay/content/src/content/world_reward_claims.rs:636:            .get("root_charges_remaining")
+crates/gameplay/content/src/content/world_reward_claims.rs:695:                "fluid_subtype",
+crates/gameplay/content/src/content/world_reward_claims.rs:696:                "charges_remaining",
+crates/gameplay/content/src/content/world_reward_claims.rs:757:        result.contents.push(RewardContainerItem {
+crates/gameplay/content/src/content/world_reward_claims.rs:762:            fluid_subtype: row
+crates/gameplay/content/src/content/world_reward_claims.rs:763:                .get("fluid_subtype")
+crates/gameplay/content/src/content/world_reward_claims.rs:767:            charges_remaining: row
+crates/gameplay/content/src/content/world_reward_claims.rs:768:                .get("charges_remaining")
+crates/gameplay/content/src/content/world_reward_claims.rs:967:        root_fluid_subtype: None,
+crates/gameplay/content/src/content/world_reward_claims.rs:968:        root_charges_remaining: None,
+crates/gameplay/content/src/content/world_reward_claims.rs:1012:                root_fluid_subtype: placement.root_fluid_subtype,
+crates/gameplay/content/src/content/world_reward_claims.rs:1013:                root_charges_remaining: placement.root_charges_remaining,
+crates/gameplay/content/src/content/world_reward_claims.rs:1092:                placement.root_charges_remaining == Some(1)
+crates/gameplay/content/src/content/world_reward_claims.rs:1094:                        child.charges_remaining == Some(1) || child.fluid_subtype.is_some())),
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:88:        if recipe.get("root_fluid_subtype").is_some() {
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:93:                || recipe.get("root_charges_remaining").and_then(Value::as_u64) != Some(1)
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:97:        } else if recipe.get("root_charges_remaining").is_some() {
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:106:                        && child["fluid_subtype"].as_u64() == Some(u64::from(*subtype)) => {}
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:107:                None if child.get("fluid_subtype").is_none() => {}
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:113:                        && child["charges_remaining"].as_u64() == Some(1) => {}
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:114:                None if child.get("charges_remaining").is_none() => {}
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:623:    ) -> Option<crate::durability::reward_claim_mint::RewardClaimMintRequest> {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:626:            RewardClaimMintContent, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:666:                fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:667:                charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:678:        Some(RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:690:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:691:            root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:7:use crate::durability::tutorial_corruptor::TutorialCorruptorClaim;
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:10:    pub(super) async fn tutorial_corruptor_table(
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:15:    ) -> Result<(LootTableDefinition, Option<TutorialCorruptorClaim>), ()> {
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:24:            .prepare_tutorial_corruptor(self.character, self.holder, fence, entry.facts.death)
+crates/gameplay/durability/src/durability/spell_item_transaction.rs:718:    due_read_only: bool,
+crates/gameplay/durability/src/durability/spell_item_transaction.rs:811:    authority.due_read_only = true;
+crates/gameplay/durability/src/durability/spell_item_transaction.rs:1248:        due_read_only: false,
+crates/gameplay/durability/src/durability/spell_item_transaction.rs:1926:    if authority.due_read_only {
+crates/gameplay/durability/src/durability/item_craft.rs:255:                    let ingredient = sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id FOR UPDATE) AS fluid_subtype FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
+crates/gameplay/durability/src/durability/item_craft.rs:266:                            ingredient_fluid_subtype(
+crates/gameplay/durability/src/durability/item_craft.rs:267:                                row.try_get::<Option<i16>, _>("fluid_subtype").ok()?,
+crates/gameplay/durability/src/durability/item_craft.rs:494:fn ingredient_fluid_subtype(stored: Option<i16>) -> Option<u32> {
+crates/gameplay/durability/src/durability/item_craft.rs:503:    fn cooking_fluid_subtype_comes_from_fluid_state() {
+crates/gameplay/durability/src/durability/item_craft.rs:504:        assert_eq!(ingredient_fluid_subtype(Some(9)), Some(9));
+crates/gameplay/durability/src/durability/item_craft.rs:505:        assert_eq!(ingredient_fluid_subtype(None), None);
+crates/gameplay/durability/src/durability/item_craft.rs:506:        assert_eq!(ingredient_fluid_subtype(Some(-1)), None);
+tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json:63:          "read_only": true
+tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json:133:          "read_only": true
+tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json:149:    "reason": "Position-only Use requires the existing shared adapter to select the source object above ordinal 0; schema extensions read_only and success_message are also prohibited for guarded branches. All four source interactions remain held."
+tools/content-schema/quest-authoring/batch3_c/held-world/the_primal_ordeal.json:332:          "read_only": true
+tools/content-schema/quest-authoring/batch3_c/held-world/the_primal_ordeal.json:471:        "read_only",
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:18:pub struct TutorialCorruptorClaim {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:25:impl TutorialCorruptorClaim {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:58:    pub async fn prepare_tutorial_corruptor(
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:64:    ) -> Result<Option<TutorialCorruptorClaim>, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:103:                    Ok(Ok((!items.is_empty()).then_some(TutorialCorruptorClaim {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:123:    let prior: Option<Vec<i32>> = sqlx::query_scalar("SELECT item_ids FROM game_tutorial_corruptor_claims WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid AND scope_generation=$4::text::numeric(20,0) AND actor_id=$5 AND actor_generation=$6::text::numeric(20,0)")
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:141:    claim: &TutorialCorruptorClaim,
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:179:    sqlx::query("INSERT INTO game_tutorial_corruptor_claims(character_id,world_id,channel_id,scope_generation,actor_id,actor_generation,item_ids) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6::text::numeric(20,0),$7)")
+crates/gameplay/quests/src/tutorial/corruptor_loot_tests.rs:4:fn tutorial_corruptor_rewards_use_source_items_and_base_vocations() {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:7:    npc_program::{self, NpcProgramRequest},
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:26:        request: NpcProgramRequest,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:41:    request: NpcProgramRequest,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:100:    let mut request = NpcProgramRequest {
+crates/gameplay/quests/src/quest/rotten_blood.rs:38:        storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false, read_only: false }],
+crates/gameplay/quests/src/quest/world_callbacks.rs:67:    pub read_only: bool,
+crates/gameplay/quests/src/quest/world_callbacks.rs:132:    pub fn is_read_only(&self) -> bool {
+crates/gameplay/quests/src/quest/world_callbacks.rs:133:        !self.storage.is_empty() && self.storage.iter().all(|storage| storage.read_only)
+crates/gameplay/quests/src/quest/world_callbacks.rs:178:            || (callback.storage.iter().any(|storage| storage.read_only)
+crates/gameplay/quests/src/quest/world_callbacks.rs:179:                && (!callback.is_read_only()
+crates/gameplay/quests/src/quest/world_callbacks.rs:282:                if callback.native_rule.is_none() && !storage.preserve && !storage.read_only {
+crates/gameplay/quests/src/quest/world_callbacks.rs:297:                    max: if storage.preserve || storage.read_only {
+crates/gameplay/quests/src/quest/world_callbacks.rs:307:        if callback.is_read_only() {
+crates/gameplay/quests/src/quest/world_callbacks.rs:342:    fn read_only_world_callback_has_no_quest_write_transition() -> Result<(), String> {
+crates/gameplay/quests/src/quest/world_callbacks.rs:360:    fn read_only_world_callbacks_reject_mixed_mutations() -> Result<(), String> {
+crates/gameplay/quests/src/quest/batch3_a/hot_cuisine/tests.rs:76:fn wrong_fluid_subtype_does_not_consume_or_progress() -> Result<(), NpcRuleError> {
+crates/gameplay/items/src/remaining_consumables.rs:10:    pub charges_remaining: u16,
+crates/gameplay/items/src/remaining_consumables.rs:16:        self.charges_remaining == 0
+crates/gameplay/items/src/remaining_consumables.rs:45:        charges_remaining: charges - filled,
+crates/gameplay/items/src/remaining_consumables.rs:76:                        charges_remaining: 0,
+crates/gameplay/items/src/remaining_consumables.rs:86:                        charges_remaining: 7,
+crates/gameplay/items/src/loot_plan.rs:94:    pub fn fluid_subtype(&self) -> Option<u8> {
+crates/gameplay/items/src/loot_plan.rs:1580:        assert_eq!(fluid.entries[0].fluid_subtype(), Some(5));
+crates/gameplay/items/src/loot_plan.rs:1584:        assert_eq!(plan(&table)?.entries[0].fluid_subtype(), None);
+crates/gameplay/items/src/loot_plan.rs:1588:        assert_eq!(wide.entries[0].fluid_subtype(), None);
+crates/gameplay/items/src/loot_plan.rs:1593:        assert_eq!(stack.entries[0].fluid_subtype(), None);
+crates/gameplay/items/src/loot_plan.rs:1599:        assert_eq!(charged.entries[0].fluid_subtype(), None);
+crates/gameplay/items/src/loot_plan.rs:1604:        assert_eq!(plain.entries[0].fluid_subtype(), None);
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:9:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:105:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:117:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:118:            root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:11:    RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:166:                                fluid_subtype: child.fluid_subtype,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:167:                                charges_remaining: child.charges_remaining,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:175:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:187:                    root_fluid_subtype: bound.root_fluid_subtype,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:188:                    root_charges_remaining: bound.root_charges_remaining,
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:8:use crate::durability::reward_claim_mint::{RewardClaimMintError, RewardClaimMintRequest};
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:159:                    .map(|(item, quantity)| RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:171:                        root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:172:                        root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:369:            let read_only_gate = if callback.is_read_only() {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:426:            if !callback.is_read_only() && !self
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:451:                read_only_gate.as_ref(),
+crates/gameplay/dispatch/src/gameplay_transport/mod.rs:191:mod tutorial_corruptor;
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:6:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:67:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:79:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:80:            root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:22:        read_only_gate: Option<&ReadOnlyGate>,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:164:        if callback.is_read_only()
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:165:            && !read_only_gate.is_some_and(|gate| {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:174:        let mut success_message = if callback.storage.is_empty() || callback.is_read_only() {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:179:        if !callback.storage.is_empty() && !callback.is_read_only() {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:9:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:15:    request: RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:203:            let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:215:                root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:216:                root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs:1089:    fn an_ended_entitlement_is_read_only_after_delivery() {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:487:    sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,7,encode($3,'hex')::uuid)")
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:511:    sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,10,encode($3,'hex')::uuid)")
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:515:        Ok(sqlx::query_scalar("SELECT fluid_subtype FROM game_item_fluid_states WHERE item_instance_id = encode($1,'hex')::uuid")
+tools/content-schema/imbuement-authoring/samples/global-rules-evidence.json:2601:      "browser_read_only": true,
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2803:        let Ok((loot_table, tutorial_corruptor)) = admission
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2804:            .tutorial_corruptor_table(fence, &entry, loot_table)
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2812:        if let Some(claim) = &tutorial_corruptor
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2819:            tutorial_corruptor,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:253:fn quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:292:        expected_plan.push(serde_json::json!({"ordinal": ordinal, "charges_remaining": charges}));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:300:                game_reward_claim_charges_plan_valid(r.charges_plan#-'{0,charges_remaining}',r.contents_plan), \
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:301:                game_reward_claim_charges_plan_valid(jsonb_set(r.charges_plan,'{0,charges_remaining}','2'),r.contents_plan), \
+crates/gameplay/durability/src/durability/spell_item_transaction/direct_companion.rs:223:    if authority.due_read_only {
+crates/gameplay/social/src/interaction/chest_use.rs:67:    RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/social/src/interaction/chest_use.rs:296:) -> Result<(ChildOccurrenceRef, RewardClaimMintRequest), ChestUseError> {
+crates/gameplay/social/src/interaction/chest_use.rs:311:    let mint_request = RewardClaimMintRequest {
+crates/gameplay/social/src/interaction/chest_use.rs:319:        root_fluid_subtype: None,
+crates/gameplay/social/src/interaction/chest_use.rs:320:        root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:316:            .prepare_tutorial_corruptor(&authority, &h.node, current, facts.death)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:333:                "CREATE FUNCTION newhaven_reject_claim() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'newhaven simulated commit failure'; END $$; CREATE TRIGGER newhaven_reject_claim BEFORE INSERT ON game_tutorial_corruptor_claims FOR EACH ROW EXECUTE FUNCTION newhaven_reject_claim();".to_owned()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:360:            sqlx::raw_sql(sqlx::AssertSqlSafe("DROP TRIGGER newhaven_reject_claim ON game_tutorial_corruptor_claims; DROP FUNCTION newhaven_reject_claim();".to_owned()))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:377:                .bind(crate::durability::tutorial_corruptor::guarantee_purpose(*id))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:479:        let claims:i64 = sqlx::query_scalar("SELECT count(*) FROM game_tutorial_corruptor_claims WHERE character_id=encode($1,'hex')::uuid")
+tools/content-schema/quest-authoring/test_batch3_world.py:52:    def test_native_read_only_gate_and_success_message_are_preserved(self):
+tools/content-schema/quest-authoring/test_batch3_world.py:55:                            'set': 0, 'read_only': True}], 'success_message': 'source text'}
+tools/content-schema/quest-authoring/batch3_b/held/a_pirates_tail_quest-world.json:31:          "read_only": true
+tools/content-schema/quest-authoring/batch3_b/held/a_pirates_tail_quest-world.json:38:          "read_only": true
+tools/content-schema/quest-authoring/batch3_b/held/a_pirates_tail_quest-world.json:183:          "storage.read_only"
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:27:          "read_only": true
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:64:          "read_only": true
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:101:          "read_only": true
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:134:          "read_only": true
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:169:          "read_only": true
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:204:          "read_only": true
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:243:          "read_only": true
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:481:        "storage.read_only",
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:492:        "storage.read_only"
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:507:        "storage.read_only"
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:522:        "storage.read_only"
+tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json:538:        "storage.read_only"
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/literal_uses.rs:27:fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/literal_uses.rs:37:            assert!(callback.is_read_only());
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:7:    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:248:    let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:263:        root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:264:        root_charges_remaining: None,
+crates/gameplay/durability/src/durability/item_transfer.rs:1498:        "SELECT item_instance_id::text, fluid_subtype FROM game_item_fluid_states \
+crates/gameplay/durability/src/durability/item_transfer.rs:1508:                u8::try_from(row.try_get::<i16, _>("fluid_subtype")?)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:8:use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:458:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:473:                    root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:474:                    root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:635:                    let fluids: Vec<(String, i32)> = sqlx::query_as("SELECT i.definition_production_key,f.fluid_subtype::integer FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid OR i.item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) ORDER BY i.definition_production_key")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:600:    use crate::durability::reward_claim_mint::{RewardClaimMintRequest, RewardClaimMintError, RewardClaimRefusal};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:637:    let mut request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:642:        root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:643:        root_charges_remaining: None,
+tools/content-schema/quest-authoring/batch3_a/world/the_hidden_city_of_beregar.json:28:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/the_hidden_city_of_beregar.json:63:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/the_hidden_city_of_beregar.json:148:          "read_only": false
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:28:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:63:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:98:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:133:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:168:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:203:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:238:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:273:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:308:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:343:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:378:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json:413:          "read_only": true
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:32:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:75:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:118:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:161:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:204:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:212:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:255:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:263:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:306:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:314:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:357:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:365:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:408:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:416:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:459:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:467:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:510:          "read_only": true,
+tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json:553:          "read_only": true,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/summer_corpse_capacity.rs:87:            fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:5:use crate::durability::quest_state::{QuestTransitionOutcome, npc_program::NpcProgramRequest};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:113:    let request = NpcProgramRequest {
+tools/content-schema/quest-authoring/batch3_a/build_world.py:38:    if any(state.get("read_only") for state in row["storage"]):
+tools/content-schema/quest-authoring/batch3_a/build_world.py:39:        missing.append("storage.read_only")
+tools/content-schema/quest-authoring/batch3_a/world_common.py:10:def storage(track, minimum, maximum, value=0, read_only=True, failure=None):
+tools/content-schema/quest-authoring/batch3_a/world_common.py:11:    result = {"track": track, "minimum": minimum, "maximum": maximum, "set": value, "read_only": read_only}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:42:use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:198:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:213:                    root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:214:                    root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:486:            let fluids: Vec<(i16, bool)> = sqlx::query_as("SELECT s.fluid_subtype, EXISTS(SELECT 1 FROM game_item_corpse_container_entries e WHERE e.item_instance_id=s.item_instance_id) FROM game_item_fluid_states s JOIN game_item_fluid_loot_mints m ON m.item_instance_id=s.item_instance_id AND m.transaction_id=s.last_transaction_id AND m.fluid_subtype=s.fluid_subtype")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:598:            fluid_subtype: None,
+crates/gameplay/durability/src/durability/quest_world_callback.rs:45:            .find(|callback| callback.key == callback_key && callback.is_read_only())
+crates/gameplay/durability/src/durability/quest_world_callback.rs:89:                    if !read_only_pin_allows(&pin, &catalogue, &callback.quest)? {
+crates/gameplay/durability/src/durability/quest_world_callback.rs:113:fn read_only_pin_allows(
+crates/gameplay/durability/src/durability/quest_world_callback.rs:467:mod read_only_pin_tests {
+crates/gameplay/durability/src/durability/quest_world_callback.rs:472:    fn read_only_callback_keeps_access_on_an_unchanged_historical_content_pin() -> Result<(), String>
+crates/gameplay/durability/src/durability/quest_world_callback.rs:474:        let quest = "oteryn:quest.fixture.read_only";
+crates/gameplay/durability/src/durability/quest_world_callback.rs:494:            read_only_pin_allows(&stored, &catalogue, quest)
+crates/gameplay/durability/src/durability/quest_world_callback.rs:499:            !read_only_pin_allows(&stored, &catalogue, quest)
+crates/gameplay/durability/src/durability/quest_world_callback.rs:504:            read_only_pin_allows(&stored, &catalogue, quest)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs:439:                        read_only: false,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:159:    pub fluid_subtype: Option<u8>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:161:    pub charges_remaining: Option<u32>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:166:pub struct RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:184:    pub root_fluid_subtype: Option<u8>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:186:    pub root_charges_remaining: Option<u32>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:360:    request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:464:    request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:510:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:523:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:538:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1027:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1384:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1465:fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1556:fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -> Result<[u8; 33]> {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1846:    fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1848:        RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1863:            root_fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1864:            root_charges_remaining: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1881:        let with = |transition: Option<&str>, achievement| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1895:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1917:        let key = |number: Option<u16>| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1927:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1931:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1935:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1949:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1950:        let with_quest = |number| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1999:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2028:        filled.root_fluid_subtype = Some(6);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2035:        wine.root_fluid_subtype = Some(2);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2043:                "empty subtype" => changed.root_fluid_subtype = Some(0),
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2059:            fluid_subtype: Some(6),
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2060:            charges_remaining: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2064:        bag.contents[0].fluid_subtype = Some(15);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2069:        bag.contents[0].fluid_subtype = Some(0);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2084:                fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2085:                charges_remaining: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2092:                fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2093:                charges_remaining: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2151:            fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2153:            charges_remaining: None,
+crates/gameplay/durability/src/durability/item_mint.rs:204:    pub fluid_subtype: Option<u8>,
+crates/gameplay/durability/src/durability/item_mint.rs:910:        tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/durability/src/durability/item_mint.rs:950:        if let Some(claim) = &tutorial_corruptor {
+crates/gameplay/durability/src/durability/item_mint.rs:961:                    let purpose = super::tutorial_corruptor::guarantee_purpose(*id);
+crates/gameplay/durability/src/durability/item_mint.rs:1024:                    if let Some(claim) = &tutorial_corruptor
+crates/gameplay/durability/src/durability/item_mint.rs:1162:                    if let Some(claim) = &tutorial_corruptor {
+crates/gameplay/durability/src/durability/item_mint.rs:1163:                        super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim).await?;
+crates/gameplay/durability/src/durability/item_mint.rs:1456:            if let Some(fluid) = entry.fluid_subtype {
+crates/gameplay/durability/src/durability/item_mint.rs:1876:    let Some(fluid) = placement.fluid_subtype.filter(|fluid| *fluid != 0) else {
+crates/gameplay/durability/src/durability/item_mint.rs:1880:        "INSERT INTO game_item_fluid_loot_mints(item_instance_id, transaction_id, fluid_subtype) \
+crates/gameplay/durability/src/durability/item_mint.rs:1889:        "INSERT INTO game_item_fluid_states(item_instance_id, world_id, fluid_subtype, \
+crates/gameplay/durability/src/durability/item_mint.rs:2272:            fluid_subtype: None,
+crates/gameplay/durability/src/durability/item_mint.rs:2290:            fluid_subtype: None,
+crates/gameplay/durability/src/durability/item_mint.rs:2301:    fn corpse_loot_binding_covers_the_fluid_subtype() {
+crates/gameplay/durability/src/durability/item_mint.rs:2304:            fluid_subtype: Some(subtype),
+crates/gameplay/durability/src/durability/item_mint.rs:2335:            fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:200:            sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,game_character_uuid_v7())")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:284:                assert_eq!(sqlx::query_scalar::<_, i16>("SELECT fluid_subtype FROM game_item_fluid_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?, 1);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quick_loot.rs:221:                            fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:142:fn atelier_wire_resource_balances_are_negotiated_live_and_read_only() -> TestResult {
+tools/content-schema/quest-authoring/test_quest_v2_export.py:97:    def test_check_is_deterministic_and_read_only(self):
+crates/gameplay/durability/src/durability/reward_claim_mint/arena.rs:17:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/arena.rs:102:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/monk.rs:13:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:12:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:111:fn validate_soul_war_request(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:130:        character: CharacterId, request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/core_modules.rs:157:pub mod tutorial_corruptor;
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:2:use super::super::quest_state::npc_program::{NpcProgramCommit, NpcProgramRequest};
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:11:        request: NpcProgramRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/grizzly.rs:13:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/grizzly.rs:46:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:6:pub(super) fn plan(request: &RewardClaimMintRequest) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:8:        std::iter::once((0, request.root_charges_remaining))
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:10:                (index + 1, child.charges_remaining)
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:13:                charges.map(|charges| json!({"ordinal": ordinal, "charges_remaining": charges}))
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:19:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:25:        request.root_fluid_subtype,
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:26:        request.root_charges_remaining,
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:34:            child.fluid_subtype,
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:35:            child.charges_remaining,
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:69:    for (ordinal, charges) in std::iter::once((0, frozen.request.root_charges_remaining)).chain(
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:71:            (index + 1, child.charges_remaining)
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:14:        requests: [RewardClaimMintRequest; 7],
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:107:    requests: &[RewardClaimMintRequest; 7],
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:109:) -> std::result::Result<RewardClaimMintRequest, DurabilityError> {
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:132:    requests: &[RewardClaimMintRequest; 7],
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:153:        || first.root_fluid_subtype.is_some()
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:154:        || first.root_charges_remaining.is_some()
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:6:pub(super) fn plan(request: &RewardClaimMintRequest) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:8:        std::iter::once((0, request.root_fluid_subtype))
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:14:                    .map(|(index, child)| (index + 1, child.fluid_subtype)),
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:23:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:29:        request.root_fluid_subtype,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:37:            child.fluid_subtype,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:59:    for (ordinal, subtype) in std::iter::once((0, frozen.request.root_fluid_subtype)).chain(
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:65:            .map(|(index, child)| (index + 1, child.fluid_subtype)),
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:78:        sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid)")
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:11:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:25:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:80:pub(super) fn capacity(request: &RewardClaimMintRequest) -> Option<i16> {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:122:pub(super) fn plan(request: &RewardClaimMintRequest, reservation: &Reservation) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:126:fn plan_for_transaction(request: &RewardClaimMintRequest, transaction: &[u8; 16]) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:153:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:173:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/item_use/fluid.rs:41:    pub fluid_subtype: u8,
+crates/gameplay/durability/src/durability/item_use/fluid.rs:50:    pub fluid_subtype: u8,
+crates/gameplay/durability/src/durability/item_use/fluid.rs:105:                    let rows = sqlx::query("SELECT placement,fluid_subtype,splash_item_id FROM game_item_fluid_splashes WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND expires_at>clock_timestamp() ORDER BY placement,transaction_id LIMIT 256")
+crates/gameplay/durability/src/durability/item_use/fluid.rs:111:                            fluid_subtype: u8::try_from(row.try_get::<i16, _>("fluid_subtype")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+crates/gameplay/durability/src/durability/item_use/fluid.rs:172:                || s.fluid_subtype == 0
+crates/gameplay/durability/src/durability/item_use/fluid.rs:302:                    (SELECT f.fluid_subtype FROM game_item_fluid_states f \
+crates/gameplay/durability/src/durability/item_use/fluid.rs:331:             fluid_subtype,splash_item_id,created_at,expires_at) SELECT encode($1,'hex')::uuid,\
+crates/gameplay/durability/src/durability/item_use/fluid.rs:339:        .bind(i16::from(splash.fluid_subtype))
+crates/gameplay/durability/src/durability/item_use/fluid.rs:378:            "INSERT INTO game_item_fluid_states(item_instance_id, world_id, fluid_subtype, \
+crates/gameplay/durability/src/durability/item_use/fluid.rs:387:            "UPDATE game_item_fluid_states SET fluid_subtype = $3, \
+crates/gameplay/durability/src/durability/item_use/carried_inventory.rs:192:                  i.quantity, i.lifecycle, k.key_number, f.fluid_subtype AS fluid \
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:8:pub struct NpcProgramRequest {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:24:impl NpcProgramRequest {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:58:    request: &NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:72:    request: &NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:118:        request: NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:143:        request: NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:254:    request: &NpcProgramRequest,
+tools/content-schema/quest-authoring/batch3_report.py:94:  'left_out': 'Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz '
+tools/content-schema/quest-authoring/ots_interactions.py:927:    def read_only(self, code):
+tools/content-schema/quest-authoring/ots_interactions.py:1367:        elif not found and not NOOP.match(code) and not self.read_only(code):
+tools/content-schema/quest-authoring/batch3_world.py:41:                set(state) - {'track', 'minimum', 'maximum', 'set', 'read_only'}
+tools/content-schema/quest-authoring/batch3_status/hero_of_rathleton.json:1093:      "left_out": "Brak projekcji TALKTYPE_MONSTER_SAY. Slurp! i dokładny typ mowy zachowane w held presentation JSON; dokładny efekt wizualny wymaga kwalifikacji presentation owner. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_hidden_city_of_beregar.json:924:      "left_out": "Brak: success_message. The donor emits the discovery text after the flag write; omitting it changes the interaction. Brak: map.attrs.action=50091. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/the_hidden_city_of_beregar.json:1054:      "left_out": "Brak: storage.read_only. The source tests GoingDown==2 and never writes it; replacing a read-only guard by SET0 would remove completed elevator access. Brak: map.attrs.action=50092. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/the_hidden_city_of_beregar.json:1087:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/the_hidden_city_of_beregar.json:1141:      "left_out": "Brak: storage.read_only. The source tests GoingDown==2 and never writes it; replacing a read-only guard by SET0 would remove completed elevator access. Brak: map.attrs.action=50093. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/the_hidden_city_of_beregar.json:1174:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/a_pirates_tail_quest.json:1317:      "left_out": "Pełny callback held: wymagane success_message. Crystal actions_cheesy_key.lua:68/100 wysyła dokładny MESSAGE_EVENT_ADVANCE po teleportacji; pominięcie pola usunęłoby źródłowy efekt. Dodatkowo brak mapowych AID47501/47502 (R-MAP-BINDINGS). Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/a_pirates_tail_quest.json:1368:      "left_out": "Pełny callback held: wymagane success_message. Crystal actions_cheesy_key.lua:68/100 wysyła dokładny MESSAGE_EVENT_ADVANCE po teleportacji; pominięcie pola usunęłoby źródłowy efekt. Dodatkowo brak mapowych AID47501/47502 (R-MAP-BINDINGS). Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/a_pirates_tail_quest.json:1500:      "left_out": "Pełne teksty trzech przejść zachowane w held. success_message jest zabronionym polem adaptera; dokładne efekty214/168 oraz cofanie nonplayer także nie są zakwalifikowane. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_order_of_the_stag.json:346:      "left_out": "Missing operation: quest_callback_matches must match the actual source object above ordinal 0 for Position-only Use. Baseline accepts ordinal 0 only; changing the shared adapter is outside scope. Missing fields: storage.read_only and per-guard failure_message, success_message. Source checks the stage without changing it; SET(3) for boat travel or SET(11) for wall travel would rewind later stages 12/13. Shared ADD(0) lowering is explicitly prohibited. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+tools/content-schema/quest-authoring/batch3_status/the_order_of_the_stag.json:392:      "left_out": "Missing operation: quest_callback_matches must match the actual source object above ordinal 0 for Position-only Use. Baseline accepts ordinal 0 only; changing the shared adapter is outside scope. Source success_message at isle_of_ada.lua:46 is also unsupported; it is preserved only in held data. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+tools/content-schema/quest-authoring/batch3_status/the_order_of_the_stag.json:869:      "left_out": "Missing operation: quest_callback_matches must match the actual source object above ordinal 0 for Position-only Use. Baseline accepts ordinal 0 only; changing the shared adapter is outside scope. Missing fields: storage.read_only and per-guard failure_message. Source checks the stage without changing it; SET(3) for boat travel or SET(11) for wall travel would rewind later stages 12/13. Shared ADD(0) lowering is explicitly prohibited. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:3742:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3091. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:3774:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:3828:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3092. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:3860:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:3914:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3093. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:3946:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4000:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3094. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4032:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4086:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3095. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4118:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4172:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3096. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4204:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4258:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3097. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4290:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4344:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3098. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4376:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4430:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3099. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4462:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4516:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3100. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4548:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4602:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3101. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4634:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4688:      "left_out": "Brak: storage.read_only. The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate). Brak: map.attrs.unique=3102. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+tools/content-schema/quest-authoring/batch3_status/in_service_of_yalahar.json:4720:              "storage.read_only"
+tools/content-schema/quest-authoring/batch3_status/the_primal_ordeal.json:493:      "left_out": "Missing fields: storage.read_only and per-guard failure_message. Crystal reads access >0 and does not write storage (gnomprona.lua:20-28). Baseline Storage emits SET: SET(0) consumes access; SET(1) introduces a write absent from the donor and cannot preserve any higher source value. The prohibited ADD(0) lowering is not replaced by SET. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_shattered_isles_quest.json:703:      "left_out": "Pełny callback held. Wymagane storage.read_only i failure_teleport: turtles.lua:20 tylko czyta AccessToLagunaIsland, a:21–22 kieruje na32340,32540,z7. SET zastępowałby odczyt zapisem, return_on_failure kierowałby na poprzednie pole. Dodatkowo brak UID3206 i force teleport na zajęty cel. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_shattered_isles_quest.json:1463:      "left_out": "Pełny callback held. Wymagane storage.read_only i failure_teleport: donor movement_energy_barrier.lua:13 tylko czyta Counterspell, a:15–16 teleportuje current.x+2. SET zastępowałby odczyt zapisem; origin nie jest tym samym celem. Dodatkowo zajęty cel pozwala ominąć barierę bez force teleport lub odmowy całego wejścia. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_shattered_isles_quest.json:1503:      "left_out": "Pełny callback held. Wymagane storage.read_only i failure_teleport: donor movement_energy_barrier.lua:13 tylko czyta Counterspell, a:15–16 teleportuje current.x+2. SET zastępowałby odczyt zapisem; origin nie jest tym samym celem. Dodatkowo zajęty cel pozwala ominąć barierę bez force teleport lub odmowy całego wejścia. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_shattered_isles_quest.json:1543:      "left_out": "Pełny callback held. Wymagane storage.read_only i failure_teleport: donor movement_energy_barrier.lua:13 tylko czyta Counterspell, a:15–16 teleportuje current.x+2. SET zastępowałby odczyt zapisem; origin nie jest tym samym celem. Dodatkowo zajęty cel pozwala ominąć barierę bez force teleport lub odmowy całego wejścia. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_shattered_isles_quest.json:2639:      "left_out": "Pełny callback held: wymagane storage.read_only dla RaysMission3. action_nargor_maps.lua:24 czyta ten track, a:28–29 zapisuje wyłącznie TavernMap. SET1 zastępowałby odczyt zapisem; usunięcie guardu dopuściłoby odczyt planu przed misją3. Dodatkowo brak UID40001–40003; źródłowa mowa osobno held. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_shattered_isles_quest.json:2681:      "left_out": "Pełny callback held: wymagane storage.read_only dla RaysMission3. action_nargor_maps.lua:24 czyta ten track, a:28–29 zapisuje wyłącznie TavernMap. SET1 zastępowałby odczyt zapisem; usunięcie guardu dopuściłoby odczyt planu przed misją3. Dodatkowo brak UID40001–40003; źródłowa mowa osobno held. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_shattered_isles_quest.json:2723:      "left_out": "Pełny callback held: wymagane storage.read_only dla RaysMission3. action_nargor_maps.lua:24 czyta ten track, a:28–29 zapisuje wyłącznie TavernMap. SET1 zastępowałby odczyt zapisem; usunięcie guardu dopuściłoby odczyt planu przed misją3. Dodatkowo brak UID40001–40003; źródłowa mowa osobno held. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/the_shattered_isles_quest.json:2765:      "left_out": "Brak projekcji TALKTYPE_MONSTER_SAY w SpeechMode. Pełne teksty A/B/C zachowane w held presentation JSON; bez zamiany na zwykły Say. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/hot_cuisine.json:975:      "left_out": "Brak zatwierdzonego questowego wywołania showTextDialog/odczytu tych dwóch książek w obecnym adapterze. Samo przechowanie tekstu nie publikuje interakcji. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/hot_cuisine.json:1018:      "left_out": "Brak zatwierdzonego questowego wywołania showTextDialog/odczytu tych dwóch książek w obecnym adapterze. Samo przechowanie tekstu nie publikuje interakcji. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/quest_batch4.py:255:               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only'}, key + ': storage')
+tools/content-schema/quest-authoring/quest_batch4.py:261:        require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
+tools/content-schema/quest-authoring/quest_batch4.py:262:    if any(entry.get('read_only', False) for entry in callback['storage']):
+tools/content-schema/quest-authoring/quest_batch4.py:263:        require(all(entry.get('read_only', False) and not entry.get('preserve', False)
+tools/content-schema/quest-authoring/samples/wiki-source-specs/supplement-4.json:63080:                "Waterskin_fluid_subtype": "UNKNOWN_SOURCE_ENTITY_LINK_ONLY"
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:3808:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:3850:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:3873:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:3914:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:3937:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:3978:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4001:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4042:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4065:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4106:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4129:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4170:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4193:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4234:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4257:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4298:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4321:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4362:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4385:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4426:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4449:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4490:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4532:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4574:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4616:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4658:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4700:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Brak: ordered distinct failures for the same QuestLine. One guard per track cannot retain both source refusals; requirement25 is not relaxed. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4723:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4787:      "left_out": "Brak: storage.read_only, storage.failure_message. The donor reads QuestLine/rank and distinguishes Xelvar refusal from low rank. SET would change player progress and one common refusal would discard the source branch order. Brak: ordered distinct failures for the same QuestLine. One guard per track cannot retain both source refusals; requirement25 is not relaxed. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4810:              "storage.read_only",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4874:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4916:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:4958:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:5000:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:5042:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/batch3_status/bigfoot_burden.json:5084:      "left_out": "Płatny StepIn zużywa teleport crystal16167. Obecny trwały consume_inputs jest związany z Use; nie dodano nowej ścieżki StepIn ani darmowego zastępstwa. Źródłowy koszt pozostaje wymaganiem. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+tools/content-schema/quest-authoring/samples/wiki-source-all373/previous105.json:289870:                "Waterskin_fluid_subtype": "UNKNOWN_SOURCE_ENTITY_LINK_ONLY"
+tools/content-schema/quest-authoring/samples/wiki-source-specs/source-specs-105.enriched.json:289870:                "Waterskin_fluid_subtype": "UNKNOWN_SOURCE_ENTITY_LINK_ONLY"
+tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json:489000:                "Waterskin_fluid_subtype": "UNKNOWN_SOURCE_ENTITY_LINK_ONLY"

@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+      "position": [
+        33227,
+        31656,
+        13
+      ],
+      "appearance": 2472,
+      "unique": 6085,
+      "source_line": 1235
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+      "position": [
+        33229,
+        31656,
+        13
+      ],
+      "appearance": 2472,
+      "unique": 6086,
+      "source_line": 1242
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+      "position": [
+        33231,
+        31656,
+        13
+      ],
+      "appearance": 2472,
+      "unique": 6087,
+      "source_line": 1249
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+      "position": [
+        33233,
+        31656,
+        13
+      ],
+      "appearance": 2472,
+      "unique": 6088,
+      "source_line": 1256
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": [
+    {
+      "position": [
+        33214,
+        31671,
+        13
+      ],
+      "appearance": 5111,
+      "action": 1100,
+      "source_line": 173,
+      "claims": [
+        "oteryn:reward-claim.quest.u7_24.the_annihilator.reward"
+      ]
+    }
+  ]
+}

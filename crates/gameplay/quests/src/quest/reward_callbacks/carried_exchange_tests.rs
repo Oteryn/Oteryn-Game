@@ -22,6 +22,7 @@ fn explicit_carried_exchange_keeps_exact_selection_and_bounded_costs() -> Result
         count: 5,
         contents: vec![],
         backpack_outputs: vec![],
+        key_number: None,
     });
     exchange.take.push(ItemAmount {
         fluid_subtype: None,

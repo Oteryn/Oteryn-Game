@@ -1,0 +1,230 @@
+{
+  "status": "QUALIFIED",
+  "test": "questpc7_friends_full_route_and_repeatable_unlocked_services",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 74.691341078,
+    "log": "/tmp/questpc7-friends-counter-red3.log",
+    "assertion": "royal steel exchanged successfully; expected counted receipt1, actual0"
+  },
+  "excluded_attempts": [
+    {
+      "log": "/tmp/questpc7-friends-counter-red.log",
+      "seconds": 73.238663429,
+      "reason": "wire capabilities not negotiated; failed decoding before counter assertion"
+    },
+    {
+      "log": "/tmp/questpc7-friends-counter-red2.log",
+      "reason": "cancelled compilation to load corrected capability fixture"
+    }
+  ],
+  "counter_units": {
+    "result": "PASS",
+    "cases": 3,
+    "seconds": 1.23,
+    "log": "/tmp/questpc7-friends-counter-units.log"
+  },
+  "authoring": {
+    "result": "PASS",
+    "cases": 14,
+    "seconds": 7.874,
+    "log": "/tmp/questpc7-friends-author-tests.log"
+  },
+  "reuse": [
+    "Existing QuestEffectKind::Add arithmetic, bounds and Character-fenced writer",
+    "Existing carried exchange/MINT/source/fee participants; no alternative writer"
+  ],
+  "sources": "callback sources contain canonical pointer and SHA plus every donor file:line/SHA",
+  "intermediate_pg": [
+    {
+      "seconds": 79.300914567,
+      "log": "/tmp/questpc7-friends-green1.log",
+      "result": "first counter1 passed; second exchange refused by original once-only MINT claim",
+      "fix": "command-scoped claim for counted services, retaining original identity for ordinary grants; migration1100 exact source proof"
+    },
+    {
+      "seconds": 109.875448585,
+      "log": "/tmp/questpc7-friends-green2.log",
+      "result": "both royal-steel trades passed; fixture refused placing a second NPC table: AlreadyPlaced",
+      "fix": "place all13 native NPCs once in a bounded speaking-range grid"
+    }
+  ],
+  "final_fixture": "checks PostgreSQL migration1100 SHA384 against final source bytes before exercising the route",
+  "recovery": "Removed inactive compiler caches only after exact No space left on device (os error28); compilation-only failures are not PG proof",
+  "final_log": "/tmp/questpc7-friends-green-recovered.log",
+  "green": {
+    "seconds": 76.609885521,
+    "log": "/tmp/questpc7-friends-green-effects.log",
+    "result": "PASS",
+    "migration_source_match": "MIGRATION_1100_SOURCE_MATCHED (SHA384 equals final source file)",
+    "scope": [
+      "fresh selected programme; no quest-state seeds",
+      "exact3 Bast Skirts and50 Honeycombs consumed",
+      "two royal-steel trades and two yarn trades with distinct bounded counters",
+      "exact5000 Gamon fee, change and wooden-stake delivery",
+      "wrong priest order: no receipt, progress or inventory effect",
+      "all10 named priests in selected order with retained stake",
+      "single blessed-stake exchange and duplicate request without any effect",
+      "once-only programme completion",
+      "earned crafting service usable after completion"
+    ]
+  },
+  "fixture_corrections": [
+    {
+      "logs": [
+        "/tmp/questpc7-friends-green-recovered.log",
+        "/tmp/questpc7-friends-green-player-carry.log"
+      ],
+      "seconds": [
+        73.648256392,
+        74.84824467
+      ],
+      "error": "Carrier(CapacityExceeded)",
+      "cause": "NPC carrier had5 total actor slots;13 NPCs plus player require14",
+      "fix": "explicit14-slot bounded fixture budget; production carrier checks unchanged",
+      "note": "Earlier inventory-capacity interpretation was wrong; supplying one armor per trade is valid but was not the fix"
+    },
+    {
+      "log": "/tmp/questpc7-friends-green-carrier-budget.log",
+      "seconds": 76.094073395,
+      "cause": "Unavailable prayer falls through to ordinary NPC chat Ok",
+      "fix": "Keep exact Ok acknowledgement plus assert zero quest receipts, progress and inventory changes; no grant or input guard weakened"
+    }
+  ],
+  "checks": [
+    {
+      "check": "sam-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "qengine_rewards_backpack_exchange",
+        "--",
+        "--nocapture"
+      ],
+      "seconds": 76.01,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-friends-recovered-sam-pg.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 23.368,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-friends-recovered-clippy.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 83.124,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-friends-recovered-check.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 175.538,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-friends-recovered-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 114.383,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-friends-recovered-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-friends-pin-check"
+      ],
+      "seconds": 128.055,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-friends-recovered-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.081,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-friends-recovered-fmt.log"
+    }
+  ],
+  "content_checks": {
+    "result": "PASS",
+    "cases": 123,
+    "seconds": 2.61,
+    "log": "/tmp/questpc7-friends-final-content.log"
+  },
+  "ordinary_mint_regression": {
+    "result": "PASS",
+    "test": "qengine_rewards_backpack_exchange",
+    "postgres": "18.6",
+    "seconds": 75.706993997,
+    "log": "/tmp/questpc7-friends-recovered-sam-pg.log"
+  },
+  "generation_checks": {
+    "result": "PASS",
+    "logs": [
+      "/tmp/questpc7-friends-generation-final.log",
+      "/tmp/questpc7-friends-registration-verified.log"
+    ]
+  },
+  "world_digest": "ac00a4cedc85a1b5f1b1ada2e1781382f73c9c4da757bc84a0959049de3ec062",
+  "migration_number_check": {
+    "main": "91afbe0ba1",
+    "main_max": 1095,
+    "new_migration": 1100,
+    "log": "/tmp/questpc7-friends-number-check.log"
+  }
+}

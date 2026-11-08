@@ -44,6 +44,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
                 y: position.1,
                 floor: position.2,
             })
+        && callback.selector.position_aliases.is_empty()
         && callback.selector.action == action
         && callback.selector.ordinal.is_none()
         && callback.selector.unique.is_none()
@@ -70,6 +71,9 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             .sources
             .iter()
             .any(|reference| reference.starts_with(source))
+        && !callback.completes
+        && callback.requirements.is_none()
+        && callback.effects.outfit_reward.is_none()
         && callback.lever.is_none()
         && !callback.reversible
         && callback.passages.is_empty()

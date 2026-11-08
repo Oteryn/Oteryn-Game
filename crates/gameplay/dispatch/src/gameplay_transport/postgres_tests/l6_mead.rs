@@ -250,6 +250,7 @@ pub(super) async fn exercise(
         let placement_context = runtime.content_pin().frame_binding_digest().to_vec();
         let actor = admitted.runtime_actor.ok_or("actor")?;
         let context = crate::durability::quest_world_callback::QuestWorldContext {
+            party: Vec::new(),
             map_revision: crate::map::overlay::map_revision(map.overlay.base()),
             content_revision: content_revision.clone(),
             placement_context: placement_context.clone(),

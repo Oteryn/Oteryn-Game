@@ -76,57 +76,63 @@ struct Document {
     objectives: Vec<DeathObjective>,
 }
 
+/// Static objective descriptions; independent from the native live actor budget.
+pub const MAX_OBJECTIVES: usize = 128;
+
+fn parse(text: &str) -> Result<Vec<DeathObjective>, String> {
+    let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    let mut keys = BTreeSet::new();
+    if document.schema != 1 || document.objectives.len() > MAX_OBJECTIVES {
+        return Err("death objective bounds".into());
+    }
+    for objective in &document.objectives {
+        if !objective.key.starts_with("oteryn:quest-death/")
+            || [
+                &objective.key,
+                &objective.quest,
+                &objective.stage,
+                &objective.counter,
+            ]
+            .iter()
+            .any(|key| !super::valid_quest_key(key))
+            || !keys.insert(&objective.key)
+            || !objective.creature.starts_with("oteryn:creature.")
+            || !super::valid_quest_key(&objective.creature)
+            || objective
+                .creature
+                .strip_prefix("oteryn:creature.")
+                .is_none_or(str::is_empty)
+            || objective.stage == objective.counter
+            || objective.required == 0
+            || !(-15..=0).contains(&objective.minimum.floor)
+            || objective.minimum.floor != objective.maximum.floor
+            || objective.maximum.x < objective.minimum.x
+            || objective.maximum.y < objective.minimum.y
+            || objective.maximum.x - objective.minimum.x > 64
+            || objective.maximum.y - objective.minimum.y > 64
+            || objective
+                .guardian
+                .as_ref()
+                .is_some_and(|guardian| !guardian.valid_for(objective))
+            || objective.sources.is_empty()
+            || objective.sources.len() > 8
+            || objective
+                .sources
+                .iter()
+                .any(|source| source.is_empty() || source.len() > 1024)
+        {
+            return Err(format!("invalid death objective {}", objective.key));
+        }
+    }
+    Ok(document.objectives)
+}
+
 pub fn load() -> Result<&'static [DeathObjective], String> {
     static DATA: OnceLock<Result<Vec<DeathObjective>, String>> = OnceLock::new();
     DATA.get_or_init(|| {
-        let document: Document = serde_json::from_str(include_str!(
-            "../../../../../content/quests/authored-death-objectives.json"
+        parse(include_str!(
+            "../../../../../content/quests/questpc7-death-objectives.json"
         ))
-        .map_err(|e| e.to_string())?;
-        let mut keys = BTreeSet::new();
-        if document.schema != 1 || document.objectives.len() > 32 {
-            return Err("death objective bounds".into());
-        }
-        for objective in &document.objectives {
-            if !objective.key.starts_with("oteryn:quest-death/")
-                || [
-                    &objective.key,
-                    &objective.quest,
-                    &objective.stage,
-                    &objective.counter,
-                ]
-                .iter()
-                .any(|key| !super::valid_quest_key(key))
-                || !keys.insert(&objective.key)
-                || !objective.creature.starts_with("oteryn:creature.")
-                || !super::valid_quest_key(&objective.creature)
-                || objective
-                    .creature
-                    .strip_prefix("oteryn:creature.")
-                    .is_none_or(str::is_empty)
-                || objective.stage == objective.counter
-                || objective.required == 0
-                || !(-15..=0).contains(&objective.minimum.floor)
-                || objective.minimum.floor != objective.maximum.floor
-                || objective.maximum.x < objective.minimum.x
-                || objective.maximum.y < objective.minimum.y
-                || objective.maximum.x - objective.minimum.x > 64
-                || objective.maximum.y - objective.minimum.y > 64
-                || objective
-                    .guardian
-                    .as_ref()
-                    .is_some_and(|guardian| !guardian.valid_for(objective))
-                || objective.sources.is_empty()
-                || objective.sources.len() > 8
-                || objective
-                    .sources
-                    .iter()
-                    .any(|source| source.is_empty() || source.len() > 1024)
-            {
-                return Err(format!("invalid death objective {}", objective.key));
-            }
-        }
-        Ok(document.objectives)
     })
     .as_ref()
     .map(Vec::as_slice)
@@ -161,7 +167,6 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 .map(|byte| format!("{byte:02x}"))
                 .collect();
         transitions.push(QuestTransition {
-            world_change: None,
             key: format!("oteryn:quest-death-plan/{digest}"),
             quest: objective.quest.clone(),
             effects: vec![QuestEffect {
@@ -171,13 +176,14 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             }],
             completes: false,
             experience: None,
+            world_change: None,
         });
         transitions.push(QuestTransition {
-            world_change: None,
             key: objective.key.clone(),
             quest: objective.quest.clone(),
             completes: false,
             experience: None,
+            world_change: None,
             effects: vec![
                 QuestEffect {
                     track: objective.stage.clone(),
@@ -194,6 +200,63 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn fixture(count: usize) -> Result<serde_json::Value, String> {
+        let source: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/questpc7-death-objectives.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let rows: Vec<_> = (0..count)
+            .map(|i| {
+                let mut row = source["objectives"][0].clone();
+                row["key"] = format!("oteryn:quest-death/catalogue-test-{i}").into();
+                row
+            })
+            .collect();
+        Ok(serde_json::json!({"schema":1,"objectives":rows}))
+    }
+    #[test]
+    fn static_catalogue_has_its_own_closed_bound() -> Result<(), String> {
+        assert_eq!(
+            parse(&fixture(MAX_OBJECTIVES)?.to_string())?.len(),
+            MAX_OBJECTIVES
+        );
+        assert!(parse(&fixture(MAX_OBJECTIVES + 1)?.to_string()).is_err());
+        Ok(())
+    }
+    #[test]
+    fn expanded_catalogue_preserves_every_spatial_credit_and_source_guard() -> Result<(), String> {
+        for case in 0..9 {
+            let mut document = fixture(2)?;
+            match case {
+                0 => document["schema"] = 2.into(),
+                1 => document["objectives"][1]["key"] = document["objectives"][0]["key"].clone(),
+                2 => document["objectives"][0]["required"] = 0.into(),
+                3 => {
+                    document["objectives"][0]["counter"] =
+                        document["objectives"][0]["stage"].clone()
+                }
+                4 => document["objectives"][0]["guardian"]["respawn_ms"] = 59_999.into(),
+                5 => document["objectives"][0]["guardian"]["respawn_ms"] = 3_600_001.into(),
+                6 => {
+                    document["objectives"][0]["maximum"]["x"] =
+                        (document["objectives"][0]["minimum"]["x"]
+                            .as_u64()
+                            .ok_or("coordinate")?
+                            + 65)
+                            .into()
+                }
+                7 => document["objectives"][0]["sources"] = serde_json::json!([]),
+                _ => document["objectives"][0]["maximum"]["floor"] = 1.into(),
+            }
+            assert!(parse(&document.to_string()).is_err(), "case {case}");
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

@@ -1,0 +1,225 @@
+{
+  "owner_rule": "New work rules: shared engine belongs to qengine2; local helper under ~50 lines only in a new file",
+  "requests": [
+    {
+      "id": "feaster-world-rewards",
+      "quest": "Feaster of Souls Quest",
+      "canonical": "oteryn:quest.feaster_of_souls_quest",
+      "feature": "Phase-discriminated STEP routes; bounded repeatable world USE rewards with exact carried and ground input proofs",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs",
+        "crates/gameplay/durability/src/durability/reward_claim_mint/quest.rs",
+        "game_quest_reward_complete()"
+      ],
+      "proof": {
+        "command": "cargo nextest run --locked -p oteryn-gameplay-dispatch -E test(questpc7_feaster_native_sampling_prefix)",
+        "postgres": "18.6",
+        "red_seconds": 77.666321927,
+        "exact_error": "quest reward consumed an unauthored input",
+        "at": "native grinder after the real NPC-given bell and three fixed bell passages",
+        "previous_red": "two eligible STEP definitions at the same entrance are correctly refused as ambiguous"
+      },
+      "local_draft": "stash: questpc7: unqualified Feaster engine extensions awaiting qengine2 ownership",
+      "boundary": "Draft retained, not shipped as a qualified engine. Coordinator routes ownership to qengine2.",
+      "state": "WAITING-ENGINE",
+      "latest_owner": "QENGINE2",
+      "latest_evidence": "Actual PG18.6 prefix RED39.777546549s: expected13 callbacks, actual12; runtime excludes duplicate purification-entry selector. world_callbacks.rs validates selectors without phase discrimination."
+    },
+    {
+      "id": "goblin-live-capture",
+      "quest": "Goblin Merchant Quest",
+      "canonical": "oteryn:quest.goblin_merchant_quest",
+      "feature": "Carried quest-tool capture of an exact live creature, one fenced quest receipt per distinct creature occurrence",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/cosmetic_item_use.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs"
+      ],
+      "evidence": "Current carried reward route rejects use-with targets; world Selector admits position/appearance/action/unique, not an exact live Actor. Selected stage s4 requires three Adventurers captured with Guardcatcher17669.",
+      "reuse_checked": "QENGINE2 5c01deabb and inherited main1ae39c7fb; no live quest-capture route found.",
+      "state": "WAITING-ENGINE",
+      "quest_owned_binding": {
+        "programme_track": "oteryn:quest-progress/questpc7/goblin/programme",
+        "active_programme": 0,
+        "capture_track": "oteryn:quest-progress/questpc7/goblin/captures",
+        "required": 3,
+        "counter_after_native_intro": 0,
+        "track_initial_before_intro": -1,
+        "tool": "oteryn:item.tibia.i17669",
+        "boundary": "Do not replace owned track initialization or invent a separate quest. Introduction and exact source-priced tools already have native PG proof."
+      },
+      "latest_owner": "ENGITEM/ENGNPC",
+      "latest_evidence": "Native tools and distinct kills already proved. world_callbacks.rs forbids monster-actor callbacks from changing quest storage; normal use-with actor owners do not expose a quest capture/sampling participant."
+    },
+    {
+      "id": "hot-cuisine-native-eligibility",
+      "quest": "Hot Cuisine Quest",
+      "canonical": "oteryn:quest.hot_cuisine_quest",
+      "feature": "Fenced HotCuisineProgram calendar/typed-recipe execution with real progression level and Premium eligibility",
+      "where": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "evidence": "Locked native NPC evaluator supplies level:0, with no Premium gate. Existing HotCuisine planner has UTC calendar and exact ingredient transactions; reuse it, do not replace it.",
+      "reuse": "questpc8 70a0d92af already supplies authored NPC programmes with transactional Premium; route that reusable owner through qengine2/main.",
+      "scope": "The canonical chosen recipe is a once-only fourteen-course apprenticeship (101 stages), ending Sweet Mangonaise Elixir11588. Native source has a fifteenth later course50334, outside this chosen itinerary. Existing UTC can_cook permits a first cooking when last=None and retains its source August/new-period/bonus rules.",
+      "state": "WAITING-ENGINE",
+      "latest_proof": {
+        "postgres": "18.6",
+        "seconds": 40.03,
+        "executed_command": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-31b2a0f652fd693e --exact gameplay_transport::monk_save::postgres_tests::npc_item_exchanges::npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay --nocapture",
+        "exact_error": "NpcProgramCommit { transition: Refused(StageMismatch), reply: [], next_topic: 0, read_only: false, inventory_changed: false, end_conversation: false, end_delay_ms: 0 }",
+        "at": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_item_exchanges.rs:241",
+        "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+      }
+    },
+    {
+      "id": "illuminated-first-party-constructors",
+      "quest": "Illuminated Warrior Outfits Quest",
+      "canonical": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+      "feature": "First-party portable item and cosmetic constructors without invented Tibia external IDs",
+      "where": [
+        "crates/gameplay/content/src/content/native_gameplay/authored_items.rs",
+        "crates/gameplay/content/src/content/native_gameplay/cosmetics_loader.rs"
+      ],
+      "evidence": "Peer constructor37aa8adda requires existing numeric oteryn:item.tibia.i* identities and pinned client facts; it cannot admit a newly authored non-Tibia identity for Scraps of a Radiant Attire.",
+      "reuse": "Reuse37aa8adda/ec811acb7 constructor proof discipline; extend via qengine2 rather than fork a second admission owner.",
+      "facts": {
+        "item": "Scraps of a Radiant Attire",
+        "stackable": false,
+        "weight_hundredths_oz": 30,
+        "donations": [
+          2500,
+          1250,
+          1250
+        ],
+        "min_level": 1000,
+        "premium": true,
+        "parent": "Make Believe Quest"
+      },
+      "boundary": "No fake source ID or invented official look type. Existing min-level/Premium/parent and state-operation owners can compose the route after constructors land.",
+      "state": "WAITING-ENGINE",
+      "latest_owner": "ENGITEM/QENGINE2",
+      "latest_evidence": "Selected 2500/1250/1250 newly collected Scraps of a Radiant Attire require a first-party admitted item and cosmetic, without invented Tibia source IDs. Existing numeric-source qualifiers do not provide that constructor."
+    },
+    {
+      "id": "goblin-live-odour-sampling",
+      "quest": "Goblin Merchant Quest",
+      "canonical": "oteryn:quest.goblin_merchant_quest",
+      "feature": "Fenced carried-tool sampling of an exact live creature with item transformation",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use.rs"
+      ],
+      "state": "WAITING-ENGINE",
+      "peer_review": {
+        "branch": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "head": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
+        "result": "Authored catalogue bindings and carried exchange proofs exist; no exact live-creature USE target sampling owner found."
+      },
+      "boundary": "Do not infer a corpse or ground-item target for the live Rotworm sample; continue independent signs, trunks, pond and kill tasks.",
+      "latest_owner": "ENGITEM/ENGNPC",
+      "latest_evidence": "Native tools and distinct kills already proved. world_callbacks.rs forbids monster-actor callbacks from changing quest storage; normal use-with actor owners do not expose a quest capture/sampling participant."
+    },
+    {
+      "id": "hot-native-recipe-restoration",
+      "quest": "Hot Cuisine Quest",
+      "canonical": "oteryn:quest.hot_cuisine_quest",
+      "feature": "Restore existing native Hot Cuisine planner/calendar integration and dedicated fenced recipe consumption; source recipe6 has9 ingredient types while canonical plain-input participant is closed at8",
+      "where": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs",
+        "crates/gameplay/durability/src/durability/quest_world_callback.rs"
+      ],
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "proof": {
+        "compiled_source": "ec0ad9a1b7660c6df29cc8d2bacdfa7859f3ffd2",
+        "binary_provenance": "/tmp/questpc7-collector3030-binary-provenance.json",
+        "test": "npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay",
+        "postgres": "18.6",
+        "red_seconds": 35.0,
+        "exact_error": "NpcProgramCommit { transition: Refused(StageMismatch), reply: [], next_topic: 0, read_only: false, inventory_changed: false, end_conversation: false, end_delay_ms: 0 }",
+        "log": "/tmp/questpc7-collector3030-hot-diagnostic.log"
+      },
+      "reuse": {
+        "commit": "a056392a4",
+        "files": [
+          "crates/gameplay/durability/src/durability/quest_state/npc_program.rs",
+          "crates/gameplay/durability/src/durability/quest_state/npc_program/inventory_exchange.rs",
+          "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+        ],
+        "note": "Planner and calendar already remain in quests; routing and specialized inventory participant were dropped when reusing main NPC owner. Do not weaken generic8-type cap or recipe tests."
+      }
+    },
+    {
+      "id": "main3029-callback-effect-convergence",
+      "quests": [
+        "Feaster of Souls Quest",
+        "Goblin Merchant Quest",
+        "Golden Outfits Quest",
+        "Formal Dress Outfits Quest"
+      ],
+      "feature": "Reconcile canonical main CallbackEffectSet with retained world item rewards, read-only guards and bounded counters without dropping qualified legacy behavior",
+      "where": [
+        "crates/gameplay/quests/src/quest/world_callbacks.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs",
+        "crates/gameplay/durability/src/durability/reward_claim_mint/quest.rs"
+      ],
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "evidence": {
+        "command": "git merge --no-commit --no-ff origin/main",
+        "main": "83acbdac3",
+        "conflicted_files": 67,
+        "rust_files": 18,
+        "exact_error": "CONFLICT (content): Merge conflict in crates/gameplay/quests/src/quest/world_callbacks.rs",
+        "specific_collision": "main places CallbackEffectSet in effects; retained API has CallbackEffects plus top-level item_reward/reward_bundle/activation and read_only storage. Blind union duplicates effects and dropping either side loses established behavior.",
+        "preview": "/tmp/questpc7-main3029-preview/index.json"
+      },
+      "boundary": "Owner assigns large shared engine changes to qengine2. Preserve coherent lane source under the explicit15-minute merge-abort exception; continue independent quest-owned data and PG qualification.",
+      "latest_reuse_check": "2026-11-08: qengine2 3babb30bd plus questpc3 09c26dcee, questpc5 5ee913340, questpc8 8639b16b1, questpc4b0457bc5f7. No compatibility implementation; current mainc77d436d8 merge actually attempted69conflicts and aborted."
+    },
+    {
+      "id": "goblin-fresh-slug-corpse-use",
+      "quest": "Goblin Merchant Quest",
+      "canonical": "oteryn:quest.goblin_merchant_quest",
+      "feature": "Carried quest-tool USE on an exact freshly killed native Ground corpse, with atomic tool transform and quest progress",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:575",
+        "crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:55",
+        "crates/gameplay/dispatch/src/gameplay_transport/item_view.rs:64"
+      ],
+      "source": "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:49-90",
+      "facts": "Ordered odours: recently dead Slug, black swamp gas, living Rotworm, mouldy cheese. Do not replace a dynamic Slug corpse with a static map prop.",
+      "reuse_checked": "qengine2c7f9d9ba7 shared callback handle route accepts MapAdded only after world_change_item_source; native corpse Entity/Instance handles are not routed here.",
+      "state": "WAITING-ENGINE",
+      "producer_ready_proof": "qlane-meta/questpc7/SLUG-CORPSE-PG-PROOF.json: actual native Slug death produces one12526Groundcorpse, PG18.6 GREEN72.27338302s; exact Ground corpse USE adapter remains requested.",
+      "latest_owner": "ENGITEM/ENGNPC",
+      "latest_evidence": "Native tools and distinct kills already proved. world_callbacks.rs forbids monster-actor callbacks from changing quest storage; normal use-with actor owners do not expose a quest capture/sampling participant."
+    },
+    {
+      "id": "formorgar-live-quest-tools",
+      "quest": "Formorgar Mines Quest",
+      "feature": "Live-creature quest-tool capture/release and three distinct Baby Seal painting operations",
+      "state": "WAITING-ENGINE",
+      "owner": "ENGITEM/ENGNPC",
+      "evidence": "Peer Norseman/Formorgar proof covers outfit grants and prerequisite reads, not the chosen nine-stage Ice Islands journey; selected s3/s4 require native actor-bound tool operations.",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs"
+      ]
+    }
+  ],
+  "latest_peer_review": {
+    "branch": "origin/claude/happy-davinci-ijz3wy-qengine2",
+    "head": "c7f9d9ba7",
+    "finding": "Reviewed newer native binding admission checkpoint:326quest units green; own PG GREEN still pending. Existing canonical callback-field convergence request remains before consuming this API; no duplicate engine authored.",
+    "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+    "merge_retry": "68 conflicted files; aborted and restored coherent changes under owner15-minute exception.",
+    "conflict": "CONFLICT (content): Merge conflict in crates/gameplay/quests/src/quest/world_callbacks.rs",
+    "latest_main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+    "latest_main_review": "Three shared-API collision files unchanged from98d6retry. Avoid mutating live crate-unit inputs merely to repeat identical conflict."
+  },
+  "restored_peer_review": {
+    "head": "aa85b2500",
+    "main": "6f61ac15d",
+    "finding": "Peer now adopts canonical main effects API. No activation/read_only/reward_bundle compatibility fields observed; request remains open. Reuse its canonical implementation when compatibility is delivered."
+  }
+}

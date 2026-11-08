@@ -37,7 +37,7 @@ const SHARDS: [(&str, &[u8]); 4] = [
         ),
     ),
 ];
-const CREATURE_COUNT: usize = 1_864;
+const CREATURE_COUNT: usize = 1_865;
 const BESTIARY_COUNT: usize = 824;
 
 #[derive(Deserialize)]

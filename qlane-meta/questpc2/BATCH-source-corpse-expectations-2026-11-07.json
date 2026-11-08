@@ -1,0 +1,65 @@
+{
+  "batch": "source corpse expectation repair",
+  "production_code_changed": false,
+  "new_qualified_quests": 0,
+  "changed_content_crate": {
+    "selected_default_units_passed": 320,
+    "preexisting_ignored_full_manifest_case": "requires OTERYN_FULL_SPELL_TEST_MANIFEST; unchanged and not counted as passed"
+  },
+  "red": {
+    "selected_unit_tests": 1326,
+    "passed": 1315,
+    "failed": 11,
+    "duration_seconds": 1069.333,
+    "groups": {
+      "source_expectations": 2,
+      "ENOSPC_in_PG_setup": 9
+    }
+  },
+  "green": {
+    "all_11_prior_failures_passed": true,
+    "prior_failures": [
+      "oteryn-gameplay-content content::native_gameplay::test_support::activation_fixture::reward_boss_test_fixture_preserves_source_loot_and_production_unavailability",
+      "oteryn-gameplay-content content::native_gameplay::tests::reward_boss_empty_corpse_does_not_admit_missing_private_loot",
+      "oteryn-gameplay-durability durability::boss_encounter::activity_assignment_tests::character_fence::boss_activity_full_character_fence_postgres",
+      "oteryn-gameplay-durability durability::boss_encounter::activity_assignment_tests::item_consumers::boss_activity_item_consumers_postgres",
+      "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_clock_native_owner_cas_and_restart_storage_postgres",
+      "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_cooldown_atomic_group_replay_and_compensation_postgres",
+      "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_reward_native_fences_atomic_claim_and_reload_postgres",
+      "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_reward_time_and_epoch_boundaries_postgres",
+      "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_spawn1_world_exclusion_restart_and_reset_postgres",
+      "oteryn-gameplay-durability durability::character_death::death_build_postgres::concurrent_native_deaths_serialize_build_and_one_receipt_on_the_root",
+      "oteryn-gameplay-durability durability::character_death::death_build_postgres::historical_v2_training_then_death_replays_and_reconciles_after_restart"
+    ],
+    "own_postgres_cases_passed": 5,
+    "postgres_version_num": 180006,
+    "own_pg_runtime_seconds": 198.738,
+    "own_pg_build_plus_run_seconds": 685.415,
+    "own_pg_head": "948834804d9e80202f6012c5e18b066cda29ab7e",
+    "production_code_and_runtime_data_unchanged_since_pg": true,
+    "workspace_all_targets_check": "PASS3m52s",
+    "fmt": "PASS",
+    "content_clippy": "PASS23.13s -D warnings",
+    "native_generated_outputs": "44 files reproduced exactly",
+    "central_evidence": "binding packets, NPC links, matrix and audit goldens refreshed",
+    "pin_refresh": "PASS unchanged runtime digest and inputs digest",
+    "duplicate_migrations": "PASS"
+  },
+  "conservative_same_four_crate_unit_rerun": {
+    "state": "PASS",
+    "selected": 1326,
+    "passed": 1326,
+    "failed": 0,
+    "duration_seconds": 1024.412,
+    "excluded_or_preexisting_ignored": 18,
+    "log": "/tmp/questpc2-corpse-refusals-full-unit-rerun.log"
+  },
+  "source_census": {
+    "total_bosses": 387,
+    "missing": 52,
+    "inadmissible": 324,
+    "explicit_source_corpse_closures": 10,
+    "primal_empty_row": 1
+  },
+  "publication": "All1326 selected four-crate tests ultimately passed; the320 changed-content default units, five real PG cases and all11 previous failures were already green at16d3f9a3f."
+}

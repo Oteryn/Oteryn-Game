@@ -1,0 +1,24 @@
+{
+  "batch": "main-98d-soulpit-integration",
+  "main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+  "local_wip_parent": "7fc9c35cf60a1ff9da32202f5cb21ecfbc95d4f1",
+  "last_pushed": "b33d0c985c4088285f7f8ce273183a87fce49541",
+  "conflicts_resolved": 9,
+  "resolution": [
+    "XP priority Soulpit then ordinary row then lane encounter fallback, shared by both accessors",
+    "Soulpit kills skip both Grizzly and quest objective capture",
+    "World index/capture semantic merge: every differing top-level field changed on only one side; no counters guessed",
+    "Rebuilt current pin compiler and regenerated applicable central data, overlays, promotion pin and world pins"
+  ],
+  "checks": {
+    "workspace_pre_pin": "PASS3m36s",
+    "clippy": "PASS4m00s dispatch/compiler alltargets allfeatures -Dwarnings",
+    "compiler_release_build": "PASS14.23s",
+    "terrain_tests": "PASS6/6,0ignored,0.02s",
+    "workspace_post_pin": "PASS4m20s",
+    "fmt": "PASS",
+    "dup_migrations": "PASS",
+    "generation": "PASS overlays, central authorers, promotion pin and current-compiler world pins"
+  },
+  "qualification": "Compiling WIP integration; Henricus source recruitment still missing. Premerge real PG RED65.812s,180006. Implement it after push; no whole quest qualification change."
+}

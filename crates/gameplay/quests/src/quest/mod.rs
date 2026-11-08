@@ -8,7 +8,7 @@
 //! loads the lowered quest content into it (QUEST-LOWER-1).
 //!
 //! [`QuestStateCatalogue::evaluate`] is the pure §4 validation of one transition against the
-//! values the writer read under lock: the closed `from` comparisons, then `SET`, checked `ADD`
+//! values the writer read under lock: the closed `from` comparisons, then `SET`, exact `SET_IF`, checked `ADD`
 //! and `SET_NOW` (database transaction time, never a node clock), each within the track's
 //! bounds. It writes nothing; `durability::quest_state` owns the transaction.
 //!
@@ -30,17 +30,22 @@ pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod death_objectives;
 pub mod deepling_boss_access;
+pub mod elvenbane;
 pub mod falcon;
 pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod hero_of_bounac;
 pub mod hive_access;
+#[path = "batch3_a/hot_cuisine.rs"]
+pub mod hot_cuisine;
 pub mod isle_of_evil;
+pub mod kill_objectives;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod native_kill_goals;
 pub mod native_kills;
 pub mod native_rules;
 pub mod npc_rules;
@@ -188,6 +193,11 @@ impl QuestComparison {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuestEffectKind {
     Set(i64),
+    /// Replace only an exact locked value; other values remain unchanged.
+    SetIf {
+        equals: i64,
+        value: i64,
+    },
     /// Raise a locked value to this floor, preserving already higher progress.
     RaiseTo(i64),
     /// The same monotone operation pinned to its physical admission terms.
@@ -250,6 +260,11 @@ impl QuestEffectKind {
             }
             Self::Add(value) => {
                 out.push(2);
+                out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::SetIf { equals, value } => {
+                out.push(6);
+                out.extend_from_slice(&equals.to_be_bytes());
                 out.extend_from_slice(&value.to_be_bytes());
             }
             Self::AddWithBinding { delta, binding } => {
@@ -373,8 +388,6 @@ pub struct QuestStateCatalogue {
 struct NpcDefinitionPredecessor {
     hash: [u8; 32],
     defaults: BTreeMap<String, i64>,
-    // Read-compatible NPC activation retains historical pins and absent-track meanings.
-    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
 }
 
 impl QuestStateCatalogue {
@@ -469,6 +482,10 @@ impl QuestStateCatalogue {
                     | QuestEffectKind::RaiseTo(value)
                     | QuestEffectKind::RaiseToWithBinding { value, .. } => {
                         (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::SetIf { equals, value } => {
+                        (track.min..=track.max).contains(&equals)
+                            && (track.min..=track.max).contains(&value)
                     }
                     QuestEffectKind::SetWhenAtLeast {
                         other_effect,
@@ -686,6 +703,9 @@ impl QuestStateCatalogue {
                     QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. } => {
                         Some(now)
                     }
+                    QuestEffectKind::SetIf { equals, value } => {
+                        Some(if before == equals { value } else { before })
+                    }
                     QuestEffectKind::Computed => None,
                     QuestEffectKind::SetWhenAtLeast {
                         other_effect,
@@ -839,6 +859,62 @@ mod tests {
             .collect();
         let transition = catalogue.transition(key).expect("transition");
         catalogue.evaluate(transition, &stored, now)
+    }
+
+    #[test]
+    fn conditional_set_matches_exact_value_preserves_other_values_and_binds_hash() {
+        const KEY: &str = "oteryn:quest-transition/test.conditional-reset";
+        let make = |equals| {
+            catalogue(vec![transition(
+                KEY,
+                vec![effect(
+                    STAGE,
+                    QuestComparison::Any,
+                    QuestEffectKind::SetIf { equals, value: 0 },
+                )],
+                false,
+            )])
+        };
+        let catalogue = make(1);
+        for before in [-1, 0, 1, 2] {
+            let changes =
+                run(&catalogue, KEY, &[(STAGE, before)], 100).expect("conditional effect");
+            assert_eq!(
+                changes,
+                vec![QuestTrackChange {
+                    track: STAGE.into(),
+                    before,
+                    after: if before == 1 { 0 } else { before },
+                }]
+            );
+        }
+        assert_ne!(
+            catalogue.definition_hash(QUEST),
+            make(2).definition_hash(QUEST)
+        );
+        for kind in [
+            QuestEffectKind::SetIf {
+                equals: 11,
+                value: 0,
+            },
+            QuestEffectKind::SetIf {
+                equals: 1,
+                value: 11,
+            },
+        ] {
+            assert!(
+                QuestStateCatalogue::new(
+                    "content-1",
+                    vec![track(STAGE, -1, -1, 10)],
+                    vec![transition(
+                        KEY,
+                        vec![effect(STAGE, QuestComparison::Any, kind)],
+                        false
+                    )]
+                )
+                .is_err()
+            );
+        }
     }
 
     #[test]

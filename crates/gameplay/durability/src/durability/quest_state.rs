@@ -586,6 +586,8 @@ pub(super) mod capacity;
 pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
+pub mod kill_objectives;
+mod persist;
 mod planegazer_finale;
 pub mod native_kills;
 pub mod rotten_blood;
@@ -598,6 +600,8 @@ mod tests;
 #[path = "quest_state/wrath_sleeping_dragon.rs"]
 mod wrath_sleeping_dragon;
 
+mod owned_cosmetics;
+mod owned_items;
 mod writer;
 use storage::*;
 

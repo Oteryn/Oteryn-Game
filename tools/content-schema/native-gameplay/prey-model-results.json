@@ -2644,7 +2644,9 @@
     "oteryn:creature.yielothax",
     "oteryn:creature.young_goanna",
     "oteryn:creature.young_sea_serpent",
-    "oteryn:creature.zombie"
+    "oteryn:creature.zombie",
+    "oteryn:creature.cyclops",
+    "oteryn:creature.troll"
   ],
   "unsettleable_creatures": [
     "oteryn:creature.acid_blob",
@@ -3401,6 +3403,12 @@
     "oteryn:creature.yielothax",
     "oteryn:creature.young_goanna",
     "oteryn:creature.young_sea_serpent",
-    "oteryn:creature.zombie"
+    "oteryn:creature.zombie",
+    "oteryn:creature.bear",
+    "oteryn:creature.cyclops",
+    "oteryn:creature.furious_troll",
+    "oteryn:creature.little_corym_charlatan",
+    "oteryn:creature.troll",
+    "oteryn:creature.wolf"
   ]
 }
