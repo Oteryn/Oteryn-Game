@@ -47,3 +47,20 @@ assertion or scan input was replaced.
 Pending next slice: source-specific Nomads Land obstruction binding and a
 complete quest-call regression. The generic read-set alone is not a whole
 quest qualification.
+
+
+## Coordinator merge verification
+
+Merged qmech `74bb50fcb`. Kept its M07 immutable-object admission guard and
+added the legacy-empty Ground field to M07's new test initializer. No
+assertion or existing admission predicate was weakened.
+
+- Entire quests library: **352 passed**, **41.79s**; M02 regression rerun
+  after selecting the source crate i2471: PASS.
+- M02 PostgreSQL on the merged tree: PASS **5.126674382s**.
+- All ten key33 checks: PASS **1.64s** after repository-tool refresh.
+- `regenerate_content.py --native-only`: PASS; this engine slice changes no
+  World content input, and regeneration left the canonical data unchanged.
+- All-target clippy of quests, durability and dispatch passed before merging;
+  all three production libraries passed again together after the merge in
+  **2m28s** with `-D warnings`. `cargo fmt --all --check` passed.

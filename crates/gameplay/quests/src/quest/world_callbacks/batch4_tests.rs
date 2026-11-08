@@ -281,7 +281,7 @@ fn m02_ground_stack_requires_exact_ordered_bounded_items_and_durable_admission()
     ]);
     value["world_requirements"] = serde_json::json!([{
         "position":{"x":32991,"y":31496,"floor":-1}, "appearance":0,
-        "ground_stack":[{"item":"oteryn:item.tibia.i1739","count":1},
+        "ground_stack":[{"item":"oteryn:item.tibia.i2471","count":1},
                         {"item":"oteryn:item.tibia.i2904","count":1}]
     }]);
     assert!(

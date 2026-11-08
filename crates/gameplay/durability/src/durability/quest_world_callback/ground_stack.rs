@@ -1,6 +1,9 @@
 //! M02: read-only portable-item prerequisites share the existing Ground custody lock.
 //! Nomads Land authored recipe s4 derives from TibiaWiki spoiler page 22842,
 //! revision 1002600; arrangement is a prerequisite, not an offering to consume.
+//! See docs/reference/content-prep/SRVWLD-M02.md: TibiaWiki BR Arito's Task,
+//! lines115-117 specify ordered crate/amphora piles. Crystal 201189f
+//! data/items/items.xml:5020-5024 and6245-6247 identify the two source Items.
 use super::{DurabilityError, QuestWorldContext, SpellLanePermit};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement;
