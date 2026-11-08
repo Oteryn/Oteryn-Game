@@ -55,7 +55,7 @@ Zasady przeciw dublowaniu:
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
 | T148 | Achievements | Account list/points/notices | DONE | evidence: crates/client-ui/src/features/local-account-achievements/state/catalog.rs:40 + achievement_browser_filters_regular_secret_and_sorts_server_rows; apps/client/src/features/local-account-achievements/tests/browser.rs:5 |
-| T163 | Boss | Difficulty selection / preview/start/cancel | PARTIAL | Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora. |
+| T163 | Boss | Difficulty selection / preview/start/cancel | DONE | evidence: apps/client/src/features/0225-boss-difficulty/input.rs:6 + difficulty_real_caller_uses_server_context_and_invalidates_refused_or_reopened_windows |
 | T164 | Boss | Hazard level i encounter entry | DONE | evidence: crates/client-ui/src/features/0117-boss-encounter/protocol/auxiliary.rs:63 + pc05_boss_activity_refusal_and_reconnect_scenario; apps/client/src/features/0117-boss-encounter/tests/hazard.rs:8 + hazard_confirmation_updates_entry_guide_and_next_selection |
 | O074 | Boss | Cyklopedia: bosstiariusz | DONE | evidence: apps/client/src/features/0117-boss-encounter/input.rs:11 + bosstiary_browser_actions_select_details_and_enter_confirmed_record; apps/client/src/features/0117-boss-encounter/tests/browser.rs:8 |
 | T077 | Cyclopedia | Wspólne okno i nawigacja | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
@@ -85,7 +85,7 @@ Zasady przeciw dublowaniu:
 | T097 | Cyclopedia / Character | Badges / cudza postać / inspection | PARTIAL | Odczyt/zgody są; brak spójnego pełnego profilu i zakładki badges. |
 | O015 | Cyclopedia / Character | Błogosławieństwa i ochrona po śmierci | PARTIAL | Brakuje panelu prognozy kary XP/PvP i utraty ekwipunku przed śmiercią; dostępne są listy błogosławieństw i ich zużycia po śmierci. |
 | T143 | Highscores | Kategorie/world/vocation, paging/show-me | PARTIAL | Są category/vocation/refresh/previous/next; brak world selector i show-me; BattlEye wykluczone. |
-| T113 | Hunting tasks | Bounty, rewards, shop i talisman | PARTIAL | Główne operacje są; brak pełnej prezentacji sklepu/drzewa ulepszeń i odbioru wszystkich nagród jak w referencji. |
+| T113 | Hunting tasks | Bounty, rewards, shop i talisman | DONE | evidence: apps/client/src/features/0072-task-board/input.rs:76 + task_tree_uses_server_quotes_and_submits_the_selected_path_and_reward |
 | T114 | Hunting tasks | Soul Seals fight dialog | PARTIAL | Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia. |
 | T076 | Minimap | Exploration/markers/labels, floor/zoom/pan | DONE | evidence: apps/client/src/features/local-minimap/state.rs:79 + minimap_world_switch_reanchors_camera_without_losing_same_world_pan |
 | O039 | Minimap | Minimapa i nawigacja | DONE | evidence: apps/client/src/features/local-minimap/input.rs:6 + minimap_edge_clicks_never_queue_out_of_world_navigation |
@@ -94,8 +94,8 @@ Zasady przeciw dublowaniu:
 | T098 | Trackers | Bestiary tracker | DONE | evidence: apps/client/src/features/0197-cyclopedia-tracker/input.rs:6 + tracker_widgets_round_trip_admitted_commands_and_keep_independent_state |
 | T099 | Trackers | Bosstiary tracker | DONE | evidence: apps/client/src/features/0197-cyclopedia-tracker/input.rs:6 + tracker_widgets_round_trip_admitted_commands_and_keep_independent_state |
 | T100 | Trackers | Boss cooldowns | DONE | evidence: apps/client/src/features/0117-boss-encounter/input.rs:17 + cooldown_shortcut_opens_only_the_tracker_and_queries_real_command |
-| T101 | Trackers | Imbuement remaining time | PARTIAL | Stan imbuement/timed items jest; brak dedykowanego trackera wyposażenia i alertów. |
-| O030 | Trackers | Tracker czasu imbuementów wyposażenia | PARTIAL | Brakuje stale widocznego trackera wszystkich wyposażonych imbuementów z filtrami czasu; czas jest pokazany tylko dla przedmiotu w oknie imbuingu. |
+| T101 | Trackers | Imbuement remaining time | DONE | evidence: apps/client/src/features/0068-imbue/input/tracker.rs:69 + equipment_tracker_reads_real_inspection_commands_and_prunes_unequipped_items |
+| O030 | Trackers | Tracker czasu imbuementów wyposażenia | DONE | evidence: apps/client/src/features/0068-imbue/input/tracker.rs:76 + equipped_imbuement_widget_shortcut_and_time_filters_use_the_confirmed_feed |
 
 ## cg_options
 

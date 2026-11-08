@@ -737,9 +737,10 @@
   "src": "TIBAUD-1",
   "area": "Trackers",
   "feature": "Imbuement remaining time",
-  "status": "PARTIAL",
-  "gap": "Stan imbuement/timed items jest; brak dedykowanego trackera wyposażenia i alertów.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0068-imbue/input/tracker.rs:69 + equipment_tracker_reads_real_inspection_commands_and_prunes_unequipped_items"
  },
  {
   "id": "T102",
@@ -833,9 +834,10 @@
   "src": "TIBAUD-1",
   "area": "Hunting tasks",
   "feature": "Bounty, rewards, shop i talisman",
-  "status": "PARTIAL",
-  "gap": "Główne operacje są; brak pełnej prezentacji sklepu/drzewa ulepszeń i odbioru wszystkich nagród jak w referencji.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0072-task-board/input.rs:76 + task_tree_uses_server_quotes_and_submits_the_selected_path_and_reward"
  },
  {
   "id": "T114",
@@ -1222,9 +1224,10 @@
   "src": "TIBAUD-1",
   "area": "Boss",
   "feature": "Difficulty selection / preview/start/cancel",
-  "status": "PARTIAL",
-  "gap": "Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0225-boss-difficulty/input.rs:6 + difficulty_real_caller_uses_server_context_and_invalidates_refused_or_reopened_windows"
  },
  {
   "id": "T164",
@@ -1380,9 +1383,10 @@
   "src": "OTCAUD1108",
   "area": "Trackers",
   "feature": "Tracker czasu imbuementów wyposażenia",
-  "status": "PARTIAL",
-  "gap": "Brakuje stale widocznego trackera wszystkich wyposażonych imbuementów z filtrami czasu; czas jest pokazany tylko dla przedmiotu w oknie imbuingu.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0068-imbue/input/tracker.rs:76 + equipped_imbuement_widget_shortcut_and_time_filters_use_the_confirmed_feed"
  },
  {
   "id": "O033",
