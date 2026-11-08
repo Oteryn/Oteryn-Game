@@ -70,6 +70,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
         }
+        if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
+            callback,
+            after.appearance_id,
+        ) {
+            return UseDisposition::NothingToUse;
+        }
         let close = callback.trigger == Trigger::StepOut
             || callback
                 .lever
