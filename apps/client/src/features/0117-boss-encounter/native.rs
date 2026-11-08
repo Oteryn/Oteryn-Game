@@ -51,11 +51,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 if let Some(search) = values.get(3) {
                     mailbox.boss_encounter.boss_search = search.clone();
                 }
-                if action >= 12 {
-                    if action <= 13 {
-                        mailbox.boss_encounter.select_boss(action == 12);
+                if action >= 14 {
+                    if action <= 15 {
+                        mailbox.boss_encounter.select_boss(action == 14);
                     }
-                    if action == 15 {
+                    if action == 17 {
                         mailbox.boss_encounter.select_slot();
                     }
                     return;
