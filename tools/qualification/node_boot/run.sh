@@ -451,6 +451,14 @@ stage() { # name prerequisite... -- function
     STATUS[$name]="FAIL(exit $rc)"
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
     echo "--- last node events"; tail -n 40 "$node_log" 2>/dev/null || true
+    # Repeated background-pass retries hide the event that took the root down.
+    echo "--- node events without background retries"
+    grep -vE 'statistics_retention|audit_collector|corpse_decay_read_deferred|server_save_countdown_read_deferred|_world_pass state=retry|admission_refused' "$node_log" 2>/dev/null | tail -n 150 || true
+    echo "--- first root-not-ready"
+    grep -n -m 1 -B 40 'root is not ready' "$node_log" 2>/dev/null | tail -n 41 || true
+    echo "--- postgres sessions"
+    echo "SELECT pid, usename, application_name, state, wait_event_type, wait_event, now() - backend_start, now() - xact_start, now() - state_change, left(regexp_replace(query, '\\s+', ' ', 'g'), 160) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND pid <> pg_backend_pid() ORDER BY backend_start" \
+      | psql_admin oteryn_node_boot 2>&1 | tail -n 30 || true
     echo "--- postgres"; docker logs --tail 40 "$PG_CONTAINER" 2>&1 | grep -E 'ERROR|FATAL|STATEMENT' || true
     echo "--- platform"; compose logs --no-color --tail 40 platform nginx 2>&1 || true
   fi
