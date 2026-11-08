@@ -31,8 +31,9 @@ mod clock;
 mod counterparts;
 mod effects;
 pub use effects::{
-    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
-    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
+    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
+    EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal,
+    PortalPair,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -241,6 +242,9 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/engenc2-cults.json"
+    ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
     ))?);
