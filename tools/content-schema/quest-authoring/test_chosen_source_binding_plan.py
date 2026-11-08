@@ -55,12 +55,15 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
         self.assertEqual(79, len(talks))
         self.assertTrue(all(stage["NPC_dialogue_candidates"] is not None for stage in talks))
 
-    def test_no_native_bindings_anywhere(self):
-        self.assertEqual(
-            0,
-            sum(stage["native_dispatch_binding"] is not None
-                for row in self.plan["records"] for stage in row["stages"]),
-        )
+    def test_only_registered_native_talk_stage_is_enabled(self):
+        bound = [(row["quest"], stage) for row in self.plan["records"]
+                 for stage in row["stages"] if stage["native_dispatch_binding"] is not None]
+        self.assertEqual(1, len(bound))
+        quest, stage = bound[0]
+        self.assertEqual("oteryn:quest.authored.a_pirate_s_death_to_me", quest)
+        self.assertEqual("s1", stage["stage_key"])
+        self.assertTrue(stage["runtime_enabled"])
+        self.assertEqual("npc_dialogue", stage["native_dispatch_binding"]["kind"])
         self.assertEqual(
             0,
             sum(row["native_reward_delivery_binding"] is not None for row in self.plan["records"]),

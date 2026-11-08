@@ -24,7 +24,14 @@ class CompletionImportTests(unittest.TestCase):
                 transition = transitions[stage['quest_transition_key']]
                 self.assertEqual(transition['quest'], quest['quest'])
                 self.assertEqual(transition['source']['chosen_stage']['key'], stage['stage_key'])
-                self.assertIsNone(stage['native_dispatch_binding'])
+                if (quest['quest'], stage['stage_key']) == ('oteryn:quest.authored.a_pirate_s_death_to_me', 's1'):
+                    self.assertTrue(stage['runtime_enabled'])
+                    self.assertEqual(stage['native_dispatch_binding'], {
+                        'kind': 'npc_dialogue', 'document': 'content/quests/authored-bindings/m01a-a-pirates-death-to-me.json',
+                        'stage': 's1', 'callback': 'oteryn:quest-reward/native-talk/a-pirates-death-to-me/s1'})
+                else:
+                    self.assertIsNone(stage['native_dispatch_binding'])
+                    self.assertFalse(stage['runtime_enabled'])
                 self.assertIsNone(stage['selected_NPC_branch'])
 
     def test_existing_main_source_prefix_is_preserved_and_only_five_source_effects_refine(self):
