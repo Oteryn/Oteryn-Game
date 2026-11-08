@@ -137,6 +137,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         )
         .await?;
         Ok(AdmittedSession {
+            character_id: self.character_id,
             character_name: self.character_name.clone(),
             session,
             world_id: self.grant.world_id.clone(),

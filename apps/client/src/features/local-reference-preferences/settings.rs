@@ -169,6 +169,7 @@ impl std::error::Error for PreferenceError {}
 
 #[derive(Debug, Clone)]
 pub(crate) struct LocalPlayState {
+    character: Option<[u8; 16]>,
     pub(in crate::play) minimap_binding:
         Option<crate::play::feature_local_minimap::view::MinimapBinding>,
     pub(in crate::play) minimap_edit: u64,
@@ -181,6 +182,7 @@ pub(crate) struct LocalPlayState {
 impl LocalPlayState {
     pub(crate) fn new(world: World) -> Self {
         Self {
+            character: None,
             minimap_binding: None,
             minimap_edit: 0,
             minimap_origin: None,
@@ -201,7 +203,12 @@ impl LocalPlayState {
 
 impl PlayView {
     pub fn preference_character(&self) -> Option<[u8; 16]> {
-        self.scene.preference_character()
+        self.local.character
+    }
+
+    /// Installed only after native admission has accepted the selected character.
+    pub(crate) fn set_preference_character(&mut self, character: [u8; 16]) {
+        self.local.character = Some(character);
     }
 
     pub(in crate::play) fn apply_preference_scale(

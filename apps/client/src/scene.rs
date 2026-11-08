@@ -328,8 +328,6 @@ mod tests;
 
 #[path = "features/0006-world-spatial-entities/scene.rs"]
 mod live_entities;
-#[path = "features/local-reference-preferences/scene.rs"]
-mod local_preferences;
 #[path = "features/local-minimap/scene.rs"]
 mod minimap;
 

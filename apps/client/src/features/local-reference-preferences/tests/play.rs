@@ -98,14 +98,14 @@ fn admitted_character_preferences_are_isolated_and_reloaded()
     let mut settings = SettingsState::new(Some(path.clone()));
     let global = settings.preferences.clone();
     let mut play = view()?;
-    play.set_own_identity([1; 16]);
+    play.set_preference_character([1; 16]);
     settings.select_character(play.preference_character());
     assert_eq!(settings.scope_label(), "Character settings");
     let mut changed = settings.preferences.clone();
     changed.ui_scale = 120;
     changed.battle_lists[0].name = "Character one".into();
     settings.apply(changed.clone());
-    play.set_own_identity([2; 16]);
+    play.set_preference_character([2; 16]);
     settings.select_character(play.preference_character());
     assert_eq!(settings.preferences, global);
     settings.preferences.ui_scale = 130;
@@ -562,5 +562,44 @@ fn shortcut_order_persists_and_buttons_open_real_panels() -> Result<(), Box<dyn 
     settings.apply(good.clone());
     settings.apply(prefs);
     assert_eq!(settings.preferences, good);
+    Ok(())
+}
+
+#[test]
+fn actor_placement_does_not_select_a_character_preference_file()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.set_own_identity([31; 16]);
+    assert_eq!(
+        play.preference_character(),
+        None,
+        "runtime placement is not a durable character id"
+    );
+    play.set_preference_character([7; 16]);
+    play.set_own_identity([32; 16]);
+    assert_eq!(play.preference_character(), Some([7; 16]));
+    play = play.with_entities(vec![])?;
+    assert_eq!(
+        play.preference_character(),
+        Some([7; 16]),
+        "scene rebuilding retains the admitted character"
+    );
+    let root = std::env::temp_dir().join(format!("stable-character-scope-{}", std::process::id()));
+    let path = root.join("preferences.json");
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    settings.select_character(play.preference_character());
+    let mut prefs = settings.preferences.clone();
+    prefs.ui_scale = 140;
+    settings.apply(prefs);
+    let mut next_admission = view()?;
+    next_admission.set_own_identity([33; 16]);
+    next_admission.set_preference_character([7; 16]);
+    let mut restarted = crate::play::SettingsState::new(Some(path));
+    restarted.select_character(next_admission.preference_character());
+    assert_eq!(restarted.preferences.ui_scale, 140);
+    next_admission.set_preference_character([8; 16]);
+    restarted.select_character(next_admission.preference_character());
+    assert_eq!(restarted.preferences.ui_scale, 100);
+    std::fs::remove_dir_all(root)?;
     Ok(())
 }
