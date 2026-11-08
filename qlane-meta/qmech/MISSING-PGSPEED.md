@@ -39,3 +39,19 @@ Migration **2220** is reserved for the zero-track NPC teleport receipt shape: a
 matching same-transaction NPC receipt and pending-arrival proof is required.
 The existing receipt arms and their bounds remain intact. No migration has
 been applied by this report-only reservation push.
+
+## M37 checkpoint
+
+- The initial durable/dispatch integration passed its all-target compile check
+  (227.538 s); the pure-teleport receipt refinement remains in progress.
+- The generated Riddler programme rebuilds from the pinned donor capture; four
+  focused authoring tests pass. Peter/Riddler placement scope uses only their
+  existing agreeing source candidates.
+- Migration 2220 now preserves **all** existing quest receipt constraints. A pure
+  teleport has a separate source NPC response receipt and no invented personal
+  quest start, track write, CharacterRevision, fare or paid-route receipt. A real
+  progress-changing teleport still composes the quest receipt and arrival.
+- Real-PG M37 cases and package regeneration/gates are pending: M37 is not DONE.
+- Separately, the unchanged PGSPEED fixture checkpoint passed all 4,636 unit
+  cases in 1,791.035 s (PG environment unset); its real-PG performance and full
+  node qualification continue in the isolated measurement worktree.

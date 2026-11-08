@@ -35,5 +35,5 @@ Checked package base: `aca84855776f1f68e3d2d61bf720366c6b46d1cf`. Scope: the 17 
 
 - PR #3037 is merged as `c77d436d8be39f348924e66d97928ffd69e61a8c`; its qready1 quest, claim, test and proof content is already present on main and in this package. Do not replay the pre-squash branch history: it also predates subsequent main fixes.
 - No additional finished qready1 quest/mechanic changes were found outside main. This contribution is the requested report only; no content inputs, generated files, migrations, runtime code or client code are changed.
-- Retain qready1’s previously allocated migration range **1430–1439** for any subsequent claim; this report takes no migration numbers.
+- The original reward packet used range 1430–1439. The coordinator subsequently assigned **2090–2099** for QMECH M19/M20; no migration is used by the clock slice.
 - Validation for this documentation-only delta: `git diff --check`; fresh read-only proof-loader validation; focused `test_qready1*.py` runner (result reported at publication). Rust/PG suites are not represented as freshly run.

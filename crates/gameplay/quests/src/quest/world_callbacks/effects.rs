@@ -222,13 +222,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 && (1..=100).contains(&count)
         };
         callback.trigger != Trigger::Use
-            || callback.storage.is_empty()
+            || !callback.has_personal_state()
             || callback
                 .storage
                 .iter()
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
             || !item(&reward.item, reward.count)
             || !reward.valid_literal_text()
+            || reward.additional.len() > 19
+            || reward
+                .additional
+                .iter()
+                .any(|c| !item(&c.item, c.count) || c.fluid_subtype.is_some())
             || reward.contents.len() > 20
             || reward.contents.iter().any(|c| {
                 !item(&c.item, c.count) || c.fluid_subtype.is_some_and(|f| f == 0 || c.count != 1)
@@ -236,7 +241,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }) || (callback.facing.is_some() && effects.facing.is_some())
         || effects.outfit_reward.as_ref().is_some_and(|r| {
             callback.trigger != Trigger::Use
-                || callback.storage.is_empty()
+                || !callback.has_personal_state()
                 || callback
                     .storage
                     .iter()
@@ -263,7 +268,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if effects.item_presence.as_ref().is_some_and(|presence| {
         !pos(presence.position)
             || presence.appearance == 0
-            || (!callback.storage.is_empty()
+            || (callback.has_personal_state()
                 && !callback.requires_world_admission
                 && !callback.opening_only)
             || effects.portals.is_some()
@@ -278,7 +283,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if operations > 1
         || (operations > 0
             && (!lever
-                || !callback.storage.is_empty()
+                || callback.has_personal_state()
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {

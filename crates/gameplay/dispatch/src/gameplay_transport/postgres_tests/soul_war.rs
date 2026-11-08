@@ -370,7 +370,7 @@ world_change: None,
             actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
             trigger: Trigger::Use, selector: Selector { native: None, position: Some(trigger), unique: None, action: None, appearance: None },
-            lever: None, reversible: false, passages: vec![], teleport: None, facing: None, effects: Default::default(), world_requirements: vec![], storage: vec![],
+            lever: None, reversible: false, passages: vec![], teleport: None, facing: None, effects: Default::default(), state_ops: Vec::new(), world_requirements: vec![], storage: vec![],
             minimum_level: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,
             native_rule: None, sources: vec![],
@@ -636,6 +636,7 @@ async fn reward_delivery(
     };
     let backpack = generation_item_facts(native, &bag_definition).map_err(debug)?;
     let mut request = RewardClaimMintRequest {
+            additional_items: Vec::new(),
         command: CommandRef::new(session, CommandId::new(601).map_err(debug)?),
         claim: TypedDefinitionRef { family: "RewardClaim".into(), production_key: SOUL_WAR_REWARD_CLAIM.into(), revision_ref: SOUL_WAR_REWARD_REVISION.into() },
         source_placement: SOUL_WAR_REWARD_PLACEMENT.into(), item, quantity: 1, backpack,
