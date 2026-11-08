@@ -47,14 +47,14 @@
     "fmt": "PASS final enum-order source",
     "duplicate_migrations": "PASS final enum-order source",
     "source_stage_tests": "9 passed2.061s; installer/reseal byte-idempotent",
-    "crate_units": "Content330passed/0failed/1existingignore354.66s; game-server577passed/0failed/3existingignores182.47s. Dispatch full unit run executing, pending PREPUSH-2 budget.",
+    "crate_units": "Content330passed354.66s; game-server577passed182.47s; dispatch2775passed1250.53s; zero failures;22 preexisting ignores total. Unit admin URL unset; actualPG evidence separate.",
     "pg_rerun": "green4 currently compiling; no GREEN claim",
     "publication": "Compiling WIP under owner PREPUSH-2 cadence exception; final pin refresh required before push",
     "completion_matrix": "Freshness PASS; no quest completion implied",
     "world_metadata": "PASS",
     "clippy": "PASS strict content/dispatch/game-server all-targets,10m28s including queued lock"
   },
-  "publication": "Native actor-admission slice QUALIFIED; whole Feaster ACTIVE; dispatch full units pending under owner PREPUSH-2 budget",
+  "publication": "PUSHED c5cc4325927d98d1af90c7041352d8c1d32a3361; native actor-admission slice QUALIFIED; whole Feaster ACTIVE; full changed-crate units now complete",
   "final_bundle_digest": "8e4be229276fd4fe4898ae301a0557bd9df8c000be99a1ec508c3dd46008a053",
   "last_red_before_enum_fix": {
     "duration_seconds": 44.285881391,

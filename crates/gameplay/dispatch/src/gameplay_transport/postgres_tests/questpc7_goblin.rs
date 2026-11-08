@@ -50,7 +50,7 @@ async fn quantity(h: &Harness, item: u32) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.definition_production_key=$2")
         .bind(id(41).as_slice()).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
 }
-async fn receipts(h: &Harness) -> TestResult<i64> {
+pub(super) async fn receipts(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2")
         .bind(id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?)
 }
@@ -384,7 +384,7 @@ pub(super) fn stalker_objects() -> Vec<(Position,u16)> {
     // Travel-only test terrain; the five positive spawn positions are source-pinned.
     (33010..=33077).flat_map(|x|(32106..=32162).map(move|y|(Position{x,y,floor:-7},100))).collect()
 }
-async fn stalker_death(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mut AdmittedSession,key:&str,at:Position,command:u64)->TestResult {
+pub(super) async fn stalker_death(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mut AdmittedSession,key:&str,at:Position,command:u64)->TestResult {
     let target={
         let mut runtime=owner.runtime.lock().await;
         let policy=runtime.companion_policy(key).map_err(debug)?;

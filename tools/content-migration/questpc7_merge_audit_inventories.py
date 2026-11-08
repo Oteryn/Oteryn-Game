@@ -73,6 +73,15 @@ def main():
         anchor = '    ("SRV9-MARRIAGE", 2),\n'
         replace(str(equipment.relative_to(ROOT)), anchor, anchor + row)
         text = equipment.read_text()
+    slug_proof = ROOT / 'tools/content-schema/native-gameplay/questpc7-slug-corpse-profiles.json'
+    if slug_proof.exists():
+        slug = json.loads(slug_proof.read_bytes())['records']
+        assert {r['production_definition']['production_key'] for r in slug} == {
+            f'oteryn:item.tibia.i{i}' for i in (12526, 12533, 12534, 12535)}
+        assert len(slug) == 4 and all(r['semantics']['temporal']['state'] == 'KNOWN' for r in slug)
+        anchor = '    ("SRV9-MARRIAGE", 2),\n'
+        replace(str(equipment.relative_to(ROOT)), anchor, anchor + '    ("QUESTPC7-SLUG-CORPSES", 4),\n')
+        text = equipment.read_text()
     body = text.split('const PROFILE_ADDITIONS:')[1].split('];')[0]
     other = sum(int(count) for name, count in re.findall(r'\("([^"\n]+)", (\d+)\)', body)
                 if name != 'QUESTPC7-REGISTERED-UNION')

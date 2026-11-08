@@ -1,3 +1,57 @@
+# Push compiling Slug source WIP — 2026-11-08 08:57 UTC
+
+WorkspacealltargetsPASS4m19s; fmt/dups/normalregeneration/officialpinrefreshPASS.
+Semanticdelta exactly4nativecorpseprofiles and12526lootfact(cap10). Allprior
+profiles and alltables/bindings/otherfacts unchanged. Prey15cases776creatures.
+ActualPG baselineRED91.212731681s corpse_item_inadmissible. GREEN rerunqueued;
+strictclippy/content+dispatchunit runsqueued/running. NO qualification claim.
+Publish WIPunderPREPUSH2 budget/cadence exception, then finishallverification.
+Latestmain3209fetched; conflictblobsunchanged. Nextpriorityafterthisslice is
+freshmainmergeof finishedportion, adaptingexistinglanecalls tocanonicalAPI where
+possible; no newlargeenginefeatures. Ownerrequests statusanswered21done4WIP.
+
+# Frozen Thaian full units COMPLETE; Slug data materializing — 2026-11-08 08:46 UTC
+
+Full dispatch2775pass/0fail/18existingignores1250.53s; server577pass182.47s and
+content330pass354.66s. Total3682passed,22preexistingignores; these units are not
+PG proof (adminunset); Thaian actualPG18.6 GREEN67.368691913s is separate.
+Only after completion began Slug data materialization. Current pipeline uses
+prey_difficulty.regenerate ->register_spell_families ->closed auditinventories.
+ActualSlugRED91.212731681s proved corpse_item_inadmissible before minting. Four
+profiles and one fact12526capacity10 only; allotherlootfacts/tables preserved.
+Next ownSlugGREEN, normalpinrefresh, workspacealltargets, strictclippy/fmt,
+changedunitbudget, commitpush immediately. Lastpushc5cc4325 at08:28UTC.
+
+# Slug actualPG RED91.212731681s — 2026-11-08 08:44 UTC
+
+PostgreSQL18.6 afterrealRafzanintro and paidkit: nativeSlugdeath refused twice
+reason=corpse_item_inadmissible creature=oteryn:creature.slug; no corpse minted.
+Four source-qualified profile helper and bounded lootclosure staged in code,
+not materialized. ExactSlugtwoentrytableSHA33d8e78abf88d73215915d918746f31f6c6cf1566dfc91bd5f1af7cd51352c3c.
+Only12526capacity10changes; gold3031/carrot3492alreadyadmitted. Sourcechain
+12526(10sec,cap10)->12533(300sec,cap10)->12534(300sec,cap5)->12535(60sec,remove).
+Closed auditgenerator now has explicit4Slugcohort, residual130unchanged. No
+engine/USE route authored; freshcorpseinteraction remainsqengine2. Latestqengine2
+0aa80f984 changes evidenceonly, notenginecode. PriorThaian full dispatchunits
+stillrunning (~19min),0reportedfailures; waitcompletion before materialization.
+Then prey_difficulty.regenerate(), register_spell_families.py, auditinventorytool,
+ownSlugPGGREEN, normalpins/fmt/check/clippy/unitbudget andpush immediately.
+
+# Native freshSlug corpse PG RED building — 2026-11-08 08:30 UTC
+
+PUSHEDc5cc4325927d98d1af90c7041352d8c1d32a3361 qualifiesThaian admission67.3687s
+PG18.6; all fastgatesPASS, content330/server577fullunitsPASS; dispatch fullunits
+stillrunning on frozenproductiondata, no reportedfailures. New SlugPG test only
+adds testcode and exposes existing testhelpers; NO productiondata changed.
+CaseafterrealRafzanintro+paidkit attemptsordinarySlugnativekill, expects one
+fresh12526Groundcorpse from duplicate lethalnotifications, no questcounter/receipt
+or freeodour vial. Four corpseprofiles currentlymissing; XML30254/30290/30296/
+30301 exact10/300/300/60seconds, capacities10/10/5/none; sourceSHA1cf2992c...
+Lootdrop facts3031gold and3492carrot alreadyadmitted; only freshcorpse12526 needs
+capacityclosure10, do not refreshunrelatedlootfacts or tables. Actualordered
+corpseUSE interaction stillqengine2 request, never seedintermediateodourstate.
+WaitactualPGRED and frozenunitrunfinish before productiondata admission.
+
 # PUSH qualified Thaian admission now — 2026-11-08 08:28 UTC
 
 All fast gatesPASS: actualPG18.6 GREEN67.368691913s, full content330pass354.66s,

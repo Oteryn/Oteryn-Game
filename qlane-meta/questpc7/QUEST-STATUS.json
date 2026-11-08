@@ -178,7 +178,7 @@
       "green_seconds": 67.368691913,
       "postgres": "18.6",
       "proof": "qlane-meta/questpc7/THAIAN-PG-PROOF.json",
-      "crate_units": "Content330pass and game-server577pass; dispatch running, pending PREPUSH2 budget"
+      "crate_units": "Full content330/server577/dispatch2775pass; zero failures;22 preexisting ignores; actualPG67.368691913s separate"
     }
   },
   {
@@ -1212,6 +1212,19 @@
       "green_seconds": 86.668771533,
       "scope": "Supporting source Item admission only; ordered odour interactions remain incomplete",
       "whole_quest": "ACTIVE"
+    },
+    "fresh_slug_corpse_progress": {
+      "state": "COMPILING_WIP_PG_GREEN_AND_UNITS_PENDING",
+      "test": "questpc7_goblin_native_slug_death_materializes_fresh_corpse",
+      "source": "imports/canary/items-xml/items.xml:30254,30290,30296,30301",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "scope": "Native fresh corpse production support only; ordered perfume USE still pending qengine2; whole quest ACTIVE",
+      "red_seconds": 91.212731681,
+      "postgres": "18.6",
+      "red_error": "kill_reward_refused reason=corpse_item_inadmissible creature=oteryn:creature.slug",
+      "frozen_units": "Prior Thaian dispatch full units still running; no production artifact writes until completion",
+      "workspace_all_targets": "PASS4m19s",
+      "proof": "qlane-meta/questpc7/SLUG-CORPSE-PG-PROOF.json"
     }
   },
   {

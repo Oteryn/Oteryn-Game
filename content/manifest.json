@@ -844,6 +844,9 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/questpc7-marsh-corpse-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/questpc7-slug-corpse-profiles.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1000,7 +1003,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3855,
+          "record_count": 3859,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1008,7 +1011,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "508c0a5fbd3b7bfcd28ec640687e84c42bbfaf5c5b1e7fb20f152abc2906e1dc"
+          "sha256": "a5c74997105d2dd359099621585bef9a259316b66159e62a47b65de3a0fb2d02"
         },
         {
           "creates_canonical_identities": false,

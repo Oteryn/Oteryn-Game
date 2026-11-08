@@ -1,0 +1,38 @@
+{
+  "scope": "Ordinary native Slug death produces its fresh corpse; no odour USE or whole quest completion claim",
+  "postgres": "18.6",
+  "red_seconds": 91.212731681,
+  "red_error": "kill_reward_refused reason=corpse_item_inadmissible creature=oteryn:creature.slug",
+  "red_log": "/workspace/scratch/questpc7-slug-red.log",
+  "green": "PENDING; do not qualify",
+  "sources": {
+    "xml": "imports/canary/items-xml/items.xml:30254,30290,30296,30301",
+    "xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "client_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "loot_table_sha256": "33d8e78abf88d73215915d918746f31f6c6cf1566dfc91bd5f1af7cd51352c3c"
+  },
+  "changes": {
+    "profiles_added": [
+      12526,
+      12533,
+      12534,
+      12535
+    ],
+    "all_prior_profiles_unchanged": true,
+    "only_loot_fact_changed": 12526,
+    "capacity": 10,
+    "all_tables_and_creature_bindings_unchanged": true,
+    "closed_inventory_residual": 130
+  },
+  "checks": {
+    "workspace_all_targets": "PASS4m19s",
+    "fmt": "PASS",
+    "duplicate_migrations": "PASS",
+    "regeneration": "PASS; Prey15cases776creatures,46registeredfiles, closed auditinventories",
+    "official_pin_refresh": "PASS unchanged8e4be229...",
+    "clippy": "PENDING",
+    "content_dispatch_units": "PENDING",
+    "own_actual_pg_green": "PENDING"
+  },
+  "publication": "Compiling WIP under owner PREPUSH-2 step3/cadence exception; not QUALIFIED"
+}

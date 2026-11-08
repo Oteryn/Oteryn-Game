@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "f868726bec3a9d138c9676a147dac46803e442e55327cc7dac4a6baf8acd244d",
+  "input_sha256": "e1c998f13fb32bb14465128451da1a377ef2d8fe313dc5ccfeceb0a5206ec42c",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -3266,7 +3266,6 @@
     "oteryn:creature.skeleton_warrior",
     "oteryn:creature.skunk",
     "oteryn:creature.slime",
-    "oteryn:creature.slug",
     "oteryn:creature.smuggler",
     "oteryn:creature.snake",
     "oteryn:creature.son_of_verminor",
