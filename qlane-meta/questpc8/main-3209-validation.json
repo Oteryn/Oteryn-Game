@@ -1,6 +1,6 @@
 {
   "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
-  "state": "COMPILE_GREEN_FOCUSED_NATIVE_RETEST_PENDING",
+  "state": "FOCUSED_GREEN_2_NATIVE_PG",
   "merge": "Clean five-file main merge; no content producer inputs changed",
   "checks": {
     "workspace": {
@@ -14,6 +14,14 @@
     "dups": {
       "exit": 0,
       "seconds": 0.30204303900245577
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 173.5890627369954
+    },
+    "pg": {
+      "exit": 0,
+      "seconds": 411.57810618399526
     }
   },
   "incoming_durability_units": {
@@ -33,10 +41,16 @@
   },
   "generated_freshness": "NPC placement conversion, exact3924-key equipment union, chosen authoring --check and source approval compiler inputs all current; underlying generated content unchanged by main code-only fix",
   "pending": [
-    "combined-head clippy and focused2PG active in driver",
     "remaining dispatch full unit coverage: CI scope"
   ],
   "whole_quests_qualified": 21,
   "whole_quests_total": 23,
-  "migrations": "1300-1308 unchanged; no incoming migration delta"
+  "migrations": "1300-1308 unchanged; no incoming migration delta",
+  "native_green": {
+    "product_head": "2fe922d793ad1303e901902b3b2c3514c2a1a863",
+    "summary_seconds": 100.026,
+    "hunt_seconds": 99.99,
+    "source_world_dragon_seconds": 100.022,
+    "proof": "wrath-source-dragon-validation.json"
+  }
 }

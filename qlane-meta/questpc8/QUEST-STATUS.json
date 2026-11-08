@@ -1431,7 +1431,7 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+        "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
         "qengine2": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
         "result": "Both requested capabilities stillQUEUED; quest-specific work continues without duplicate engine."
       }
@@ -1462,8 +1462,8 @@
     },
     "main_sync": {
       "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
-      "state": "COMPILE_GREEN_FOCUSED_NATIVE_RETEST_PENDING",
-      "proof": "main-3209-validation.json"
+      "state": "NATIVE_POSTGRES_GREEN",
+      "proof": "wrath-source-dragon-validation.json"
     },
     "authoring_round_trip": "Published envelope/self-mark rows restored to canonical author input; opening PG revalidation included in wrath-dream-validation.json"
   },
@@ -1718,7 +1718,7 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+        "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
         "qengine2": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
         "result": "Both requested capabilities stillQUEUED; quest-specific work continues without duplicate engine."
       }
@@ -1753,8 +1753,8 @@
     },
     "main_sync": {
       "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
-      "state": "COMPILE_GREEN_FOCUSED_NATIVE_RETEST_PENDING",
-      "proof": "main-3209-validation.json"
+      "state": "NATIVE_POSTGRES_GREEN",
+      "proof": "wrath-source-dragon-validation.json"
     },
     "dream_slice": {
       "state": "NATIVE_POSTGRES_GREEN",
@@ -1771,18 +1771,13 @@
       }
     },
     "source_dragon_placement": {
-      "state": "COMPILE_GREEN_NATIVE_RETEST_PENDING",
+      "state": "NATIVE_POSTGRES_GREEN",
       "proof": "wrath-source-dragon-validation.json",
       "cell": [
         33242,
         31213,
         10
-      ],
-      "pre_main_green": {
-        "source_world_dragon_seconds": 100.009,
-        "imperial_hunt_seconds": 100.356,
-        "proof": "main-3209-validation.json"
-      }
+      ]
     }
   },
   {
