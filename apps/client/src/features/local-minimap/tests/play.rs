@@ -258,3 +258,62 @@ fn minimap_world_switch_reanchors_camera_without_losing_same_world_pan() -> Resu
     assert!(!crate::play::feature_local_minimap::state::lock(&play.minimap).tracking);
     Ok(())
 }
+
+#[test]
+fn minimap_world_switch_reanchors_camera_without_losing_same_world_pan() -> Result<(), BatchError> {
+    let mut play = minimap_view()?;
+    play.bind_minimap_world("11111111-1111-4111-8111-111111111111");
+    play.set_live_map(&snapshot(100))?;
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        map.pan(50, 50);
+        map.zoom = 4;
+    }
+    play.bind_minimap_world("22222222-2222-4222-8222-222222222222");
+    play.apply(&moved_to(110, 202, -7))?;
+    play.rebuild()?;
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        assert_eq!((map.x, map.y, map.floor, map.zoom), (110, 202, -7, 1));
+        assert!(map.tracking);
+        map.pan(2, 0);
+    }
+    play.bind_minimap_world("22222222-2222-4222-8222-222222222222");
+    assert!(!crate::play::feature_local_minimap::state::lock(&play.minimap).tracking);
+    Ok(())
+}
+
+#[test]
+fn minimap_edge_clicks_never_queue_out_of_world_navigation() -> Result<(), BatchError> {
+    let mut play = minimap_view()?;
+    play.set_live_map(&snapshot(100))?;
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        map.zoom = 4;
+        map.pan(i32::MAX, i32::MIN);
+        assert_eq!((map.x, map.y), (65_535, 0));
+        map.x = 0;
+        map.y = 0;
+        map.zoom = 1;
+    }
+    assert!(play.minimap_click(58.0, 50.0));
+    assert!(play.inputs.is_empty());
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        map.x = 65_535;
+        map.y = 65_535;
+    }
+    assert!(play.minimap_click(66.0, 50.0));
+    assert!(play.inputs.is_empty());
+    crate::play::feature_local_minimap::state::lock(&play.minimap).x = 65_534;
+    assert!(play.minimap_click(66.0, 50.0));
+    assert_eq!(
+        play.inputs.pop_front(),
+        Some(Input::TargetWalk(ActorPosition {
+            x: 65_535,
+            y: 65_535,
+            floor: -7
+        }))
+    );
+    Ok(())
+}
