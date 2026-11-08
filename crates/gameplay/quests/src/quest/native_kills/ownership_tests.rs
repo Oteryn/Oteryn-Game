@@ -2,6 +2,24 @@
 use super::*;
 
 #[test]
+fn authored_native_counter_creatures_are_captured_only_for_loaded_catalogues() -> Result<(), String>
+{
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let empty =
+        crate::quest::QuestStateCatalogue::empty("content-1").ok_or("empty catalogue rejected")?;
+    for counter in qworld::counters()? {
+        assert!(
+            tracks_creature_for(loaded.catalogue(), counter.creature),
+            "{}",
+            counter.creature
+        );
+        assert!(!tracks_creature_for(&empty, counter.creature));
+    }
+    Ok(())
+}
+
+#[test]
 fn authored_native_counter_rejects_changed_and_renamed_operations() -> Result<(), String> {
     let counters = qworld::counters()?;
     assert!(!counters.is_empty());
