@@ -108,7 +108,7 @@ fn plan(epoch: i64) -> f::TestResult<NpcRulePlan> {
             now_epoch_seconds: epoch,
             // Intentionally wrong cached month: the annual guard must use UTC epoch.
             calendar_month: 8,
-        premium_current: false,
+            premium_current: false,
             level: 100,
             vocation: "oteryn:vocation.knight",
             sex: 0,

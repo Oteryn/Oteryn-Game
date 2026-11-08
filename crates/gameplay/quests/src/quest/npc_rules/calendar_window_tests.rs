@@ -25,7 +25,7 @@ fn eligible(catalog: &NpcRuleCatalog, epoch: i64) -> Result<bool, NpcRuleError> 
             inventory: &inventory,
             now_epoch_seconds: epoch,
             calendar_month: 8,
-        premium_current: false,
+            premium_current: false,
             level: 100,
             vocation: "oteryn:vocation.knight",
             sex: 0,
