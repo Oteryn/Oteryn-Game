@@ -255,3 +255,39 @@ mod tests {
         assert!(panel_text(&panel).contains("materials are missing"));
     }
 }
+
+#[cfg(test)]
+mod tracker_tests {
+    use super::*;
+    #[test]
+    fn low_time_alert_uses_confirmed_imbuements_and_clears_on_item_change() {
+        let mut panel = ImbuePanel {
+            item: Some(ItemHandle::MIN),
+            window: Some(imbuement::ImbuementWindow {
+                slot_count: 2,
+                applied: vec![
+                    imbuement::AppliedImbuement {
+                        slot: 0,
+                        family: 1,
+                        tier: 1,
+                        remaining_ms: 300_000,
+                    },
+                    imbuement::AppliedImbuement {
+                        slot: 1,
+                        family: 2,
+                        tier: 1,
+                        remaining_ms: 0,
+                    },
+                ],
+                offers: vec![],
+                clear_gold: 0,
+            }),
+            ..Default::default()
+        };
+        let text = panel_text(&panel);
+        assert!(text.contains("LOW TIME"));
+        assert!(text.contains("EXPIRED"));
+        panel.select_item(ItemHandle::MIN.saturating_add(1));
+        assert!(!panel_text(&panel).contains("LOW TIME"));
+    }
+}

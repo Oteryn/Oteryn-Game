@@ -57,6 +57,9 @@ fn srx1_native_furniture_catalogue_wrap_unwrap_and_stale_refusal()->Result<(),Er
             assert!(!text.contains("07070707"));
             link.house_furniture_edit("1".into());
             queue(&script,catalogue.request(0).ok_or("request")?.encode(),CommandStatus::Accepted,wire::Reply::Committed(2).encode());
+            link.house_furniture_request(Intent::Apply);
+            assert!(!link.house_furniture_panel().pending);
+            assert!(link.house_furniture_panel().feedback.contains("again to confirm"));
             link.house_furniture_request(Intent::Apply);complete(&link,&script).await?;
             assert!(link.house_furniture_panel().feedback.contains("revision 2"));
             assert!(link.house_furniture_panel().catalogue.is_none());
@@ -66,6 +69,9 @@ fn srx1_native_furniture_catalogue_wrap_unwrap_and_stale_refusal()->Result<(),Er
             assert!(oteryn_client_ui::house_furniture_wrap::panel_text(&link.house_furniture_panel()).contains("oven kit — Place"));
             link.house_furniture_edit("1".into());
             queue(&script,catalogue.request(0).ok_or("request")?.encode(),CommandStatus::Accepted,wire::Reply::Committed(3).encode());
+            link.house_furniture_request(Intent::Apply);
+            assert!(!link.house_furniture_panel().pending);
+            assert!(link.house_furniture_panel().feedback.contains("again to confirm"));
             link.house_furniture_request(Intent::Apply);complete(&link,&script).await?;
             assert!(link.house_furniture_panel().feedback.contains("revision 3"));
             assert!(link.house_furniture_panel().catalogue.is_none());
@@ -74,6 +80,9 @@ fn srx1_native_furniture_catalogue_wrap_unwrap_and_stale_refusal()->Result<(),Er
             link.house_furniture_request(Intent::Refresh);complete(&link,&script).await?;
             link.house_furniture_edit("1".into());
             queue(&script,catalogue.request(0).ok_or("request")?.encode(),CommandStatus::Rejected,wire::Reply::Refused(wire::Refusal::Stale).encode());
+            link.house_furniture_request(Intent::Apply);
+            assert!(!link.house_furniture_panel().pending);
+            assert!(link.house_furniture_panel().feedback.contains("again to confirm"));
             link.house_furniture_request(Intent::Apply);complete(&link,&script).await?;
             assert!(link.house_furniture_panel().feedback.contains("access changed"));
             assert!(link.house_furniture_panel().catalogue.is_none());
