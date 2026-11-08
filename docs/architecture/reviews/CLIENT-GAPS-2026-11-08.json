@@ -1473,9 +1473,10 @@
   "src": "OTCAUD1108",
   "area": "Boss",
   "feature": "Cyklopedia: bosstiariusz",
-  "status": "PARTIAL",
-  "gap": "Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0117-boss-encounter/input.rs:11 + bosstiary_browser_actions_select_details_and_enter_confirmed_record; apps/client/src/features/0117-boss-encounter/tests/browser.rs:8"
  },
  {
   "id": "O077",

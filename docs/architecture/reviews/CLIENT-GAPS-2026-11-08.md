@@ -57,7 +57,7 @@ Zasady przeciw dublowaniu:
 | T148 | Achievements | Account list/points/notices | PARTIAL | Odczyt/notices są; brak pełnego filter/sort regular/secret i wizualnej listy. |
 | T163 | Boss | Difficulty selection / preview/start/cancel | PARTIAL | Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora. |
 | T164 | Boss | Hazard level i encounter entry | DONE | evidence: apps/client/src/features/0117-boss-encounter/tests/hazard.rs:8 + hazard_confirmation_updates_entry_guide_and_next_selection; crates/client-ui/src/features/0117-boss-encounter/view.rs:48 |
-| O074 | Boss | Cyklopedia: bosstiariusz | PARTIAL | Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu. |
+| O074 | Boss | Cyklopedia: bosstiariusz | DONE | evidence: apps/client/src/features/0117-boss-encounter/input.rs:11 + bosstiary_browser_actions_select_details_and_enter_confirmed_record; apps/client/src/features/0117-boss-encounter/tests/browser.rs:8 |
 | T077 | Cyclopedia | Wspólne okno i nawigacja | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
 | T078 | Cyclopedia | Items: kategorie/search/statystyki/źródła | PARTIAL | Inspect/catalogue/market są; brak kompletnej encyklopedii Items i jej filtrów. |
 | T079 | Cyclopedia | Map: areas/subareas/passages/PoI/NPC | PARTIAL | Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC. |

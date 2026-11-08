@@ -51,10 +51,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 if mailbox.boss_encounter.pending {
                     return;
                 }
-                if let Some(search) = values.get(3) {
-                    mailbox.boss_encounter.boss_search = search.clone();
-                    mailbox.boss_encounter.browser_search = search.clone();
-                }
+                let search = values.get(3).cloned().unwrap_or_default();
                 for (index, value) in values.into_iter().take(3).enumerate() {
                     super::super::input::edit(&mut mailbox.boss_encounter, index, value);
                 }
@@ -70,10 +67,20 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     return;
                 }
                 if action >= 14 {
-                    if action <= 15 {
-                        mailbox.boss_encounter.select_boss(action == 14);
+                    if matches!(action, 14..=16 | 19) {
+                        let category = mailbox.boss_encounter.browser_category;
+                        let category = if action == 16 {
+                            category.next()
+                        } else {
+                            category
+                        };
+                        super::super::input::browse(
+                            &mut mailbox.boss_encounter,
+                            &search,
+                            category,
+                            action == 14,
+                        );
                     }
-                    if action == 16 { mailbox.boss_encounter.browser_category = mailbox.boss_encounter.browser_category.next(); }
                     if action == 20 {
                         mailbox.boss_encounter.select_slot();
                     }
