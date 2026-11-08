@@ -8,6 +8,11 @@ use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 
 impl PlayLink {
+    /// Select only a handle in the session's current carried inventory projection.
+    pub fn imbue_carried_item(&self, item: ItemHandle) -> bool {
+        select_carried(&mut lock(&self.mailbox), &self.commands, item)
+    }
+
     pub fn imbue_item(&self, item: ItemHandle) {
         lock(&self.mailbox).imbue.select_item(item);
     }
@@ -60,4 +65,41 @@ pub(in crate::play) fn enqueue_details(
         mailbox.imbue.details_pending = None;
         mailbox.imbue.details_feedback = Some("The session has ended");
     }
+}
+
+/// Includes equipment and only container views proven connected to carried inventory.
+pub(in crate::play) fn carried_items(
+    mailbox: &Mailbox,
+) -> Vec<oteryn_client_runtime::depot::ItemEntry> {
+    let items = &mailbox.depot.items;
+    let mut carried: Vec<_> = items
+        .inventory
+        .main_backpack
+        .iter()
+        .chain(&items.inventory.entries)
+        .chain(items.inventory.equipment.iter().map(|entry| &entry.item))
+        .chain(&items.views)
+        .cloned()
+        .collect();
+    carried.sort_by_key(|entry| entry.handle);
+    carried.dedup_by_key(|entry| entry.handle);
+    carried
+}
+
+pub(in crate::play) fn select_carried(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    item: ItemHandle,
+) -> bool {
+    if !mailbox.imbue.selected
+        || mailbox.imbue.pending
+        || !carried_items(mailbox)
+            .iter()
+            .any(|entry| entry.handle == item)
+    {
+        return false;
+    }
+    mailbox.imbue.select_item(item);
+    enqueue(mailbox, commands, Intent::Refresh);
+    true
 }

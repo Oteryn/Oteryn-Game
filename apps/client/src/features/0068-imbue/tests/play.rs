@@ -13,9 +13,64 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 
 struct Peer {
     requests: Arc<Mutex<Vec<imbuement::ImbuementRequest>>>,
+    details: bool,
 }
 
 impl Stepper for Peer {
+    fn feature_selected(&self, capability: u32) -> bool {
+        self.details && matches!(capability, 37 | 447)
+    }
+    fn depot_items(&self) -> oteryn_client_runtime::depot::Items {
+        let mut items = oteryn_client_runtime::depot::Items::default();
+        {
+            items
+                .inventory
+                .entries
+                .push(oteryn_client_runtime::depot::ItemEntry {
+                    handle: NonZeroU64::MIN.saturating_add(41),
+                    item_definition_ref: std::num::NonZeroU32::MIN,
+                    count: std::num::NonZeroU32::MIN,
+                    sub_type: 0,
+                });
+        }
+        items
+    }
+    async fn feature(
+        &mut self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        use oteryn_client_runtime::imbuement_details as wire;
+        if !self.details
+            || command.capability != wire::CAPABILITY_IMBUEMENT_DETAILS_V1
+            || command.kind != wire::COMMAND_TYPE_IMBUEMENT_DETAILS
+        {
+            return Err(SessionError::SessionUnusable);
+        }
+        let item =
+            wire::decode_query(&command.payload).map_err(|_| SessionError::SessionUnusable)?;
+        let reply = wire::Reply {
+            item,
+            quotes: vec![wire::Quote {
+                family: 3,
+                tier: 2,
+                gold: 400,
+                requires_premium: true,
+                recipe_available: true,
+                success_percent: 100,
+                materials: vec![wire::Material {
+                    definition_key: "oteryn:item.tibia.i11466".into(),
+                    quantity: 25,
+                }],
+            }],
+        };
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 9,
+            server_sequence: 9,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_reply(&reply).map_err(|_| SessionError::SessionUnusable)?,
+        })
+    }
+
     fn imbue_selected(&self) -> bool {
         true
     }
@@ -115,6 +170,7 @@ fn imbuement_panel_queries_and_sends_every_wire_action() -> Result<(), Error> {
                 let requests = Arc::new(Mutex::new(Vec::new()));
                 let peer = Peer {
                     requests: Arc::clone(&requests),
+                    details: false,
                 };
                 let (link, incoming, outbox) = play_channel();
                 let task = tokio::spawn(run_session(peer, incoming, outbox));
@@ -339,4 +395,72 @@ fn imbuement_activity_handoff_discards_old_item_and_material_reply() -> Result<(
     assert!(mailbox.imbue.details.is_none());
     drop(mailbox);
     Ok(())
+}
+
+/// Exercises the production live picker and the actual session-loop Feature reply route.
+#[test]
+fn imbuement_live_picker_and_material_reply_reach_run_session() -> Result<(), Error> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+            runtime.block_on(async {
+                let requests = Arc::new(Mutex::new(Vec::new()));
+                let (link, incoming, outbox) = play_channel();
+                let task = tokio::spawn(run_session(
+                    Peer {
+                        requests: requests.clone(),
+                        details: true,
+                    },
+                    incoming,
+                    outbox,
+                ));
+                ready(&link, &requests, 0).await?;
+                tokio::time::timeout(Duration::from_secs(3), async {
+                    while crate::play::feature_0068_imbue::input::carried_items(
+                        &crate::play::mailbox::lock(&link.mailbox),
+                    )
+                    .is_empty()
+                    {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await?;
+                assert!(!link.imbue_carried_item(NonZeroU64::new(999).ok_or("unknown item")?));
+                assert!(
+                    requests
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .is_empty()
+                );
+                assert!(link.imbue_carried_item(NonZeroU64::new(42).ok_or("carried item")?));
+                ready(&link, &requests, 1).await?;
+                assert_eq!(
+                    requests.lock().unwrap_or_else(PoisonError::into_inner)[0]
+                        .item
+                        .get(),
+                    42
+                );
+                assert!(link.imbue_panel().details_selected);
+                link.imbue_details_request();
+                tokio::time::timeout(Duration::from_secs(3), async {
+                    while link.imbue_panel().details.is_none() {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await?;
+                assert!(link.imbue_slot(1));
+                let panel = link.imbue_panel();
+                assert!(panel.details_pending.is_none());
+                assert!(panel.can_apply());
+                let text = oteryn_client_ui::imbue::selected_detail_text(&panel);
+                assert!(text.contains("25"));
+                assert!(text.contains("i11466"));
+                drop(link);
+                task.await?;
+                Ok::<(), Error>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "Imbuement live route test thread panicked")?
 }
