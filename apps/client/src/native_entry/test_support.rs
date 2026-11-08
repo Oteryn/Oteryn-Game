@@ -80,11 +80,15 @@ impl Stack {
         admitted_frames: Vec<Vec<u8>>,
         empty: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        Self::start_variant(refusals, admitted_frames, empty, false)
+        Self::start_variant(refusals, admitted_frames, empty, false, false)
     }
 
     pub(super) fn start_with_challenge() -> Result<Self, Box<dyn std::error::Error>> {
-        Self::start_variant(Vec::new(), admitted_frames(), false, true)
+        Self::start_variant(Vec::new(), admitted_frames(), false, true, false)
+    }
+
+    pub(super) fn start_training() -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_variant(Vec::new(), admitted_frames(), false, false, true)
     }
 
     fn start_variant(
@@ -92,6 +96,7 @@ impl Stack {
         admitted_frames: Vec<Vec<u8>>,
         empty: bool,
         challenge: bool,
+        hold_joined: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let servers = ClientRuntime::new()?;
         let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
@@ -131,6 +136,10 @@ impl Stack {
                 if !admitted_frames.is_empty() {
                     for frame in &admitted_frames {
                         let _ = oteryn_session::write_frame(&mut stream, frame).await;
+                    }
+                    if hold_joined {
+                        while oteryn_session::read_frame(&mut stream).await.is_ok() {}
+                        continue;
                     }
                     // A restarted server drops the admitted stream immediately after joining.
                     let _ = stream.shutdown().await;
