@@ -115,3 +115,43 @@ fn carried_click_rejects_a_changed_projection_and_invalid_row() {
     panel.carried.clear();
     assert_eq!(carried_intent(&panel, &[item], 0), None);
 }
+
+#[test]
+fn filtered_sorted_stash_withdraws_the_displayed_server_handle() -> Result<(), &'static str> {
+    let mut panel = StashPanel {
+        selected: true,
+        query: "APPLE".into(),
+        sort: Sort::Stock,
+        ..Default::default()
+    };
+    for (handle, key, quantity) in [
+        (1, "item.apple", 2),
+        (2, "item.pear", 90),
+        (3, "item.apple.green", 7),
+    ] {
+        panel.rows.push(stash::StashRow {
+            handle: [handle; 16],
+            definition_key: key.into(),
+            definition_revision: "r1".into(),
+            quantity,
+            migration_required: false,
+        });
+    }
+    assert_eq!(visible_rows(&panel), vec![2, 0]);
+    let intent = visible_withdraw(&panel, 0, 3).ok_or("visible selection")?;
+    let command = request(&mut panel, intent).ok_or("withdraw")?;
+    assert_eq!(
+        stash::decode_stash_intent(&command.payload)
+            .map_err(|_| "wire")?
+            .action,
+        stash::StashAction::Withdraw {
+            row: [3; 16],
+            amount: 3
+        }
+    );
+    panel.pending = false;
+    panel.query = "no match".into();
+    assert!(visible_withdraw(&panel, 0, 1).is_none());
+    assert!(panel_text(&panel).contains("No matching items on this page"));
+    Ok(())
+}

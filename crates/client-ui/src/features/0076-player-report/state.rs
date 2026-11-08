@@ -6,6 +6,8 @@ pub enum Intent {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub bug: BugDraft,
+    pub violation_reviewed: Option<Vec<u8>>,
+    pub violation_preview: String,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,

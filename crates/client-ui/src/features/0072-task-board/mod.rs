@@ -9,6 +9,7 @@ pub use oteryn_client_runtime::task_board::{
     CommandStatus, TaskBoardCommand, TaskBoardResponse, task_board,
 };
 pub use protocol::{FullIntent, apply_full_result, full_request};
+pub use view::shop_offer_text;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {

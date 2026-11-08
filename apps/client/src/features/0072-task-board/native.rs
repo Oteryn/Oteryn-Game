@@ -77,7 +77,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             820,
-            700,
+            760,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -181,6 +181,16 @@ fn run(
                 WS_TABSTOP,
             );
         }
+        control(hwnd, "STATIC", "Shop offer", 0, [10, 635, 120, 24], 0);
+        let shop = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            204,
+            [140, 635, 650, 240],
+            CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
+        );
+        let mut shop_ids: Vec<u16> = Vec::new();
         let mut choices: Vec<String> = Vec::new();
         let mut held = None;
         loop {
@@ -231,7 +241,10 @@ fn run(
                         .zip(selected_race)
                         .map(|(v, key)| FullIntent::Unwanted(v, key.to_owned())),
                     UNLOCK => Some(FullIntent::UnlockList),
-                    BUY => selected.map(FullIntent::BuyShop),
+                    BUY => usize::try_from(SendMessageW(shop, CB_GETCURSEL, 0, 0))
+                        .ok()
+                        .and_then(|row| shop_ids.get(row).copied())
+                        .map(FullIntent::BuyShop),
                     _ => None,
                 };
                 let command = if let Some(intent) = intent {
@@ -278,6 +291,25 @@ fn run(
             }
             let rendered = panel_text(&mailbox.task_board).replace('\n', "\r\n");
             if held.as_ref() != Some(&rendered) {
+                let previous = usize::try_from(SendMessageW(shop, CB_GETCURSEL, 0, 0))
+                    .ok()
+                    .and_then(|row| shop_ids.get(row).copied());
+                SendMessageW(shop, CB_RESETCONTENT, 0, 0);
+                shop_ids.clear();
+                if let Some(reply) = &mailbox.task_board.weekly {
+                    for offer in &reply.shop {
+                        let label =
+                            oteryn_client_ui::task_board::shop_offer_text(offer, reply.points)
+                                .replace('\n', " — ");
+                        SendMessageW(shop, CB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                        shop_ids.push(offer.index);
+                    }
+                }
+                if let Some(row) =
+                    previous.and_then(|id| shop_ids.iter().position(|value| *value == id))
+                {
+                    SendMessageW(shop, CB_SETCURSEL, row, 0);
+                }
                 SetWindowTextW(text, wide(&rendered).as_ptr());
                 held = Some(rendered);
             }
