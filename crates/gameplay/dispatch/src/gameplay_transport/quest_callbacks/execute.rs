@@ -528,9 +528,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if !callback.has_personal_state()
-            && world_callbacks::world_change_requirement(&callback.key).is_some()
-        {
+        if stateless_observation_required(callback) {
             let Some(observed) = observed_world else {
                 return UseDisposition::Rejected;
             };
@@ -640,6 +638,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.active_generation
                         .and_then(|generation| generation.native_gameplay()),
                     reward_admission,
+                    &self.premium_coordinator,
                 )
                 .await;
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
