@@ -207,6 +207,7 @@ async fn check(
     catalogue: &QuestStateCatalogue,
     carried: &super::super::QuestCarriedUse,
 ) -> f::TestResult<bool> {
+    let before = peer_snapshot(h, peer).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query(
         "SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
@@ -225,7 +226,13 @@ async fn check(
     )
     .await
     .map_err(f::debug)?;
-    tx.rollback().await?;
+    // Commit the read-only transaction: rollback would conceal accidental writes.
+    tx.commit().await?;
+    assert_eq!(
+        peer_snapshot(h, peer).await?,
+        before,
+        "peer predicate must not mutate durable peer state"
+    );
     Ok(result)
 }
 
@@ -286,4 +293,12 @@ async fn commit_peer_death(
         "native death created its durable respawn obligation"
     );
     Ok(death.committed_character_revision)
+}
+
+async fn peer_snapshot(
+    h: &f::Harness,
+    peer: &QuestPeerUseProof,
+) -> f::TestResult<serde_json::Value> {
+    Ok(sqlx::query_scalar("SELECT jsonb_build_object('root',(SELECT to_jsonb(r) FROM game_character_roots r WHERE character_id=encode($1,'hex')::uuid),'session',(SELECT to_jsonb(s) FROM game_durability_reconnect_sessions s WHERE game_session_id=encode($2,'hex')::uuid),'states',COALESCE((SELECT jsonb_agg(to_jsonb(s) ORDER BY quest_key) FROM game_character_quest_states s WHERE character_id=encode($1,'hex')::uuid),'[]'::jsonb),'tracks',COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY track_key) FROM game_character_quest_tracks t WHERE character_id=encode($1,'hex')::uuid),'[]'::jsonb),'arrival',(SELECT to_jsonb(a) FROM game_character_pending_arrivals a WHERE character_id=encode($1,'hex')::uuid),'respawn',(SELECT to_jsonb(r) FROM game_character_pending_respawns r WHERE character_id=encode($1,'hex')::uuid))")
+        .bind(peer.fence.character_id.as_bytes().as_slice()).bind(peer.fence.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?)
 }
