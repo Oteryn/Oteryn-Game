@@ -167,3 +167,7 @@ mod tests {
         assert!(panel_text(&panel).contains("materials are missing"));
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_p21.rs"]
+mod e2e_p21;

@@ -119,3 +119,7 @@ mod tests {
         assert!(p.feedback.unwrap().contains("refused"));
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_p18.rs"]
+mod e2e_p18;
