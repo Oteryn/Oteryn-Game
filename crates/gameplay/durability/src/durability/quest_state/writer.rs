@@ -857,6 +857,12 @@ impl DurabilityRoot {
                         .map(|effect| effect.track.as_str())
                         .collect();
                     keys.extend(catalogue.completion_tracks(quest));
+                    if oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
+                        for key in oteryn_gameplay_quests::quest::shared_world_progress::hive_mission_tracks() {
+                            keys.push(key);
+                        }
+                    }
+
                     let grizzly_keys = grizzly_action.as_ref().map(|_| {
                         oteryn_gameplay_quests::quest::grizzly_adams::storage_keys()
                     }).unwrap_or_default();
@@ -890,6 +896,35 @@ impl DurabilityRoot {
                         }
                         stored.insert(key, row.try_get("value")?);
                     }
+                    // Resolve World authority before planning lifecycle-driven
+                    // Character resets. Receipt replay returned above this boundary.
+                    let shared_counter = if refusal.is_none() && (
+                        oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
+                        || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()) {
+                        let world=fence.runtime_scope.world_id();
+                        let epoch:String=sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
+                            .bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        let epoch=epoch.parse::<u64>().map_err(|_|DurabilityError::InvalidStoredState)?;
+                        let Some(counter_authority)=super::super::world_event::changes::counters::authorize(
+                            &mut tx,&recovery,&node,fence.runtime_scope,fence.scope_ownership_generation,epoch,
+                        ).await? else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        Some((epoch,counter_authority))
+                    } else { None };
+                    let counter_reset_plan = if let (Some(task),Some(_)) = (
+                        oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key), &shared_counter) {
+                        match super::super::world_event::changes::counters::shared_progress::first_in_hive_cycle(
+                            &mut tx,fence.runtime_scope,crate::foundation::CharacterId::decode(character.as_bytes()).map_err(|_|DurabilityError::InvalidStoredState)?,
+                        ).await? {
+                            Some(true) => match oteryn_gameplay_quests::quest::shared_world_progress::plan_hive_cycle_acceptance(&catalogue,&stored,task) {
+                                Ok(plan) => Some(plan),
+                                Err(refusal) => return Ok(Ok(QuestTransitionOutcome::Refused(refusal))),
+                            },
+                            Some(false) => None,
+                            None => return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))),
+                        }
+                    } else { None };
                     let refusal = if refusal.is_none() {
                         if let Some(collection) = &collection {
                             (!super::collection::admit(&mut tx, fence, &request, collection).await?)
@@ -937,13 +972,17 @@ impl DurabilityRoot {
                         } else { None }
                     } else { refusal };
                     // Reading all Grizzly inputs does not reserve capacity for untouched tracks.
-                    let written_keys: Vec<&str> = grizzly_plan.as_ref().map_or_else(
+                    let written_keys: Vec<&str> = if let Some(plan) = &counter_reset_plan {
+                        plan.iter().map(|change|change.track.as_str()).collect()
+                    } else if oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
+                        transition.effects.iter().map(|effect|effect.track.as_str()).collect()
+                    } else { grizzly_plan.as_ref().map_or_else(
                         || keys.iter().copied().filter(|key| reward_callback.as_ref().is_none_or(|c|
                             !c.requires.iter().any(|r| r.track == *key)))
                             .filter(|key| transition.effects.iter().any(|effect| effect.track.as_str() == *key)
                                 || !catalogue.completion_tracks(quest).any(|read| read == *key)).collect(),
                         |plan| plan.changes.iter().map(|change| change.track.as_str()).collect(),
-                    );
+                    ) };
                     let new_tracks = written_keys.iter().filter(|key| !stored.contains_key(**key)).count();
                     let refusal = match refusal {
                         Some(refusal) => Some(refusal),
@@ -1002,7 +1041,9 @@ impl DurabilityRoot {
                     } else { None };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
-                            || catalogue.evaluate_with_roll(transition, &stored, now, roll),
+                            || counter_reset_plan.as_ref().map_or_else(
+                                || catalogue.evaluate_with_roll(transition, &stored, now, roll),
+                                |plan| Ok(plan.clone())),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {
                             if xp_full {
@@ -1129,20 +1170,9 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
-                    if oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some() || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
-                        // Native object/NPC selection and the locked complete quest plan
-                        // precede shared credit. Refusal drops all input and quest writes.
-                        let world=fence.runtime_scope.world_id();
-                        let epoch:String=sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
-                            .bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-                        let epoch=epoch.parse::<u64>().map_err(|_|DurabilityError::InvalidStoredState)?;
-                        let Some(counter_authority)=super::super::world_event::changes::counters::authorize(
-                            &mut tx,&recovery,&node,fence.runtime_scope,fence.scope_ownership_generation,epoch,
-                        ).await? else {
-                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
-                        };
+                    if let Some((epoch,counter_authority)) = &shared_counter {
                         let credited=super::super::world_event::changes::counters::shared_progress::credit_completed(
-                            &mut tx,&counter_authority,fence.runtime_scope,crate::foundation::CharacterId::decode(character.as_bytes()).map_err(|_|DurabilityError::InvalidStoredState)?,epoch,
+                            &mut tx,counter_authority,fence.runtime_scope,crate::foundation::CharacterId::decode(character.as_bytes()).map_err(|_|DurabilityError::InvalidStoredState)?,*epoch,
                             &request.transition_key,request.cause,&changes,
                         ).await?;
                         if !matches!(credited,super::super::world_event::changes::counters::CreditOutcome::Applied {..}) {

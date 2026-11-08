@@ -193,17 +193,57 @@ pub const HIVE_QUEST: &str = "oteryn:quest.hive_native_shared";
 pub const DEEPLING_QUEST: &str = "oteryn:quest.deeplings_native_shared";
 pub const HIVE_OBJECTIVE_PREFIX: &str = "oteryn:quest-callback/hive-native-objective-";
 
+/// Source mission counters cleared together at the first acceptance of a new cycle.
+pub fn hive_mission_tracks() -> impl Iterator<Item = &'static str> {
+    BINDINGS
+        .iter()
+        .filter(|binding| matches!(binding.action, SharedAction::HiveTask(_)))
+        .map(|binding| binding.track)
+        .chain(ACTIVE_TRACKS)
+        .chain([HATCHLINGS_TRACK])
+}
+
+/// Build the physical receipt delta for first acceptance in a source cycle.
+/// The durable owner must independently prove that this is the current cycle's
+/// first acceptance. Private balances and timestamps are never part of this plan.
+pub fn plan_hive_cycle_acceptance(
+    catalogue: &super::QuestStateCatalogue,
+    stored: &std::collections::BTreeMap<String, i64>,
+    task: u8,
+) -> Result<Vec<QuestTrackChange>, super::QuestRefusal> {
+    let selected = ACTIVE_TRACKS
+        .get(usize::from(task))
+        .ok_or(super::QuestRefusal::StageMismatch)?;
+    let mut changes = Vec::new();
+    for key in hive_mission_tracks() {
+        let track = catalogue
+            .track(key)
+            .ok_or(super::QuestRefusal::StageMismatch)?;
+        let before = stored.get(key).copied().unwrap_or(track.initial);
+        let after = i64::from(key == *selected);
+        if track.quest != HIVE_QUEST
+            || track.initial != 0
+            || !(track.min..=track.max).contains(&before)
+            || !(track.min..=track.max).contains(&after)
+        {
+            return Err(super::QuestRefusal::OutOfRange);
+        }
+        if before != after || key == *selected {
+            changes.push(QuestTrackChange {
+                track: key.into(),
+                before,
+                after,
+            });
+        }
+    }
+    Ok(changes)
+}
+
 /// Mission tracks scoped to the counter cycle. Private Favour and scent
 /// timestamps remain persistent across cycles.
 pub fn counter_progress_track(quest: &str, track: &str) -> bool {
     match quest {
-        HIVE_QUEST => {
-            ACTIVE_TRACKS.contains(&track)
-                || track == HATCHLINGS_TRACK
-                || BINDINGS.iter().any(|binding| {
-                    matches!(binding.action, SharedAction::HiveTask(_)) && binding.track == track
-                })
-        }
+        HIVE_QUEST => hive_mission_tracks().any(|key| key == track),
         DEEPLING_QUEST => BINDINGS.iter().any(|binding| {
             !matches!(binding.action, SharedAction::HiveTask(_)) && binding.track == track
         }),

@@ -150,6 +150,58 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
             .catalogue()
             .clone(),
     );
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
+        hive_access,
+    };
+    let mission_tracks: Vec<_> = shared_world_progress::BINDINGS
+        .iter()
+        .take(6)
+        .map(|binding| binding.track)
+        .chain(shared_world_progress::ACTIVE_TRACKS)
+        .chain([shared_world_progress::HATCHLINGS_TRACK])
+        .collect();
+    let seed_key = "oteryn:quest-transition/qm55-prior-mission-progress";
+    let seed_tracks: Vec<_> = mission_tracks
+        .iter()
+        .copied()
+        .chain([hive_access::FAVOUR, hive_access::PURCHASED])
+        .collect();
+    let catalogue = std::sync::Arc::new(
+        QuestStateCatalogue::new(
+            "content-1",
+            seed_tracks
+                .iter()
+                .map(|key| catalogue.track(key).cloned().ok_or("source mission track"))
+                .collect::<Result<Vec<_>, _>>()?,
+            vec![
+                catalogue
+                    .transition(&shared_world_progress::accept_key(0))
+                    .cloned()
+                    .ok_or("native acceptance")?,
+                QuestTransition {
+                    key: seed_key.into(),
+                    quest: shared_world_progress::HIVE_QUEST.into(),
+                    effects: seed_tracks
+                        .iter()
+                        .map(|key| QuestEffect {
+                            track: (*key).into(),
+                            from: QuestComparison::Between(0, 1),
+                            effect: QuestEffectKind::Set(if *key == hive_access::FAVOUR {
+                                49
+                            } else {
+                                1
+                            }),
+                        })
+                        .collect(),
+                    completes: false,
+                    experience: None,
+                    world_change: None,
+                },
+            ],
+        )
+        .map_err(f::debug)?,
+    );
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h
         .root
@@ -200,6 +252,25 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
             "an unqualified delta cannot refresh cycle evidence"
         );
     }
+    let seed = QuestTransitionRequest {
+        transition_key: seed_key.into(),
+        cause: QuestCause::Command(CommandRef::new(
+            GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+            CommandId::new(10).map_err(f::debug)?,
+        )),
+    };
+    assert!(matches!(
+        h.root
+            .commit_character_quest_transition(
+                &authority,
+                &h.node,
+                f::fence(2)?,
+                seed,
+                catalogue.clone()
+            )
+            .await?,
+        QuestTransitionOutcome::Committed(_)
+    ));
     let history: (String, String) = sqlx::query_as("SELECT change_key,occurrence_generation::text FROM game_character_counter_quest_scopes LIMIT 2").fetch_one(&h.pool).await?;
     assert_eq!(history, ("hive_born".into(), "1".into()));
     sqlx::query("UPDATE game_world_change_counters SET state=jsonb_set(jsonb_set(state,'{stage}','3'),'{entered_epoch}','1') WHERE world_id=encode($1,'hex')::uuid AND change_key='hive_born'").bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
@@ -232,7 +303,7 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
                 .await?;
         assert_eq!(
             count,
-            i64::from(epoch < 6),
+            2 * i64::from(epoch < 6),
             "same source cycle survives saves; reset hides old personal progress"
         );
         let copy = h
@@ -250,6 +321,90 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
             "cycle projection does not rewrite canonical receipt history"
         );
     }
+    let restart_request = QuestTransitionRequest {
+        cause: QuestCause::Command(CommandRef::new(
+            GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+            CommandId::new(2).map_err(f::debug)?,
+        )),
+        ..request.clone()
+    };
+    let mut stale = f::fence(3)?;
+    stale.character_lease_generation += 1;
+    assert!(
+        h.root
+            .commit_character_quest_transition(
+                &authority,
+                &h.node,
+                stale,
+                restart_request.clone(),
+                catalogue.clone()
+            )
+            .await
+            .is_err()
+    );
+    assert_eq!(
+        h.root_revision().await?,
+        "3",
+        "stale Character lease cannot reset mission progress"
+    );
+    let restarted = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(3)?,
+            restart_request,
+            catalogue.clone(),
+        )
+        .await?;
+    assert!(
+        matches!(restarted, QuestTransitionOutcome::Committed(_)),
+        "new cycle must restart stale missions: {restarted:?}"
+    );
+    let restarted_copy = h
+        .root
+        .read_character_quest_state(&authority, character)
+        .await?;
+    let progress = restarted_copy
+        .counter_quest_progress(shared_world_progress::HIVE_QUEST)
+        .ok_or("restarted cycle missing")?;
+    assert_eq!(progress.occurrence_generation, 2);
+    for track in &mission_tracks {
+        let expected = i64::from(*track == shared_world_progress::ACTIVE_TRACKS[0]);
+        assert_eq!(
+            restarted_copy.tracks().get(*track),
+            Some(&expected),
+            "stale mission track {track}"
+        );
+        assert_eq!(progress.tracks.get(*track), Some(&expected));
+    }
+    assert_eq!(restarted_copy.tracks().get(hive_access::FAVOUR), Some(&49));
+    assert_eq!(
+        restarted_copy.tracks().get(hive_access::PURCHASED),
+        Some(&1)
+    );
+    let duplicate = QuestTransitionRequest {
+        cause: QuestCause::Command(CommandRef::new(
+            GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+            CommandId::new(3).map_err(f::debug)?,
+        )),
+        ..request.clone()
+    };
+    assert!(
+        matches!(
+            h.root
+                .commit_character_quest_transition(
+                    &authority,
+                    &h.node,
+                    f::fence(4)?,
+                    duplicate,
+                    catalogue.clone()
+                )
+                .await?,
+            QuestTransitionOutcome::Refused(_)
+        ),
+        "same-cycle acceptance cannot reset progress"
+    );
     assert!(matches!(
         h.root
             .commit_character_quest_transition(
@@ -266,7 +421,7 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(
-        count, 1,
+        count, 3,
         "replay must not rebind an old receipt to the new cycle"
     );
     let error =
