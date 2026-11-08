@@ -840,7 +840,12 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 mod tests {
     #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
-        let mut callback = super::load()?.into_iter().next().ok_or("callback")?;
+        let mut callback = super::parse(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))?
+        .into_iter()
+        .next()
+        .ok_or("callback")?;
         callback.storage = (0..16)
             .map(|i| super::Storage {
                 track: format!("oteryn:quest-progress/atomic/{i}"),

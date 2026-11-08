@@ -6,7 +6,10 @@ fn fail<E: std::fmt::Debug>(error: E) -> String {
 
 #[test]
 fn carried_peer_predicate_is_explicit_and_bounded() -> Result<(), String> {
-    let mut document: serde_json::Value = serde_json::from_str(DOCUMENTS[0]).map_err(fail)?;
+    let mut document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/shared-reward-callbacks.json"
+    ))
+    .map_err(fail)?;
     let row = document["callbacks"]
         .as_array_mut()
         .ok_or("callbacks array")?
@@ -90,7 +93,10 @@ fn m43_data_attachment_waits_for_separately_packaged_opening() -> Result<(), Str
 
 #[test]
 fn carried_creature_requires_exact_native_identity() -> Result<(), String> {
-    let mut document: serde_json::Value = serde_json::from_str(DOCUMENTS[0]).map_err(fail)?;
+    let mut document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/shared-reward-callbacks.json"
+    ))
+    .map_err(fail)?;
     let row = document["callbacks"]
         .as_array_mut()
         .ok_or("callbacks")?
