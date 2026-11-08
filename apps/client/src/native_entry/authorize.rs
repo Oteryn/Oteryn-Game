@@ -30,15 +30,15 @@ pub(super) async fn authorize(
         .await_code(&flow, cancellation.clone())
         .await
         .map_err(retry_login)?;
-    let token = client
-        .exchange_code(
-            code.expose().expose(),
-            pkce.verifier().expose(),
-            &redirect_uri,
-            cancellation.clone(),
-        )
-        .await
-        .map_err(login_rejected)?;
+    let token = super::challenge::exchange(
+        client,
+        config,
+        code.expose().expose(),
+        pkce.verifier().expose(),
+        &redirect_uri,
+        cancellation.clone(),
+    )
+    .await?;
     let platform = PlatformClientConfig::new(&config.platform_url)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     let directory_client = oteryn_platform_client::PlatformClient::new(platform)
