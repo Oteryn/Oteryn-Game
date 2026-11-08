@@ -22,7 +22,7 @@ pub async fn require(
     let Some(day) = super::load(tx, world, epoch).await? else {
         return Ok(false);
     };
-    if !oteryn_gameplay_world_change::owner::is_active(&day, key) {
+    if !super::super::change_active(tx, world, key).await? {
         return Ok(false);
     }
     Ok(match stage {
@@ -112,6 +112,9 @@ pub async fn hive_gate_permitted(
     let Some(day) = super::load(tx, world, epoch).await? else {
         return Ok(false);
     };
+    if day.reset_epoch == 0 {
+        return Ok(false);
+    }
     if day.counter_stages[oteryn_gameplay_world_change::counter::CounterKind::HiveBorn.index()]
         < gate.minimum_stage
     {
