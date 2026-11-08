@@ -10,6 +10,7 @@ pub(super) struct Options {
     npc: bool,
     floor: i16,
     own: Option<EntityRef>,
+    scale: u16,
 }
 impl Options {
     pub(super) fn new(
@@ -19,6 +20,7 @@ impl Options {
     ) -> Self {
         Self {
             health: preferences.creature_bars,
+            scale: preferences.interface_scale,
             own_marks: preferences.hud_marks_own,
             other_marks: preferences.hud_marks_other,
             npc: preferences.hud_npc_icons,
@@ -34,6 +36,7 @@ fn marks(
     atlas: &AtlasImage,
     at: [f32; 2],
     icon: &PartyIcon,
+    scale: f32,
 ) -> Result<(), BatchError> {
     for (offset, value, pattern) in [
         (0.0, icon.shield, [5_u8, 7, 2]),
@@ -54,8 +57,11 @@ fn marks(
                         batch,
                         view,
                         atlas,
-                        [at[0] + offset + col as f32 * 2.0, at[1] + row as f32 * 2.0],
-                        [2.0; 2],
+                        [
+                            at[0] + (offset + col as f32 * 2.0) * scale,
+                            at[1] + row as f32 * 2.0 * scale,
+                        ],
+                        [2.0 * scale; 2],
                         color,
                     )?;
                 }
@@ -74,6 +80,7 @@ pub(super) fn draw(
     icons: &[PartyIcon],
     options: Options,
 ) -> Result<(), BatchError> {
+    let scale = f32::from(options.scale) / 100.0;
     for entity in entities {
         let tile = TileCoord::new(entity.position.x, entity.position.y);
         if entity.position.floor != options.floor || !view.contains(tile) {
@@ -83,14 +90,14 @@ pub(super) fn draw(
         if options.health
             && let EntityDetail::Actor { health_percent, .. } = entity.detail
         {
-            let at = [x + 2.0, y + view.tile_px() as f32 - 5.0];
-            let width = (view.tile_px() as f32 - 4.0).max(1.0);
+            let at = [x + 2.0 * scale, y + view.tile_px() as f32 - 5.0 * scale];
+            let width = (view.tile_px() as f32 - 4.0 * scale).max(1.0);
             pixel(
                 batch,
                 view,
                 atlas,
                 at,
-                [width, 3.0],
+                [width, 3.0 * scale],
                 PresentationColor::DarkRed,
             )?;
             pixel(
@@ -98,7 +105,10 @@ pub(super) fn draw(
                 view,
                 atlas,
                 at,
-                [width * f32::from(health_percent.min(100)) / 100.0, 3.0],
+                [
+                    width * f32::from(health_percent.min(100)) / 100.0,
+                    3.0 * scale,
+                ],
                 PresentationColor::LightGreen,
             )?;
         }
@@ -106,7 +116,7 @@ pub(super) fn draw(
             && Some(entity.entity) != options.own
             && let Some(icon) = icons.iter().find(|icon| icon.entity == entity.entity)
         {
-            marks(batch, view, atlas, [x, y], icon)?;
+            marks(batch, view, atlas, [x, y], icon, scale)?;
         }
         if options.npc && entity.kind == EntityKind::Npc {
             for (row, bits) in [7_u8, 5, 7, 2].into_iter().enumerate() {
@@ -117,10 +127,10 @@ pub(super) fn draw(
                             view,
                             atlas,
                             [
-                                x + view.tile_px() as f32 - 8.0 + col as f32 * 2.0,
-                                y + row as f32 * 2.0,
+                                x + view.tile_px() as f32 - 8.0 * scale + col as f32 * 2.0 * scale,
+                                y + row as f32 * 2.0 * scale,
                             ],
-                            [2.0; 2],
+                            [2.0 * scale; 2],
                             PresentationColor::SkyBlue,
                         )?;
                     }
@@ -132,7 +142,7 @@ pub(super) fn draw(
         && let Some(own_ref) = options.own
         && let Some(icon) = icons.iter().find(|icon| icon.entity == own_ref)
     {
-        marks(batch, view, atlas, view.tile_to_screen(own), icon)?;
+        marks(batch, view, atlas, view.tile_to_screen(own), icon, scale)?;
     }
     Ok(())
 }

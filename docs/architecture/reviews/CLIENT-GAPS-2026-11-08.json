@@ -270,10 +270,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / General: language/scale, cursor i tooltips",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Skala mapy i pole języka są; brak pełnej skali UI, kursora i tooltip controls.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/native_tooltips.rs:19 + tooltips_use_visible_server_names_delay_and_generation + interface_scale_changes_hud_geometry_and_rejects_invalid_values; Cursor, HUD scaling and enabled/delayed native tooltips are wired; scaling all native panels remains."
+  "evidence": "apps/client/src/features/local-reference-preferences/native_ui_scale.rs:175 + interface_scale_projects_panels_and_live_labels_without_zooming_the_map + tooltips_use_visible_server_names_delay_and_generation; UI scale reaches native panels, common typography, tooltips and scene HUD labels without changing map zoom; panels fit the monitor and cursor shape is configurable."
  },
  {
   "id": "T051",

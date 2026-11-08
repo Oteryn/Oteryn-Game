@@ -18,6 +18,9 @@ mod store;
 mod sync;
 #[path = "tooltips.rs"]
 mod tooltips;
+#[path = "ui_geometry.rs"]
+mod ui_geometry;
+pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
 pub use tooltips::{HoverTooltip, TooltipTarget};
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use store::PreferenceStore;
@@ -316,6 +319,7 @@ impl PlayView {
         let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
             .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
             .max(1);
+        self.scene.set_label_scale(self.preferences().interface_scale);
         self.scene.set_tile_px(pixels.min(fit))
     }
 

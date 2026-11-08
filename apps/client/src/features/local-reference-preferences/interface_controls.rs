@@ -49,7 +49,7 @@ impl InterfaceControls {
             let label = control(
                 hwnd,
                 "STATIC",
-                "HUD scale % (80–200)",
+                "UI scale % (80–200; panels fit the screen)",
                 0,
                 [10, 185, 300, 26],
                 0,
@@ -112,7 +112,7 @@ impl InterfaceControls {
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
             preferences.interface_scale = text(self.scale)
                 .parse()
-                .map_err(|_| "Enter a HUD scale from 80 to 200%".to_owned())?;
+                .map_err(|_| "Enter a UI scale from 80 to 200%".to_owned())?;
             preferences.cursor_crosshair = SendMessageW(self.cursor, BM_GETCHECK, 0, 0) == 1;
             Ok(())
         }

@@ -3,6 +3,9 @@ use super::*;
 use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
+    pub(crate) fn set_label_scale(&mut self, percentage: u16) {
+        self.label_scale = percentage;
+    }
     pub(crate) fn own_identity(&self) -> Option<[u8; 16]> {
         self.own_identity
     }

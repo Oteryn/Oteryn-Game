@@ -23,7 +23,14 @@ impl NativeTooltip {
             info
         }
     }
-    pub(super) fn refresh(&mut self, parent: HWND, view: &PlayView, enabled: bool, delay_ms: u16) {
+    pub(super) fn refresh(
+        &mut self,
+        parent: HWND,
+        view: &PlayView,
+        enabled: bool,
+        delay_ms: u16,
+        font: Option<usize>,
+    ) {
         unsafe {
             let mut cursor: POINT = std::mem::zeroed();
             let valid =
@@ -80,6 +87,9 @@ impl NativeTooltip {
             } else {
                 let info = self.info();
                 SendMessageW(self.hwnd, TTM_UPDATETIPTEXTW, 0, &info as *const _ as isize);
+            }
+            if let Some(font) = font {
+                SendMessageW(self.hwnd, WM_SETFONT, font, 1);
             }
             drop(old);
             let position =
