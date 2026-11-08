@@ -415,3 +415,12 @@ production fix. Preserve this existing guard; ordinary non-native mission/reset
 writes retain their revision barrier. The original review missed this earlier
 filter before the track-upsert loop. Retain the new regression; do not apply
 /tmp/qengine2-apply-burst-fix.py (redundant and unnecessary).
+
+2026-11-08 world delivery decision: reuse the qualified peer read-only per-player
+world USE gift contract. Preserve shared object revisions; use owned quest guards
+and complete MINT in one type2 transaction. Synthetic template provenance is
+inherited from the retained Behemoth callback solely for parser coverage; no
+Behemoth or Draccoon acquisition lore is authored or qualified by the fixture.
+Only new migration1553 is copied/adapted; do not duplicate peer1225/1101 or the
+already-owned1552 carried-input extension. Peer original world gift fields were
+moved into effects by later main merges; use the current effects shape.

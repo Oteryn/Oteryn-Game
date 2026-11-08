@@ -1119,3 +1119,19 @@ completion remains pending under PREPUSH-2 budget exception; no full-suite claim
 Continue world item delivery using peer653feac45 and current effects shape;
 explicit native admission + world PG qualification remain for68-binding feature,
 then definition_ready claim/use42 and queued requests. Own packet44/66 unchanged.
+
+World-delivery WIP after e6bacdda6 kill qualification. Fresh peer search found
+modern questpc3 effects.item_reward and reused its bounded validation/USE proof
+plus questpc7 world MINT participant. No peer quest data copied. Actual PG RED
+49.876s, marker49.823465016s, unknown item_reward field. Runtime port is applied:
+new optional effects field, shared ItemReward validation, world MINT participant
+in new files, cursor/root entrypoints, type2 receipt linkage, read-only map-source
+handling and migration1553 (preserving1552 carried guards). Quest292units PASS
+22.34s. First compile error was moved child-module QuestCause path; fixed.
+Workspace2/clippy/gen checks run in/tmp/qengine2-world-*.log. Test fixture now
+uses the peer's read-only source mode and explicitly checks unchanged source
+revision; added full-backpack rollback case. PG GREEN is NOT yet run. Publish
+compiling WIP under PREPUSH-2 cadence exception when mandatory checks pass, then
+start focused world normal/full + retained authored NPC/carried PG AFTER push.
+Keep HEAD stable during build and cases. Packet44/66 unchanged; no ENGINE-DONE
+world delivery until actual PG GREEN. New source guide QUEST-WORLD-ITEM-DELIVERY.md.

@@ -234,6 +234,31 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .minimum_level
                 .is_some_and(|level| level == 0 || callback.storage.is_empty())
+            || callback.effects.item_reward.as_ref().is_some_and(|reward| {
+                !super::reward_callbacks::valid_item_reward(reward)
+                    || callback.trigger != Trigger::Use
+                    || callback.storage.is_empty()
+                    || callback
+                        .storage
+                        .iter()
+                        .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                    || callback.reversible
+                    || callback.lever.is_some()
+                    || !callback.passages.is_empty()
+                    || callback.teleport.is_some()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.experience.is_some()
+                    || callback.effects.outfit_reward.is_some()
+                    || callback.effects.transform.is_some()
+                    || callback.effects.facing.is_some()
+                    || callback.effects.magic.is_some()
+                    || callback.effects.portals.is_some()
+                    || callback.effects.item_cycle.is_some()
+                    || callback.effects.encounter.is_some()
+            })
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience

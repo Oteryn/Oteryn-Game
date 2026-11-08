@@ -265,6 +265,25 @@ pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), Str
     parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }
 
+pub(crate) fn valid_item_reward(reward: &ItemReward) -> bool {
+    let item = |key: &str, count: u16| {
+        key.len() <= 256
+            && key.strip_prefix("oteryn:item.").is_some_and(|tail| {
+                !tail.is_empty()
+                    && tail.bytes().all(|b| {
+                        b.is_ascii_lowercase() || b.is_ascii_digit() || b"._/:-".contains(&b)
+                    })
+            })
+            && (1..=100).contains(&count)
+    };
+    item(&reward.item, reward.count)
+        && reward.contents.len() <= 20
+        && reward
+            .contents
+            .iter()
+            .all(|entry| item(&entry.item, entry.count))
+}
+
 fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     parse_document(text).map(|document| document.callbacks)
 }
@@ -281,8 +300,6 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     })
             })
     };
-    let item =
-        |item: &str, count| slug(item, "oteryn:item.", b"._/:-", 256) && (1..=100).contains(&count);
     if document.schema != 1 || document.callbacks.len() > 256 || document.tracks.len() > 256 {
         return Err("reward callback bounds".into());
     }
@@ -479,11 +496,9 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.take
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
-            || c.give.as_ref().is_some_and(|r| {
-                !item(&r.item, r.count)
-                    || r.contents.len() > 20
-                    || r.contents.iter().any(|s| !item(&s.item, s.count))
-            })
+            || c.give
+                .as_ref()
+                .is_some_and(|reward| !valid_item_reward(reward))
             || (!c.outfits.is_empty() && c.outfit.is_some())
             || c.outfits.len() > 4
             || c.cosmetic_targets()

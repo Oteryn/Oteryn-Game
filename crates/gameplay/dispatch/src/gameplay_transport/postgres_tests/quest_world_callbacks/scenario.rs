@@ -47,6 +47,9 @@ fn scenario_case(
     } else {
         name.strip_suffix("-expiry").unwrap_or(name)
     })?;
+    if matches!(name,"qengine-rewards-authored-world-rewards" | "qengine-rewards-authored-world-rewards-full") {
+        callback = super::super::authored_world_rewards::placeholder(trigger)?;
+    }
     if name.ends_with("-expiry") {
         callback
             .effects

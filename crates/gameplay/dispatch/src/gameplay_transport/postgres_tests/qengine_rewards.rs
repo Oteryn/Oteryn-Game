@@ -749,6 +749,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if matches!(name,"qengine-rewards-authored-world-rewards" | "qengine-rewards-authored-world-rewards-full") {
+        return super::authored_world_rewards::exercise(owner, admitted, h, name.ends_with("-full")).await;
+    }
     if matches!(name,"qengine-rewards-authored-kills" | "qengine-rewards-authored-kills-burst") {
         return super::authored_kill_bindings::exercise(owner, admitted, h, name.ends_with("-burst")).await;
     }

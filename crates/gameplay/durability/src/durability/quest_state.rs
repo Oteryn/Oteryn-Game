@@ -554,6 +554,7 @@ mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
+mod world_rewards;
 #[path = "quest_state/wrath_sleeping_dragon.rs"]
 mod wrath_sleeping_dragon;
 

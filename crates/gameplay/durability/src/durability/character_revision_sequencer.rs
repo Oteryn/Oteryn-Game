@@ -38,6 +38,7 @@ mod npc_marriage;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
+mod world_rewards;
 #[cfg(test)]
 mod writer_registration_tests;
 

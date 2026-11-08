@@ -14,6 +14,8 @@ pub enum Facing {
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,

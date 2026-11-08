@@ -179,7 +179,7 @@ impl DurabilityRoot {
         }
         let reward_callback = reward_callbacks.into_iter()
             .find(|c| c.key == request.transition_key);
-        if reward_callback.is_some() != reward_admission.is_some()
+        if (context.is_none() && reward_callback.is_some() != reward_admission.is_some())
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -239,6 +239,10 @@ impl DurabilityRoot {
         } else {
             None
         };
+        if context.is_some() && (callback.as_ref().is_some_and(|c|c.effects.item_reward.is_some()) != reward_admission.is_some()
+            || reward_admission.is_some_and(|a|a.fee_payment.is_some() || a.actor_conditions.is_some() || a.carried_use.is_some())) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let lionheart = super::hero_of_bounac::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
@@ -274,7 +278,7 @@ impl DurabilityRoot {
                                 || c.minimum_level.is_some()
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
-                                || c.native_rule.is_some())
+                                || c.native_rule.is_some() || c.effects.item_reward.is_some())
                     }))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -381,6 +385,10 @@ impl DurabilityRoot {
                     // The MINT cause precedes the Character root, matching the item owner.
                     if reward_callback.as_ref().is_some_and(|c|c.give.is_some())
                         && let QuestCause::Command(command)=request.cause {
+                        super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
+                    }
+                    if callback.as_ref().is_some_and(|c|c.effects.item_reward.is_some())
+                        && let QuestCause::Use(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
                     if let Some(row) = load_receipt(&mut tx, character, &request).await? {
@@ -727,6 +735,9 @@ impl DurabilityRoot {
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
+                    { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if let (Some(world),Some(admission),Some(tuple))=(&callback,*reward_admission,reward_tuple)
+                        && !super::super::reward_claim_mint::quest::give_world(&mut tx,tuple,&node,fence,&request,world,admission).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let Some(world) = &callback
                         && let Some(reward) = &world.effects.outfit_reward

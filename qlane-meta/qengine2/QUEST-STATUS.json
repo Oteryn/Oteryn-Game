@@ -3540,5 +3540,34 @@
       ],
       "log": "/tmp/qengine2-pubproj-own-pg.log"
     }
+  },
+  "world_item_delivery_slice": {
+    "status": "IN_PROGRESS",
+    "scope": "generic read-only world USE item delivery; no whole-quest data authored",
+    "reuse": [
+      "questpc3 6146ee945bc2e01b5c7e751e6499f670062ad03a",
+      "questpc7 653feac452d8dbb2cf03edbfc733a1bf59bd77d7"
+    ],
+    "red": {
+      "test": "authored_world_use_item_delivery_is_atomic_and_replay_bound_postgres",
+      "seconds": 49.876,
+      "marker_seconds": 49.823465016,
+      "error": "unknown field item_reward in CallbackEffects",
+      "log": "/tmp/qengine2-authored-world-red.log"
+    },
+    "quest_units": {
+      "passed": 292,
+      "failed": 0,
+      "seconds": 22.34,
+      "log": "/tmp/qengine2-world-quest-units.log"
+    },
+    "migration": "1553_quest_world_reward_participants.sql",
+    "pending": [
+      "workspace/clippy/fmt/generation publication gates",
+      "own PG GREEN normal/replay and full-backpack refusal",
+      "retained authored NPC/carried exchange PG regression",
+      "full dispatch/durability crate unit suites under PREPUSH-2 budget exception"
+    ],
+    "whole_quest_qualification_changed": false
   }
 }

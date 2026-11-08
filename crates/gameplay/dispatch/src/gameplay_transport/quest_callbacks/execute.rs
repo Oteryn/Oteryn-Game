@@ -268,8 +268,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 return UseDisposition::Rejected;
             };
-            let outcome = slot
-                .commit_world_callback(
+            let outcome = if callback.effects.item_reward.is_some() {
+                let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                    return UseDisposition::Rejected;
+                };
+                let weights =
+                    crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+                        .with_wheel(self.premium_coordinator);
+                slot.commit_world_reward(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: callback.key.clone(),
+                        cause,
+                    },
+                    std::sync::Arc::clone(catalogue),
+                    permit,
+                    context,
+                    crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        native,
+                        weights: &weights,
+                        fee_payment: None,
+                        actor_conditions: None,
+                        carried_use: None,
+                    },
+                )
+                .await
+            } else {
+                slot.commit_world_callback(
                     self.root,
                     self.character,
                     self.holder,
@@ -284,7 +312,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.active_generation
                         .and_then(|generation| generation.native_gameplay()),
                 )
-                .await;
+                .await
+            };
+            if callback.effects.item_reward.is_some()
+                && matches!(
+                    &outcome,
+                    Ok(QuestTransitionOutcome::Committed(_)
+                        | QuestTransitionOutcome::AlreadyCommitted(_))
+                )
+            {
+                self.states.loop_ground.invalidate();
+            }
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
             match outcome {
                 Ok(
@@ -346,15 +384,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        if !map.facts.apply_quest_callback(
-            key,
-            expected_revision,
-            after,
-            &passages,
-            &replacements,
-            close,
-            projection.as_ref(),
-        ) {
+        if callback.effects.item_reward.is_none()
+            && !map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &passages,
+                &replacements,
+                close,
+                projection.as_ref(),
+            )
+        {
             return UseDisposition::Rejected;
         }
         if callback

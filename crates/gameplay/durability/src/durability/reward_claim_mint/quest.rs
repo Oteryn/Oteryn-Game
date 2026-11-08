@@ -1,4 +1,7 @@
 //! Quest exchanges borrow the existing complete backpack MINT and custody owners.
+mod world_rewards;
+pub(crate) use world_rewards::give_world;
+
 use super::*;
 use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
 use crate::durability::account_achievement::{
@@ -369,7 +372,7 @@ pub(crate) async fn apply(
     }
     let minted = if let Some(reward) = &callback.give {
         let Some(transaction) =
-            mint(tx, tuple, node, fence, command, callback, reward, admission).await?
+            mint(tx, tuple, node, fence, command, &callback.key, callback.is_paid_exchange(), reward, admission).await?
         else {
             return Ok(false);
         };
@@ -421,7 +424,8 @@ async fn mint(
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
-    callback: &RewardCallback,
+    source_key: &str,
+    counted: bool,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
@@ -462,14 +466,14 @@ async fn mint(
     // The MINT owner still permits each claim exactly once. A repeatable paid
     // exchange supplies its own stable per-command occurrence, not a bypass of
     // the claim ledger or its pending/reservation checks.
-    let claim_key = if callback.is_paid_exchange() {
+    let claim_key = if counted {
         let digest = Sha256::new()
             .chain_update(b"oteryn:quest-exchange:v1\0")
             .chain_update(fence.character_id.as_bytes())
             .chain_update(command.game_session_id().as_bytes())
             .chain_update(command.command_id().get().to_string().as_bytes())
             .chain_update(b":")
-            .chain_update(callback.key.as_bytes())
+            .chain_update(source_key.as_bytes())
             .finalize();
         format!(
             "oteryn:quest-exchange/{}",
@@ -479,7 +483,7 @@ async fn mint(
                 .collect::<String>()
         )
     } else {
-        callback.key.clone()
+        source_key.to_owned()
     };
     let request = RewardClaimMintRequest {
         additional_items: Vec::new(),
@@ -489,7 +493,7 @@ async fn mint(
             production_key: claim_key,
             revision_ref: content_revision.clone(),
         },
-        source_placement: callback.key.clone(),
+        source_placement: source_key.to_owned(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
         contents: reward
