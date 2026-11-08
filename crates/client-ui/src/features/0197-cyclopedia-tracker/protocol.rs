@@ -57,13 +57,16 @@ pub fn apply_snapshot(panel: &mut CyclopediaTrackerPanel, payload: &[u8]) -> boo
     let snapshot =
         if let Some((bestiary, bosstiary)) = cyclopedia_tracker::decode_domain_snapshot(payload) {
             panel.bestiary_snapshot = Some(bestiary.clone());
+            panel.bosstiary_snapshot = Some(bosstiary.clone());
             Some(if panel.boss { bosstiary } else { bestiary })
         } else {
             cyclopedia_tracker::decode_snapshot(payload)
         };
     match snapshot {
         Some(value) => {
-            if !value.boss {
+            if value.boss {
+                panel.bosstiary_snapshot = Some(value.clone());
+            } else {
                 panel.bestiary_snapshot = Some(value.clone());
             }
             panel.snapshot = Some(value);

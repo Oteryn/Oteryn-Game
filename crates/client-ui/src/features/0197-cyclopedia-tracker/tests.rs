@@ -48,3 +48,40 @@ fn bestiary_widget_keeps_its_snapshot_when_a_boss_update_arrives_and_filters_sor
     assert_eq!(bestiary_rows(&p)[0].kill_count, 2);
     Ok(())
 }
+
+#[test]
+fn bosstiary_widget_has_independent_config_and_survives_bestiary_updates()
+-> Result<(), &'static str> {
+    let mut p = CyclopediaTrackerPanel::default();
+    let bestiary = TrackerSnapshot {
+        boss: false,
+        entries: vec![entry("oteryn:creature.rat", 10, false)],
+    };
+    let bosses = TrackerSnapshot {
+        boss: true,
+        entries: vec![
+            entry("oteryn:creature.boss_a", 20, true),
+            entry("oteryn:creature.boss_b", 5, false),
+        ],
+    };
+    assert!(apply_snapshot(
+        &mut p,
+        &encode_domain_snapshot(&bestiary, &bosses).ok_or("encode")?
+    ));
+    assert!(apply_snapshot(
+        &mut p,
+        &encode_snapshot(&bestiary).ok_or("encode")?
+    ));
+    p.boss_hide_completed = true;
+    p.boss_sort = TrackerSort::Kills;
+    assert_eq!(tracker_rows(&p, true).len(), 1);
+    assert_eq!(
+        tracker_rows(&p, true)[0].creature_key,
+        "oteryn:creature.boss_b"
+    );
+    assert_eq!(bestiary_rows(&p).len(), 1);
+    p.boss_search = "missing".into();
+    assert!(tracker_rows(&p, true).is_empty());
+    assert_eq!(bestiary_rows(&p).len(), 1);
+    Ok(())
+}

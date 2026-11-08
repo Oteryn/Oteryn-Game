@@ -33,19 +33,39 @@ pub fn panel_text(panel: &CyclopediaTrackerPanel) -> String {
 pub fn bestiary_rows(
     panel: &CyclopediaTrackerPanel,
 ) -> Vec<&oteryn_client_runtime::cyclopedia_tracker::TrackerEntry> {
+    tracker_rows(panel, false)
+}
+
+pub fn tracker_rows(
+    panel: &CyclopediaTrackerPanel,
+    boss: bool,
+) -> Vec<&oteryn_client_runtime::cyclopedia_tracker::TrackerEntry> {
     use super::TrackerSort;
-    let search = panel.search.to_lowercase();
-    let mut rows: Vec<_> = panel
-        .bestiary_snapshot
+    let (snapshot, search, sort, hide_completed) = if boss {
+        (
+            &panel.bosstiary_snapshot,
+            &panel.boss_search,
+            panel.boss_sort,
+            panel.boss_hide_completed,
+        )
+    } else {
+        (
+            &panel.bestiary_snapshot,
+            &panel.search,
+            panel.sort,
+            panel.hide_completed,
+        )
+    };
+    let search = search.to_lowercase();
+    let mut rows: Vec<_> = snapshot
         .iter()
         .flat_map(|s| &s.entries)
         .filter(|e| {
-            (!panel.hide_completed || !e.completed)
-                && e.creature_key.to_lowercase().contains(&search)
+            (!hide_completed || !e.completed) && e.creature_key.to_lowercase().contains(&search)
         })
         .collect();
     rows.sort_by(|a, b| {
-        let order = match panel.sort {
+        let order = match sort {
             TrackerSort::Name => std::cmp::Ordering::Equal,
             TrackerSort::Kills => b.kill_count.cmp(&a.kill_count),
             TrackerSort::Remaining => a.thresholds[2]

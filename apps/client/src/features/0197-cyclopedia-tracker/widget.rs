@@ -1,9 +1,9 @@
-//! Dedicated Bestiary widget. HWNDs and action storage belong to its window thread.
+//! Dedicated Bestiary and Bosstiary widgets. HWNDs and action storage belong to its window thread.
 #![allow(unsafe_code)]
 use super::{ctl, text, w};
 use crate::combat_input::PlayCommand;
 use crate::play::mailbox::{Mailbox, lock};
-use oteryn_client_ui::cyclopedia_tracker::{Intent, TrackerSort, bestiary_rows};
+use oteryn_client_ui::cyclopedia_tracker::{Intent, TrackerSort, tracker_rows};
 use std::ptr::{null, null_mut};
 use std::sync::{Mutex, Weak};
 use tokio::sync::mpsc::UnboundedSender;
@@ -27,33 +27,50 @@ pub(super) unsafe extern "system" fn proc(hwnd: HWND, msg: u32, wp: WPARAM, lp: 
     }
 }
 
-pub(super) fn open(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
+pub(super) fn open(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
     let Some(shared) = weak.upgrade() else { return };
     {
         let mut m = lock(&shared);
-        if m.cyclopedia_tracker.bestiary_widget_open {
+        if if boss {
+            m.cyclopedia_tracker.bosstiary_widget_open
+        } else {
+            m.cyclopedia_tracker.bestiary_widget_open
+        } {
             return;
         }
-        m.cyclopedia_tracker.bestiary_widget_open = true;
+        if boss {
+            m.cyclopedia_tracker.bosstiary_widget_open = true;
+        } else {
+            m.cyclopedia_tracker.bestiary_widget_open = true;
+        }
     }
     let failed = weak.clone();
     if std::thread::Builder::new()
         .name("bestiary-widget".into())
-        .spawn(move || run(weak, commands))
+        .spawn(move || run(weak, commands, boss))
         .is_err()
         && let Some(shared) = failed.upgrade()
     {
-        lock(&shared).cyclopedia_tracker.bestiary_widget_open = false;
+        if boss {
+            lock(&shared).cyclopedia_tracker.bosstiary_widget_open = false;
+        } else {
+            lock(&shared).cyclopedia_tracker.bestiary_widget_open = false;
+        }
     }
 }
 
-fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
+fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
     // SAFETY: all handles, pointers and message dispatch remain on this thread.
     unsafe {
         let h = CreateWindowExW(
             0,
             w("STATIC").as_ptr(),
-            w("Bestiary tracker").as_ptr(),
+            w(if boss {
+                "Bosstiary tracker"
+            } else {
+                "Bestiary tracker"
+            })
+            .as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -65,7 +82,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             null(),
         );
         if h.is_null() {
-            close(&weak);
+            close(&weak, boss);
             return;
         }
         let mut actions = Box::<Actions>::default();
@@ -135,23 +152,44 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             .any(|h| h.is_null())
         {
             DestroyWindow(h);
-            close(&weak);
+            close(&weak, boss);
             return;
         }
         if let Some(shared) = weak.upgrade() {
             let initial = lock(&shared).cyclopedia_tracker.clone();
-            SetWindowTextW(search, w(&initial.search).as_ptr());
+            SetWindowTextW(
+                search,
+                w(if boss {
+                    &initial.boss_search
+                } else {
+                    &initial.search
+                })
+                .as_ptr(),
+            );
             SendMessageW(
                 sort,
                 CB_SETCURSEL,
-                match initial.sort {
+                match if boss {
+                    initial.boss_sort
+                } else {
+                    initial.sort
+                } {
                     TrackerSort::Name => 0,
                     TrackerSort::Kills => 1,
                     TrackerSort::Remaining => 2,
                 },
                 0,
             );
-            SendMessageW(hide, BM_SETCHECK, usize::from(initial.hide_completed), 0);
+            SendMessageW(
+                hide,
+                BM_SETCHECK,
+                usize::from(if boss {
+                    initial.boss_hide_completed
+                } else {
+                    initial.hide_completed
+                }),
+                0,
+            );
         }
         let mut held = None;
         let mut initial = true;
@@ -179,11 +217,21 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 let p = &mut m.cyclopedia_tracker;
                 // Resolve selection against exactly the rows currently displayed.
                 let selected_key = held.as_ref().and_then(|old| {
-                    selected.and_then(|i| bestiary_rows(old).get(i).map(|e| e.creature_key.clone()))
+                    selected.and_then(|i| {
+                        tracker_rows(old, boss)
+                            .get(i)
+                            .map(|e| e.creature_key.clone())
+                    })
                 });
-                p.search = search_text;
-                p.sort = chosen_sort;
-                p.hide_completed = hide_completed;
+                if boss {
+                    p.boss_search = search_text;
+                    p.boss_sort = chosen_sort;
+                    p.boss_hide_completed = hide_completed;
+                } else {
+                    p.search = search_text;
+                    p.sort = chosen_sort;
+                    p.hide_completed = hide_completed;
+                }
                 if initial && !p.pending {
                     actions.0.push(208);
                     initial = false;
@@ -205,14 +253,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                         208 => Intent::Read,
                         _ => continue,
                     };
-                    m.cyclopedia_tracker.boss = false;
+                    m.cyclopedia_tracker.boss = boss;
                     super::super::super::input::enqueue(&mut m, &commands, intent);
                 }
                 m.cyclopedia_tracker.clone()
             };
             if held.as_ref() != Some(&panel) {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
-                for row in bestiary_rows(&panel) {
+                for row in tracker_rows(&panel, boss) {
                     let goal = row.thresholds[2];
                     let percent = if goal == 0 {
                         0
@@ -252,11 +300,15 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         if IsWindow(h) != 0 {
             DestroyWindow(h);
         }
-        close(&weak);
+        close(&weak, boss);
     }
 }
-fn close(weak: &WeakMailbox) {
+fn close(weak: &WeakMailbox, boss: bool) {
     if let Some(shared) = weak.upgrade() {
-        lock(&shared).cyclopedia_tracker.bestiary_widget_open = false;
+        if boss {
+            lock(&shared).cyclopedia_tracker.bosstiary_widget_open = false;
+        } else {
+            lock(&shared).cyclopedia_tracker.bestiary_widget_open = false;
+        }
     }
 }

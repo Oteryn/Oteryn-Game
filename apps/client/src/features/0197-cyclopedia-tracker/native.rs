@@ -36,7 +36,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
-                620,
+                740,
                 430,
                 null_mut(),
                 null_mut(),
@@ -78,7 +78,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             {
                 ctl(h, "BUTTON", t, *id, [10 + i as i32 * 110, 45, 100, 28], 0);
             }
-            ctl(h, "BUTTON", "Bestiary widget", 107, [350, 45, 170, 28], 0);
+            ctl(h, "BUTTON", "Bestiary widget", 107, [340, 45, 160, 28], 0);
+            ctl(h, "BUTTON", "Bosstiary widget", 108, [510, 45, 160, 28], 0);
             let out = ctl(
                 h,
                 "EDIT",
@@ -98,8 +99,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 }
                 let Some(s) = weak.upgrade() else { break };
                 for id in actions.0.drain(..) {
-                    if id == 107 {
-                        widget::open(weak.clone(), commands.clone());
+                    if matches!(id, 107 | 108) {
+                        widget::open(weak.clone(), commands.clone(), id == 108);
                     }
                     if matches!(id, 103..=105) {
                         let key_text = text(key);
