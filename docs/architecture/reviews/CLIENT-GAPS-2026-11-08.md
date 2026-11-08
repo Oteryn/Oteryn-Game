@@ -176,7 +176,7 @@ Zasady przeciw dublowaniu:
 | T137 | House | Hireling jobs/name/sex/outfit config | PARTIAL | Podgląd nazwy/płci, jobów i oczekującego outfitu jest; brak wspólnego pełnego edytora name/sex/jobs/outfit. |
 | O079 | House | Cyklopedia: katalog domów i aukcje | DONE | Sesja i natywne okno są już zamontowane w cgmech; uzupełniono własność, typ, termin aukcji, własny max bid i paginację. |
 | O083 | House | Edycja list gości, współwłaścicieli i drzwi | DONE | Natywny edytor i HouseResult są zamontowane; door ACL korzysta z rewizji wybranego domu bez ręcznego wpisywania rewizji. |
-| T115 | Imbuing | Shrine: apply/clear, sloty i materiały/szansa | PARTIAL | Komendy/lista są; brak pełnego interaktywnego widoku slotów i szczegółów koszt/szansa. |
+| T115 | Imbuing | Shrine: apply/clear, sloty i materiały/szansa | DONE | Evidence: apps/client/src/features/0068-imbue/input.rs:12 + imbuement_live_picker_and_material_reply_reach_run_session |
 | T002 | Login | Połączenie, re-entry i logout | DONE | Widoczna ponowna próba, odliczanie admission i anulowanie pojedynczej próby bez zatrzymania runtime (`68169ce25`). |
 | T003 | Login | Pozycja kolejki i odliczanie | PARTIAL | Odliczanie, automatyczne ponowienie i anulowanie są podłączone do istniejącej odmowy capacity; brak autorytatywnej pozycji kolejki oraz jej producenta/protokołu na serwerze (`68169ce25`). |
 | T004 | Login | News i kalendarz zdarzeń | PARTIAL | Jest ograniczony rozmiarem feed pakietu `bulletin.json`, news i kalendarz z opisami; brak żywego feedu i publikacji przyszłych wydarzeń przez usługę operatora (`8ba0c9983`, `f86998757`). |
@@ -189,7 +189,7 @@ Zasady przeciw dublowaniu:
 | T160 | Modal dialogs | Blessings / death protection overview | PARTIAL | Stan i death notices są; brak pełnego dedykowanego Blessings dialog. |
 | T166 | Modal dialogs | Nagging / balancing / generic notices | PARTIAL | Wiadomości serwera są; brak dedykowanych interaktywnych dialogów i dont-show-again. |
 | O040 | Modal dialogs | Ogólne dialogi modalne serwera | MISSING | Brakuje ogólnego handlera dialogu z identyfikatorem, listą wyborów i przyciskami oraz odpowiedzią wyboru do serwera. |
-| T123 | Proficiency | Weapon perks/rank i shape/reshape | PARTIAL | Operacje/katalog są; ręczne id/perk index/slot/revision zamiast pełnego wyboru wizualnego. |
+| T123 | Proficiency | Weapon perks/rank i shape/reshape | DONE | Evidence: apps/client/src/features/0195-weapon-proficiency/input.rs:6 + proficiency_session_routes_state_from_native_selection_into_exact_paid_revision |
 | T017 | PvP | Unjustified points i skull timer | PARTIAL | Są stany PvP/warunki; brak pełnego Unjustified Points widget. |
 | O066 | PvP | Unjustified points i limity fragów | PARTIAL | Brakuje liczników dziennych/tygodniowych/miesięcznych fragów, czasu czaszki i otwartych sytuacji PvP; obecny panel pokazuje tylko tarcze i czaszki. |
 | T144 | Rewards | Daily wall/streak/jokers/claim/pick items | PARTIAL | 30-day wall/claim są; brak pełnego kalendarza, historii i pick-items dialog. |
@@ -208,7 +208,7 @@ Zasady przeciw dublowaniu:
 | T156 | Tutorial | Player Guide / compendium / recommendations | DONE | Zakładki Player Guide i Recommendations są w oknie Ctrl+Shift+N, obok komunikatów samouczka i server-save (`0ef49c5a8`). |
 | O017 | Tutorial | Kompendium: poradnik, aktualizacje i pomoc | DONE | Kompendium ma kategorie Guide, Recommendations, Updates (feed pakietu), Features i Help z informacjami o raportach i zgodzie (`dc3a78120`). |
 | T119 | Wheel | Punkty, slots/perks i reset | PARTIAL | Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków. |
-| T120 | Wheel | Presets i copy/import code/URL | PARTIAL | Save allocation jest; brak nazwanych presetów i wymiany buildów code/URL. |
+| T120 | Wheel | Presets i copy/import code/URL | DONE | Evidence: apps/client/src/features/0148-wheel-allocation/presets.rs:57 + wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views |
 
 ## OWNER
 

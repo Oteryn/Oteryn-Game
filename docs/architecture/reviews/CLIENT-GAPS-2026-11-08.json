@@ -826,9 +826,10 @@
   "src": "TIBAUD-1",
   "area": "Imbuing",
   "feature": "Shrine: apply/clear, sloty i materiały/szansa",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Komendy/lista są; brak pełnego interaktywnego widoku slotów i szczegółów koszt/szansa.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0068-imbue/input.rs:12 + imbuement_live_picker_and_material_reply_reach_run_session"
  },
  {
   "id": "T116",
@@ -871,9 +872,10 @@
   "src": "TIBAUD-1",
   "area": "Wheel",
   "feature": "Presets i copy/import code/URL",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Save allocation jest; brak nazwanych presetów i wymiany buildów code/URL.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0148-wheel-allocation/presets.rs:57 + wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views"
  },
  {
   "id": "T121",
@@ -889,9 +891,10 @@
   "src": "TIBAUD-1",
   "area": "Proficiency",
   "feature": "Weapon perks/rank i shape/reshape",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Operacje/katalog są; ręczne id/perk index/slot/revision zamiast pełnego wyboru wizualnego.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0195-weapon-proficiency/input.rs:6 + proficiency_session_routes_state_from_native_selection_into_exact_paid_revision"
  },
  {
   "id": "T124",
