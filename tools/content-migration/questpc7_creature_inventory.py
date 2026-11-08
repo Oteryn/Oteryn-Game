@@ -31,3 +31,13 @@ def refresh(root):
         imports=len(json.loads((root/'content/world/provenance/sources.json').read_bytes())['sources'])
         text=re.sub(r'max_import_records: (?:25 \+ 4|\d+),',f'max_import_records: {imports},',text)
         if target.read_text()!=text:target.write_text(text)
+
+    # Main's closed legacy cohort has 1,863 creatures. The only additional
+    # canonical Creature is the exact Thaian declaration in the owned packet.
+    assert len(rows) == 1863 + sum(r['identity']['family'] == 'Creature' for r in packet['records']) == 1864
+    for path in ('tools/content-migration/validate_world_project_v2_to_tree.py',
+                 'tools/content-migration/test_world_project_v2_to_tree.py'):
+        target = root / path
+        text = target.read_text().replace("counts['Creature'] == 1863", "counts['Creature'] == 1864")
+        text = text.replace('"Creature": 1863, "Encounter"', '"Creature": 1864, "Encounter"')
+        if target.read_text() != text: target.write_text(text)

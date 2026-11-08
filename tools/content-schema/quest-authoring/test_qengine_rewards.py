@@ -307,6 +307,10 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
+        lane=[c for c in callbacks if c['key'].split('/')[-1].startswith('questpc7-')]
+        self.assertEqual(len(lane),59)
+        self.assertEqual(sum(c['outfit'] is not None for c in lane),5)
+        callbacks=[c for c in callbacks if not c['key'].split('/')[-1].startswith('questpc7-')]
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),81)

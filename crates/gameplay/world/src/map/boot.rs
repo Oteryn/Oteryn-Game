@@ -825,6 +825,16 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
     ) -> Result<CollisionClass, StaticCellEngineError> {
         self.lookup(scope, cell)
     }
+    fn house_tiles_present(
+        &self,
+        scope: &EngineeringStaticCellScope,
+    ) -> Result<bool, StaticCellEngineError> {
+        if scope != &self.scope {
+            return Err(StaticCellEngineError::ScopeMismatch);
+        }
+        Ok(self.map.facts.has_house_tiles())
+    }
+
     fn same_index(
         &self,
         other: &dyn crate::content::native_cell_lookup::BundleCollisionLookup,
@@ -838,15 +848,64 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
 pub use crate::content::native_cell_lookup::BundleCollisionIndex;
 pub trait BundleCollisionIndexExt {
     fn map(&self) -> &BundleMap;
+    fn fork_activity(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        bounds: [i32; 6],
+    ) -> Option<BundleCollisionIndex>;
 }
 
 impl BundleCollisionIndexExt for BundleCollisionIndex {
+    fn fork_activity(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        bounds: [i32; 6],
+    ) -> Option<BundleCollisionIndex> {
+        if let Some(parent) = self.0.parent_index() {
+            return parent.fork_activity(scope, bounds);
+        }
+        let source =
+            (self.0.as_ref() as &dyn std::any::Any).downcast_ref::<BundleCollisionData>()?;
+        if !matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
+            || scope.world_id() != source.scope.world_id
+            || bounds[0] > bounds[2]
+            || bounds[1] > bounds[3]
+            || bounds[4] > bounds[5]
+            || bounds[2]
+                .checked_sub(bounds[0])
+                .is_none_or(|span| span > 255)
+            || bounds[3]
+                .checked_sub(bounds[1])
+                .is_none_or(|span| span > 255)
+            || bounds[4] < 0
+            || bounds[5] > 15
+        {
+            return None;
+        }
+        let map = Arc::new(BundleMap {
+            entry_start: source.map.entry_start,
+            overlay: ChannelOverlay::for_scope(Arc::clone(&source.base), scope),
+            facts: source.map.facts.activity_copy(bounds),
+            floors: source.map.floors.clone(),
+            spell_tiles: Arc::clone(&source.map.spell_tiles),
+        });
+        Some(BundleCollisionIndex(Arc::new(BundleCollisionData {
+            scope: source.scope.clone(),
+            base: Arc::clone(&source.base),
+            blocked: Arc::clone(&source.blocked),
+            map,
+        })))
+    }
+
     /// The Channel's map view over the same bundle.
     #[expect(
         clippy::expect_used,
         reason = "the bundle port is constructed only here from BundleCollisionData"
     )]
     fn map(&self) -> &BundleMap {
+        if let Some(parent) = self.0.parent_index() {
+            return parent.map();
+        }
         &(self.0.as_ref() as &dyn std::any::Any)
             .downcast_ref::<BundleCollisionData>()
             .expect("bundle map owner")
@@ -1556,6 +1615,7 @@ pub mod tests {
                 seed: [7; 32],
                 fungus: true,
                 grimvale_full_moon: false,
+                items: Vec::new(),
                 trader: None,
             })
             .boot(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?, served)?;
@@ -1612,6 +1672,51 @@ pub mod tests {
         let progress = runtime.realize_activation_spawn_window(0)?;
         assert_eq!(progress.remaining, 0);
         assert_eq!(runtime.spawn_point_creatures().len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn bundle_house_absence_comes_from_loaded_tiles_and_rejects_scope_substitution()
+    -> Result<(), Box<dyn Error>> {
+        let world_id = WorldId::decode(&id(1))?;
+        let channel_id = ChannelId::decode(&id(2))?;
+        let entry = crate::content::qualify_native_entry_room(world_id)?;
+        assert!(!entry.movement_cells().house_tiles().is_known_empty());
+        for house in [0, 42] {
+            let (bytes, load) = bundle_with_house("item:box", 0, "item:coin", 1, house);
+            let world = boot(&bytes, &pins(load, 2), world_id, channel_id, items)?;
+            let cells = world.movement_cells(entry.movement_cells())?;
+            assert_eq!(cells.house_tiles().is_known_empty(), house == 0);
+            let at = LogicalCell { x: 2, y: 0, z: 7 };
+            assert_eq!(
+                cells
+                    .house_tiles()
+                    .house_at(cells.scope(), at)
+                    .map(|house| house.is_none()),
+                if house == 0 {
+                    Ok(true)
+                } else {
+                    Err("House placement metadata unavailable")
+                }
+            );
+            let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+                cells.index()
+            else {
+                return Err("bundle collision index".into());
+            };
+            let mut foreign = cells.scope().clone();
+            foreign.map_revision = MapRevisionRef::new("different-native-map")?;
+            let spoofed = NativeEntryMovementCells::from_bundle(
+                entry.movement_cells(),
+                foreign,
+                index.clone(),
+                Arc::clone(&world.map.spell_tiles),
+            );
+            assert!(
+                !spoofed.house_tiles().is_known_empty(),
+                "another map cannot borrow an absence proof"
+            );
+        }
         Ok(())
     }
 
@@ -1976,6 +2081,91 @@ pub mod tests {
 
     pub fn door_world() -> Result<BundleWorld, Box<dyn Error>> {
         door_world_with(door_items)
+    }
+
+    #[test]
+    fn soulpit_private_bundle_forks_scope_overlay_and_door_facts() -> Result<(), Box<dyn Error>> {
+        let source = door_world()?;
+        let world = WorldId::decode(&id(1))?;
+        let room = crate::content::qualify_native_entry_room(world)?;
+        let cells = source.movement_cells(room.movement_cells())?;
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err("bundle cells".into());
+        };
+        let scope = crate::foundation::RuntimeScopeRefV1::instance(world, id(9))
+            .map_err(|error| format!("{error:?}"))?;
+        let other_scope = crate::foundation::RuntimeScopeRefV1::instance(world, id(10))
+            .map_err(|error| format!("{error:?}"))?;
+        let activity = index
+            .fork_activity(scope, [0, 0, 8, 0, 7, 7])
+            .ok_or("private activity map")?;
+        let other = index
+            .fork_activity(other_scope, [0, 0, 8, 0, 7, 7])
+            .ok_or("second private map")?;
+        assert_eq!(activity.map().overlay.runtime_scope(), scope);
+        assert_eq!(other.map().overlay.runtime_scope(), other_scope);
+        assert!(!std::ptr::eq(activity.map(), index.map()));
+        assert!(!std::ptr::eq(activity.map(), other.map()));
+        assert!(
+            activity
+                .map()
+                .facts
+                .doors()
+                .toggle(door_key(), 0, false, u32::MAX, true)
+                .is_some()
+        );
+        assert_eq!(activity.map().facts.doors().revision(door_key()), 1);
+        assert_eq!(other.map().facts.doors().revision(door_key()), 0);
+        assert_eq!(source.facts().doors().revision(door_key()), 0);
+        assert!(source.facts().doors().blocks(DOOR_AT));
+        assert!(other.map().facts.doors().blocks(DOOR_AT));
+        Ok(())
+    }
+
+    #[test]
+    fn soulpit_common_static_collision_controls_real_bundle_movement() -> Result<(), Box<dyn Error>>
+    {
+        for walkable in [Some(false), Some(true), None] {
+            let (bytes, mut load) = bundle();
+            let read = bundle::read(&bytes)?;
+            let mut manifest = read.manifest;
+            manifest.palette[2].terrain = Some(oteryn_world_bundle::bundle::Terrain {
+                kind: oteryn_world_bundle::bundle::TerrainKind::Common,
+                walkable,
+                ground_speed: None,
+            });
+            let bytes = oteryn_world_bundle::writer::write(&manifest, &read.sectors, &read.spawns)?;
+            load.digest = bundle::read(&bytes)?.digest;
+            let world_id = WorldId::decode(&id(1))?;
+            let source = boot(
+                &bytes,
+                &pins(load, 2),
+                world_id,
+                ChannelId::decode(&id(2))?,
+                items,
+            )?;
+            let at = TilePos {
+                x: 5,
+                y: 0,
+                floor: -7,
+            };
+            assert_eq!(source.enterable(at), walkable != Some(false));
+            let room = crate::content::qualify_native_entry_room(world_id)?;
+            let cells = source.movement_cells(room.movement_cells())?;
+            assert_eq!(
+                cells
+                    .index()
+                    .lookup(cells.scope(), LogicalCell { x: 5, y: 0, z: 7 }),
+                Ok(if walkable == Some(false) {
+                    CollisionClass::Blocked
+                } else {
+                    CollisionClass::Walkable
+                })
+            );
+        }
+        Ok(())
     }
 
     /// The door's tile.

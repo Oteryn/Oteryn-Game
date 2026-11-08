@@ -37,6 +37,12 @@ class CanonicalVariantTests(unittest.TestCase):
         self.assertEqual(index['record_count'], 336)
         self.assertEqual(index['readiness']['ready'], 228)
         self.assertEqual(index['readiness']['waiting_item_semantics'], 3)
+    def test_plain_231_committed_shards_keep_merged_readiness_228_3(self):
+        outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
+        self.assertEqual(index['plain_record_count'], 231)
+        self.assertEqual(index['record_count'], 336)
+        self.assertEqual(index['readiness']['ready'], 228)
+        self.assertEqual(index['readiness']['waiting_item_semantics'], 3)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
@@ -140,6 +146,8 @@ class CanonicalVariantTests(unittest.TestCase):
         # the immutable source dispositions of the105 original variant records.
         self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 78)
         self.assertEqual(len(errors), 27)
+        # Combined ITEMHOLD-Q and QUESTPC4 admissions retain the same source witnesses.
+        self.assertEqual(len(self.records), 105)
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

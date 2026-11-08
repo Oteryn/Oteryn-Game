@@ -600,7 +600,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(index) = pinned_index(&runtime, self.active_generation) else {
                 return ImbuementReply::Unavailable;
             };
-            let reach = super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+            let reach = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
                 .is_some_and(|at| shrine_in_reach(&at, index));
             if !reach {
                 return encode(&reply(ImbuementResult::RequirementNotMet));

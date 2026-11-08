@@ -141,3 +141,74 @@ fn pushed_handler_requires_reducer_window_and_test() -> Result<(), String> {
     }
     Ok(())
 }
+
+#[test]
+fn session_transport_handler_requires_actual_async_session_symbol_and_preserves_coverage()
+-> Result<(), String> {
+    let f = Fixture::structure()?;
+    f.json(
+        "crates/protocol-oteryn/capabilities/1000-transport-v1.json",
+        &json!({"id":1000,"name":"TRANSPORT_V1","commands":[1000]}),
+    )?;
+    f.json(
+        "docs/contracts/protocol-oteryn/v1/registry/command_types/1000-transport.json",
+        &json!({"id":1000,"capability":1000}),
+    )?;
+    let feature = "crates/client-ui/src/features/1000-transport";
+    let mut entry = json!({"mechanic":"1000-transport","kind":"handlers","id":"transport-handler",
+        "status":"supported","commands":[1000],"capability":1000,"direction":"client_to_server",
+        "entry_owner":"session","entry":"activity_handoff.rs::acknowledge",
+        "not_applicable":{"state":"Session owns transfer","protocol":"Session transport entry",
+            "view":"Native receipt presentation is separate","input":"Automatic transport acknowledgement",
+            "settings":"Mandatory transport sequencing"}});
+    f.json(&format!("{feature}/registrations/handler.json"), &entry)?;
+    f.json(
+        &format!("{feature}/fixtures/registrations.json"),
+        &json!([entry]),
+    )?;
+    let source = "impl<S> Session<S> { async fn acknowledge(&mut self) {} }";
+    f.write("crates/session/src/activity_handoff.rs", source)?;
+    let (_, coverage) = client_fragments::scan(&f.0)?;
+    assert!(
+        coverage
+            .iter()
+            .any(|row| row["mechanic"] == "1000-transport" && row["status"] == "supported")
+    );
+    for invalid in [
+        "impl<S> Session<S> { async fn other(&mut self) {} }",
+        "impl OtherOwner { async fn acknowledge(&mut self) {} }",
+        "impl<S> Session<S> { fn acknowledge(&mut self) {} }",
+        "async fn acknowledge() {}",
+    ] {
+        f.write("crates/session/src/activity_handoff.rs", invalid)?;
+        assert!(
+            client_fragments::scan(&f.0).is_err(),
+            "wrong transport symbol: {invalid}"
+        );
+    }
+    f.write("crates/session/src/activity_handoff.rs", source)?;
+    for invalid in ["missing.rs::acknowledge", "../outside.rs::acknowledge"] {
+        entry["entry"] = json!(invalid);
+        f.json(&format!("{feature}/registrations/handler.json"), &entry)?;
+        f.json(
+            &format!("{feature}/fixtures/registrations.json"),
+            &json!([entry]),
+        )?;
+        assert!(
+            client_fragments::scan(&f.0).is_err(),
+            "wrong transport path: {invalid}"
+        );
+    }
+    entry["entry"] = json!("activity_handoff.rs::acknowledge");
+    entry["commands"] = json!([]);
+    f.json(&format!("{feature}/registrations/handler.json"), &entry)?;
+    f.json(
+        &format!("{feature}/fixtures/registrations.json"),
+        &json!([entry]),
+    )?;
+    assert!(
+        client_fragments::scan(&f.0).is_err(),
+        "transport entry cannot remove command coverage"
+    );
+    Ok(())
+}

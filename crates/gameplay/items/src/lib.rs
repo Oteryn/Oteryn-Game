@@ -7,6 +7,7 @@ pub mod equipment_effects;
 pub mod event_items;
 pub mod event_planting;
 pub mod fishing;
+pub mod floor_assembly;
 pub mod forge;
 pub mod hotkey_search;
 pub mod imbuement;

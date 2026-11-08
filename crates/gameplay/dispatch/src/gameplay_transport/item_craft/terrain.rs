@@ -146,7 +146,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
             let Some(at) =
-                super::super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+                super::super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
@@ -521,6 +521,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let after = view::EntryFacts {
                 definition: MapDefinition::Item(reference),
                 appearance_id: u16::try_from(row.item).unwrap_or(0),
+                blocks_projectile: native
+                    .item_policy_for_source_id(row.item)
+                    .and_then(|policy| policy.record().attributes.blocks_projectile)
+                    .unwrap_or(entry.facts.blocks_projectile),
                 ..entry.facts
             };
             let gathering = matches!(

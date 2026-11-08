@@ -75,6 +75,9 @@ pub enum SessionError {
     /// (protocol violation, timeout or I/O): the peer's state is no longer trusted, so nothing
     /// further is sent on it.
     SessionUnusable,
+    /// A complete committed scope switch canceled this source-session request.
+    /// The destination remains usable; do not retry the request automatically.
+    ActivityScopeChanged,
     /// The next `CommandId` would overflow `u64`.
     CommandIdExhausted,
     /// A `CommandResult` named a `command_id` other than the one just sent.
@@ -163,6 +166,9 @@ pub enum SessionError {
 impl fmt::Display for SessionError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::ActivityScopeChanged => {
+                write!(formatter, "activity scope changed; source request canceled")
+            }
             Self::Io(error) => write!(formatter, "transport I/O failed: {error}"),
             Self::Protocol(error) => write!(formatter, "FND-02 protocol error: {error}"),
             Self::WorldSpatial(error) => {

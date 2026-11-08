@@ -26,7 +26,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         runtime.player_control_facts(actor, session).ok()?;
         let zone = crate::gameplay_transport::spell_presentation_publisher::ambient_sounds::zone(
             &mut runtime,
-            self.movement_cells,
+            self.movement_cells(),
             actor,
         );
         let minute = self.world_clock_utc_ms().and_then(|now| {
@@ -793,6 +793,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) {
         self.record_actor_step_deadline_now(actor, holder, due)
             .await;
+    }
+
+    async fn use_map_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        self.use_ladder_handle(actor, command, item).await
     }
 
     /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.

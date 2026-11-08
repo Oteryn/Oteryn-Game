@@ -17,6 +17,21 @@ DEMON_HELMET_REWARDS = {
     'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet': 'oteryn:item.tibia.i3387',
     'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield': 'oteryn:item.tibia.i3420',
 }
+# These T..Z source chests carry already-admitted Item facts into the native
+# provider. No quest progress or access puzzle is inferred here.
+QUESTPC4_REWARD_QUESTS = {
+    'canary:quest/the_ape_city_quest', 'canary:quest/the_explorer_society_quest',
+    'canary:quest/the_hidden_city_of_beregar_quest',
+    'canary:quest/the_inquisition_quest', 'canary:quest/the_pits_of_inferno_quest',
+    'canary:quest/the_thieves_guild_quest', 'canary:quest/the_white_raven_monastery_quest',
+    'canary:quest/threatened_dreams_quest', 'canary:quest/throwing_star_quest',
+    'canary:quest/time_ring_quest', 'canary:quest/to_blind_the_enemy_quest',
+    'canary:quest/to_outfox_a_fox_quest', 'canary:quest/tomes_of_knowledge_quest',
+    'canary:quest/triangle_tower_quest', 'canary:quest/troll_cave_quest',
+    'canary:quest/vampire_hunter_quest', 'canary:quest/vampire_shield_quest',
+    'canary:quest/waterfall_quest', 'canary:quest/wedding_ring_quest',
+    'canary:quest/what_a_foolish_quest',
+}
 
 
 def complete_native_stack(root, record, definition, binding):
@@ -138,7 +153,11 @@ def grant_semantics(root, definition):
     return semantics
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical):
+def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'content-schema/reward-claim-authoring'))
+    import container_native
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
@@ -149,6 +168,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     # Crystal201189f chest.lua:508-513: Fanfare's key3520 uses the already
     # admitted bone key2973. Its key-binding hold is separate from Item admission.
     keys.add('oteryn:item.tibia.i2973')
+    keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:
@@ -173,6 +193,18 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                         or placements[0]['reward']['items'] != expected):
                     raise ValueError('DEMON_HELMET_QUALIFIED_CLAIM_CHANGED')
                 keys.add(demon_item)
+            # Crystal201189f chest.lua:556: UID5024 grants the already-canonical
+            # silver key3700. KEY owns its native numbered instance; the claim's
+            # historical waiting_implementation flag is not an Item hold.
+            if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3700':
+                placements = definition['placements']
+                key = 'oteryn:item.tibia.i2971'
+                expected = {'items': [{'count': 1, 'item': {
+                    'family': 'Item', 'key': key, 'revision': 'definition-r1'}}],
+                    'key_binding': 'canary:door-key/3700'}
+                if len(placements) != 1 or placements[0]['reward'] != expected:
+                    raise ValueError('PITS_OF_INFERNO_KEY_CLAIM_CHANGED')
+                keys.add(key)
             # W15b's complete recipe already qualified the canonical root and
             # every child. Carry that whole closure into the native provider;
             # admitting only the visible chest reward would mint a partial bag.
@@ -220,6 +252,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(
             source_packet, present.get(key), definition, root)
+        if key in {f'oteryn:item.tibia.i{item}' for item in container_native.CHARGED_QUEST_CLAIMS.values()}:
+            definition = container_native.native_charge_item(definition, present.get(key))
         identity = definition['identity']
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']

@@ -88,11 +88,25 @@ impl NativeStaticCellLookup for NativeMovementCollisionIndex {
 
 /// Read-only bundle collision supplied by the World owner.
 pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
+    /// A bounded activity keeps its already qualified map owner as its parent.
+    /// Consumers needing the concrete map follow this link, while collision
+    /// continues to use the child's clipped lookup.
+    fn parent_index(&self) -> Option<&BundleCollisionIndex> {
+        None
+    }
     fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError>;
+    /// Complete House-marker evidence from this exact loaded bundle scope.
+    /// Older or unqualified ports provide no absence proof.
+    fn house_tiles_present(
+        &self,
+        _scope: &EngineeringStaticCellScope,
+    ) -> Result<bool, StaticCellEngineError> {
+        Err(StaticCellEngineError::Unqualified)
+    }
     fn same_index(&self, other: &dyn BundleCollisionLookup) -> bool;
 }
 
@@ -112,5 +126,12 @@ impl BundleCollisionIndex {
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError> {
         self.0.lookup(scope, cell)
+    }
+
+    pub fn house_tiles_present(
+        &self,
+        scope: &EngineeringStaticCellScope,
+    ) -> Result<bool, StaticCellEngineError> {
+        self.0.house_tiles_present(scope)
     }
 }

@@ -71,7 +71,8 @@ def main():
         assert len(marsh) == 4 and all(r['semantics']['temporal']['state'] == 'KNOWN' for r in marsh)
         row = '    ("QUESTPC7-MARSH-CORPSES", 4),\n'
         anchor = '    ("SRV9-MARRIAGE", 2),\n'
-        replace(str(equipment.relative_to(ROOT)), anchor, anchor + row)
+        if row not in equipment.read_text():
+            replace(str(equipment.relative_to(ROOT)), anchor, anchor + row)
         text = equipment.read_text()
     slug_proof = ROOT / 'tools/content-schema/native-gameplay/questpc7-slug-corpse-profiles.json'
     if slug_proof.exists():
@@ -80,8 +81,18 @@ def main():
             f'oteryn:item.tibia.i{i}' for i in (12526, 12533, 12534, 12535)}
         assert len(slug) == 4 and all(r['semantics']['temporal']['state'] == 'KNOWN' for r in slug)
         anchor = '    ("SRV9-MARRIAGE", 2),\n'
-        replace(str(equipment.relative_to(ROOT)), anchor, anchor + '    ("QUESTPC7-SLUG-CORPSES", 4),\n')
+        row = '    ("QUESTPC7-SLUG-CORPSES", 4),\n'
+        if row not in equipment.read_text():
+            replace(str(equipment.relative_to(ROOT)), anchor, anchor + row)
         text = equipment.read_text()
+    # Additive merge anchors can repeat these identical, closed lane cohorts.
+    for name in ('QUESTPC7-MARSH-CORPSES', 'QUESTPC7-SLUG-CORPSES'):
+        row = f'    ("{name}", 4),\n'
+        assert text.count(row) in (1, 2, 3), 'unexpected lane corpse cohort'
+        if text.count(row) > 1:
+            first = text.index(row) + len(row)
+            text = text[:first] + text[first:].replace(row, '')
+    equipment.write_text(text)
     body = text.split('const PROFILE_ADDITIONS:')[1].split('];')[0]
     other = sum(int(count) for name, count in re.findall(r'\("([^"\n]+)", (\d+)\)', body)
                 if name != 'QUESTPC7-REGISTERED-UNION')
@@ -100,11 +111,16 @@ def main():
         additions = {r['production_definition']['production_key'] for r in records}
         assert len(additions) == len(records)
         actual_keys |= additions
-    residual = len(actual_keys) - 432 - other - len(keys) + 1
-    assert residual == 130, 'review source-cohort changes before refreshing this closed union'
+    from questpc7_merge_profile_delta import verify
+    verify(ROOT, actual_keys)
+    residual = len(actual_keys) - 432 - other - len(keys) + 1 - 26 - 23
+    # Main adds 35 distinct profiles, 12 named cohort entries and seven shared
+    # quest profiles; its floor/callback cohorts now own 49 previously grouped keys.
+    expected_residual = 130 + 35 - 12 - 7 - 26 - 23
+    assert residual == expected_residual == 97, 'review source-cohort changes before refreshing this closed union'
     row = f'    ("QUESTPC7-REGISTERED-UNION", {residual}),\n'
     replace(str(equipment.relative_to(ROOT)),
-            '    ("QUESTPC7-REGISTERED-UNION", 95),\n', row)
+            '    ("QUESTPC7-REGISTERED-UNION", 130),\n', row)
     text = equipment.read_text()
     if row not in text:
         anchor = '    ("SRV9-MARRIAGE", 2),\n'

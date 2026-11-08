@@ -36,6 +36,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         }
     };
     callback.quest == rule.quest()
+        && callback.selector.native.is_none()
         && callback.trigger == trigger
         && callback.selector.position
             == Some(Position {
@@ -75,6 +76,8 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && !callback.reversible
         && callback.passages.is_empty()
         && callback.teleport.is_none()
+        && callback.facing.is_none()
+        && callback.effects.is_empty()
         && callback.minimum_level.is_none()
         && callback.experience.is_none()
         && callback.monk_reward.is_none()

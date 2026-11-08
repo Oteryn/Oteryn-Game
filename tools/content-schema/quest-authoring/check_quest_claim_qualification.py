@@ -22,6 +22,8 @@ ITEMHOLD_ADMISSIONS = frozenset({
     "oteryn:reward-claim.kv.powerring2",
     "oteryn:reward-claim.kv.triangletower",
 })
+# All three ITEMHOLD routes have source-placement PG reward witnesses and
+# remain outside the pending-route inventory.
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

@@ -39,6 +39,7 @@ class VariantStackSerializationTests(unittest.TestCase):
         # these two selected native stack normalizations (PR2770 Q4/A).
         self.assertEqual(len(variants.native_lowering_errors(self.records)), 27)
         errors = variants.native_lowering_errors(self.records)
+        self.assertEqual(len(errors), 27)  # Merged eight source-qualified native recipes.
         qualified = {'oteryn:reward-claim.kv.ornamentedshield',
                      'oteryn:reward-claim.kv.triangletower'}
         self.assertTrue(qualified.isdisjoint(error['claim'] for error in errors))
@@ -49,6 +50,7 @@ class VariantStackSerializationTests(unittest.TestCase):
                 del row['definition']['native_contents']
         previous_errors = variants.native_lowering_errors(without_itemhold)
         self.assertEqual(len(previous_errors), 29)
+        self.assertEqual(len(previous_errors), len(errors) + len(qualified))
         self.assertEqual({error['claim'] for error in previous_errors}
                          - {error['claim'] for error in errors}, qualified)
 

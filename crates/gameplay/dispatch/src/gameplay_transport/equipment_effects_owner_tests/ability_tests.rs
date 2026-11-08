@@ -154,6 +154,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
     // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
     ("QNPCFX", 1),
+    // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
+    ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
@@ -290,8 +292,17 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("SRV9-MARRIAGE", 2),
     ("QUESTPC7-SLUG-CORPSES", 4),
     ("QUESTPC7-MARSH-CORPSES", 4),
+    // BEGIN GENERATED QREADY PROFILE ADDITIONS
+    // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
+    // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json
+    // Source-qualified zero speed: 3068, 3323, 3383, 3579, 3734, 4871.
+    ("QREADY1", 6),
+    // tools/content-migration/qready2_native_profiles.py
+    // Source-qualified zero speed: 2822, 2823, 2848, 3310, 21982.
+    ("QREADY2", 5),
+    // END GENERATED QREADY PROFILE ADDITIONS
     // Merged source/custody cohorts, refreshed by questpc7_merge_audit_inventories.py.
-    ("QUESTPC7-REGISTERED-UNION", 130),
+    ("QUESTPC7-REGISTERED-UNION", 97),
 ];
 
 #[test]
@@ -331,7 +342,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         };
         assert_eq!(profile.attributes.speed_bonus, expected, "{key}");
     }
-    assert_eq!(added_keys.len(), 104);
+    assert_eq!(added_keys.len(), 111);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -381,11 +392,14 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
+
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
             + additions.len()
+            // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
+            + 26 + 23
             - 1 // the pick already belongs to the base provider
     );
     for id in [2949, 12369, 14156, 33330, 44179, 52732] {

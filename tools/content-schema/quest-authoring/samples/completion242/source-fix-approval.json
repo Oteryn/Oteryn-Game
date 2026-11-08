@@ -368,7 +368,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
-      "sha256": "33932f1e4f9deb69f06d5994320eb4e1c00cf7d0c4df0e2a17e2f0cd34412daa"
+      "sha256": "679e4e8506745e702166b5d33ef459e8956c57c6b3e6440de91c24999d522fc4"
     },
     {
       "path": "tools/content-schema/quest-authoring/reward_aliases.py",

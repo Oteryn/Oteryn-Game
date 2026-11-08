@@ -178,6 +178,7 @@ pub(super) async fn exercise(
             .commit_character_npc_program(
                 authority,
                 owner.holder,
+                &owner.spell_lane_permit().await.ok_or("NPC programme permit")?,
                 fence,
                 request.clone(),
                 catalogue.clone(),
@@ -228,6 +229,7 @@ pub(super) async fn exercise(
                 owner.root,
                 authority,
                 owner.holder,
+                &owner.spell_lane_permit().await.ok_or("NPC programme permit")?,
                 fence,
                 request.clone(),
                 catalogue.clone(),
@@ -403,7 +405,8 @@ pub(super) async fn exercise(
         .commit_character_npc_program(
             authority,
             owner.holder,
-            fence,
+            &owner.spell_lane_permit().await.ok_or("NPC programme permit")?,
+                fence,
             request.clone(),
             catalogue.clone(),
             &weights,
@@ -462,6 +465,7 @@ pub(super) async fn exercise(
             .commit_character_npc_program(
                 authority,
                 owner.holder,
+                &owner.spell_lane_permit().await.ok_or("NPC programme permit")?,
                 stale,
                 stale_request,
                 catalogue,

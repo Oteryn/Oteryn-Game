@@ -366,15 +366,15 @@ fn scenario() -> TestResult {
         use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Selector, Trigger};
         use crate::gameplay_transport::connection::FirstEntryOutcome;
         let trigger = Position { x: 33620, y: 31400, floor: -10 };
-        let world = super::quest_world_callbacks::world(&Callback {
+        let world = super::quest_world_callbacks::world(&Callback { effects: Default::default(), actor_kind: Default::default(), facing: None, opening_only: false, requires_world_admission: false, world_requirements: Vec::new(),
         world_change: None,            key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
-            trigger: Trigger::Use, selector: Selector { position: Some(trigger), unique: None, action: None, appearance: None },
+            trigger: Trigger::Use, selector: Selector { native: None, position: Some(trigger), unique: None, action: None, appearance: None },
             lever: None, reversible: false, passages: vec![], teleport: None, remote_teleport: None,
         item_reward: None, reward_bundle: false, achievements: vec![],
         activation: None, completes: false, requirements: None, storage: vec![],
             minimum_level: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,
-            native_rule: None, effects: Default::default(), sources: vec![],
+            native_rule: None, sources: vec![],
         }, trigger)?;
         let h = Harness::create_with_admission_seed(admin, "soul_war_durable", false, false).await?;
         prepare_current_session(&h).await?;
@@ -677,7 +677,7 @@ async fn reward_delivery(
         assert_eq!(position, crate::map::overlay::TilePos { x:33620,y:31400,floor:-10 }, "source USE position");
         let runtime = owner.runtime.lock().await;
         let actor = admitted.runtime_actor.ok_or("source USE actor")?;
-        assert!(crate::gameplay_transport::hazard::qualified_source_frame(&runtime, owner.movement_cells).is_some(), "source USE frame");
+        assert!(crate::gameplay_transport::hazard::qualified_source_frame(&runtime, owner.movement_cells()).is_some(), "source USE frame");
         assert!(runtime.player_control_facts(actor, session).is_ok_and(|facts| facts.control_loss.is_none()), "source USE current control");
         assert!(runtime.bound_attacker_lease(actor, session).is_ok_and(|lease|
             lease.character_id().as_bytes() == current_fence.character_id.as_bytes()

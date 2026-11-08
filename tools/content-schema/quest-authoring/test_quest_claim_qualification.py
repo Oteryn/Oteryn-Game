@@ -34,12 +34,17 @@ class QualificationTests(unittest.TestCase):
         self.assertEqual(sum(counts.values()), 162)
         ledger = qualification.read_json(qualification.LEDGER)
         for key in qualification.ITEMHOLD_ADMISSIONS:
-            record = ledger["claims"][key]
-            self.assertEqual(record["disposition"], "blocked")
-            self.assertEqual(record["dependency"], "QUEST-QUAL-1")
+            self.assertNotIn(key, ledger["claims"])
+            coverage = qualification.read_json(qualification.COVERAGE)
+            matches = [chest for quest in coverage["quests"]
+                       for chest in quest.get("chests", []) if chest.get("claim") == key]
+            self.assertEqual(len(matches), 1)
+            self.assertEqual(matches[0]["status"], "dispatch_pg_qualified")
+            self.assertTrue(matches[0]["reason"])
+            self.assertTrue(matches[0]["placements"])
 
     def test_missing_row_is_rejected(self):
-        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+        for key in sorted(self.ledger["claims"]):
             with self.subTest(claim=key):
                 ledger = copy.deepcopy(self.ledger)
                 del ledger["claims"][key]

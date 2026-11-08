@@ -95,7 +95,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
         let (none, bundle_doors, legacy);
         let blocking: &dyn crate::map::floor::CellBlocker = if self
-            .rooms
+            .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
@@ -110,10 +110,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let pvp_blocking = super::pvp_live::PvpBlocker {
             inner: blocking,
-            cells: self.movement_cells,
+            cells: self.movement_cells(),
             blocked: super::pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
         };
-        let blocking: &dyn crate::map::floor::CellBlocker = &pvp_blocking;
+        let callback_portals = super::quest_callbacks::CallbackPortals {
+            inner: &pvp_blocking,
+            map: self.bundle_map(),
+            callbacks: self.callback_content(),
+        };
+        let blocking: &dyn crate::map::floor::CellBlocker = &callback_portals;
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
@@ -131,7 +136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             states.step_with_creature_field_contact(
                 &mut runtime,
-                self.movement_cells,
+                self.movement_cells(),
                 actor,
                 session,
                 now,

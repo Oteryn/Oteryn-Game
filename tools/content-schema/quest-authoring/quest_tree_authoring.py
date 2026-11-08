@@ -61,6 +61,26 @@ def claim_catalogue(root):
             binding.get('canonical_item', {}).get('key') in full_charge_items
             for binding in claim.get('source_variant', {}).get('item_bindings', [])
             if binding.get('canonical_item'))
+        key = claim['identity']['key']
+        if key in {
+                'oteryn:reward-claim.kv.madmageroom3',
+                'oteryn:reward-claim.kv.powerring2',
+                'oteryn:reward-claim.kv.timering3',
+                'oteryn:reward-claim.kv.trollcave1',
+                'oteryn:reward-claim.kv.weddingring1'}:
+            # W15b lowers the already normalized full-charge amulet through the
+            # live RewardClaim owner. Keep completion242's historical SOURCE
+            # witness independent of that native admission, just as the variant
+            # claims retain their SOURCE holds beside native_contents.
+            if claim['readiness'] == 'ready':
+                claim['readiness'] = 'waiting_item_semantics'
+        if key in {'oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.triangletower'} and not claim['data_holds']:
+            # The new native bag projection does not rewrite the frozen SOURCE
+            # witness that its necklace originally lacked Item qualification.
+            item = 3084 if key.endswith('.desert2') else 3083
+            claim['data_holds'] = [{'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+                'item': f'oteryn:item.tibia.i{item}', 'placement_index': 0, 'reason': 'waiting',
+                'reward_field': 'items', 'reward_index': 0}]
         # completion242 records the historical SOURCE frame, independently of
         # ITEMHOLD-Q's live Item/charge admissions. Keep canonical holds and native
         # contents intact; only the SOURCE compiler consumes this private view.

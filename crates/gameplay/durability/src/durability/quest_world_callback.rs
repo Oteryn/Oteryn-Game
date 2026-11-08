@@ -1,4 +1,7 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
+pub mod carried_step;
+pub mod shared_count;
+pub mod shared_switch;
 use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,
@@ -374,18 +377,21 @@ async fn consume_inputs(
     // Resolve and lock every input before any write, including replacement preconditions.
     let mut inputs = Vec::new();
     if let Some(required) = &callback.item_on_target {
+        let accepted: Vec<&str> = std::iter::once(required.item.as_str())
+            .chain(required.alternatives.iter().map(String::as_str))
+            .collect();
         let row = sqlx::query(
             "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
              c.location,c.kind,i.quantity FROM \
              game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
              JOIN game_item_instances i ON i.item_instance_id=c.item \
              WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
-             AND i.definition_family='Item' AND i.definition_production_key=$3 \
+             AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) \
              AND i.quantity >= $4 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(world_id.as_bytes().as_slice())
-        .bind(&required.item)
+        .bind(&accepted)
         .bind(i64::from(required.count))
         .fetch_optional(&mut **tx)
         .await?;
@@ -436,7 +442,12 @@ async fn consume_inputs(
                 return Err(DurabilityError::InvalidStoredState);
             }
         }
-        inputs.push(input);
+        // Retained tools still require a positive quantity, live custody and the
+        // same location lock. The enclosing Quest receipt binds this read to the
+        // action without inventing an item consumption or changing its identity.
+        if !required.reusable {
+            inputs.push(input);
+        }
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.
     let mut offerings = callback.offerings.iter().collect::<Vec<_>>();
@@ -622,16 +633,21 @@ async fn lock_location(
     Ok(())
 }
 
-mod input_authority;
-
-async fn apply_input<'a>(
+async fn apply_input(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: impl Into<input_authority::InputPermit<'a>>,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     input: &Input,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
-    permit.into().check(fence)?;
+    let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    permit.check_channel(world_id, channel_id)?;
     let changed = sqlx::query(
         "UPDATE game_item_instances SET \
          quantity=CASE WHEN $4::text IS NULL THEN quantity-$2 ELSE quantity END, \
@@ -664,7 +680,7 @@ async fn apply_input<'a>(
 
 pub(super) async fn consume_npc_inputs(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: &super::quest_state::npc_program::NpcItemPermit,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     plan: &oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan,
@@ -745,6 +761,11 @@ pub(super) async fn consume_npc_inputs(
         }
         sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9),$10,$11)")
             .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(&input.before).bind(i32::from(input.count)).bind(proof).bind(&input.location).bind(&input.kind).execute(&mut **tx).await?;
+        // This owner admits carried equipment/container inputs only. Ground
+        // deletion remains behind apply_input's channel SpellLanePermit.
+        if input.kind == "ground" {
+            return Err(DurabilityError::InvalidStoredState);
+        }
         apply_input(tx, permit, fence, &input, &transaction).await?;
     }
     Ok(true)

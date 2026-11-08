@@ -105,6 +105,40 @@ impl DurabilityRoot {
         .await
     }
 
+    /// A content-bound world callback uses the same fenced quest writer and receipt.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_items(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<QuestRewardAdmission<'_>>,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, native)),
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            None,
+            None,
+            None,
+            admission,
+        )
+        .await
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_character_world_callback_with_reward_and_gate<G: grizzly::GrizzlyPremiumGate>(
         &self,
@@ -233,18 +267,39 @@ impl DurabilityRoot {
         )>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
     ) -> Result<QuestTransitionOutcome> {
-        let native_key=request.transition_key.starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX);
-        if native_key!=native.is_some() || native.as_ref().is_some_and(|death|!death.valid(&request)) {
+        let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
+        if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let native_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX);
+        if native_key != native.is_some()
+            || native.as_ref().is_some_and(|death| !death.valid(&request))
+        {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        if reward_callbacks.iter().any(|c| c.participants.iter().enumerate().any(|(i,_)|
-            oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&c.key,i) == request.transition_key)) {
+        if reward_callbacks.iter().any(|c| {
+            c.participants.iter().enumerate().any(|(i, _)| {
+                oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&c.key, i)
+                    == request.transition_key
+            })
+        }) {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let reward_callback = reward_callbacks.into_iter()
+        let reward_callback = reward_callbacks
+            .into_iter()
             .find(|c| c.key == request.transition_key);
+        // Ownership survives a caller removing or renaming a bound effect.
+        if let Some(transition) = catalogue.transition(&request.transition_key) {
+            oteryn_gameplay_quests::quest::admission_binding::validate(
+                transition,
+                context.is_some(),
+            )
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        }
         if (context.is_none() && reward_callback.is_some() != reward_admission.is_some())
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
         {
@@ -308,11 +363,20 @@ impl DurabilityRoot {
         } else {
             None
         };
+        let world_reward = callback
+            .as_ref()
+            .and_then(|c| c.item_reward().as_ref());
+        if (reward_callback.is_some() || world_reward.is_some()) != reward_admission.is_some()
+            || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
+            || (world_reward.is_some() && !matches!(request.cause, QuestCause::Use(_)))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let lionheart = super::hero_of_bounac::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        if context.is_some() && (callback.as_ref().is_some_and(|c| c.item_reward.is_some()) != reward_admission.is_some()) {
+        if context.is_some() && (callback.as_ref().is_some_and(|c| c.item_reward().is_some()) != reward_admission.is_some()) {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
@@ -347,7 +411,7 @@ impl DurabilityRoot {
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
                                 || c.native_rule.is_some()
-                                || c.effects.outfit_reward.is_some() || c.item_reward.is_some() || c.reward_bundle || !c.achievements.is_empty()
+                                || c.effects.outfit_reward.is_some() || c.item_reward().is_some() || c.reward_bundle || !c.achievements.is_empty()
                                 || c.requirements.is_some() || c.completes)
                     }))
         {
@@ -390,7 +454,9 @@ impl DurabilityRoot {
                 return Err(CharacterProgressionError::InvalidInput);
             }
         }
-        if let Some(death)=&native {death.bind(&mut binding)?;}
+        if let Some(death) = &native {
+            death.bind(&mut binding)?;
+        }
         if let Some(source) = &grizzly_party {
             grizzly::bind_party(&mut binding, source)?;
         }
@@ -458,7 +524,7 @@ impl DurabilityRoot {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
                     // The MINT cause precedes the Character root, matching the item owner.
-                    if (reward_callback.as_ref().is_some_and(|c|c.give.is_some()) || callback.as_ref().is_some_and(|c|c.item_reward.is_some()))
+                    if (reward_callback.as_ref().is_some_and(|c|c.give.is_some()) || callback.as_ref().is_some_and(|c|c.item_reward().is_some()))
                         && let QuestCause::Command(command) | QuestCause::Use(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
@@ -487,6 +553,10 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
+                    if let Some(recipe) = timer_recipe
+                        && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if reward_callback.as_ref().is_some_and(|c| c.requires_premium) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
@@ -510,6 +580,13 @@ impl DurabilityRoot {
                     let Some(state) = state else {
                         return Ok(Err(CharacterProgressionError::MissingProgressionState));
                     };
+                    // Reused from PC3 add7faf92: authoritative locked progression,
+                    // after historical receipt lookup and before any fresh write.
+                    if let Some(minimum)=reward_callback.as_ref().and_then(|c|c.minimum_level)
+                        && state.try_get::<i64,_>("level")? < i64::from(minimum) {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if numeric_u64(&state, "character_revision")? != root.revision {
                         return Err(DurabilityError::InvalidStoredState);
                     }
@@ -791,6 +868,14 @@ impl DurabilityRoot {
                         }) {
                         Ok(changes) => changes,
                         Err(refusal) => {
+                            if let Some(recipe) = timer_recipe
+                                && refusal == QuestRefusal::StageMismatch
+                                && stored.get(recipe.track).copied().unwrap_or(-1) > recipe.maximum_before {
+                                server_timer::record(&mut tx,fence,&request,recipe,stored.get(recipe.track).copied().unwrap_or(-1),None).await?;
+                                server_timer::audit(&mut tx,&request).await?;
+                                commit_semantic_transaction(tx,deadline).await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
+                            }
                             if grizzly_action.is_some() {
                                 grizzly::record_refusal(&mut tx, character, &request, &binding, refusal).await?;
                                 commit_semantic_transaction(tx, deadline).await?;
@@ -854,8 +939,23 @@ impl DurabilityRoot {
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(world),Some(admission),Some(tuple))=(&callback,*reward_admission,reward_tuple)
+                        && world.item_reward.is_some()
                         && !super::super::reward_claim_mint::quest::give_world(&mut tx,tuple,&node,fence,&request,world,admission).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if let Some(world) = &callback
+                        && let Some(reward) = &world.effects.item_reward
+                    {
+                        let (Some(admission), Some(tuple)) = (*reward_admission, reward_tuple) else { return Err(DurabilityError::InvalidStoredState); };
+                        let QuestCause::Use(command) = request.cause else { return Err(DurabilityError::InvalidStoredState); };
+                        // Fresh value must use the generation proved by the physical
+                        // occurrence. Historical receipts returned before this check.
+                        let revision = format!("sha256:{}", admission.native.source_digest().iter()
+                            .map(|byte| format!("{byte:02x}")).collect::<String>());
+                        if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
+                            || admission.weights.generation_digest() != admission.native.source_digest()
+                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,false,reward,admission).await?.is_none()
+                        { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    }
                     if let Some(world) = &callback
                         && let Some(reward) = &world.effects.outfit_reward
                     {
@@ -933,6 +1033,9 @@ impl DurabilityRoot {
                         .revision
                         .checked_add(1)
                         .ok_or(DurabilityError::InvalidStoredState)?;
+                    if let Some(recipe) = timer_recipe {
+                        server_timer::record(&mut tx,fence,&request,recipe,changes.first().ok_or(DurabilityError::InvalidStoredState)?.before,Some(committed_revision)).await?;
+                    }
                     let (original, committed) =
                         (root.revision.to_string(), committed_revision.to_string());
                     for successor in [
@@ -1106,6 +1209,7 @@ impl DurabilityRoot {
                     if let Some((_, context)) = grizzly_boss.as_ref() {
                         grizzly_boss::earn(&mut tx, fence, &request, context).await?;
                     }
+                    if timer_recipe.is_some() { server_timer::audit(&mut tx,&request).await?; }
                     let committed = CommittedQuestTransition {
                         character_id: character,
                         cause: request.cause,

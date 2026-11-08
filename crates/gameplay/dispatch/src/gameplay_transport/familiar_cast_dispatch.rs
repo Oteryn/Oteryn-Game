@@ -855,7 +855,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .is_ok_and(|owned| familiar_return_within_summon_cap(owned.len()))
                     || !familiar_return_placement_available(
                         &runtime,
-                        self.movement_cells,
+                        self.movement_cells(),
                         profile,
                         actor,
                     )

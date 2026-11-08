@@ -29,6 +29,22 @@ pub(super) fn source_world_choices(
     choices: &[(u16, u16)],
     appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_positions(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, unique)| (*x, chest.1, *unique))
+            .collect::<Vec<_>>(),
+        appearance,
+    )
+}
+
+/// Preserve all source placements of one shared claim, including different rows.
+pub(super) fn source_world_positions(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -52,31 +68,44 @@ pub(super) fn source_world_choices(
     };
     let min_x = choices
         .iter()
-        .map(|(x, _)| *x)
+        .map(|(x, _, _)| x.saturating_sub(2))
         .min()
         .ok_or("source choices")?
         .min(chest.0 - 2);
     let max_x = choices
         .iter()
-        .map(|(x, _)| *x)
+        .map(|(x, _, _)| *x)
         .max()
         .ok_or("source choices")?
         .max(chest.0);
+    let min_y = choices
+        .iter()
+        .map(|(_, y, _)| *y)
+        .min()
+        .ok_or("source choices")?;
+    let max_y = choices
+        .iter()
+        .map(|(_, y, _)| *y)
+        .max()
+        .ok_or("source choices")?;
     data.manifest.world = bundle::Extent {
         min_x,
-        min_y: chest.1,
+        min_y,
         max_x: max_x + 1,
-        max_y: chest.1 + 1,
+        max_y: max_y + 1,
         floors: vec![chest.2],
     };
-    let tiles = (min_x..=max_x)
-        .map(|x| sector::Tile {
+    let tiles = (min_y..=max_y)
+        .flat_map(|y| (min_x..=max_x).map(move |x| (x, y)))
+        .map(|(x, y)| sector::Tile {
             x,
-            y: chest.1,
+            y,
             flags: 0,
             house: 0,
             zones: Vec::new(),
-            items: if let Some((_, unique)) = choices.iter().find(|(placed, _)| *placed == x) {
+            items: if let Some((_, _, unique)) =
+                choices.iter().find(|(px, py, _)| (*px, *py) == (x, y))
+            {
                 vec![
                     ground(),
                     sector::Item {
@@ -96,19 +125,23 @@ pub(super) fn source_world_choices(
     // The Demon Helmet source chest is one tile from a sector boundary; its
     // approach tiles belong to the neighbouring sector. Preserve every tile's
     // actual sector rather than assigning the whole fixture to the chest sector.
-    let mut grouped = std::collections::BTreeMap::<u16, Vec<sector::Tile>>::new();
+    let mut grouped = std::collections::BTreeMap::<(u16, u16), Vec<sector::Tile>>::new();
     for tile in tiles {
-        grouped.entry(tile.x / 32).or_default().push(tile);
+        grouped
+            .entry((tile.x / 32, tile.y / 32))
+            .or_default()
+            .push(tile);
     }
-    let sectors = grouped
+    let mut sectors = grouped
         .into_iter()
-        .map(|(sx, tiles)| bundle::Sector {
+        .map(|((sx, sy), tiles)| bundle::Sector {
             floor: chest.2,
             sx,
-            sy: chest.1 / 32,
+            sy,
             tiles,
         })
         .collect::<Vec<_>>();
+    sectors.sort_by_key(bundle::order);
     let bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
     pins.digest = bundle::read(&bytes)?.digest;
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
@@ -206,7 +239,15 @@ pub(super) async fn wire_uses(
 
 pub(super) async fn wire_use_targets(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: AdmittedSession,
+    mut admitted: AdmittedSession,
+    commands: &[(u64, &WorldObjectTarget)],
+) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
+    wire_use_targets_retained(owner, &mut admitted, commands).await
+}
+
+pub(super) async fn wire_use_targets_retained(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
     commands: &[(u64, &WorldObjectTarget)],
 ) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
     use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
@@ -257,7 +298,7 @@ pub(super) async fn wire_use_targets(
         std::time::Duration::from_secs(30),
         super::fixture::join_two(
             async {
-                let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+                let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
                 drop(server);
                 end
             },
@@ -265,6 +306,12 @@ pub(super) async fn wire_use_targets(
         ),
     )
     .await?;
+    use crate::gameplay_transport::connection::ConnectionEnd;
+    if let ConnectionEnd::AdmittedThenDisconnected(next)
+    | ConnectionEnd::AdmittedThenClosed(next, _) = &end
+    {
+        *admitted = *next;
+    }
     results.map_err(|error| format!("{end:?}: {error}").into())
 }
 

@@ -47,7 +47,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
             }
         }
-        let room = self.rooms.gate_attack_target();
+        let room = self.rooms().gate_attack_target();
         if target.is_some_and(|target| states.player_ref_hidden_from(&runtime, actor, target, now))
         {
             return oteryn_protocol_oteryn::attack::AttackIntentDisposition::TargetNotVisible;

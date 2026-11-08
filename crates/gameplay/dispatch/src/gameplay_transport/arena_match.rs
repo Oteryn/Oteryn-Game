@@ -88,7 +88,7 @@ pub(super) fn walkable(
         y: at.y,
         z: i32::from(at.floor),
     };
-    let cells = owner.movement_cells;
+    let cells = owner.movement_cells();
     cells.scope().generation_digest == runtime.content_pin().server_artifact_digest()
         && cells.index().lookup(cells.scope(), cell) == Ok(CollisionClass::Walkable)
         && owner
@@ -662,11 +662,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut contents = Vec::new();
         for (source, quantity) in reward.contents {
             contents.push(RewardClaimMintContent {
+                fluid_subtype: None,
                 item: facts(source)?,
                 quantity,
                 key_number: None,
                 text: None,
-                fluid_subtype: None,
                 charges_remaining: None,
             });
         }

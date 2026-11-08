@@ -8,8 +8,6 @@ mod marlin_trophy;
 mod items;
 mod rewards;
 
-/// Constructed only by this fenced NPC owner after current equipment admission.
-pub(in crate::durability) struct NpcItemPermit(());
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NpcProgramRequest {
@@ -189,10 +187,12 @@ impl DurabilityRoot {
     }
 
     /// One source storage operation, including Father's eleven-track acceptance, is one transaction.
+    #[allow(clippy::too_many_arguments, reason = "physical lane, current authority and item content are independent proofs")]
     pub async fn commit_character_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
         fence: CurrentCharacterGameplayFence,
         request: NpcProgramRequest,
         catalogue: Arc<QuestStateCatalogue>,
@@ -208,6 +208,8 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        permit.check_scope(fence.runtime_scope)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -321,7 +323,7 @@ impl DurabilityRoot {
                 let applied = if marlin_items {
                     marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
                 } else if generic_items {
-                    items::apply(&mut tx, fence, &request, &plan, *content, &node).await?
+                    items::apply(&mut tx, fence, &request, &plan, *content, &node, permit).await?
                 } else {
                     fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?
                 };

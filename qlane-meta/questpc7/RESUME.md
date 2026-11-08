@@ -1,3 +1,43 @@
+# Main merge validation and ownership reconciliation — 2026-11-08 10:24 UTC
+
+Latest pushed parent: 5c39e6be3c934499b27ff01f6c3cc63b8af46581.
+Merge origin/main3209d3d61d87451339ca09095e00aa43617bb83f remains open;
+conflicts resolved and earlier all-target compile passed. Final regenerated-tree
+compile, own PG and exact CI authoring checks/unit runner are running.
+Closed equipment union3929: every parent profile preserved, exactly35 added;
+new questpc7_merge_profile_delta.py verifies the exact identity delta. Registered
+residual97 accounts for main's explicit floor26/callback23, twelve newly named
+cohort entries and seven shared profiles. Duplicate corpse cohort insertion is
+fixed idempotently. Frozen SOURCE amendment verifies every approved core unchanged.
+Content-tree validator now includes the exact additional Thaian Creature1864.
+No new migration; main owns0999-1008, lane1280/81/83/86/87/88 retained.
+Whole node-boot invoked with the exact Platform3bc2d0 checkout in disposable
+Ubuntu24 runner. It reached Platform compose build and failed: failed to fetch
+anonymous token: Get https://auth.docker.io/token?scope=repository%3Adocker%2Fdockerfile%3Apull&service=registry.docker.io:
+dial tcp104.18.43.178:443: connect: connection refused. Cleanup complete; no node
+boot qualification claimed. Full source log in scratch/questpc7-whole-node-boot.log.
+Hot Cuisine still needs qengine2 real-level/Premium input (npc_program.rs:148
+still level0). Current reward parser admits16 take entries; runtime recipe owner
+must be tested separately. Do not reuse old eight-input assumption as evidence.
+Final own scope4: Exchange, Hidden Threats, Hot Cuisine, Hunting for Tokens.
+Other21 exact packet claims are skipped in LANE-questpc7.json, preserving history.
+
+# Binding ownership rescan — 2026-11-08 09:38 UTC
+
+Checked all25 originclaude/happy-davinci-ijz3wy-quest* branches,29LANEpacket
+occurrences. Exact owning entries claim21oforiginal25titles. PerlatestANY-title
+ownerdecision, skipthose21(includingQENGINE2mechanism packets namingparentquests),
+retain4: ExchangeQuests, HiddenThreatsQuest, HotCuisineQuest, HuntingforTokensQuest.
+Historicalqualificationevidence/code remainsforcollector; no redo ordeletion.
+FinalpacketLANE-questpc7.json containsallskippedtitles/owners/branchsha/packet
+witnesses. Retainedcounts3QUALIFIED,1ACTIVE(HotCuisine). No ownershipquestions.
+Mainmergepass1 checkpointed andabortedafter15min; abortindexneededgitadd-u first.
+Pass2replayed fixes, currentlibrariescompile; latestalltargeterrors limitedtest
+constructor/permit plumbing, fixed. PreserveexistingPremiumgateentrypoints plus
+mainwheelawareweights/actor/worldadmissionguards; no newenginefeature. Next full
+regenerationLAST, exactCIquest-authoringchecks+unit-tests/content-treevalidation,
+wholeNodeBootvariants whereapplicable, ownPGandcratechecks beforeanypush.
+
 # Slug fresh-corpse production PG QUALIFIED; publish then MAIN — 2026-11-08 09:08 UTC
 
 ActualPG18.6 RED91.212731681s corpse_item_inadmissible ->GREEN72.27338302s.
