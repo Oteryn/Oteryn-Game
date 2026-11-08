@@ -204,3 +204,24 @@ fn engenc_encounter_roster_rolls_back_late_spawn_and_map_projection_failures() -
     assert_eq!(runtime.visible_entities().creatures.len(), 0);
     Ok(())
 }
+
+#[test]
+fn worldchg_preflight_retains_actor_slots_and_movement_for_the_real_commit() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let step = player(&mut runtime)?;
+    let before = runtime.encounter_fixture_snapshot();
+    let monsters = [("creature:rat", 20, position(111))];
+    checked(runtime.preflight_quest_encounter_entry(vec![step], &monsters))?;
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    assert_eq!(
+        checked(runtime.read_actor_position(step.actor))?,
+        step.expected
+    );
+    assert!(runtime.visible_entities().creatures.is_empty());
+    let (players, actors) =
+        checked(runtime.commit_quest_encounter_entry_with_roster(vec![step], &monsters, || true))?;
+    assert_eq!(players[0].position(), step.destination);
+    assert_eq!(actors.len(), 1);
+    assert!(runtime.contains_live_creature(actors[0]));
+    Ok(())
+}
