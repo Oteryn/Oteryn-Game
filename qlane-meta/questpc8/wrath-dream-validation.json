@@ -1,5 +1,5 @@
 {
-  "state": "COMPILE_AND_QUEST_UNITS_GREEN_NATIVE_POSTGRES_PENDING",
+  "state": "NATIVE_POSTGRES_GREEN",
   "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
   "baseline": {
     "case": "nx6_wayfarer_real_npc_atomic_finale_replay_and_fences",
@@ -27,15 +27,23 @@
   "checks": {
     "workspace": {
       "exit": 0,
-      "seconds": 191.74782913200033
+      "seconds": 110.9995363689959
     },
     "fmt": {
       "exit": 0,
-      "seconds": 11.697780268004863
+      "seconds": 11.374426850001328
     },
     "dups": {
       "exit": 0,
-      "seconds": 0.2944195320014842
+      "seconds": 0.293483567002113
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 168.55717318798997
+    },
+    "pg": {
+      "exit": 0,
+      "seconds": 331.2792491619912
     }
   },
   "regeneration": {
@@ -100,7 +108,49 @@
     "Wrath": "Continue chosen graph; item-look disguise still queued with qengine2"
   },
   "pending": [
-    "remaining dispatch full unit coverage: CI scope; not claimed complete",
-    "three focused native PostgreSQL cases and clippy still in active sequential driver; PREPUSH-2 step3 cadence exception"
-  ]
+    "remaining dispatch full unit coverage: CI scope; not claimed complete"
+  ],
+  "green": {
+    "cases": [
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_colours_opening::questpc8_colours_native_envelope_and_self_marking_postgres",
+        "seconds": 68.289
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::nx6_wayfarer::nx6_wayfarer_real_npc_atomic_finale_replay_and_fences",
+        "seconds": 69.269
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_wrath_opening::questpc8_wrath_native_opening_exact_materials_crate_and_replay",
+        "seconds": 98.435
+      }
+    ],
+    "markers": [
+      "POSTGRES_CASE_STARTED authored-colours-opening after PostgreSQL fixture initialization",
+      "POSTGRES_CASE_STARTED questpc8_colours_opening after PostgreSQL fixture initialization",
+      "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_colours_opening duration=68.247384161s result=Ok(())",
+      "POSTGRES_CASE_STARTED questpc8_wrath_dream_report",
+      "POSTGRES_WRATH_DREAM_RECEIPT_STAGE_REPLAY_AND_COLD_REFUSAL_PASS",
+      "NX6_POSTGRES_CASE_COMPLETED elapsed=34.150015952s",
+      "POSTGRES_CASE_STARTED authored-wrath-opening after PostgreSQL fixture initialization",
+      "POSTGRES_CASE_STARTED questpc8_wrath_opening after PostgreSQL fixture initialization",
+      "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_wrath_native_opening duration=98.385301506s result=Ok(())"
+    ],
+    "summary": "Summary [  98.437s] 3 tests run: 3 passed (3 slow), 2966 skipped",
+    "product_head": "bd7f26fe8f177994d8ef1f0cf27c85cb46427b13"
+  },
+  "repaired_validation_failure": {
+    "case": "nx6_wayfarer_real_npc_atomic_finale_replay_and_fences",
+    "seconds": 69.232,
+    "point": "6301 dream journey rejected; NX6 donor fixture lacked native Premium authority",
+    "all_selected_results_collected": {
+      "passed": 2,
+      "failed": 1
+    },
+    "fix": "Provision existing latched Premium fixture and session admission; require authority before missing-receipt check; preserve production requirement",
+    "rerun": "all3selectedcasesPASS98.437s",
+    "log": "/tmp/questpc8b-dream-first-green-attempt.log"
+  }
 }

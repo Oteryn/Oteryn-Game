@@ -1462,7 +1462,7 @@
     },
     "main_sync": {
       "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
-      "state": "COMPILE_AND_QUEST_UNITS_GREEN_NATIVE_POSTGRES_PENDING",
+      "state": "NATIVE_POSTGRES_GREEN",
       "proof": "wrath-dream-validation.json"
     },
     "authoring_round_trip": "Published envelope/self-mark rows restored to canonical author input; opening PG revalidation included in wrath-dream-validation.json"
@@ -1753,11 +1753,11 @@
     },
     "main_sync": {
       "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
-      "state": "COMPILE_AND_QUEST_UNITS_GREEN_NATIVE_POSTGRES_PENDING",
+      "state": "NATIVE_POSTGRES_GREEN",
       "proof": "wrath-dream-validation.json"
     },
     "dream_slice": {
-      "state": "COMPILE_AND_QUEST_UNITS_GREEN_NATIVE_POSTGRES_PENDING",
+      "state": "NATIVE_POSTGRES_GREEN",
       "proof": "wrath-dream-validation.json",
       "scope": "Chosen Wrath s7 report advances stage6 to7 after exact dream receipt; no item/achievement reward and no whole-quest completion"
     }
