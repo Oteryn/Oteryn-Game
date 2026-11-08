@@ -2,7 +2,7 @@
   "schema": 1,
   "lane": "questpc2",
   "branch": "claude/happy-davinci-ijz3wy-questpc2-n2-n3",
-  "base_main": "3b4696be310eb76fa02b2cfae4f7addcbb779dd3",
+  "base_main": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
   "scope_source": {
     "ref": "2f12120aaec72a2dbfac209eb61c563ea1eadd6e",
     "path": "qlane-meta/questpc2/LANE-L3.json"
