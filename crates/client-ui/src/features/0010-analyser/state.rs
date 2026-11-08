@@ -33,6 +33,8 @@ pub struct Panel {
     pub selected: bool,
     pub open: bool,
     pub kills: u64,
+    pub kills_by_race: std::collections::BTreeMap<u32, u64>,
+    pub export_path: String,
     pub raw_xp: u64,
     pub gained_xp: u64,
     pub gold: u64,

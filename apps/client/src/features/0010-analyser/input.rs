@@ -87,10 +87,37 @@ pub(in crate::play) fn submit(
     {
         oteryn_client_ui::analyser::set_xp_goal(&mut mailbox.analyser, value);
     } else if action == tools + 2
-        && let [_, item, price] = values.as_slice()
+        && let [_, item, price, ..] = values.as_slice()
     {
         oteryn_client_ui::analyser::set_item_price(&mut mailbox.analyser, item, price);
     } else if action == tools + 3 {
         resolve_items(mailbox, commands);
+    } else if action == tools + 4
+        && let Some(path) = values.get(3)
+    {
+        mailbox.analyser.export_path = path.clone();
+        mailbox.analyser.feedback = Some(
+            match save_session(&mailbox.analyser, std::path::Path::new(path)) {
+                Ok(()) => "Session report exported",
+                Err(_) => "Session export failed; choose a writable file path",
+            },
+        );
+    }
+}
+
+/// The player explicitly supplies a destination; remote identities never supply paths.
+pub(in crate::play) fn save_session(
+    panel: &oteryn_client_ui::analyser::Panel,
+    path: &std::path::Path,
+) -> std::io::Result<()> {
+    if !panel.selected {
+        return Err(std::io::Error::other("No active analyser session"));
+    }
+    std::fs::write(path, oteryn_client_ui::analyser::session_text(panel))
+}
+
+impl PlayLink {
+    pub fn analyser_save_session(&self, path: &std::path::Path) -> std::io::Result<()> {
+        save_session(&lock(&self.mailbox).analyser, path)
     }
 }

@@ -15,6 +15,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "XP still needed for your level goal (blank disables)",
                 "Item number from loot or supply list",
                 "Unit item value (gold)",
+                "Session export file path",
             ],
             buttons: &[
                 "Overview",
@@ -34,6 +35,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Apply level goal",
                 "Apply item price",
                 "Resolve item info",
+                "Export (replace file)",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.analyser;
@@ -44,6 +46,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         panel.goal_input.clone(),
                         panel.price_input[0].clone(),
                         panel.price_input[1].clone(),
+                        panel.export_path.clone(),
                     ],
                     oteryn_client_ui::analyser::panel_text(panel),
                 )

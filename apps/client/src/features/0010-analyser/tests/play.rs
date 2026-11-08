@@ -137,3 +137,62 @@ fn merged_analyser_controls_keep_selectors_prices_resolve_and_reset_distinct()
     assert_eq!(mailbox.analyser.tool, Tool::Impact);
     Ok(())
 }
+
+#[test]
+fn analyser_session_export_writes_confirmed_report_through_native_action()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _, outbox) = play_channel();
+    let path = std::env::temp_dir().join(format!(
+        "oteryn-hunt-{}-{}.txt",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos()
+    ));
+    assert!(link.analyser_save_session(&path).is_err());
+    assert!(!path.exists());
+    outbox.analyser_initialize(true);
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 1,
+        new_revision: 2,
+        value: vec![
+            AnalyserFact::Kill { race: None },
+            AnalyserFact::KillLoot {
+                race: None,
+                corpse_items: vec![],
+                gold: 12,
+            },
+        ],
+    })]);
+    std::fs::write(&path, "old report")?;
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        crate::play::feature_0010_analyser::input::submit(
+            &mut mailbox,
+            &link.commands,
+            oteryn_client_ui::analyser::Tool::ALL.len() + 4,
+            vec![
+                String::new(),
+                String::new(),
+                String::new(),
+                path.to_string_lossy().into_owned(),
+            ],
+        );
+        assert_eq!(mailbox.analyser.feedback, Some("Session report exported"));
+    }
+    let report = std::fs::read_to_string(&path)?;
+    std::fs::remove_file(path)?;
+    for expected in [
+        "Hunting Session",
+        "Kills: 1",
+        "Priced balance: 12 gold",
+        "Race unavailable: 1",
+        "Loot Analyser",
+        "Supply Analyser",
+    ] {
+        assert!(report.contains(expected), "missing {expected}: {report}");
+    }
+    assert!(!report.contains("old report"));
+    Ok(())
+}

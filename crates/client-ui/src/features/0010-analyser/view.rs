@@ -17,7 +17,7 @@ pub fn panel_text(panel: &Panel) -> String {
         super::Tool::Supply => supply_text(panel, panel.clock.seconds()),
         super::Tool::Impact => impact_text(panel, panel.clock.seconds()),
         super::Tool::Input => input_text(panel, panel.clock.seconds()),
-        super::Tool::Session => format!("Hunting Session\r\n{}", overview(panel)),
+        super::Tool::Session => session_text(panel),
         super::Tool::Party => "Party Hunt\r\nNo party accounting received".into(),
         super::Tool::LootTracker => format!("Loot Tracker\r\nLoot: {} items", panel.loot_items),
         super::Tool::Kills => format!("Kill Tracker\r\nKills: {}", panel.kills),
@@ -252,5 +252,39 @@ pub(super) fn input_text(panel: &Panel, seconds: u64) -> String {
         };
         let _ = write!(text, "\r\n{name}: {value} {}", gauge(*value, total));
     }
+    text
+}
+
+/// A report independent of which analyser tab is currently selected.
+pub fn session_text(panel: &Panel) -> String {
+    session_text_at(panel, panel.clock.seconds())
+}
+pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
+    use std::fmt::Write;
+    let balance = i128::from(panel.loot_value()) - i128::from(panel.supply_cost());
+    let balance_rate = if seconds == 0 {
+        0
+    } else {
+        balance * 3600 / i128::from(seconds)
+    };
+    let mut text = format!(
+        "Hunting Session\r\nElapsed: {seconds} seconds\r\nXP/h: {}\r\nRaw XP/h: {}\r\nPriced balance: {balance} gold\r\nPriced balance/h: {balance_rate} gold\r\nOnly resolved, priced items and confirmed gold enter the balance.\r\n{}\r\nKills by creature race",
+        super::state::per_hour(panel.gained_xp, seconds),
+        super::state::per_hour(panel.raw_xp, seconds),
+        overview(panel)
+    );
+    for (race, count) in &panel.kills_by_race {
+        if *race == 0 {
+            let _ = write!(text, "\r\nRace unavailable: {count}");
+        } else {
+            let _ = write!(text, "\r\nRace #{race}: {count}");
+        }
+    }
+    let _ = write!(
+        text,
+        "\r\n\r\n{}\r\n\r\n{}",
+        loot_text(panel, seconds),
+        supply_text(panel, seconds)
+    );
     text
 }

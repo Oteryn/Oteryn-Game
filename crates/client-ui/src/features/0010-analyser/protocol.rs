@@ -11,7 +11,14 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
     }
     for fact in facts {
         match fact {
-            AnalyserFact::Kill { .. } => panel.kills = panel.kills.saturating_add(1),
+            AnalyserFact::Kill { race } => {
+                panel.kills = panel.kills.saturating_add(1);
+                let count = panel
+                    .kills_by_race
+                    .entry(race.map_or(0, |race| race.get()))
+                    .or_default();
+                *count = count.saturating_add(1);
+            }
             AnalyserFact::Experience { raw, gained } => {
                 panel.xp_chart.add(seconds, *gained);
                 panel.raw_xp_chart.add(seconds, *raw);
@@ -92,6 +99,7 @@ pub fn reset(panel: &mut Panel) {
         .map(|goal| goal.saturating_sub(panel.gained_xp));
     *panel = Panel {
         tool: panel.tool,
+        export_path: std::mem::take(&mut panel.export_path),
         loot_prices: std::mem::take(&mut panel.loot_prices),
         supply_prices: std::mem::take(&mut panel.supply_prices),
         item_info: std::mem::take(&mut panel.item_info),
