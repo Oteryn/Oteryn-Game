@@ -1001,9 +1001,9 @@
   "src": "TIBAUD-1",
   "area": "House",
   "feature": "Hireling jobs/name/sex/outfit config",
-  "status": "PARTIAL",
-  "gap": "Podgląd nazwy/płci, jobów i oczekującego outfitu jest; brak wspólnego pełnego edytora name/sex/jobs/outfit.",
-  "evidence": "crates/client-ui/src/features/0250-hireling-management/view.rs:2 + hireling_configuration_displays_owned_jobs_and_pending_outfit_preview; left: Podgląd nazwy/płci, jobów i oczekującego outfitu jest; brak wspólnego pełnego edytora name/sex/jobs/outfit.",
+  "status": "DONE",
+  "gap": "Jedno natywne okno udostępnia wybór owned Hireling/outfit/kolorów, podgląd, name/sex i cztery jobs; płatne zmiany korzystają z istniejącego Store quote i potwierdzenia tożsamości/ceny. Po wyniku wymagany jest refresh owned state.",
+  "evidence": "apps/client/src/features/0250-hireling-management/input/configuration.rs:87 + unified_hireling_configuration_binds_identity_and_quote_before_sending; apps/client/src/features/0250-hireling-management/native.rs:98 + hireling_management_crosses_the_real_session_loop",
   "lane": "cg_ui"
  },
  {
