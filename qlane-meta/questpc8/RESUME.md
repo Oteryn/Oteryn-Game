@@ -1,3 +1,15 @@
+# Latest checkpoint: main3209 cleanly merged; focused native retest pending
+
+Clean five-file incoming Soulpit/durability/count merge. Workspace all-targets
+check169.157s, fmt, dup-migrations and four incoming durability unit tests PASS.
+Own quest/placement sources were frozen and native2/2GREEN100.359s before this
+main merge: source-world dragon100.009s, imperial hunt100.356s. Combined-head
+clippy and the same2PG retest remain active; do not claim that retest complete.
+See main-3209-validation.json and the preserved pre-main log. Existing generators
+and exact3924-key union remain current because main changed no content inputs.
+No new migration or quest rule; whole quest count stays21/23. The source NPC
+placement is implemented; combined runtime evidence is the next step.
+
 # Latest checkpoint: Wrath source Sleeping Dragon COMPILE_GREEN_NATIVE_RETEST_PENDING
 
 Source NPC33242,31213,z10 is now scoped by existing placement overrides with

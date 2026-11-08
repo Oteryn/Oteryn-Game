@@ -1461,9 +1461,9 @@
       "qualification_unchanged": true
     },
     "main_sync": {
-      "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-      "state": "COMPILE_GREEN_NATIVE_RETEST_PENDING",
-      "proof": "wrath-source-dragon-validation.json"
+      "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+      "state": "COMPILE_GREEN_FOCUSED_NATIVE_RETEST_PENDING",
+      "proof": "main-3209-validation.json"
     },
     "authoring_round_trip": "Published envelope/self-mark rows restored to canonical author input; opening PG revalidation included in wrath-dream-validation.json"
   },
@@ -1752,9 +1752,9 @@
       "qualification_unchanged": true
     },
     "main_sync": {
-      "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-      "state": "COMPILE_GREEN_NATIVE_RETEST_PENDING",
-      "proof": "wrath-source-dragon-validation.json"
+      "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+      "state": "COMPILE_GREEN_FOCUSED_NATIVE_RETEST_PENDING",
+      "proof": "main-3209-validation.json"
     },
     "dream_slice": {
       "state": "NATIVE_POSTGRES_GREEN",
@@ -1777,7 +1777,12 @@
         33242,
         31213,
         10
-      ]
+      ],
+      "pre_main_green": {
+        "source_world_dragon_seconds": 100.009,
+        "imperial_hunt_seconds": 100.356,
+        "proof": "main-3209-validation.json"
+      }
     }
   },
   {
