@@ -1,7 +1,7 @@
 {
   "lane": "questpc3",
   "branch": "claude/happy-davinci-ijz3wy-questpc3b-n3",
-  "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+  "base_main": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
   "scope_total": 22,
   "owned_retained": 6,
   "other_owner_excluded": 16,
@@ -11,7 +11,8 @@
   "engine_heads": {
     "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
     "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
-    "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+    "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+    "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
   },
   "quests": [
     {
@@ -88,10 +89,18 @@
   "validation": {
     "scope_audit": "PASS; exact6 retained packet identities; no NOT STARTED/IN_PROGRESS rows remain",
     "gameplay": "No new gameplay qualification claimed. Earlier PG proofs belong to previous branch only.",
-    "generated_files": "No content, runtime, schema, generator inputs, migration, or pin changed; no derived artifact requires regeneration.",
-    "workspace_check": "PASS cargo check --workspace --all-targets;7m31s; /tmp/questpc3-n3-workspace.log",
-    "fmt": "PASS cargo fmt --all --check; /tmp/questpc3-n3-fmt.log",
-    "duplicate_migrations": "PASS .claude/skills/oteryn-dev/scripts/dup-migrations.sh; no migration changed",
-    "final_main_sync": "PASS; origin/main unchanged; already up to date"
+    "generated_files": "No lane-authored content/schema/world/generator/serve input changed relative to merged main6ef6b0cad; accepted main generated files preserved unchanged. Automatic server PG/migration registrations rebuilt by cargo. No derived file was hand-edited.",
+    "workspace_check": "PASS cargo check --workspace --all-targets on SEASON6ef6b0cad merge;7m52s; /tmp/questpc3-n3-season-workspace.log",
+    "fmt": "PASS cargo fmt --all --check on SEASON6ef6b0cad merge",
+    "duplicate_migrations": "PASS repository duplicate-migration check on main6ef6b0cad; no lane migration authored or renumbered",
+    "final_main_sync": "PASS: main6ef6b0cad merged first and used as the fixed validation snapshot; six allowed terminal statuses and missing collector callback/test artefacts rechecked.",
+    "upstream_focused_pg": "PostgreSQL18.6 reset-lock case PASS8.450s on preceding3b4696be3 tree, MAINRED1108 PG EXECUTED marker. Its test and migration1553 unchanged by SEASON; no current-head PG claim made.",
+    "authored_runtime_delta": "NONE relative to origin/main; current lane changes are handoff records only. No new gameplay PG result or whole-quest DONE status asserted."
+  },
+  "previous_base_main": "3b4696be310eb76fa02b2cfae4f7addcbb779dd3",
+  "main_delivery": "MAINRED1108 runtime reset-epoch locked reads1553 reused unchanged. This repairs native boss/reset reading but does not provide the missing quest callback, annual date guard, target-stack conversion or world-clock contract. Subsequent SEASON6ef6b0cad merged unchanged. Its seasonal NPC adapter is specific to Santa/Brutus/bakers; it does not supply the outstanding NPC annual/day guard, Threatened appearances, world callback clock operations or target-stack conversion.",
+  "engine_delivery_notes": {
+    "ENGNPC": "Sixteen-track capacity/receipt delivery inspected; CalendarMonth remains the only calendar guard. No annual date or scheduled Threatened appearance contract delivered.",
+    "SEASON": "Current main adds fixed Santa/Brutus/baker projections; no change to the four cited quest-engine gap blobs."
   }
 }
