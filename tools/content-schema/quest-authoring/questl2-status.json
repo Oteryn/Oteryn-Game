@@ -3738,7 +3738,27 @@
         "seconds": 425.4788260350033,
         "state": "PASS"
       },
-      "checks_after_merge": "IN_PROGRESS"
+      "checks_after_merge": {
+        "workspace": {
+          "state": "PASS",
+          "seconds": 279.696931131999
+        },
+        "clippy": {
+          "state": "PASS",
+          "seconds": 471.5987091740026
+        },
+        "pins": {
+          "state": "PASS",
+          "seconds": 25.136805963004008
+        },
+        "focused_content_units": {
+          "state": "PASS",
+          "seconds": 52.23021066000365
+        },
+        "fmt": "PASS",
+        "native_freshness": "PASS 46 outputs; equipment source-ID and identity-union checks pass"
+      },
+      "merge_commit": "72979ce3b"
     }
   }
 }
