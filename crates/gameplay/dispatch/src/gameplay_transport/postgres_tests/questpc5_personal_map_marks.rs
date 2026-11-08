@@ -52,6 +52,35 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    let current = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("current Character controller")?;
+    let fence = current.item_fence();
+    admitted.item_fence = Some(fence);
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    assert!(
+        crate::gameplay_transport::battle_instinct_status::actor_is_current(
+            &*owner.runtime.lock().await,
+            *admitted,
+        )
+    );
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -63,12 +92,43 @@ pub(super) async fn exercise(
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(offered, &selected)
             .ok_or("initial selection")?;
     assert!(owner.personal_map_marks_query(*admitted).await.is_none());
-    selected.extend([3, 6, 18, 449]);
+    selected.extend([3, 4, 6, 18, 449]);
     selected.sort_unstable();
     selected.dedup();
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(offered, &selected)
             .ok_or("selection")?;
+    assert!(
+        offered.iter().any(|entry| entry.id == 449),
+        "World offers personal marks"
+    );
+    assert!(
+        admitted.continuity.selected_capabilities.contains(449),
+        "the full World map dependency closure was negotiated"
+    );
+    assert!(
+        owner.personal_map_marks_available(),
+        "composed capability hook is installed"
+    );
+    {
+        let permit = owner
+            .spell_lane_permit()
+            .await
+            .ok_or("map query lane unavailable")?;
+        drop(permit);
+    }
+    let read_fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("map query current fence")?;
+    assert_eq!(Some(read_fence.item_fence()), admitted.item_fence);
+    let root_view = owner
+        .root
+        .read_character_quest_map_marks(owner.character, owner.holder, read_fence)
+        .await
+        .map_err(debug)?;
+    assert!(root_view.marks.is_empty());
     let empty = owner
         .personal_map_marks_query(*admitted)
         .await
@@ -92,6 +152,16 @@ pub(super) async fn exercise(
         .await
         .map_err(debug)?
         .ok_or("fence")?;
+    let state = owner
+        .root
+        .read_character_quest_state(owner.character, before.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(state.tracks().get(&format!("{PREFIX}mission")), Some(&4));
+    assert_eq!(
+        state.tracks().get(&format!("{PREFIX}treasure_marked")),
+        Some(&1)
+    );
     let payload = owner
         .personal_map_marks_query(*admitted)
         .await

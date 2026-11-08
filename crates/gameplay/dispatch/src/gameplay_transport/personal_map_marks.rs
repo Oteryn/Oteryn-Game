@@ -120,6 +120,24 @@ mod tests {
         world_callbacks::Position,
     };
     #[test]
+    fn personal_map_marks_selection_requires_the_world_map_dependency_closure()
+    -> Result<(), &'static str> {
+        use crate::gameplay_transport::capabilities::{
+            BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+        };
+        let incomplete =
+            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[3, 6, 18, 449])
+                .ok_or("bounded selection")?;
+        assert!(!incomplete.contains(18));
+        assert!(!incomplete.contains(449));
+        let complete =
+            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[3, 4, 6, 18, 449])
+                .ok_or("bounded selection")?;
+        assert!(complete.contains(18));
+        assert!(complete.contains(449));
+        Ok(())
+    }
+    #[test]
     fn personal_map_marks_projection_sorts_independently_of_database_collation()
     -> Result<(), &'static str> {
         let fact = |key: &str| PersonalQuestMapMark {
