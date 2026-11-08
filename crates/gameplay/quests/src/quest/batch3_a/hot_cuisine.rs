@@ -317,6 +317,7 @@ fn native_rule(recipe: &Recipe, guards: Vec<NpcRuleGuard>) -> NpcRule {
         npc: NPC.into(),
         trigger: NpcRuleTrigger::Say,
         keywords: vec!["yes".into()],
+        match_player_name: false,
         exclude_keywords: ["cook", "recipe", "menu", "apprentice"]
             .map(String::from)
             .to_vec(),

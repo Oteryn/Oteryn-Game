@@ -71,10 +71,22 @@ pub fn preview(
     now: i64,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
+    preview_with_player_name(request, tracks, catalogue, now, None)
+}
+
+/// The admitted chat name is preview data; the writer rereads the locked Character name.
+pub fn preview_with_player_name(
+    request: &NpcProgramRequest,
+    tracks: &BTreeMap<String, i64>,
+    catalogue: &QuestStateCatalogue,
+    now: i64,
+    player_name: Option<&str>,
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
+{
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    match evaluate_source(&source, request, tracks, catalogue, now, None) {
+    match evaluate_source(&source, request, tracks, catalogue, now, None, player_name) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
             &source,
             request,
@@ -82,6 +94,7 @@ pub fn preview(
             catalogue,
             now,
             Some(&fathers_burden::optimistic_inventory()),
+            player_name,
         ),
         Err(_) if marlin_trophy::owns(request) => evaluate_source(
             &source,
@@ -90,14 +103,21 @@ pub fn preview(
             catalogue,
             now,
             Some(&marlin_trophy::optimistic_inventory()),
+            player_name,
         ),
         Err(error) => match source
             .optimistic_item_inventory(&request.npc)
             .or_else(|| source.optimistic_equipped_inventory(&request.npc))
         {
-            Some(inventory) => {
-                evaluate_source(&source, request, tracks, catalogue, now, Some(&inventory))
-            }
+            Some(inventory) => evaluate_source(
+                &source,
+                request,
+                tracks,
+                catalogue,
+                now,
+                Some(&inventory),
+                player_name,
+            ),
             None => Err(error),
         },
         result => result,
@@ -111,6 +131,7 @@ fn evaluate_source(
     catalogue: &QuestStateCatalogue,
     now: i64,
     inventory: Option<&NpcInventorySnapshot>,
+    player_name: Option<&str>,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
     let mut complete = tracks.clone();
@@ -150,6 +171,7 @@ fn evaluate_source(
         npc: &request.npc,
         trigger: request.trigger,
         message: &request.message,
+        player_name,
         topic: request.topic,
         tracks: &complete,
         inventory: inventory.unwrap_or(&empty),
@@ -321,7 +343,12 @@ impl DurabilityRoot {
             } else if let Some(keys) = plain_keys.filter(|_| generic_items) {
                 Some(fathers_burden::inventory_for(&mut tx, fence, &keys).await?)
             } else { None };
-            let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref());
+            let player_name = if source.programs().iter().flat_map(|p| &p.document.rules)
+                .any(|rule| rule.npc == request.npc && rule.match_player_name) {
+                Some(super::super::character_chat_name::read_character_name_for_share_in_transaction(
+                    &mut tx, character.as_bytes()).await?)
+            } else { None };
+            let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref(),player_name.as_deref());
             if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !rewards::has_experience(&plan.effects) {
                 let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan) };
                 tx.commit(deadline).await?;
