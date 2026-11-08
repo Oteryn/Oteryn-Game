@@ -1244,4 +1244,8 @@ mod tests {
 }
 
 #[cfg(test)]
+#[path = "reward_callbacks/readable_text_tests.rs"]
+mod readable_text_tests;
+
+#[cfg(test)]
 mod multiple_rewards_tests;
