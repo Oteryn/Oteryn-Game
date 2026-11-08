@@ -90,6 +90,7 @@ pub(super) fn prepare(
         }
         tracks
     };
+    let player_name = admission.states.chat.speaker_name(command.game_session_id);
     let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
     let state = sessions.get_mut(&command.game_session_id)?;
     if matches!(state.catalogue, Some(Pending::Commit { .. })) {
@@ -113,7 +114,15 @@ pub(super) fn prepare(
             ["hi", "hello", "hail"]
                 .iter()
                 .any(|g| word.eq_ignore_ascii_case(g))
-        });
+        })
+        && !source
+            .matches_player_name_message(
+                &context.2,
+                &intent.text,
+                previous.as_ref().map_or(0, |p| p.topic),
+                player_name.as_deref(),
+            )
+            .ok()?;
     let mut request = NpcProgramRequest {
         command: CommandRef::new(
             command.game_session_id,
@@ -180,7 +189,14 @@ pub(super) fn prepare(
     } else {
         npc_program::NpcEligibility::default()
     };
-    let plan = match npc_program::preview(&request, &tracks, catalogue, now, &eligibility) {
+    let plan = match npc_program::preview_with_player_name(
+        &request,
+        &tracks,
+        catalogue,
+        now,
+        &eligibility,
+        player_name.as_deref(),
+    ) {
         Ok(Some(plan)) => plan,
         Ok(None) => {
             if greeting {
@@ -198,6 +214,7 @@ pub(super) fn prepare(
         topic: plan.next_topic,
     };
     if plan.track_changes.is_empty()
+        && !plan.completes
         && plan
             .effects
             .iter()
@@ -205,7 +222,7 @@ pub(super) fn prepare(
     {
         return Some(Step::Refused);
     }
-    if plan.track_changes.is_empty() && request.npc != "oteryn:npc.pemaret" {
+    if plan.track_changes.is_empty() && !plan.completes && request.npc != "oteryn:npc.pemaret" {
         let end = plan
             .effects
             .iter()

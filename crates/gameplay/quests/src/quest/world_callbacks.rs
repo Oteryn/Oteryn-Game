@@ -30,10 +30,13 @@ pub enum Trigger {
 mod clock;
 mod counterparts;
 mod effects;
+mod ground_stack;
+mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
-    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
+    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
 };
+pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -146,12 +149,15 @@ impl ActorKind {
     }
 }
 
-/// A read-only exact appearance predicate on a native, immovable map entry.
+/// A static native anchor, optionally guarded by an ordered durable Ground stack.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
     pub position: Position,
     pub appearance: u16,
+    /// Exact durable Ground roots, bottom first, in addition to the static anchor.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ground_stack: Option<Vec<GroundStackEntry>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -239,6 +245,14 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
+/// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    match catalogue.authored_world_callbacks() {
+        Some(callbacks) => Ok(callbacks.to_vec()),
+        None => load(),
+    }
+}
+
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
@@ -262,6 +276,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
+    ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
@@ -270,8 +287,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::fire_feathered_native::callbacks());
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
+    callbacks.push(super::targuna_ram::callback()?);
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
+    callbacks.push(super::source_world_objects::uneasy_crystal());
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());
@@ -284,6 +303,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)
+}
+
+pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
@@ -302,7 +325,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     Ok(())
 }
 
-fn parse(text: &str) -> Result<Vec<Callback>, String> {
+pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds".into());
@@ -356,6 +379,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.native_rule.is_some()
                     || callback.effects.item_reward.is_some()
                     || callback.effects.outfit_reward.is_some()
+                    || callback.effects.mount_reward.is_some()
                     || callback.effects.encounter.is_some()
                     || callback.effects.portals.is_some()
                     || callback.effects.item_cycle.is_some()
@@ -375,15 +399,19 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.native_rule.is_some()
                     || callback.effects.item_reward.is_some()
                     || callback.effects.outfit_reward.is_some()
+                    || callback.effects.mount_reward.is_some()
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
             || callback.world_requirements.len() > MAX_EFFECTS
-            || callback
-                .world_requirements
-                .iter()
-                .any(|r| !valid_pos(r.position) || r.appearance == 0)
+            || callback.world_requirements.iter().any(|r| {
+                !valid_pos(r.position)
+                    || r.appearance == 0
+                    || r.ground_stack.as_ref().is_some_and(|stack| {
+                        callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
+                    })
+            })
             || (!callback.world_requirements.is_empty()
-                && (!!callback.has_personal_state()
+                && ((callback.has_personal_state() && !callback.requires_world_admission)
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
@@ -391,7 +419,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
                     || callback.effects.item_reward.is_some()
-                    || callback.effects.outfit_reward.is_some()))
+                    || callback.effects.outfit_reward.is_some()
+                    || callback.effects.mount_reward.is_some()))
             || !effects::valid(callback)
             || callback
                 .facing
@@ -448,15 +477,20 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     })
             })
             || (!callback.offerings.is_empty() && !callback.has_personal_state())
+            || (callback.key.starts_with("oteryn:quest-callback/m01b/")
+                && !imported_explore::admitted(callback))
             || callback.sources.is_empty()
-            || !callback.sources.iter().any(|source| {
-                // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
-                    || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
-                    || (callback.effects.outfit_reward.is_some()
-                        && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
-                    || source.starts_with("crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
-            })
+            || !(imported_explore::admitted(callback)
+                || callback.sources.iter().any(|source| {
+                    // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
+                    source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                        || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
+                        || (callback.effects.outfit_reward.is_some()
+                            && source
+                                .starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
+                        || source
+                            .starts_with("crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
+                }))
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 let accepted: BTreeSet<_> = std::iter::once(item.item.as_str())
                     .chain(item.alternatives.iter().map(String::as_str))
@@ -550,11 +584,12 @@ fn extend_callbacks(
                         callback.key, storage.track
                     ));
                 }
+                let initial = imported_explore::initial(callback, storage);
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),
-                    initial: -1,
-                    min: -1,
+                    initial,
+                    min: initial,
                     max: if storage.preserve {
                         storage.maximum
                     } else {
@@ -638,7 +673,7 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                     .map(|operation| operation.quest_effect()),
             )
             .collect(),
-        completes: false,
+        completes: callback.effects.completes_quest,
         experience: callback.experience,
     })
 }
@@ -852,6 +887,7 @@ mod tests {
                 floor: -7,
             },
             appearance: 2773,
+            ground_stack: None,
         }];
         parse(&wire(&callback))?;
         callback.experience = Some(1);
@@ -1534,3 +1570,82 @@ pub fn completion_transition(callback: &Callback) -> Option<QuestTransition> {
 
 #[cfg(test)]
 mod completion_tests;
+
+#[cfg(test)]
+mod srv7_mount_reward_tests {
+    #[test]
+    fn srv7_world_mount_reward_requires_once_only_progress() -> Result<(), String> {
+        let mut value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-outfit-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        let callback = &mut value["callbacks"][0];
+        callback["effects"]
+            .as_object_mut()
+            .ok_or("effects")?
+            .remove("outfit_reward");
+        callback["requires_world_admission"] = true.into();
+        callback["effects"]["mount_reward"] =
+            serde_json::json!({"mount":"oteryn:content.mount.reliable_ram"});
+        callback["sources"] = serde_json::json!([
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/actions_reliable_ram.lua:20-50"
+        ]);
+        super::parse(&value.to_string())?;
+        for storage in value["callbacks"][0]["storage"]
+            .as_array_mut()
+            .ok_or("storage")?
+        {
+            storage["set"] = storage["minimum"].clone();
+        }
+        assert!(
+            super::parse(&value.to_string()).is_err(),
+            "repeatable mount grants must fail closed"
+        );
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod m07_trials_tests;
+
+#[cfg(test)]
+mod qn1_lifecycle_tests {
+    #[test]
+    fn uneasy_alliance_crystal_has_fenced_ten_second_reset() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let callback = callbacks
+            .iter()
+            .find(|c| c.key.ends_with("uneasy-alliance-crystal"))
+            .ok_or("missing native crystal callback")?;
+        assert_eq!(callback.selector.action, Some(40030));
+        assert_eq!(callback.effects.transform, Some(10187));
+        let value = serde_json::to_value(&callback.effects).map_err(|e| e.to_string())?;
+        assert_eq!(value["reset_after_ms"], 10000);
+        assert_eq!(callback.storage[0].minimum, 3);
+        assert_eq!(callback.storage[0].maximum, 3);
+        assert_eq!(callback.storage[0].set, 4);
+        let lowered =
+            crate::quest::loader::load_embedded_quest_state("qn1").map_err(|e| format!("{e:?}"))?;
+        let catalogue = lowered.catalogue();
+        super::parse(&serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string())?;
+        let transition = catalogue.transition(&callback.key).ok_or("transition")?;
+        let track = callback.storage[0].track.clone();
+        let stored = std::collections::BTreeMap::from([(track.clone(), 3)]);
+        let changes = catalogue
+            .evaluate(transition, &stored, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!((changes[0].before, changes[0].after), (3, 4));
+        for wrong_stage in [0, 2, 4, 5] {
+            assert!(
+                catalogue
+                    .evaluate(
+                        transition,
+                        &std::collections::BTreeMap::from([(track.clone(), wrong_stage)]),
+                        0
+                    )
+                    .is_err()
+            );
+        }
+        Ok(())
+    }
+}

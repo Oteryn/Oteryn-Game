@@ -25,8 +25,38 @@ struct TaskSnapshot {
     lease_generation: u64,
     observed_revision: u64,
     active_tasks: Vec<u8>,
-    native_counters: Vec<&'static str>,
+    native_counters: Vec<NativeCounterCapture>,
     source_objectives: Vec<&'static str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NativeCounterCapture {
+    transition: String,
+    creature: String,
+    definition_hash: Option<[u8; 32]>,
+}
+
+fn capture_native(
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Vec<NativeCounterCapture> {
+    use oteryn_gameplay_quests::quest::native_kills;
+    native_kills::active_for(catalogue, tracks)
+        .into_iter()
+        .filter_map(|key| {
+            let counter = native_kills::counter_for(catalogue, &key)?;
+            let definition_hash = if native_kills::counter(&key).is_some() {
+                None
+            } else {
+                Some(catalogue.definition_hash(counter.quest)?)
+            };
+            Some(NativeCounterCapture {
+                transition: key.clone(),
+                creature: counter.creature.into(),
+                definition_hash,
+            })
+        })
+        .collect()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -125,17 +155,16 @@ fn freeze(
         {
             continue;
         }
-        for transition in &snapshot.native_counters {
-            if oteryn_gameplay_quests::quest::native_kills::counter(transition)
-                .is_some_and(|counter| counter.creature == creature)
-            {
+        for counter in &snapshot.native_counters {
+            if counter.creature == creature {
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
                     character,
                     lease_generation: snapshot.lease_generation,
                     death: crate::durability::quest_state::native_kills::NativeQuestDeath {
-                        transition: (*transition).into(),
+                        transition: counter.transition.clone(),
+                        definition_hash: counter.definition_hash,
                         creature: creature.into(),
                         observed_revision: snapshot.observed_revision,
                         source:
@@ -188,6 +217,18 @@ fn freeze(
 /// Membership in the pinned Grizzly catalogue permits capture only, never a reward
 /// amount or a recipient. The native lethal facts and frozen live task runs still
 /// decide eligibility, and the fenced quest writer remains the sole value owner.
+pub(super) fn tracks_native_creature(queue: &KillSettlementQueue, creature: &str) -> bool {
+    oteryn_gameplay_quests::quest::native_kills::tracks_creature(creature)
+        || queue.1.lock().is_ok_and(|cache| {
+            cache.sessions.iter().any(|snapshot| {
+                snapshot
+                    .native_counters
+                    .iter()
+                    .any(|counter| counter.creature == creature)
+            })
+        })
+}
+
 pub(super) fn tracks_creature(creature: &str) -> bool {
     quest::catalogue().is_ok_and(|catalogue| {
         catalogue.bosses.iter().any(|boss| {
@@ -318,9 +359,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         lease_generation: lease.generation(),
                         observed_revision: revision,
                         active_tasks,
-                        native_counters: oteryn_gameplay_quests::quest::native_kills::active(
-                            copy.tracks(),
-                        ),
+                        native_counters: self
+                            .quest_catalogue
+                            .as_deref()
+                            .map(|catalogue| capture_native(catalogue, copy.tracks()))
+                            .unwrap_or_default(),
                         source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
                             copy.tracks(),
                         ),

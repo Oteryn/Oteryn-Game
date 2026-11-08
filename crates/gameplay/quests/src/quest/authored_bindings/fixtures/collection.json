@@ -1,0 +1,14 @@
+{
+  "schema":1,"quests":[{
+    "quest":"oteryn:quest.black_knight_quest",
+    "recipe_sha256":"187d512b68cabfe55e1d114362d97fe5ac410fd256af3adc68e9b4b413c4ca53",
+    "sources":["M01c engine fixture; not production quest qualification"],
+    "tracks":[{"key":"oteryn:quest-progress/m01c/collected","initial":0,"minimum":0,"maximum":1}],
+    "stages":[{"key":"s1","completes":false,"trigger":{"kind":"collect","collection":{
+      "key":"oteryn:quest-collection/m01c/black-knight-key",
+      "items":[{"item":"oteryn:item.tibia.i2969","count":1,"key_number":5010}],
+      "storage":[{"track":"oteryn:quest-progress/m01c/collected","minimum":0,"maximum":0,"set":1}],
+      "sources":["fixture: exact key number, not interchangeable with another key"]
+    }}}]
+  }]
+}

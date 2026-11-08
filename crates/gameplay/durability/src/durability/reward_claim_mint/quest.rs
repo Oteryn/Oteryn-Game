@@ -86,6 +86,7 @@ pub struct QuestRewardAdmission<'a> {
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
     pub actor_conditions: Option<&'a super::QuestActorConditionProof>,
     pub carried_use: Option<&'a QuestCarriedUse>,
+    pub creature_use: Option<&'a super::quest_creature::QuestCreatureUseProof>,
     pub peer_use: Option<&'a super::quest_peer::QuestPeerUseProof>,
 }
 
@@ -114,6 +115,11 @@ pub(crate) async fn apply(
         })
     {
         return Ok(false);
+    }
+    match (&callback.creature_target, admission.creature_use, admission.carried_use) {
+        (None, None, _) => {}
+        (Some(key), Some(proof), Some(carried)) if proof.permits(fence, request, key, carried) => {}
+        _ => return Ok(false),
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
