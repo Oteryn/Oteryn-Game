@@ -270,7 +270,7 @@ fn soulpit_recovery_projection_is_bound_to_admitted_session_and_selection() -> R
         .stack_size(64 << 20)
         .spawn(|| {
             block_on(async {
-                for fault in 0..6 {
+                for fault in 0..7 {
                     let (client, mut server) = tokio::io::duplex(256 * 1024);
                     let peer = tokio::spawn(async move {
                         let mut restored = receipt(0, 1, 1, false);
@@ -288,13 +288,29 @@ fn soulpit_recovery_projection_is_bound_to_admitted_session_and_selection() -> R
                         } else {
                             encode_activity_scope(&restored).map_err(|e| format!("{e:?}"))?
                         };
+                        let mut projections =
+                            vec![(99, 1, if fault == 5 { 2 } else { 1 }, payload)];
+                        if fault == 6 {
+                            // Even a valid gameplay domain may not precede
+                            // the retained binding after the two core domains.
+                            projections.insert(
+                                0,
+                                (
+                                    3,
+                                    1,
+                                    1,
+                                    actor_spell::encode_actor_vitals(&vitals(150, 55))
+                                        .map_err(|error| format!("{error:?}"))?,
+                                ),
+                            );
+                        }
                         join_peer_with(
                             &mut server,
                             &[117],
                             &[117],
                             &[],
                             (1, spatial(0)),
-                            &[(99, 1, if fault == 5 { 2 } else { 1 }, payload)],
+                            &projections,
                         )
                         .await?;
                         Ok::<(), BoxError>(())

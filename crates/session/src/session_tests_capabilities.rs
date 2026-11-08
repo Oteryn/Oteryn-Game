@@ -206,6 +206,9 @@ fn derived_gated_routes_match_previous_table() {
         (382, &[664], &[]),
         (383, &[], &[]),
         (384, &[669], &[]),
+        // Native cue basis and object appearance add no command or domain owner.
+        (385, &[], &[]),
+        (386, &[], &[]),
         // CL25J: native feature adapters now use these existing gated wire routes.
         (151, &[177], &[]),
         (152, &[181, 668], &[]),

@@ -202,10 +202,14 @@ pub(super) fn current_projection(
     else {
         return Ok(None);
     };
-    // Native setup composes its sole spatial domain first, immediately
-    // followed by the retained scope binding. A scope-first complete snapshot
-    // is also valid; no intervening gameplay domain can precede the proof.
-    if (index != 0 && !(index == 1 && domains[0].domain_id == 1))
+    // Both existing core spatial compositions precede the retained binding:
+    // native setup uses domain1; legacy full join also includes its domain2
+    // object overlay. Neither admits an intervening gameplay domain. The full
+    // bounded body and binding are validated before any store is installed.
+    let spatial_prefix = index == 0
+        || (index == 1 && domains[0].domain_id == 1)
+        || (index == 2 && domains[0].domain_id == 1 && domains[1].domain_id == 2);
+    if !spatial_prefix
         || domain.snapshot_type != 1
         || domain.revision != generation
         || !selection.contains(&117)
