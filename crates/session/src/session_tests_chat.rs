@@ -135,6 +135,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // CLIGAP-W12 adds 10 (typed analyser facts and the native totals panel).
     // CLCAST adds native caster settings, chat and consent (290–292); Watch 289 is separate.
     // C17b adds 275 (empty-outfit-v1: invisible creatures project an empty outfit).
+    // The native walking route also advertises diagonal movement (371).
     // The real-server client journeys (node boot) add 3 (npc_service) and 81 (npc_shop) for the
     // NPC shop phase, and 51 (staff) with 165 (hireling) for the hireling phase; staff negotiation
     // never grants the signed-envelope authority it requires.

@@ -6,6 +6,7 @@ pub(super) fn keys() -> Result<BTreeSet<String>, String> {
     // These are the published shared and l6 documents; chosen callbacks follow.
     for source in [
         include_str!("../../../../../../content/quests/shared-reward-callbacks.json"),
+        include_str!("../../../../../../content/quests/npc-callbacks/l13-outfits.json"),
         include_str!("../../../../../../content/quests/npc-callbacks/l6-stories.json"),
     ] {
         let document: Document = serde_json::from_str(source).map_err(|error| error.to_string())?;

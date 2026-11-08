@@ -11,9 +11,9 @@ mod published_markers;
 mod selector_partitions;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-// Each source document remains bounded independently of the combined boot registry.
+// Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
-// Main and the quest package contribute separate source documents and native owners.
+// The merged source cohorts and native callbacks share a separate boot bound.
 const MAX_RUNTIME_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
@@ -492,14 +492,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     );
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
-    callbacks.extend(
-        parse_with_provenance(
-            include_str!("../../../../../content/quests/authored-world-callbacks.json"),
-            true,
-        )?
-        .into_iter()
-        .filter(questpc7_compat::retained_authored),
-    );
+    callbacks.extend(parse_with_provenance(
+        include_str!("../../../../../content/quests/authored-world-callbacks.json"),
+        true,
+    )?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     bindings::apply(&mut callbacks)?;
     let mut native_callbacks = vec![
@@ -525,6 +521,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/questl2-djinn-world.json"
     ))?);
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
+        return Err("callback bounds including djinn access".into());
+    }
     counterparts::apply(&mut callbacks)?;
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));

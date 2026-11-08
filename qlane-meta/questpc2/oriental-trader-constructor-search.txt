@@ -84,4 +84,3 @@ apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.r
 apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:951:            ProjectV2DialogueKeyword {
 crates/gameplay/content/src/content/project/v2.rs:1211:pub struct ProjectV2DialogueKeyword {
 crates/gameplay/npc/src/npc_talk.rs:234:                    .map(|word| crate::content::ProjectV2DialogueKeyword {
-

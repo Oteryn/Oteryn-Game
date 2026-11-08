@@ -31,6 +31,16 @@ class CorpseQualification(unittest.TestCase):
                               self.xml[number], appearance or self.appearances[number], self.policies[number],
                               bindings or self.bindings, fresh)
 
+    def test_native_goal_decay_tail_retains_its_non_container_policy(self):
+        row = self.qualify(4027, fresh=False)
+        self.assertEqual(row['semantics']['container'], corpse.grizzly.source.NA)
+        node = copy.deepcopy(self.xml[4027])
+        ET.SubElement(node, 'attribute', {'key': 'containerSize', 'value': '8'})
+        with self.assertRaisesRegex(ValueError, 'QUEST_CORPSE_CANONICAL_CONTAINER'):
+            corpse.qualify(4027, self.definitions['oteryn:item.tibia.i4027'],
+                           self.world[4027], node, self.appearances[4027],
+                           self.policies[4027], self.bindings, False)
+
     def test_native_corym_corpse_keeps_exact_source_decay_and_capacity(self):
         root = self.plan.records['oteryn:item.tibia.i17449']
         terminal = self.plan.records['oteryn:item.tibia.i17450']

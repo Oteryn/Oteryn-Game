@@ -118,6 +118,13 @@ def qualify(rows, declarations, reference, packet, item_bindings):
     return cake
 
 
+def read_derived_shard(path):
+    """Read regenerated rows; selected source equality is enforced by the caller."""
+    if path.is_symlink():
+        raise ValueError('CAKE_NATIVE_DERIVED_SHARD_SYMLINK')
+    return json.loads(path.read_bytes())
+
+
 def loot_successor(root, creatures, native_item_profiles=None):
     # Crystal cake_golem.lua:73 binds its real source loot, never an empty
     # stand-in. The existing loot producer copies exact canonical table entries.
@@ -126,7 +133,9 @@ def loot_successor(root, creatures, native_item_profiles=None):
                     if r['identity']['family'] == 'Loot')
     tables = []
     for path in sorted((root / 'content/loot').glob('loot-*.json')):
-        document, _ = read_canonical(path)
+        # Shards are derived from the current WorldProject and can change before
+        # a commit. The selected source rows are checked exactly below.
+        document = read_derived_shard(path)
         tables.extend(r['definition'] for r in document['records'])
     if [t for t in tables if t['identity'] == expected['identity']] != [expected]:
         raise ValueError('CAKE_NATIVE_CANONICAL_LOOT_MISMATCH')
@@ -145,12 +154,9 @@ def admit(root, generated):
     reference = read_project_document(root, 'definitions/reference.json')
     rows = []
     for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):
-        # Unrelated generated shards may be repartitioned by another admission.
-        # Only Cake's input shard participates here and still must match HEAD.
-        candidate = json.loads(path.read_bytes())
-        if not any(identity(r['definition']['identity']) == CAKE for r in candidate['records']):
-            continue
-        document, _ = read_canonical(path)
+        # Shards are derived from the current WorldProject and can change before
+        # a commit. The selected source rows are checked exactly below.
+        document = read_derived_shard(path)
         rows.extend(document['records'])
     item_bindings, _ = read_canonical(root / 'imports/crystalserver/bindings/items.json')
     cake = qualify(rows, declarations, reference, packet, item_bindings)

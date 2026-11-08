@@ -252,6 +252,10 @@ pub fn validate_closed(catalogue: &QuestStateCatalogue) -> Result<(), String> {
                 continue;
             }
             for e in &t.effects {
+                // Computed contract markers cannot execute or mutate a track.
+                if e.effect == QuestEffectKind::Computed {
+                    continue;
+                }
                 if e.track == goal.phase {
                     let valid = match (e.from, e.effect) {
                         (QuestComparison::Between(-1, -1), QuestEffectKind::Set(0)) => {
@@ -331,6 +335,51 @@ mod tests {
             .find(|g| g.counter == "oteryn:quest-progress/elvenbane/native-defenders/dragon")
             .ok_or("goal")?;
         validate_closed(lowered.catalogue())?;
+        let goals = load()?;
+        let marker = lowered
+            .catalogue()
+            .transitions
+            .values()
+            .find(|t| {
+                t.key.starts_with("oteryn:quest-reward-rule/")
+                    && t.effects
+                        .iter()
+                        .any(|effect| goals.iter().any(|goal| goal.phase == effect.track))
+            })
+            .ok_or("native goal reward contract marker")?;
+        assert_eq!(
+            lowered.catalogue().evaluate(marker, &BTreeMap::new(), 0),
+            Err(super::super::QuestRefusal::NotSupported)
+        );
+        let mut forged = lowered.catalogue().clone();
+        let mut writer = marker.clone();
+        writer.effects[0].from = QuestComparison::Between(-1, -1);
+        writer.effects[0].effect = QuestEffectKind::Set(0);
+        forged.transitions.insert(writer.key.clone(), writer);
+        assert!(validate_closed(&forged).is_err());
+        for track in [&goal.phase, &goal.counter] {
+            let mut catalogue = lowered.catalogue().clone();
+            let marker = QuestTransition {
+                world_change: None,
+                key: "oteryn:quest-transition/fixture-native-goal-marker".into(),
+                quest: goal.quest.clone(),
+                effects: vec![QuestEffect {
+                    track: track.clone(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Computed,
+                }],
+                completes: false,
+                experience: None,
+            };
+            catalogue
+                .transitions
+                .insert(marker.key.clone(), marker.clone());
+            validate_closed(&catalogue)?;
+            assert!(matches!(
+                catalogue.evaluate(&marker, &BTreeMap::new(), 0),
+                Err(super::super::QuestRefusal::NotSupported)
+            ));
+        }
         let marker = lowered
             .catalogue()
             .transitions

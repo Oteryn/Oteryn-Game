@@ -238,7 +238,7 @@ class QuestPc7QuestRewards(unittest.TestCase):
         self.assertFalse(formal['starter_female'] or formal['starter_male'])
         targets = {'oteryn:outfit.formal_dress', 'oteryn:outfit.fiend_slayer', 'oteryn:outfit.hand_of_the_inquisition'}
         item_aliases = [m for m in document['grant_mappings'] if m['grant_key'].startswith('oteryn:item-grant.')]
-        self.assertEqual(len(item_aliases),47)
+        self.assertEqual(len(item_aliases),202)
         aliases = [m for m in item_aliases if m['target'].get('outfit_key') in targets]
         self.assertEqual(len(aliases), 9)
         self.assertEqual({m['target']['outfit_key'] for m in aliases}, targets)

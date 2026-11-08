@@ -46,6 +46,7 @@ def packet(directory):
 class QuestBatch4Tests(unittest.TestCase):
     def test_read_only_step_remote_teleport_is_a_closed_predicate(self):
         row = callback('formogar_mine_hoist', 'hoist-remote')
+        row['return_on_failure'] = True
         row['storage'] = [{'track': 'oteryn:quest-progress/fixture/instruction',
                            'minimum': 1, 'maximum': 1, 'set': 1, 'read_only': True}]
         row['remote_teleport'] = {
@@ -54,7 +55,7 @@ class QuestBatch4Tests(unittest.TestCase):
             'destination': {'x': 32157, 'y': 31125, 'floor': -11},
         }
         tool.validate_callback(row, 'formogar_mine_hoist')
-        for invalid in ('appearance', 'position', 'destination', 'no_gate', 'mutation', 'no_default'):
+        for invalid in ('appearance', 'position', 'destination', 'no_gate', 'mutation', 'no_default', 'no_return'):
             bad = copy.deepcopy(row)
             if invalid == 'appearance':
                 bad['remote_teleport']['appearance'] = 0
@@ -64,6 +65,8 @@ class QuestBatch4Tests(unittest.TestCase):
                 bad['storage'] = []
             elif invalid == 'mutation':
                 bad['storage'][0]['preserve'] = True
+            elif invalid == 'no_return':
+                bad['return_on_failure'] = False
             else:
                 bad['teleport'] = None
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):

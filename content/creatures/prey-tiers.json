@@ -6238,8 +6238,8 @@
       "minimum_level": 1,
       "nonexclusive_count": 89,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 87,
-      "runtime_unsettleable_count": 83,
+      "runtime_available_count": 86,
+      "runtime_unsettleable_count": 81,
       "tier": 1
     },
     {
@@ -6259,8 +6259,8 @@
       "minimum_level": 50,
       "nonexclusive_count": 162,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 159,
-      "runtime_unsettleable_count": 158,
+      "runtime_available_count": 153,
+      "runtime_unsettleable_count": 152,
       "tier": 2
     },
     {
@@ -6280,8 +6280,8 @@
       "minimum_level": 100,
       "nonexclusive_count": 188,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 187,
-      "runtime_unsettleable_count": 187,
+      "runtime_available_count": 186,
+      "runtime_unsettleable_count": 186,
       "tier": 3
     },
     {
@@ -6325,111 +6325,6 @@
       "runtime_available_count": 33,
       "runtime_unsettleable_count": 27,
       "tier": 5
-    },
-    {
-      "examples": [
-        "Rat",
-        "Spit Nettle",
-        "Lion",
-        "Troll Champion",
-        "Smuggler",
-        "Nomad Female",
-        "Elf Scout",
-        "Pirate Quartermaster"
-      ],
-      "expanded_three_slot_capacity": true,
-      "experience_max": 99,
-      "experience_min": 1,
-      "minimum_level": 1,
-      "nonexclusive_count": 89,
-      "normal_three_slot_capacity": true,
-      "runtime_available_count": 87,
-      "runtime_unsettleable_count": 84,
-      "tier": 1
-    },
-    {
-      "examples": [
-        "Infernoid Blob",
-        "Fire Devil",
-        "Dwarf Guard",
-        "Pirate Buccaneer",
-        "Shadow Pupil",
-        "Dragon Lord Hatchling",
-        "Bog Raider",
-        "Braindeath"
-      ],
-      "expanded_three_slot_capacity": true,
-      "experience_max": 999,
-      "experience_min": 100,
-      "minimum_level": 50,
-      "nonexclusive_count": 161,
-      "normal_three_slot_capacity": true,
-      "runtime_available_count": 157,
-      "runtime_unsettleable_count": 157,
-      "tier": 2
-    },
-    {
-      "examples": [
-        "Rat",
-        "Spit Nettle",
-        "Lion",
-        "Troll Champion",
-        "Smuggler",
-        "Nomad Female",
-        "Elf Scout",
-        "Pirate Quartermaster"
-      ],
-      "expanded_three_slot_capacity": true,
-      "experience_max": 99,
-      "experience_min": 1,
-      "minimum_level": 1,
-      "nonexclusive_count": 89,
-      "normal_three_slot_capacity": true,
-      "runtime_available_count": 88,
-      "runtime_unsettleable_count": 86,
-      "tier": 1
-    },
-    {
-      "examples": [
-        "Infernoid Blob",
-        "Fire Devil",
-        "Dwarf Guard",
-        "Pirate Buccaneer",
-        "Shadow Pupil",
-        "Dragon Lord Hatchling",
-        "Bog Raider",
-        "Braindeath"
-      ],
-      "expanded_three_slot_capacity": true,
-      "experience_max": 999,
-      "experience_min": 100,
-      "minimum_level": 50,
-      "nonexclusive_count": 161,
-      "normal_three_slot_capacity": true,
-      "runtime_available_count": 154,
-      "runtime_unsettleable_count": 154,
-      "tier": 2
-    },
-    {
-      "examples": [
-        "Deepling Spellsinger",
-        "Exotic Bat",
-        "Pirat Scoundrel",
-        "Deepling Guard",
-        "Draken Warmaster",
-        "Crusader",
-        "Frost Flower Asura",
-        "Moonstone Overseer"
-      ],
-      "expanded_three_slot_capacity": true,
-      "experience_max": 4999,
-      "experience_min": 1000,
-      "minimum_level": 100,
-      "nonexclusive_count": 188,
-      "normal_three_slot_capacity": true,
-      "runtime_available_count": 186,
-      "runtime_unsettleable_count": 186,
-      "tier": 3
     }
   ]
 }

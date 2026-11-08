@@ -46,12 +46,12 @@ index e399f8654..6c71be42e 100644
 @@ -4,6 +4,9 @@
  // through the real B3-1 TRANSFER path; its definition is the same test-only
  // fixture as the B3-1 cases.
- 
+
 +#[path = "reward_claim_mint_postgres_cases/filled_fluid.rs"]
 +mod filled_fluid;
 +
  use crate::durability::item_weight_lookup::TEST_WEIGHTS;
- 
+
  use crate::character_recovery_fence::CharacterRecoveryStore;
 @@ -808,6 +811,7 @@ fn chest(
          quantity,
@@ -206,7 +206,7 @@ index 5c7071e30..964fd4fcc 100644
 @@ -932,6 +1010,50 @@ fn bind_placement(
  mod container_tests {
      use super::*;
- 
+
 +    #[test]
 +    fn medusa_uses_exact_crystal_bag_without_canary_text_carrier_guess() {
 +        let source = authored("quest.u7_3.the_medusa_quest").expect("Medusa source");
@@ -361,7 +361,7 @@ index 04809c6c4..d9ff766a6 100644
 +    );
 +    Ok(())
  }
- 
+
  pub(super) async fn install<const N: usize>(
 @@ -41,98 +51,212 @@ pub(super) async fn install<const N: usize>(
  ) -> TestResult<[EntityRef; N]> {
@@ -469,7 +469,7 @@ index 04809c6c4..d9ff766a6 100644
      }
      found.try_into().map_err(|_| "exact NPC refs".into())
  }
- 
+
  pub(super) async fn talk(
 -    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession,
 -    npc: EntityRef, command_id: u64, text: &str,
@@ -517,7 +517,7 @@ index 04809c6c4..d9ff766a6 100644
      assert!(!result.unknown);
      Ok(result.conversation.map(|c| c.lines).unwrap_or_default())
  }
- 
+
  pub(super) async fn progress(
 -    owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession,
 -    authority: &ReconciledCharacterAuthority<'_, '_>, track: &str,
@@ -541,7 +541,7 @@ index 04809c6c4..d9ff766a6 100644
 +        .map_err(debug)?;
      Ok(copy.tracks().get(track).copied().unwrap_or(0))
  }
- 
+
  pub(super) async fn exercise(
 -    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
 -    h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -652,7 +652,7 @@ index 04809c6c4..d9ff766a6 100644
 +    );
      Ok(())
  }
- 
+
 @@ -162,26 +293,43 @@ fn classic_rottin_disrepair_commits_three_flags_only_after_the_source_offer() ->
      }
      super::kill_reward_e2e::scenario_thread::run("classic-rottin", || {
@@ -668,7 +668,7 @@ index 04809c6c4..d9ff766a6 100644
          )
      })
  }
- 
+
  pub(super) async fn exercise_rottin(
 -    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
 -    h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -797,7 +797,7 @@ index 04809c6c4..d9ff766a6 100644
 +    );
      Ok(())
  }
- 
+
 @@ -228,10 +421,22 @@ fn classic_draconia_real_levers_open_and_restore_the_source_obstacles() -> TestR
      }
      super::kill_reward_e2e::scenario_thread::run("classic-draconia", || {
@@ -869,7 +869,7 @@ index 04809c6c4..d9ff766a6 100644
 @@ -255,23 +488,40 @@ fn classic_world_steps_use_source_teleports_and_commit_seal_flags_atomically() -
      })
  }
- 
+
 -#[allow(clippy::too_many_arguments, reason = "existing callback fixture owner and source binding")]
 +#[allow(
 +    clippy::too_many_arguments,
@@ -996,7 +996,7 @@ index 94e4fd28e..638195b50 100644
      DemonShield,
 +    Catalogue,
  }
- 
+
  fn execute(case: Case, marker: &'static str) -> TestResult {
      if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
          return Ok(());
@@ -1011,10 +1011,10 @@ index 94e4fd28e..638195b50 100644
 +    println!("{marker} POSTGRES_CASE_COMPLETED {:?}", started.elapsed());
      Ok(())
  }
- 
+
 @@ -102,7 +104,36 @@ fn definition(key: &str) -> TypedDefinitionRef {
  }
- 
+
  fn scenario(case: Case) -> TestResult {
 +    scenario_case(case, None, None)
 +}
@@ -1245,7 +1245,7 @@ index 1883cd77c..85e9a22a3 100644
 +    /// Source-resolved fluid subtype; no row means an empty container.
 +    pub fluid_subtype: Option<u8>,
  }
- 
+
  /// Complete semantic intent of one reward-claim MINT.
 @@ -173,6 +176,8 @@ pub struct RewardClaimMintRequest {
      pub contents: Vec<RewardClaimMintContent>,
@@ -1324,7 +1324,7 @@ index 1883cd77c..85e9a22a3 100644
 +    fluid::validate(request)?;
      Ok(())
  }
- 
+
 @@ -1595,6 +1604,12 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
          canonical.push(0x54);
          push_text(&mut canonical, text.as_bytes()).map_err(from_transfer_input)?;
@@ -1349,7 +1349,7 @@ index 1883cd77c..85e9a22a3 100644
 @@ -1985,6 +2001,57 @@ mod tests {
          }
      }
- 
+
 +    #[test]
 +    fn filled_fluid_rewards_bind_subtypes_and_refuse_ambiguous_shapes() {
 +        let character = CharacterId::from_bytes(id(41)).expect("character");
@@ -1432,7 +1432,7 @@ index 4540fccab..73334518d 100644
 --- a/crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs
 +++ b/crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs
 @@ -90,7 +90,7 @@ pub(super) fn capacity(request: &RewardClaimMintRequest) -> Option<i16> {
- 
+
  /// UUIDv7-shaped, domain-separated identities retain the reserved timestamp
  /// prefix. Retry/restart derives the same children, independently of process RNG.
 -fn child_id(root: &[u8; 16], ordinal: usize, kind: u8) -> [u8; 16] {
@@ -1455,14 +1455,14 @@ index 4540fccab..73334518d 100644
 +        && saved.0 == plan(request, reservation)
 +        && row.try_get::<Option<String>, _>("root_text")? == request.root_text)
  }
- 
+
  /// The character fence already holds its root. This is the complete fresh
 diff --git a/crates/gameplay/quests/src/quest/classic_dialogue.rs b/crates/gameplay/quests/src/quest/classic_dialogue.rs
 index 803aeba4d..c0dfd0f6d 100644
 --- a/crates/gameplay/quests/src/quest/classic_dialogue.rs
 +++ b/crates/gameplay/quests/src/quest/classic_dialogue.rs
 @@ -158,8 +158,12 @@ mod tests {
- 
+
      #[test]
      fn native_start_commits_both_herb_flags_and_refuses_stale_confirmation() -> Result<(), String> {
 -        let loaded =
@@ -1477,7 +1477,7 @@ index 803aeba4d..c0dfd0f6d 100644
          let transition = catalogue
              .transition("oteryn:quest-transition/classic/dawnport/start-the-rare-herb")
 @@ -181,8 +185,11 @@ mod tests {
- 
+
      #[test]
      fn logbook_start_checks_torn_book_and_does_not_clear_its_track() -> Result<(), String> {
 -        let loaded =
@@ -1526,11 +1526,11 @@ index b1dea070a..93bd06b8d 100644
 +        .retain(|key, _| lowered.catalogue.transition(key).is_some());
      Ok(lowered)
  }
- 
+
 @@ -360,6 +386,54 @@ mod tests {
          load_embedded_quest_state("content-1").expect("embedded quest state loads")
      }
- 
+
 +    #[test]
 +    fn owner_scope_excludes_dawnport_from_runtime_state_and_callbacks() -> Result<(), String> {
 +        let loaded =
@@ -1583,7 +1583,7 @@ index b1dea070a..93bd06b8d 100644
          serde_json::from_str(EMBEDDED).expect("embedded quest state is JSON")
      }
 @@ -370,7 +444,9 @@ mod tests {
- 
+
      #[test]
      fn every_lowered_record_loads_under_an_oteryn_key() {
 -        let lowered = embedded();
@@ -1600,7 +1600,7 @@ index 1dc2d29a0..4bf572a0d 100644
 @@ -73,6 +73,12 @@ pub const QUESTGATE0_RL_10: usize = 16;
  const KEY_PREFIX: &str = "oteryn:";
  const DEFINITION_HASH_VERSION: u8 = 2;
- 
+
 +/// QUEST-FINISH owner scope: Dawnport is reference data; Newhaven owns the start.
 +#[must_use]
 +pub fn in_runtime_scope(quest: &str) -> bool {
@@ -1699,7 +1699,7 @@ index af35f0d72..e8f208ae5 100644
 +    'oteryn:item.tibia.i3084': 250, 'oteryn:item.tibia.i3085': 200,
 +    'oteryn:item.tibia.i3284': 1,
 +}
- 
+
  # ITEM-SEM-2 precedence, bounded to exact client identities and English Wiki cuts.
  # Donor XML stays in the packet as a witness; only its container fact is superseded.
 @@ -273,6 +283,13 @@ def enrich(definition, facts, xml):
@@ -1714,8 +1714,8 @@ index af35f0d72..e8f208ae5 100644
 +        # exact full definition value until the first charge mutation.
 +        definition['materializable'] = True
      return definition
- 
- 
+
+
 diff --git a/tools/content-migration/test_quest_callback_profiles.py b/tools/content-migration/test_quest_callback_profiles.py
 index 1716ee942..066f46e04 100644
 --- a/tools/content-migration/test_quest_callback_profiles.py
@@ -1723,7 +1723,7 @@ index 1716ee942..066f46e04 100644
 @@ -93,6 +93,27 @@ class QuestCallbackProfiles(unittest.TestCase):
                           'stack_class': 'NonStackable',
                           'legal_destinations': ['CharacterInventory', 'Ground']})
- 
+
 +    def test_every_ready_reward_leaf_has_its_exact_native_item_profile(self):
 +        self.admit()
 +        rows = {row['production_definition']['production_key']: row
@@ -1765,7 +1765,7 @@ index 9a1d7b044..021558cde 100644
 @@ -112,6 +112,28 @@ class RewardItemAdmissionTests(unittest.TestCase):
          self.assertFalse(definition["materializable"])
          self.assertEqual(definition["semantics"]["charges"]["value"]["count"], known(5))
- 
+
 +    def test_full_charge_quest_items_reuse_the_existing_timed_instance_owner(self):
 +        defaults = {3054: 200, 3056: 200, 3082: 50, 3083: 150,
 +                    3084: 250, 3085: 200, 3284: 1}
@@ -1877,8 +1877,8 @@ index 28e840092..a0fd614b2 100644
 +            for binding in claim.get('source_variant', {}).get('item_bindings', [])
 +            if binding.get('canonical_item'))
      return claims
- 
- 
+
+
 @@ -112,7 +120,10 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
              canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
              if claim.get('definition_profile') == 'authored_variant_v1':
@@ -1905,7 +1905,7 @@ index 489305783..d2059763a 100644
 +        # Thirteen full-charge claims and the Crystal Medusa bag are supported;
 +        # two Dawnport claims are excluded. Preserve exact denominator drift detection.
 +        self.assertEqual(sum(counts.values()), 309)
- 
+
      def test_missing_row_is_rejected(self):
          del self.ledger["claims"][next(iter(self.ledger["claims"]))]
 diff --git a/tools/content-schema/quest-authoring/test_quest_completion_matrix.py b/tools/content-schema/quest-authoring/test_quest_completion_matrix.py
@@ -1947,16 +1947,16 @@ index d5acc5a33..0b5831b98 100644
 +MEDUSA_DIFFERENCE = 'CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT'
 +MEDUSA_HOLD = [{'category': 'source', 'code': 'SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED',
 +                'placement_index': 0}]
- 
- 
+
+
  def source():
 @@ -54,17 +59,27 @@ def item_id(ref):
- 
- 
+
+
  def full_charge_leaf(item, pilot_key, position, key, raw_count):
 -    """UID6082 is one already-admitted Item at its exact definition charges.
 +    """An exact D277 source leaf is one admitted Item at definition charges.
- 
+
      Missing native timed state means full definition values; this does not
      authorize partial source charges or make a held Item materializable.
      """
@@ -1982,8 +1982,8 @@ index d5acc5a33..0b5831b98 100644
      setting = entries[6082]['setting']
      return (setting.get('useKV') is True and setting.get('questName') == 'madmageroom3'
 @@ -72,6 +87,23 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
- 
- 
+
+
  def derive(definition, items, stack_problem):
 +    difference = None
 +    if (definition['identity']['key'] == 'oteryn:reward-claim.quest.u7_3.the_medusa_quest'
@@ -2035,7 +2035,7 @@ index 77d1bf7ca..aa11035fb 100644
 @@ -27,6 +27,36 @@ class ContainerNativeTests(unittest.TestCase):
                           [('oteryn:item.tibia.i3447', 12), ('oteryn:item.tibia.i3031', 40)])
          self.assertEqual(placement['completion'], {'kind': 'quest_kv', 'key': 'bearChest1'})
- 
+
 +    def test_medusa_uses_complete_crystal_reward_without_canary_fox_text(self):
 +        definition = next(d for d in self.rows
 +                          if d['identity']['key'].endswith('quest.u7_3.the_medusa_quest'))
@@ -2078,13 +2078,13 @@ index 77d1bf7ca..aa11035fb 100644
          self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
 -                             for d in native), 54)
 +                             for d in native), 60)
- 
+
      def test_all_twelve_text_leaves_keep_the_established_lf_normalization(self):
          evidence, _ = container_native.source()
 @@ -160,6 +190,18 @@ class ContainerNativeTests(unittest.TestCase):
              self.assertFalse(container_native.full_charge_leaf(changed, claim, point,
                               item['identity']['key'], raw), mutation)
- 
+
 +    def test_every_admitted_default_matching_charge_leaf_uses_one_instance(self):
 +        proof = plain.load_source_charge_evidence()
 +        for source in proof:
@@ -2107,7 +2107,7 @@ index 557e480f0..43a9370aa 100644
 @@ -31,12 +31,12 @@ class CanonicalVariantTests(unittest.TestCase):
                          self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
                          self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
- 
+
 -    def test_plain_231_definition_records_remain_exact_and_readiness_220_11(self):
 +    def test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
          outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
@@ -2121,7 +2121,7 @@ index 557e480f0..43a9370aa 100644
              self.assertEqual(outputs[path], (self.root / path).read_text())
          self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
 @@ -125,10 +125,10 @@ class CanonicalVariantTests(unittest.TestCase):
- 
+
      def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
          errors = variants.native_lowering_errors(self.records)
 -        # W15b admits 67 exact container/leaf recipes without rewriting
@@ -2132,7 +2132,7 @@ index 557e480f0..43a9370aa 100644
 +        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 73)
 +        self.assertEqual(len(errors), 32)
          self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
- 
+
      def test_committed_family_reproduces_with_separate_holds(self):
 diff --git a/tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py b/tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py
 index 790e112ac..f8ecd92fc 100644
@@ -2147,6 +2147,6 @@ index 790e112ac..f8ecd92fc 100644
          # these two selected native stack normalizations (PR2770 Q4/A).
 -        self.assertEqual(len(variants.native_lowering_errors(self.records)), 38)
 +        self.assertEqual(len(variants.native_lowering_errors(self.records)), 32)
- 
+
      def test_every_actual_item_total_is_preserved(self):
          for row, old in zip(self.records, self.old):

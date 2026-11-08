@@ -21,13 +21,3 @@ impl From<super::effects::CallbackEffects> for super::effects::CallbackEffectSet
 pub(super) fn registered(callback: &Callback) -> bool {
     callback.key != "oteryn:quest-callback/questpc7-feaster-purification-entry"
 }
-
-/// The reused smith programme owns its native cache prop and guardian on this branch.
-/// Retain that exact placement instead of registering the peer's old cache twice.
-pub(super) fn retained_authored(callback: &Callback) -> bool {
-    !matches!(
-        callback.key.as_str(),
-        "oteryn:quest-callback/authored-smith-cache"
-            | "oteryn:quest-callback/authored-smith-cache-reward"
-    )
-}

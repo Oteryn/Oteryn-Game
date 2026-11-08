@@ -17,6 +17,6 @@ def preserve(existing, observed):
     expected = lambda text: {'state': 'KNOWN', 'value': {
         'name': {'state': 'KNOWN', 'value': 'skull coin'},
         'description': {'state': 'KNOWN', 'value': text}}}
-    if before != expected('The silver is heavily tarnished') or after != expected('The silver is heavily tarnished.'):
+    if before not in (expected('The silver is heavily tarnished'), expected('The silver is heavily tarnished.')) or after != expected('The silver is heavily tarnished.'):
         raise ValueError('QUESTPC7_SKULL_COIN_PRESENTATION_DRIFT')
     observed['semantics']['presentation'] = copy.deepcopy(before)

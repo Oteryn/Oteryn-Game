@@ -205,7 +205,7 @@ index d0cbc640b..61012e705 100644
 +map_revision = "eaf464f35b521b0dac01b07afe055100a1a173b93e57d5e57a13912ff3e0e2d9"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
  world_policy_revision = "wp.1"
  offer_revision = "offer.1"
- 
+
 @@ -55,7 +55,7 @@ offer_revision = "offer.1"
  # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
  enabled = true

@@ -2,7 +2,7 @@
 +++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs
 @@ -192,6 +192,27 @@
  }
- 
+
  #[test]
 +fn newhaven_cached_plan_reserves_only_shortfall_and_releases_it() {
 +    let queue = KillSettlementQueue::default();

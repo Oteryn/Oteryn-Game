@@ -5,7 +5,7 @@ index f6bd184b5..66af0c0cb 100644
 @@ -98,6 +98,70 @@ fn tile_position(position: MovementLocalPosition) -> Option<TilePos> {
      })
  }
- 
+
 +// Crystal 9f5a72c6 data-global/scripts/quests/devil_helmet/movements_sewer.lua:
 +// 1,5-23,27-45. A player entering uid25030 creates sewer435 if absent;
 +// leaving removes one sewer. Use the committed movement turn, not quest flags.
@@ -266,7 +266,7 @@ index fe134fde5..eb9275634 100644
 @@ -1125,6 +1125,38 @@ mod tests {
          assert_eq!(MapFacts::movement_items(&facts, pos).len(), 1);
      }
- 
+
 +    #[test]
 +    fn movement_item_removal_keeps_other_items_and_pinned_views() {
 +        let (bytes, _) = fixture::bundle();
@@ -309,7 +309,7 @@ index e55ad45d1..42013dae3 100644
 @@ -288,6 +288,30 @@ impl BundleFacts {
          true
      }
- 
+
 +    /// Remove one volatile callback item under the Channel runtime owner. Base,
 +    /// durable Ground and House items stay with their existing removal owners.
 +    pub fn remove_movement_item(&self, pos: TilePos, appearance: u16) -> bool {

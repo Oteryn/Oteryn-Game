@@ -173,7 +173,7 @@ index 332eba41b..ccb7cdca4 100644
 +        input.tutorial_corruptor.clone(),
      )
      .await;
- 
+
 diff --git a/crates/gameplay/content/src/content/world_reward_claims.rs b/crates/gameplay/content/src/content/world_reward_claims.rs
 index 5c7071e30..b47d0138f 100644
 --- a/crates/gameplay/content/src/content/world_reward_claims.rs
@@ -181,7 +181,7 @@ index 5c7071e30..b47d0138f 100644
 @@ -6,6 +6,8 @@
  //! placement's canonical [`PlacementKey`], bound cell and bundle `placement_key`, plus the
  //! placements that did not bind and the records left out, so the caller can gate boot on it.
- 
+
 +mod native_state;
 +
  use crate::content::{
@@ -203,7 +203,7 @@ index 5c7071e30..b47d0138f 100644
 +    pub root_fluid_subtype: Option<u8>,
 +    pub root_charges_remaining: Option<u32>,
  }
- 
+
  #[derive(Debug, Clone, PartialEq, Eq)]
 @@ -117,6 +123,8 @@ pub struct RewardContainerItem {
      pub count: u32,
@@ -212,7 +212,7 @@ index 5c7071e30..b47d0138f 100644
 +    pub fluid_subtype: Option<u8>,
 +    pub charges_remaining: Option<u32>,
  }
- 
+
  /// A claim whose placements are all bound.
 @@ -234,6 +242,8 @@ struct CandidatePlacement {
      achievement: Option<String>,
@@ -221,7 +221,7 @@ index 5c7071e30..b47d0138f 100644
 +    root_fluid_subtype: Option<u8>,
 +    root_charges_remaining: Option<u32>,
  }
- 
+
  const DEFINITION_FIELDS: [&str; 6] = [
 @@ -274,18 +284,35 @@ fn candidate(
      definition: &serde_json::Map<String, Value>,
@@ -401,7 +401,7 @@ index 5c7071e30..b47d0138f 100644
 -        .filter(|entries| !entries.is_empty())
 +    Some(placements)
  }
- 
+
  fn candidate_container_placement(
 @@ -437,6 +549,7 @@ fn candidate_container_placement(
              "completion",
@@ -481,7 +481,7 @@ index 5c7071e30..b47d0138f 100644
 +        root_charges_remaining: None,
      }))
  }
- 
+
 @@ -871,6 +1014,8 @@ fn bind_candidate(
                  bundle_placement_key,
                  contents: placement.contents.clone(),
@@ -494,7 +494,7 @@ index 5c7071e30..b47d0138f 100644
 @@ -932,6 +1077,102 @@ fn bind_placement(
  mod container_tests {
      use super::*;
- 
+
 +    #[test]
 +    fn source_charge_and_fluid_projections_reach_the_native_candidate() {
 +        for suffix in [
@@ -773,7 +773,7 @@ index 8b4d709e7..f6256693d 100644
 @@ -696,6 +705,29 @@ impl KillSettlementQueue {
          Some(frozen)
      }
- 
+
 +    fn freeze_tutorial_loot(
 +        &self,
 +        runtime: &ChannelRuntimeV1,
@@ -803,7 +803,7 @@ index 8b4d709e7..f6256693d 100644
 @@ -1023,6 +1055,36 @@ impl KillSettlementQueue {
          true
      }
- 
+
 +    /// Top up this death's existing take and extra reservations to its frozen
 +    /// exact plan, under the same scope counter lock used by take/release.
 +    fn ensure_loot_mint_reservation(
@@ -953,7 +953,7 @@ index 9a038a3ff..9b181faf2 100644
 @@ -12,22 +13,56 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
  use crate::foundation::CreatureDeathOccurrenceKey;
  use oteryn_gameplay_quests::tutorial::{TutorialEvent, corruptor_items, tutorial_transition};
- 
+
 +/// Trusted preparation only. Preparing this value never consumes an entitlement.
 +#[derive(Debug, Clone)]
 +pub struct TutorialCorruptorClaim {
