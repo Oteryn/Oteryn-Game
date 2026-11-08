@@ -51,3 +51,14 @@ command used a filename rather than module filter and must NOT count as proof).
 Existing dispatch1613selection continues against pre-main binary; keep content
 frozen and collect all failures. Publish compiling merge under cadence exception
 then finish pending checks and fresh post-main mechanic proof. No full pass claim.
+
+FINAL VALIDATION after42a707818: all pending checks completed. RealPG180006
+three Albinius casesPASS63.050059344/66.816094652/48.273847874s total111.32s.
+Dispatch selectedunits1613/1613PASS850.809s (pre-last-main binary); fresh merged
+Soulpit retry test1PASS. Durability635/635selected unitsPASS70.463s, correct
+classification4PASS, service model1PASS22.37s. Clippyall3changedcratesPASS6m36s
+inclqueue. Finalworkspacecheckon42aPASS2m13s; fmtPASS. No known failures.
+BATCH-albinius-main3209-green-2026-11-08.json records all contexts and log hashes.
+Publish this green receipt; then continue scope. Keep3wholequalified/7active/
+19notstarted; source NPC slices must not inflate wholequest counts. Do not rely
+on the old checkpoint's pending state as current; it is historical proof.

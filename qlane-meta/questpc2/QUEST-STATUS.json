@@ -1760,7 +1760,7 @@
       "zero_test_results_accepted": false
     }
   },
-  "current_batch": "albinius-green-source-plus-main3209-compiling-checkpoint",
+  "current_batch": "albinius-source-contribution-main3209-green",
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
@@ -1796,7 +1796,7 @@
     "BATCH-main-6f-postgres-green-2026-11-08.json",
     "BATCH-henricus-green-2026-11-08.json"
   ],
-  "next_batch": "Finish dispatch unit run, collect all failures together, publish green validation receipt; continue supported owned source mechanics.",
+  "next_batch": "Continue owned scope using existing tested owners; do not build new shared engine features. Requests remain recorded; no whole-quest qualification beyond the prior three.",
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",
     "records": [
@@ -2210,15 +2210,13 @@
     "unit_and_pg": "pending current merge build; prior pushed receipts remain valid for prior source only"
   },
   "current_validation": {
-    "own_postgres": "3/3PASS on180006,48.12/48.16/46.23s",
-    "quest_units": "322/322PASS15.24s",
-    "authorer": "2/2PASS1.022s",
-    "workspace_all_targets": "PASS4m09s after main3209; earlier own-source pass3m13s",
-    "clippy": "Own sourcePASS2m26s; main3209 recheck queued",
-    "fmt": "PASS",
-    "generation_pins_duplicates": "PASS",
-    "dispatch_units": "RUNNING",
-    "latest_main": "3209d3d61 clean Rust-only merge; no runtime content changed"
+    "source_head": "42a707818866a6c76cca48bac03008d5de643ed2",
+    "latest_main": "3209d3d61 included",
+    "post_main_pg": "3/3PASS on180006,63.050/66.816/48.274s",
+    "units": "quest322+dispatch1613+durability635+classification4+service1+freshSoulpit1PASS; contexts in receipt",
+    "workspace_all_targets": "PASS2m13s final repeat",
+    "clippy": "quests+dispatch+durability alltargets/allfeatures-DwarningsPASS",
+    "fmt_generation_pins_duplicates": "PASS"
   },
   "engine_requests": [
     {
@@ -2382,12 +2380,8 @@
       "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "d1feaafe625281215acc71ed334dce651b706506",
-  "prepush_pending_tests": [
-    "Pre-main3209 dispatch unit selection still running",
-    "Post-main3209 durability focused units queued",
-    "Post-main3209 clippy recheck queued"
-  ],
+  "last_pushed_sha": "42a707818866a6c76cca48bac03008d5de643ed2",
+  "prepush_pending_tests": [],
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",
     "parent_frozen_branch": "claude/happy-davinci-ijz3wy-questpc2",
@@ -2431,13 +2425,14 @@
     "source": "data-global/npc/albinius.lua:105-137",
     "source_sha256": "1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18",
     "scope": "Initial temple contribution only; portal/rune/shop branches and whole Forgotten Knowledge remain unqualified.",
-    "state": "OWN MECHANIC GREEN; dispatch unit selection running",
+    "state": "QUALIFIED_INITIAL_CONTRIBUTION_SLICE; whole quest IN_PROGRESS",
     "fixture_correction": "First three PG cases reached180006 but duplicate existing backpack. Reuse existing fenced mint-and-transfer helper instead; no quest rows seeded.",
     "proof": "BATCH-albinius-contribution-2026-11-08.json",
     "postgres_green_seconds": [
       48.121325993,
       48.162816023,
       46.231552174
-    ]
+    ],
+    "post_main_proof": "BATCH-albinius-main3209-green-2026-11-08.json"
   }
 }
