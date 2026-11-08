@@ -45,6 +45,15 @@ impl LiveShop {
             })
             .collect()
     }
+    /// Filter presentation only; command construction resolves the original quote.
+    pub fn filtered_quotes(&self, side: Option<NpcTradeSide>, query: &str) -> Vec<Quote> {
+        let query = query.trim().to_lowercase();
+        self.quotes()
+            .into_iter()
+            .filter(|quote| side.is_none_or(|side| quote.side == side))
+            .filter(|quote| self.quote_text(*quote).to_lowercase().contains(&query))
+            .collect()
+    }
     pub fn owned(&self, item: u32) -> u64 {
         self.inventory.as_ref().map_or(0, |inventory| {
             inventory
