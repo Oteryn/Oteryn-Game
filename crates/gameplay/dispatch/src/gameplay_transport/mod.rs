@@ -67,6 +67,7 @@ mod death_ml_loss_postgres;
 mod depot;
 mod echo_warden;
 mod endgame_entry;
+mod endgame_room_policy;
 mod entity_names;
 mod equipment_move;
 mod equipment_reflection;
