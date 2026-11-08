@@ -184,3 +184,6 @@ mod navigation;
 
 #[path = "profile.rs"]
 mod profile;
+
+#[path = "history.rs"]
+mod history;
