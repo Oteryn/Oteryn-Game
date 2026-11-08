@@ -12,6 +12,8 @@ use oteryn_protocol_oteryn::{
     world_object::UseDisposition,
     world_spatial::{StepDirection, StepDisposition},
 };
+#[path = "m39_tomes_journey/extra.rs"]
+mod extra;
 #[path = "m39_tomes_journey/prerequisites.rs"]
 mod prerequisites;
 #[path = "m39_tomes_journey/world.rs"]
@@ -24,10 +26,16 @@ fn m39a_tomes_twelve_source_books_and_incremental_handins() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m39-tomes")
 }
 
+#[test]
+fn m39b_tomes_repeatable_paid_xp_and_no_free_reward() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-m39-tomes-extra")
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    name: &str,
 ) -> TestResult {
     let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
         .fetch_one(&h.pool)
@@ -145,6 +153,9 @@ pub(super) async fn exercise(
     }
     for flag in ["snake_head_teleport", "corruption_hole", "zao_palace_doors"] {
         assert_eq!(stage(h, &format!("{FRONTIER}{flag}")).await?, Some(1));
+    }
+    if name.ends_with("-extra") {
+        extra::exercise(owner, admitted, h, cael).await?;
     }
     Ok(())
 }

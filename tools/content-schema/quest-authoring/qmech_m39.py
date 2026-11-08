@@ -25,7 +25,7 @@ def append(add, callbacks, offers, declarations, inputs, pin):
     # Cael owns New Frontier's existing counter, rather than a parallel quest flag.
     cael='data-global/npc/cael.lua'
     counter=frontier+'tomeof_knowledge'
-    for number in range(1,13):
+    for number in range(1,14):
         before=min(number-1,12)
         states=[state(counter,-1 if number==1 else before,min(number,12),maximum=0 if number==1 else None)]
         unlocks={7:('snake_head_teleport',-1),8:('corruption_hole',-1),10:('zao_palace_doors',0)}
@@ -42,6 +42,7 @@ def append(add, callbacks, offers, declarations, inputs, pin):
         callbacks[-1].update(inventory=[{'item':'oteryn:item.tibia.i10217','minimum':1,'maximum':4294967295}], failure_reply=['You dont have one!'])
         if number==13:
             callbacks[-1].update(repeatable=True,experience=5000)
+            callbacks[-1]['storage'][0]['preserve']=True
         offers.append({'npc':'oteryn:npc.cael','keywords':['tome','knowledge'],
             'topic':0,'any_topic':True,'next_topic':number,
             'storage':[state(counter,-1 if number==1 else before,before,maximum=0 if number==1 else None,preserve=True)],

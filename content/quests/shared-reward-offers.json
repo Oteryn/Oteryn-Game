@@ -803,6 +803,38 @@
     {
       "npc": "oteryn:npc.cael",
       "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 13,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
         "tribal crest"
       ],
       "topic": 0,

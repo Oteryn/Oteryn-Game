@@ -780,8 +780,8 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-m39-any-topic" {
         return m39_any_topic::exercise(owner, admitted, h).await;
     }
-    if name == "qengine-rewards-m39-tomes" {
-        return super::m39_tomes_journey::exercise(owner, admitted, h).await;
+    if name.starts_with("qengine-rewards-m39-tomes") {
+        return super::m39_tomes_journey::exercise(owner, admitted, h, name).await;
     }
     if name.starts_with("qengine-rewards-m39-bone") {
         return super::m39_bone_journey::exercise(owner, admitted, h, authority, name).await;

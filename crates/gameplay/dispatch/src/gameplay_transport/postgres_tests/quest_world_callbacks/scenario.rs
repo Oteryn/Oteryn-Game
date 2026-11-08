@@ -53,7 +53,7 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-m39-tomes" {
+    let start = if name.starts_with("qengine-rewards-m39-tomes") {
         super::super::m39_tomes_journey::world::start()?
     } else if native_upper {
         super::super::l6_paradox_upper::start(name)
@@ -325,7 +325,7 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if name == "qengine-rewards-m39-tomes" {
+        let world = if name.starts_with("qengine-rewards-m39-tomes") {
             super::super::m39_tomes_journey::world::build(
                 generation.native_gameplay().ok_or("Tomes native profiles")?
             )?

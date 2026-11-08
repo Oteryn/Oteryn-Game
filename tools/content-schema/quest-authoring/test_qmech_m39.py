@@ -59,7 +59,7 @@ class M39SampleAuthoring(unittest.TestCase):
             self.assertEqual(callback['failure_reply'], ['You dont have one!'])
         offers = json.loads(self.outputs['content/quests/shared-reward-offers.json'])['offers']
         cael = [o for o in offers if o['npc'] == 'oteryn:npc.cael' and 'tome' in o['keywords']]
-        self.assertEqual(len(cael), 12)
+        self.assertEqual(len(cael), 13)
         self.assertTrue(all(o['any_topic'] and o['failure_reply'] for o in cael))
 
     def test_authoring_rejects_reversed_inventory_ranges(self):
@@ -68,6 +68,21 @@ class M39SampleAuthoring(unittest.TestCase):
         callback['inventory'][0].update(minimum=2, maximum=1)
         with self.assertRaisesRegex(ValueError, 'invalid inventory range'):
             qengine_rewards.validate_callbacks(document)
+
+    def test_extra_tome_is_a_paid_repeatable_xp_exchange(self):
+        extra = self.callbacks['l2-cael-tome-13']
+        self.assertEqual(extra['experience'], 5000)
+        self.assertTrue(extra['repeatable'])
+        self.assertEqual(extra['take'], [{'item': 'oteryn:item.tibia.i10217', 'count': 1}])
+        self.assertIsNone(extra['give'])
+        self.assertTrue(all(s.get('preserve') and s['minimum'] == s['maximum'] == 12
+                            for s in extra['storage']))
+        self.assertEqual(extra['next_topic'], 33)
+        free = copy.deepcopy(self.document)
+        callback = next(c for c in free['callbacks'] if c['key'] == extra['key'])
+        callback['take'] = []
+        with self.assertRaisesRegex(ValueError, 'invalid reward callback'):
+            qengine_rewards.validate_callbacks(free)
 
 
 if __name__ == '__main__':

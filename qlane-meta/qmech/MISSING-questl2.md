@@ -10,8 +10,11 @@ Scoped refusal replies are handled by `npc_command/quest_dialogue.rs`.
 Into the Bone Pit is wired through the two `m39-stories.json` shards; both native
 PG journeys passed (78.255105046 s / 78.718498797 s, PostgreSQL 18.6), including
 canonical-writer rejection of a false loss claim and literal command replay.
-Tomes of Knowledge's authoring is not enabled by this slice; its missing
-`any_topic` engine capability is now available and covered by the M39 native conversation test.
+Tomes of Knowledge now wires two NPC books, ten one-shot source chests, twelve
+incremental hand-ins and additional paid XP books. Native PG stories passed
+(86.111770788 s and 95.356697343 s); the source mission refusal is exercised
+without injecting callback rows. Merchant/access consumer verification is not
+a full-quest certification from these NPC-offer tests.
 
 | quest | missing mechanic (server or client) | evidence (quest file and step, missing hook/table/command) | blocks fully or partly |
 |---|---|---|---|

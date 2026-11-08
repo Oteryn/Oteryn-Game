@@ -392,6 +392,59 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-cael-tome-13",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 13,
+      "next_topic": 33,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you! I look forward to reading this interesting discovery of yours and learn a few things about Zao."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:84-128:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i10217",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "You dont have one!"
+      ],
+      "repeatable": true,
+      "experience": 5000
+    },
+    {
       "key": "oteryn:quest-reward/l2-cael-tome-2",
       "quest": "oteryn:quest.the_new_frontier_quest",
       "npc": "oteryn:npc.cael",

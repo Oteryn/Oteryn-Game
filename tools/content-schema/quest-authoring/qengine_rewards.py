@@ -1027,6 +1027,8 @@ def validate_callbacks(document):
             for t in targets for g in callback.get('forbids_addons',[]))
         value_guard = value_guard or any(t['addons']==0 and t.get('sex') is None and t['outfit'] in callback.get('forbids_outfits',[]) for t in targets)
         value_guard = value_guard or (bool(callback['take']) and callback.get('give') is not None)
+        value_guard = value_guard or (callback.get('repeatable', False)
+            and bool(callback['take']) and 1 <= callback.get('experience', 0) <= 100000000)
         if callback.get('outfits') and callback.get('outfit') is not None:
             raise ValueError('mixed legacy and target-set grants '+callback['key'])
         participants=callback.get('participants',[])
