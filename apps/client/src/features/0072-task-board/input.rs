@@ -3,6 +3,10 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::task_board::{Intent, request};
 impl PlayLink {
     pub fn task_board_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::task_board::soulseals_key(events) {
+            self.open_soulseals();
+            return true;
+        }
         if !oteryn_client_ui::task_board::open_key(events) {
             return false;
         }

@@ -312,3 +312,5 @@ pub mod skill_display;
 pub mod skill_progress;
 
 pub mod modal_dialogs;
+
+pub mod notifications;
