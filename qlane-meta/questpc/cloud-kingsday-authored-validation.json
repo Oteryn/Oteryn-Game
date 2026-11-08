@@ -1,15 +1,15 @@
 {
   "schema": 1,
   "quest": "oteryn:quest.authored.kingsday_mini_world_change",
-  "state": "IN_PROGRESS",
-  "qualified": false,
+  "state": "QUALIFIED",
+  "qualified": true,
   "engine_reused": "dd35529b6f1c61042e798723f71768109f9573f8",
   "main_merge": {
     "attempted": "6f61ac15d93bbda9f9d718721233c0d067f40530",
     "result": "aborted under owner fifteen-minute exception",
     "conflicted_paths": 73,
     "next": "resume conflict reconciliation after compiling WIP push",
-    "tested_tree_restored": "990434b193c646b516d021b6d92edce10401cdb0"
+    "tested_tree_restored": "44e8e8bf9eb441666a95af76eed7fddbecb75416"
   },
   "postgres_red": {
     "version": "18.6 (Debian 18.6-1.pgdg13+2)",
@@ -18,7 +18,6 @@
   },
   "native_source_tests": "3/3 PASS; captured public courtyard and King cells, captured placement and unchanged approved recipe digest",
   "pending_tests": [
-    "questpc_kingsday_visit_greet_journal_once_postgres GREEN",
     "crate-wide unit suites: dispatch, game-server"
   ],
   "boot_unit": "PASS1/1 in8.20s; previous hashes and journals retained",
@@ -110,6 +109,26 @@
     "dispatch_all_features_clippy": {
       "sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e",
       "bytes": 1504
+    },
+    "pg_green": {
+      "sha256": "e3f45ff0f48535bc365b1d8b395d6ac7c4d2ad125ffd9bdbf0d593edb60f5561",
+      "bytes": 5774,
+      "tail": [
+        "oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:288:32 next_command_id=12 server_sequence=31",
+        "POSTGRES_CASE_COMPLETED qengine-rewards-questpc-kingsday duration=134.27059665s success=true",
+        "test gameplay_transport::monk_save::postgres_tests::questpc_kingsday::questpc_kingsday_visit_greet_journal_once_postgres ... ok",
+        "",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2876 filtered out; finished in 134.27s",
+        ""
+      ]
+    },
+    "qualification_final-check": {
+      "sha256": "0746e802dfa50f9b603abbd6636aa3cc2ac1eada880d7c581e62b4ea82746d21",
+      "bytes": 3723
+    },
+    "qualification_final-fmt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
     }
   },
   "bindings_sha256": "84da23d8a64bb2edbefd9447551a5f109b8a5ef14337601aa28450602f7d622e",
@@ -123,6 +142,32 @@
     "boot_unit": "PASS1/1 8.20s",
     "source_unit": "PASS3/3",
     "crate_units": "317PASS/1existingNPC13FAIL138.61s",
-    "pg_green": "PENDING; WIP cadence exception"
+    "pg_green": "PASS1/1 PostgreSQL18.6 134.27059665s"
+  },
+  "code_pushed": "20eb2e45b9139d9dc8a77d86a9d426b40c7ef1a8",
+  "postgres_green": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "cases": 1,
+    "duration_seconds": 134.27059665,
+    "test": "questpc_kingsday_visit_greet_journal_once_postgres",
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib questpc_kingsday_visit_greet_journal_once_postgres -- --nocapture"
+  },
+  "assertions": [
+    "courtyard exploration through literal STEP",
+    "royal greeting and journal confirmation through literal NPC commands",
+    "greeting and completion refused before exploration",
+    "exact phase order0\u21921\u21922\u21923",
+    "one Loyal Subject achievement",
+    "same-command replay and fresh repeat create no additional rewards/quest receipts",
+    "completed journal visible from PostgreSQL-reloaded session copy",
+    "King dialogue admitted by the ordinary production promotion service"
+  ],
+  "qualification_push_checks": {
+    "workspace_all_targets": "PASS7m36s after final regeneration",
+    "fmt_all": "PASS",
+    "generated": "PASS native44, tree34111Items/252Mounts/1282NPCs, central evidence/matrix/mint/equipment, SOURCE receipt",
+    "world_pin": "PASS unchanged0d87e75b463e",
+    "runtime_content_diff_from_code_pushed": [],
+    "unit_scope": "No crate code changed in this qualification-record batch; live PG134.27s and prior unit/lint results refer to unchanged20eb2e45b runtime"
   }
 }

@@ -1,3 +1,26 @@
+## Qualification proof checks complete
+Kingsday code remains20eb2e45b, live PostgreSQL18.6 GREEN1/1 134.27059665s.
+Final post-regeneration workspace check PASS7m36s, fmt PASS; all regenerated
+runtime/content bytes and world pin0d87e75b463e match20eb2e45b. Only these lane
+qualification records changed. Counts63/114/1; continue NPC13 repair next.
+
+## Kingsday QUALIFIED — next batch is compatibility repair
+Code20eb2e45b passed full literal Kingsday PG on real18.6:1/1 in134.27059665s.
+Visit→royal greeting→journal/achievement, ordered refusals, same/fresh replay,
+one Loyal Subject, journal reload, ordinary King service admission all proved.
+Local counts63QUALIFIED/114UNFINISHED/1Dawnport exclusion. Original recipe unchanged.
+Qualification proof is cloud-kingsday-authored-validation.json. Main6f61ac15d
+remains unmerged after73conflicts and owner-authorized abort; no merge in progress.
+After this proof push apply the small NPC13 compatibility repair prepared at
+/tmp/questpc_npc13_prefix.rs (not yet applied). Read-only probe reconstructed the
+EXACT expected8c649465... from historical lower bounds-1 for rescued01/06/08
+and the cohort preceding hallowed-holy-water/outfox-helmet. Do not change tests.
+Historical source facts/probe outputs are /tmp/questpc-npc13-*.json/.rs.
+Keep active hashes, NPC legacy maps and all existing predecessors unchanged;
+layer0 exposes the true historical prefix, active layers retain its defaults.
+Then run existing history/full quest units, focused old-save PG and compile/lint/
+regeneration checks. Continue the saved main reconciliation and remaining packet.
+
 ## Validated WIP push — next action
 Workspace all-targets PASS6m42s, strict quests/dispatch/game-server Clippy PASS6m31s,
 dispatch all-features Clippy PASS, fmt PASS, native source3/3 and boot1/1 PASS.

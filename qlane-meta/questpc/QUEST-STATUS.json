@@ -3,8 +3,8 @@
   "scope": "Pinned wiki titles A..M; no numeric or N..Z titles",
   "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; green batch commits and fast-forward pushes authorized; no frozen integration candidate.",
   "counts": {
-    "QUALIFIED": 62,
-    "UNFINISHED": 115,
+    "QUALIFIED": 63,
+    "UNFINISHED": 114,
     "BLOCKED": 1
   },
   "owner_excluded_with_blocked_status": 1,
@@ -7172,34 +7172,54 @@
       "title": "Kingsday Mini World Change",
       "canonical": "oteryn:quest.authored.kingsday_mini_world_change",
       "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/10/definition",
-      "status": "UNFINISHED",
-      "scope": "complete pinned quest path",
+      "status": "QUALIFIED",
+      "scope": "Complete approved on-demand Oteryn three-stage recipe; calendar, raids, exhibition and jail remain outside the chosen scope.",
       "reward_claims": [],
       "queued_stage_binding": {
         "stage": "s1",
-        "native_dispatch_binding": null,
-        "runtime_enabled": false
+        "native_dispatch_binding": "content/quests/questpc-authored-bindings.json#/quests/0",
+        "runtime_enabled": true
       },
-      "blocker": {
-        "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Thais Kingsday celebration) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
-        "evidence": [
-          "content/quests/definitions/quests-00300-00351.json:1#/records/10/definition",
-          "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Kingsday Mini World Change",
-          "content/quests/missions/completion-binding-plan.json:1#/records/26"
+      "superseded_kingsday_evidence": {
+        "blocker": {
+          "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Thais Kingsday celebration) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+          "evidence": [
+            "content/quests/definitions/quests-00300-00351.json:1#/records/10/definition",
+            "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Kingsday Mini World Change",
+            "content/quests/missions/completion-binding-plan.json:1#/records/26"
+          ],
+          "attempts": [
+            "Read this canonical definition and chosen recipe, including source references.",
+            "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+            "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+          ]
+        },
+        "first_unqualified_stage": {
+          "key": "s1",
+          "kind": "explore",
+          "objective": "Visit decorated Thais and the celebration outside the royal castle.",
+          "targets": [
+            "Thais Kingsday celebration"
+          ]
+        }
+      },
+      "qualification": {
+        "proof": "cloud-kingsday-authored-validation.json",
+        "code_pushed": "20eb2e45b9139d9dc8a77d86a9d426b40c7ef1a8",
+        "postgres": "18.6",
+        "cases": 1,
+        "duration_seconds": [
+          134.27059665
         ],
-        "attempts": [
-          "Read this canonical definition and chosen recipe, including source references.",
-          "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
-          "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
-        ]
-      },
-      "first_unqualified_stage": {
-        "key": "s1",
-        "kind": "explore",
-        "objective": "Visit decorated Thais and the celebration outside the royal castle.",
-        "targets": [
-          "Thais Kingsday celebration"
-        ]
+        "stages": [
+          "s1",
+          "s2",
+          "s3"
+        ],
+        "reward": "oteryn:achievement/loyal_subject once",
+        "journal": "completed mission after PostgreSQL session-copy reload",
+        "engine_reused": "QENGINE2 authored_bindings dd35529b6",
+        "native_npc": "oteryn:npc.king_tibianus at captured32311,32172,z6"
       }
     },
     {
@@ -10643,7 +10663,7 @@
     "evidence": "cloud-stock-wire-validation.json",
     "runtime_published": true
   },
-  "latest_qualified_title": "Citizen Outfits Quest",
+  "latest_qualified_title": "Kingsday Mini World Change",
   "reverse_dependency_gate": {
     "state": "SUPERSEDED by owner PREPUSH-2; no full reverse-dependency test run is active",
     "main_merge": "bbb3e06d04875fc1e63f024b853194f7580cc875",
@@ -11289,12 +11309,12 @@
     "focused_pg": "PASS10/10 on PostgreSQL18.6; 497.736s; see cloud-qengine-authored-integration-validation.json"
   },
   "kingsday_authored_batch": {
-    "state": "IN_PROGRESS; compiling WIP; PG GREEN and main reconciliation pending",
+    "state": "QUALIFIED on pushed code20eb2e45b; live PG GREEN134.27059665s",
     "recipe": "unchanged approved on-demand three-stage recipe",
     "engine_reused": "QENGINE2 dd35529b6 authored_bindings",
     "production": "small finite state/journal composition at game-server boot; no generic engine rewrite",
     "test": "PG RED executed PostgreSQL18.6 55.871986355s missing greeting binding; source3/3 GREEN0.680s; full PG GREEN pending",
-    "qualified": false,
+    "qualified": true,
     "latest_main": "83acbdac3720d7fe2df6c44d82623b7307806402",
     "world_pin": "0d87e75b463e92f54ba9bf5f851e1070135c42fc99f321385a4c909030cf6d44",
     "workspace_check": "first run found test-only error conversion, fixed; retry interrupted for mandatory latest-main merge; no PASS claim",
@@ -11316,7 +11336,15 @@
       "boot_unit": "PASS1/1 8.20s",
       "source_unit": "PASS3/3",
       "crate_units": "317PASS/1existingNPC13FAIL138.61s",
-      "pg_green": "PENDING; WIP cadence exception"
+      "pg_green": "PASS1/1 PostgreSQL18.6 134.27059665s"
     }
+  },
+  "npc13_predecessor_investigation": {
+    "result": "exact historical8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084 recovered by read-only typed-catalogue probe",
+    "facts": [
+      "historical rescued01/06/08 lower bounds -1; current0",
+      "historical cohort predates hallowed-holy-water and outfox-helmet reward callbacks"
+    ],
+    "next": "small finite compatibility reconstruction after this proof push; assertion unchanged"
   }
 }
