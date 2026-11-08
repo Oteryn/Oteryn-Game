@@ -178,6 +178,13 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Item 7934 used by a world callback's item-on-target step
     // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
     ("QUESTCB3", 1),
+    // BEGIN generated questpc native profile cohorts.
+    ("QUESTPC-CRAFT", 16),
+    ("QUESTPC-EMPEROR", 1),
+    ("QUESTPC-KEYS", 3),
+    ("QUESTPC-NEWHAVEN", 8),
+    ("QUESTPC-REWARDS", 137),
+    // END generated questpc native profile cohorts.
     // Batch 3 admits only the canonical demon helmet 3387 through quest_callback_profiles.py.
     // Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:9970-9986
     // and data-global/startup/tables/chest.lua:806-811 confirm the single reward and
@@ -284,6 +291,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
     // 201189f871d23597b82caf88fd611454a2ddefb8 items.xml. All three keep speed_bonus=0.
     ("SV16-ECHO-CATALYSTS", 3),
+    // WORLDCHG: 41 source-captured definitions; 12369 is already in ITEMHOLD-Q.
+    ("WORLDCHG", 40),
+    // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
+    ("SRV9-MARRIAGE", 2),
 ];
 
 #[test]
@@ -338,6 +349,36 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .ok_or("missing NPC venison profile")?;
     assert!(venison.admission.materializable);
     assert_eq!(venison.attributes.speed_bonus, Some(0));
+    let world_change_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/world-change-item-profiles.json"
+    )))?;
+    let world_change_records = world_change_proof["records"]
+        .as_array()
+        .ok_or("world-change profiles")?;
+    assert_eq!(world_change_records.len(), 41);
+    for source in world_change_records {
+        let key = source["production_definition"]["production_key"]
+            .as_str()
+            .ok_or("world-change key")?;
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing world-change source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+    for id in [9585, 9586] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing marriage source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES

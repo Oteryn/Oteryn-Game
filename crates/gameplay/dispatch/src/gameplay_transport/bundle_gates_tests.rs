@@ -142,6 +142,8 @@ const INVENTORY: &[Entry] = &[
         },
         calls: &[
             ("gameplay_transport/monster_ai_cycle.rs", 1),
+            // S10: source NPC wandering uses the same live-world movement gate.
+            ("gameplay_transport/npc_actor/current_map.rs", 1),
             // RAIDS-1 (pkg4): a raid's live world steps its spawned monsters through the same gate.
             ("gameplay_transport/raid_live_world.rs", 1),
             // W17: the physical Drome regression proves participant-only targeting.
@@ -276,6 +278,7 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/creature_push.rs", 1),
             ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/paced_movement/autowalk.rs", 1),
+            ("gameplay_transport/source_dropdown.rs", 1),
         ],
     },
 ];
@@ -808,6 +811,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ),
     ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
+    // Corruptor fixture supplies combat only; the qualified room remains None.
+    ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
     (
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
         1,
@@ -827,6 +832,9 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/rotten_blood_progression.rs",
         1,
     ),
+    // S10 source NPC fixtures supply combat only; qualified room remains None.
+    ("gameplay_transport/postgres_tests/s10_travel.rs", 1),
+    ("gameplay_transport/postgres_tests/s10_wandering.rs", 1),
     // I14 special-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/special_potions.rs", 1),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),

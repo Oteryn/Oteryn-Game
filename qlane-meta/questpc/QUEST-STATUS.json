@@ -6565,7 +6565,7 @@
         ],
         "other_unfinished_composition": "Mission start is proven separately; material/kill progress and held world/access callbacks are not one complete executable quest path."
       },
-      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
+      "execution_owner": "questpc: import the original startup selectors through existing shared tooling; qengine2: missing sewer outcome/counter/outfit capability"
     },
     {
       "title": "Insectoid Invasion World Change",
@@ -7999,7 +7999,7 @@
       "first_unqualified_stage": {
         "key": "s10",
         "kind": "collect",
-        "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
+        "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
         "targets": [
           "Winning Lottery Ticket"
         ]
@@ -8619,7 +8619,7 @@
       "first_unqualified_stage": {
         "key": "s2",
         "kind": "collect",
-        "objective": "Odszukaj świątynię Inukayi i odbierz pierwszy fragment statuy.",
+        "objective": "Odszukaj \u015bwi\u0105tyni\u0119 Inukayi i odbierz pierwszy fragment statuy.",
         "targets": [
           "Fragment of a Statue (1st)",
           "Inukaya Shrine"
@@ -10876,7 +10876,7 @@
       "1295_quest_stateless_paid_receipts.sql",
       "1296_quest_paid_sale_mint_occurrences.sql"
     ],
-    "canonical_npc_migrations": "1310–1315 unchanged from main; duplicate lane NPC bootstrap, Marlin, item-source and Father proof removed",
+    "canonical_npc_migrations": "1310\u20131315 unchanged from main; duplicate lane NPC bootstrap, Marlin, item-source and Father proof removed",
     "atomic_father": "exact eleven-track acceptance retained in1290; value/XP proof consumed from main1315",
     "unit_run2": {
       "total": 346,
@@ -10954,7 +10954,7 @@
       "log": "/tmp/questpc-main3032-audit-unit-green.log"
     },
     "dispatch_unit_findings": {
-      "state": "RUNNING; no partial fix pushed",
+      "state": "Superseded by mandatory collector merge; all three stable inventory findings repaired; focused rerun pending",
       "findings": [
         "Exact CONSTRUCTIONS omits test-only newhaven_corruptor.rs (qualified room stays None)",
         "Exact gate_source_world inventory omits existing source_dropdown.rs producer",
@@ -11036,5 +11036,91 @@
     "changed_crates": [],
     "workspace_all_targets": "PASS6m42s",
     "fmt_all": "PASS"
+  },
+  "yalahar_startup_binding_discovery": {
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "source": {
+      "path": "data-global/startup/tables/item.lua",
+      "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+      "git_blob_sha1": "5d5323401d243df8416a38aba33c3d6e738b2d1a"
+    },
+    "binding_count": 18,
+    "native_dry_overlay": {
+      "source_item_matches": 18,
+      "regions": 6,
+      "written": false
+    },
+    "example": {
+      "position": [
+        32743,
+        31164,
+        5
+      ],
+      "item": 8618,
+      "attribute": "unique",
+      "value": 3091,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4294
+    },
+    "decision": "Raw OTBM absence does not establish missing source facts: startup ItemUnique assigns these IDs. Reuse quest_access_bindings to import exact stored UIDs at source item/position pairs. No runtime coordinate fallback. Authored import and PG proof are next, not qualified yet."
+  },
+  "collector3030_integration": {
+    "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+    "state": "Ready to push; main merged, generation/check/fmt/clippy/pins pass; focused unit/PG reruns pending",
+    "reuse": "Collector protected WorldProject documents unchanged; regenerated successor tree and all native/central artifacts from merged authoring",
+    "merge_repairs": [
+      "Keep source-owned reward transition recognition plus exact Benevola empty handover",
+      "Retain carried-tool/read-only and guarded departure paths alongside main World observations",
+      "Retain Jorge backend-only Exchange plus main Yasir/Yeo, fluids and full charges; reject mixed source options",
+      "Supply explicit absent/default additive callback/owner fields; remove duplicate identical map delegations"
+    ],
+    "own_migrations": [
+      1290,
+      1292,
+      1293,
+      1295,
+      1296
+    ],
+    "source_profile_cohorts": {
+      "profiles": 165,
+      "cohorts": 5,
+      "generator": "tools/contracts/update_questpc_equipment_pins.py",
+      "old_pins": "all retained; added only independently captured zero-speed profile cohorts"
+    },
+    "unit_repairs_authored": [
+      "Two exact seam/gate inventory entries",
+      "Five missing equipment source cohorts"
+    ],
+    "pre_merge_pg": "cloud-precollector-npc-pg-validation.json",
+    "pending": [
+      "Post-merge focused inventory/equipment and source PG retries",
+      "Full selected dispatch unit rerun"
+    ],
+    "prior_unit_selection": {
+      "head": "15740c1401eaaec855cfe61b85e37cdef03727cb",
+      "interrupted_for": "mandatory collector main merge; old binary/changed source artifacts cannot qualify new head",
+      "summary": "1086/1625 run;1080passed;4failures plus2SIGINT;539notrun;1194filtered",
+      "stable_pre_merge_findings": 3,
+      "additional_failure": "SRX1 native provisioning manifest mismatch while main merge replaced artifacts; rerun required, not dismissed"
+    },
+    "native_writer": {
+      "red": "mtime changed on identical bytes (1test failed0.002s)",
+      "green": "1test passed0.001s after collector merge; changed/new outputs still written"
+    },
+    "cadence": "PREPUSH-2 tests-pending exception; no new whole quest qualification",
+    "checks": {
+      "workspace_check_before_final_quest_regeneration": "PASS 4m25s",
+      "strict_clippy_four_changed_crates": "PASS 3m10s",
+      "world_pin_refresh": "PASS",
+      "independent_world_pin_check": "PASS",
+      "world_digest": "d4accaf06d3416d18ba7193a66b9b88348aee745d255b681e4d922c50bfbecf8",
+      "source_receipt": "PASS; frozen SOURCE cores unchanged; compiler and callback proof regenerated with repo tooling",
+      "equipment_pin_generator": "PASS 5 source cohorts /165 profiles",
+      "native_writer_unit": "PASS; red-before proof retained",
+      "post_merge_pg": "PENDING; no post-merge green claim",
+      "final_workspace_all_targets": "PASS after final quest regeneration",
+      "fmt_all": "PASS",
+      "duplicate_migrations": "PASS staged merged tree"
+    }
   }
 }

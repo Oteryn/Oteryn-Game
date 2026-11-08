@@ -1,0 +1,53 @@
+{
+  "source_head": "15740c1401eaaec855cfe61b85e37cdef03727cb",
+  "scope": "Actual NPC PostgreSQL regressions before mandatory collector3030 merge; not post-merge proof",
+  "postgres_version": "18.6 (Debian18.6-1.pgdg13+2)",
+  "summary": "11passed;0failed;610.756s",
+  "cases": [
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::draconia_elathriel::draconia_elathriel_bank_price_exact_key_replay_and_repurchase",
+      "seconds": 99.488
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::draconia_elathriel::draconia_elathriel_carried_price_exact_key_replay_and_repurchase",
+      "seconds": 99.544
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::draconia_elathriel::draconia_elathriel_full_backpack_rolls_back_bank_fee_and_key",
+      "seconds": 94.003
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::fathers_burden::fathers_burden_eight_handins_cape_experience_and_replay",
+      "seconds": 100.54
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::uneasy_curos::uneasy_curos_accepts_two_flags_atomically_and_replays",
+      "seconds": 95.145
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::uneasy_curos::uneasy_curos_preserves_preceding_frontier_branch",
+      "seconds": 92.622
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::uneasy_curos::uneasy_curos_requires_completed_frontier_mission",
+      "seconds": 86.501
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_briefs_after_native_death_report",
+      "seconds": 88.668
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_refuses_report_without_death",
+      "seconds": 100.404
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_reports_native_renegade_death",
+      "seconds": 102.175
+    },
+    {
+      "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::viola::viola_mission_yes_book_handin_is_atomic_and_survives_restart",
+      "seconds": 135.212
+    }
+  ],
+  "log_sha256": "bcb4003d309fe78e9aa62893ed889a3a8f72c544854015c4dfbc13e64ade6ded"
+}

@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+  "qualification_change": false,
+  "post_merge_pg": "pending",
+  "unit_retries": "pending",
+  "logs": {
+    "source-receipt": {
+      "sha256": "5b5e2de3c6b59eaf512cfbae9d845215a90c4c6ab6754e224aea9218394e6560",
+      "bytes": 72
+    },
+    "native-writer-unit": {
+      "sha256": "8b0e51893ed666799058984bf84e6269af59528b40d68c21ee35b453bd4b886c",
+      "bytes": 152
+    },
+    "pin-check": {
+      "sha256": "7ca203ad4e4833f83acbad5e20ecc2042f34da04169de7b563ed07a9890f2367",
+      "bytes": 252
+    },
+    "clippy-final": {
+      "sha256": "32a3d93eac1aa72babbdaa8879c4cd97ce281ca8017787cf01e9ff3dd95eb4f6",
+      "bytes": 2184
+    },
+    "dup-final": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "postregen-check": {
+      "sha256": "f31d74e85e7819365a4ace5647300e3f261a12d5da4ab74f144f7fb56256fb6c",
+      "bytes": 1997
+    },
+    "postregen-fmt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": {
+    "workspace_all_targets": "PASS",
+    "fmt_all": "PASS",
+    "clippy_changed_crates": "PASS 3m10s",
+    "duplicate_migrations": "PASS",
+    "independent_world_pin_check": "PASS"
+  }
+}

@@ -254,6 +254,8 @@ pub(super) async fn apply(
         )
     };
     let request = NpcTradeRequest {
+        fluid_subtype: None,
+        full_charges: None,
         cause: NpcTradeCause {
             npc_key: source::NPC.into(),
             catalogue_revision: 1,

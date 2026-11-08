@@ -155,6 +155,8 @@ mod current_appearance;
 mod earned_unlocks;
 mod grant_lock;
 pub(crate) use grant_lock::{item_action_sex, lock_account_grants};
+mod marriage;
+pub(crate) use marriage::grant_marriage_outfits;
 mod quest_grants;
 pub(crate) use quest_grants::{QuestOutfitGrant, grant_callback_outfit, grant_quest_outfit};
 pub use current_appearance::CurrentCharacterAppearance;

@@ -668,3 +668,21 @@ Counter9 succeeds before total increments; total>20 asks for a new round.
 Sven resets total0, not the success counter. Preserve these literal source
 boundaries; do not guarantee completion after ten USEs. Mammoth requires live
 CONDITION_DRUNK. Requested random quest outcome/condition owner composition.
+
+## Yalahar startup binding correction (2026-11-08)
+The earlier map-only conclusion was incomplete. Both raw source maps contain no
+UID/AID attributes because Crystal assigns them during startup. Authoritative
+assignment source: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item.lua
+SHA2567f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad.
+ItemUnique explicitly binds1018/1019,3071–3074 and3091–3102. UID3091 is item8618
+at32743,31164,5. Existing quest_access_bindings.overlay_region verified all18
+source item/position pairs in current native regions without writing anything.
+Import these stored attributes; keep original callback selectors. A coordinate
+fallback in runtime matching remains forbidden and unnecessary.
+
+Sewer behavior source: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/lib/register_actions.lua
+SHA2565121124402c29aead613174c80e94e6b8d5c7db1e62ad152ad68f1280fc3df6d.
+onUseCrowbar(3304/9598) uses3071–3074, increments Mission01 once per pipe, gives
+3s skeleton/5s bog-raider disguises and random rat spawns on the second pipe.
+These coupled effects remain requested from qengine2; a four-USE approximation
+would omit source behavior. No new whole-quest qualification claimed.

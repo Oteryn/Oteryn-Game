@@ -1042,6 +1042,37 @@ mod fluid_map_tests {
     use super::*;
 
     #[test]
+    fn srv9b_native_fluid_namespace_matches_shop_craft_and_drinking() {
+        assert!(drink_restore(7).is_none(), "oil cannot restore mana");
+        assert!(matches!(
+            drink_restore(10),
+            Some(ReferencePotionRestore {
+                resource: ReferenceRestoreResource::Mana,
+                min: 50,
+                max: 150,
+            })
+        ));
+        assert!(matches!(
+            drink_restore(11),
+            Some(ReferencePotionRestore {
+                resource: ReferenceRestoreResource::Health,
+                min: 60,
+                max: 60,
+            })
+        ));
+        for (source, subtype) in [
+            (2098, 6),
+            (2522, 12),
+            (2521, 2),
+            (391, 4),
+            (4848, 13),
+            (2520, 3),
+        ] {
+            assert_eq!(fluid_source_subtype(source), Some(subtype));
+        }
+    }
+
+    #[test]
     fn fluid_map_use_refuses_distant_and_other_floor_targets() {
         assert!(fluid_map_target_in_range(10, 10, 7, 10, 10, 7));
         assert!(!fluid_map_target_in_range(10, 10, 7, 12, 10, 7));
@@ -1049,7 +1080,8 @@ mod fluid_map_tests {
     }
 }
 
-/// Crystal `fluids.lua:35-40` consumes the target's `items.xml` `fluidsource` value.
+/// Crystal 201189f8 `data-global/scripts/actions/other/fluids.lua:151-153` copies
+/// the target's `items.xml` `fluidsource`, in the modern Item subtype namespace.
 /// These are the source objects present in the pinned donor XML used by Oteryn.
 fn fluid_source_subtype(id: u32) -> Option<u8> {
     match id {
@@ -1070,22 +1102,23 @@ fn fluid_source_subtype(id: u32) -> Option<u8> {
         | 21302..=21322
         | 31171..=31182 => Some(1),
         2520 => Some(3),
-        2098..=2101 => Some(4),
-        2522 => Some(5),
-        2521 | 2527..=2534 => Some(15),
-        391 => Some(19),
-        4848 | 5512..=5513 => Some(27),
+        2098..=2101 => Some(6),
+        2522 => Some(12),
+        2521 | 2527..=2534 => Some(2),
+        391 => Some(4),
+        4848 | 5512..=5513 => Some(13),
         _ => None,
     }
 }
 
-/// Crystal `fluids.lua:55-62`: mana fluid (7) restores `math.random(50, 150)` mana and life
-/// fluid (10) `addHealth(60)`. The drunk (3, 15, 43) and poison (4) conditions are not modelled
+/// Crystal `data-global/scripts/actions/other/fluids.lua:130-135`: mana fluid (10)
+/// restores `math.random(50, 150)` mana and life fluid (11) `addHealth(60)`.
+/// The drunk (2, 3, 13, 16) and poison (6) conditions are not modelled
 /// (`PARITY_PENDING`); every other fluid is only drunk.
 fn drink_restore(fluid: u8) -> Option<ReferencePotionRestore> {
     let (resource, min, max) = match fluid {
-        7 => (ReferenceRestoreResource::Mana, 50, 150),
-        10 => (ReferenceRestoreResource::Health, 60, 60),
+        10 => (ReferenceRestoreResource::Mana, 50, 150),
+        11 => (ReferenceRestoreResource::Health, 60, 60),
         _ => return None,
     };
     Some(ReferencePotionRestore { resource, min, max })
@@ -1251,12 +1284,14 @@ mod tests {
     #[test]
     fn drinking_restores_only_mana_and_life_fluid() {
         let restore = |fluid| drink_restore(fluid).map(|r| (r.resource, r.min, r.max));
-        assert_eq!(restore(7), Some((ReferenceRestoreResource::Mana, 50, 150)));
-        assert_eq!(
-            restore(10),
-            Some((ReferenceRestoreResource::Health, 60, 60))
-        );
-        assert_eq!(restore(1), None);
+        for fluid in 0..=20 {
+            let expected = match fluid {
+                10 => Some((ReferenceRestoreResource::Mana, 50, 150)),
+                11 => Some((ReferenceRestoreResource::Health, 60, 60)),
+                _ => None,
+            };
+            assert_eq!(restore(fluid), expected, "modern fluid subtype {fluid}");
+        }
         let mut gate = ItemUseGate::default();
         assert_eq!(gate.start_drink(10), Ok(()));
         assert_eq!(gate.start_drink(11), Err(UseDisposition::Exhausted));

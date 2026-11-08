@@ -658,6 +658,7 @@ fn a_trade_intent_names_the_projected_offer_of_the_server_catalogue() {
     assert_eq!(
         offer,
         NpcTradeOffer {
+            sub_type: None,
             npc_key: "oteryn:npc.alice".to_owned(),
             catalogue_revision: revision,
             offer_index: 1,
@@ -731,13 +732,13 @@ fn a_mismatched_trade_intent_is_stale_and_re_projects_the_window() {
 }
 
 #[test]
-fn a_charged_fluid_or_foreign_currency_offer_is_rejected() {
+fn subtype_is_preserved_for_the_item_owner_and_foreign_currency_is_rejected() {
     use ProjectV2ServiceOfferDirection::SellToPlayer;
     let mut fluid = offer(SWORD, "definition-r1", SellToPlayer, 500, None);
     fluid.sub_type = Some(1);
     let mut foreign = offer(SWORD, "definition-r1", SellToPlayer, 500, None);
     foreign.currency = Some(foreign.item.clone());
-    for odd in [fluid, foreign] {
+    for (odd, subtype) in [(fluid, Some(1)), (foreign, None)] {
         let (runtime, actor, session, npc, chat, conversations) = trading(vec![odd]);
         let revision = chat.npc_talk().expect("book").catalogue_revision();
         let intent = NpcTradeIntent {
@@ -747,12 +748,21 @@ fn a_charged_fluid_or_foreign_currency_offer_is_rejected() {
             expected_unit_price: 500,
             ..trade(npc, revision)
         };
-        let Err(refusal) =
-            conversations.trade_in(&chat, &runtime, actor, session, &intent, Some(&items()))
-        else {
-            panic!("refused");
-        };
-        assert_eq!(refusal.disposition, NpcIntentDisposition::Rejected);
+        let resolved =
+            conversations.trade_in(&chat, &runtime, actor, session, &intent, Some(&items()));
+        if let Some(subtype) = subtype {
+            let Ok(selected) = resolved else {
+                panic!("subtype must reach native Item policy validation");
+            };
+            assert_eq!(selected.sub_type, Some(subtype));
+            assert_eq!(selected.quantity, 1);
+            assert_eq!(selected.item_key, SWORD);
+        } else {
+            let Err(refusal) = resolved else {
+                panic!("foreign currency must remain refused");
+            };
+            assert_eq!(refusal.disposition, NpcIntentDisposition::Rejected);
+        }
     }
 }
 

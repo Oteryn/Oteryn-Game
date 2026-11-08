@@ -274,7 +274,7 @@ impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
         self.inner.movement_item(id)
     }
 
-    fn movement_items(&self, pos: TilePos) -> Vec<crate::map::view::ComposedEntry> {
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
         self.inner.movement_items(pos)
     }
 

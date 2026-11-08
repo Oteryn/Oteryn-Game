@@ -92,7 +92,8 @@ impl DurabilityRoot {
             None,
             None,
             None,
-        )
+                    None,
+)
         .await
     }
 
@@ -133,7 +134,8 @@ impl DurabilityRoot {
             None,
             None,
             None,
-        )
+                    None,
+)
         .await
     }
 
@@ -167,7 +169,8 @@ impl DurabilityRoot {
             None,
             None,
             None,
-        )
+                    None,
+)
         .await
     }
 

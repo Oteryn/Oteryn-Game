@@ -638,7 +638,6 @@ pub(super) fn extend(
             .insert(
                 key.clone(),
                 super::QuestTransition {
-                    world_change: None,
                     key,
                     quest: program.document.quest.clone(),
                     effects: vec![super::QuestEffect {
@@ -648,6 +647,7 @@ pub(super) fn extend(
                     }],
                     completes: false,
                     experience: None,
+                    world_change: None,
                 },
             )
             .is_some()
