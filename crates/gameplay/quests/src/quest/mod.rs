@@ -25,6 +25,7 @@ pub mod barbarian_mead;
 #[cfg(test)]
 pub mod batch3_a;
 pub mod carried_step;
+pub mod children_puzzle;
 pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
