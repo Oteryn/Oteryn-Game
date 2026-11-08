@@ -128,8 +128,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match at {
             Target::Creature(_) => {
                 let (none, bundle_doors, legacy);
-                let blocking: &dyn crate::map::floor::CellBlocker = if self
-                    .rooms
+                let blocking: &dyn crate::map::floor::CellBlocker = if self.rooms()
                     .gate_source_world()
                     .is_some_and(|room| room.source_world().is_some())
                 {
@@ -146,7 +145,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 match crate::movement::relocate::relocate_creature(
                     &mut runtime,
                     target,
-                    self.movement_cells,
+                    self.movement_cells(),
                     blocking,
                     destination,
                 ) {
@@ -155,7 +154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         // too; trap.lua:23-44,59-69 applies the same entry/exit rules to monsters.
                         crate::movement::monster_map::apply_committed_step_in(
                             &mut runtime,
-                            self.movement_cells,
+                            self.movement_cells(),
                             target,
                             snapshot.position(),
                         );
@@ -249,7 +248,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// (protection zone, no-PvP zone) of one cell; `None` when its tile is unknown.
     fn push_zones(&self, at: MovementLocalPosition) -> Option<(bool, bool)> {
-        let cells = self.movement_cells;
+        let cells = self.movement_cells();
         let cell = crate::content::LogicalCell {
             x: at.x,
             y: at.y,

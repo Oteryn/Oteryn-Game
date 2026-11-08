@@ -570,7 +570,7 @@ pub(super) async fn move_loop_item(
         let mut seed_target = None;
         let mut assembly_target = None;
         let pins =
-            super::bundle_map_position(&mut runtime, admission.movement_cells, actor).map(|at| {
+            super::bundle_map_position(&mut runtime, admission.movement_cells(), actor).map(|at| {
                 // MAIL: a move onto a tile holding a mailbox posts into it.
                 if let (LoopTarget::Ground(to), Some(index)) = (&request.target, index)
                     && let (Ok(x), Ok(y), Ok(floor)) = (
@@ -998,7 +998,7 @@ pub(super) async fn observe_container(
             let pin = runtime.content_pin();
             let content_revision = sha256_revision(pin.server_artifact_digest());
             let placement_context = pin.frame_binding_digest().to_vec();
-            let at = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)?;
+            let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
             (
                 at.map.overlay.base().clone(),
                 (at.at.x, at.at.y, at.at.floor),
