@@ -491,6 +491,22 @@ pub(crate) async fn mint(
         callback_key.to_owned()
     };
     let request = RewardClaimMintRequest {
+        additional_items: reward
+            .additional
+            .iter()
+            .map(|item| {
+                if item.fluid_subtype.is_some() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                Ok(RewardClaimMintContent {
+                    fluid_subtype: None,
+                    item: resolve(&item.item)?,
+                    quantity: u32::from(item.count),
+                    key_number: None,
+                    text: None,
+                })
+            })
+            .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

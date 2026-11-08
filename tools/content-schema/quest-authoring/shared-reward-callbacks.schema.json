@@ -71,6 +71,24 @@
           "items": {
             "$ref": "#/$defs/giftItem"
           }
+        },
+        "additional": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/giftItem"
+              },
+              {
+                "not": {
+                  "required": [
+                    "fluid_subtype"
+                  ]
+                }
+              }
+            ]
+          }
         }
       }
     },
