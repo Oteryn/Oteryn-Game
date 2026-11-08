@@ -323,6 +323,10 @@ def expected(root: Path):
         for r in records
         if r["reward_claim_owner"] is not None
     )
+    # Keep the runtime progress buckets when their last entry becomes verified.
+    for counts in (work_counts, implementation_counts, reward_owner_counts):
+        for state in ("REWARD_CLAIM_USE_ENABLED", "REWARD_CLAIM_USE_VERIFIED"):
+            counts.setdefault(state, 0)
     donor_counts = Counter(r["donor"]["mode"] for r in records)
     mapping_counts = Counter(r["canonical_mapping"] for r in records)
     unique_readiness = Counter(d.get("readiness") for d in definitions)
