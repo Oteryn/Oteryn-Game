@@ -50,6 +50,9 @@ use std::sync::{Arc, Mutex};
 
 /// D1211: the loop decides every touched definition from this exact admitted native generation.
 impl ItemLoopContent for NativeItemWeights<'_> {
+    fn npc_outfit_content(&self) -> Option<&crate::content::native_gameplay::NativeGameplayState> {
+        Some(self.0)
+    }
     fn loop_content_digest(&self) -> [u8; 32] {
         self.0.source_digest()
     }

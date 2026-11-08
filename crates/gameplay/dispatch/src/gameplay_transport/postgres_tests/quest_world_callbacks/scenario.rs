@@ -117,7 +117,7 @@ fn scenario_case(
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
-    let classic_npc = qengine_reward
+    let classic_npc = name.starts_with("engoutfit-") || qengine_reward
         || matches!(
             name,
             "engnpc-m04"
@@ -288,7 +288,7 @@ fn scenario_case(
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" {
+        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" || name.starts_with("engoutfit-") {
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
@@ -854,6 +854,12 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if name == "engoutfit-rock-steady" {
+            super::super::engoutfit::exercise_rock(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name.starts_with("engoutfit-source") {
+            super::super::engoutfit::exercise_source(
+                &mut owner, &mut admitted, &h, &authority, name.ends_with("-fault"),
+            ).await?;
         } else if name == "engnpc-m04" {
             super::super::engnpc_m04_completion::exercise(
                 &mut owner,

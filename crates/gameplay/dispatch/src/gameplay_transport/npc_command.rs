@@ -684,6 +684,7 @@ pub(super) async fn npc_bank_talk(
     } else {
         None
     };
+    let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -855,8 +856,15 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
-    {
+    if let Some(step) = catalogue::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        &ordinary,
+        source_appearance.as_ref(),
+    ) {
         drop(runtime);
         drop(_trade_permit);
         return catalogue::apply(admission, actor, command, intent, step).await;
