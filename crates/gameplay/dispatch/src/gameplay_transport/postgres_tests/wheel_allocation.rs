@@ -622,7 +622,7 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                 move_wheel_actor(&mut runtime, deps.actor, if in_pz { 2 } else { 0 }, if in_pz { 0 } else { 5 })?;
                 assert_eq!(
                     crate::gameplay_transport::actor_spell::qualified_protection_zone(
-                        &mut runtime, &owner.movement_cells, deps.actor,
+                        &mut runtime, owner.movement_cells(), deps.actor,
                     ),
                     Some(in_pz),
                 );

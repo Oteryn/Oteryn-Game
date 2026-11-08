@@ -11,6 +11,7 @@ fn run() -> Result<(), String> {
     for path in [
         "crates/client-ui/src/features",
         "crates/protocol-oteryn/capabilities",
+        "crates/session/src",
         "docs/contracts/protocol-oteryn/v1/registry/command_types",
         "tools/architecture-check/client-fragment.schema.json",
         "tools/architecture-check/client-unsupported-baseline.json",

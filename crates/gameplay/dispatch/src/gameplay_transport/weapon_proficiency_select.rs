@@ -314,7 +314,7 @@ pub(super) async fn execute(
         {
             return None;
         }
-        super::actor_spell::qualified_protection_zone(&mut runtime, &owner.movement_cells, actor)
+        super::actor_spell::qualified_protection_zone(&mut runtime, owner.movement_cells(), actor)
             == Some(true)
     };
     let plan = plan_proficiency_selection(

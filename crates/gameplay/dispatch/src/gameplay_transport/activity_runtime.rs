@@ -90,6 +90,15 @@ pub struct ActivityRuntimeAssets<'a> {
     pub rooms: super::SeamRooms<'a>,
 }
 
+impl ActivityRuntimeAssets<'_> {
+    pub(super) fn movement_cells(&self) -> &NativeEntryMovementCells {
+        &self.movement_cells
+    }
+    pub(super) fn rooms(&self) -> &super::SeamRooms<'_> {
+        &self.rooms
+    }
+}
+
 /// The proposed runtime could not be registered under the current allocation,
 /// node, content and capability proofs. No runtime was published on this error.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -129,6 +138,9 @@ pub struct ActivityConnectionSwitch {
 
 #[derive(Default)]
 pub struct ActivityRuntimeRegistry<'a> {
+    pub(super) soulpit_transitions: tokio::sync::Mutex<()>,
+    soulpit_template:
+        Mutex<Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>>,
     templates: Mutex<
         HashMap<
             String,
@@ -209,6 +221,23 @@ impl ActivityRefusalPrune {
 }
 
 impl<'a> ActivityRuntimeRegistry<'a> {
+    pub(super) fn register_soulpit_template(
+        &self,
+        template: &'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate,
+    ) -> Result<(), ()> {
+        let mut current = self.soulpit_template.lock().map_err(|_| ())?;
+        if current.is_some_and(|existing| !std::ptr::eq(existing, template)) {
+            return Err(());
+        }
+        *current = Some(template);
+        Ok(())
+    }
+
+    pub(super) fn soulpit_template(
+        &self,
+    ) -> Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate> {
+        *self.soulpit_template.lock().ok()?
+    }
     pub(super) fn register_template(
         &self,
         template: &'a crate::content::bosses::activity_template::QualifiedActivityRoomTemplate,
@@ -852,11 +881,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .active_generation
             .ok_or(ActivityRuntimeRegistrationError)?;
         let room = assets
-            .rooms
+            .rooms()
             .gate_native_combat_cast()
             .ok_or(ActivityRuntimeRegistrationError)?;
         if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
-            assets.movement_cells.index()
+            assets.movement_cells().index()
         {
             use crate::map::boot::BundleCollisionIndexExt;
             if index.map().overlay.runtime_scope() != assignment.scope {
@@ -873,8 +902,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             || pin.server_artifact_digest() != active.identity().server_artifact_digest()
             || pin.client_artifact_digest() != active.identity().client_artifact_digest()
             || room.compiled().server_digest() != pin.server_artifact_digest()
-            || assets.movement_cells.scope().world_id != self.world_id
-            || &*assets.movement_cells != room.movement_cells()
+            || assets.movement_cells().scope().world_id != self.world_id
+            || assets.movement_cells() != room.movement_cells()
             || runtime.owner_fence().is_err()
         {
             return Err(ActivityRuntimeRegistrationError);

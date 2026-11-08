@@ -12,10 +12,31 @@ import refresh_spkg2_qualification_receipts as refresh
 
 
 class ContextTests(unittest.TestCase):
+    def test_soulpit_owner_successor_recovers_the_exact_frozen_marker(self):
+        original = world_context.original_marker(check.ROOT)
+        self.assertEqual(world_context.sha(original), world_context.BASE_SHA)
+
+    def test_soulpit_owner_successor_rejects_changed_catalogue_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in (
+                world_context.MARKER,
+                "content/world/terrain/" + world_context.GROUND,
+                "content/world/terrain/" + world_context.SOULPIT,
+            ):
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes((check.ROOT / relative).read_bytes())
+            path = root / "content/world/terrain" / world_context.SOULPIT
+            path.write_bytes(path.read_bytes() + b" ")
+            with self.assertRaisesRegex(ValueError, "unrecognized Soulpit"):
+                world_context.original_marker(root)
+
     def test_historical_owner_receipts_reject_unqualified_ground_changes(self):
         for relative in (
             world_context.MARKER,
             "content/world/terrain/" + world_context.GROUND,
+            "content/world/terrain/" + world_context.SOULPIT,
         ):
             with (
                 self.subTest(relative=relative),
@@ -25,6 +46,7 @@ class ContextTests(unittest.TestCase):
                 for source in (
                     world_context.MARKER,
                     "content/world/terrain/" + world_context.GROUND,
+                    "content/world/terrain/" + world_context.SOULPIT,
                 ):
                     target = root / source
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -44,6 +66,7 @@ class ContextTests(unittest.TestCase):
             for relative in (
                 world_context.MARKER,
                 "content/world/terrain/" + world_context.GROUND,
+                "content/world/terrain/" + world_context.SOULPIT,
                 world_context.HIT_PACKET,
             ):
                 target = root / relative

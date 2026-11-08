@@ -13,7 +13,8 @@ use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_f
 use super::character_last_position::{LastPositionCell, LastPositionRecord};
 use super::character_progression::{assert_item_only_fence, assert_runtime_scope_fence};
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::fresh_admission::FreshAdmissionStore;
 use super::item_transfer::CurrentCharacterItemFence;
@@ -30,6 +31,7 @@ use sqlx::{Postgres, Row, Transaction};
 
 mod catalogue;
 mod entry;
+pub mod soulpit;
 mod transfer_recovery;
 pub use transfer_recovery::ActivityTransferRecovery;
 pub(crate) use transfer_recovery::OfflineActivityMismatchRelease;
@@ -144,6 +146,8 @@ pub enum ActivityReturnReason {
     Exit,
     Timeout,
     Defeated,
+    /// A Soulpit lifecycle transaction has already reached its terminal checkpoint.
+    SoulpitTerminal,
     OwnerLost,
     Death {
         occurrence: [u8; 16],
@@ -184,6 +188,7 @@ impl ActivityReturnReason {
             Self::CapabilityMismatch { .. } => 9,
             Self::StaffKick { .. } => 10,
             Self::StaffKickLost { .. } => 11,
+            Self::SoulpitTerminal => 52,
         }
     }
 }
@@ -281,14 +286,15 @@ impl ActivityHandoffOwner {
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    let result =
-                        entry::enter_in_transaction(&mut tx, &root, &node, &request, boss_room)
-                            .await?;
+                    let result = entry::enter_in_transaction(
+                        &mut tx, &root, &node, &request, boss_room, None,
+                    )
+                    .await?;
                     if !matches!(result, ActivityEnterOutcome::Refused(_)) {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                     }
                     Ok(result)
                 })
@@ -339,6 +345,8 @@ impl ActivityHandoffOwner {
                     || request.destination_transport.is_none()
                     || recovering))
             || (request.command_id.is_none() && request.reason == ActivityReturnReason::Exit)
+            || (request.reason == ActivityReturnReason::SoulpitTerminal
+                && (request.command_id.is_some() || recovering))
             || matches!(request.reason, ActivityReturnReason::Death { occurrence } if !uuid_v7(&occurrence) || request.command_id.is_some())
             || !uuid_v7(&request.return_id)
             || !uuid_v7(&request.handoff_id)

@@ -87,7 +87,7 @@ pub(super) async fn execute(
         ) else {
             return refused(9);
         };
-        let town = super::bundle_map_position(&mut runtime, &owner.movement_cells, actor)
+        let town = super::bundle_map_position(&mut runtime, owner.movement_cells(), actor)
             .as_ref()
             .and_then(super::depot::locker);
         let index = native.item_index()?;

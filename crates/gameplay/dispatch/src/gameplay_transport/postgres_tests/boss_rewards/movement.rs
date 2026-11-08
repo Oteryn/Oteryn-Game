@@ -63,8 +63,8 @@ pub(super) async fn walk_corridor(
     for y in ys.into_iter().skip(1) {
         let next = at(y);
         assert_eq!(
-            owner.movement_cells.index().lookup(
-                owner.movement_cells.scope(),
+            owner.movement_cells().index().lookup(
+                owner.movement_cells().scope(),
                 crate::content::LogicalCell {
                     x: next.x,
                     y: next.y,

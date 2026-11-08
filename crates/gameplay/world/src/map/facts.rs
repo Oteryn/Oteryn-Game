@@ -132,6 +132,65 @@ pub struct BundleFacts {
 const AMBIGUOUS: u32 = u32::MAX;
 
 impl BundleFacts {
+    /// Share immutable palette identities, copying only this bounded activity's
+    /// placement provenance. Scope-ephemeral facts always start empty.
+    pub(super) fn activity_copy(&self, bounds: [i32; 6]) -> Self {
+        let inside = |pos: TilePos| {
+            let z = -i32::from(pos.floor);
+            bounds[0] <= i32::from(pos.x)
+                && i32::from(pos.x) <= bounds[2]
+                && bounds[1] <= i32::from(pos.y)
+                && i32::from(pos.y) <= bounds[3]
+                && bounds[4] <= z
+                && z <= bounds[5]
+        };
+        let mut placements = Vec::new();
+        for z in bounds[4]..=bounds[5] {
+            for y in bounds[1]..=bounds[3] {
+                for x in bounds[0]..=bounds[2] {
+                    let (Ok(x), Ok(y), Ok(floor)) =
+                        (u16::try_from(x), u16::try_from(y), i8::try_from(-z))
+                    else {
+                        continue;
+                    };
+                    let pos = TilePos { x, y, floor };
+                    let (Some(low), Some(high)) = (
+                        view::placement_key(pos, 0),
+                        view::placement_key(pos, MAX_BASE_ORDINAL),
+                    ) else {
+                        continue;
+                    };
+                    let start = self.placements.partition_point(|(key, _)| *key < low);
+                    let end = self.placements.partition_point(|(key, _)| *key <= high);
+                    placements.extend_from_slice(&self.placements[start..end]);
+                }
+            }
+        }
+        placements.sort_unstable_by_key(|(key, _)| *key);
+        Self {
+            palette: self.palette.clone(),
+            movement_definitions: self.movement_definitions.clone(),
+            ids: self.ids.clone(),
+            placements,
+            houses: self
+                .houses
+                .iter()
+                .filter(|(pos, _)| inside(*pos))
+                .copied()
+                .collect(),
+            house_doors: self
+                .house_doors
+                .iter()
+                .filter(|(pos, _, _)| inside(*pos))
+                .copied()
+                .collect(),
+            doors: self.doors.activity_copy(inside),
+            rotations: Mutex::new(Arc::new(BTreeMap::new())),
+            callbacks: Mutex::new(Arc::new(CallbackStates::default())),
+            monster_steps: Mutex::new(VecDeque::new()),
+        }
+    }
+
     /// Retain static source facts, with fresh Instance-local mutable owners.
     pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Self {
         let inside = |pos: TilePos| super::activity_contains(bounds, pos);
@@ -222,13 +281,13 @@ impl BundleFacts {
         })
     }
 
-    /// Whether palette entry `index` blocks a tile: a `wall` Terrain or a solid Item. An index
+    /// Whether palette entry `index` blocks a tile: a `wall`, explicitly unwalkable
+    /// Terrain layer or a solid Item. An index
     /// outside the palette blocks.
     pub fn blocks(&self, index: u32) -> bool {
-        self.palette.get(index as usize).is_none_or(|entry| {
-            entry.facts.terrain_kind == Some(TerrainKind::Wall)
-                || (entry.family == Family::Item && entry.solid)
-        })
+        self.palette
+            .get(index as usize)
+            .is_none_or(|entry| entry.facts.terrain_kind == Some(TerrainKind::Wall) || entry.solid)
     }
 
     /// Collision of a transformed entry whose exact definition and appearance
@@ -878,7 +937,12 @@ fn palette_facts(
         count: 1,
         sub_type: 0,
     };
-    let mut solid = false;
+    // Crystal 201189f src/items/items.cpp:233 applies unpass to every layer,
+    // including Soulpit's non-wall static decorations and blocked ground.
+    let mut solid = entry
+        .terrain
+        .as_ref()
+        .is_some_and(|terrain| terrain.walkable == Some(false));
     let mut door = PaletteDoor::No;
     if entry.family == Family::Item {
         let definition = item(&entry.key)

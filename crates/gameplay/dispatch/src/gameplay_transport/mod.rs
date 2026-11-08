@@ -362,6 +362,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// Sealed bounded templates issued by the same existing Content activation owner.
     pub activity_templates:
         &'a [crate::content::bosses::activity_template::QualifiedActivityRoomTemplate],
+    pub soulpit_template:
+        Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>,
     pub gameplay_idle_policy: connection::GameplayIdlePolicy,
     pub store_purchases: StorePurchaseMode,
     pub store: Option<crate::native_admission_source::store::StoreClient>,
@@ -611,6 +613,15 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// STORE_V1: the node's Platform Store client; `None` refuses every purchase as disabled.
     pub store: Option<store::StorePlatform>,
     pub store_purchases: StorePurchaseMode,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn movement_cells(&self) -> &NativeEntryMovementCells {
+        &self.movement_cells
+    }
+    pub(super) fn rooms(&self) -> &SeamRooms<'_> {
+        &self.rooms
+    }
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the

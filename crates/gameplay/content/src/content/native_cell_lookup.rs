@@ -88,6 +88,12 @@ impl NativeStaticCellLookup for NativeMovementCollisionIndex {
 
 /// Read-only bundle collision supplied by the World owner.
 pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
+    /// A bounded activity keeps its already qualified map owner as its parent.
+    /// Consumers needing the concrete map follow this link, while collision
+    /// continues to use the child's clipped lookup.
+    fn parent_index(&self) -> Option<&BundleCollisionIndex> {
+        None
+    }
     fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,

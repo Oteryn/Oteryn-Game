@@ -238,7 +238,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let prepare = |to| {
                 crate::map::floor::prepare_quest_callback_teleport_facing(
                     runtime,
-                    &self.movement_cells,
+                    self.movement_cells(),
                     actor,
                     session,
                     expected,
@@ -346,7 +346,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match callback.teleport {
                 Some(to) => match crate::map::floor::prepare_quest_callback_teleport_facing(
                     runtime,
-                    &self.movement_cells,
+                    self.movement_cells(),
                     actor,
                     session,
                     expected,

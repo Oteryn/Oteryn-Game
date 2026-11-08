@@ -112,8 +112,8 @@ pub(super) async fn live_other_character(
             floor: 7,
         };
         assert_eq!(
-            owner.movement_cells.index().lookup(
-                owner.movement_cells.scope(),
+            owner.movement_cells().index().lookup(
+                owner.movement_cells().scope(),
                 crate::content::LogicalCell {
                     x: position.x,
                     y: position.y,

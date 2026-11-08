@@ -59,8 +59,8 @@ pub(super) fn admit_at(
         {
             return false;
         }
-        owner.movement_cells.index().lookup(
-            owner.movement_cells.scope(),
+        owner.movement_cells().index().lookup(
+            owner.movement_cells().scope(),
             LogicalCell {
                 x: point.x,
                 y: point.y,

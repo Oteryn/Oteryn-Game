@@ -302,7 +302,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
-        let at = super::bundle_map_position(&mut runtime, &self.movement_cells, actor)?;
+        let at = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)?;
         let ItemKey::MapBase {
             bundle_digest,
             placement_key,
@@ -323,10 +323,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Crystal 201189f exercise_training_weapons.lua:177-185 permits a house
         // dummy only while the player and dummy are in that same house scope.
         let house_at = |tile: crate::map::overlay::TilePos| {
-            self.movement_cells
+            self.movement_cells()
                 .house_tiles()
                 .house_at(
-                    self.movement_cells.scope(),
+                    self.movement_cells().scope(),
                     crate::content::LogicalCell {
                         x: i32::from(tile.x),
                         y: i32::from(tile.y),
@@ -401,7 +401,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let definition = super::item_look::typed_definition(index, reference)?;
         // Both actor and target are server-qualified PZ cells. Unknown tile facts fail closed.
-        let scope = self.movement_cells.scope();
+        let scope = self.movement_cells().scope();
         for cell in [
             crate::content::LogicalCell {
                 x: at.at.x,
@@ -415,7 +415,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         ] {
             if !self
-                .movement_cells
+                .movement_cells()
                 .spell_tiles()
                 .lookup(scope, cell)
                 .ok()?

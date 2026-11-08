@@ -164,6 +164,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         };
         encode_activity_scope(&ActivityScopeSnapshot {
+            requires_ack: false,
             // A return is its own immutable transition, as in the live barrier.
             // The group handoff remains separate authority/audit provenance.
             handoff: candidate.return_id.unwrap_or(candidate.handoff_id),

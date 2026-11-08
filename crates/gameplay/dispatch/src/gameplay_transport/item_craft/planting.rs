@@ -216,7 +216,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(outcome(UseDisposition::Rejected));
         }
-        let Some(room) = self.rooms.gate_ground_item_action() else {
+        let Some(room) = self.rooms().gate_ground_item_action() else {
             return Ok(outcome(UseDisposition::NotPossible));
         };
         let context = {

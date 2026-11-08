@@ -628,7 +628,8 @@ pub(super) async fn look_world_object(
     {
         return refused;
     }
-    let Some(position) = super::bundle_map_position(&mut runtime, &admission.movement_cells, actor)
+    let Some(position) =
+        super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
     else {
         return refused;
     };
@@ -724,7 +725,7 @@ async fn observe_map_look(
     let unavailable = ItemLookRefusal::NotAvailable;
     let (at, index, pin) = {
         let mut runtime = admission.runtime.lock().await;
-        let at = super::bundle_map_position(&mut runtime, &admission.movement_cells, actor)
+        let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
             .ok_or(unavailable)?;
         let index = pinned_index(&runtime, admission.active_generation).ok_or(unavailable)?;
         (at, index, content_generation(&runtime))
@@ -738,7 +739,7 @@ async fn observe_map_look(
     {
         return Err(unavailable);
     }
-    let current = super::bundle_map_position(&mut runtime, &admission.movement_cells, actor)
+    let current = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
         .ok_or(unavailable)?;
     let facts = at.map.facts.pinned();
     let (definition, count, distance) = match ground.as_deref() {
