@@ -705,27 +705,30 @@
   "src": "TIBAUD-1",
   "area": "Trackers",
   "feature": "Bestiary tracker",
-  "status": "PARTIAL",
-  "gap": "Add/remove/read po creature key; brak pełnego widżetu sort/config.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0197-cyclopedia-tracker/input.rs:6 + tracker_widgets_round_trip_admitted_commands_and_keep_independent_state"
  },
  {
   "id": "T099",
   "src": "TIBAUD-1",
   "area": "Trackers",
   "feature": "Bosstiary tracker",
-  "status": "PARTIAL",
-  "gap": "Wspólny edytor z checkbox Bosstiary; brak osobnego widżetu z konfiguracją.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0197-cyclopedia-tracker/input.rs:6 + tracker_widgets_round_trip_admitted_commands_and_keep_independent_state"
  },
  {
   "id": "T100",
   "src": "TIBAUD-1",
   "area": "Trackers",
   "feature": "Boss cooldowns",
-  "status": "PARTIAL",
-  "gap": "Odczyt cooldowns w zbiorczym formularzu; brak samodzielnego widget.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0117-boss-encounter/input.rs:17 + cooldown_shortcut_opens_only_the_tracker_and_queries_real_command"
  },
  {
   "id": "T101",
