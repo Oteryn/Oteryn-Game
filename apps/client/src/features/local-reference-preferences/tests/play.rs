@@ -8,6 +8,8 @@ mod contexts;
 mod hud_options;
 #[path = "interface.rs"]
 mod interface;
+#[path = "status_order.rs"]
+mod status_order;
 
 #[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>

@@ -12,6 +12,8 @@ use std::sync::Arc;
 mod bindings;
 #[path = "profiles.rs"]
 mod profiles;
+#[path = "status_order.rs"]
+mod status_order;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
@@ -121,6 +123,12 @@ pub struct ReferencePreferences {
     pub console_font_px: u16,
     #[serde(default)]
     pub compact_status: bool,
+    #[serde(default = "enabled")]
+    pub status_panel_visible: bool,
+    #[serde(default)]
+    pub skill_order: Vec<u8>,
+    #[serde(default)]
+    pub condition_order: Vec<u8>,
     #[serde(default = "default_arc_distance")]
     pub arc_distance: u16,
     #[serde(default = "default_arc_size")]
@@ -191,6 +199,9 @@ impl Default for ReferencePreferences {
             chat_context_hotkeys: false,
             console_font_px: 14,
             compact_status: false,
+            status_panel_visible: true,
+            skill_order: Vec::new(),
+            condition_order: Vec::new(),
             arc_distance: 8,
             arc_size: 3,
             hud_names: default_hud_names(),
@@ -232,6 +243,7 @@ impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         self.validate_profiles()?;
+        self.validate_status_order()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {
                 !WINDOW_ACTIONS.iter().any(|(key, _)| key == id)
