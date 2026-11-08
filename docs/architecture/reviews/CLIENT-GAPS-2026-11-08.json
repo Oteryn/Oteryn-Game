@@ -1186,9 +1186,10 @@
   "src": "TIBAUD-1",
   "area": "Boss",
   "feature": "Difficulty selection / preview/start/cancel",
-  "status": "PARTIAL",
-  "gap": "Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0225-boss-difficulty/input.rs:6 + difficulty_real_caller_uses_server_context_and_invalidates_refused_or_reopened_windows"
  },
  {
   "id": "T164",

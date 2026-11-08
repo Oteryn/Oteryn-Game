@@ -55,7 +55,7 @@ Zasady przeciw dublowaniu:
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
 | T148 | Achievements | Account list/points/notices | PARTIAL | Odczyt/notices są; brak pełnego filter/sort regular/secret i wizualnej listy. |
-| T163 | Boss | Difficulty selection / preview/start/cancel | PARTIAL | Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora. |
+| T163 | Boss | Difficulty selection / preview/start/cancel | DONE | evidence: apps/client/src/features/0225-boss-difficulty/input.rs:6 + difficulty_real_caller_uses_server_context_and_invalidates_refused_or_reopened_windows |
 | T164 | Boss | Hazard level i encounter entry | PARTIAL | Query/select/entry są; brak pełnego wizualnego panelu zagrożenia i prowadzenia wejścia. |
 | O074 | Boss | Cyklopedia: bosstiariusz | PARTIAL | Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu. |
 | T077 | Cyclopedia | Wspólne okno i nawigacja | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
