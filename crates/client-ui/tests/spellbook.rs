@@ -57,3 +57,15 @@ fn t032_spellbook_filters_confirmed_level_group_and_learning() {
     protocol::navigate(&mut panel, "exori", 2);
     assert!(panel_text(&panel).contains("Page 1/1"));
 }
+
+#[test]
+fn t033_selection_follows_filtered_catalogue_rows() {
+    let mut panel = catalogue();
+    assert_eq!(panel.selected_spell().map(|entry| entry.cast_index), Some(71));
+    protocol::select_relative(&mut panel, true);
+    assert_eq!(panel.selected_spell().map(|entry| entry.cast_index), Some(93));
+    protocol::select_relative(&mut panel, true);
+    assert_eq!(panel.selected_spell().map(|entry| entry.cast_index), Some(93));
+    assert!(protocol::set_filters(&mut panel, "", "1", false));
+    assert_eq!(panel.selected_spell().map(|entry| entry.cast_index), Some(71));
+}
