@@ -10,6 +10,7 @@ use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 pub(crate) mod coins;
+pub(crate) mod premium;
 
 pub(crate) type TestResult = Result<(), Box<dyn std::error::Error>>;
 pub(crate) const CHARACTER: &str = "01890a5d-ac96-774b-bcce-b302099a8058";
@@ -26,6 +27,7 @@ pub(crate) struct MockPlatform {
 #[derive(Default)]
 pub(crate) struct Authority {
     pub coins: Option<coins::CoinAuthority>,
+    pub premium_reply: Option<serde_json::Value>,
     pub commands: BTreeMap<String, (BazaarRequest, OperationReceipt)>,
     pub requests: Vec<String>,
     pub effects: u32,
@@ -128,6 +130,14 @@ impl Authority {
         }
         if !authorized {
             return (401, String::new());
+        }
+        if method == "GET" && target == "/api/v1/native-account/premium" {
+            let reply = self.premium_reply.clone().unwrap_or_else(|| {
+                serde_json::json!(premium::snapshot(
+                    oteryn_platform_client::native_login::premium::PremiumState::Active
+                ))
+            });
+            return (200, reply.to_string());
         }
         if let Some(reply) = self
             .coins
