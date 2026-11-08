@@ -128,7 +128,11 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         return true;
     }
     let text = if p.command_kind == 387 {
-        decode_badges(&r.payload)
+        let decoded = decode_badges(&r.payload);
+        if decoded.is_some() {
+            p.badges = Some(r.payload[1..].to_vec());
+        }
+        decoded
     } else {
         tab.and_then(|tab| decode_tab(&r.payload, tab, p.limit))
     };
