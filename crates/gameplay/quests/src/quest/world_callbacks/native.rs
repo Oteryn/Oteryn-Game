@@ -4,6 +4,9 @@ use crate::quest::{QuestTrackChange, cults_of_tibia as cults, unnatural_selectio
 
 pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bool {
     let (trigger, position, action, ranges, source) = match rule {
+        // The progress planner is usable by the fenced owner, but no authored
+        // callback is admitted until its map identity and paint custody are bound.
+        NativeRule::IceSealPaint { .. } => return false,
         NativeRule::CultsSymbol { symbol } => {
             let Some(position) = cults::SYMBOL_POSITIONS.get(usize::from(symbol)).copied() else {
                 return false;
@@ -126,6 +129,7 @@ impl Callback {
                     None
                 }
             }
+            Some(NativeRule::IceSealPaint { .. }) => None,
             None => self.success_message.as_deref(),
         }
     }

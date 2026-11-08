@@ -38,6 +38,7 @@ pub mod grizzly_adams;
 pub mod ground_stack;
 pub mod hero_of_bounac;
 pub mod hive_access;
+pub mod ice_islands_seals;
 pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
