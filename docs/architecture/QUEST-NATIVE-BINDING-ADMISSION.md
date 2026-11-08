@@ -1,6 +1,7 @@
 # Native authored binding admission
 
-Status: 326 quest unit tests, merged workspace compilation, clippy, and formatting pass. Real-dispatch PostgreSQL GREEN is pending.
+Status: qualified by 326 quest unit tests and a full seven-case real-dispatch
+PostgreSQL confirmation run on `c7f9d9ba7` (main `98d6ae8ce`).
 
 Native boot registers regular JSON documents from `content/quests/authored-bindings/`.
 The build script generates the file registry in `OUT_DIR`; lanes add their own
@@ -32,3 +33,10 @@ The real-dispatch PostgreSQL regression is
 52.000s with a 51.942s PostgreSQL completion marker and reported: `native boot
 accepted a stale authored recipe digest`. The implementation must refuse that
 digest and deliver the correctly bound reward through the ordinary USE owner.
+
+The seven-case confirmation passed in 386.448s. Native admission itself passed
+with a 59.105s PostgreSQL completion marker, after an earlier independent pass
+of 67.376s. The first broader run had one intermittent catalogue-drain timeout
+in the retained sequential-kill fixture; the complete set then passed unchanged.
+No timeout or test assertion was weakened, and no fix to that intermittent drain
+failure is claimed.

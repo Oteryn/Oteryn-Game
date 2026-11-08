@@ -1697,3 +1697,26 @@ Publish now under PREPUSH2 pending-test exception, then immediately run new
 native-admission PG + retainedworld/NPC-carried + nativekill PG with stableHEAD.
 No ENGINE-DONE native admission untilactualPGGREEN. Original RED52.000s with
 marker51.941706214s proved stale recipe acceptance. Own packet44/66 unchanged.
+
+05:58UTC native admission PG feature GREEN: newcase67.375607899s on first7case
+run; broader first run6pass/1fail due retained sequential-kill helper catalogue
+EOFdrain timeout (not gameplay assertion). Collected all7, then reranfull7
+unchanged:7PASS386.448s, native59.105387685s; allactualPGmarkers. No assertions,
+timeouts, implementation or parallelism weakened; no claim intermittentdrain
+wasfixed. Fullproof PG-NATIVE-ADMISSION-2026-11-08.json againstc7f9d9ba7/main98.
+Authored trigger/delivery engine inclnativeboot nowQUALIFIED; no production
+bindings added and no wholequest counts changed. Beforequalificationpush native
+regen/fmt session15158 and workspaceconfirm33064 arefinishing; pins/registrynext.
+Then ENGINE-DONE authored_trigger_and_delivery_bindings with APIs andstart42
+readyclaim/use. Readonlyfacts in/tmp/qengine2-reward-claim-next-facts.md: existing
+bundle USE resolveralreadyexists;59readyclaims/60UIDplacements/54materializable
+Items; noposition/UIDcollisions. Reuseandprovecoverage before duplicatingcode.
+W15b variants stillseparate gaps (cooldown/random/timed/written etc). Packet44/66.
+
+06:00UTC confirmationworkspace PASS6m20s againstc7; full7PG confirmation PASS
+386.448s unchanged. Prepush fetch advancedmain to47baa7bb8 (4files, floor-transform
+key33 scope proof and cosmetics provisioning bound). Commit qualified proof
+locally, merge requiredmain, refresh affected generation/compile/fmt, thenpush.
+Admission code itself isunchanged. Do notlosefirst-run drainflakerecord; no fix
+or weaker assertions/timeouts claimed. Nativegen command15158 stopped atmain
+ancestry guard, so it mustbe rerunafter thismerge.

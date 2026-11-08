@@ -5,11 +5,9 @@
     {
       "feature": "authored_trigger_and_delivery_bindings",
       "quests_reported": 68,
-      "state": "IN_PROGRESS",
+      "state": "QUALIFIED",
       "api": "quest::authored_bindings::Bindings::attach; catalogue-scoped callback resolution",
-      "remaining": [
-        "explicit native content admission"
-      ],
+      "remaining": [],
       "world_delivery_qualification": {
         "state": "QUALIFIED",
         "source_sha": "aa85b250027fa68c88c391f6cda490f0764dbf02",
@@ -21,12 +19,17 @@
           "RevisionSlot::commit_world_callback_with_items",
           "DurabilityRoot::commit_character_world_callback_with_items"
         ]
+      },
+      "native_admission_qualification": {
+        "state": "QUALIFIED",
+        "source_sha": "c7f9d9ba79ec4a53c4b874af54affe6898780c5a",
+        "proof": "PG-NATIVE-ADMISSION-2026-11-08.json"
       }
     },
     {
       "feature": "definition_ready_reward_claim_use",
       "quests_reported": 42,
-      "state": "QUEUED",
+      "state": "NEXT",
       "remaining": [
         "bind canonical claim selectors to existing reward MINT through ordinary dispatch"
       ]
