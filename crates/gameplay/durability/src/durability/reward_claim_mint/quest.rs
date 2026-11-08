@@ -108,7 +108,10 @@ pub(crate) async fn apply(
     let super::super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
-    if callback.carried_item.is_some() != admission.carried_use.is_some()
+    // A quest tool requires a target receipt, never the ordinary source-only USE path.
+    // Keep these authored contracts closed until the target owner admits that receipt.
+    if callback.quest_tool.is_some()
+        || callback.carried_item.is_some() != admission.carried_use.is_some()
         || admission.carried_use.is_some_and(|use_| {
             use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
         })

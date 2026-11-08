@@ -10,6 +10,10 @@ mod colours_peer;
 #[cfg(test)]
 mod peer_tests;
 mod state_ops;
+mod tool;
+pub use tool::{QuestToolAction, QuestToolTarget};
+#[cfg(test)]
+mod tool_tests;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
 fn is_false(value: &bool) -> bool {
@@ -150,6 +154,9 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    /// Source-only actor/corpse actions, admitted by the selected carried USE owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quest_tool: Option<QuestToolAction>,
     /// Read-only condition on the selected other live player, checked atomically.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub peer_requires: Option<TrackRequirement>,
@@ -231,7 +238,8 @@ impl RewardCallback {
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
-        (!self.take.is_empty() && self.give.is_some())
+        (self.quest_tool.is_some() && QuestToolAction::bounded_counter(self))
+            || (!self.take.is_empty() && self.give.is_some())
             || self.cosmetic_targets().any(|target| {
                 (target.addons == 0
                     && target.sex.is_none()
@@ -457,7 +465,11 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
+            || c.quest_tool.as_ref().is_some_and(|tool| !tool.valid(c))
             || c.carried_item.as_ref().is_some_and(|item| {
+                if c.quest_tool.is_some() {
+                    return false;
+                }
                 c.take
                     != [ItemAmount {
                         item: item.clone(),
@@ -608,7 +620,10 @@ fn validate_document(document: Document) -> Result<Document, String> {
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none() && callback.peer_requires.is_none() {
+    if callback.minimum_level.is_none()
+        && callback.peer_requires.is_none()
+        && callback.quest_tool.is_none()
+    {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
@@ -749,6 +764,10 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
     let bound_effect = callback.storage.iter().position(|state| !state.preserve);
+    let bound_operation = callback
+        .state_ops
+        .iter()
+        .position(|op| matches!(op.effect, StateMutation::Add { value } if value > 0));
     Ok(QuestTransition {
         world_change: None,
         key: callback.key.clone(),
@@ -771,7 +790,24 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                     QuestEffectKind::Set(state.set)
                 },
             })
-            .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
+            .chain(
+                callback
+                    .state_ops
+                    .iter()
+                    .enumerate()
+                    .map(|(index, operation)| {
+                        let mut effect = operation.quest_effect();
+                        if callback.quest_tool.is_some()
+                            && bound_effect.is_none()
+                            && Some(index) == bound_operation
+                            && let (Some(binding), QuestEffectKind::Add(delta)) =
+                                (binding, effect.effect)
+                        {
+                            effect.effect = QuestEffectKind::AddWithBinding { delta, binding };
+                        }
+                        effect
+                    }),
+            )
             .collect(),
         completes: callback.completes,
         experience: None,
