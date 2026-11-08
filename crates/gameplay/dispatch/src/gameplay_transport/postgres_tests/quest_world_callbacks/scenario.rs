@@ -125,6 +125,12 @@ fn scenario_case(
             | "l6-special-item-5552"
             | "l6-special-item-9171"
             | "l6-special-item-21572"
+            | "l6-treasure-item-9181"
+            | "l6-treasure-item-9182"
+            | "l6-treasure-item-9183"
+            | "l6-treasure-item-9184"
+            | "l6-treasure-item-9186"
+            | "l6-treasure-item-9177"
             | "l6-typed-item-5949"
             | "l6-typed-item-24382"
             | "l6-typed-item-21506"
@@ -758,6 +764,15 @@ fn scenario_case(
             super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, source_id)
                 .await?;
         } else if let Some(source_id) = super::super::l6_yalahar_items::source_id(name) {
+            super::super::l6_stag_item::exercise_plain(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
+        } else if let Some(source_id) = super::super::l6_treasure_items::source_id(name) {
             super::super::l6_stag_item::exercise_plain(
                 &mut owner,
                 &mut admitted,

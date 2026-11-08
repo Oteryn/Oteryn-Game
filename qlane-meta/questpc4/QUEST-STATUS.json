@@ -10819,43 +10819,12 @@
     "postpublication_followup": "Repeated clippy PASS5m50s. Dispatch units interrupted before switching continuation input tree:707 passed,4 SIGTERM,2138 not run; no complete pass claimed."
   },
   "continuation_branch": {
-    "branch": "claude/happy-davinci-ijz3wy-questpc4b",
-    "started_from": "c54b4cfe98a6f530060e5ac467993b57b959a689",
+    "branch": "claude/happy-davinci-ijz3wy-questpc4c",
+    "started_from": "9ee8b80795135a87841ea835cb426cd08ab23c66",
     "frozen_pr_branch": "claude/happy-davinci-ijz3wy-questpc4",
     "rule": "Push frozen branch only for owner-sent CI repairs or requested main merge. New work and cadence belong to questpc4b.",
     "integrated_pr_head": "8edc2d297a3668dfda1aab8c6105b9bcdd7135c2",
-    "current_slice": {
-      "quest": "oteryn:quest.the_order_of_the_stag_quest",
-      "scope": "Exact source compass52759 physical custody and neutral ammo-slot admission; reuse qualified sword52824. Whole quest remains IN_PROGRESS.",
-      "source": "Crystal201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:88349-88356; immutable XML digest retained in generated capture.",
-      "validation": "12 qualifier/pin-generator controls PASS4.945s; source capture --check PASS. PG RED build running before native admission.",
-      "engine_reuse_check": "Fetched qengine2 e6bacdda6; no Stag item profiles and no changes to NPC effect guards. No competing generic engine implementation authored.",
-      "engine_request": "NPC teleport and outfit/achievement native effects remain required for Paradox/Stag; existing source program reused.",
-      "red_postgres": "PG18.6 native compass policy missing,42.938s; explicit database/version marker and nextest exit100. /tmp/questpc4b-compass-pg-red.log",
-      "red_equipment_pin": "Independent source cohort3764 vs current generated union3763; refresh --check exits1 before native admission.",
-      "green_postgres": {
-        "compass_seconds": 44.646906479,
-        "sword_seconds": 45.285936913,
-        "total_seconds": 89.93,
-        "passed": 2,
-        "failed": 0,
-        "proof": "PostgreSQL18.6 version markers and STAG_PG_EXIT=0; identity-preserving drop and exact replay assertions unchanged. /tmp/questpc4b-stag-pg-green.log"
-      },
-      "profile_delta": "3725->3726 raw; only compass52759 added, no prior profile changed or removed. Assembled equipment3764; source-derived cohort refresh/check PASS.",
-      "generated": "Native providers, source capture, completion matrix and world pin refreshed with repository tooling. SRX1 and Grizzly-room changes are input hashes only.",
-      "publication_checks": {
-        "workspace": "cargo check --workspace --all-targets --keep-going PASS4m19s",
-        "clippy": "dispatch alltargets/allfeatures -Dwarnings PASS3m39s",
-        "fmt": "cargo fmt --all --check PASS",
-        "native_freshness": "register_spell_families.py --check EXIT0",
-        "source_capture": "build_questpc4_stag_item_profiles.py --source-root /tmp/questpc4-crystal201189 --check PASS",
-        "python": "9 source qualification controls plus3 new pin controls PASS4.945s; existing/new pin tests8/8 PASS0.005s; RuffPASS",
-        "duplicate_migrations": 0,
-        "unit_crates": "content and dispatch nextest --all-features compiling at publication; explicitly pending under PREPUSH-2 step3 cadence allowance"
-      },
-      "state": "Physical custody slice qualified; whole Stag remains IN_PROGRESS. Publish only continuation branch.",
-      "pushed": "0fcfb69137b545ea2a2b6b05a1310784ab139621"
-    },
+    "current_slice": "Six physical inputs for the owned selected Treasure Hunt route; no use, text, exchange or whole-quest activation inferred.",
     "material_slice": {
       "quest": "oteryn:quest.the_order_of_the_stag_quest",
       "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
@@ -11733,6 +11702,98 @@
         "fmt": "PASS",
         "broad_units": "Complete4002-case four-worker run active;438PASS observed, no assertion failure at this checkpoint; pending, not a full pass. Earlier two-worker run216PASS/2SIGINT is retained separately."
       }
+    },
+    "review_candidate_branch": "claude/happy-davinci-ijz3wy-questpc4b",
+    "review_candidate_validation": {
+      "head": "9ee8b80795135a87841ea835cb426cd08ab23c66",
+      "full_units": "content/dispatch/durability unfiltered nextest:4002PASS,0FAIL,17repository-default skips,1815.957s execution;2466s including build. PostgreSQL guards in the unit job are not actual PG proof.",
+      "actual_postmain_pg": "Seven real PostgreSQL18.6 cases45.242\u201346.602s PASS; unchanged runtime tree.",
+      "scope": "Reviewable item-profile work on b stays stable while c continues the remaining owned scope."
+    },
+    "treasure6_slice": {
+      "status": "QUALIFIED_COMPONENT",
+      "items": [
+        9181,
+        9182,
+        9183,
+        9184,
+        9186,
+        9177
+      ],
+      "source": "Crystal201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:24718/24721/24724/24727/24734/24702; SHA2568a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509. Exact client2dfa943b profile also pinned.",
+      "decision": "Canonical chosen Treasure Hunt permits one fixed successful code. Choose source doll9177/code3613; other code dolls are rejected. Qualify four map pieces plus encrypted text and this doll only; no readable text, code activation, new NPC interpretation or completed quest claimed.",
+      "source_controls": "7PASS13.275s; RuffPASS; actual six-record capture generated with existing repository owner.",
+      "postgres": {
+        "version": "18.6",
+        "red": "Six expected missing-policy failures44.011\u201345.592s; six retained regressionsPASS; no unexpected failures.",
+        "green": {
+          "9181": 63.945,
+          "9182": 63.981,
+          "9183": 61.243,
+          "9184": 61.282,
+          "9186": 64.7,
+          "9177": 64.672,
+          "9185": 47.593,
+          "21572": 47.016
+        },
+        "passed": 8,
+        "failed": 0
+      },
+      "whole_quest_status": "IN_PROGRESS",
+      "preservation": "3778->3784 native records; exactly six additions, all prior rows identical. Equipment3822 derived independently; world pin unchanged43f9c852.",
+      "validation": {
+        "source_controls": "56PASS77.333s; seven new controlsPASS13.275s; RuffPASS",
+        "workspace_check": "PASS364s",
+        "clippy": "content/dispatch/durability all-targets/all-features -Dwarnings PASS394s",
+        "fmt": "PASS",
+        "quest_authoring_checks": "run_checks.py --part checks EXIT0",
+        "quest_authoring_units": {
+          "command": "run_checks.py --part unit-tests --jobs2",
+          "modules": 103,
+          "tests": 1118,
+          "result": "PASS; unchanged repository-default skips retained"
+        },
+        "content_tree": "validate_world_project_v2_to_tree.py EXIT0:34111Items/252Mounts",
+        "binding_regeneration": "Repository generator rebuilt all outputs in scratch; all byte-identical,6628exact references verified.",
+        "freshness": "Native/equipment/QREADY pins, variant packet, completion matrix and worldmetadata PASS; donor check input equality retained.",
+        "crate_units": "New complete three-crate4008-case suite queued after authoring; pending under PREPUSH-2 cadence exception. Parent b already4002/4002PASS.",
+        "pinned_test_files": "No existing reward-use-proof-pinned test file changed; existing assembly assertions untouched.",
+        "node_boot": "No node boot, serve or content-activation implementation edit; changes are item data, authoring hooks and PG test routing."
+      }
+    },
+    "assembly_owner_recheck": {
+      "reported_failure": "Seven source pieces remain; no helmet created. Matches historical pre-hook RED, not the current local result.",
+      "existing_fix": "516de7b0dc2126e083cd49c60451c99fd6cca402; reuse the original transactional AddItem assembly owner.",
+      "postgres": "18.6",
+      "main_case": "PASS67.656083335s; original7-to1 assertion unchanged.",
+      "regressions": [
+        {
+          "case": "l6_floor_assembly_missing_part_keeps_every_other_item",
+          "exit": 0,
+          "seconds": 52.287,
+          "pg_proved": true
+        },
+        {
+          "case": "l6_floor_assembly_unbound_tile_cannot_assemble",
+          "exit": 0,
+          "seconds": 52.425,
+          "pg_proved": true
+        },
+        {
+          "case": "l6_floor_ruby_preserves_helmet_and_starts_exact_deadline",
+          "exit": 0,
+          "seconds": 122.257,
+          "pg_proved": true
+        },
+        {
+          "case": "l6_native_altar_assembly",
+          "exit": 0,
+          "seconds": 114.164,
+          "pg_proved": true
+        }
+      ],
+      "production_change": "None: no current failing assertion was reproduced; do not invent a patch.",
+      "whole_quest": "Ancient Tombs remains IN_PROGRESS."
     }
   }
 }
