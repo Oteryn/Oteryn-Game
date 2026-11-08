@@ -492,6 +492,8 @@ impl NpcRuleCatalog {
                             == Some("oteryn:quest-npc-program.first-dragon-calendar")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.citizen-source-sagas")
                         || matches!(
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
