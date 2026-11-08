@@ -627,7 +627,7 @@ async fn projection_cases(database: &Database) -> TestResult {
         ),
         (
             "resync unknown family",
-            "SELECT game_public_projection_resync('guild', false)",
+            "SELECT game_public_projection_resync('unsupported_public_family', false)",
             "22023",
         ),
         (

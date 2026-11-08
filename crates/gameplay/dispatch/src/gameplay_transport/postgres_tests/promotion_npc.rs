@@ -431,6 +431,7 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
             .map_err(debug)?
             .position();
         let death = crate::gameplay_transport::actor_spell::PlayerDeath {
+            public_cause: None,
             occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
                 220,
             ))
@@ -493,6 +494,7 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
 
         // A fresh death after lapse must ignore the still-promoted login display.
         let lapsed_death = crate::gameplay_transport::actor_spell::PlayerDeath {
+            public_cause: None,
             occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
                 221,
             ))

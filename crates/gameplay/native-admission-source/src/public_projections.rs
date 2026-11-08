@@ -36,6 +36,7 @@ use std::{
     time::Duration,
 };
 
+pub mod v2;
 pub mod world_totals;
 use world_totals::{TotalsFacts, TotalsSnapshot};
 
@@ -709,7 +710,20 @@ impl PublicSink for MtlsPublicSink {
                 .await
                 .map_err(|_| NotDelivered::Unavailable)?;
         if status == 200 {
-            return decode_response(&raw).map_err(|_| NotDelivered::InvalidResponse);
+            return if matches!(
+                operation,
+                Operation::PublishCharacterDeathsV2
+                    | Operation::PublishGuildV2
+                    | Operation::PublishHouseV2
+                    | Operation::PublishCharacterOnlineSessionV2
+                    | Operation::PublishWorldDailyKillsV2
+                    | Operation::PublishPublicProjectionWatermarkV2
+            ) {
+                v2::decode_response(&raw)
+            } else {
+                decode_response(&raw)
+            }
+            .map_err(|_| NotDelivered::InvalidResponse);
         }
         Err(refusal(status, &raw))
     }
@@ -775,6 +789,20 @@ pub struct OnlineCut {
 /// The Game side of the public projections (§5). Every call is one database
 /// transaction; an `Err` is "not now".
 pub trait PublicStore: Send + Sync {
+    fn next_v2(
+        &self,
+        _family: v2::Family,
+        _held: &[String],
+    ) -> impl Future<Output = Result<Option<v2::Snapshot>, ()>> + Send {
+        async { Err(()) }
+    }
+    fn ack_v2(&self, _snapshot: &v2::Snapshot) -> impl Future<Output = Result<(), ()>> + Send {
+        async { Err(()) }
+    }
+    fn v2_facts(&self, _family: v2::Family) -> impl Future<Output = Result<v2::Facts, ()>> + Send {
+        async { Err(()) }
+    }
+
     /// Sample one UUID page durably. None ends the sweep; errors retry the same page.
     fn sample_totals(&self, after: &str)
     -> impl Future<Output = Result<Option<String>, ()>> + Send;
@@ -1050,6 +1078,7 @@ pub struct Publisher<C, S, K, F> {
     /// Maximum Character transaction duration (§5.1); it also bounds each
     /// store call, since every store call is one such transaction.
     pub max_transaction: Duration,
+    pub v2_activation: v2::Activation,
     /// §6 operator alarm: definite refusals (`400`, `401`, `409`, unencodable).
     pub alarms: AtomicU64,
     pub last_cut: Mutex<Option<GoodCut>>,
@@ -1093,6 +1122,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             fence: Mutex::new(fence),
             source_authority,
             max_transaction,
+            v2_activation: v2::Activation::default(),
             alarms: AtomicU64::new(0),
             last_cut: Mutex::new(None),
             last_online_watermark: Mutex::new(None),
@@ -2017,10 +2047,13 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
     /// `world_online` scan and its watermark run concurrently on one task.
     pub async fn run(&self) {
         join2(
-            self.outbox_loop(),
+            self.v2_loops(),
             join2(
-                self.totals_loop(),
-                join2(self.scan_loop(), self.online_watermark_loop()),
+                self.outbox_loop(),
+                join2(
+                    self.totals_loop(),
+                    join2(self.scan_loop(), self.online_watermark_loop()),
+                ),
             ),
         )
         .await;

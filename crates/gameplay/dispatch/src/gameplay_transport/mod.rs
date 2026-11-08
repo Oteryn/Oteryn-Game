@@ -145,6 +145,7 @@ mod private_channel_world;
 mod proficiency_checkpoint;
 mod promotion_death;
 mod promotion_login;
+mod public_kill_statistics;
 mod pvp_death;
 mod pvp_expert;
 mod pvp_live;
@@ -1610,6 +1611,7 @@ fn player_death_request<const N: usize>(
         .map(|byte| format!("{byte:02x}"))
         .collect();
     crate::durability::character_death::CharacterDeathRequest {
+        public_cause: death.public_cause,
         pvp_contributors: Vec::new(),
         occurrence: death.occurrence,
         context: progression.context.clone(),
