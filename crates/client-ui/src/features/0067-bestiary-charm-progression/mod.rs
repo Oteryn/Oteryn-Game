@@ -4,7 +4,7 @@ mod state;
 mod view;
 pub use input::open_key;
 pub use protocol::request;
-pub use state::{Intent, Panel};
-pub use view::panel_text;
+pub use state::{Intent, Panel, RaceFilter};
+pub use view::{bestiary_text, panel_text};
 #[cfg(test)]
 mod tests;
