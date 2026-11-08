@@ -53,3 +53,9 @@ pub fn panel_text(panel: &ChatPanel) -> String {
     }
     text
 }
+
+/// Export exactly the selected console projection. The caller owns file mode and path.
+pub fn write_log(panel: &ChatPanel, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    writer.write_all(panel_text(panel).as_bytes())?;
+    writer.flush()
+}
