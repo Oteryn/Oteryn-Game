@@ -77,8 +77,8 @@
     "authoring-tests": "AUTHORING_TESTS_EXIT=0",
     "profile-tests": "PROFILE_TESTS_EXIT=0"
   },
-  "check_duration": "3m25s",
-  "clippy_duration": "3m14s",
+  "check_duration": "3m33s",
+  "clippy_duration": "3m09s",
   "superseded_preintro_red": {
     "baseline": "c7d67c4fc95e29b9e4651ea069fd441810b40e4d plus the new regression and corrected native-only fixture",
     "seconds": 34.668652794,
@@ -99,5 +99,26 @@
     "fix": "Repo audit derives exact106=103 original +3 reviewed sign keys; four negative authority mutations unchanged",
     "green": "308 passed,0failed,0ignored in21.27s",
     "log": "/tmp/questpc7-signs-activation-quests-unit2.log"
+  },
+  "main3029_merge_exception": {
+    "main": "83acbdac3",
+    "conflicted_files": 67,
+    "action": "Aborted before publication under the explicit owner15-minute merge exception; preserve last coherent activation fix, compile/fmt/clippy, push, then resume integration.",
+    "conflict_list": "/tmp/questpc7-main3029-conflicts.txt",
+    "local_activation_commit": "940472244",
+    "merged": false
+  },
+  "activation_checkpoint_checks": {
+    "generation": "ACTIVATION_GENERATION_EXIT=0",
+    "audit": "ACTIVATION_AUDIT_EXIT=0",
+    "quests-unit2": "ACTIVATION_QUESTS_UNIT2_EXIT=0",
+    "central-check": "ACTIVATION_CENTRAL_CHECK_EXIT=0",
+    "native-check": "ACTIVATION_NATIVE_CHECK_EXIT=0",
+    "callback-check": "ACTIVATION_CALLBACK_CHECK_EXIT=0",
+    "migrations": "ACTIVATION_MIGRATIONS_EXIT=0",
+    "pins": "ACTIVATION_PINS_EXIT=0",
+    "publish-check": "ACTIVATION_PUBLISH_CHECK_EXIT=0",
+    "publish-clippy": "ACTIVATION_PUBLISH_CLIPPY_EXIT=0",
+    "publish-fmt": "ACTIVATION_PUBLISH_FMT_EXIT=0"
   }
 }

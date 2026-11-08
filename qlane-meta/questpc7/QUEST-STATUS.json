@@ -1109,7 +1109,8 @@
       "state": "ACTIVATION_FIXED_QUESTS_308_GREEN_SIGN_PG_PENDING",
       "proof": "qlane-meta/questpc7/GOBLIN-SIGNS-PG-PROOF.json",
       "whole_quest": "ACTIVE",
-      "next": "Run the authored route on PG; only after GREEN qualify the sign stage, then continue native trunk and urine jobs."
+      "next": "Run the authored route on PG; only after GREEN qualify the sign stage, then continue native trunk and urine jobs.",
+      "main_merge": "83acbdac3 merge aborted under owner15-minute conflict exception; resume after coherent checkpoint"
     }
   },
   {

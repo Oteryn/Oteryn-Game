@@ -132,6 +132,32 @@
         ],
         "note": "Planner and calendar already remain in quests; routing and specialized inventory participant were dropped when reusing main NPC owner. Do not weaken generic8-type cap or recipe tests."
       }
+    },
+    {
+      "id": "main3029-callback-effect-convergence",
+      "quests": [
+        "Feaster of Souls Quest",
+        "Goblin Merchant Quest",
+        "Golden Outfits Quest",
+        "Formal Dress Outfits Quest"
+      ],
+      "feature": "Reconcile canonical main CallbackEffectSet with retained world item rewards, read-only guards and bounded counters without dropping qualified legacy behavior",
+      "where": [
+        "crates/gameplay/quests/src/quest/world_callbacks.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs",
+        "crates/gameplay/durability/src/durability/reward_claim_mint/quest.rs"
+      ],
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "evidence": {
+        "command": "git merge --no-commit --no-ff origin/main",
+        "main": "83acbdac3",
+        "conflicted_files": 67,
+        "rust_files": 18,
+        "exact_error": "CONFLICT (content): Merge conflict in crates/gameplay/quests/src/quest/world_callbacks.rs",
+        "specific_collision": "main places CallbackEffectSet in effects; retained API has CallbackEffects plus top-level item_reward/reward_bundle/activation and read_only storage. Blind union duplicates effects and dropping either side loses established behavior.",
+        "preview": "/tmp/questpc7-main3029-preview/index.json"
+      },
+      "boundary": "Owner assigns large shared engine changes to qengine2. Preserve coherent lane source under the explicit15-minute merge-abort exception; continue independent quest-owned data and PG qualification."
     }
   ],
   "latest_peer_review": {

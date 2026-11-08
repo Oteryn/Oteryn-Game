@@ -1,3 +1,41 @@
+# Activation checkpoint ready — 2026-11-08 03:53 UTC
+
+Workspace all-target check PASS3m33s; strict changed3 clippy PASS3m09s; fmt,
+source native generation freshness, central lists, callback freshness, duplicate
+migrations and pin refresh PASS. Quests308/308 PASS21.27s. Publish940472244
+plus recorded main3029 abort/shared-engine convergence request now. Own sign
+PG GREEN and content/dispatch units still pending. Then run the one sign case
+with immediate success/failure output. No wholequest or sign-stage qualification
+until actual PG GREEN. Canonical main83acbdac3 remains unmerged under explicit
+owner15-minute conflict exception;67 conflicts/18Rust require qengine2 shared
+CallbackEffectSet convergence. Continue independent physical quest-owned data.
+
+# Shared merge convergence routed — 2026-11-08 03:50 UTC
+
+Main3029 integration has a real shared API collision: incoming effects is
+CallbackEffectSet while retained source has CallbackEffects and separate
+item_reward/reward_bundle/activation/read_only. Blind union duplicates a field;
+dropping one loses established behavior. ENGINE-REQUEST main3029-callback-effect-
+convergence is routed to qengine2 per owner rule for shared engine features.
+Read-only67-file/18-Rust conflict previews in /tmp/questpc7-main3029-preview.
+Preserve coherent activation fix, publish after current check/clippy/fmt, then
+continue focused sign PG and independent physical jobs. Do not spend another
+hour making a new shared engine variant in this lane. Main check PASS3m33s;
+strict changed3 clippy still running. Quests308/308 GREEN21.27s.
+
+# Main3029 merge aborted for safe checkpoint — 2026-11-08 03:45 UTC
+
+Activation fix committed940472244; NOT pushed yet. Fetch advanced main to
+83acbdac3 (QUESTPC4 #3029), with broad conflicts in shared Rust, schemas, source
+authoring and generated registries. Exact count/list in proof and
+/tmp/questpc7-main3029-conflicts.txt. Aborted under owner15-minute conflict
+exception to publish last coherent activation source, then resume integration.
+Run workspace all-target check/fmt/strict changed3 clippy now, preserve fresh
+308/308 quests unit PASS21.27s and generated/pin checks. Post-change sign PG
+GREEN and content/dispatch units remain pending under PREPUSH-2.
+Do not merge67 conflict files by blindly dropping own backpack outputs or
+canonical main NPC programmes; compare authorities before reusing code.
+
 # Activation/schema gate GREEN — 2026-11-08 03:40 UTC
 
 Full quests unit suite308/308 PASS21.27s. Initial307/1 failure was only closed
