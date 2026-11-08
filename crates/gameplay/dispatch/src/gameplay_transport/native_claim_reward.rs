@@ -174,6 +174,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }),
             )
             .await;
+        #[cfg(test)]
+        eprintln!("ENGCLAIM_NATIVE_RESULT {result:?}");
         if result.is_ok() {
             self.refresh_quest_session(command.game_session_id, false)
                 .await;

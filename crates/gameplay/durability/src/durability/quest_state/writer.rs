@@ -541,7 +541,7 @@ impl DurabilityRoot {
                     lock_receipt_key(&mut tx, character, &request).await?;
                     // The MINT cause precedes the Character root, matching the item owner.
                     if reward_callback.as_ref().is_some_and(|c|c.give.is_some())
-                        && let QuestCause::Command(command)=request.cause {
+                        && let QuestCause::Command(command) | QuestCause::Use(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
                     if let Some(row) = load_receipt(&mut tx, character, &request).await? {
