@@ -1019,9 +1019,10 @@
   "src": "TIBAUD-1",
   "area": "Quest",
   "feature": "Tracker auto-add/remove i filters",
-  "status": "PARTIAL",
-  "gap": "Track quest jest; brak pełnego osobnego trackera, auto-reguł i hide/completed filters.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0016-quest-log/view.rs:89 + tracker_hides_completed_missions_and_removes_quests_only_after_server_confirmation; apps/client/src/features/0016-quest-log/tests/play.rs:15 + tracker_read_only_reply_preserves_the_current_quest_and_revision"
  },
  {
   "id": "T143",

@@ -89,7 +89,7 @@ Zasady przeciw dublowaniu:
 | T114 | Hunting tasks | Soul Seals fight dialog | PARTIAL | Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia. |
 | T076 | Minimap | Exploration/markers/labels, floor/zoom/pan | DONE | evidence: apps/client/src/features/local-minimap/state.rs:79 + minimap_world_switch_reanchors_camera_without_losing_same_world_pan |
 | O039 | Minimap | Minimapa i nawigacja | PARTIAL | Brakuje trwałej mapy odkrytych terenów, edytowanych znaczników, przewijania i zmiany pięter/zoomu minimapy; nakładka pokazuje bieżące okno świata. |
-| T142 | Quest | Tracker auto-add/remove i filters | PARTIAL | Track quest jest; brak pełnego osobnego trackera, auto-reguł i hide/completed filters. |
+| T142 | Quest | Tracker auto-add/remove i filters | DONE | evidence: crates/client-ui/src/features/0016-quest-log/view.rs:89 + tracker_hides_completed_missions_and_removes_quests_only_after_server_confirmation; apps/client/src/features/0016-quest-log/tests/play.rs:15 + tracker_read_only_reply_preserves_the_current_quest_and_revision |
 | O050 | Quest | Dziennik zadań i śledzenie | PARTIAL | Brakuje wyszukiwania i sortowania dziennika; istnieją wybór zadania/misji, opis i przełączanie śledzenia. |
 | T098 | Trackers | Bestiary tracker | PARTIAL | Add/remove/read po creature key; brak pełnego widżetu sort/config. |
 | T099 | Trackers | Bosstiary tracker | PARTIAL | Wspólny edytor z checkbox Bosstiary; brak osobnego widżetu z konfiguracją. |
