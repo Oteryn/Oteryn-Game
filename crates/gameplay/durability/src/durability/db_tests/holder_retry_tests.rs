@@ -43,11 +43,11 @@ fn foreground_admission_waits_for_the_busy_holder() -> TestResult {
     run_postgres_test(async {
         let (database, url) = migrated_database("holder_foreground_busy").await?;
         let root = ready_root(&url).await?;
-        let holder = root.try_acquire_ready()?;
+        let holder = root.try_issue_semantic_pass()?;
         let started = std::time::Instant::now();
         let release = tokio::spawn(async move {
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-            drop(holder);
+            holder.run(|_holder, _| Box::pin(async { Ok(()) })).await
         });
         let pass = root.issue_ready_semantic_pass().await?;
         assert!(started.elapsed() >= std::time::Duration::from_millis(100));
@@ -55,7 +55,31 @@ fn foreground_admission_waits_for_the_busy_holder() -> TestResult {
             Ok(sqlx::query_scalar("SELECT 1").fetch_one(&mut **holder).await?)
         })).await?;
         assert_eq!(value, 1);
-        release.await?;
+        release.await??;
+        database.cleanup().await
+    })
+}
+
+#[test]
+fn foreground_admission_waits_for_busy_holder_without_queuing_maintenance() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = migrated_database("holder_foreground_busy_maintenance").await?;
+        let root = ready_root(&url).await?;
+        let holder = root.try_issue_semantic_pass()?;
+        let _maintenance = root.maintenance.lock().await;
+        let release = tokio::spawn(async move {
+            holder.run(|_holder, _| Box::pin(async {
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                Ok(())
+            })).await
+        });
+
+        let pass = root.issue_ready_semantic_pass().await?;
+        let value: i32 = pass.run(|holder, _| Box::pin(async move {
+            Ok(sqlx::query_scalar("SELECT 1").fetch_one(&mut **holder).await?)
+        })).await?;
+        assert_eq!(value, 1);
+        release.await??;
         database.cleanup().await
     })
 }
@@ -74,9 +98,15 @@ fn foreground_admission_is_bounded_and_preserves_recovery_demand() -> TestResult
         let error = result.err().ok_or("busy root was admitted past its budget")?;
         assert!(matches!(error, crate::durability::DurabilityError::RootUnavailable), "{error:?}");
         assert!(started.elapsed() >= super::ROOT_RECOVERY_WINDOW);
-        assert!(root.has_ready_demand());
+        assert!(!root.has_ready_demand());
         drop(holder);
-        root.await_ready().await?;
+        tokio::time::timeout(std::time::Duration::from_secs(1), async {
+            while !root.is_ready() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await?;
+        assert!(root.is_ready());
         database.cleanup().await
     })
 }

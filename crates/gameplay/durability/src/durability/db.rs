@@ -988,7 +988,12 @@ impl DurabilityRoot {
             return Ok(holder);
         }
 
-        self.request_ready();
+        // A checked-out holder is healthy but busy. Re-arming maintenance in
+        // that state makes the maintenance pump compete with foreground work
+        // for every return of the max-one pool.
+        if self.pool.size() == 0 {
+            self.request_ready();
+        }
         Err(DurabilityError::RootUnavailable)
     }
 

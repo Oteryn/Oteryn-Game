@@ -13,7 +13,9 @@ impl DurabilityRoot {
                 return Err(DurabilityError::RootUnavailable);
             }
             if tokio::time::Instant::now() >= deadline {
-                self.request_ready();
+                if self.pool.size() == 0 {
+                    self.request_ready();
+                }
                 return Err(DurabilityError::RootUnavailable);
             }
             match self.try_issue_semantic_pass() {
@@ -21,14 +23,28 @@ impl DurabilityRoot {
                 Err(DurabilityError::RootUnavailable) => {}
                 Err(error) => return Err(error),
             }
-            match tokio::time::timeout_at(deadline, self.await_ready()).await {
-                Ok(Ok(()))
-                | Ok(Err(DurabilityError::RootUnavailable))
-                | Ok(Err(DurabilityError::Database(SqlxFailureClass::Pool))) => {}
-                Ok(Err(error)) => return Err(error),
-                Err(_) => {
-                    // Cancelling maintenance must not lose its recovery demand.
-                    self.request_ready();
+            if self.pool.size() == 0 {
+                match tokio::time::timeout_at(deadline, self.await_ready()).await {
+                    Ok(Ok(()))
+                    | Ok(Err(DurabilityError::RootUnavailable))
+                    | Ok(Err(DurabilityError::Database(SqlxFailureClass::Pool))) => {}
+                    Ok(Err(error)) => return Err(error),
+                    Err(_) => {
+                        // Cancelling maintenance must not lose its recovery demand.
+                        self.request_ready();
+                        return Err(DurabilityError::RootUnavailable);
+                    }
+                }
+            } else {
+                let mut returned = std::pin::pin!(self.holder_returned.notified());
+                returned.as_mut().enable();
+                if self.is_ready() {
+                    continue;
+                }
+                if tokio::time::timeout_at(deadline, returned).await.is_err() {
+                    if self.pool.size() == 0 {
+                        self.request_ready();
+                    }
                     return Err(DurabilityError::RootUnavailable);
                 }
             }
