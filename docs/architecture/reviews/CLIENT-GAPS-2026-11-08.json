@@ -1164,7 +1164,7 @@
   "status": "PARTIAL",
   "gap": "Brak ogólnego modal UI sterowanego serwerem; zwykłe okna mechanik go nie zastępują.",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/components/modal_dialogs.rs:138 + server_dialog_keeps_ids_and_content_image_reference; PARTIAL: server wire and native modal/image rendering remain"
+  "evidence": "crates/protocol-oteryn/src/server_modal.rs:17 + server_modal_wire_round_trip_validates_choices_buttons_and_image_bounds; bounded protocol codec implemented and tested; remaining capability/owner registration, native dialog/image presentation and response transport"
  },
  {
   "id": "T160",
