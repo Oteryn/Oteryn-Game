@@ -4,8 +4,8 @@
 
 use windows_sys::Win32::Foundation::HWND;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DestroyWindow, SW_HIDE, SW_SHOW, SetWindowTextW, ShowWindow, WS_CHILD,
-    WS_VISIBLE,
+    CreateWindowExW, DestroyWindow, MoveWindow, SW_HIDE, SW_SHOW, SetWindowTextW, ShowWindow,
+    WS_CHILD, WS_VISIBLE,
 };
 use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use winit::window::Window;
@@ -42,8 +42,16 @@ impl Hud {
         (!hwnd.is_null()).then_some(Self(hwnd))
     }
 
-    pub(super) fn update(&self, text: Option<&str>) {
+    pub(super) fn update(&self, text: Option<&str>, bounds: [u16; 4]) {
         unsafe {
+            MoveWindow(
+                self.0,
+                i32::from(bounds[0]),
+                i32::from(bounds[1]),
+                i32::from(bounds[2]),
+                i32::from(bounds[3]),
+                1,
+            );
             SetWindowTextW(self.0, wide(text.unwrap_or("")).as_ptr());
             ShowWindow(self.0, if text.is_some() { SW_SHOW } else { SW_HIDE });
         }
@@ -69,20 +77,20 @@ impl super::Application {
                 play.view.hud_status(),
                 play.link.movement_feedback().unwrap_or("")
             );
+            if let Some(hud) = &self.hud {
+                hud.update(Some(&status), play.view.preferences().hud_bounds);
+            }
             if status != play.status {
                 window.set_title(&format!(
                     "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements"
                 ));
-                if let Some(hud) = &self.hud {
-                    hud.update(Some(&status));
-                }
                 play.status = status;
             }
         }
         if self.play.is_none()
             && let Some(hud) = &self.hud
         {
-            hud.update(None);
+            hud.update(None, [8, 8, 900, 40]);
         }
     }
 }
