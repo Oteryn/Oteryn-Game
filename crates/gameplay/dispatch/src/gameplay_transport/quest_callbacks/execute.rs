@@ -183,10 +183,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ((f.appearance_id == passage.appearance
                         || passage.replacement == Some(f.appearance_id)
                         || passage.create_on_close == Some(f.appearance_id))
-                        && !map.facts.house_tile(p))
+                        && !map.facts.house_tile(p)
+                        && (!passage.if_present || !map.facts.base_hidden(k)))
                     .then_some(k)
                 })
                 .collect::<Vec<_>>();
+            if candidates.is_empty() && passage.if_present {
+                continue;
+            }
             let [passage] = candidates.as_slice() else {
                 return UseDisposition::Rejected;
             };

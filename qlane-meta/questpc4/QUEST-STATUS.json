@@ -11045,5 +11045,24 @@
     "pin_check": "PASS",
     "migrations": "duplicate check PASS; no SQL changes",
     "remaining": "M07 PARTIAL: lifecycle source bindings, puzzle wiring and five assigned quest stories remain"
+  },
+  "m07_dreamer_levers": {
+    "state": "TESTED_NATIVE_LIFECYCLE_STAGE",
+    "bindings": 4,
+    "source_wall_entries": 17,
+    "actual_north_walls": 5,
+    "red": "m07_dreamer_levers_bind_four_native_controls_and_all_source_wall_objects: 0 bindings vs4",
+    "model": "29/29 PASS7.166s (legacy source validation included)",
+    "postgres": "PostgreSQL18.6 marker success=true59.928511707s; nextest case59.985s",
+    "adapter": "PASS0.059s; dispatch2/2 PASS60.047s",
+    "author_checks": "PASS361.884s",
+    "author_units": "114 modules PASS529.327s",
+    "content_tree": "PASS193.615s",
+    "clippy": "quests/dispatch all-targets all-features -D warnings PASS3m55s",
+    "remaining": "M07 still PARTIAL: other trial/lifecycle bindings and Dreamer remaining puzzles; no whole-quest completion claim",
+    "workspace_check": "PASS --workspace --all-targets",
+    "fmt": "PASS",
+    "pin_check": "PASS",
+    "duplicate_migrations": "PASS"
   }
 }

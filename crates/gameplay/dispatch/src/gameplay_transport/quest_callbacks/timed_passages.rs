@@ -58,6 +58,11 @@ pub(super) fn prepare(
             passable,
         });
     }
+    if entries.is_empty() {
+        // Source loops do not create objects whose conditional lookup found nothing.
+        return Ok(source_reset
+            .map(|(due, restore)| QuestCallbackProjection::TimedTransform { due, restore }));
+    }
     let projection = QuestCallbackProjection::TimedPassages {
         due,
         entries,

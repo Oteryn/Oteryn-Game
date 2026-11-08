@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m07_dreamer = name.starts_with("m07/dreamer-lever-");
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -41,7 +42,7 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = qm48
+    let native_crop = m07_dreamer || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -57,7 +58,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if qm48 {
+    let start = if m07_dreamer {
+        Position { x:32762,y:32289,floor:-14 }
+    } else if qm48 {
         Position {
             x: trigger.x,
             y: trigger.y - 1,
@@ -424,6 +427,8 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native Spirit policies")?,
             )?
+        } else if m07_dreamer {
+            super::super::m07_dreamer_levers::world(generation.native_gameplay().ok_or("native Dreamer policies")?)?
         } else if mead {
             super::super::l6_mead::world(
                 generation.native_gameplay().ok_or("native Mead policies")?,
@@ -653,6 +658,8 @@ fn scenario_case(
             super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+        } else if m07_dreamer {
+            super::super::m07_dreamer_levers::exercise(&mut owner,&mut admitted,&h,&callback).await?;
         } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
                 .await?;

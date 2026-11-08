@@ -67,6 +67,9 @@ pub struct Selector {
 pub struct Passage {
     pub position: Position,
     pub appearance: u16,
+    /// Literal source lookup: skip an absent object, never an ambiguous one.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub if_present: bool,
     #[serde(default)]
     pub replacement: Option<u16>,
     /// Source-asymmetric lever: remove `appearance`, then create this different wall.
@@ -320,6 +323,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -387,7 +393,12 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let selector = &callback.selector;
         let valid_pos = |p: Position| (-15..=0).contains(&p.floor);
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
-        let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
+        let passage_positions: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
+        let unique_passages: BTreeSet<_> = callback
+            .passages
+            .iter()
+            .map(|p| (p.position, p.appearance))
+            .collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
         if (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
@@ -489,6 +500,12 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .any(|e| !valid_pos(e.position) || e.effect == 0)
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
+            || (callback.effects.passages_reset_after_ms.is_none()
+                && passage_positions.len() != callback.passages.len())
+            || callback
+                .passages
+                .iter()
+                .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none())
             || unique_storage.len() != callback.storage.len()
             || callback.passages.len() > MAX_EFFECTS
             || callback.passages.iter().any(|p| {

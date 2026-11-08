@@ -136,3 +136,66 @@ fn m07_remote_passage_reset_has_explicit_targets_and_bounded_deadline() -> Resul
     }
     Ok(())
 }
+
+#[test]
+fn m07_dreamer_levers_bind_four_native_controls_and_all_source_wall_objects() -> Result<(), String>
+{
+    let callbacks: Vec<_> = load()?
+        .into_iter()
+        .filter(|c| {
+            c.key
+                .starts_with("oteryn:quest-callback/m07/dreamer-lever-")
+        })
+        .collect();
+    assert_eq!(
+        callbacks.len(),
+        4,
+        "all four physical Dreamer controls must be wired"
+    );
+    let mut wall_count = 0;
+    for callback in &callbacks {
+        assert_eq!(callback.quest, "oteryn:quest.dreamer_s_challenge_quest");
+        assert_eq!(callback.lever, Some([2772, 2773]));
+        assert!(!callback.reversible);
+        assert_eq!(callback.effects.reset_after_ms, Some(8000));
+        assert_eq!(callback.effects.passages_reset_after_ms, Some(7000));
+        let native = callback
+            .selector
+            .native
+            .as_ref()
+            .ok_or("physical lever counterpart")?;
+        assert_eq!(native.ordinal, 1);
+        assert_eq!(native.appearance, 2772);
+        assert_eq!(native.position.floor, -14);
+        assert_eq!(
+            callback.selector.unique, None,
+            "the captured map has no donor UID tags"
+        );
+        wall_count += callback.passages.len();
+        let mut duplicate = (*callback).clone();
+        duplicate
+            .passages
+            .push(duplicate.passages.first().ok_or("walls")?.clone());
+        assert!(
+            parse(&encode(&duplicate)).is_err(),
+            "reject duplicate exact wall identity"
+        );
+    }
+    assert_eq!(wall_count, 17);
+    let north = callbacks
+        .iter()
+        .find(|c| c.key.ends_with("-north"))
+        .ok_or("north control")?;
+    let corner: std::collections::BTreeSet<_> = north
+        .passages
+        .iter()
+        .filter(|p| p.position.x == 32760 && p.position.y == 32288)
+        .map(|p| p.appearance)
+        .collect();
+    assert_eq!(
+        corner,
+        [1027, 1272].into_iter().collect(),
+        "retain both source creates at the same coordinate"
+    );
+    Ok(())
+}
