@@ -63,6 +63,9 @@ impl SeasonalWindow {
 /// Only donor-backed, physically composed daily changes can qualify an active gate.
 /// Unknown/held keys fail closed, including the requested incomplete quest titles.
 pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
+    if day.reset_epoch == 0 {
+        return false;
+    }
     if let Some((key, stage)) = key.rsplit_once('@') {
         return crate::counter::CounterKind::from_key(key).is_some_and(|kind| {
             counter_admitted(kind)

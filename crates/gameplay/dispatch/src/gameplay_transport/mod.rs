@@ -159,6 +159,7 @@ mod quest_admission;
 mod quest_callbacks;
 mod quest_kills;
 mod quest_log_source;
+mod quest_peer_use;
 mod quest_timer_cycle;
 mod raid_live;
 mod raid_live_world;

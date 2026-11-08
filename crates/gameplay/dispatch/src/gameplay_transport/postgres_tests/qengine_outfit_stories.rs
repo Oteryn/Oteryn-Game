@@ -1335,6 +1335,7 @@ pub(super) async fn exercise(
                     fee_payment: None,
                     actor_conditions: None,
                     carried_use: None,
+                    peer_use: None,
                 },
                 &owner.premium_coordinator,
             )
@@ -1718,6 +1719,7 @@ pub(super) async fn exercise(
                         fee_payment: None,
                         actor_conditions: None,
                         carried_use: None,
+                    peer_use: None,
                     },
                     &owner.premium_coordinator,
                 )

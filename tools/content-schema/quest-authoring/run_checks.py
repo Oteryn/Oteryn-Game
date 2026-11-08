@@ -114,6 +114,7 @@ def main():
         parser.error('required Quest check inputs missing: ' + ', '.join(missing))
     commands = [
         ['verify_quest_schema.py'],
+        ['questpc2_live_eligibility.py', '--check'],
         ['soul_war_reconstruction.py', '--check'],
         ['../encounter-authoring/soul_war_crystal_reconstruction.py', '--check'],
         ['../encounter-authoring/test_soul_war_crystal_reconstruction.py'],
