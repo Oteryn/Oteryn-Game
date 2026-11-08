@@ -199,3 +199,30 @@ fn m07_dreamer_levers_bind_four_native_controls_and_all_source_wall_objects() ->
     );
     Ok(())
 }
+
+#[test]
+fn m07_native_offering_can_bind_an_exact_input_and_physical_world_predicate() -> Result<(), String>
+{
+    let mut callback = trial()?;
+    callback.item_on_target = Some(
+        serde_json::from_value(serde_json::json!({
+            "item":"oteryn:item.tibia.i9634","count":1,
+            "replacement":null,"target_replacement":null
+        }))
+        .map_err(|e| e.to_string())?,
+    );
+    parse(&encode(&callback))?;
+    let binding = gated_binding(&callback)?;
+    callback.item_on_target.as_mut().ok_or("offering")?.count = 2;
+    assert_ne!(
+        gated_binding(&callback)?,
+        binding,
+        "the exact charge is part of admission"
+    );
+    callback.requires_world_admission = false;
+    assert!(
+        parse(&encode(&callback)).is_err(),
+        "paid physical predicates must remain natively bound"
+    );
+    Ok(())
+}

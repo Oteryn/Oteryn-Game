@@ -11064,5 +11064,20 @@
     "fmt": "PASS",
     "pin_check": "PASS",
     "duplicate_migrations": "PASS"
+  },
+  "m07_counter_floor": {
+    "state": "TESTED_ENGINE_SLICE_NOT_QUEST_WIRED",
+    "migration": 2061,
+    "operation": "checked add then minimum floor; max(old+1,2) for Lion source progress",
+    "rust": "9/9 focused PASS0.059s; old operators included",
+    "pg_red": "PostgreSQL180006 unsupported floor witness rejected5.075s",
+    "pg_green": "PostgreSQL180006 success marker5.551617259s; nextest5.561s; migrationSHA384 exact",
+    "sql_guards": "wrong outputs, signed overflow/underflow, malformed terms rejected; legacy add and16-effect capacity preserved",
+    "clippy": "quests/durability all-targets all-features -D warnings PASS1m27s",
+    "workspace": "all-targets PASS3m50s",
+    "fmt": "PASS",
+    "migration_check": "staged duplicate scan and embedded migrator/directory equality PASS",
+    "pin_check": "PASS",
+    "remaining": "Authoring JSON schema still needs the new operator (RED test held outside checkout); native Lion offering PG/wiring and rest of M07 remain PARTIAL"
   }
 }

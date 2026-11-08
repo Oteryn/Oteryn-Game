@@ -42,6 +42,8 @@ pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
+#[cfg(test)]
+mod m07_offering_counter_tests;
 pub mod map_marks;
 pub mod monk_shrines;
 pub mod native_kills;
@@ -193,6 +195,11 @@ pub enum QuestEffectKind {
     },
     /// Checked `i64` addition.
     Add(i64),
+    /// Checked addition, then a floor; used by source counters with an unset sentinel.
+    AddAtLeast {
+        delta: i64,
+        minimum: i64,
+    },
     /// Checked addition while pinning physical admission terms.
     AddWithBinding {
         delta: i64,
@@ -238,6 +245,11 @@ impl QuestEffectKind {
             Self::Add(value) => {
                 out.push(2);
                 out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::AddAtLeast { delta, minimum } => {
+                out.push(12);
+                out.extend_from_slice(&delta.to_be_bytes());
+                out.extend_from_slice(&minimum.to_be_bytes());
             }
             Self::AddWithBinding { delta, binding } => {
                 out.push(8);
@@ -449,6 +461,9 @@ impl QuestStateCatalogue {
                     | QuestEffectKind::RaiseToWithBinding { value, .. } => {
                         (track.min..=track.max).contains(&value)
                     }
+                    QuestEffectKind::AddAtLeast { minimum, .. } => {
+                        (track.min..=track.max).contains(&minimum)
+                    }
                     QuestEffectKind::SetWhenAtLeast {
                         other_effect,
                         value,
@@ -639,6 +654,9 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::Add(delta) | QuestEffectKind::AddWithBinding { delta, .. } => {
                         before.checked_add(delta)
+                    }
+                    QuestEffectKind::AddAtLeast { delta, minimum } => {
+                        before.checked_add(delta).map(|value| value.max(minimum))
                     }
                     QuestEffectKind::SetNow => Some(now),
                     QuestEffectKind::Computed => None,

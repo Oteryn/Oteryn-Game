@@ -411,7 +411,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.reversible
                     || callback.opening_only
                     || callback.native_rule.is_some()
-                    || !callback.world_requirements.is_empty()))
+                    || (!callback.world_requirements.is_empty()
+                        && !callback.requires_world_admission)))
             || !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
@@ -480,8 +481,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             })
             || (!callback.world_requirements.is_empty()
                 && ((callback.has_personal_state() && !callback.requires_world_admission)
-                    || !callback.offerings.is_empty()
-                    || callback.item_on_target.is_some()
+                    || ((!callback.offerings.is_empty() || callback.item_on_target.is_some())
+                        && !callback.requires_world_admission)
                     || callback.minimum_level.is_some()
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
