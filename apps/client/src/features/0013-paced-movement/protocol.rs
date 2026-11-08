@@ -9,6 +9,10 @@ pub(in crate::play) const fn step_direction(direction: StepDir) -> StepDirection
         StepDir::East => StepDirection::East,
         StepDir::South => StepDirection::South,
         StepDir::West => StepDirection::West,
+        StepDir::NorthEast => StepDirection::NorthEast,
+        StepDir::SouthEast => StepDirection::SouthEast,
+        StepDir::SouthWest => StepDirection::SouthWest,
+        StepDir::NorthWest => StepDirection::NorthWest,
     }
 }
 

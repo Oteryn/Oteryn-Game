@@ -20,10 +20,46 @@
   {
     "mechanic": "0013-paced-movement",
     "kind": "keybindings",
+    "id": "0013-paced-movement-move-north-east",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "NUMPAD9",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-move-north-west",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "NUMPAD7",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
     "id": "0013-paced-movement-move-south",
     "status": "supported",
     "context": "gameplay",
     "chord": "ARROWDOWN",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-move-south-east",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "NUMPAD3",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-move-south-west",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "NUMPAD1",
     "entry": "input.rs::default_arrow_binding"
   },
   {
