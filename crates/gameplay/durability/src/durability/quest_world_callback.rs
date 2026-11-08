@@ -3,6 +3,8 @@ pub mod carried_step;
 pub(super) mod completion;
 pub(crate) mod ground_stack;
 #[cfg(any(test, feature = "test-support"))]
+pub use ground_stack::matches as fixture_ground_stack_matches;
+#[cfg(any(test, feature = "test-support"))]
 #[doc(hidden)]
 pub use ground_stack::matches as fixture_ground_stack_matches;
 pub mod shared_count;
@@ -71,6 +73,25 @@ pub(super) async fn consume_reward_inputs(
     if rows.len() > 500 {
         return Ok(false);
     }
+    if let Some(target_key) = &callback.carried_target {
+        let Some(use_) = carried_use else {
+            return Ok(false);
+        };
+        let Some(target) = use_.recipe_target else {
+            return Ok(false);
+        };
+        if target == use_.source {
+            return Ok(false);
+        }
+        let selected = sqlx::types::Uuid::from_bytes(target).to_string();
+        if !rows.iter().any(|row| {
+            row.try_get::<&str, _>("item").ok() == Some(selected.as_str())
+                && row.try_get::<&str, _>("definition_production_key").ok()
+                    == Some(target_key.as_str())
+        }) {
+            return Ok(false);
+        }
+    }
     if callback.exact_take {
         for input in &callback.take {
             let mut total = 0_i64;
@@ -107,17 +128,24 @@ pub(super) async fn consume_reward_inputs(
         .collect();
     let mut inputs = Vec::new();
     for row in rows {
-        if carried_use.is_some_and(|use_| {
-            row.try_get::<&str, _>("item").ok()
-                != Some(
-                    sqlx::types::Uuid::from_bytes(use_.source)
-                        .to_string()
-                        .as_str(),
-                )
-        }) {
-            continue;
-        }
         let key: String = row.try_get("definition_production_key")?;
+        if let Some(use_) = carried_use {
+            let selected = if callback.carried_item.as_deref() == Some(key.as_str()) {
+                Some(use_.source)
+            } else if callback.carried_target.as_deref() == Some(key.as_str()) {
+                use_.recipe_target
+            } else if callback.carried_target.is_some() {
+                None // Additional recipe ingredients use the ordinary bounded stack allocator.
+            } else {
+                continue;
+            };
+            if let Some(selected) = selected {
+                let selected = sqlx::types::Uuid::from_bytes(selected).to_string();
+                if row.try_get::<&str, _>("item")? != selected {
+                    continue;
+                }
+            }
+        }
         let Some(required) = remaining.get_mut(key.as_str()) else {
             continue;
         };
@@ -198,6 +226,11 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    if !ground_stack::matches_requirements(tx, permit, fence, context, &callback.world_requirements)
+        .await?
+    {
+        return Ok(false);
+    }
     if !ground_stack::require(
         tx,
         permit,
@@ -209,6 +242,29 @@ pub(super) async fn consume(
     .await?
     {
         return Ok(false);
+    }
+    if let Some(admission) = &callback.admission {
+        if admission.promotion
+            && !super::character_promotion::read_durable_promotion(tx, fence.character_id).await?
+        {
+            return Ok(false);
+        }
+        if admission.regular_blessings {
+            let held: Vec<String> = sqlx::query_scalar(
+                "SELECT blessing_key FROM game_character_blessings WHERE character_id=encode($1,'hex')::uuid ORDER BY blessing_key LIMIT 33",
+            ).bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
+            let catalogue =
+                oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+            if !catalogue
+                .blessings
+                .iter()
+                .filter(|blessing| blessing.storage_key != "oteryn:blessing.twist_of_fate")
+                .all(|blessing| held.contains(&blessing.storage_key))
+            {
+                return Ok(false);
+            }
+        }
     }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
