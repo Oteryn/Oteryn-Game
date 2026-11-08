@@ -76,7 +76,7 @@ fn scenario() -> TestResult {
         )?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = room.movement_cells();
+        owner.movement_cells = room.movement_cells().into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
         deps.initialize(&owner).await;
         let catalogue = NpcDataCatalogue::load(
@@ -223,6 +223,7 @@ fn world_fixture(world: crate::foundation::WorldId) -> TestResult<crate::map::bo
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         }],
         draft_areas: vec![],

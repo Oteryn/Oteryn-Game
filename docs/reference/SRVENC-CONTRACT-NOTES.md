@@ -1414,3 +1414,13 @@ unchanged. The repository loot producer and prey simulation regenerate the
 admission-bound hash and reports; no generated hash or expected result is
 hand-edited. Existing lane migrations remain unchanged and no new number is
 allocated; collector migrations are inherited from main.
+
+The collector merge's first workspace compile found two integration families
+in newly inherited dispatch fixtures: raw movement-cell references need the
+existing SharedOwner conversion (five assignments across four files), and
+four Terrain literals need the additive optional blocks_projectile field.
+The repair preserves reset epochs and all existing assertions; None retains
+the original fixture's unspecified projectile behavior. No tests are removed.
+Canonical tree validation passes for 34,111 Items and 252 Mounts; the metadata
+check passes separately using its actual world-authoring tool path. A scratch
+wrapper's obsolete metadata path failed after the tree check, not in content.
