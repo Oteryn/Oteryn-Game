@@ -68,4 +68,6 @@
 
 | M18: timed player-admitting encounter with personal cooldown and cleanup | SEASON | 2210 reserved if schema work is needed; coordinator range2210–2219 | The First Dragon Quest (selected final encounter) | CLAIMED |
 
+| M38: conditional NPC presence, stationary/water admission, returns/tickets and Mistrock binding | npcfix | 2140–2149 reserved by coordinator; none allocated yet | Five checked rows in MISSING-npcfix.md, including The Hidden City of Beregar — Way to Beregar | CLAIMED |
+
 | M42: dispatch existing UTC cooking planner and typed ingredient operations | questpc7 | none planned; M42 allocation 2080–2089 only | Hot Cuisine | CLAIMED |
