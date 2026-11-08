@@ -5,17 +5,30 @@ use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::UseIntent;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
+/// A live target proof borrows its runtime owner until the quest commit ends.
+/// Mutating or releasing that owner while retaining the proof is forbidden.
+///
+/// ```compile_fail
+/// use oteryn_gameplay_durability::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof;
+/// let _requires_owner = |runtime: &mut _, actor, fence, command, callback, intent| {
+///     let proof = QuestCreatureUseProof::read_current(runtime, actor, fence, command, callback, intent);
+///     fn change_runtime<T>(_: &mut T) {}
+///     change_runtime(runtime);
+///     drop(proof);
+/// };
+/// ```
 #[derive(Debug)]
-pub struct QuestCreatureUseProof {
+pub struct QuestCreatureUseProof<'runtime> {
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     callback: String,
     key: String,
     target: EntityRef,
+    _runtime: std::marker::PhantomData<&'runtime ()>,
 }
-impl QuestCreatureUseProof {
+impl<'runtime> QuestCreatureUseProof<'runtime> {
     pub fn read_current(
-        runtime: &ChannelRuntimeV1,
+        runtime: &'runtime ChannelRuntimeV1,
         actor: ExactActorRef,
         fence: CurrentCharacterGameplayFence,
         command: CommandRef,
@@ -54,6 +67,7 @@ impl QuestCreatureUseProof {
             callback: callback.key.clone(),
             key: key.clone(),
             target,
+            _runtime: std::marker::PhantomData,
         })
     }
     pub(super) fn permits(

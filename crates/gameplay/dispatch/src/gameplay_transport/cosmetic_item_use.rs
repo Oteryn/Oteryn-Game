@@ -489,22 +489,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if fence.item_fence() != item_fence {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        let creature = if callback.creature_target.is_some() {
-            let runtime = self.runtime.lock().await;
-            let proof = crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
-                &runtime, actor, fence, command_ref, &callback, intent);
-            let Some(proof) = proof else {
-                return Ok(Some(outcome(UseDisposition::Rejected)));
-            };
-            Some(proof)
-        } else {
-            None
-        };
         let peer = if callback.peer_requires.is_some() {
             match self.quest_peer_use(actor, command, intent).await {
                 Ok(peer) => peer,
                 Err(()) => return Ok(Some(outcome(UseDisposition::Rejected))),
             }
+        } else {
+            None
+        };
+        // Lane -> Character sequence -> runtime is retained through COMMIT.
+        // The proof's borrow prevents detaching a live target snapshot.
+        let mut sequence = self.revision_sequencer.acquire(fence.character_id).await;
+        let creature_runtime = if callback.creature_target.is_some() {
+            Some(self.runtime.lock().await)
+        } else {
+            None
+        };
+        let creature = if let Some(runtime) = creature_runtime.as_ref() {
+            let proof = crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
+                runtime, actor, fence, command_ref, &callback, intent);
+            let Some(proof) = proof else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            Some(proof)
         } else {
             None
         };
@@ -517,10 +524,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source,
             intent: encoded,
         };
-        let result = self
-            .revision_sequencer
-            .acquire(fence.character_id)
-            .await
+        let result = sequence
             .commit_quest_reward(
                 self.root,
                 self.character,
@@ -544,6 +548,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| ())?;
+        drop(creature);
+        drop(creature_runtime);
+        drop(sequence);
         drop(permit);
         let disposition = if matches!(
             result,
