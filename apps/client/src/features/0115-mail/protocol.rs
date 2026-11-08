@@ -20,6 +20,7 @@ pub(in crate::play) struct Panels {
     pub player_report: oteryn_client_ui::player_report::Panel,
     pub pvp_expert: oteryn_client_ui::pvp_expert::Panel,
     pub mail: Panel,
+    pub house_furniture_rotation: oteryn_client_ui::house_furniture_rotation::Panel,
     pub house_furniture_wrap: oteryn_client_ui::house_furniture_wrap::Panel,
     pub house_podium: oteryn_client_ui::house_podium::Panel,
     pub timed_item: oteryn_client_ui::timed_item::Panel,
@@ -28,6 +29,7 @@ pub(in crate::play) struct Panels {
 }
 impl Panels {
     pub fn end(&mut self) {
+        self.house_furniture_rotation = oteryn_client_ui::house_furniture_rotation::Panel { feedback: "The session has ended".into(), ..Default::default() };
         self.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel { feedback: "The session has ended".into(), ..Default::default() };
         self.staff = super::super::feature_0051_staff::state::Panel {
             feedback: "The session has ended".into(),
@@ -191,6 +193,7 @@ impl Outbox {
             session,
         );
         shared.properties.mail.selected = session.feature_selected(115);
+        shared.properties.house_furniture_rotation = oteryn_client_ui::house_furniture_rotation::Panel { selected: session.feature_selected(445), ..Default::default() };
         shared.properties.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel {selected: session.feature_selected(207), ..Default::default()};
         shared.properties.house_podium.selected = session.feature_selected(150);
         shared.properties.training.selected = session.feature_selected(54);
@@ -273,6 +276,7 @@ impl Outbox {
                 command,
                 result,
             ),
+            445 => super::super::feature_0445_house_furniture_rotation::protocol::apply(&mut shared.properties.house_furniture_rotation, command, result),
             207 => super::super::feature_0207_house_furniture_wrap::protocol::apply(&mut shared.properties.house_furniture_wrap, command, result),
             115 => apply(&mut shared.properties.mail, command, result),
             134 => super::super::feature_0134_party_skull::protocol::apply(

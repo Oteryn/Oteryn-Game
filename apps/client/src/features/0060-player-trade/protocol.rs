@@ -77,16 +77,7 @@ pub(in crate::play) fn initial_items<S: oteryn_session::SessionStream>(
     oteryn_client_runtime::player_trade::TradeItems {
         inventory: session.inventory().cloned().unwrap_or_default(),
         corpse: session.open_container().cloned().unwrap_or_default(),
-        containers: session
-            .gated_snapshot(14)
-            .and_then(|snapshot| {
-                oteryn_session::container_tree::decode_container_views_for(
-                    &snapshot.payload,
-                    session.is_selected(230),
-                )
-                .ok()
-            })
-            .unwrap_or_default(),
+        containers: session.container_views().cloned().unwrap_or_default(),
         can_open: session.is_selected(14),
         pending: false,
     }

@@ -134,6 +134,30 @@ impl DurabilityRoot {
 }
 
 impl DurabilityRoot {
+    /// Settle bounded batches before the first House map read after an idle period.
+    /// Crystal src/items/decay/decay.cpp:29-54 arms absolute deadlines independently
+    /// of observers; the SQL owner catches up the closed eight-stage animation.
+    pub async fn settle_house_timed_decorations(
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        house: HouseId,
+    ) -> Result<bool, DurabilityError> {
+        // Each call processes up to sixteen native timers and sixteen destruction
+        // timers in its own fenced transaction; no runtime guard spans this work.
+        for _ in 0..=(super::house_interior::HOUSE_INTERIOR_ITEMS_MAX / 16) {
+            if self
+                .expire_house_furniture(node, fence, house.clone())
+                .await?
+                < 16
+            {
+                return Ok(true);
+            }
+            tokio::task::yield_now().await;
+        }
+        Ok(false)
+    }
+
     /// Bounded deadline work over the existing timed-state deadline index.
     pub async fn expire_house_furniture(
         &self,

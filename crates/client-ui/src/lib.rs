@@ -28,6 +28,10 @@ pub mod guild_war;
 pub mod guildhall;
 #[path = "features/0049-house/mod.rs"]
 pub mod house;
+#[path = "features/0446-house-container-capacity/mod.rs"]
+pub mod house_container_capacity;
+#[path = "features/0445-house-furniture-rotation/mod.rs"]
+pub mod house_furniture_rotation;
 #[path = "features/0207-house-furniture-wrap/mod.rs"]
 pub mod house_furniture_wrap;
 #[path = "features/0059-house-move-out/mod.rs"]
