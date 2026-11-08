@@ -81,7 +81,7 @@ pub struct CultsEncounter {
 }
 impl CultsEncounter {
     pub fn bind(
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         participants: &[(ExactActorRef, GameSessionId)],
         pillars: [ExactActorRef; 5],
         stops: [ExactActorRef; 5],
@@ -101,6 +101,7 @@ impl CultsEncounter {
             pillars_at[i] = runtime.read_actor_position(pillars[i])?.position();
             guardians_at[i] = runtime.read_actor_position(stops[i])?.position();
         }
+        super::gates::protect(runtime, &stops)?;
         Ok(Self {
             phase,
             stops,
@@ -108,6 +109,12 @@ impl CultsEncounter {
             guardians_at,
             essence_at,
         })
+    }
+    pub fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.phase.current(runtime).is_ok()
+    }
+    pub fn contains(&self, actor: ExactActorRef) -> bool {
+        self.phase.actors.contains(&Some(actor))
     }
     pub fn projected_death(
         &mut self,
@@ -142,6 +149,9 @@ impl CultsEncounter {
                     )?;
                 }
                 10 => {
+                    if !runtime.native_summon_cell_free(self.essence_at) {
+                        return Err(CarrierError::PlanConflict);
+                    }
                     self.phase.spawn_role(
                         runtime,
                         role,

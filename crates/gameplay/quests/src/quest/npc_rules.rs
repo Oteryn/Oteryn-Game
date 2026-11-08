@@ -1,14 +1,19 @@
 //! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
 //! Crystal source references and source-order branches are retained in each program.
 
+#[cfg(test)]
+mod achievement_tests;
 mod admission;
 mod bounds;
+mod calendar;
 mod equipped_storage;
+pub use calendar::NpcUtcCalendar;
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+pub mod teleport;
 mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
@@ -148,8 +153,19 @@ pub enum NpcRuleGuard {
     CalendarMonth {
         value: u8,
     },
+    /// Inclusive, annually repeating UTC dates; the durable owner supplies epoch time.
+    CalendarWindow {
+        start_month: u8,
+        start_day: u8,
+        end_month: u8,
+        end_day: u8,
+        within: bool,
+    },
     Vocation {
         value: String,
+    },
+    Premium {
+        value: bool,
     },
     Sex {
         value: u8,
@@ -327,10 +343,18 @@ pub struct NpcRuleInput<'a> {
     pub inventory: &'a NpcInventorySnapshot,
     pub now_epoch_seconds: i64,
     pub calendar_month: u8,
+    pub premium_current: bool,
     pub level: u32,
     pub vocation: &'a str,
     pub sex: u8,
     pub outfits: &'a BTreeMap<u16, u8>,
+}
+
+impl NpcRuleInput<'_> {
+    /// M17: preview and commit project the epoch supplied by their existing owners.
+    pub fn utc_calendar(&self) -> Result<NpcUtcCalendar, NpcRuleError> {
+        NpcUtcCalendar::from_epoch(self.now_epoch_seconds)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -446,11 +470,14 @@ impl NpcRuleCatalog {
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
                         || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.first-dragon-calendar")
+                        || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
                         || matches!(
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
                                 | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.elemental_spheres_quest"
                                 | "oteryn:quest.bigfoot_s_burden_quest"
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
@@ -683,7 +710,13 @@ pub fn legacy_defaults<'a>(
 }
 
 #[cfg(test)]
+mod multiple_item_rewards_tests;
+
+#[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod calendar_window_tests;
 
 #[cfg(test)]
 mod draconia_source_tests {

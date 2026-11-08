@@ -71,6 +71,12 @@ fn registry() -> Result<&'static Registry, String> {
             for counter in super::native_kills::COUNTERS {
                 add(counter.transition(), false, true)?;
             }
+            // M24 source deaths may share questline tracks with existing NPC
+            // stages. Register the exact canonical operation; the writer also
+            // requires its independently fenced native-death context.
+            for rule in super::source_deaths::rules().map_err(str::to_owned)? {
+                add(rule.transition()?, false, false)?;
+            }
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
             }
