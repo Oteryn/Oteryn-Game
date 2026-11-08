@@ -1905,3 +1905,43 @@ recipe, not a claim of exact donor quest bookkeeping:
 generator copies their exact predecessor guards, effects and bounds. Source
 URLs, pinned wiki revisions and this approximation distinction are retained
 in `docs/reference/content-prep/qmech-m24/source-notes.md`.
+
+
+## M24 real PostgreSQL qualification
+
+On the own-lane branch after coordinator QMECH `a505e643f`, all13
+`srvenc_m24_postgres_*` cases passed against real PostgreSQL18.6:
+264.54s test execution, 0 failures, 0 ignored. Each case creates its own
+database and drives an actual native lethal projection, the existing kill
+queue and fenced quest writes; corpse materialization remains independently
+qualified. No ADMIN_URL skip path was used.
+
+| PG case suffix | Executed seconds |
+|---|---:|
+| `dipthrah_stage` | 57.285 |
+| `anomaly_room` | 57.343 |
+| `court_warlock_room` | 57.367 |
+| `cake_golem_twenty_and_cap` | 69.396 |
+| `goblin_leader_damage` | 57.923 |
+| `magma_bubble_damage` | 57.923 |
+| `mahrdis_stage` | 57.916 |
+| `morguthis_stage` | 71.175 |
+| `omruc_stage` | 76.087 |
+| `rahemos_stage` | 90.675 |
+| `thalas_stage` | 97.475 |
+| `vashresamun_stage` | 96.262 |
+| `world_devourer_room` | 73.221 |
+
+Every case also rejects a generic command for the native-bound transition
+and rejects a source context from a different ownership generation. The Cake
+case queues simultaneous kills, reaches exactly20, refuses the21st credit and
+replays each corpse projection without an extra receipt. Source stage/value
+and exact receipt-count assertions remain unchanged.
+
+The initial negative fixture mistakenly supplied a non-UUIDv7 occurrence.
+It now uses the existing UUIDv7 fixture helper so the test reaches the actual
+wrong-generation check. The earlier personal-credit red cases exposed the
+real rowless-ledger loss; retaining the native damage shares fixes those
+without qualifying XP, loot or corpse Items. Build retries resolved memory
+pressure by stopping concurrent Python runners, and disk pressure by deleting
+inactive lane compiler caches; normal repository profiles were preserved.
