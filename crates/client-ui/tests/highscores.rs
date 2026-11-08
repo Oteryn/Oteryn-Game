@@ -261,3 +261,39 @@ fn native_combo_selection_preserves_reserved_category_gaps() {
         assert_eq!(highscores::category_selection(category), None);
     }
 }
+
+#[test]
+fn show_me_uses_the_confirmed_rank_and_snapshot_page() -> Result<(), Box<dyn std::error::Error>> {
+    let mut p = HighscoresPanel::default();
+    p.selected = true;
+    assert!(highscores::request(&mut p, Action::Refresh).is_some());
+    let result = HighscoresResult {
+        category: 1,
+        snapshot_id: 9,
+        computed_at: 100,
+        page: 1,
+        has_more: false,
+        rows: vec![],
+        own_row: Some(HighscoreRow {
+            rank: 73,
+            name: "Me".into(),
+            vocation: "knight".into(),
+            level: 10,
+            value: 20,
+        }),
+    };
+    highscores::apply_result(
+        &mut p,
+        &ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_highscores_result(&result).map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    let command = highscores::request(&mut p, Action::ShowMe).ok_or("show me")?;
+    let query = wire::decode_highscores_query(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((query.page, query.snapshot_id), (2, 9));
+    assert!(highscores::request(&mut p, Action::ShowMe).is_none());
+    Ok(())
+}

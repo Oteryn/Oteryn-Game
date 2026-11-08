@@ -3,6 +3,22 @@ use super::*;
 
 impl Application {
     pub(super) fn poll_entry(&mut self) {
+        if self
+            .login
+            .as_ref()
+            .is_some_and(LoginWindow::cancel_requested)
+            && let Some(entry) = &mut self.entry
+        {
+            entry.cancel_entry();
+        }
+        if let Some(message) = self
+            .entry
+            .as_mut()
+            .and_then(|entry| entry.poll_wait(std::time::Instant::now()))
+            && let Some(login) = &self.login
+        {
+            login.progress(message);
+        }
         if let Some(config) = self.login.as_ref().and_then(LoginWindow::poll) {
             let started = self
                 .entry
@@ -22,7 +38,7 @@ impl Application {
         }
         match result {
             Ok((mut view, link)) => {
-                self.settings.restore(&mut view);
+                self.settings.restore(&mut view, &link);
                 self.scene = None;
                 self.play = Some(Play {
                     view,

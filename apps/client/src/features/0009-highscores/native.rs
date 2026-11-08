@@ -29,7 +29,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             if !actions.is_null()
                 && (*actions).0.len() < 16
                 && ((matches!(id, 101 | 102) && notification == CBN_SELCHANGE as usize)
-                    || (matches!(id, 103..=105) && notification == BN_CLICKED as usize))
+                    || (matches!(id, 103..=106) && notification == BN_CLICKED as usize))
             {
                 (*actions).0.push(id);
             }
@@ -109,9 +109,10 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             170,
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
-        let refresh = control(hwnd, "BUTTON", "Refresh", 103, 430, 110, 0);
-        let previous = control(hwnd, "BUTTON", "Previous", 104, 550, 120, 0);
-        let next = control(hwnd, "BUTTON", "Next", 105, 680, 120, 0);
+        let refresh = control(hwnd, "BUTTON", "Refresh", 103, 430, 80, 0);
+        let previous = control(hwnd, "BUTTON", "Previous", 104, 520, 80, 0);
+        let next = control(hwnd, "BUTTON", "Next", 105, 610, 80, 0);
+        let show_me = control(hwnd, "BUTTON", "Show me", 106, 700, 100, 0);
         let text = CreateWindowExW(
             0,
             wide("EDIT").as_ptr(),
@@ -133,7 +134,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             null_mut(),
             null(),
         );
-        if [category, vocation, refresh, previous, next, text]
+        if [category, vocation, refresh, previous, next, show_me, text]
             .iter()
             .any(|h| h.is_null())
         {
@@ -188,6 +189,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                     }
                     104 => Action::Previous,
                     105 => Action::Next,
+                    106 => Action::ShowMe,
                     _ => Action::Refresh,
                 };
                 if let Some(command) = highscores::request(panel, action)
@@ -220,6 +222,10 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
                     next,
                     i32::from(enabled && panel.reply.as_ref().is_some_and(|r| r.has_more)),
+                );
+                windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
+                    show_me,
+                    i32::from(enabled && panel.reply.as_ref().is_some_and(|r| r.own_row.is_some())),
                 );
                 held = Some(panel.clone());
             }

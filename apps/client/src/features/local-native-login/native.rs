@@ -15,22 +15,25 @@ use windows_sys::Win32::UI::WindowsAndMessaging::*;
 const SUBMIT: usize = 1;
 enum Update {
     Show(String),
+    Progress(String),
     Finish(Result<(), GameplayEntryError>),
 }
 pub struct LoginWindow {
     updates: Option<Sender<Update>>,
     requests: Receiver<NativeLoginConfig>,
+    cancellations: Receiver<()>,
     thread: Option<JoinHandle<()>>,
 }
 impl LoginWindow {
     pub fn open() -> Result<Self, String> {
         let (updates, incoming) = mpsc::channel();
         let (requests, outgoing) = mpsc::channel();
+        let (cancel, cancellations) = mpsc::sync_channel(1);
         let (ready, initialized) = mpsc::sync_channel(1);
         let thread = std::thread::Builder::new()
             .name("native-login".into())
             .spawn(move || {
-                let result = run(incoming, requests, &ready);
+                let result = run(incoming, requests, cancel, &ready);
                 if let Err(error) = result {
                     let _ = ready.send(Err(error));
                 }
@@ -42,11 +45,18 @@ impl LoginWindow {
         Ok(Self {
             updates: Some(updates),
             requests: outgoing,
+            cancellations,
             thread: Some(thread),
         })
     }
     pub fn poll(&self) -> Option<NativeLoginConfig> {
         self.requests.try_recv().ok()
+    }
+    pub fn cancel_requested(&self) -> bool {
+        self.cancellations.try_recv().is_ok()
+    }
+    pub fn progress(&self, message: String) {
+        self.send(Update::Progress(message));
     }
     pub fn show(&self, message: String) {
         self.send(Update::Show(message));
@@ -77,7 +87,7 @@ fn wide(text: &str) -> Vec<u16> {
 unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if message == WM_COMMAND
-            && (1..=7).contains(&(w & 0xffff))
+            && (1..=8).contains(&(w & 0xffff))
             && (w >> 16) & 0xffff == BN_CLICKED as usize
         {
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (w & 0xffff) as isize);
@@ -93,6 +103,7 @@ unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPAR
 fn run(
     updates: Receiver<Update>,
     requests: Sender<NativeLoginConfig>,
+    cancel: mpsc::SyncSender<()>,
     ready: &mpsc::SyncSender<Result<(), String>>,
 ) -> Result<(), String> {
     crate::crash_report::review_pending();
@@ -161,13 +172,13 @@ fn run(
             [15, 315, 200, 32],
             WS_TABSTOP | BS_DEFPUSHBUTTON as u32,
         );
-        for (id, label, x) in [(6, "About", 235), (7, "Survey", 395)] {
+        for (id, label, x) in [(6, "About", 235), (7, "Survey", 395), (8, "Cancel", 555)] {
             controls.push(control(
                 hwnd,
                 "BUTTON",
                 label,
                 id,
-                [x, 315, 140, 32],
+                [x, 315, if id == 8 { 90 } else { 140 }, 32],
                 WS_TABSTOP,
             ));
         }
@@ -220,6 +231,7 @@ fn run(
                 }
             }
             match updates.try_recv() {
+                Ok(Update::Progress(message)) => form.feedback(message),
                 Ok(Update::Show(message)) => {
                     form.feedback(message);
                     ShowWindow(hwnd, SW_SHOW);
@@ -235,7 +247,12 @@ fn run(
             let action = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
             if action >= 2 {
                 SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-                if action == 6 {
+                if action == 8 {
+                    if form.pending() {
+                        let _ = cancel.try_send(());
+                        form.feedback("Cancelling sign-in…".into());
+                    }
+                } else if action == 6 {
                     crate::about::show_information(&crate::about::about_text());
                 } else if action == 7 {
                     crate::about::run_survey();

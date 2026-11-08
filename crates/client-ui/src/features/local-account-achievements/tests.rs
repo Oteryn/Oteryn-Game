@@ -175,3 +175,25 @@ fn changing_account_pages_never_replace_a_confirmed_full_list() {
     assert!(!p.catalog.collecting);
     assert_eq!(catalog_next_request(&mut p), None);
 }
+
+#[test]
+fn achievement_browser_search_trims_input_and_finds_confirmed_keys() {
+    use oteryn_client_runtime::account_achievements::AccountAchievementRow;
+    let mut p = AchievementsPanel::default();
+    p.catalog.rows.push(AccountAchievementRow {
+        key: "oteryn:achievement/hunter".into(),
+        name: "Hunter".into(),
+        description: "Hunt creatures".into(),
+        grade: 1,
+        points: 5,
+        earned_at: 100,
+        secret: true,
+    });
+    p.catalog.search = " OTERYN:ACHIEVEMENT/HUNTER ".into();
+    assert_eq!(catalog_rows(&p.catalog).len(), 1);
+    p.catalog.filter = AchievementFilter::Regular;
+    assert!(catalog_rows(&p.catalog).is_empty());
+    p.catalog.filter = AchievementFilter::Secret;
+    p.catalog.search = " HUNT CREATURES ".into();
+    assert_eq!(catalog_rows(&p.catalog).len(), 1);
+}

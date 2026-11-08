@@ -37,12 +37,12 @@ fn run(weak: WeakMailbox) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Player Guide and notices").as_ptr(),
+            wide("Compendium — Guide, updates and help").as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            440,
-            520,
+            840,
+            620,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -53,7 +53,17 @@ fn run(weak: WeakMailbox) {
             return;
         }
         let mut tabs = Vec::new();
-        for (index, label) in ["Notices", "Guide", "Recommendations"].iter().enumerate() {
+        for (index, label) in [
+            "Notices",
+            "Guide",
+            "Recommendations",
+            "Updates",
+            "Features",
+            "Help",
+        ]
+        .iter()
+        .enumerate()
+        {
             tabs.push(CreateWindowExW(
                 0,
                 wide("BUTTON").as_ptr(),
@@ -81,6 +91,13 @@ fn run(weak: WeakMailbox) {
         SendMessageW(tabs[0], BM_SETCHECK, 1, 0);
         let mut guide = oteryn_client_ui::guide::Guide::default();
         let mut held_tab = usize::MAX;
+        let updates = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(std::path::Path::to_owned))
+            .map(|path| crate::bulletin::Browser::load(&path))
+            .transpose()
+            .map(|browser| browser.unwrap_or_default().news())
+            .unwrap_or_else(|error| format!("Updates unavailable: {error}"));
         let list = CreateWindowExW(
             0,
             wide("EDIT").as_ptr(),
@@ -93,13 +110,18 @@ fn run(weak: WeakMailbox) {
                 | ES_READONLY as u32,
             10,
             50,
-            400,
-            410,
+            800,
+            510,
             hwnd,
             101 as _,
             null_mut(),
             null(),
         );
+        if list.is_null() {
+            DestroyWindow(hwnd);
+            close(&weak);
+            return;
+        }
         let mut held: Option<NoticePanel> = None;
         let mut msg: MSG = std::mem::zeroed();
         loop {
@@ -123,12 +145,19 @@ fn run(weak: WeakMailbox) {
                 let text = if tab == 0 {
                     panel_text(&mailbox.notices)
                 } else {
-                    guide.select(if tab == 1 {
-                        oteryn_client_ui::guide::Page::Basics
-                    } else {
-                        oteryn_client_ui::guide::Page::Recommendations
+                    use oteryn_client_ui::guide::Page;
+                    guide.select(match tab {
+                        1 => Page::Basics,
+                        2 => Page::Recommendations,
+                        3 => Page::Updates,
+                        4 => Page::Features,
+                        _ => Page::Help,
                     });
-                    guide.text()
+                    if tab == 3 {
+                        format!("Updates\r\n\r\n{updates}")
+                    } else {
+                        guide.text()
+                    }
                 };
                 SetWindowTextW(list, wide(&text).as_ptr());
                 held_tab = tab;
