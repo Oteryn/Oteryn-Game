@@ -223,7 +223,7 @@ pub(super) fn element(kind: crate::player_lethal::PlayerHitKind) -> DamageElemen
         K::Death => DamageElement::Death,
         K::LifeDrain => DamageElement::LifeDrain,
         K::ManaDrain => DamageElement::ManaDrain,
-        K::Mitigated => DamageElement::Untyped,
+        K::Mitigated | K::Undefined => DamageElement::Untyped,
     }
 }
 

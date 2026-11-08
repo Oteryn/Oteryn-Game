@@ -14,9 +14,10 @@ impl Outbox {
 impl Outbox {
     pub(in crate::play) fn browse_field_views(&self, payload: &[u8]) {
         let mut m = lock(&self.0);
-        match oteryn_session::container_tree::decode_container_views_for(
+        match oteryn_session::container_tree::decode_container_views_with_house_capacity(
             payload,
             m.browse_field.selected,
+            m.containers.house_capacity_v2,
         ) {
             Ok(views) => replace_views(&mut m.browse_field, views),
             Err(_) => m.browse_field.feedback = Some("Invalid container view".into()),

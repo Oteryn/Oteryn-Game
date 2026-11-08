@@ -718,7 +718,19 @@ pub fn stage_typed_hit_in_world(
     let magnitude = state
         .after_player_block(magnitude, kind, bonus.shielding, now)
         .ok_or(SpellCastDisposition::Rejected)?;
-    stage_preprocessed_player_hit(state, magnitude, now)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        true,
+        true,
+        None,
+        if kind == crate::player_lethal::PlayerHitKind::Undefined {
+            HitDelivery::Undefined
+        } else {
+            HitDelivery::Ordinary
+        },
+    )
 }
 
 /// Same source block/final pipeline, at the destination already qualified by the
@@ -744,7 +756,19 @@ pub fn stage_typed_hit_at_position(
     let magnitude = state
         .after_player_block(magnitude, kind, bonus.shielding, now)
         .ok_or(SpellCastDisposition::Rejected)?;
-    stage_preprocessed_player_hit(state, magnitude, now)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        true,
+        true,
+        None,
+        if kind == crate::player_lethal::PlayerHitKind::Undefined {
+            HitDelivery::Undefined
+        } else {
+            HitDelivery::Ordinary
+        },
+    )
 }
 
 /// Numerical final HP stage for an independently qualified preprocessed hit. Dispatch
@@ -760,7 +784,15 @@ pub fn stage_preprocessed_player_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, true, true, None, false)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        true,
+        true,
+        None,
+        HitDelivery::Ordinary,
+    )
 }
 
 pub(crate) fn stage_preprocessed_player_components(
@@ -785,7 +817,7 @@ pub(crate) fn stage_preprocessed_player_components(
         true,
         true,
         Some((primary, secondary)),
-        false,
+        HitDelivery::Ordinary,
     )
 }
 
@@ -821,7 +853,15 @@ fn stage_incoming_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, true, false, None, false)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        true,
+        false,
+        None,
+        HitDelivery::Ordinary,
+    )
 }
 
 /// CONDITIONS-0 §3.5: an `agony` tick skips the whole incoming mitigation pipeline (damage
@@ -838,7 +878,22 @@ pub fn stage_agony_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, false, false, None, false)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        false,
+        false,
+        None,
+        HitDelivery::Ordinary,
+    )
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum HitDelivery {
+    Ordinary,
+    DirectHealth,
+    Undefined,
 }
 
 fn stage_hit(
@@ -848,7 +903,7 @@ fn stage_hit(
     mitigated: bool,
     preprocessed: bool,
     components: Option<(u32, u32)>,
-    direct_health: bool,
+    delivery: HitDelivery,
 ) -> Result<
     (
         PlayerSpellState,
@@ -865,6 +920,7 @@ fn stage_hit(
         return rejected();
     }
     let mut next = state.clone();
+    let direct_health = delivery == HitDelivery::DirectHealth;
     let mut remaining = magnitude;
     if mitigated
         && !preprocessed
@@ -906,7 +962,10 @@ fn stage_hit(
     }
     // Crystal src/game/game.cpp:8004-8066 skips origin-based reductions for Lua addHealth,
     // but :8142-8155 and :8290 retain mana shields and the existing lethal-health owner.
-    if mitigated || direct_health {
+    // Crystal 201189f src/game/game.cpp:8142 excludes Undefined only from mana
+    // shield, while creature.cpp:842-845 retains baseline mitigation and the
+    // normal HP owner below retains reductions, Gift and the lethal lifecycle.
+    if (mitigated || direct_health) && delivery != HitDelivery::Undefined {
         let capacity = next
             .conditions
             .mana_shield_at(now)
@@ -1365,7 +1424,10 @@ mod tests {
         .unwrap();
         assert_eq!((state.health, state.mana), (120, 107));
         tick(&mut state, 10000, TickFacts::default()).unwrap();
-        assert_eq!((state.health, state.mana), (140, 121));
+        // Crystal201189f src/creatures/combat/condition.cpp:1348-1356,1385-1391:
+        // leaving PZ permits one pulse and resets each accumulator to zero;
+        // suppressed mana time never grants multiple retrospective pulses.
+        assert_eq!((state.health, state.mana), (140, 114));
         assert!(state.conditions.instances().is_empty());
         let revision = state.revision;
         clear_on_lifecycle(&mut state);
