@@ -140,11 +140,56 @@ fn m01b_asura_native_entry_requires_current_premium_and_replays() -> TestResult 
     result
 }
 
+#[test]
+fn m01b_alawar_native_approach_credits_once_without_replacing_portal() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result =
+        super::kill_reward_e2e::scenario_thread::run("m01b-alawar-source-approach", || {
+            super::quest_world_callbacks::scenario(
+                "m01b/alawar-s-vault/s1/entry",
+                Position {
+                    x: 32187,
+                    y: 31623,
+                    floor: -8,
+                },
+                false,
+            )
+        });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED m01b_alawar_approach duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if name == "m01b/alawar-s-vault/s1/entry" {
+        return native_crop(
+            native,
+            NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z08-x125-y123.b3"
+                )),
+                region: (8, 125, 123),
+                bounds: (32186, 31623, 32190, 31625),
+                start: (32188, 31623),
+                expected: vec![ExpectedTile {
+                    position: (32187, 31623),
+                    ids: vec![409],
+                    counted_entry: None,
+                }],
+            },
+        );
+    }
     if name == "m01b/asura-palace/s1/entry" {
         return native_crop(
             native,
@@ -219,9 +264,12 @@ pub(super) async fn exercise(
     if callback.admission.as_ref().is_some_and(|a| a.premium) {
         return exercise_premium(owner, admitted, h, callback).await;
     }
+    let alawar = callback.key.ends_with("m01b/alawar-s-vault/s1/entry");
     let geomancer = callback.key.ends_with("m01b/geomancer/s1/entry");
-    assert!(geomancer || callback.key.ends_with(ENTRY));
-    let counter = if geomancer {
+    assert!(alawar || geomancer || callback.key.ends_with(ENTRY));
+    let counter = if alawar {
+        "oteryn:quest-progress/chosen-source/alawar_s_vault_quest/s1"
+    } else if geomancer {
         "oteryn:quest-progress/chosen-source/geomancer_quest/s1"
     } else {
         COUNTER
@@ -256,12 +304,12 @@ pub(super) async fn exercise(
         StepDirection::East,
         StepDirection::West,
     ];
-    let moves: &[StepDirection] = if geomancer {
+    let moves: &[StepDirection] = if alawar || geomancer {
         &geomancer_moves
     } else {
         &longsword_moves
     };
-    let first_entry = if geomancer { 0 } else { 2 };
+    let first_entry = if alawar || geomancer { 0 } else { 2 };
     for (index, &direction) in moves.iter().enumerate() {
         owner.clock_origin = owner
             .clock_origin

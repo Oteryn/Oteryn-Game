@@ -17,7 +17,8 @@
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
-      "Asura Palace Quest"
+      "Asura Palace Quest",
+      "Alawar's Vault Quest"
     ]
   },
   "validation": {
@@ -36,16 +37,16 @@
     "post_merge_postgres": "No further merges permitted;all4cases executed on current mechanic Rust/data",
     "postgres_asura": "PASS61.343279739s:missing provider no credit,Current Premium fresh entry once,old replay cannot retro-credit",
     "focused_authoring_tests": "7passed2.975s",
-    "own_files_fmt": "PASS explicit rustfmt check",
+    "own_files_fmt": "PASS explicit rustfmt check with environment sourced",
     "merge_policy": "0326 merge ABORTED;no qmech/main merges",
     "stage_planner": "RED2missing-helper errors -> GREEN9Python tests2.865s; qengine_access --check PASS;active callback JSON unchanged",
     "postgres_total": "4passed,0failed,190.89s;Rust/data sourceff447b707",
     "map_approach_resolver": "RED1missing-source-mode -> GREEN11Python tests3.635s;unchanged active JSON checkPASS",
     "alawar_profile": "RED missing binding0.02s -> GREEN5Rust tests0.04s",
     "alawar_authoring": "11passed3.689s",
-    "alawar_postgres": "PENDING: focused native approach case compiling;no qualification claim"
+    "alawar_postgres": "PASS m01b_alawar_native_approach_credits_once_without_replacing_portal61.222120123s;real native STEP,once,replay,revisit"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish Alawar native PG proof;continue42routes/52stages. Four wired stages,three PG-proven;M01b PARTIAL."
+  "continuation": "Continue42routes/52stages. Four wired stages PG-proven;M01b remains PARTIAL."
 }

@@ -86,3 +86,5 @@ EXPLORE stages. Next activate Alawar marker/point and add native move case.
 No qmech/main merges;continue43routes/53stages after these3.
 
 Alawar approach activated as fourth stage without modifying its portal. RED missing binding0.02s -> GREEN5Rust profile tests0.04s;11Python tests3.689s. Native Alawar PG case remains compiling and is not claimed passed. Continue proof,then42routes/52stages. No merges.
+
+Alawar native PG GREEN61.222120123s,1passed0failed:actual STEP credits once,immediate replay and fresh revisit do not duplicate. New PG case is published with this proof;4wired stages now PG-proven. Continue42routes/52stages,no whole-quest completion claim.
