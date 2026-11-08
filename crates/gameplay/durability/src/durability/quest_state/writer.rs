@@ -332,6 +332,9 @@ impl DurabilityRoot {
         let reward_callback = reward_callbacks
             .into_iter()
             .find(|c| c.key == request.transition_key);
+        if reward_callback.as_ref().and_then(|c| c.map_mark.as_ref()).is_some_and(|mark| !mark.valid()) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         // Ownership survives a caller removing or renaming a bound effect.
         if let Some(transition) = catalogue.transition(&request.transition_key) {
             oteryn_gameplay_quests::quest::admission_binding::validate(
@@ -1195,6 +1198,9 @@ impl DurabilityRoot {
                         grizzly_boss::earn(&mut tx, fence, &request, context).await?;
                     }
                     if timer_recipe.is_some() { server_timer::audit(&mut tx,&request).await?; }
+                    if let Some(callback) = &reward_callback {
+                        map_marks::record(&mut tx, fence, callback, committed_revision).await?;
+                    }
                     let committed = CommittedQuestTransition {
                         character_id: character,
                         cause: request.cause,

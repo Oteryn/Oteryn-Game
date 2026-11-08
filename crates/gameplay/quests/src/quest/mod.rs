@@ -38,6 +38,7 @@ pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
+pub mod map_marks;
 pub mod monk_shrines;
 pub mod native_kills;
 pub mod native_rules;
