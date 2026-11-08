@@ -255,6 +255,112 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/qm03/anniversary",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32431,
+          "y": 32165,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25096,
+        "native": {
+          "position": {
+            "x": 32431,
+            "y": 32165,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25096
+        }
+      },
+      "admission": {
+        "regular_blessings": true,
+        "promotion": true,
+        "premium": true
+      },
+      "minimum_level": 20,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33453,
+        "y": 31030,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/qm03/pits",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32791,
+          "y": 32331,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 354,
+        "native": {
+          "position": {
+            "x": 32791,
+            "y": 32331,
+            "floor": -10
+          },
+          "ordinal": 0,
+          "appearance": 354
+        }
+      },
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 80,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/the_pits_of_inferno_quest/s1",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:1-4",
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_CHOSEN_ENTRANCE:retained-source-destination"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/thais-lighthouse-plate",
       "quest": "oteryn:quest.thais_lighthouse_quest",
       "trigger": "step_in",

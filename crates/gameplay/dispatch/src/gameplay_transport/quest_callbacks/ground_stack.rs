@@ -1,11 +1,17 @@
 //! Read the same Channel overlay used by native movement and pickup.
 use super::*;
+use crate::content::item_ref::ItemDefinitionIndex;
 use crate::map::{
     overlay::{AddedItem, ChannelOverlay},
     view::EntrySource,
 };
-use oteryn_gameplay_quests::quest::ground_stack::GroundStackEntry as NativeGroundStackFact;
-use oteryn_gameplay_quests::quest::world_callbacks::{GroundStackEntry, ground_stack_matches_at};
+use oteryn_gameplay_quests::quest::{
+    ground_stack::{
+        GroundStackEntry as SnapshotEntry, GroundStackRequirement, GroundStackSnapshot,
+        StackItemRequirement, match_readset,
+    },
+    world_callbacks::{Position, WorldRequirement},
+};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn ground_requirements_match(
@@ -14,11 +20,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         callback: &Callback,
     ) -> bool {
-        let mut required = callback
+        if !callback
             .world_requirements
             .iter()
-            .filter(|r| r.ground_stack.is_some());
-        if required.clone().next().is_none() {
+            .any(|r| r.ground_stack.is_some())
+        {
             return true;
         }
         let Some(ground) = self
@@ -28,33 +34,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return false;
         };
-        required.all(|r| {
-            r.ground_stack.as_ref().is_some_and(|stack| {
-                matches(
-                    ground.overlay(),
-                    &map.facts,
-                    tile(r.position),
-                    stack,
-                    |id| ground.ground_ordinal(id),
-                )
-            })
-        })
+        let Some(index) =
+            super::super::item_ref_admission::pinned_index(runtime, self.active_generation)
+        else {
+            return false;
+        };
+        requirements_match(
+            ground.overlay(),
+            &map.facts,
+            &callback.world_requirements,
+            index,
+            &|id| ground.ground_ordinal(id),
+        )
     }
 }
 
-pub(super) fn matches(
+fn requirements_match(
+    overlay: &ChannelOverlay,
+    facts: &impl MapFacts,
+    requirements: &[WorldRequirement],
+    index: &ItemDefinitionIndex,
+    ordinal: &impl Fn(&[u8; 16]) -> Option<u64>,
+) -> bool {
+    let mut required = Vec::new();
+    let mut observed = Vec::new();
+    for requirement in requirements {
+        let Some(stack) = &requirement.ground_stack else {
+            continue;
+        };
+        let Some(snapshot) = snapshot(overlay, facts, tile(requirement.position), ordinal) else {
+            return false;
+        };
+        let mut items = Vec::with_capacity(stack.len());
+        for item in stack {
+            let Some(revision) = index.revision(&item.item) else {
+                return false;
+            };
+            items.push(StackItemRequirement {
+                item: item.item.clone(),
+                revision: revision.into(),
+                quantity: item.count,
+            });
+        }
+        required.push(GroundStackRequirement {
+            position: requirement.position,
+            items,
+        });
+        observed.push(snapshot);
+    }
+    required.is_empty() || matches!(match_readset(&required, &observed), Ok(Some(_)))
+}
+
+fn snapshot(
     overlay: &ChannelOverlay,
     facts: &impl MapFacts,
     pos: TilePos,
-    required: &[GroundStackEntry],
-    ordinal: impl Fn(&[u8; 16]) -> Option<u64>,
-) -> bool {
-    // Read base roots separately: BundleFacts intentionally cannot reconstruct
-    // portable Item facts from an appearance. Ground records below already carry
-    // their canonical definitions from the custody owner.
-    let Some(view) = overlay.tile(pos) else {
-        return false;
-    };
+    ordinal: &impl Fn(&[u8; 16]) -> Option<u64>,
+) -> Option<GroundStackSnapshot> {
+    // Base roots are distinct from portable custody. A movable base root or a
+    // volatile overlay object cannot stand in for a durable Item instance.
+    let view = overlay.tile(pos)?;
     let mut base = Vec::new();
     if facts.house_tile(pos)
         || crate::map::view::compose_into(overlay.base(), None, facts, pos, &mut base).is_err()
@@ -65,30 +104,74 @@ pub(super) fn matches(
             _ => true,
         })
     {
-        return false;
+        return None;
     }
-    ground_stack_matches_at(
-        Position {
+    let mut entries = Vec::new();
+    for entry in view.added() {
+        let AddedItem::Ground(ground) = entry.item() else {
+            return None;
+        };
+        if ground.definition.family != "Item"
+            || ground.world_id != overlay.world_id()
+            || ground.runtime_scope != overlay.runtime_scope()
+            || ground.item_instance_id == [0; 16]
+        {
+            return None;
+        }
+        entries.push(SnapshotEntry {
+            instance: ground.item_instance_id,
+            item: ground.definition.production_key.clone(),
+            revision: ground.definition.revision_ref.clone(),
+            quantity: ground.quantity,
+            // Preserve the durable append ordinal retained by the custody owner.
+            ordinal: ordinal(&ground.item_instance_id)?,
+        });
+    }
+    Some(GroundStackSnapshot {
+        position: Position {
             x: pos.x,
             y: pos.y,
             floor: pos.floor,
         },
-        required,
-        view.added().iter().map(|entry| {
-            let AddedItem::Ground(ground) = entry.item() else {
-                return None;
-            };
-            (ground.definition.family == "Item"
-                && ground.world_id == overlay.world_id()
-                && ground.runtime_scope == overlay.runtime_scope())
-            .then_some(NativeGroundStackFact {
-                instance: ground.item_instance_id,
-                item: ground.definition.production_key.clone(),
-                revision: ground.definition.revision_ref.clone(),
-                quantity: ground.quantity,
-                ordinal: ordinal(&ground.item_instance_id)?,
-            })
-        }),
+        entries,
+    })
+}
+
+#[cfg(test)]
+fn matches(
+    overlay: &ChannelOverlay,
+    facts: &impl MapFacts,
+    pos: TilePos,
+    required: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
+) -> bool {
+    let mut records: Vec<_> = required
+        .iter()
+        .map(|item| [&*item.item, "definition-r1"])
+        .collect();
+    records.sort_unstable();
+    records.dedup();
+    let Ok(index) = ItemDefinitionIndex::decode(
+        &serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_ITEM_KEYS/v1", "records": records,
+        }))
+        .unwrap_or_default(),
+    ) else {
+        return false;
+    };
+    requirements_match(
+        overlay,
+        facts,
+        &[WorldRequirement {
+            position: Position {
+                x: pos.x,
+                y: pos.y,
+                floor: pos.floor,
+            },
+            appearance: 100,
+            ground_stack: Some(required.to_vec()),
+        }],
+        &index,
+        &|id| Some(u64::from(id[0])),
     )
 }
 
@@ -98,6 +181,7 @@ mod tests {
     use crate::durability::item_mint::{GroundItemInstance, GroundPlacement, TypedDefinitionRef};
     use crate::foundation::{ChannelId, WorldId};
     use crate::map::view::EntryFacts;
+    use oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry;
 
     struct Facts;
     impl MapFacts for Facts {
@@ -185,21 +269,17 @@ mod tests {
         };
         let crate_item = ground(3, "oteryn:item.crate");
         let amphora = ground(4, "oteryn:item.amphora");
-        assert!(!matches(&overlay, &Facts, pos, &required, |id| Some(
-            u64::from(id[0])
-        )));
+        assert!(!matches(&overlay, &Facts, pos, &required));
         overlay.add_ground(crate_item)?;
-        assert!(!matches(&overlay, &Facts, pos, &required, |id| Some(
-            u64::from(id[0])
-        )));
-        let amphora_entry = overlay.add_ground(amphora)?;
-        assert!(matches(&overlay, &Facts, pos, &required, |id| Some(
-            u64::from(id[0])
-        )));
+        assert!(!matches(&overlay, &Facts, pos, &required));
+        let amphora_entry = overlay.add_ground(amphora.clone())?;
+        assert!(matches(&overlay, &Facts, pos, &required));
         overlay.remove(pos, amphora_entry)?;
-        assert!(!matches(&overlay, &Facts, pos, &required, |id| Some(
-            u64::from(id[0])
-        )));
+        assert!(!matches(&overlay, &Facts, pos, &required));
+        let mut wrong_revision = amphora;
+        wrong_revision.definition.revision_ref = "definition-r2".into();
+        overlay.add_ground(wrong_revision)?;
+        assert!(!matches(&overlay, &Facts, pos, &required));
         Ok(())
     }
 }

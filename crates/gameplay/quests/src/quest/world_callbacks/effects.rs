@@ -43,6 +43,9 @@ pub struct CallbackEffects {
     pub item_reward_cycle: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
+    /// Source-authored public player MONSTER_SAY, emitted only after commit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub player_speech: Option<String>,
     pub transform: Option<u16>,
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -222,6 +225,15 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.player_speech.as_ref().is_some_and(|text| {
+        callback.actor_kind != ActorKind::Player
+            || text.is_empty()
+            || text.len() > 255
+            || text.trim() != text.as_str()
+            || text.chars().any(char::is_control)
+    }) {
+        return false;
+    }
     if effects.completes_quest
         && (!callback.requires_world_admission
             || callback.actor_kind != ActorKind::Player
@@ -479,4 +491,34 @@ pub(super) fn valid(callback: &Callback) -> bool {
         }
     }
     true
+}
+
+#[cfg(test)]
+mod speech_tests {
+    use super::*;
+
+    #[test]
+    fn qm46_public_speech_is_bounded_and_player_only() -> Result<(), String> {
+        let original = super::super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/children-grease")
+            .ok_or("grease callback")?;
+        assert!(valid(&original));
+        for text in [
+            String::new(),
+            "x".repeat(256),
+            " whitespace ".into(),
+            "tab\t".into(),
+            "line\nbreak".into(),
+            "nul\0".into(),
+        ] {
+            let mut callback = original.clone();
+            callback.effects.player_speech = Some(text);
+            assert!(!valid(&callback));
+        }
+        let mut monster = original;
+        monster.actor_kind = ActorKind::Monster;
+        assert!(!valid(&monster));
+        Ok(())
+    }
 }
