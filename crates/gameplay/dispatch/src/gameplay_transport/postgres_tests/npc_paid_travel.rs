@@ -25,7 +25,7 @@ fn npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals(
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "paid travel thread panicked")??;
     Ok(())
@@ -75,10 +75,24 @@ fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> Str
         .unwrap_or_default()
 }
 
-fn scenario() -> TestResult {
+pub(super) fn scenario_with_reward_callback() -> TestResult {
+    scenario(true)
+}
+
+fn scenario(reward_fixture: bool) -> TestResult {
     run(async |admin| {
         reset();
-        let h = Harness::create_with_admission_seed(admin, "npc_paid_travel", true, false).await?;
+        let h = Harness::create_with_admission_seed(
+            admin,
+            if reward_fixture {
+                "engnpc_paid_confirmation"
+            } else {
+                "npc_paid_travel"
+            },
+            true,
+            false,
+        )
+        .await?;
         eprintln!("POSTGRES_STARTED TRAVEL npc_paid_travel");
         prepare_current_session(&h).await?;
         let achievement_key = "oteryn:achievement/ship_s_kobold";
@@ -157,6 +171,55 @@ fn scenario() -> TestResult {
             Some(h.root.clone()),
         );
         let mut owner = dependencies.owner(&h, &authority);
+        if reward_fixture {
+            let source =
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?;
+            let mut callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+                .map_err(debug)?
+                .into_iter()
+                .find(|c| c.key == "oteryn:quest-reward/knight-sword")
+                .ok_or("registered reward fixture")?;
+            let transition = source
+                .catalogue()
+                .transition(&callback.key)
+                .ok_or("registered reward transition")?
+                .clone();
+            let tracks = transition
+                .effects
+                .iter()
+                .map(|effect| {
+                    source
+                        .catalogue()
+                        .track(&effect.track)
+                        .cloned()
+                        .ok_or("registered reward track")
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            // Bind only this reward; unrelated native NPC programmes keep the
+            // original travel fixture's inactive state throughout the route matrix.
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::QuestStateCatalogue::new(
+                    "content-1",
+                    tracks,
+                    vec![transition],
+                )
+                .map_err(debug)?,
+            ));
+            callback.npc = "oteryn:npc.captain_bluebear".into();
+            callback.topic = 0;
+            callback.next_topic = 0;
+            callback.keywords = vec!["yes".into()];
+            callback.carried_item = None;
+            callback.storage.clear();
+            callback.state_ops.clear();
+            callback.participants.clear();
+            callback.requires.clear();
+            owner
+                .states
+                .npc_conversations
+                .fixture_reward_callbacks(vec![callback])?;
+        }
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
         owner.premium_coordinator = Some(&coordinator);
@@ -250,8 +313,15 @@ fn scenario() -> TestResult {
                 generation: placed.generation,
             }
         };
+        if reward_fixture {
+            owner.refresh_quest_session(session, true).await;
+        }
         talk(&owner, &dependencies, npc, 1, "hi").await?;
         assert!(line(&talk(&owner, &dependencies, npc, 2, "venore").await?).contains("170 gold"));
+        if reward_fixture {
+            super::engnpc_paid_confirmation::assert_quote_scope(&mut owner, &dependencies, npc)
+                .await?;
+        }
         let refused = talk(&owner, &dependencies, npc, 3, "yes").await?;
         assert!(
             line(&refused).contains("don't have enough money"),

@@ -50,7 +50,7 @@ CHESTS = 'tools/content-schema/quest-authoring/samples/chests/claims.json'
 TOOL = 'tools/content-schema/quest-authoring/quest_state_lowering.py'
 SCHEMA = 'OTERYN_QUEST_STATE_LOWERING/v1'
 # QUESTSTATE0-RL-02 and -06, as `apps/game-server/src/quest/mod.rs`.
-MAX_EFFECTS = 8
+MAX_EFFECTS = 16
 MAX_KEY_BYTES = 128
 KEY = re.compile(r'^oteryn:[A-Za-z0-9._:/-]+$')
 SOURCE_TRACK = re.compile(r'^(canary|crystalserver):quest-progress/([A-Za-z0-9._:/-]+)$')
