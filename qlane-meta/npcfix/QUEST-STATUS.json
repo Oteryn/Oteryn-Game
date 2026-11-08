@@ -13003,5 +13003,25 @@
       "state": "RUNNING independently; no full-pass claim"
     },
     "own_postgres_status": "Prior de3 physical145.418s and Rashid110.597s green; bank326.026s red. Fixture now follows existing wire resume boundary, keeps exact replay and all money/audit assertions. Fresh PG pending after push."
+  },
+  "coordinator_1020_publication": {
+    "main": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+    "conflicts": 0,
+    "dropped": [
+      "GNOPS Member",
+      "Harlow (Vengoth)",
+      "Captain Waverider",
+      "Maris (Mistrock)",
+      "Ferryman Kamil (Meluna)",
+      "Junkar (Mines)"
+    ],
+    "reason": "Name-only canonical declarations change generated activation digest; mandatory whole node-boot prerequisites unavailable. All12 variants exited2: NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing. Preserve published272 qualified entries; no new qualification.",
+    "local_notes": [
+      "/tmp/npcfix-evidence/DROPPED-GNOPS.json",
+      "/tmp/npcfix-evidence/DROPPED-FIVE-UNPUBLISHED.patch",
+      "/tmp/npcfix-evidence/dropped-display-authoring"
+    ],
+    "command": "NODE_BOOT_PROFILE=sorcerer NODE_BOOT_SPELLS=1 bash tools/qualification/node_boot/run.sh",
+    "unit_runner": "All105 modules/1131 tests passed before dropping the unpublished slice; no runtime source change in publication."
   }
 }
