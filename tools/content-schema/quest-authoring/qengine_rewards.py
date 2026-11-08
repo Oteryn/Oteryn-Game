@@ -901,7 +901,7 @@ def build():
     generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
-            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
+            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'callbacks':callbacks,'tracks':declarations}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     # Preserve the source's complete contiguous 1..10001 supply-package table.
     random_path='data-global/scripts/actions/valuables/random_items.lua'
@@ -966,6 +966,14 @@ def build():
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
     reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,cosmetics.canonical)
+    return generated
+
+
+def materialized_outputs(source_outputs=None):
+    """Keep source validation scoped while publishing all shared owners."""
+    from qengine_shared_documents import compose
+    generated = dict(build() if source_outputs is None else source_outputs)
+    compose(ROOT, generated)
     return generated
 
 
@@ -1038,7 +1046,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args=parser.parse_args()
-    for path,raw in build().items():
+    for path,raw in materialized_outputs().items():
         target=ROOT/path
         if args.check:
             if not target.is_file() or target.read_bytes()!=raw:

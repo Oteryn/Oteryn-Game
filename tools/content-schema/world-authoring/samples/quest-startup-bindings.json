@@ -10,7 +10,7 @@
     },
     {
       "path": "data-global/startup/tables/teleport.lua",
-      "sha256": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e"
+      "sha256": "462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042"
     },
     {
       "path": "data-global/startup/tables/door_level.lua",
@@ -26,6 +26,54 @@
     }
   ],
   "bindings": [
+    {
+      "position": [
+        32006,
+        32395,
+        8
+      ],
+      "item": 8648,
+      "attribute": "unique",
+      "action": 35007,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 545
+    },
+    {
+      "position": [
+        32013,
+        32467,
+        8
+      ],
+      "item": 8649,
+      "attribute": "unique",
+      "action": 35005,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 535
+    },
+    {
+      "position": [
+        32076,
+        32457,
+        8
+      ],
+      "item": 8646,
+      "attribute": "unique",
+      "action": 35006,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 540
+    },
+    {
+      "position": [
+        32077,
+        32404,
+        8
+      ],
+      "item": 8647,
+      "attribute": "unique",
+      "action": 35008,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 550
+    },
     {
       "position": [
         32573,

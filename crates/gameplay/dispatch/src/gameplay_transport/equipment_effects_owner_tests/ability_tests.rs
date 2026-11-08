@@ -163,6 +163,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QUESTPC3-CALLBACK-CLOSURE", 28),
     // Exact source talismans22008/22009; independent of recipe qualification.
     ("QUESTPC3-TAINTED-TALISMANS", 2),
+    // Pinned appearance flags: immovable, Ground-only, nonblocking exit gems.
+    ("QUESTPC3-FIRST-DRAGON-EXITS", 4),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).

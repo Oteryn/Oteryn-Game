@@ -195,7 +195,7 @@ class QuestRewards(unittest.TestCase):
 
     def test_qengine_rewards_outputs_reproduce_and_validate(self):
         q.validate_callbacks(self.callbacks)
-        for path,raw in self.outputs.items():
+        for path,raw in q.materialized_outputs(self.outputs).items():
             self.assertEqual((q.ROOT/path).read_bytes(),raw,path)
 
     def test_quest_catalogue_pairs_both_sexes_and_explicit_addon_bits(self):

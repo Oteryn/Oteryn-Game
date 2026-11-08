@@ -44,7 +44,7 @@
   "item_authoring_counts": {
     "authoring": 700,
     "relation_sources": 880,
-    "taxonomy": 12252
+    "taxonomy": 12249
   },
   "legacy_blobs": {
     "declarations": "1539c94d007a965f7c013b486c88aca2b4443991",
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3766,
+          "record_count": 3770,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "9af662e55281f1c88933851f734db991bf8292789dd99c6c68b46d6c03055fdd"
+          "sha256": "dde79ef91a7f80e6a59245fa86239c61dd17e0bc5a3d1296e462b844bc883401"
         },
         {
           "creates_canonical_identities": false,

@@ -50,6 +50,8 @@ def claim_catalogue(root):
         if key in {
                 'oteryn:reward-claim.kv.madmageroom3',
                 'oteryn:reward-claim.kv.powerring2',
+                'oteryn:reward-claim.kv.silveramulet',
+                'oteryn:reward-claim.kv.stealhring1',
                 'oteryn:reward-claim.kv.timering3',
                 'oteryn:reward-claim.kv.trollcave1',
                 'oteryn:reward-claim.kv.weddingring1'}:
@@ -88,6 +90,12 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
     bindings = {}
     for claim in claims:
         provenance = claim['provenance']
+        # Authored canonical quests have no pilot alias. They remain in the
+        # catalogue, but cannot satisfy this compiler's exact legacy source refs.
+        if claim.get('quest', {}).get('key', '').startswith('oteryn:quest.'):
+            if not provenance.get('source_packet') or not provenance.get('source_sha256'):
+                raise ValueError('authored RewardClaim lacks source provenance')
+            continue
         source = (provenance['pilot_key'], provenance['pilot_revision'])
         if source in bindings:
             raise ValueError(f'duplicate RewardClaim source identity: {source}')

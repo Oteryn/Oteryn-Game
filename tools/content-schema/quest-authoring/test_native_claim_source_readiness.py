@@ -12,7 +12,7 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
         native = {r['definition']['identity']['key']: r['definition']
                   for path in index['shards'] for r in tree.read(root, path)['records']}
         source = {r['identity']['key']: r for r in tree.claim_catalogue(root)}
-        for suffix in ('timering3', 'trollcave1', 'weddingring1'):
+        for suffix in ('timering3', 'trollcave1', 'weddingring1', 'silveramulet', 'stealhring1'):
             key = 'oteryn:reward-claim.kv.' + suffix
             with self.subTest(claim=key):
                 self.assertEqual(native[key]['readiness'], 'ready')
@@ -32,6 +32,7 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
             'oteryn:reward-claim.kv.present_box', 'oteryn:reward-claim.kv.powerring2',
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',
             'oteryn:reward-claim.kv.weddingring1',
+            'oteryn:reward-claim.kv.silveramulet', 'oteryn:reward-claim.kv.stealhring1',
         })
 
 

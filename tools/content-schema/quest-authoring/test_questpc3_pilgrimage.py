@@ -41,7 +41,9 @@ class PilgrimageAuthoringTests(unittest.TestCase):
                      "the_fire_of_the_suns", "the_spark_of_the_phoenix"):
             self.assertIn("oteryn:service.blessing." + stem, keys)
         self.assertIn("oteryn:service.blessing.henricus", keys)
-        self.assertEqual(len(keys), 8)
+        self.assertEqual(len(keys), 10)
+        before = json.loads((authoring.ROOT / index['shards'][0]).read_text())['records']
+        self.assertTrue({r['declaration']['identity']['key'] for r in before} <= keys)
 
 
 if __name__ == "__main__":

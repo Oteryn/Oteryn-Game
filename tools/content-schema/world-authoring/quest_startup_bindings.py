@@ -21,6 +21,10 @@ SUMMARY = "tools/content-schema/world-authoring/samples/world-base-capture-v1.js
 SPECS = (
     ("tile.lua", "TileAction", 50022, "action"),
     ("teleport.lua", "TeleportAction", 50022, "action"),
+    ("teleport.lua", "TeleportUnique", 35005, "unique"),
+    ("teleport.lua", "TeleportUnique", 35006, "unique"),
+    ("teleport.lua", "TeleportUnique", 35007, "unique"),
+    ("teleport.lua", "TeleportUnique", 35008, "unique"),
     ("door_level.lua", "LevelDoorAction", 1070, "action"),
     ("lever.lua", "LeverUnique", 30034, "unique"),
 )
@@ -34,7 +38,9 @@ def capture(source):
     for filename, table, selector, attribute in SPECS:
         path = "data-global/startup/tables/" + filename
         raw = (source / path).read_bytes()
-        sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+        descriptor = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+        if descriptor not in sources:
+            sources.append(descriptor)
         fields = lua_tables.assignments(raw.decode(), {table})[table]["fields"]
         (field,) = [f for f in fields if f["key"] == selector]
         value = lua_tables.as_python(field["value"])

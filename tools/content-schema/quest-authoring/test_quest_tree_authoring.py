@@ -21,6 +21,18 @@ def source_claim():
 
 
 class QuestTreeTests(unittest.TestCase):
+    def test_authored_claim_never_substitutes_for_a_legacy_source_alias(self):
+        claim = source_claim()
+        claim['quest']['key'] = 'oteryn:quest.authored.example'
+        claim['provenance'] = {'source_packet': 'authoring/source.json',
+                               'source_sha256': 'a' * 64}
+        record = tool.build_records([source_quest()], [claim])[0]['definition']
+        self.assertEqual(record['claims'], [])
+        self.assertEqual(record['unresolved_claims'], source_quest()['claims'])
+        del claim['provenance']['source_sha256']
+        with self.assertRaisesRegex(ValueError, 'lacks source provenance'):
+            tool.build_records([source_quest()], [claim])
+
     def test_itemhold_receipt_refresh_rejects_a_changed_source_core(self):
         import amend_itemhold_source_receipt as amendment
         root = Path(__file__).resolve().parents[3]

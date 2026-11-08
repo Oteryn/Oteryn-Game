@@ -102,14 +102,14 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             },
             self.result["summary"]["implementation_state"],
         )
-        # ITEMHOLD-Q adds Power Ring's full-charge amulet to W15b's ready claims.
-        self.assertEqual(128, self.result["summary"]["reward_claim_ready_refs"])
-        self.assertEqual(132, self.result["summary"]["reward_claim_placements"])
+        # Merged Item admissions clear two further data holds (130 refs/134 placements).
+        self.assertEqual(130, self.result["summary"]["reward_claim_ready_refs"])
+        self.assertEqual(134, self.result["summary"]["reward_claim_placements"])
         self.assertEqual(
             {
-                "REWARD_CLAIM_DATA_PENDING": 10,
+                "REWARD_CLAIM_DATA_PENDING": 8,
                 "REWARD_CLAIM_IMPLEMENTATION_PENDING": 42,
-                "REWARD_CLAIM_USE_PENDING": 53 - enabled - verified,
+                "REWARD_CLAIM_USE_PENDING": 55 - enabled - verified,
                 "REWARD_CLAIM_USE_ENABLED": enabled,
                 "REWARD_CLAIM_USE_VERIFIED": verified,
             },

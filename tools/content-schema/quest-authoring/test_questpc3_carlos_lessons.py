@@ -29,7 +29,13 @@ class CarlosLessons(unittest.TestCase):
     def test_return_greetings_only_check_committed_progress(self):
         offers = authoring.documents()['content/quests/shared-reward-offers.json']['offers']
         rows = [row for row in offers if row['npc'] == authoring.NPC]
-        self.assertEqual(len(rows), 7)
+        self.assertEqual(len(rows), 8)
+        reminder = rows[-1]
+        self.assertEqual((reminder['topic'], reminder['next_topic']), (6, 6))
+        self.assertEqual(reminder['storage'], [authoring.storage(authoring.GREET, 6, 6, 6),
+                         authoring.storage(authoring.LOG, 6, 6, 6),
+                         authoring.storage(authoring.BASE + 'carlos_npc_trade_storage', 1, 1, 1)])
+        rows = rows[:-1]
         self.assertEqual([row['next_topic'] for row in rows], [1, 2, 3, 4, 5, 6, 0])
         for stage, row in zip([1, 2, 3, 4, 5, 6, 8], rows):
             self.assertEqual(row['storage'], [authoring.storage(authoring.GREET, stage, stage, stage)])

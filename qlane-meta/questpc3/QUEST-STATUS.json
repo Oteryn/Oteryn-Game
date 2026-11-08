@@ -10206,14 +10206,33 @@
     "next_owned_slice": {
       "quest": "The First Dragon Quest",
       "mechanisms": 4,
-      "phase": "READY_FOR_NATIVE_PG_RED_AFTER_MAIN_PUBLICATION",
+      "phase": "SOURCE_BINDINGS_IMPLEMENTED_UNIT_GREEN; final gates and PG GREEN pending",
       "action": "Restore exact TeleportUnique35005-35008 with existing startup overlay, then four unconditional STEP exits with arrivalcue11; no new engine needed",
       "source": "data-global/startup/tables/teleport.lua:535-553 blob2d798951e1d46b7198dacad57d792971d0045899 SHA256462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
       "placements": "All4 matching8646-8649 objects exist in native region-z08-x125-y126.b3 withoutUIDs",
       "test_draft": "/tmp/questpc3-first-dragon-real-exits.rs; uses real native B3 source/destination crops; not yet compiled",
       "startup_source": "/tmp/questpc3-first-dragon-startup-source;5files individually Git-blob verified from retained corpus",
-      "authoring_draft": "/tmp/questpc3_first_dragon_exits.py; add teleport_effect11, source startup facts; do not use unchanged",
-      "warning": "Old synthetic /tmp/questpc3_first_dragon_exits.rs has wrong unrelatedUID35009 negative and lacks source placement proof. Do not restore stash metadata or redo lostcoat/source nativebosses."
+      "authoring_draft": "DO NOT restore custom callback authoring draft; duplicate uncommitted implementation removed in favor of existing quests4/the_first_dragon.json definitions",
+      "warning": "Old synthetic /tmp/questpc3_first_dragon_exits.rs has wrong unrelatedUID35009 negative and lacks source placement proof. Do not restore stash metadata or redo lostcoat/source nativebosses.",
+      "reuse": "Existing canonical batch-four callbacks from main8f1d71547; selector restoration activates their generator. No duplicate PC3 callback definitions retained.",
+      "canonical_callbacks": [
+        "oteryn:quest-callback/first-dragon-exit-35005",
+        "oteryn:quest-callback/first-dragon-exit-35006",
+        "oteryn:quest-callback/first-dragon-exit-35007",
+        "oteryn:quest-callback/first-dragon-exit-35008"
+      ],
+      "feedback": "content/quests/native-counterparts.json adds exact source position/ordinal1/appearance and arrivalcue11; original source state preserved",
+      "red": {
+        "postgres": "18.6",
+        "duration_ms": 61901,
+        "completed": 0,
+        "expected": 8,
+        "ordinary_tile_stays": true,
+        "log": "/tmp/questpc3b-first-dragon-real-exits-pg-red-retry.log"
+      },
+      "startup_units": "3PASS2.573s; overlay11selectors, second application0changes; existing7retained and4newtargets tested",
+      "quest_units": "348/348PASS46.590s after duplicate-registration root fix; full first run271PASS77FAIL5.327s, no skipped tests",
+      "pipeline": "/tmp/questpc3b-first-dragon-final-generation.log; pin-refresh/pin-check/workspace/fmt/fulltargetClippy then own3PG last; source stable"
     }
   },
   "counts": {
@@ -10758,7 +10777,7 @@
     ],
     "note": "Other original R–S mechanisms belong to other split lanes. Do not reopen finished entries."
   },
-  "phase": "AUTHORING",
+  "phase": "Publish First Dragon four-exit qualified mechanism and merged-authoring reconciliation; whole retained scope2QUALIFIED/4IN_PROGRESS; no dropped quest",
   "quests": [
     {
       "canonical": "oteryn:quest.the_beginning_quest",
@@ -10780,7 +10799,41 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Retain qualified200kills, four sacrifices/two lava directions, three life sites and ordered Gelidrazah quiz/placement. Do not qualify the exit draft from synthetic geometry: admitted map lacks35005..35008 selectors; owned room lifecycle must supply native exits. Season, conditional treasure achievement, boss admission/cleanup and recurring rewards remain qengine2 requests. Whole quest IN_PROGRESS."
+      "next_actions": "Retain qualified200kills, four sacrifices/two lava directions, three life sites and ordered Gelidrazah quiz/placement. Do not qualify the exit draft from synthetic geometry: admitted map lacks35005..35008 selectors; owned room lifecycle must supply native exits. Season, conditional treasure achievement, boss admission/cleanup and recurring rewards remain qengine2 requests. Whole quest IN_PROGRESS.",
+      "exit_portal_slice": {
+        "state": "QUALIFIED_MECHANISM",
+        "uids": [
+          35005,
+          35006,
+          35007,
+          35008
+        ],
+        "native_item_ids": [
+          8649,
+          8646,
+          8648,
+          8647
+        ],
+        "callbacks": "Reused main canonical first-dragon-exit-35005 through35008; no duplicate callbacks",
+        "source": "Crystal9f5a72c data-global/startup/tables/teleport.lua:535-553 blob2d798951e1d46b7198dacad57d792971d0045899; movements_exit_teleport.lua:1-40 blob666108d36b2e8e9afadc60e6e85f35c40e02efea",
+        "physical_policy": "Pinned Canary47dfd51f items.xml:23169 and appearance2dfa943b: immovable, not pickupable, nonblocking, Ground-only",
+        "pg_red": "Real PostgreSQL18.6 baseline61901ms; UID-only64150ms still0/8 because STEP Blocked; no skipped PG counted",
+        "current_gates": "CI authoring checks PASS880.620s; all116 authoring unit modules PASS929.967s; content-tree equivalence PASS430.029s; materialized tree97/97 PASS; metadata and duplicate migrations PASS; final workspace-all-targets PASS15m24s; fmt PASS; changed Rust crates all-feature/all-target Clippy-Dwarnings PASS7m03s; scoped3 realPG PASS138.131s (life74033ms/exits79056ms/talismans63954ms). Larger selected nonPG crate-unit run still pending under PREPUSH-2 cadence exception; no failure reported at publication snapshot.",
+        "pg_green": {
+          "server": "PostgreSQL18.6",
+          "duration_ms": 79056,
+          "source_portals": 4,
+          "successful_landings": 8,
+          "ordinary_tile_stays": true,
+          "log": "/tmp/questpc3b-exit-priority-three-pg.log"
+        },
+        "crate_unit_progress_at_publication": {
+          "passed": 323,
+          "selected_total": 1995,
+          "state": "PENDING",
+          "log": "/tmp/questpc3b-exit-final-crate-units.log"
+        }
+      }
     },
     {
       "canonical": "oteryn:quest.the_tainted_soul",
@@ -11087,6 +11140,7 @@
       },
       "log": "/tmp/questpc3b-main3209-own-two-pg.log"
     },
-    "broad_units": "INCOMPLETE; interrupted118PASS/2SIGINT, then NoSpace before restart; pending CI under owner cadence exception"
+    "broad_units": "INCOMPLETE; interrupted118PASS/2SIGINT, then NoSpace before restart; pending CI under owner cadence exception",
+    "current_batch_parent": "27d2708c3a71858ab3838f5d28d9101db2932f24"
   }
 }

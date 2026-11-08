@@ -4,6 +4,20 @@ from pathlib import Path
 import unittest
 
 from quest_rollout_authoring import build
+from reward_claim_source_aliases import bindings
+
+
+class SourceAliasTests(unittest.TestCase):
+    def test_canonical_authored_claims_do_not_acquire_pilot_aliases(self):
+        authored = {'quest': {'key': 'oteryn:quest.authored.example'},
+                    'provenance': {'source_packet': 'packet.json', 'source_sha256': 'a' * 64}}
+        legacy = {'provenance': {'pilot_key': 'canary:claim/example', 'pilot_revision': 'r1'}}
+        self.assertEqual(bindings([authored, legacy]), {('canary:claim/example', 'r1'): legacy})
+        with self.assertRaisesRegex(ValueError, 'duplicate'):
+            bindings([legacy, legacy])
+        del authored['provenance']['source_sha256']
+        with self.assertRaisesRegex(ValueError, 'lacks exact'):
+            bindings([authored])
 
 
 class RolloutTests(unittest.TestCase):

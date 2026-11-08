@@ -11,6 +11,10 @@ import world_region_codec as codec
 
 ROOT = Path(__file__).resolve().parents[3]
 EXPECTED = (
+    ((32013, 32467, 8), 8649, "unique", 35005),
+    ((32076, 32457, 8), 8646, "unique", 35006),
+    ((32006, 32395, 8), 8648, "unique", 35007),
+    ((32077, 32404, 8), 8647, "unique", 35008),
     ((32966, 32626, 5), 4634, "action", 50022),
     ((32968, 32630, 7), 1720, "action", 50022),
     ((32968, 32629, 7), 1949, "action", 50022),
@@ -72,6 +76,7 @@ class QuestStartupBindingsTests(unittest.TestCase):
             "data-global/startup/tables/lever.lua": "LeverUnique = {[30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
             "data/libs/tables/doors.lua": "LevelDoorTable = {{closedDoor=5102,openDoor=5103}}",
         }
+        sources["data-global/startup/tables/teleport.lua"] += "TeleportUnique = { [35005]={itemId=8649,itemPos={x=32013,y=32467,z=8}}, [35006]={itemId=8646,itemPos={x=32076,y=32457,z=8}}, [35007]={itemId=8648,itemPos={x=32006,y=32395,z=8}}, [35008]={itemId=8647,itemPos={x=32077,y=32404,z=8}} }"
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             for name, text in sources.items():

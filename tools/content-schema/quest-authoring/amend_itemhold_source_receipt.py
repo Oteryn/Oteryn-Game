@@ -3,6 +3,7 @@ import argparse
 import copy
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import quest_tree_authoring as tree
@@ -37,12 +38,16 @@ def outputs(root):
         raise ValueError('wrong SOURCE approval path')
     guard.verify_file(root, receipt['approval'])
     digest = hashlib.sha256((root / COMPILER).read_bytes()).hexdigest()
+    # A merge may have advanced the compiler since the original amendment.
+    # Accept only the exact committed predecessor, then prove frozen cores below.
+    predecessor = hashlib.sha256(subprocess.check_output(
+        ['git', 'show', 'HEAD:' + COMPILER], cwd=root)).hexdigest()
     for category in ('immutable_inputs', 'compiler_inputs', 'proof_inputs'):
         if approval[category] != receipt[category]:
             raise ValueError('SOURCE approval inputs differ from receipt')
         for descriptor in approval[category]:
             if category == 'compiler_inputs' and descriptor['path'] == COMPILER:
-                if descriptor['sha256'] not in (PREVIOUS, digest):
+                if descriptor['sha256'] not in (PREVIOUS, predecessor, digest):
                     raise ValueError('unrecognized prior SOURCE compiler pin')
             else:
                 guard.verify_file(root, descriptor)
