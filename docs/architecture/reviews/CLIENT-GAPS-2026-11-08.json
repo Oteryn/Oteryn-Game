@@ -802,9 +802,10 @@
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Kill / Hunting Task Tracker",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak samodzielnego trackera; postęp pozostaje w Task Board.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/state/kills.rs:109 + analyser_hunting_task_tracker_reads_real_weekly_query_and_retains_refused_progress"
  },
  {
   "id": "T113",
