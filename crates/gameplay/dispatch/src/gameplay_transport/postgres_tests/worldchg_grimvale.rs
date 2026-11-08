@@ -597,6 +597,10 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     let key = "raid:edron.feroxa";
     let expected = 1;
     let start = std::time::Instant::now();
+    let version: String = sqlx::query_scalar("SHOW server_version_num")
+        .fetch_one(&harness.pool)
+        .await?;
+    eprintln!("QN5_M52_FORMS_POSTGRES_READY version={version}");
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -706,7 +710,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         1,
         1,
         "runtime-scope-assignment:1",
-        expected + 1,
+        expected + 2, // one transient source create-before-remove body
         pin,
     )
     .map_err(debug)?;
@@ -829,7 +833,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         revision,
         "replay cannot retransform source"
     );
-    let runtime = deps.runtime.lock().await;
+    let mut runtime = deps.runtime.lock().await;
     let statuses = runtime.raid_creatures(firing).map_err(debug)?;
     assert_eq!(statuses.len(), 1);
     assert!(statuses[0].alive);
@@ -846,6 +850,82 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
             .definition_key,
         "oteryn:creature.feroxa"
     );
+    let original = runtime.companion_snapshot(actor).map_err(debug)?;
+    assert_eq!(
+        (original.health, original.maximum_health),
+        (100_000, 100_000)
+    );
+    runtime
+        .commit_monster_lab_damage(actor, b"qn5-feroxa-above-half", 49_999)
+        .map_err(debug)?;
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest);
+    assert!(
+        runtime.contains_live_creature(actor),
+        "above half does not replace the body"
+    );
+    runtime
+        .commit_monster_lab_damage(actor, b"qn5-feroxa-at-half", 1)
+        .map_err(debug)?;
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest);
+    let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(second) =
+        runtime.raid_creatures(firing).map_err(debug)?[0].outcome
+    else {
+        return Err("Feroxa2 missing".into());
+    };
+    assert_ne!(second, actor);
+    let second_body = runtime.companion_snapshot(second).map_err(debug)?;
+    assert_eq!(
+        second_body.state.policy.definition_key,
+        "oteryn:creature.feroxa2"
+    );
+    assert_eq!(
+        (second_body.health, second_body.maximum_health),
+        (50_000, 50_000)
+    );
+    assert_eq!(second_body.position, original.position);
+    runtime
+        .commit_monster_lab_damage(second, b"qn5-feroxa-at-quarter", 25_000)
+        .map_err(debug)?;
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest);
+    let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(third) =
+        runtime.raid_creatures(firing).map_err(debug)?[0].outcome
+    else {
+        return Err("Feroxa3/4 missing".into());
+    };
+    assert_ne!(third, second);
+    let third_body = runtime.companion_snapshot(third).map_err(debug)?;
+    assert!(matches!(
+        third_body.state.policy.definition_key.as_str(),
+        "oteryn:creature.feroxa3" | "oteryn:creature.feroxa4"
+    ));
+    assert_eq!(
+        (third_body.health, third_body.maximum_health),
+        (130_000, 130_000)
+    );
+    runtime
+        .commit_monster_lab_damage(third, b"qn5-feroxa-intermediate-lethal", 130_000)
+        .map_err(debug)?;
+    assert!(crate::gameplay_transport::raid_live::continue_feroxa_death(
+        &mut runtime,
+        third
+    ));
+    let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(actor) =
+        runtime.raid_creatures(firing).map_err(debug)?[0].outcome
+    else {
+        return Err("Feroxa5 missing".into());
+    };
+    assert_ne!(actor, third);
+    let final_body = runtime.companion_snapshot(actor).map_err(debug)?;
+    assert_eq!(
+        final_body.state.policy.definition_key,
+        "oteryn:creature.feroxa5"
+    );
+    assert_eq!(
+        (final_body.health, final_body.maximum_health),
+        (150_000, 150_000)
+    );
+    assert_eq!(final_body.position, original.position);
+    assert!(runtime.raid_creatures(firing).map_err(debug)?[0].alive);
     drop(runtime);
     // Placement acknowledgement opens the durable runner's lifetime boundary.
     harness
@@ -916,7 +996,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         "PG execution duration must exceed1s"
     );
     eprintln!(
-        "WORLDCHG-Q PG EXECUTED: Grimvale native61s final wave, Feroxa actor, exact1949/22761 ingress, replay and close; elapsed={:?}",
+        "WORLDCHG-Q PG EXECUTED: Grimvale native61s final wave, source Feroxa form handoffs, exact1949/22761 ingress, replay and close; elapsed={:?}",
         start.elapsed()
     );
     Ok(())

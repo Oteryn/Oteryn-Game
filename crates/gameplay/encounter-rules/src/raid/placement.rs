@@ -89,6 +89,11 @@ impl RaidRandom {
             .map_err(|_| RaidError::Exhausted)
     }
 
+    /// Feroxa2's source think chooses uniformly between physical forms 3 and 4.
+    pub fn feroxa_form(&self) -> Result<u8, RaidError> {
+        u8::try_from(self.below("feroxa-form", 0, 2)? + 3).map_err(|_| RaidError::Exhausted)
+    }
+
     /// Crystal a_piece_of_cake_config.lua:394-400: each golem chooses
     /// its own city base uniformly, independently of the coordinate draws.
     pub fn area_choice(&self, wave: u16, entry: u16, count: usize) -> Result<usize, RaidError> {
@@ -402,6 +407,19 @@ mod tests {
             .ok_or(RaidError::InvalidState)?;
         assert!(available.contains(&first));
         assert_eq!(random.zone_position(0, 0, 0, &available)?, Some(first));
+        Ok(())
+    }
+    #[test]
+    fn qn5_feroxa_random_body_choice_is_inclusive_and_replay_stable() -> Result<(), RaidError> {
+        let mut seen = std::collections::BTreeSet::new();
+        for identity in 1..=64_u8 {
+            let firing = [identity; 16];
+            let first = RaidRandom::new([7; 32], firing).feroxa_form()?;
+            assert!((3..=4).contains(&first));
+            assert_eq!(first, RaidRandom::new([7; 32], firing).feroxa_form()?);
+            seen.insert(first);
+        }
+        assert_eq!(seen, [3, 4].into_iter().collect());
         Ok(())
     }
 }
