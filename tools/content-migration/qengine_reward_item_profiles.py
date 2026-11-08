@@ -33,6 +33,13 @@ CLIENT_SHA = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
 CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
 
 
+def physical_authoring(prior):
+    """Keep source identity metadata independent of later taxonomy enrichment."""
+    authoring = copy.deepcopy(prior['authoring'])
+    authoring.pop('taxonomy', None)
+    return authoring
+
+
 def capture(root=ROOT):
     xml_raw=(root/XML).read_bytes()
     client_raw=(root/CLIENT).read_bytes()
@@ -74,7 +81,7 @@ def capture(root=ROOT):
             refined=accepted.accepted_first(prior['semantics'],record['semantics'])
             record['semantics']=accepted.accepted_first(definition['semantics'],refined)
             record['attributes']=accepted.accepted_first(prior['attributes'],record['attributes'])
-            record['authoring']=copy.deepcopy(prior['authoring'])
+            record['authoring']=physical_authoring(prior)
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,IDS)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',

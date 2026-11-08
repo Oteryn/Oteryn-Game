@@ -1068,9 +1068,6 @@
           "family": "Item",
           "key": "candidate:item/3029",
           "revision": "spell-p2-r21"
-        },
-        "taxonomy": {
-          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -1233,9 +1230,6 @@
           "family": "Item",
           "key": "candidate:item/3035",
           "revision": "spell-p2-r21"
-        },
-        "taxonomy": {
-          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -1541,9 +1535,6 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3212",
           "revision": "definition-r1"
-        },
-        "taxonomy": {
-          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -3855,9 +3846,6 @@
           "family": "Item",
           "key": "candidate:item/3607",
           "revision": "spell-p2-r21"
-        },
-        "taxonomy": {
-          "primary": "Food"
         }
       },
       "semantics": {
@@ -6366,6 +6354,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 3,
+          "max_tier": 3
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/6101",

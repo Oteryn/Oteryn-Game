@@ -23,6 +23,18 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(joined['attributes'], new['attributes'])
         self.assertEqual(old, self.record())
 
+    def test_taxonomy_enrichment_does_not_change_physical_capture_or_native_owner(self):
+        prior = self.record()
+        enriched = copy.deepcopy(prior)
+        enriched['authoring']['taxonomy'] = {'category': 'quest', 'tags': ['material']}
+        snapshot = copy.deepcopy(enriched)
+        observed = copy.deepcopy(prior)
+        observed['authoring'] = q.physical_authoring(enriched)
+        self.assertEqual(observed['authoring'], q.physical_authoring(prior))
+        joined = q.reconcile(enriched, observed)
+        self.assertEqual(joined['authoring'], enriched['authoring'])
+        self.assertEqual(enriched, snapshot)
+
     def test_known_identity_custody_and_physical_conflicts_fail(self):
         old = self.record()
         old['semantics']['charges'] = {'state': 'NOT_APPLICABLE'}
