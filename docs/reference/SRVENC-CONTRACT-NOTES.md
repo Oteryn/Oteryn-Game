@@ -2058,3 +2058,27 @@ modules in543.359s. Native regeneration passed in295.367s. M03 schema tests:
 in105.548s. The subsequent workspace check exhausted disk before completion;
 inactive compiler caches were removed and it is rerun after the requested
 qmech merge. No test or assertion was weakened.
+
+## M51: source Barbarian Arena death and geometry rules (first slice)
+
+Read current qmech INDEX, CLAIMS and ASSIGN without merging: M51 is OPEN,
+claim none, and has no assigned lane. Claimed M51 locally for SRVENC; CLAIMS.md
+is unchanged. Rules cite Crystal201189f
+`data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua:2-38`
+and `data-global/lib/quests/svargrond_arena.lua:7-22,25-115,118-172,193-256,285-313`.
+The donor is retained in the source corpus and at
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/lib/quests/svargrond_arena.lua
+
+The pure rules preserve most-damage credit, tier-wide creature membership,
+pillar/portal consequences, the source's 600-second deadline and exact ten-pit
+geometry. The last pit's center/pillar differs by one Y tile from its reset
+rectangle; spectator occupancy has a different readset from reset. All30 source
+creatures were checked against canonical creature keys. Missing pillar still
+advances PitDoor but creates no portal, matching the donor's branch ordering.
+This API computes proposals only: it is not an ownership or write capability.
+
+RED: absent source arena rules module (E0432). GREEN:3 focused rules tests;
+clippy all targets passed in10.977s and format check passed. No SQL or content
+input changed, so this slice adds no PG case or generated content. No migration
+or registry number is allocated. Exclusive pit custody, production death/map
+composition and durable kick/reset remain; M51 is PARTIAL, not DONE.
