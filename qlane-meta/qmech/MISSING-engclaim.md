@@ -38,3 +38,14 @@ selected native placements and complete stage/completion compositions for the
 four recipes above. Full quests newly unblocked: **0**. No migrations or content
 inputs changed in this slice. The open placement/allocation packet question
 remains relevant before any complete quest qualification claim.
+
+## Next checked queue item: source NPC achievement participant
+
+| quest | missing mechanic (server or client) | evidence (the quest file and step, plus the missing hook/table/command) | blocks the quest fully or partly |
+|---|---|---|---|
+| The Order of the Stag | server: source NPC achievement participant with canonical-key binding | `content/dialogues/quest-rules/quest-batch3-c-the_order_of_the_stag.json`, Eldoran `news-reward`: GiveItem i52824, questline12→13 and Achievement `Bastard`. `npc_rules/item_exchange.rs` rejects Achievement and the source NPC durable writer has no achievement participant; the existing account grant owner can share its transaction. | partly: finale reward step; earlier encounter/beak bindings remain |
+| Kilmaresh | server: the same source NPC achievement participant and programme admission | `content/dialogues/quest-sources/kilmaresh.json`, Alyxo retained Lua197: `Sculptor Apprentice`, item31574 and Fourteen.Remains=1. Source entry remains unadmitted. The same planner/writer gap applies. | partly: Alyxo finale; full quest remains separate |
+
+The native achievement owner contract §2.1 preserves allocated keys independently
+of display names. The adapter must use an explicit canonical key binding; it must
+not derive an identity from the current display name during a transaction.
