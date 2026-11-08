@@ -75,6 +75,9 @@ pub struct QuestRewardFeePayment {
 #[serde(deny_unknown_fields)]
 pub struct QuestCarriedUse {
     pub source: [u8; 16],
+    /// Exact second carried instance; absent for legacy tools and peer actions.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recipe_target: Option<[u8; 16]>,
     pub intent: Vec<u8>,
 }
 
@@ -109,7 +112,9 @@ pub(crate) async fn apply(
     let super::super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
-    if callback.carried_item.is_some() != admission.carried_use.is_some()
+    if callback.carried_target.is_some() != admission.carried_use.and_then(|u| u.recipe_target).is_some()
+        || admission.carried_use.is_some_and(|u| u.recipe_target.is_some_and(|target| target == u.source || target == [0;16]))
+        || callback.carried_item.is_some() != admission.carried_use.is_some()
         || admission.carried_use.is_some_and(|use_| {
             use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
         })
@@ -390,7 +395,7 @@ pub(crate) async fn apply(
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(serde_json::to_value(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     Ok(true)
 }
 
