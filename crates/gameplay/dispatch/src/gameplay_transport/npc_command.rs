@@ -121,6 +121,8 @@ pub struct NpcConversations {
     #[cfg(test)]
     fixture_callback_rows:
         std::sync::OnceLock<Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>>,
+    #[cfg(test)]
+    fixture_offer_rows: std::sync::OnceLock<Vec<reward_callbacks::Offer>>,
 }
 
 #[cfg(test)]
