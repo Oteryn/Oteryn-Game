@@ -19,6 +19,10 @@ def generated(root):
     packet, _ = cake.read_canonical(root / cake.PACKET)
     declarations = cake.read_project_document(root, 'definitions/declarations.json')
     reference = cake.read_project_document(root, 'definitions/reference.json')
+    # Crystal data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua:79,118:
+    # replay main's hash-checked tree-first empty-loot admission before exact family equality.
+    from primal_reference_overlay import apply_reference
+    apply_reference(reference['records'], root)
     admitted = cake.qualify(rows, declarations, reference, packet,
         read('imports/crystalserver/bindings/items.json'))
     native = read('content/creatures/definitions/spell-native-profiles.json')['records']

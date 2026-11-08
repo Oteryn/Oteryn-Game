@@ -4,8 +4,8 @@
     "path": "content/creatures/definitions/spell-native-profiles.json",
     "record_count": 1871,
     "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
-    "sha256": "690a20220da429a002b60bbb585fa73de2ee840c997a80820514614611221475",
-    "source_definitions_sha256": "1e6198baa1001a5cb3fb075338dfe71933f955bb2598c4f8bdfcb0b05ecb9a1c"
+    "sha256": "5b0531550dc98b86ad6767d3622367501019147dc7a6e7275fa7ef25295fa13e",
+    "source_definitions_sha256": "97b6be5d2d4d1de6f263393c696709b1bc00f0f7b41750f369b4b84c3b4afbcf"
   },
   "qualification": "DONOR_ATTESTED_NOT_GLOBAL_VERIFIED",
   "records": {

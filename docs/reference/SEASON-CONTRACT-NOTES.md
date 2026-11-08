@@ -1362,3 +1362,32 @@ execution (one existing ignored case;1081.878s including build/lock wait).
 Final workspace all-target check passes370.559s and cargo fmt --all --check
 passes16.447s. Before publication origin/main was fetched again and remains
 f5b584ef1, already merged. No tests, pins or source-gap guards were weakened.
+
+## PR3039 S17 comparison and encounters-main merge (2026-11-08)
+
+The exact requested PostgreSQL test was run without changing its source:
+`s17b_native_observer_map_creatures_effects_and_public_speech_dispatch`.
+Main64d8bb8b8 passed43.045s test execution; branch ea351ee4b passed47.118s.
+The branch's same compiled test passed three additional isolated runs under
+main-build load:48.493s,48.264s,48.852s. Admin PG configuration was present.
+The CI Stop502 rejection was not reproduced; no S17 implementation or
+assertion changes are justified by this comparison.
+
+The owner then requested encounters main c68395ccc (#3034). It is merged
+without rewriting history. Derived conflicts are resolved by the normal
+world/native generators. Combined Creature and Loot shards are checkpointed
+because the native successor's immutable-input check requires their bytes
+in HEAD before it can compose profiles. No source gate or test was weakened.
+Quest binding evidence, completion matrix and talk-NPC packets are regenerated
+after the merged content, with talk-NPC candidates last. No PG test source,
+proof SHA or numeric allocation is changed by this lane's merge resolution.
+
+The seasonal inventory refresh now replays main's `primal_reference_overlay`
+before exact family membership checks. Crystal201189f
+`data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua:79,118`
+explicitly supplies corpse39530 and loot={}; the existing normal producer and
+content-tree validator verify the immutable capture before admitting that
+extra Loot identity. The combined source-qualified inventory regression was
+red before this composition fix and both positive and unqualified-extra-Loot
+rejection tests pass7.891s. Family equality and all existing source-gap pins
+remain strict. No new rule or inferred loot admission is introduced.
