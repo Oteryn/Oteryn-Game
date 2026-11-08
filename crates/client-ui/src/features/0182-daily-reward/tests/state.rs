@@ -110,3 +110,36 @@ fn claim_refusal_is_visible_and_not_inferred_as_state() {
         Some("Open the daily reward shrine within reach, then refresh")
     );
 }
+
+#[test]
+fn reward_calendar_records_only_server_confirmed_claims() {
+    let mut panel = DailyRewardPanel {
+        selected: true,
+        wall: Some(daily_reward::DailyRewardWall {
+            lane_day: 5,
+            streak: 12,
+            jokers: 1,
+            claimed: false,
+            claim_enabled: true,
+        }),
+        ..Default::default()
+    };
+    let before = panel_text(&panel);
+    assert!(before.contains("30-day calendar"));
+    assert!(before.contains("05: available"));
+    assert!(!before.contains("04: claimed"));
+    assert!(request(&mut panel, Intent::Claim).is_some());
+    assert!(apply_result(
+        &mut panel,
+        &DailyRewardResponse {
+            status: CommandStatus::Accepted,
+            reply: Some(DailyRewardReply::Result(daily_reward::DailyRewardResult {
+                disposition: 1,
+                transaction_id: None
+            }))
+        }
+    ));
+    let after = panel_text(&panel);
+    assert!(after.contains("05: claimed"));
+    assert!(after.contains("Confirmed this session: day 5, streak 12"));
+}
