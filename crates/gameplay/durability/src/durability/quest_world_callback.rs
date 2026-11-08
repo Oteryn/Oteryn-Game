@@ -70,6 +70,25 @@ pub(super) async fn consume_reward_inputs(
     if rows.len() > 500 {
         return Ok(false);
     }
+    if let Some(target_key) = &callback.carried_target {
+        let Some(use_) = carried_use else {
+            return Ok(false);
+        };
+        let Some(target) = use_.recipe_target else {
+            return Ok(false);
+        };
+        if target == use_.source {
+            return Ok(false);
+        }
+        let selected = sqlx::types::Uuid::from_bytes(target).to_string();
+        if !rows.iter().any(|row| {
+            row.try_get::<&str, _>("item").ok() == Some(selected.as_str())
+                && row.try_get::<&str, _>("definition_production_key").ok()
+                    == Some(target_key.as_str())
+        }) {
+            return Ok(false);
+        }
+    }
     if callback.exact_take {
         for input in &callback.take {
             let mut total = 0_i64;
@@ -106,17 +125,24 @@ pub(super) async fn consume_reward_inputs(
         .collect();
     let mut inputs = Vec::new();
     for row in rows {
-        if carried_use.is_some_and(|use_| {
-            row.try_get::<&str, _>("item").ok()
-                != Some(
-                    sqlx::types::Uuid::from_bytes(use_.source)
-                        .to_string()
-                        .as_str(),
-                )
-        }) {
-            continue;
-        }
         let key: String = row.try_get("definition_production_key")?;
+        if let Some(use_) = carried_use {
+            let selected = if callback.carried_item.as_deref() == Some(key.as_str()) {
+                Some(use_.source)
+            } else if callback.carried_target.as_deref() == Some(key.as_str()) {
+                use_.recipe_target
+            } else if callback.carried_target.is_some() {
+                None // Additional recipe ingredients use the ordinary bounded stack allocator.
+            } else {
+                continue;
+            };
+            if let Some(selected) = selected {
+                let selected = sqlx::types::Uuid::from_bytes(selected).to_string();
+                if row.try_get::<&str, _>("item")? != selected {
+                    continue;
+                }
+            }
+        }
         let Some(required) = remaining.get_mut(key.as_str()) else {
             continue;
         };
