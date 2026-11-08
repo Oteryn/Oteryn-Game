@@ -31,9 +31,9 @@
       "quests_reported": 42,
       "state": "IN_PROGRESS",
       "remaining": [
-        "source placement/native item coverage and real-dispatch PostgreSQL qualification of the existing resolver"
+        "postmerge source-placement/native-item coverage and focused PostgreSQL confirmation"
       ],
-      "reuse": "main bundle_chest.rs and content/world_reward_claims.rs; peer questpc7 implementation retained"
+      "reuse": "main c77d436d8 QREADY1+2: all11missing native admissions; retain existing generic resolver"
     },
     {
       "feature": "ground_item_mint_and_ground_use_with",

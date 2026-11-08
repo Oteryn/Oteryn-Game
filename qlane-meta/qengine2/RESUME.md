@@ -1762,3 +1762,18 @@ WIP checkpoint gates PASS on final test source: cargo check --workspace
 registry/item-audit tooling, pin-refresh and duplicate migration check. No
 production data/code changes in this checkpoint. Own expanded PG RED/GREEN and
 non-PG dispatch unit run remain pending under PREPUSH-2 cadence exception.
+
+Prepush main advanced to c77d436d8 (QREADY1+2). Merge/reuse its canonical
+admissions for the same11missing ready-claim Items; do not extend the QENGINE2
+producer with duplicates. Four generated conflicts took incoming data then
+native repo regeneration restores this branch's existing profile cohort. Keep
+incoming World placement/UID changes. Old checks/proof are premerge only; run
+postmerge workspace/fmt and own coverage/PG refresh. Main already has the native
+fix, so do not manufacture a Blood Herb RED by deleting its admissions. Reuse
+QREADY1+2's real-dispatch tests and refresh our integration coverage.
+Main reconciliation complete: native-only generation and equipment admission
+counts pass (3781total,67retained lane profiles); official pin-refresh preserves
+incoming World0aac4a46b1eef52983f86141295f59f9063296e20723ee8551108f5e80db8b58.
+No unresolved conflicts remain. Finish merge commit with owner identity/trailers,
+then check workspace/fmt/clippy and publish WIP under PREPUSH-2 before waiting
+for the focused5case/native-coverage and non-PG dispatch unit confirmation.

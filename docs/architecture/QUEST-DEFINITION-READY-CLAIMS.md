@@ -28,3 +28,8 @@ from the repository's route-less early return.
 This is qualification of reused engine behavior, so no artificial failing
 baseline or duplicate production implementation is introduced. W15b's broader
 cooldown, random, timed and written reward variants remain separate work.
+
+Main c77d436d8 supplies the eleven missing native item admissions through
+QREADY1+2. This lane reuses those owners and retains its existing profiles; it
+does not create a duplicate item producer. The premerge coverage failure for
+Blood Herb is retained as evidence of the original admission gap.

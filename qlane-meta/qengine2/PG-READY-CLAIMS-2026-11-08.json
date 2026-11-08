@@ -1,5 +1,5 @@
 {
-  "state": "WIP: native item admission repair pending",
+  "state": "WIP: reused main admissions; postmerge integration qualification pending",
   "base": "614d005067a2a645539303ee2a8bb875f21cde85",
   "baseline": {
     "passed": 1,
@@ -25,9 +25,8 @@
     4871
   ],
   "pending": [
-    "real-dispatch Blood Herb RED before native admissions",
-    "all59claim/60placement coverage GREEN",
-    "five-case focused dispatch confirmation",
+    "all59claim/60placement postmerge coverage GREEN",
+    "five-case focused dispatch PostgreSQL confirmation",
     "dispatch non-PostgreSQL unit suite"
   ],
   "production_changes": 0,
@@ -44,5 +43,21 @@
   "test_source_sha256": {
     "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/definition_ready_claims.rs": "603b61812614247cb43ae2fc3e1e73564312178f6121754906cdc7a20146be63",
     "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_callbacks.rs": "44ae30181fc466aa76eb73be3bebdf9374b864b2ef5662008b9d433a168ead3d"
+  },
+  "integration": {
+    "main": "c77d436d8",
+    "reused_lanes": [
+      "qready1",
+      "qready2"
+    ],
+    "missing_profiles_supplied_by_main": 11,
+    "native_profiles_after_regeneration": 3781,
+    "qengine_source_cohort_retained": 67,
+    "definition_ready_quests": 42,
+    "main_reward_use_verified_quests": 35,
+    "main_reward_use_pending_quests": 7,
+    "checks": "postmerge refresh pending; prior checks remain premerge evidence",
+    "regeneration": "PASS3781total native profiles;67retained lane profiles",
+    "world_pin": "0aac4a46b1eef52983f86141295f59f9063296e20723ee8551108f5e80db8b58"
   }
 }
