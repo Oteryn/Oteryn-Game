@@ -1,3 +1,5 @@
+#[path = "features/local-reference-preferences/frame_shell.rs"]
+mod frame_performance;
 #[path = "features/local-spell-action-bar/native.rs"]
 mod hud;
 mod input;
@@ -62,6 +64,7 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
+    frame_pacer: oteryn_client::play::FramePacer,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -102,6 +105,7 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            frame_pacer: oteryn_client::play::FramePacer::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -326,61 +330,15 @@ impl ApplicationHandler for Application {
                     self.fail(event_loop, ShellError::RendererResize);
                 }
             }
-            WindowEvent::RedrawRequested => {
-                let scene = self
-                    .play
-                    .as_ref()
-                    .map(|play| play.view.scene())
-                    .or(self.scene.as_ref());
-                if let (Some(renderer), Some(scene)) = (&mut self.renderer, scene)
-                    && redraw_eligible(Some(renderer.state().phase()))
-                {
-                    if self.atlas.as_ref() != Some(scene.atlas()) {
-                        renderer.set_atlas(scene.atlas().clone());
-                        self.atlas = Some(scene.atlas().clone());
-                    }
-                    if renderer
-                        .render_batches(self.generation, scene.tiles(), scene.sprites())
-                        .is_err()
-                    {
-                        self.fail(event_loop, ShellError::RendererRender);
-                    }
-                }
-            }
+            WindowEvent::Focused(focused) => self.frame_pacer.focus(focused),
+            WindowEvent::Occluded(occluded) => self.frame_pacer.occluded(occluded),
+            WindowEvent::RedrawRequested => frame_performance::redraw(self, event_loop),
             _ => {}
         }
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        let menu_events = self.settings.take_window_events(self.play.is_some());
-        if !menu_events.is_empty() && self.play.is_some() {
-            self.handle_input(event_loop, &menu_events);
-        }
-        self.poll_entry();
-        if let Some(play) = &mut self.play {
-            self.settings.restore(&mut play.view, &play.link);
-        }
-        if let Some(play) = &mut self.play
-            && let Err(end) = play.view.tick(&play.link)
-        {
-            match end {
-                PlayEnd::Ended(class) => self.return_to_login(class),
-                PlayEnd::LoggedOut => self.return_to_character_selection(),
-            }
-        }
-        if let (Some(play), Some(window)) = (&self.play, &self.window) {
-            play.link.item_drag_tick(&play.view, window);
-        }
-        self.update_hud();
-        if let Some(window) = &self.window
-            && redraw_eligible(
-                self.renderer
-                    .as_ref()
-                    .map(|renderer| renderer.state().phase()),
-            )
-        {
-            window.request_redraw();
-        }
+        frame_performance::wait(self, event_loop);
     }
 }
 

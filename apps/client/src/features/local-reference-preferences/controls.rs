@@ -1,5 +1,8 @@
 //! Construction and validation of the settings dialog controls.
 use super::*;
+#[path = "performance_controls.rs"]
+mod performance_controls;
+use performance_controls::PerformanceControls;
 #[path = "interface_controls.rs"]
 mod interface_controls;
 use interface_controls::InterfaceControls;
@@ -8,6 +11,7 @@ mod arc_controls;
 use arc_controls::ArcControls;
 
 pub(super) struct Controls {
+    pub(super) performance: PerformanceControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
     pub(super) profile_name: HWND,
@@ -45,6 +49,7 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let performance = PerformanceControls::new(hwnd)?;
             let arcs = ArcControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
@@ -307,6 +312,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                performance,
                 arcs,
                 interface,
                 profile_name,

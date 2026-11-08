@@ -10,6 +10,8 @@ use std::sync::Arc;
 
 #[path = "bindings.rs"]
 mod bindings;
+#[path = "performance.rs"]
+mod performance;
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "store.rs"]
@@ -17,6 +19,7 @@ mod store;
 #[path = "sync.rs"]
 mod sync;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
+pub use performance::{FramePacer, PerformanceSettings};
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
 
@@ -85,6 +88,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub performance: PerformanceSettings,
     #[serde(default = "default_arc_distance")]
     pub arc_distance: u16,
     #[serde(default = "default_arc_size")]
@@ -143,6 +148,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            performance: PerformanceSettings::default(),
             arc_distance: 8,
             arc_size: 3,
             hud_names: default_hud_names(),
@@ -175,6 +181,9 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        if !self.performance.valid() {
+            return Err(PreferenceError);
+        }
         self.validate_profiles()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {

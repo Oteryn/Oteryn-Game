@@ -19,6 +19,7 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.performance_reset();
     outbox.discovery_initialize(&session);
     outbox.properties_initialize(&session);
     outbox.analyser_initialize(session.feature_selected(10));
@@ -123,8 +124,11 @@ pub async fn run_session<T: Stepper>(
     loop {
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
-            Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
+            Ok(PlayCommand::Feature(command)) => {
+                let started = std::time::Instant::now();
+                match session.feature(&command).await {
                 Ok(result) => {
+                    outbox.performance_command_result(started.elapsed());
                     match command.capability {
                         10 => outbox.analyser_result(&command, &result),
                         72 => outbox.task_board_full_result(&result),
@@ -158,7 +162,7 @@ pub async fn run_session<T: Stepper>(
                     continue;
                 }
                 Err(error) => error,
-            },
+            }},
             Ok(PlayCommand::BrowseFieldMove(intent)) => {
                 match session.move_item(oteryn_client_runtime::inventory::MoveRequest {source:intent.source,destination:intent.destination,count:None}).await {
                     Ok(response) => {
@@ -254,8 +258,10 @@ pub async fn run_session<T: Stepper>(
                 }
             }
             Ok(PlayCommand::Step(direction)) => {
+                let started = std::time::Instant::now();
                 match session.step(step_direction(direction)).await {
                     Ok(outcome) => {
+                        outbox.performance_command_result(started.elapsed());
                         outbox.action_feedback(session.refusal_detail().map(|detail| detail.reference_message()));
                         outbox.stepped(outcome);
                         publish(&mut session, &outbox, &mut held);

@@ -1,4 +1,6 @@
 use super::*;
+#[path = "performance.rs"]
+mod performance_tests;
 
 #[path = "options.rs"]
 mod options;

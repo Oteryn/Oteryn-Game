@@ -42,6 +42,7 @@ pub(super) struct Settings {
     parent: HWND,
     shortcuts: Vec<HWND>,
     collapse: HWND,
+    performance_label: HWND,
 }
 impl Settings {
     pub(super) fn new() -> Self {
@@ -52,6 +53,7 @@ impl Settings {
             parent: null_mut(),
             shortcuts: Vec::new(),
             collapse: null_mut(),
+            performance_label: null_mut(),
         }
     }
     pub(super) fn attach(&mut self, window: &Window) {
@@ -85,6 +87,7 @@ impl Settings {
                 }
                 DrawMenuBar(self.parent);
             }
+            self.performance_label = control(self.parent, "STATIC", "", 0, [420, 50, 250, 26], 0);
             self.collapse = control(self.parent, "BUTTON", "▼ Game", 25200, [8, 64, 150, 26], 0);
             self.shortcuts = oteryn_client::play::WINDOW_ACTIONS
                 .iter()
@@ -172,6 +175,31 @@ impl Settings {
         state.sync_battle_lists(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
+        }
+    }
+    pub(super) fn performance(&self) -> oteryn_client::play::PerformanceSettings {
+        lock(&self.shared).preferences.performance
+    }
+    pub(super) fn performance_indicator(&self, value: Option<&str>) {
+        unsafe {
+            if !self.performance_label.is_null() {
+                let mut rect: RECT = std::mem::zeroed();
+                if GetClientRect(self.parent, &mut rect) != 0 {
+                    MoveWindow(
+                        self.performance_label,
+                        (rect.right - 310).max(8),
+                        50,
+                        300,
+                        26,
+                        1,
+                    );
+                }
+                SetWindowTextW(self.performance_label, wide(value.unwrap_or("")).as_ptr());
+                ShowWindow(
+                    self.performance_label,
+                    if value.is_some() { SW_SHOW } else { SW_HIDE },
+                );
+            }
         }
     }
     pub(super) fn capture(&self, view: &mut PlayView) {

@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            performance,
             arcs,
             interface,
             profile_name,
@@ -124,6 +125,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            performance.show(state.page == SettingsPage::Graphics);
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
@@ -269,6 +271,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    if state.page == SettingsPage::Graphics
+                        && let Err(error) = performance.read(&mut preferences)
+                    {
+                        state.feedback = error;
+                        continue;
+                    }
                     if let Err(error) = arcs.read(&mut preferences) {
                         state.feedback = error;
                         continue;
@@ -303,6 +311,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                performance.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
                 let selection = selected.max(0) as usize;
@@ -366,7 +375,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
                 }
                 SettingsPage::Graphics => {
-                    "Renderer and window options use the supported native renderer. Additional controls are not available yet."
+                    "FPS counts successful presentations. Command latency measures real server replies, including server processing; unused or stale samples show —."
                 }
                 SettingsPage::Sound => {
                     "Master volume % (0–100). Changes apply to playback immediately."

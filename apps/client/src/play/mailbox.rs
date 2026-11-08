@@ -111,6 +111,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
     pub(super) battle_lists: super::feature_0017_attack::view::BattleListsState,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
@@ -374,6 +375,7 @@ impl Outbox {
 
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
+        self.performance_reset();
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
@@ -422,6 +424,7 @@ impl Outbox {
     }
 
     pub(super) fn logged_out(&self) {
+        self.performance_reset();
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);

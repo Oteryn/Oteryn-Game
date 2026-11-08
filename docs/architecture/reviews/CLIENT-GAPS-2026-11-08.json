@@ -364,9 +364,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics: foreground/background FPS i FPS/latency indicator",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak równoważnych kontrolek limitów i wskaźników w Settings.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/performance_controls.rs:8 + apps/client/src/features/local-reference-preferences/frame_shell.rs:4 + apps/client/src/play/session_loop.rs:127; t061_graphics_performance_preferences_survive_real_settings_apply_and_reload; t061_scheduler_tracks_focus_occlusion_successful_frames_and_stale_samples; t061_latency_comes_from_real_session_command_caller_and_clears_on_logout"
  },
  {
   "id": "T062",
