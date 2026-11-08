@@ -721,6 +721,7 @@ impl DurabilityRoot {
                         .iter()
                         .map(|effect| effect.track.as_str())
                         .collect();
+                    keys.extend(catalogue.completion_tracks(quest));
                     let grizzly_keys = grizzly_action.as_ref().map(|_| {
                         oteryn_gameplay_quests::quest::grizzly_adams::storage_keys()
                     }).unwrap_or_default();
@@ -1035,6 +1036,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
+                    let completes = catalogue.completes_after(transition, &stored, &changes);
                     let (cause_id, ordinal) = request.cause.key();
                     let track_keys: Vec<&str> =
                         changes.iter().map(|change| change.track.as_str()).collect();
@@ -1070,7 +1072,7 @@ impl DurabilityRoot {
                     .bind(binding.as_slice())
                     .bind(&pin)
                     .bind(hash.as_slice())
-                    .bind(transition.completes)
+                    .bind(completes)
                     .bind(&track_keys)
                     .bind(&before)
                     .bind(&after)
@@ -1103,7 +1105,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
-                    let completed = transition.completes.then_some(committed.as_str());
+                    let completed = completes.then_some(committed.as_str());
                     let written = if stored_state.is_some() {
                         sqlx::query(
                             "UPDATE game_character_quest_states \
@@ -1205,7 +1207,7 @@ impl DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                         pinned_content_revision: pin,
                         definition_hash: hash,
-                        completes: transition.completes,
+                        completes,
                         changes,
                         experience,
                     };
