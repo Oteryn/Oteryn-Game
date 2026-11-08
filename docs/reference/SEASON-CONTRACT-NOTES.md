@@ -1126,3 +1126,55 @@ The previous frozen-head unit run eventually completed1605 cases:1604passed,
 pin was already fixed by the normal inventory generator before publication;
 those historical results are diagnostic, not claimed as green for this merge.
 Fresh validation for this integration follows below.
+
+### Follow-up main updates within the same unpublished integration
+
+The owner then requested main98d6ae8ce (Soulpit1140-1141), followed by
+main47baa7bb8 (key33 floor-transform permit and8MiB cosmetics provisioning
+bound). Standard local merge commits preserve each requested ancestry; no
+intermediate push was made. All nine SEASON migration numbers remain free
+in those main revisions and the three fetched PR heads.
+
+The completed normalized WorldProject package was retained across the
+Soulpit merge: its eleven package documents and all promotion facts are
+unchanged upstream; source/world/map-owner evidence hashes were refreshed
+for Soulpit terrain. The registered legacy/native/authoring generators and
+final world-pin refresh ran against the combined candidate, passing631.271s.
+The final47baa7bb8 delta changes only floor-transform scope checking, its
+caller and cosmetics provisioning validation; pin inputs are unchanged.
+Pin refresh and pin-check were rerun:26.118s and27.319s, both passed.
+
+Mutable generated WorldProject declarations/references now load only through
+their current hash-bound package manifest, with schema, revision, unique
+member, size and duplicate-identity checks. The global immutable HEAD reader
+is unchanged; the complete Cake donor packet, bindings, normalized Creature
+and Loot source checks remain strict. New tests reject forged pins, altered
+canonical damage and duplicate identities. This resolves regeneration of a
+legitimate merged package without weakening the donor-source qualification.
+
+All20 Cake/provider/inventory Python tests passed182.408s after updating the
+exact QENGINE unique-key count from53 to its source-captured60. Duplicates,
+missing keys, exact packet bytes, per-record semantics and source attributes
+remain asserted. The six content-independent Rust crates passed1954 unit
+cases on the Soulpit revision (120.664s including build); the final four-file
+main update changes none of those crates or their inputs.
+Final workspace check passed228.464s; fmt passed15.803s. Provisioning-bound
+tests passed0.116s. Focused PG and remaining unit/Clippy results follow.
+
+Final isolated focused validation:11/11 passed, 574.687s build+run.
+This includes nine real PostgreSQL cases and two strict inventory unit tests;
+per-case durations are retained in the validation log. The200-input case
+also passed alone45.265s. Earlier runs while other suites created/dropped
+databases reached the unchanged2s transaction deadline; no production
+timeout, trigger, assertion or source guard was weakened. Read-only rollback
+probes measured200 shape checks94.719ms, admission79.089ms and200 full
+completion checks488.102ms. The final batch runs without competing DB tests.
+
+Final Clippy across all15 changed crates passed741.166s including lock wait.
+PREPUSH-2's cadence exception still applies to remaining full library suites:
+six crates passed1954 tests; the nine-crate batch executed418 passing cases
+before4 SIGINT cancellations when stopped to isolate PG validation;3560
+remained unrun. This is explicitly incomplete unit evidence, not a green
+3982-case claim. CI owns the full suite; no tests were weakened or removed.
+This single publication includes all requested main updates through47baa7bb8.
+After publication the branch returns to frozen status, awaiting owner CI fixes.

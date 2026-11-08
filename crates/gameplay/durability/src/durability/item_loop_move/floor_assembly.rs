@@ -112,7 +112,7 @@ impl DurabilityRoot {
                 }
                 let mut moved = apply_loop_move(&mut tx, permit, &record, &node, &fence, command, content, &request, &intent, None, None, None, None).await?;
                 if let Some(recipe) = transform {
-                    if super::floor_transform::apply(&mut tx, &fence, command, native, &moved, &target, ground, recipe).await? {
+                    if super::floor_transform::apply(&mut tx, permit, &fence, command, native, &moved, &target, ground, recipe).await? {
                         moved.floor_effect = recipe.effect;
                     }
                     return Ok(moved);
