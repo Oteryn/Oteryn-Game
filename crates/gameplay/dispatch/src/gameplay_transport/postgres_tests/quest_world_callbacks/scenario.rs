@@ -270,7 +270,7 @@ fn scenario_case(
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
-    if name.starts_with("qengine-rewards-qworld-phase-") { callback = super::super::qworld_phase_steps::geometry(callback)?; }
+    if name.starts_with("qengine-rewards-qworld-phase-") { callback = super::super::qworld_phase_steps::geometry(callback, name)?; }
     let world = world(&callback, trigger)?;
     run(async |admin| {
         let h = if qengine_reward || outfit_world {

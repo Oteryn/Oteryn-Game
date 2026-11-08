@@ -2,9 +2,9 @@
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) fn select_step_phase<'a>(
+    pub(super) fn select_step_phase(
         &self,
-        selected: &mut Vec<(&'a Callback, u64)>,
+        selected: &mut Vec<(&Callback, u64)>,
         actor: ExactActorRef,
         session: GameSessionId,
         entered: MovementPositionSnapshot,

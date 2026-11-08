@@ -4,7 +4,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Passage, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
 };
@@ -40,21 +40,17 @@ fn callbacks() -> TestResult<Vec<Callback>> {
         })
         .collect())
 }
-pub(super) fn geometry(mut callback: Callback) -> TestResult<Callback> {
-    let rows = callbacks()?;
-    let [first, second] = rows.as_slice() else {
-        return Err("phase records".into());
-    };
-    callback.selector = first.selector.clone();
-    callback.trigger = first.trigger;
-    callback.teleport = first.teleport;
-    // Only geometry is supplied by this fixture; production records own both actions.
-    callback.passages = vec![Passage {
-        position: second.teleport.ok_or("second destination")?,
-        appearance: 100,
-        replacement: None,
-        create_on_close: None,
-    }];
+pub(super) fn geometry(mut callback: Callback, name: &str) -> TestResult<Callback> {
+    let phase = if name.ends_with("-5") { 5 } else { 0 };
+    let selected = callbacks()?.into_iter().find(|c| {
+        c.storage.iter().any(|s| s.track == PROGRAMME && s.minimum == phase)
+    }).ok_or("phase geometry")?;
+    // Supply a walkable destination for this scenario, without a wall passage.
+    // Dispatch still loads and selects both unmodified production callbacks.
+    callback.selector = selected.selector;
+    callback.trigger = selected.trigger;
+    callback.teleport = selected.teleport;
+    callback.passages.clear();
     callback.storage.clear();
     callback.state_ops.clear();
     callback.lever = None;
