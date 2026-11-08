@@ -10,12 +10,29 @@ pub enum Facing {
     West,
 }
 
+/// A once-only earned mount through the existing account appearance owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MountReward {
+    pub mount: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub achievement: Option<String>,
+}
+
+impl MountReward {
+    pub fn grant_key(&self) -> String {
+        format!("{}/quest-grant", self.mount)
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
     /// Complete a separately owned child quest with this native once-only reward.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quest_completion: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mount_reward: Option<MountReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
     /// An existing, preserved local quest epoch; commands never create reward cycles.
@@ -272,6 +289,34 @@ pub(super) fn valid(callback: &Callback) -> bool {
                             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                 })
         })
+        || effects.mount_reward.as_ref().is_some_and(|r| {
+            !callback.requires_world_admission
+                || callback.trigger != Trigger::Use
+                || callback.storage.is_empty()
+                || callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                || r.achievement.as_ref().is_some_and(|key| {
+                    key.len() > 160
+                        || !key.strip_prefix("oteryn:achievement/").is_some_and(|tail| {
+                            !tail.is_empty()
+                                && tail.bytes().all(|b| {
+                                    b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_'
+                                })
+                        })
+                })
+                || r.mount.len() > 160
+                || !r
+                    .mount
+                    .strip_prefix("oteryn:content.mount.")
+                    .is_some_and(|tail| {
+                        !tail.is_empty()
+                            && tail
+                                .bytes()
+                                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+                    })
+        })
         || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())
         || effects
@@ -344,6 +389,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || callback.native_rule.is_some()
                     || effects.item_reward.is_some()
                     || effects.outfit_reward.is_some()
+                    || effects.mount_reward.is_some()
                     || !(1..=60_000).contains(&timing.spawn_after_ms)
                     || timing.reset_after_ms <= timing.spawn_after_ms
                     || timing.reset_after_ms > 3_600_000

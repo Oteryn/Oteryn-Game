@@ -40,6 +40,16 @@ def expected():
     second = qready2_native_profiles.keys(ROOT) - shared_keys
     if first & second:
         raise ValueError("ready-lane admission cohorts overlap")
+    # M14 admits exactly one independent, source-qualified physical input.
+    # Count its admission packet, never the generated runtime union.
+    import srv7_targuna_item_profiles
+    ram_source = srv7_targuna_item_profiles.PATH
+    ram_records = json.loads((ROOT / ram_source).read_bytes())["records"]
+    ram_keys = {row["production_definition"]["production_key"] for row in ram_records}
+    if (ram_keys != {srv7_targuna_item_profiles.KEY} or len(ram_records) != 1
+            or ram_keys & (shared_keys | first | second)
+            or any(row["attributes"]["speed_bonus"] != 0 for row in ram_records)):
+        raise ValueError("SRV7 M14 admission must be one distinct zero-speed turnip profile")
     block = (
         BEGIN
         + "    // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py\n"
@@ -47,6 +57,7 @@ def expected():
     for name, keys, owner in (
         ("QREADY1", first, source),
         ("QREADY2", second, "tools/content-migration/qready2_native_profiles.py"),
+        ("SRV7-M14", ram_keys, ram_source),
     ):
         ids = sorted(int(key.rsplit(".i", 1)[1]) for key in keys)
         block += f"    // {owner}\n    // Source-qualified zero speed: {', '.join(map(str, ids))}.\n"

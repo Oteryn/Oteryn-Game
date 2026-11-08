@@ -33,7 +33,7 @@ mod effects;
 mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
-    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
+    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -271,6 +271,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::fire_feathered_native::callbacks());
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
+    callbacks.push(super::targuna_ram::callback()?);
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
@@ -303,7 +304,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     Ok(())
 }
 
-fn parse(text: &str) -> Result<Vec<Callback>, String> {
+pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds".into());
@@ -357,6 +358,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.native_rule.is_some()
                     || callback.effects.item_reward.is_some()
                     || callback.effects.outfit_reward.is_some()
+                    || callback.effects.mount_reward.is_some()
                     || callback.effects.encounter.is_some()
                     || callback.effects.portals.is_some()
                     || callback.effects.item_cycle.is_some()
@@ -376,6 +378,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.native_rule.is_some()
                     || callback.effects.item_reward.is_some()
                     || callback.effects.outfit_reward.is_some()
+                    || callback.effects.mount_reward.is_some()
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
             || callback.world_requirements.len() > MAX_EFFECTS
@@ -392,7 +395,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
                     || callback.effects.item_reward.is_some()
-                    || callback.effects.outfit_reward.is_some()))
+                    || callback.effects.outfit_reward.is_some()
+                    || callback.effects.mount_reward.is_some()))
             || !effects::valid(callback)
             || callback
                 .facing
@@ -1541,3 +1545,37 @@ pub fn completion_transition(callback: &Callback) -> Option<QuestTransition> {
 
 #[cfg(test)]
 mod completion_tests;
+
+#[cfg(test)]
+mod srv7_mount_reward_tests {
+    #[test]
+    fn srv7_world_mount_reward_requires_once_only_progress() -> Result<(), String> {
+        let mut value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-outfit-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        let callback = &mut value["callbacks"][0];
+        callback["effects"]
+            .as_object_mut()
+            .ok_or("effects")?
+            .remove("outfit_reward");
+        callback["requires_world_admission"] = true.into();
+        callback["effects"]["mount_reward"] =
+            serde_json::json!({"mount":"oteryn:content.mount.reliable_ram"});
+        callback["sources"] = serde_json::json!([
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/actions_reliable_ram.lua:20-50"
+        ]);
+        super::parse(&value.to_string())?;
+        for storage in value["callbacks"][0]["storage"]
+            .as_array_mut()
+            .ok_or("storage")?
+        {
+            storage["set"] = storage["minimum"].clone();
+        }
+        assert!(
+            super::parse(&value.to_string()).is_err(),
+            "repeatable mount grants must fail closed"
+        );
+        Ok(())
+    }
+}

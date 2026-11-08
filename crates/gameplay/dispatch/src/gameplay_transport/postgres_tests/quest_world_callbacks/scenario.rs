@@ -40,7 +40,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = m01b_explore || small_ruby
+    let native_crop = m01b_explore
+        || small_ruby
         || mead
         || spirit
         || tomb_native
@@ -55,7 +56,10 @@ fn scenario_case(
         || native_story
         || native_upper;
     let start = if m01b_explore {
-        Position { x: trigger.x + 1, ..trigger }
+        Position {
+            x: trigger.x + 1,
+            ..trigger
+        }
     } else if native_upper {
         super::super::l6_paradox_upper::start(name)
     } else if native_story {
@@ -102,7 +106,11 @@ fn scenario_case(
     };
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
-    let floor_profiles = name.starts_with("l6-treasure-reward-") || matches!(name, "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile");
+    let floor_profiles = name.starts_with("l6-treasure-reward-")
+        || matches!(
+            name,
+            "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile"
+        );
     let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
     let reusable_tool = name.starts_with("l6-reusable-tool");
@@ -112,7 +120,12 @@ fn scenario_case(
     let classic_npc = qengine_reward
         || matches!(
             name,
-            "engnpc-m04" | "catalogue-npc" | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp" | "nx6-wayfarer"
+            "engnpc-m04"
+                | "catalogue-npc"
+                | "catalogue-npc-end"
+                | "catalogue-npc-calendar"
+                | "catalogue-npc-xp"
+                | "nx6-wayfarer"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -275,7 +288,7 @@ fn scenario_case(
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward || outfit_world {
+        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" {
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
@@ -318,7 +331,9 @@ fn scenario_case(
         let generation = controller.active().ok_or("generation")?;
         let world = if m01b_explore {
             super::super::m01b_explore::world(
-                generation.native_gameplay().ok_or("native explore policies")?,
+                generation
+                    .native_gameplay()
+                    .ok_or("native explore policies")?,
             )?
         } else if native_upper {
             super::super::l6_paradox_upper::world(
@@ -708,8 +723,13 @@ fn scenario_case(
             }
         } else if let Some(source_id) = super::super::l6_treasure_rewards::source_id(name) {
             super::super::l6_treasure_rewards::exercise(
-                &mut owner, &mut admitted, &h, fence, source_id,
-            ).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
         } else if name == "l6-stag-item-profile" {
             super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence).await?;
         } else if name == "l6-ruby-profile" {
@@ -835,17 +855,32 @@ fn scenario_case(
             )
             .await?;
         } else if name == "engnpc-m04" {
-            super::super::engnpc_m04_completion::exercise(&mut owner,&mut admitted,&h,&authority).await?;
+            super::super::engnpc_m04_completion::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
         } else if name == "catalogue-npc-xp" {
-            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "catalogue-npc-calendar" {
             super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
         } else if name == "catalogue-npc-end" {
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "srv7-reliable-ram" {
+            super::super::srv7_reliable_ram::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if outfit_world {
-
             super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,
