@@ -990,7 +990,8 @@
   "feature": "Podium: outfit/mount/creature/item",
   "status": "PARTIAL",
   "gap": "Set/projection są; brak preview i kompletu przełączników creature podium.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0150-house-podium/view.rs:21; apps/client/src/features/0150-house-podium/input.rs:37 + podium_creature_selector_updates_the_real_panel_without_sending; creature/outfit/mount and rotation selectors wired, graphical preview remains open"
  },
  {
   "id": "T137",

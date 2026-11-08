@@ -172,7 +172,7 @@ Zasady przeciw dublowaniu:
 | T121 | Gems | Reveal/socket/unsocket/dismantle/enhance | PARTIAL | Komendy/selektory są; brak kompletnej wizualnej prezentacji gem/mod i atelier. |
 | T134 | House | Guest/subowner/door ACL, bid/leave/notice | DONE | Montaż play.json, natywne okno i submit/HouseResult są już w cgmech; dodano informacje o braku środków, limicie i konieczności odświeżenia. |
 | T135 | House | Transfer/move-out/furniture wrapping | PARTIAL | Dodano potwierdzenie dokładnego itemu i celu wrap/place; pozostaje pełny wybór transfer/move-out i pozostałe potwierdzenia. |
-| T136 | House | Podium: outfit/mount/creature/item | PARTIAL | Dodano tekstowy preview outfit/mount/item z kierunkiem; brak graficznego preview i przełączników creature podium. |
+| T136 | House | Podium: outfit/mount/creature/item | PARTIAL | evidence: apps/client/src/features/0150-house-podium/view.rs:21; apps/client/src/features/0150-house-podium/input.rs:37 + podium_creature_selector_updates_the_real_panel_without_sending; creature/outfit/mount and rotation selectors wired, graphical preview remains open |
 | T137 | House | Hireling jobs/name/sex/outfit config | PARTIAL | Podgląd nazwy/płci, jobów i oczekującego outfitu jest; brak wspólnego pełnego edytora name/sex/jobs/outfit. |
 | O079 | House | Cyklopedia: katalog domów i aukcje | DONE | Sesja i natywne okno są już zamontowane w cgmech; uzupełniono własność, typ, termin aukcji, własny max bid i paginację. |
 | O083 | House | Edycja list gości, współwłaścicieli i drzwi | DONE | Natywny edytor i HouseResult są zamontowane; door ACL korzysta z rewizji wybranego domu bez ręcznego wpisywania rewizji. |

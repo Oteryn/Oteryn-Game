@@ -13,11 +13,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             title: "House podium",
             labels: &[
                 "Podium item UUID",
-                "Display: 1 outfit, 2 mount, 3 item",
+                "Display: 1 outfit, 2 mount, 3 creature",
                 "Direction: 0 north, 1 east, 2 south, 3 west",
                 "Display content key",
             ],
-            buttons: &["Refresh", "Projection", "Set"],
+            buttons: &[
+                "Refresh",
+                "Projection",
+                "Set",
+                "Outfit",
+                "Mount",
+                "Creature",
+                "Turn clockwise",
+            ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.house_podium;
                 (
@@ -35,6 +43,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 }
                 for (index, value) in values.into_iter().enumerate() {
                     super::input::edit(panel, index, value);
+                }
+                if (3..=5).contains(&action) {
+                    super::input::edit(panel, 1, (action - 2).to_string());
+                    return;
+                }
+                if action == 6 {
+                    let direction = panel.fields[2]
+                        .parse::<u8>()
+                        .ok()
+                        .filter(|v| *v < 4)
+                        .unwrap_or(0);
+                    super::input::edit(panel, 2, ((direction + 1) % 4).to_string());
+                    return;
                 }
                 let intent = match action {
                     0 => oteryn_client_ui::house_podium::Intent::Refresh,

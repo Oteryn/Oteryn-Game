@@ -296,3 +296,18 @@ impl<T, E: std::fmt::Debug> Checked<T> for Result<T, E> {
         self.map_err(|error| format!("{error:?}").into())
     }
 }
+
+#[test]
+fn podium_creature_selector_updates_the_real_panel_without_sending()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, _) = crate::play::play_channel();
+    link.house_podium_edit(3, "oteryn:creature.test".into());
+    assert!(link.house_podium_choose_display(3, 2));
+    let panel = link.house_podium_panel();
+    assert_eq!(panel.fields[1], "3");
+    assert_eq!(panel.fields[2], "2");
+    assert!(oteryn_client_ui::house_podium::panel_text(&panel).contains("creature"));
+    assert!(!link.house_podium_choose_display(4, 0));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
