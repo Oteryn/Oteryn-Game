@@ -45,3 +45,5 @@
 
 | Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | CLAIMED |
 | Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
+
+| M30 — native spear/magic-missile hit events and participant-scoped defender death/door progression | engenc | 2240 reserved; only 2240–2249 for this assignment | Child of Destiny; Asura Palace | CLAIMED |
