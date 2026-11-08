@@ -13,7 +13,8 @@ use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_f
 use super::character_last_position::{LastPositionCell, LastPositionRecord};
 use super::character_progression::{assert_item_only_fence, assert_runtime_scope_fence};
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::fresh_admission::FreshAdmissionStore;
 use super::item_transfer::CurrentCharacterItemFence;
@@ -284,10 +285,7 @@ impl ActivityHandoffOwner {
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = super::item_mint_audit::Type2Transaction::open(
-                        begin_semantic_transaction(holder, deadline).await?,
-                    )
-                    .await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let result = entry::enter_in_transaction(

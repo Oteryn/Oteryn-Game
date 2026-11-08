@@ -869,3 +869,20 @@ At 2026-11-07 14:29:32 UTC, local and remote delivery head both matched
 Fresh checks passed: architecture (3.587 seconds), source_generator (0.864 seconds), diff (0.029 seconds).
 W07 and W08 remain DONE; no mechanic source, allocations, or generated
 artifacts changed. This checkpoint records verification of the completed delivery.
+## PR 3036 generated-owner footprint repair
+
+The clean 78294c081 main packet rebuild passes; the Soulpit successor needs a
+fresh Item stat packet because its Terrain owner inputs changed. The 13,414
+fields and 6,533 promoted Items remain unchanged. Regenerate with
+`lower_wiki_stats_packet.py`, then
+`tools/contracts/refresh_item_stats_promotion_pin.py`; neither source facts nor
+qualification predicates are relaxed.
+
+The existing 55 static records use canonical shard range 08614–08668. After a
+palette qualification, `refresh_palette_capture.py --items-xml <source>` recounts
+the committed regions and verifies the XML against the existing source capture
+(Crystal 00ce02a5, items.xml SHA-256
+13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece).
+Also run `convert_appearance_only_ids.py --crystal-root <source-root>` and
+`convert_islands.py`, then the complete world-metadata validation job. This adds
+no migration, command, capability or mechanic allocation.

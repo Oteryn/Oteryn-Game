@@ -1,6 +1,5 @@
 //! Soulpit composes its debit and encounter with the shared session handoff.
 use super::*;
-use crate::durability::item_mint_audit::Type2Transaction;
 use crate::durability::soulpit::{SOULPIT_ACTIVITY_KEY, SoulpitEntryRequest};
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
@@ -74,9 +73,7 @@ impl ActivityHandoffOwner {
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx =
-                        Type2Transaction::open(begin_semantic_transaction(holder, deadline).await?)
-                            .await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let context = SoulpitEntryContext {
