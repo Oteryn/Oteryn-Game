@@ -142,6 +142,18 @@ pub(super) async fn exercise_legs(
     exercise_custody(owner, admitted, harness, fence, 3398, false, 1).await
 }
 
+pub(super) async fn exercise_typed(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    source_id: u32,
+) -> TestResult {
+    assert!(matches!(source_id, 5949 | 24382 | 21506 | 7785 | 52632));
+    let maximum = if source_id == 5949 { 1 } else { 100 };
+    exercise_custody(owner, admitted, harness, fence, source_id, false, maximum).await
+}
+
 async fn exercise_custody(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -173,6 +185,10 @@ async fn exercise_custody(
             semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"],
             "EXTRA"
         );
+    } else if source_id == 5949 {
+        assert_eq!(semantics["protection"]["state"], "UNKNOWN");
+        assert_eq!(semantics["container"]["value"]["capacity"], serde_json::json!({"state":"KNOWN","value":20}));
+        assert_eq!(semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"], "CONTAINER");
     } else if source_id == 3398 {
         assert_eq!(semantics["protection"], serde_json::json!({
             "state":"KNOWN", "value": {
@@ -197,7 +213,8 @@ async fn exercise_custody(
             && qualified.ground_destination
     );
     assert_eq!(qualified.stack_maximum, expected_stack_maximum);
-    assert!(qualified.decay.is_none() && qualified.container_capacity.is_none());
+    assert!(qualified.decay.is_none());
+    assert_eq!(qualified.container_capacity, if source_id == 5949 { Some(20) } else { None });
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),

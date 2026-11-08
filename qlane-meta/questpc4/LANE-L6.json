@@ -97,7 +97,8 @@
           "PostgreSQL18.6 catalogue_npc_source_acceptance_is_atomic_and_replay_bound PASS212.004999259s /tmp/questpc4-f641-integration-pg.log",
           "PostgreSQL18.6 l6_stag_source_sword_has_native_custody_and_exact_replay RED42.109s missing native policy; GREEN45.59743029s with real SQL version marker, identity-preserving drop and exact command replay. /tmp/questpc4-stag-item-pg-green.log",
           "PostgreSQL18.6 source compass52759 custody RED42.938s missing native policy; GREEN44.646906479s, identity-preserving drop and exact replay. Existing sword52824 regression GREEN45.285936913s. Raw profiles add only52759; all3725 prior records unchanged. /tmp/questpc4b-stag-pg-green.log",
-          "PG18.6 plain certificate52586 and parts52635/52743/52758: all four RED missing native policy; all four GREEN60.885-68.640s with identity-preserving drop and exact replay. Compass/sword regressions GREEN47.970/47.882s. Raw3730/equipment3768; all3726 prior raw records unchanged. Whole story still IN_PROGRESS. /tmp/questpc4b-material-pg-green.log"
+          "PG18.6 plain certificate52586 and parts52635/52743/52758: all four RED missing native policy; all four GREEN60.885-68.640s with identity-preserving drop and exact replay. Compass/sword regressions GREEN47.970/47.882s. Raw3730/equipment3768; all3726 prior raw records unchanged. Whole story still IN_PROGRESS. /tmp/questpc4b-material-pg-green.log",
+          "Typedcustody5949emptybackpack20slots,24382/21506/7785/52632stack100:fiveactualPGRED,sevenPG18.6GREEN42.580-57.019s incltwoexistingregressions;allprior3757rowsidentical,raw3762/equipment3800beforeQREADYmainmerge. Nofood/fluid/repair/use/questpayloadinference;wholequestIN_PROGRESS. /tmp/questpc4b-typed5-green-results.json"
         ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Order of the Stag Quest_Spoiler.wiki:18; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/80/definition).",
@@ -559,7 +560,10 @@
       "blocker": {
         "missing_piece": "Live area-clear, field/switch/lever puzzle and key/book-gated access composition.",
         "kind": null,
-        "dependency": null
+        "dependency": null,
+        "native_evidence": [
+          "Typedcustody5949emptybackpack20slots,24382/21506/7785/52632stack100:fiveactualPGRED,sevenPG18.6GREEN42.580-57.019s incltwoexistingregressions;allprior3757rowsidentical,raw3762/equipment3800beforeQREADYmainmerge. Nofood/fluid/repair/use/questpayloadinference;wholequestIN_PROGRESS. /tmp/questpc4b-typed5-green-results.json"
+        ]
       },
       "sources": [
         {
@@ -704,7 +708,9 @@
         "source": ".questpc4/evidence/wiki/The Cradle of Monsters Quest_Spoiler.wiki:28",
         "canonical_location": "content/quests/definitions/quests-00100-00199.json:1",
         "canonical_json_pointer": "/records/24/definition",
-        "native_evidence": [],
+        "native_evidence": [
+          "Typedcustody5949emptybackpack20slots,24382/21506/7785/52632stack100:fiveactualPGRED,sevenPG18.6GREEN42.580-57.019s incltwoexistingregressions;allprior3757rowsidentical,raw3762/equipment3800beforeQREADYmainmerge. Nofood/fluid/repair/use/questpayloadinference;wholequestIN_PROGRESS. /tmp/questpc4b-typed5-green-results.json"
+        ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Cradle of Monsters Quest_Spoiler.wiki:28; checked the selected canonical definition at content/quests/definitions/quests-00100-00199.json:1 (/records/24/definition).",
           "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
@@ -770,7 +776,8 @@
         "canonical_json_pointer": "/records/18/definition",
         "native_evidence": [
           "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS.",
-          "Additional source-qualified plain custody21466/21554/9106/36543/36544/9185/9205:7actualPG18.6 RED missingpolicy,then9GREEN44.093-66.068s incl2existingregressions. Native3750->3757 exactly7added/allprioridentical,equipment3795;worldpinunchanged. Nofluid/text/use/wholequestinference. /tmp/questpc4b-recipe7-green-results.json"
+          "Additional source-qualified plain custody21466/21554/9106/36543/36544/9185/9205:7actualPG18.6 RED missingpolicy,then9GREEN44.093-66.068s incl2existingregressions. Native3750->3757 exactly7added/allprioridentical,equipment3795;worldpinunchanged. Nofluid/text/use/wholequestinference. /tmp/questpc4b-recipe7-green-results.json",
+          "Typedcustody5949emptybackpack20slots,24382/21506/7785/52632stack100:fiveactualPGRED,sevenPG18.6GREEN42.580-57.019s incltwoexistingregressions;allprior3757rowsidentical,raw3762/equipment3800beforeQREADYmainmerge. Nofood/fluid/repair/use/questpayloadinference;wholequestIN_PROGRESS. /tmp/questpc4b-typed5-green-results.json"
         ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Cursed Crystal Quest_Spoiler.wiki:16; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/18/definition).",
@@ -1869,7 +1876,8 @@
         "kind": null,
         "dependency": null,
         "native_evidence": [
-          "Seven-item native custody batch:3398equipment preservesarmor7/physical3/legs;14682/5467/21504/21507/12674/3454plain. All7actualPGRED missing-policy controls, then9PG18.6GREENincl2Stagregressions; allprior3743rowsidentical,raw3750/equipment3788. Wholequest remainsIN_PROGRESS; no custom use/NPC/finale mechanism inferred. /tmp/questpc4b-seven-green-results.json"
+          "Seven-item native custody batch:3398equipment preservesarmor7/physical3/legs;14682/5467/21504/21507/12674/3454plain. All7actualPGRED missing-policy controls, then9PG18.6GREENincl2Stagregressions; allprior3743rowsidentical,raw3750/equipment3788. Wholequest remainsIN_PROGRESS; no custom use/NPC/finale mechanism inferred. /tmp/questpc4b-seven-green-results.json",
+          "Typedcustody5949emptybackpack20slots,24382/21506/7785/52632stack100:fiveactualPGRED,sevenPG18.6GREEN42.580-57.019s incltwoexistingregressions;allprior3757rowsidentical,raw3762/equipment3800beforeQREADYmainmerge. Nofood/fluid/repair/use/questpayloadinference;wholequestIN_PROGRESS. /tmp/questpc4b-typed5-green-results.json"
         ]
       },
       "sources": [

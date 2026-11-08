@@ -11484,6 +11484,155 @@
         "duplicate_migrations": "PASS0; no new migration",
         "unit_coverage": "32sourcecontrolsPASS49.076s,final4recipecontrolsPASS20.273s; prior/current13specific regressionsGREENincludingninePG/fourcentralunits. FreshbroadcrateunitsremainpendingunderPREPUSH-2cadenceallowance; previous579PASS/2SIGINTisnotafullpass."
       }
+    },
+    "typed5_slice": {
+      "status": "QUALIFIED_COMPONENTS_PENDING_MAIN_INTEGRATION",
+      "items": [
+        5949,
+        24382,
+        21506,
+        7785,
+        52632
+      ],
+      "scope": "Four stack100 materials and one empty20-slot backpack physical custody; no food/fluid/repair/use effects or payload contents inferred. Wholequeststatusesunchanged.",
+      "source": "Crystal201189f pinned XML/client capture; lines16146/47555/42915/21095/88025.",
+      "source_controls": "39source/pincontrolsPASS58.506s,includingsevennewtypedcontrolsPASS10.338s;RuffPASS;actualfive-recordcapturevalidatesinmemory.",
+      "postgres": "Allseven actualPG18.6 custody/drop/replaycasesGREEN42.580-57.019s withversion/completionmarkers,including20slotbackpackandfourstack100materials; fiveREDbeforeadmission,sixregressionsGREEN,0unexpectedfailures.",
+      "last_pushed": "c4ba15cbc61896cd26d1cbea9a8457e7bbdba443 at06:30UTC; sourcebaseline3757/equipment3795.",
+      "red_proof": {
+        "rows": [
+          {
+            "status": "PASS",
+            "seconds": 0.013,
+            "test": "gameplay_transport::module_registration_block_is_sorted_and_complete"
+          },
+          {
+            "status": "PASS",
+            "seconds": 43.198,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_beregar_items::l6_beregar_item_3398_native_custody_and_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 50.737,
+            "test": "gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes"
+          },
+          {
+            "status": "PASS",
+            "seconds": 44.548,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_21466_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 42.88,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_typed_items::l6_typed_item_21506_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 42.375,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_typed_items::l6_typed_item_24382_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 42.151,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_typed_items::l6_typed_item_52632_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 42.791,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_typed_items::l6_typed_item_5949_native_custody_and_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 0.188,
+            "test": "durability::item_mint_audit::tests::every_type2_insert_takes_its_tuple_from_a_type2_transaction"
+          },
+          {
+            "status": "PASS",
+            "seconds": 0.008,
+            "test": "durability::module_registration_block_is_sorted_and_complete"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 42.526,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_typed_items::l6_typed_item_7785_native_custody_and_replay"
+          }
+        ],
+        "expected_red_items": [
+          5949,
+          24382,
+          21506,
+          7785,
+          52632
+        ],
+        "unexpected_failures": [],
+        "missing_expected_red": [],
+        "postgres_version": "PostgreSQL18.6"
+      },
+      "green_results": [
+        {
+          "item": 5949,
+          "seconds": 57.019,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-typed5-green-5949.log"
+        },
+        {
+          "item": 24382,
+          "seconds": 56.947,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-typed5-green-24382.log"
+        },
+        {
+          "item": 21506,
+          "seconds": 55.235,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-typed5-green-21506.log"
+        },
+        {
+          "item": 7785,
+          "seconds": 55.209,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-typed5-green-7785.log"
+        },
+        {
+          "item": 52632,
+          "seconds": 46.975,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-typed5-green-52632.log"
+        },
+        {
+          "item": 21466,
+          "seconds": 46.905,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-typed5-green-21466.log"
+        },
+        {
+          "item": 3398,
+          "seconds": 42.58,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-typed5-green-3398.log"
+        }
+      ],
+      "native_preservation": {
+        "before": 3757,
+        "after": 3762,
+        "all_prior_rows_identical": true,
+        "equipment_profiles": 3800,
+        "added_exactly": [
+          5949,
+          24382,
+          21506,
+          7785,
+          52632
+        ]
+      },
+      "main_integration": "origin/main advancedc77d436d8(QREADY1+2),11nativeadditionsnoneoverlaptyped5. SavecompilevalidatedsliceandmergeMainnormally,retainbothprofilecohorts,regeneratebothpinowners,rerunworkspace/fmt. NoQREADYquestauthoringbythislane."
     }
   }
 }
