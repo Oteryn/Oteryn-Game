@@ -421,7 +421,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ("SRX3-BOSS-CORPSES", 185),
         ("SRX3-BOSS-YIELDS", 32),
         ("M25-GALTHEN-CORPSES", 8),
-        ("M25-GALTHEN-THRONE", 1),
+        ("M25-GALTHEN-THRONE", 2),
     ];
     assert_eq!(
         profiles.records.len(),

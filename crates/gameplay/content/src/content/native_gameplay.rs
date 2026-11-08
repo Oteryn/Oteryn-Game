@@ -1270,7 +1270,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         let m25_items = m25_corpse_items::qualified_records()?;
         m25_corpse_items::admit_exact_bindings(&mut admitted, &m25_items)?;
         source_reward_items.extend(m25_items);
-        source_reward_items.push(galthen_furniture::qualified_record()?);
+        source_reward_items.extend(galthen_furniture::qualified_records()?);
         for record in &items.records {
             let binding = &record.production_binding;
             let external = binding
@@ -2114,6 +2114,7 @@ mod tests {
             "oteryn:item.tibia.i42069",
             "oteryn:item.tibia.i44687",
             "oteryn:item.tibia.i31483",
+            "oteryn:item.tibia.i21287",
         ] {
             assert!(
                 admitted

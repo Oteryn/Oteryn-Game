@@ -164,3 +164,9 @@ passable physics. `galthen_boss_furniture.py` reuses the source Item decoder,
 preserves its existing exact Crystal binding and grants only Ground custody.
 The native decoder compares the complete record against its generated source pin.
 No canonical Item identity or static WorldObject alias is added.
+
+The same map-to-native check finds existing immutable Item 21287 on Mitmah's
+waiting cell `[34049,31431,11]` and return cell `[34060,31432,11]`. The pinned
+`galthen-mitmah-vanguard/source-room.json` and DAT policy both prove that it is
+nonblocking, non-pickupable and immovable. It joins the same closed source
+packet, retaining its existing Crystal identity and Ground-only custody.

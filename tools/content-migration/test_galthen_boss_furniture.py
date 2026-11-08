@@ -9,6 +9,18 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class GalthenFurnitureTests(unittest.TestCase):
+    def test_actual_mitmah_waiting_and_return_decoration_has_known_collision(self):
+        native = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+        records = [row for row in native['records']
+                   if row['production_definition']['production_key'] == 'oteryn:item.tibia.i21287']
+        self.assertEqual(len(records), 1, 'Mitmah waiting and return cells require source Item 21287')
+        self.assertIs(records[0]['attributes']['blocks_movement'], False)
+        room = json.loads((ROOT / 'content/encounters/galthen-mitmah-vanguard/source-room.json').read_bytes())
+        for position in [[34049, 31431, 11], [34060, 31432, 11]]:
+            tile = next(tile for tile in room['tiles'] if tile['source_position'] == position)
+            self.assertIn(21287, [item['server_item_id'] for item in tile['items']])
+            self.assertIs(tile['semantics']['flags']['block_solid'], False)
+
     def test_known_throne_policy_cannot_be_replaced(self):
         packet = json.loads((ROOT / producer.PATH).read_bytes())
         record = copy.deepcopy(packet['records'][0])
@@ -26,7 +38,9 @@ class GalthenFurnitureTests(unittest.TestCase):
                 if row['production_definition']['production_key'] == 'oteryn:item.tibia.i31483']
         self.assertEqual(len(rows), 1, 'the real Ahau boss cell must not retain UNKNOWN solidity')
         row = rows[0]
-        self.assertEqual(row, json.loads((ROOT / producer.PATH).read_bytes())['records'][0],
+        expected = next(record for record in json.loads((ROOT / producer.PATH).read_bytes())['records']
+                        if record['production_definition']['production_key'] == 'oteryn:item.tibia.i31483')
+        self.assertEqual(row, expected,
                          'later publishers must preserve the complete source record')
         self.assertIs(row['attributes']['blocks_movement'], False)
         self.assertIs(row['attributes']['blocks_projectile'], False)

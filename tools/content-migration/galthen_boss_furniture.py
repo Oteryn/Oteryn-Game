@@ -1,4 +1,4 @@
-"""Complete the existing Ahau throne Item from pinned Crystal loader facts."""
+"""Complete existing Galthen static Items from pinned Crystal loader facts."""
 import argparse
 import copy
 import hashlib
@@ -11,7 +11,8 @@ ROOT = base.ROOT
 PATH = 'tools/content-schema/native-gameplay/galthen-boss-furniture.json'
 PIN_PATH = 'tools/content-schema/native-gameplay/galthen-boss-furniture-pin.json'
 RUST_PIN = 'crates/gameplay/content/src/content/native_gameplay/galthen_furniture_pin.rs'
-KEY = 'oteryn:item.tibia.i31483'
+IDS = (21287, 31483)
+KEYS = tuple(f'oteryn:item.tibia.i{item}' for item in IDS)
 
 
 def capture(cache, root=ROOT):
@@ -19,27 +20,31 @@ def capture(cache, root=ROOT):
     source = base.source
     xml = source.xml_index(blobs['data/items/items.xml'])
     objects = source.engine_items.load_appearance_objects(blobs['data/items/appearances.dat'])
-    physics = source.policies(blobs['data/items/appearances.dat'],
-                              blobs['data/items/items.xml'], {31483})[0]
+    policies = {row['server_item_id']: row for row in source.policies(
+        blobs['data/items/appearances.dat'], blobs['data/items/items.xml'], set(IDS))}
     bindings = base.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
-    binding = bindings['31483']
-    if binding['disposition'] != 'EXACT' or binding['target'] != {
-            'family': 'Item', 'key': KEY, 'revision': 'definition-r1'}:
-        raise ValueError('M25_THRONE_EXISTING_IDENTITY')
-    row = source.profile(31483, xml[31483], objects[31483], physics, bindings, None)
-    base.complete_source_top_order(row, objects[31483])
-    row['production_binding'] = copy.deepcopy(binding)
-    row['production_binding_qualification'] = None
-    row['production_definition'] = {'family': 'Item', 'production_key': KEY,
-                                    'revision_ref': 'definition-r1'}
-    if (row['admission'] != {'materializable': True, 'stack_class': 'NonStackable',
-                             'legal_destinations': ['Ground']}
-            or physics['block_solid'] or physics['block_projectile']
-            or physics['movable'] or physics['pickupable'] or physics['dynamic_kind'] is not None):
-        raise ValueError('M25_THRONE_STATIC_SOURCE')
+    records = []
+    for item, key in zip(IDS, KEYS):
+        binding = bindings[str(item)]
+        physics = policies[item]
+        if binding['disposition'] != 'EXACT' or binding['target'] != {
+                'family': 'Item', 'key': key, 'revision': 'definition-r1'}:
+            raise ValueError('M25_THRONE_EXISTING_IDENTITY')
+        row = source.profile(item, xml.get(item), objects[item], physics, bindings, None)
+        base.complete_source_top_order(row, objects[item])
+        row['production_binding'] = copy.deepcopy(binding)
+        row['production_binding_qualification'] = None
+        row['production_definition'] = {'family': 'Item', 'production_key': key,
+                                        'revision_ref': 'definition-r1'}
+        if (row['admission'] != {'materializable': True, 'stack_class': 'NonStackable',
+                                 'legal_destinations': ['Ground']}
+                or physics['block_solid'] or physics['block_projectile']
+                or physics['movable'] or physics['pickupable'] or physics['dynamic_kind'] is not None):
+            raise ValueError('M25_THRONE_STATIC_SOURCE')
+        records.append(row)
     return {'source_revision': base.PIN,
             'sources': [{'path': path, 'sha256': sha} for path, sha in base.SOURCE_HASHES.items()],
-            'records': [row]}
+            'records': records}
 
 
 def admit(root, generated, destination, manifest_path, order, canonical):
@@ -48,17 +53,17 @@ def admit(root, generated, destination, manifest_path, order, canonical):
             'path': PATH, 'sha256': hashlib.sha256(raw).hexdigest()}:
         raise ValueError('M25_THRONE_CAPTURE_PIN')
     packet = json.loads(raw)
-    if (packet['source_revision'] != base.PIN or len(packet['records']) != 1
-            or packet['records'][0]['production_definition']['production_key'] != KEY):
+    if (packet['source_revision'] != base.PIN
+            or [row['production_definition']['production_key'] for row in packet['records']] != list(KEYS)):
         raise ValueError('M25_THRONE_EXACT_SOURCE')
-    row = packet['records'][0]
     document = json.loads(generated[destination])
-    existing = [record for record in document['records']
-                if record['production_definition']['production_key'] == KEY]
-    if existing and existing != [row]:
-        raise ValueError('M25_THRONE_KNOWN_POLICY_CONFLICT')
-    if not existing:
-        document['records'].append(row)
+    for row, key in zip(packet['records'], KEYS):
+        existing = [record for record in document['records']
+                    if record['production_definition']['production_key'] == key]
+        if existing and existing != [row]:
+            raise ValueError('M25_THRONE_KNOWN_POLICY_CONFLICT')
+        if not existing:
+            document['records'].append(row)
     document['records'].sort(key=order)
     generated[destination] = canonical(document)
     manifest = json.loads(generated[manifest_path])
