@@ -3295,5 +3295,73 @@
       "equipment_scope": "Collector4a08b3ebb WORLDCHG/SRV9 additions were inspected and removed because their profile producer is not shipped on this branch",
       "focused_dispatch_log": "/tmp/qengine2-focused-dispatch/state.json"
     }
+  },
+  "engine_pg_qualification_2026_11_08": {
+    "source_commit": "15ac677d3dcf9386e02a2a36c3b0fe2374ad2798",
+    "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "binary_sha256": "19fde4c4e02bc1378aa7c6f7ca391740b86f37efb6f52266c3b5209cdb209af3",
+    "execution": "Exact compiled focused-audit binary, isolated Rust test processes; no intervening source changes",
+    "passed": 7,
+    "failed": 0,
+    "cases": [
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::mount_taming::mount_taming_postgres_real_dispatch_outcomes_refusals_replay_and_reload",
+        "exit": 0,
+        "seconds": 68.14380734700535,
+        "green": true,
+        "native_markers": 0,
+        "log": "/tmp/qengine2-focused-dispatch/mount_taming_postgres_real_dispatch_outcomes_refusals_replay_and_reload.log"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::authored_quest_bindings::authored_bindings_npc_delivery_and_carried_use_dispatch_postgres",
+        "exit": 0,
+        "seconds": 129.45903288200498,
+        "green": true,
+        "native_markers": 1,
+        "log": "/tmp/qengine2-focused-dispatch/authored_bindings_npc_delivery_and_carried_use_dispatch_postgres.log"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_general_xp_handin_runs_in_real_dispatch",
+        "exit": 0,
+        "seconds": 119.18800061199727,
+        "green": true,
+        "native_markers": 1,
+        "log": "/tmp/qengine2-focused-dispatch/catalogue_npc_general_xp_handin_runs_in_real_dispatch.log"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::qengine_s06_construction::s06_glider_ground_trigger_preserves_source_and_consumes_carried_recipe",
+        "exit": 0,
+        "seconds": 54.75043040500168,
+        "green": true,
+        "native_markers": 1,
+        "log": "/tmp/qengine2-focused-dispatch/s06_glider_ground_trigger_preserves_source_and_consumes_carried_recipe.log"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
+        "exit": 0,
+        "seconds": 112.8129025409944,
+        "green": true,
+        "native_markers": 1,
+        "log": "/tmp/qengine2-focused-dispatch/catalogue_npc_source_acceptance_is_atomic_and_replay_bound.log"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::qengine_s06_construction::s06_glider_missing_one_piece_never_spends",
+        "exit": 0,
+        "seconds": 56.1385710579998,
+        "green": true,
+        "native_markers": 1,
+        "log": "/tmp/qengine2-focused-dispatch/s06_glider_missing_one_piece_never_spends.log"
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::qengine_s06_construction::s06_glider_seven_carried_pieces_are_atomic_and_replayed",
+        "exit": 0,
+        "seconds": 58.464998231997015,
+        "green": true,
+        "native_markers": 1,
+        "log": "/tmp/qengine2-focused-dispatch/s06_glider_seven_carried_pieces_are_atomic_and_replayed.log"
+      }
+    ],
+    "full_backend_units": "Pending under PREPUSH-2 budget exception; no full-suite green claimed",
+    "collector_merge_pending": "78294c081a099c96a57948573d5dbf0caf398abf"
   }
 }

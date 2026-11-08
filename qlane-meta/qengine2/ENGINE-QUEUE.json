@@ -92,5 +92,20 @@
       "evidence": "2b8157325:qlane-meta/questpc8/ENGINE-REQUESTS.md",
       "ownership": "Engine capability only; source quest remains in requesting lane"
     }
+  ],
+  "qualified_slices": [
+    {
+      "feature": "carried_quest_exchanges_and_authored_npc_delivery",
+      "state": "QUALIFIED",
+      "code_sha": "15ac677d3dcf9386e02a2a36c3b0fe2374ad2798",
+      "real_dispatch_pg_seconds": 129.459,
+      "api": [
+        "RewardCallback.carried_exchange",
+        "authored_bindings::Bindings::parse",
+        "authored_bindings::Bindings::attach",
+        "reward_callbacks::load_for"
+      ],
+      "scope": "Engine capability only; no whole quest qualification"
+    }
   ]
 }
