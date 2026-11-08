@@ -274,6 +274,25 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
 ];
 
+/// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
+    let mut callbacks = load()?;
+    if let Some(bindings) = catalogue.authored_bindings() {
+        callbacks.extend(bindings.reward_callbacks().cloned());
+    }
+    if callbacks.len() > super::authored_bindings::MAX_BOUND_STAGES
+        || callbacks
+            .iter()
+            .map(|c| &c.key)
+            .collect::<BTreeSet<_>>()
+            .len()
+            != callbacks.len()
+    {
+        return Err("authored/base reward binding collision or bound".into());
+    }
+    Ok(callbacks)
+}
+
 pub fn load() -> Result<Vec<RewardCallback>, String> {
     parse_documents(DOCUMENTS).map(|document| document.callbacks)
 }
@@ -296,7 +315,10 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
     validate_document(combined)
 }
 
-#[cfg(test)]
+pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
+}
+
 fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     parse_documents(&[text]).map(|document| document.callbacks)
 }
