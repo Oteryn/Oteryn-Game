@@ -1,7 +1,7 @@
 """M09 content admission: real native policies, canonical guards, separate caches."""
 import json
-import unittest
 import sys
+import unittest
 
 import m09_rewards as m
 import qengine_rewards
@@ -57,7 +57,7 @@ class M09Rewards(unittest.TestCase):
         profiles = json.loads((m.ROOT/
             'content/items/definitions/spell-native-profiles.json').read_bytes())
         keys = {r['production_definition']['production_key'] for r in profiles['records']}
-        for path, document in m.outputs().items():
+        for document in m.outputs().values():
             if 'callbacks' not in document:
                 continue
             for callback in document['callbacks']:

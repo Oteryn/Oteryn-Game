@@ -73,6 +73,14 @@ pub(super) fn prepare(
         return None;
     }
     offers.offers.extend(authored.offers);
+    let m09: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/npc-offers/m09-rookie.json"
+    ))
+    .ok()?;
+    if m09.schema != 1 {
+        return None;
+    }
+    offers.offers.extend(m09.offers);
     #[cfg(test)]
     if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
         offers.offers.extend(rows.iter().cloned());

@@ -156,6 +156,7 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "m09-rookie-mission11" => &["yes"],
         "m09-tower" => &["mission"],
         "knight-sword" => &["forge"],
         "l1-warmaster-crest" => &["crest"],
@@ -769,6 +770,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-m09-rookie" {
+        return super::m09_rookie_reward::exercise(owner, admitted, h, authority).await;
+    }
     if name.starts_with("qengine-rewards-m09-tower-") {
         return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
     }
