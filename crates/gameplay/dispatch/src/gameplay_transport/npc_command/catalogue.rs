@@ -198,6 +198,7 @@ pub(super) fn prepare(
         topic: plan.next_topic,
     };
     if plan.track_changes.is_empty()
+        && !plan.completes
         && plan
             .effects
             .iter()
@@ -205,7 +206,7 @@ pub(super) fn prepare(
     {
         return Some(Step::Refused);
     }
-    if plan.track_changes.is_empty() && request.npc != "oteryn:npc.pemaret" {
+    if plan.track_changes.is_empty() && !plan.completes && request.npc != "oteryn:npc.pemaret" {
         let end = plan
             .effects
             .iter()

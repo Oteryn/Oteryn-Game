@@ -136,6 +136,36 @@ fn fixture_catalog(document: &serde_json::Value) -> Result<NpcRuleCatalog, NpcRu
 }
 
 #[test]
+fn m04_explicit_terminal_npc_rule_is_admitted() -> Result<(), NpcRuleError> {
+    let mut terminal = fixture_rule(
+        "terminal",
+        serde_json::json!([
+            {"kind":"set","track":"oteryn:quest-progress/test/value","value":1}
+        ]),
+    );
+    terminal["completes"] = serde_json::json!(true);
+    let catalog = fixture_catalog(&fixture_document(vec![terminal]))?;
+    let facts = Facts::empty();
+    let plan = catalog
+        .plan_storage(&facts.input("oteryn:npc.test", "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("terminal plan".into()))?;
+    assert!(plan.completes);
+    let plain = fixture_catalog(&fixture_document(vec![fixture_rule(
+        "plain",
+        serde_json::json!([
+            {"kind":"set","track":"oteryn:quest-progress/test/value","value":1}
+        ]),
+    )]))?;
+    assert!(
+        !plain
+            .plan_storage(&facts.input("oteryn:npc.test", "mission", 0))?
+            .ok_or_else(|| NpcRuleError::Invalid("plain plan".into()))?
+            .completes
+    );
+    Ok(())
+}
+
+#[test]
 fn continuation_reads_staged_tracks_topics_and_items() -> Result<(), NpcRuleError> {
     let mut first = fixture_rule(
         "first",
