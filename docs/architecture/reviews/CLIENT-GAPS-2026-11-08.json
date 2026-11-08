@@ -1138,9 +1138,10 @@
   "src": "TIBAUD-1",
   "area": "Tutorial",
   "feature": "Player Guide / compendium / recommendations",
-  "status": "MISSING",
-  "gap": "Brak Player Guide i zakładek zaleceń w grze.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Compendium otwierane przez Ctrl+Shift+N zawiera Player Guide, Recommendations i żywe komunikaty server-save; natywne zakładki korzystają ze wspólnego prezentera.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0031-tutorial-notices/view.rs:20 + play_compendium_opens_guide_recommendations_and_live_notices"
  },
  {
   "id": "T158",

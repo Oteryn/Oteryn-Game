@@ -1,7 +1,7 @@
 //! Native tutorial and server-save panel. HWND access remains on its creating thread.
 #![allow(unsafe_code)]
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::tutorial_notices::{NoticePanel, panel_text};
+use oteryn_client_ui::tutorial_notices::NoticePanel;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
@@ -142,9 +142,7 @@ fn run(weak: WeakMailbox) {
                 .position(|tab| SendMessageW(*tab, BM_GETCHECK, 0, 0) == 1)
                 .unwrap_or(0);
             if held.as_ref() != Some(&mailbox.notices) || held_tab != tab {
-                let text = if tab == 0 {
-                    panel_text(&mailbox.notices)
-                } else {
+                let text = super::compendium_text(&mailbox.notices, tab).unwrap_or_else(|| {
                     use oteryn_client_ui::guide::Page;
                     guide.select(match tab {
                         1 => Page::Basics,
@@ -158,7 +156,7 @@ fn run(weak: WeakMailbox) {
                     } else {
                         guide.text()
                     }
-                };
+                });
                 SetWindowTextW(list, wide(&text).as_ptr());
                 held_tab = tab;
                 held = Some(mailbox.notices.clone());
