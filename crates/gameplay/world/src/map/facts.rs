@@ -34,6 +34,8 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod source_container_capacity;
+pub use source_container_capacity::captured_source_capacity;
 mod source_containers;
 pub use source_containers::CapturedMapItem;
 
