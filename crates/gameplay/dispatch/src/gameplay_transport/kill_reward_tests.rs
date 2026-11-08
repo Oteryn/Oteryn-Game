@@ -1428,3 +1428,94 @@ fn worldchg_native_death_uses_carrier_floor_not_overlay_floor() {
         .is_empty()
     );
 }
+
+#[test]
+fn pubproj_physical_source_batch_keeps_original_occurrence_on_retry_without_rewards() {
+    let (mut runtime, target) = runtime_with_killed_creature();
+    let (death, _) = runtime
+        .borrow_combat_death()
+        .projected_death(target)
+        .expect("sealed physical death");
+    let queue = KillSettlementQueue::default();
+    queue.statistics().capture(
+        &runtime,
+        target,
+        death,
+        "oteryn:creature.rat",
+        false,
+        1790000000000,
+    );
+    let first = queue
+        .statistics()
+        .batch(1790000000001, true)
+        .expect("first batch");
+    assert_eq!(first.events.len(), 1);
+    let retry = queue
+        .statistics()
+        .batch(1790000000002, true)
+        .expect("retry before ACK");
+    assert_eq!(
+        retry.events, first.events,
+        "lost batch ACK cannot move the occurrence's UTC day"
+    );
+    queue.statistics().acknowledge(&first);
+    queue.statistics().capture(
+        &runtime,
+        target,
+        death,
+        "oteryn:creature.rat",
+        false,
+        1790086400000,
+    );
+    assert!(
+        queue
+            .statistics()
+            .batch(1790086400001, true)
+            .expect("new cut")
+            .events
+            .is_empty(),
+        "same physical death cannot be counted under a later day"
+    );
+    assert_eq!(
+        queue.counts(),
+        (0, 0, 0),
+        "no reward row or credited Character is required for capture"
+    );
+}
+#[test]
+fn pubproj_physical_source_invalid_key_and_regressed_clock_hold_coverage() {
+    let (mut runtime, target) = runtime_with_killed_creature();
+    let (death, _) = runtime
+        .borrow_combat_death()
+        .projected_death(target)
+        .expect("sealed physical death");
+    for key in ["player", "unknown"] {
+        let queue = KillSettlementQueue::default();
+        queue
+            .statistics()
+            .capture(&runtime, target, death, key, false, 1790000000000);
+        let batch = queue
+            .statistics()
+            .batch(1790000000001, true)
+            .expect("quarantined source cut");
+        assert!(batch.events.is_empty());
+        assert!(
+            batch.gap_ms.is_some(),
+            "invalid source cannot become known zero"
+        );
+    }
+    let queue = KillSettlementQueue::default();
+    assert!(queue.statistics().batch(1790000000000, true).is_some());
+    assert!(
+        queue.statistics().batch(1789999999999, true).is_none(),
+        "unsafe clock cannot advance coverage"
+    );
+    assert!(
+        queue
+            .statistics()
+            .batch(1790000000001, true)
+            .expect("reconciled clock cut")
+            .gap_ms
+            .is_some()
+    );
+}

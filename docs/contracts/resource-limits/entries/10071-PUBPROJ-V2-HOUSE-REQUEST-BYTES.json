@@ -1,0 +1,22 @@
+{
+  "id": "PUBPROJ-V2-HOUSE-REQUEST-BYTES",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md",
+  "resource": "V2 house snapshot request bytes",
+  "unit": "bytes",
+  "hard_maximum": 2048,
+  "configurable_range": {
+    "minimum": 2048,
+    "maximum": 2048
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Bounded complete replacement snapshots; overflow refuses the whole publication and retains its outbox. Private capture preserves the classified cohort and does not truncate to the public wire limit.",
+  "client_visible": false,
+  "boundary_tests": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2/tests.rs:v2_family_wire_matches_generated_goldens"
+  ],
+  "consumers": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2.rs",
+    "crates/gameplay/native-admission-source/src/descriptor.rs"
+  ],
+  "notes": "PUBPROJ owner 2026-11-07. Allocation is next free on d34807f5b plus lane offset 50. V2 public projection only; V1 accepted surfaces are unchanged."
+}

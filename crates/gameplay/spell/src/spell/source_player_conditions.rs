@@ -239,6 +239,24 @@ impl PlayerSpellState {
         immunities: &[source::ConditionType],
         facts: &source::ApplicationFacts<'_>,
     ) -> Option<Self> {
+        self.stage_source_player_conditions_with_history(
+            source,
+            definitions,
+            immunities,
+            facts,
+            None,
+        )
+    }
+    /// The same canonical owner application, with frozen non-authoritative death
+    /// display provenance. The condition instance itself bounds its lifetime.
+    pub fn stage_source_player_conditions_with_history(
+        &self,
+        source: String,
+        definitions: &[source::ConditionDefinition],
+        immunities: &[source::ConditionType],
+        facts: &source::ApplicationFacts<'_>,
+        historical_source: Option<&native::ConditionHistoricalSource>,
+    ) -> Option<Self> {
         if self.health == 0
             || !facts.target_is_player
             || definitions.is_empty()
@@ -265,13 +283,24 @@ impl PlayerSpellState {
         };
         let mut next = self.clone();
         for definition in definitions {
-            match next.conditions.apply(
-                &definition,
-                Some(source.clone()),
-                native::ConditionSourceKind::Creature,
-                &immunities,
-                &facts,
-            ) {
+            let applied = match historical_source {
+                Some(historical) => next.conditions.apply_with_historical_source(
+                    &definition,
+                    Some(source.clone()),
+                    native::ConditionSourceKind::Creature,
+                    &immunities,
+                    &facts,
+                    historical,
+                ),
+                None => next.conditions.apply(
+                    &definition,
+                    Some(source.clone()),
+                    native::ConditionSourceKind::Creature,
+                    &immunities,
+                    &facts,
+                ),
+            };
+            match applied {
                 Ok(_) => {}
                 Err(
                     values::ConditionRefusal::Immune

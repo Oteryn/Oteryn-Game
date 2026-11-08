@@ -554,6 +554,13 @@ fn stage_player_batch_inner(
                         *actor,
                         *session,
                         super::PlayerDeath {
+                            public_cause: if runtime.companion_snapshot(batch.caster).is_ok() {
+                                super::native_public_death_cause(runtime,batch.caster)
+                            } else {
+                                states.get(runtime,batch.caster,batch.command.game_session_id()).map(|_| crate::durability::character_death::PublicDeathCause::PlayerSession {
+                                    game_session_id:*batch.command.game_session_id().as_bytes(),
+                                })
+                            },
                             occurrence: (states.mint_death)()
                                 .ok_or(SpellCastDisposition::Rejected)?,
                             cell: runtime
