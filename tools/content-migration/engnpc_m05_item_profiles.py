@@ -30,7 +30,8 @@ def capture(source_root):
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     packet = json.loads((root / PATH).read_bytes())
     records = packet['records']
-    if (packet['schema'] != SCHEMA or len(records) != len(KEYS)
+    if (packet.get('runtime_enabled') is not True
+            or packet['schema'] != SCHEMA or len(records) != len(KEYS)
             or {r['production_definition']['production_key'] for r in records} != KEYS
             or len(packet['classification']) != len(KEYS)
             or {r['key'] for r in packet['classification']} != KEYS

@@ -38,6 +38,27 @@ class M05NativeRewardTests(unittest.TestCase):
         finally:
             sys.path.pop(0)
 
+    def test_disabled_publication_cannot_reach_the_native_merger(self):
+        import sys
+        import tempfile
+        from unittest.mock import patch
+        sys.path.insert(0, str(ROOT / 'tools/content-migration'))
+        try:
+            import engnpc_m05_item_profiles as adapter
+            packet = json.loads((ROOT / adapter.PATH).read_text())
+            packet['runtime_enabled'] = False
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                target = root / adapter.PATH
+                target.parent.mkdir(parents=True)
+                target.write_text(json.dumps(packet))
+                with patch.object(adapter.shared, 'admit_records') as merge:
+                    with self.assertRaisesRegex(ValueError, 'ENGNPC_M05_ITEM_QUALIFICATION'):
+                        adapter.admit(root, {}, '', '', [], lambda value: value)
+                    merge.assert_not_called()
+        finally:
+            sys.path.pop(0)
+
     def test_gnomus_token_is_admitted_by_the_runtime_item_provider(self):
         document = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_text())
         records = [r for r in document['records'] if r['production_definition']['production_key'] == 'oteryn:item.tibia.i27654']
