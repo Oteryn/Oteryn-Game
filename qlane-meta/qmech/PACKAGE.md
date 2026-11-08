@@ -21,7 +21,7 @@ Molehill PC, merged with main, validated there, and only then marked ready.
 |---|---|---|---|---|
 | outfit / addon grants | engoutfit | 1820-1829 | 47 | open |
 | boss / encounter | engenc, engenc2 | (lane's range) | 27 | ENGENC2: shared native phase foundation; Cults production closure claimed, not DONE |
-| reward / achievement claims | engclaim | 1830-1839 | 14 | open |
+| reward / achievement claims | engclaim | 1830-1839 (unused) | 0 full; 4 reward-binding prerequisites | PARTIAL: native placement / once leaf+container / achievement slice; independent outputs and quest bindings pending |
 | world change | engworldchg | 1840-1859 | 10 | open |
 | NPC quest dialogue | engnpc2 | (lane's range) | - | open |
 | quest items | engitem | (lane's range) | - | open |
