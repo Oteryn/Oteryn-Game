@@ -39,3 +39,13 @@ The publication merges qmech `4bed43770`; it changes neither this engine slice
 nor its fixture or the backpack/key policies. World pin-check passed after that merge.
 This is an engine checkpoint. Restoring source placements and wiring quest
 completion are subsequent work; the quests are not declared Native-ready here.
+
+## Fixed source views without a portable Item policy
+
+The pinned Item index contains dead tree 3634, while the native portable Item
+provider has no record for it. A read-only captured source therefore derives
+its exposed slots from its captured children when custody facts are absent.
+Portable unknowns and empty noncontainers still fail closed. Known capacities
+are bounded by the existing 20-entry view window; excess children refuse the
+view instead of being truncated. The standalone Rust planner regression failed
+for the missing-policy case before the fix and all three cases pass after it.
