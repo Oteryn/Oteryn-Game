@@ -491,6 +491,7 @@ impl NpcRuleCatalog {
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
                                 | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.dangerous_depths_quest"
                                 | "oteryn:quest.elemental_spheres_quest"
                                 | "oteryn:quest.bigfoot_s_burden_quest"
                                 | "oteryn:quest.hero_of_rathleton_quest"
@@ -500,6 +501,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
+                                | "oteryn:quest.tower_defence_quest"
                         )
                 });
                 Ok(catalogue)
