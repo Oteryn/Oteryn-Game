@@ -80,9 +80,10 @@ pub(super) use composed_methods;
 
 /// The active generation's cosmetics, bosses and Bestiary, checked by the store before a
 /// write (Crystal `game.cpp:4692-4699`, `game.cpp:11149`).
-struct PodiumContentView {
-    cosmetics: NativeCosmeticsView,
-    rewards: Arc<CreatureRewardTable>,
+#[derive(Clone)]
+pub(super) struct PodiumContentView {
+    pub(super) cosmetics: NativeCosmeticsView,
+    pub(super) rewards: Arc<CreatureRewardTable>,
 }
 
 impl AppearanceContent<String> for PodiumContentView {
@@ -140,7 +141,7 @@ impl PodiumContent for PodiumContentView {
     }
 }
 
-fn refusal(refusal: HousePodiumRefusal) -> wire::SetRefusal {
+pub(super) fn refusal(refusal: HousePodiumRefusal) -> wire::SetRefusal {
     use wire::SetRefusal as R;
     match refusal {
         HousePodiumRefusal::StaleSession => R::StaleSession,

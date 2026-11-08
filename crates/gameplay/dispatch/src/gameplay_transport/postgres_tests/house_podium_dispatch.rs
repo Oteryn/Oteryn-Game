@@ -31,10 +31,11 @@ const POSITION: [i32; 3] = [32310, 32804, 7];
 const RAT: &str = "oteryn:creature.rat";
 
 #[derive(Clone, Copy)]
-enum Case {
+pub(super) enum Case {
     Roundtrip,
     Refusals,
     MissingCapability,
+    Display,
 }
 
 #[test]
@@ -52,7 +53,7 @@ fn house_podium_dispatch_without_capability_150_is_rejected_postgres() -> TestRe
     postgres_case("house_podium_without_capability", Case::MissingCapability)
 }
 
-fn postgres_case(name: &'static str, case: Case) -> TestResult {
+pub(super) fn postgres_case(name: &'static str, case: Case) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -132,6 +133,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             id: 150,
             requires: &[49],
         },
+        crate::gameplay_transport::capabilities::OfferedCapability {
+            id: 449,
+            requires: &[150],
+        },
     ];
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
         &[], crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id), 1, "policy-1", OFFERS,
@@ -188,12 +193,20 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
     let selected: &[u32] = if matches!(case, Case::MissingCapability) {
         &[4, 6, 49, 86]
+    } else if matches!(case, Case::Display) {
+        &[4, 6, 49, 86, 150, 449]
     } else {
         &[4, 6, 49, 86, 150]
     };
-    admitted.continuity.selected_capabilities =
+    admitted.continuity.selected_capabilities = if matches!(case, Case::Display) {
+        crate::gameplay_transport::connection::fresh_capability_selection(&owner, selected)
+    } else {
         SelectedCapabilities::select(owner.offered_capabilities(), selected)
-            .ok_or("house podium offer")?;
+    }
+    .ok_or("house podium offer")?;
+    if matches!(case, Case::Display) {
+        assert!(admitted.continuity.selected_capabilities.contains(449));
+    }
     let mut body = vec![8, 1, 18, HOUSE.len() as u8];
     body.extend(HOUSE.as_bytes());
     let (inside, _) = owner
@@ -227,6 +240,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     admitted.continuity.next_command_id = 1;
+    if matches!(case, Case::Display) {
+        return super::house_podium_display::scenario(&owner, &mut admitted, h).await;
+    }
 
     let set = wire::SetRequest {
         item: id(71),
@@ -344,7 +360,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     Ok(())
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command_id: u64,
