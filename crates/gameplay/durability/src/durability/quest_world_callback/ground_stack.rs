@@ -82,7 +82,7 @@ pub(super) async fn require(
 /// The authority is issued for this same physical transaction. Keep both the
 /// scope's established Ground-owner advisory lock and exact Item/custody row
 /// locks through the quest COMMIT: a concurrent drop cannot create a phantom.
-pub(crate) async fn matches(
+pub async fn matches(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     authority: &SpellItemScopeAuthority,
     target: &SpellGroundTarget,
