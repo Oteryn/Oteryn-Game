@@ -491,9 +491,16 @@ mod tests {
                     .ok_or("callback key")
             })
             .collect::<Result<_, _>>()?;
-        // The runtime admits all three explicit registries, not only the original
+        // The runtime admits every explicit registry, not only the original
         // source capture. Keep exact-set coverage and exclude Dawnport in each.
         for raw in [
+            include_str!(
+                "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
+            ),
+            include_str!("../../../../../content/quests/world-callbacks/l6-item-rewards.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tools.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-world-puzzles.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tomb-rooms.json"),
             include_str!("../../../../../content/quests/shared-access-callbacks.json"),
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
             include_str!("../../../../../content/quests/authored-world-callbacks.json"),
@@ -517,6 +524,8 @@ mod tests {
         expected.extend(
             crate::quest::fire_feathered_native::callbacks()
                 .into_iter()
+                .chain(crate::quest::carried_step::callbacks())
+                .chain(crate::quest::shared_switches::callbacks())
                 .chain(crate::quest::shared_world_progress::callbacks())
                 .chain(crate::quest::hive_access::callbacks())
                 .chain(crate::quest::deepling_boss_access::callbacks(&callbacks)?)

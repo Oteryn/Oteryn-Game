@@ -1183,11 +1183,11 @@ mod tests {
             ),
             (
                 "oteryn:quest.the_ice_islands_quest",
-                "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
+                "2c3055056d3a059f1ff13f060dd139a831efc851593356d8cd8c15ded72b98f3",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
-                "0df1f07a25989a00e27d16a890e8598556f37bcb08deb2a3b2feab8958747414",
+                "3c194dfc485dcd599947fb5ad93d37beb0517b1f0c9a9b539797b7b06cf06b5a",
             ),
         ] {
             let hash = lowered
@@ -1207,7 +1207,23 @@ mod tests {
     fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
     -> Result<(), String> {
         let legacy = parse(DOCUMENTS[0])?;
-        for callback in &legacy {
+        let selected_completions = BTreeSet::from([
+            "oteryn:quest-reward/newhaven-wisdom",
+            "oteryn:quest-reward/nimmersatt-breath",
+            "oteryn:quest-reward/noodles-report",
+        ]);
+        assert_eq!(
+            legacy
+                .iter()
+                .filter(|c| c.completes)
+                .map(|c| c.key.as_str())
+                .collect::<BTreeSet<_>>(),
+            selected_completions
+        );
+        for callback in legacy
+            .iter()
+            .filter(|c| !selected_completions.contains(c.key.as_str()))
+        {
             assert!(!callback.completes);
             assert!(
                 serde_json::to_value(callback)

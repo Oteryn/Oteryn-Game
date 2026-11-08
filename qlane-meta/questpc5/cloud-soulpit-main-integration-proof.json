@@ -1,6 +1,6 @@
 {
   "main": "98d6ae8ce",
-  "state": "AUTHORING_CHECKS_RUNNING",
+  "state": "COMPILES_CADENCE_CHECKPOINT_TEST_RERUNS_PENDING",
   "reuse": [
     "Main Soulpit lifecycle, physical map facts and migrations1140-1141 consumed as-is",
     "Both exact Cook44563 and bounded55Soulpit static profiles retained, no widened source admission",
@@ -10,7 +10,23 @@
   ],
   "red": {
     "terrain_tests": "2 failures: main static identities absent in pre-regeneration placements palette",
-    "clippy": "if_same_then_else in existing test helper; equivalent conditions combined"
+    "clippy": "if_same_then_else in existing test helper; equivalent conditions combined",
+    "focused_rust_cases": {
+      "failures": 7,
+      "root_cause": "invalid callback oteryn:quest-callback/l6/paradox-first-exit-32478: incoming pure passage departure has no reversible lever",
+      "postgres_proof": "No GREEN proof. Six cases fail parsing before PG; Thais starts realPG but fails the same registry. Never treat these0.01s parse failures as PG execution success."
+    },
+    "quest_library_full_run": {
+      "total": 331,
+      "passed": 328,
+      "failed": 3,
+      "duration_seconds": 56.482,
+      "root_causes": [
+        "Exact callback inventory omitted five incoming L6 registries and carried-step/shared-switch producers",
+        "Legacy serialization fixture omitted exact three own selected completion callbacks",
+        "Incoming Ice Islands programme changed its canonical hash; refresh with repository Rust-loader tool"
+      ]
+    }
   },
   "green": {
     "cook_terrain_tests": 3,
@@ -31,13 +47,19 @@
     "reward_authoring_seconds": 131.342,
     "item_mount_equivalence": "PASS34114Items/252Mounts/337rewardclaims",
     "fixture_repair_cases": 7,
-    "fixture_repair_seconds": 13.319
+    "fixture_repair_seconds": 13.319,
+    "main47_provisioning_units": 2,
+    "passage_repair_workspace_all_targets_seconds": 207,
+    "reward_hash_baselines": "3 exact assertions regenerated with canonical Rust-loader repository tool",
+    "final_fmt": "PASS"
   },
   "pending": [
-    "postmerge own PostgreSQL tests",
-    "changed-crate unit tests",
-    "Final workspace all-target recheck after incoming permit-only fix"
+    "Full331quest-library grouped repair rerun active",
+    "Own7focused PostgreSQL regressions after registry repair",
+    "Remaining changed-crate units",
+    "Final strict Clippy after registry/test repairs (earlier pre-repair run passed; newest run interrupted to prioritize mandatory hash regeneration)"
   ],
   "qualification": "No additional whole quest qualified; ledger remains13/23. No foreign migration introduced.",
-  "latest_main": "47baa7bb872498ba9c5b30cf070c330f85cefba8"
+  "latest_main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+  "repair": "Reuse main pure passage departures only when passages nonempty and effects empty; existing StepOut durable-write restrictions retained. New regression rejects empty shape, teleport, storage, experience and reward mutations."
 }

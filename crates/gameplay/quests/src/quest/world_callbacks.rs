@@ -103,6 +103,7 @@ fn is_false(value: &bool) -> bool {
 mod counted_use;
 pub use counted_use::CountedUse;
 mod native;
+mod passage_departure;
 use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
@@ -602,7 +603,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             // Departure restores Channel-local map facts only. It must never
             // introduce another durable transition for the same movement cause.
             || (callback.trigger == Trigger::StepOut
-                && ((!callback.reversible && callback.effects.transform.is_none())
+                && ((!callback.reversible
+                        && callback.effects.transform.is_none()
+                        && !passage_departure::restores_only_passages(callback))
                     || callback.teleport.is_some()
                     || !callback.storage.is_empty()
                     || !callback.offerings.is_empty()

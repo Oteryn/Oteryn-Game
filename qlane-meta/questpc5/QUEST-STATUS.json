@@ -113,7 +113,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -144,7 +144,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     },
     "engine_request_2026_11_08": {
       "feature": "Claimant-fenced progress from actual looting of an Item issued by an exact Creature death",
@@ -212,7 +212,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -270,7 +270,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -332,7 +332,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -373,7 +373,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -425,7 +425,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -474,7 +474,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -495,7 +495,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -531,7 +531,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -577,7 +577,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -614,7 +614,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -649,7 +649,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -681,7 +681,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -719,7 +719,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -748,7 +748,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -806,7 +806,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -879,7 +879,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -962,7 +962,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -1013,7 +1013,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -1044,7 +1044,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -1126,7 +1126,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   },
   {
@@ -1186,7 +1186,7 @@
     "latest_main_integration": {
       "main": "47baa7bb8",
       "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "content generation/pins/equivalence and79authoring tests green; final workspace recheck/ownPG/unit tests running"
+      "state": "compiles and generated pins/hash baselines current;331unit rerun active, ownPG/remainingunits/Clippy pending cadence checkpoint"
     }
   }
 ]
