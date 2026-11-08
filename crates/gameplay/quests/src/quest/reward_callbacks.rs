@@ -1169,7 +1169,7 @@ mod tests {
         for (key, expected) in [
             (
                 "oteryn:quest.outfit_and_addon_quests",
-                "87f6476714ed0ad9ea3a2eb7c54e0a2d34f263f536be9d6c143153629d2f328d",
+                "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
             ),
             (
                 "oteryn:quest.the_ice_islands_quest",
