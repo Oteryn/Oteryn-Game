@@ -260,6 +260,14 @@ fn scenario(funded: bool) -> TestResult {
                     .actor
             };
             fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
+            {
+                let mut runtime = deps.runtime.lock().await;
+                crate::gameplay_transport::arena_match::tick(&owner, &mut runtime);
+            }
+            assert!(
+                crate::gameplay_transport::arena_match::pit_exit_open(&owner, admitted.game_session_id),
+                "credited death opens the source pit without another client command"
+            );
             let advanced = command(&owner, &mut admitted, A::Advance).await?;
             assert_eq!(advanced.disposition, D::Applied, "pit {pit}: {advanced:?}");
             assert_eq!(advanced.state.pit, if pit == 10 { 0 } else { pit + 1 });
