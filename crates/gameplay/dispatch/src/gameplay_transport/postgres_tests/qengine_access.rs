@@ -809,6 +809,10 @@ async fn wardrobe(
         .clone()
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
+        required_receipts: vec![],
+        experience: None,
+        completes: false,
+        per_occurrence_mint: false,
         carried_item: None,
         minimum_level: None,
         requires_addons: vec![],

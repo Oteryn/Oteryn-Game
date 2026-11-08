@@ -1,0 +1,20 @@
+{
+  "main_head": "1138720b1",
+  "source_parent": "d078ecd29",
+  "resolved_conflicts": [
+    "crates/gameplay/quests/src/quest/rotten_blood.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs"
+  ],
+  "compile_red": "Missing world_change in seven lane-specific QuestTransition constructors",
+  "repair": "ExplicitNone defaults preserve existing non-seasonal routes; no new engine behavior added",
+  "workspace_all_targets": {
+    "result": "PASS",
+    "duration": "2m50s",
+    "log_sha256": "57eda0285dc5f083d334b828b8068a7f1d848bc55fddd758ee7db3819a944991"
+  },
+  "fmt": {
+    "result": "PASS",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "native_quest_proofs": "Previous five green native PG proofs retained; no additional suite under latest owner speed rule"
+}

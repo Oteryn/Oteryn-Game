@@ -98,12 +98,12 @@ fn tile_position(position: MovementLocalPosition) -> Option<TilePos> {
     })
 }
 
-pub(super) struct TileEntries {
-    pub(super) protection_zone: bool,
-    pub(super) entries: Vec<(u64, EntryFacts)>,
+pub(in crate::gameplay_transport) struct TileEntries {
+    pub(in crate::gameplay_transport) protection_zone: bool,
+    pub(in crate::gameplay_transport) entries: Vec<(u64, EntryFacts)>,
 }
 
-pub(super) fn tile_entries(
+pub(in crate::gameplay_transport) fn tile_entries(
     map: &BundleMap,
     position: MovementLocalPosition,
 ) -> Option<TileEntries> {
@@ -795,9 +795,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                     command_id: u64::from_be_bytes(id).max(1),
                     item_fence: fence,
                 };
-                let result =
-                    loop_move::relocate_door_item(self, permit, actor, command, item, position, to)
-                        .await;
+                let result = loop_move::relocate_source_item(
+                    self, permit, actor, command, item, position, to,
+                )
+                .await;
                 if result != crate::gameplay_transport::item_move::LoopMoveResult::Committed {
                     return;
                 }

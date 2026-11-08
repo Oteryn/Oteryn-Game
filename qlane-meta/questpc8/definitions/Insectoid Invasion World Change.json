@@ -1,0 +1,119 @@
+{
+  "classification": "OTERYN_AUTHORED_APPROXIMATION",
+  "completeness_scope": "CHOSEN_OTERYN_RECIPE_ONLY",
+  "data_complete": true,
+  "definition_profile": "oteryn_authored_v1",
+  "display_name": "Insectoid Invasion World Change",
+  "identity": {
+    "key": "oteryn:quest.authored.insectoid_invasion_world_change",
+    "revision": "authored-r1"
+  },
+  "kind": "storyline",
+  "missing_data": [
+    {
+      "code": "quest_native_lowering_missing"
+    },
+    {
+      "code": "authored_trigger_and_delivery_bindings_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "canonical_reward_refs": [],
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "provenance": {
+    "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+    "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+  },
+  "readiness": "waiting_native_bindings",
+  "recipe": {
+    "adaptations": [
+      "The invasion is localized per character and available on demand. Ten kills are an authored target; the source's fifteen charm points describe bestiary opportunity and are not granted as quest currency."
+    ],
+    "repeat": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "kind": "once"
+    },
+    "requirements": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "min_level": 0,
+      "premium": false,
+      "prerequisites": []
+    },
+    "reward_intents": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "access",
+        "name": "Insectoid Scout hunting grounds"
+      }
+    ],
+    "source_notes": [
+      "Source establishes Greenshore access through the Rotworm hole and Insectoid Scout hunting, not a direct fifteen-point quest payout.",
+      "All behavior and reward delivery are authored Oteryn choices; named entities are unresolved references, not canonical IDs. Native bindings, locations and runtime execution remain to be implemented."
+    ],
+    "source_refs": [
+      {
+        "content_sha256": "3ce58b7ec8a458a455a4ab381a3ba32eb56b2b4332e2585ea6b91c49d544f612",
+        "pageid": 54570,
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "revid": 1106148,
+        "url": "https://tibia.fandom.com/index.php?curid=54570&oldid=1106148"
+      },
+      {
+        "content_sha256": "373c8a691f750c592613c02f7094c4a4d2d16abba730189795517d05f6525d79",
+        "pageid": 55050,
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "revid": 1160735,
+        "url": "https://tibia.fandom.com/index.php?curid=55050&oldid=1160735"
+      }
+    ],
+    "stages": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s1",
+        "kind": "explore",
+        "next": [
+          "s2"
+        ],
+        "objective": "Find the Rotworm hole across the bridge west of Greenshore.",
+        "targets": [
+          "Greenshore",
+          "western Rotworm hole"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 10,
+        "key": "s2",
+        "kind": "kill",
+        "next": [
+          "s3"
+        ],
+        "objective": "Clear ten Insectoid Scouts in the chosen incursion encounter.",
+        "targets": [
+          "Insectoid Scout"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s3",
+        "kind": "complete",
+        "next": [],
+        "objective": "Record completion and the selected Oteryn reward intents in the character journal.",
+        "targets": [
+          "Insectoid Invasion World Change"
+        ]
+      }
+    ],
+    "summary": "Investigate the Greenshore tunnel and contain an Insectoid Scout incursion.",
+    "wiki_title": "Insectoid Invasion World Change"
+  },
+  "runtime_enabled": false
+}

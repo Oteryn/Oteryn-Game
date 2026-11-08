@@ -204,11 +204,11 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
         let tool=tools.get(index).copied().filter(|tool|*tool!=0);
         Callback {
             key,quest:if hive {HIVE_QUEST}else{DEEPLING_QUEST}.into(),trigger:Trigger::Use,
-            selector:Selector{position:Some(Position{x:binding.position.0,y:binding.position.1,floor:binding.position.2}),unique:None,action:None,appearance:Some(binding.appearance)},
-            lever:None,reversible:false,passages:vec![],teleport:None,
-            storage:{let mut storage=vec![Storage{track:binding.track.into(),minimum:0,maximum:if hive {binding.required-1}else{0},set:if hive {1}else{0},preserve:false}];if hive {storage.push(Storage{track:ACTIVE_TRACKS[index].into(),minimum:1,maximum:1,set:1,preserve:true})}storage},
+            selector:Selector{position:Some(Position{x:binding.position.0,y:binding.position.1,floor:binding.position.2}),ordinal:None,unique:None,action:None,appearance:Some(binding.appearance)},
+            use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],lever:None,reversible:false,passages:vec![],teleport:None,
+            storage:{let mut storage=vec![Storage{track:binding.track.into(),minimum:0,maximum:if hive {binding.required-1}else{0},set:if hive {1}else{0},preserve:false,read_only:false}];if hive {storage.push(Storage{track:ACTIVE_TRACKS[index].into(),minimum:1,maximum:1,set:1,preserve:true,read_only:false})}storage},
             minimum_level:None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
-            item_on_target:tool.map(|tool|ItemOnTarget{item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
+            item_on_target:tool.map(|tool|ItemOnTarget{item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None,reusable:false}),
             return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),
             sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/orockle.lua:explicit-native-geometry-and-execution-adaptation; wiki56916@1184992; NOT_DONOR_POSITION".into()],
         }
@@ -231,6 +231,7 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
             count: 1,
             replacement: Some("oteryn:item.tibia.i14255".into()),
             target_replacement: None,
+            reusable: false,
         });
         result.push(hatchling);
     }
@@ -252,12 +253,14 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
             maximum: 0,
             set: 0,
             preserve: false,
+            read_only: false,
         };
         fluid.item_on_target = Some(ItemOnTarget {
             item: "oteryn:item.tibia.i14054".into(),
             count: 1,
             replacement: Some("oteryn:item.tibia.i14055".into()),
             target_replacement: None,
+            reusable: false,
         });
         result.push(fluid);
     }

@@ -17,8 +17,122 @@ pub struct QuestWorldContext {
     pub movement_revision: u64,
 }
 
+#[path = "quest_world_callback/carried_batch.rs"]
+mod carried_batch;
+#[path = "quest_world_callback/input_authority.rs"]
+mod input_authority;
+
 #[path = "quest_world_callback/reward_inputs.rs"]
 mod reward_inputs;
+
+impl super::DurabilityRoot {
+    /// Read a literal callback's quest gates under the live session and Character
+    /// root fences. This path never writes Quest state, receipts or revisions.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the read owner requires the same authority and world context as callback writes"
+    )]
+    pub async fn check_character_world_callback(
+        &self,
+        authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        callback_key: &str,
+        catalogue: std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+        permit: &SpellLanePermit,
+        context: QuestWorldContext,
+    ) -> Result<bool, super::character_progression::CharacterProgressionError> {
+        use super::character_authority::assert_recovery_fence;
+        use super::character_progression::{CharacterProgressionError, assert_item_only_fence};
+        use super::db::{
+            begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+        };
+        let callback = oteryn_gameplay_quests::quest::world_callbacks::load()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .into_iter()
+            .find(|callback| {
+                callback.key == callback_key
+                    && (callback.is_read_only() || callback.effects.scene.is_some())
+            })
+            .ok_or(CharacterProgressionError::InvalidInput)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        let mut context = (permit, context);
+        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, (permit, context)| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                if let Err(error) = assert_item_only_fence(&mut tx, &fence.item_fence(), &node).await? {
+                    return Ok(Err(error));
+                }
+                if !context_is_current(&mut tx, permit, fence, context).await? {
+                    return Ok(Ok(false));
+                }
+                let current: Option<String> = sqlx::query_scalar(
+                    "SELECT content_revision FROM game_character_progression_state \
+                     WHERE character_id=encode($1,'hex')::uuid",
+                ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                if current.as_deref() != Some(catalogue.content_revision()) {
+                    return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                }
+                let pending: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns \
+                     WHERE character_id=encode($1,'hex')::uuid)",
+                ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                if pending {
+                    return Ok(Err(CharacterProgressionError::RespawnPending));
+                }
+                let pin = sqlx::query(
+                    "SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed \
+                     FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
+                ).bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest)
+                    .fetch_optional(&mut *tx).await?;
+                if let Some(pin) = pin {
+                    let pin = super::quest_state::QuestStateRecord {
+                        pinned_content_revision: pin.try_get("pinned_content_revision")?,
+                        definition_hash: pin.try_get::<Vec<u8>, _>("definition_hash")?.try_into()
+                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        completed: pin.try_get("completed")?,
+                    };
+                    if !read_only_pin_allows(&pin, &catalogue, &callback.quest)? {
+                        return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                    }
+                }
+                for storage in &callback.storage {
+                    let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
+                        return Ok(Err(CharacterProgressionError::InvalidInput));
+                    };
+                    let value: Option<i64> = sqlx::query_scalar(
+                        "SELECT value FROM game_character_quest_tracks \
+                         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
+                    ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
+                        .bind(&callback.quest).fetch_optional(&mut *tx).await?;
+                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or(track.initial)) {
+                        return Ok(Ok(false));
+                    }
+                }
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(Ok(true))
+            })
+        }).await?
+    }
+}
+
+fn read_only_pin_allows(
+    stored: &super::quest_state::QuestStateRecord,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    quest: &str,
+) -> Result<bool, DurabilityError> {
+    let current_hash = catalogue
+        .definition_hash(quest)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    // QUEST-STATE-0 §6: unchanged definitions retain their historical content
+    // pin; completed quests keep access even when the definition changes.
+    Ok(stored.definition_hash == current_hash || stored.completed)
+}
 
 struct Input {
     item: String,
@@ -186,7 +300,43 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
-    if callback.offerings.is_empty() && callback.item_on_target.is_none() {
+    // The Character root and current session are already fenced. Lock the actual
+    // carried instances before testing quantities; map objects never prove ownership.
+    for evidence in &callback.present {
+        let quantities: Vec<i64> = sqlx::query_scalar(
+            "SELECT i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
+             JOIN game_item_instances i ON i.item_instance_id=c.item \
+             WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3 \
+             ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i",
+        ).bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
+            .bind(&evidence.item).fetch_all(&mut **tx).await?;
+        if quantities.len() > 500 || quantities.iter().sum::<i64>() < i64::from(evidence.count) {
+            return Ok(false);
+        }
+    }
+    // NPC travel locks the Character root but does not advance its revision.
+    // A trip admitted after the quest milestone therefore carries exactly the
+    // milestone's committed revision. Every trip serialized before it has a
+    // strictly smaller revision because the quest milestone itself advances it.
+    for route in &callback.required_travel {
+        let arrived: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_newhaven_travel_receipts r \
+             LEFT JOIN game_item_fee_burns f ON f.transaction_id=r.fee_transaction_id \
+             WHERE r.character_id=encode($1,'hex')::uuid AND r.route=$2 AND r.arrived_at IS NOT NULL \
+             AND ($3::text IS NULL OR EXISTS(SELECT 1 FROM game_character_quest_receipts q \
+                 WHERE q.character_id=r.character_id AND q.quest_key=$4 AND q.transition_key=$3 \
+                 AND f.character_id=r.character_id \
+                 AND f.committed_character_revision>=q.committed_character_revision)))",
+        ).bind(fence.character_id.as_bytes().as_slice()).bind(&route.route)
+            .bind(&route.after_transition).bind(&callback.quest).fetch_one(&mut **tx).await?;
+        if !arrived {
+            return Ok(false);
+        }
+    }
+    if callback.offerings.is_empty()
+        && callback.item_on_target.is_none()
+        && callback.effects.carried_inputs.is_empty()
+    {
         return Ok(true);
     }
     consume_inputs(
@@ -329,7 +479,25 @@ async fn consume_inputs(
                 return Err(DurabilityError::InvalidStoredState);
             }
         }
-        inputs.push(input);
+        // Retained tools still require a positive quantity, live custody and the
+        // same location lock. The enclosing Quest receipt binds this read to the
+        // action without inventing an item consumption or changing its identity.
+        if !required.reusable {
+            inputs.push(input);
+        }
+    }
+    // Distinct definitions prevent one instance satisfying multiple requirements.
+    // Resolve every carried input before the shared BURN loop changes any item.
+    let mut carried = callback.effects.carried_inputs.iter().collect::<Vec<_>>();
+    carried.sort_by(|left, right| left.item.cmp(&right.item));
+    for required in carried {
+        let Some(resolved) = carried_batch::resolve(tx, fence, required).await? else {
+            return Ok(false);
+        };
+        for input in &resolved {
+            lock_location(tx, input).await?;
+        }
+        inputs.extend(resolved);
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.
     let mut offerings = callback.offerings.iter().collect::<Vec<_>>();
@@ -515,8 +683,6 @@ async fn lock_location(
     Ok(())
 }
 
-mod input_authority;
-
 async fn apply_input<'a>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: impl Into<input_authority::InputPermit<'a>>,
@@ -641,4 +807,49 @@ pub(super) async fn consume_npc_inputs(
         apply_input(tx, permit, fence, &input, &transaction).await?;
     }
     Ok(true)
+}
+
+#[cfg(test)]
+mod read_only_pin_tests {
+    use super::*;
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
+
+    #[test]
+    fn read_only_callback_keeps_access_on_an_unchanged_historical_content_pin() -> Result<(), String>
+    {
+        let quest = "oteryn:quest.fixture.read_only";
+        let catalogue = QuestStateCatalogue::new(
+            "content-current",
+            vec![QuestTrack {
+                key: "oteryn:quest-progress/fixture/read-only".into(),
+                quest: quest.into(),
+                initial: -1,
+                min: -1,
+                max: 13,
+            }],
+            vec![],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let mut stored = super::super::quest_state::QuestStateRecord {
+            pinned_content_revision: "content-previous".into(),
+            definition_hash: catalogue.definition_hash(quest).ok_or("hash")?,
+            completed: false,
+        };
+        assert_ne!(stored.pinned_content_revision, catalogue.content_revision());
+        assert!(
+            read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        stored.definition_hash[0] ^= 1;
+        assert!(
+            !read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        stored.completed = true;
+        assert!(
+            read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        Ok(())
+    }
 }

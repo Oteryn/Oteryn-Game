@@ -211,6 +211,15 @@ pub(super) fn world(
     callback: &Callback,
     trigger: Position,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_ordinal(callback, trigger, callback.selector.appearance.unwrap_or(100), 1)
+}
+
+fn world_ordinal(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -261,7 +270,6 @@ pub(super) fn world(
             }
         }
     }
-    let appearance = callback.selector.appearance.unwrap_or(100);
     data.manifest.palette.push(bundle::PaletteEntry {
         key: format!("oteryn:terrain.tibia.i{appearance}"),
         family: bundle::Family::Terrain,
@@ -286,6 +294,11 @@ pub(super) fn world(
                 walkable: None,
                 ground_speed: None,
             }),
+        });
+    }
+    for _ in 1..ordinal {
+        cells.entry((trigger.floor, trigger.x, trigger.y)).or_default().push(sector::Item {
+            palette: 0, depth: 0, attrs: Default::default(),
         });
     }
     cells
@@ -562,6 +575,8 @@ mod actions;
 mod assertions;
 #[path = "quest_world_callbacks/lions_rock.rs"]
 mod lions_rock;
+#[path = "quest_world_callbacks/literal_uses.rs"]
+mod literal_uses;
 #[path = "quest_world_callbacks/rotten_blood.rs"]
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]

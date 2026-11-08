@@ -1,0 +1,63 @@
+{
+  "state": "QUALIFIED",
+  "postgres_duration_seconds": 113.890788027,
+  "postgres_marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit",
+  "log_sha256": "f36874af9ba4d1e9db0b1be6c232f6834b6db2e073faad5e5ad4c78755fa3341",
+  "exact_red_point": null,
+  "native_walkable_chamber_cells": [
+    [
+      33008,
+      32130
+    ],
+    [
+      33011,
+      32130
+    ],
+    [
+      33012,
+      32130
+    ],
+    [
+      33013,
+      32130
+    ],
+    [
+      33016,
+      32147
+    ],
+    [
+      33017,
+      32147
+    ],
+    [
+      33017,
+      32148
+    ],
+    [
+      33019,
+      32146
+    ]
+  ],
+  "qualified_l7": 20,
+  "remaining_l7": 3,
+  "next_slice": "Continue Colours,Winterlight,Wrath",
+  "authored": {
+    "machine_callbacks": 9,
+    "hand_ins": 2,
+    "guardian_count": 5,
+    "experience": 1000,
+    "gold": 1000,
+    "repeat_seconds": 72000
+  },
+  "checks": {
+    "reach_units": "6PASS",
+    "reward_units": "9PASS",
+    "compilation": "fresh filtered dispatch target compiled",
+    "postgres": "full native occurrence GREEN running",
+    "strict_checks": "queued/running",
+    "latest_dispatch_clippy": "PASS3m03s"
+  },
+  "green_duration_seconds": 116.777669567,
+  "green_log": "/tmp/questpc8-venore-occurrence-green2.log",
+  "proof": "venore-route-validation.json"
+}

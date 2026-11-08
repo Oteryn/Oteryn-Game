@@ -13,8 +13,15 @@ pub enum Facing {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Distinct carried definitions consumed atomically by the Quest receipt owner.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scene: Option<super::SceneEdits>,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
@@ -86,6 +93,55 @@ pub struct Encounter {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    let inputs = &effects.carried_inputs;
+    let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
+    if inputs.len() > 8
+        || unique.len() != inputs.len()
+        || inputs.iter().any(|input| {
+            input.count == 0
+                || input.count > 100
+                || !super::super::valid_quest_key(&input.item)
+                || callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|target| target.item == input.item)
+        })
+        || (!inputs.is_empty()
+            && (callback.trigger != Trigger::Use
+                || callback.storage.is_empty()
+                || callback.is_read_only()
+                || effects.scene.is_some()
+                || effects.portals.is_some()
+                || effects.encounter.is_some()
+                || effects.item_cycle.is_some()))
+    {
+        return false;
+    }
+    if effects
+        .scene
+        .as_ref()
+        .is_some_and(|scene| !super::scene::valid_scene(callback, scene))
+    {
+        return false;
+    }
+    if effects.item_reward.as_ref().is_some_and(|reward| {
+        callback.trigger != Trigger::Use
+            || callback.is_read_only()
+            || !callback.offerings.is_empty()
+            || callback.item_on_target.as_ref().is_some_and(|input| {
+                input.reusable || input.replacement.is_some() || input.target_replacement.is_some()
+            })
+            || callback.storage.is_empty()
+            || callback
+                .storage
+                .iter()
+                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || !super::super::reward_callbacks::valid_item_reward(reward)
+    }) || (callback.completes && (callback.storage.is_empty() || callback.is_read_only()))
+    {
+        return false;
+    }
+
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
     if effects.outfit_reward.as_ref().is_some_and(|r| {
@@ -115,11 +171,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
-        + usize::from(effects.encounter.is_some());
+        + usize::from(effects.encounter.is_some())
+        + usize::from(effects.scene.is_some());
     if operations > 1
         || (operations > 0
             && (!lever
-                || !callback.storage.is_empty()
+                || (effects.scene.is_none() && !callback.storage.is_empty())
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {

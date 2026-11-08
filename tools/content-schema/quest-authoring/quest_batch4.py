@@ -343,12 +343,22 @@ def validate_callback(callback, directory):
     seen = set()
     for storage in callback['storage']:
         fields(storage, {'track', 'minimum', 'maximum', 'set'},
-               {'track', 'minimum', 'maximum', 'set', 'preserve'}, key + ': storage')
+               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only'}, key + ': storage')
         require(valid_key(storage['track']) and storage['track'] not in seen, key + ': duplicate or invalid track')
         seen.add(storage['track'])
         require(all(integer(storage[field], -(2 ** 63), 2 ** 63 - 1) for field in ('minimum', 'maximum', 'set'))
                 and storage['minimum'] <= storage['maximum'], key + ': invalid storage range')
         require(type(storage.get('preserve', False)) is bool, key + ': invalid preserve')
+        require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
+    if any(entry.get('read_only', False) for entry in callback['storage']):
+        require(all(entry.get('read_only', False) and not entry.get('preserve', False)
+                    for entry in callback['storage'])
+                and callback['trigger'] == 'use' and callback.get('teleport') is not None
+                and not callback.get('lever') and not callback['passages']
+                and not callback['offerings'] and not callback.get('item_on_target')
+                and callback.get('minimum_level') is None and callback.get('experience') is None
+                and callback.get('monk_reward') is None and callback.get('native_rule') is None,
+                key + ': invalid read-only callback')
     seen = set()
     for passage in callback['passages']:
         fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement'}, key + ': passage')

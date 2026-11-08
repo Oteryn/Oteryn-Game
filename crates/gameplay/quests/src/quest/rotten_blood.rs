@@ -31,13 +31,16 @@ pub const CLEANSE_COOLDOWN_SECONDS: u64 = 68 * 60 * 60;
 pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
     Callback {
-        world_change: None,        key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
-        selector: Selector { position: None, unique: None, action: None,
+        world_change: None,
+        key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use, use_range: 1, disguise: None,
+        selector: Selector { position: None, ordinal: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
         lever: None, reversible: false, passages: Vec::new(), teleport: None,
-        storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false }],
-        minimum_level: None, experience: None, monk_reward: None, offerings: Vec::new(),
-        item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1,
+        storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false, read_only: false }],
+        minimum_level: None, experience: None,
+            completes: false,
+            premium_required: false, monk_reward: None, present: Vec::new(), required_travel: Vec::new(), offerings: Vec::new(),
+        item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1, reusable: false,
             replacement: None, target_replacement: None }),
         return_on_failure: false,
         failure_message: Some("You need a bloody tear for the sacrifice.".into()),

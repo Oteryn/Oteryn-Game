@@ -95,6 +95,19 @@ def complete_native_stack(root, record, definition, binding):
 def grant_semantics(root, definition):
     """Carry source text facts without inventing an unqualified player-write policy."""
     semantics = copy.deepcopy(definition['semantics'])
+    # Canary04b83b5:data/items/items.xml:16088-16091. The admitted poem
+    # scroll has an unknown canonical weight, but this exact donor explicitly
+    # supplies 120 centi-oz. Preserve the canonical record and known native facts.
+    if (definition['identity']['key'] == 'oteryn:item.tibia.i5952'
+            and semantics['physical'].get('state') == 'KNOWN'
+            and semantics['physical']['value'].get('weight') == {'state': 'UNKNOWN'}):
+        raw = (root / SOURCE).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
+            raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
+        witnesses = ET.fromstring(raw).findall("item[@id='5952']/attribute[@key='weight']")
+        if len(witnesses) != 1 or witnesses[0].get('value') != '120':
+            raise ValueError('QUEST_CALLBACK_POEM_SCROLL_WEIGHT_DRIFT')
+        semantics['physical']['value']['weight'] = {'state': 'KNOWN', 'value': 120}
     text = semantics['readable_writeable']
     if (text.get('state') != 'KNOWN'
             or text['value']['writeable'] != writing.known(True)):
@@ -129,10 +142,44 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
+    authored_keys = set()
+    authored_callbacks = []
+    # Executable authored callbacks use the same exact canonical/native Item
+    # qualification as source chests. Include every output, never a partial bag.
+    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
+        path = root / 'content/quests' / relative
+        if not path.is_file():
+            continue
+        for callback in json.loads(path.read_bytes())['callbacks']:
+            authored_callbacks.append(callback)
+            reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
+            if reward:
+                authored_keys.add(reward['item'])
+                authored_keys.update(child['item'] for field in ('contents', 'backpack_outputs')
+                                     for child in reward.get(field, []))
+                keys.add(reward['item'])
+                keys.update(child['item'] for field in ('contents', 'backpack_outputs')
+                            for child in reward.get(field, []))
+            carried = callback.get('effects', {}).get('carried_inputs', [])
+            authored_keys.update(item['item'] for item in carried)
+            keys.update(item['item'] for item in carried)
+            for field in ('take', 'present', 'offerings'):
+                keys.update(item['item'] for item in callback.get(field, []))
+                authored_keys.update(item['item'] for item in callback.get(field, []))
+            tool = callback.get('item_on_target')
+            if tool:
+                authored_keys.add(tool['item'])
+                keys.add(tool['item'])
+                if tool.get('replacement'):
+                    authored_keys.add(tool['replacement'])
+                    keys.add(tool['replacement'])
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    # Crystal201189f chest.lua:508-513: Fanfare's key3520 uses the already
+    # admitted bone key2973. Its key-binding hold is separate from Item admission.
+    keys.add('oteryn:item.tibia.i2973')
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:
@@ -144,6 +191,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     for path in sorted((root / 'content/interactions/reward_claims').glob('reward-claim*.json')):
         for row in json.loads(path.read_bytes())['records']:
             definition = row['definition']
+            # QUEST-FINISH owner scope: retain the donor record as evidence,
+            # but do not admit Dawnport's rewards into the Newhaven start path.
+            if definition.get('quest', {}).get('key') == 'canary:quest/dawnport_quest':
+                continue
             demon_item = DEMON_HELMET_REWARDS.get(definition['identity']['key'])
             if demon_item is not None:
                 placements = definition['placements']
@@ -161,8 +212,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 keys.update(child['item']['key'] for child in placement['contents'])
             if definition.get('readiness') == 'ready':
                 for placement in definition['placements']:
-                    if placement.get('quest_transition'):
-                        keys.update(item['item']['key'] for item in placement['reward']['items'])
+                    # A ready source reward still needs the same exact native
+                    # Item admission when it has no quest-state side effect.
+                    keys.update(item['item']['key'] for item in placement['reward']['items'])
+    # Falcon repeat owner freezes one of these exact seven source rewards.
+    keys.update(f'oteryn:item.tibia.i{number}' for number in (9081, 28821, 28823, 9058, 6299, 3052, 3035))
     grizzly_path = root / 'content/quests/killing-in-the-name-of.json'
     if grizzly_path.is_file():
         grizzly = json.loads(grizzly_path.read_bytes())
@@ -186,6 +240,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if set(definitions) != keys:
         raise ValueError('QUEST_CALLBACK_ITEM_MISSING')
     bindings = json.loads((root / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']
+    import authored_static_item_constructors
+    authored = json.loads(generated[authored_static_item_constructors.ADMISSIONS])
+    bindings.extend(row['binding'] for row in authored['records'])
     raw = (root / SOURCE).read_bytes()
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
@@ -197,7 +254,27 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(
             source_packet, present.get(key), definition, root)
+        import questpc8_nail_custody
+        definition = questpc8_nail_custody.callback_definition(root, present.get(key), definition)
         identity = definition['identity']
+        if key in authored_keys and key not in present:
+            import authored_quest_timed_custody
+            exact = [binding for binding in bindings if binding['target'] == identity]
+            if len(exact) != 1 or exact[0]['disposition'] != 'EXACT':
+                raise ValueError('AUTHORED_TIMED_EXACT_BINDING')
+            expiry = authored_quest_timed_custody.source_expiry(raw, int(exact[0]['external_id']))
+            if expiry is not None:
+                profile, _ = authored_quest_timed_custody.qualify(root, definition, raw, authored_callbacks)
+                document['records'].append(profile)
+                continue
+        if key in authored_keys and not definition['materializable'] and definition['stack_class'] == 'Unknown':
+            import authored_quest_item_custody
+            if key in present:
+                authored_quest_item_custody.reuse_existing(definition, present[key], bindings)
+                continue
+            profile = authored_quest_item_custody.qualify(root, definition, raw)
+            document['records'].append(profile)
+            continue
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']
                 or definition['stack_class'] not in ('StackCapable', 'NonStackable')

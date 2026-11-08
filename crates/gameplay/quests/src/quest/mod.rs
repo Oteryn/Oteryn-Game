@@ -24,7 +24,9 @@ pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
 pub mod dark_trails;
+pub mod death_objectives;
 pub mod deepling_boss_access;
+pub mod falcon;
 pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
@@ -81,6 +83,12 @@ pub const QUESTGATE0_RL_10: usize = 16;
 const KEY_PREFIX: &str = "oteryn:";
 const DEFINITION_HASH_VERSION: u8 = 2;
 
+/// QUEST-FINISH owner scope: Dawnport is reference data; Newhaven owns the start.
+#[must_use]
+pub(super) fn in_runtime_scope(quest: &str) -> bool {
+    quest != "oteryn:quest.dawnport_quest"
+}
+
 /// An Oteryn key (§13.2): `oteryn:` and a non-empty tail of `[A-Za-z0-9._:/-]`, at most
 /// [`QUESTSTATE0_RL_06`] bytes. A source key never reaches the store.
 #[must_use]
@@ -118,6 +126,8 @@ pub enum QuestComparison {
     Between(i64, i64),
     /// `elapsed >= s`: database time minus the value, in seconds.
     ElapsedAtLeast(i64),
+    /// A previously initialized timestamp whose nonnegative elapsed time is strictly below the bound.
+    ElapsedLessThan(i64),
 }
 
 impl QuestComparison {
@@ -133,6 +143,12 @@ impl QuestComparison {
             Self::Between(low, high) => (low..=high).contains(&value),
             Self::ElapsedAtLeast(seconds) => {
                 i128::from(now) - i128::from(value) >= i128::from(seconds)
+            }
+            Self::ElapsedLessThan(seconds) => {
+                seconds > 0
+                    && value > 0
+                    && now >= value
+                    && i128::from(now) - i128::from(value) < i128::from(seconds)
             }
         }
     }
@@ -153,6 +169,7 @@ impl QuestComparison {
                 return;
             }
             Self::ElapsedAtLeast(value) => (8, std::slice::from_ref(value)),
+            Self::ElapsedLessThan(value) => (9, std::slice::from_ref(value)),
         };
         out.push(tag);
         for value in values {
@@ -288,6 +305,8 @@ pub struct QuestStateCatalogue {
 struct NpcDefinitionPredecessor {
     hash: [u8; 32],
     defaults: BTreeMap<String, i64>,
+    // Read-compatible NPC activation retains historical pins and absent-track meanings.
+    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
 }
 
 impl QuestStateCatalogue {
@@ -371,6 +390,9 @@ impl QuestStateCatalogue {
                 let comparison_ok = match effect.from {
                     QuestComparison::Between(low, high) => low <= high,
                     QuestComparison::ElapsedAtLeast(seconds) => seconds >= 0,
+                    QuestComparison::ElapsedLessThan(seconds) => {
+                        (1..=366 * 24 * 60 * 60).contains(&seconds)
+                    }
                     _ => true,
                 };
                 let effect_ok = match effect.effect {
@@ -423,7 +445,7 @@ impl QuestStateCatalogue {
         if let Some(quest) = quests.find(|quest| self.hashes.contains_key(*quest)) {
             return Err(QuestCatalogueError::DuplicateKey(quest.clone()));
         }
-        Self::new(
+        let mut extended = Self::new(
             self.content_revision.clone(),
             self.tracks.values().cloned().chain(tracks).collect(),
             self.transitions
@@ -431,7 +453,28 @@ impl QuestStateCatalogue {
                 .cloned()
                 .chain(transitions)
                 .collect(),
-        )
+        )?;
+        extended.npc_legacy.clone_from(&self.npc_legacy);
+        Ok(extended)
+    }
+
+    /// Test-support fixtures may author an extra transition through the same full
+    /// catalogue validation and definition hashing as production content. As with
+    /// entities/test-support, this adds no production mutation or fence bypass.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_fixture_transition(
+        &self,
+        transition: QuestTransition,
+    ) -> Result<Self, QuestCatalogueError> {
+        let mut transitions: Vec<_> = self.transitions.values().cloned().collect();
+        transitions.push(transition);
+        let mut updated = Self::new(
+            self.content_revision.clone(),
+            self.tracks.values().cloned().collect(),
+            transitions,
+        )?;
+        updated.npc_legacy.clone_from(&self.npc_legacy);
+        Ok(updated)
     }
 
     /// A catalogue with no quest: every transition request is unknown.
@@ -448,6 +491,11 @@ impl QuestStateCatalogue {
     #[must_use]
     pub fn track(&self, key: &str) -> Option<&QuestTrack> {
         self.tracks.get(key)
+    }
+
+    /// Immutable declarations used by the admission read view; no progress is written.
+    pub fn declared_tracks(&self) -> impl Iterator<Item = &QuestTrack> {
+        self.tracks.values()
     }
 
     #[must_use]
@@ -1033,5 +1081,43 @@ mod tests {
         assert_eq!(QuestRefusal::RevisionMismatch.code(), "REVISION_MISMATCH");
         assert!(QuestStateCatalogue::empty("content-1").is_some());
         assert!(QuestStateCatalogue::empty("bad revision").is_none());
+    }
+    #[test]
+    fn fixture_transition_keeps_full_owner_and_duplicate_validation() -> Result<(), String> {
+        let base = catalogue(vec![]);
+        let aging = transition(
+            "oteryn:quest-transition/test.rats.fixture-age",
+            vec![effect(
+                TIMER,
+                QuestComparison::Any,
+                QuestEffectKind::Add(-1801),
+            )],
+            false,
+        );
+        let extended = base
+            .with_fixture_transition(aging.clone())
+            .map_err(|error| format!("{error:?}"))?;
+        assert_ne!(extended.definition_hash(QUEST), base.definition_hash(QUEST));
+        assert!(matches!(
+            extended.with_fixture_transition(aging),
+            Err(QuestCatalogueError::DuplicateKey(_))
+        ));
+        let foreign = QuestTransition {
+            world_change: None,
+            key: "oteryn:quest-transition/test.rats.foreign".into(),
+            quest: "oteryn:quest.other".into(),
+            effects: vec![effect(
+                TIMER,
+                QuestComparison::Any,
+                QuestEffectKind::Add(-1801),
+            )],
+            completes: false,
+            experience: None,
+        };
+        assert!(matches!(
+            base.with_fixture_transition(foreign),
+            Err(QuestCatalogueError::ForeignTrack(_))
+        ));
+        Ok(())
     }
 }

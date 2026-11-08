@@ -1,7 +1,7 @@
 {
   "approval": {
     "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
-    "sha256": "17582c5138ae11162fd4234d2ac811b22d445e2f138d41881382d55762e76a70"
+    "sha256": "b385a4fed3224d53d2fe0ee57b4a051dcf4b427af30aeb9f8a38c8d2d4dd9fe6"
   },
   "changes": [
     {
@@ -314895,7 +314895,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
-      "sha256": "7d6c0470aad6ea2df973a4c8e0092950af83109105793e92ae3717cab5429663"
+      "sha256": "739a451cf4dec4d7ff9367ecf656602c5804da73b8097f4b0dddb9e11ed511ae"
     },
     {
       "path": "tools/content-schema/quest-authoring/reward_aliases.py",
@@ -315021,7 +315021,7 @@
     },
     {
       "path": "content/quests/world-callbacks.json",
-      "sha256": "59e992218f26406f8a28f85c20d48ea6e894a07aea886da138873a15e1253572"
+      "sha256": "8c82810980c9dcc8ca7a83fe563da2b65d89356106ff2ede990f1d18b64006ac"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",

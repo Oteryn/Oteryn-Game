@@ -44,6 +44,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
                 floor: position.2,
             })
         && callback.selector.action == action
+        && callback.selector.ordinal.is_none()
         && callback.selector.unique.is_none()
         && callback.selector.appearance.is_none()
         && callback.storage.len() == 3
@@ -72,9 +73,13 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && !callback.reversible
         && callback.passages.is_empty()
         && callback.teleport.is_none()
+        && !callback.completes
+        && !callback.premium_required
         && callback.minimum_level.is_none()
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
+        && callback.present.is_empty()
+        && callback.required_travel.is_empty()
         && callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && !callback.return_on_failure

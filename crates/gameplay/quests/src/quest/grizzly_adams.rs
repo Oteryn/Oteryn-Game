@@ -10,6 +10,7 @@ use sha2::{Digest, Sha256};
 
 use super::QuestTrackChange;
 
+pub mod campaign;
 #[path = "grizzly_adams/catalogue.rs"]
 mod integration;
 #[path = "grizzly_adams/rules.rs"]
@@ -34,7 +35,7 @@ pub const PROMOTION_STORAGE: u32 = 42171;
 pub const ACTIVE_TASK_LIMIT: usize = 3;
 pub const BOSS_ROOM_SECONDS: u64 = 600;
 const SOURCE_REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
-const RULES_VERSION: &[u8] = b"oteryn-grizzly-rules-v2";
+const RULES_VERSION: &[u8] = b"oteryn-grizzly-rules-v3-chosen-campaign";
 const EMBEDDED: &str = include_str!("../../../../../content/quests/killing-in-the-name-of.json");
 
 pub type GrizzlyState = BTreeMap<String, i64>;
@@ -310,7 +311,13 @@ pub fn storage_track(id: u32) -> String {
 #[must_use]
 pub fn storage_keys() -> Vec<String> {
     catalogue()
-        .map(|data| data.storages.iter().map(|row| row.key.clone()).collect())
+        .map(|data| {
+            data.storages
+                .iter()
+                .map(|row| row.key.clone())
+                .chain(campaign::TRACKS.into_iter().map(str::to_owned))
+                .collect()
+        })
         .unwrap_or_default()
 }
 

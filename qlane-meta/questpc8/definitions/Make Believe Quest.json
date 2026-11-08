@@ -1,0 +1,474 @@
+{
+  "classification": "OTERYN_AUTHORED_APPROXIMATION",
+  "completeness_scope": "CHOSEN_OTERYN_RECIPE_ONLY",
+  "data_complete": true,
+  "definition_profile": "oteryn_authored_v1",
+  "display_name": "Make Believe Quest",
+  "identity": {
+    "key": "oteryn:quest.authored.make_believe_quest",
+    "revision": "authored-r1"
+  },
+  "kind": "storyline",
+  "missing_data": [
+    {
+      "code": "quest_native_lowering_missing"
+    },
+    {
+      "code": "authored_trigger_and_delivery_bindings_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "canonical_reward_refs": [],
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "provenance": {
+    "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+    "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+  },
+  "readiness": "waiting_native_bindings",
+  "recipe": {
+    "adaptations": [
+      "The old three-device red-blue-yellow gong approximation is removed. The chosen journey now retains the post-release five-colour observed sequence without inventing a fixed colour order.",
+      "The old six-floor guardian approximation is removed. The chosen journey now requires all eight Elite Fanatics to be simultaneously Petrified on their designated floors.",
+      "The authored stage vocabulary has no damage-participation kind. Stage s4 therefore remains kind=kill only as a non-executable DATA approximation; Native credit must advance when the player damages at least one Moonspawn Juggernaut during the invasion and must not require the last hit or death attribution.",
+      "Mimar Haffar, Maior Domus and Phosphorus now retain their repeated shield or vulnerability cycles and key encounter mechanics in the authored journey. These repeats remain encounter-owned behavior rather than a cyclic quest-state graph, and scalable difficulty remains an encounter-system concern instead of an invented Quest progress field.",
+      "The video-observed supply-store stealth behavior is retained as reference detail, but exact guard paths, tile positions and timing constants remain Native binding work. Quest completion unlocks access; it does not directly grant Moonsilver boss loot, Cloud in a Bottle or the Illuminated Warrior outfit."
+    ],
+    "repeat": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "kind": "once"
+    },
+    "requirements": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "min_level": 300,
+      "premium": true,
+      "prerequisites": []
+    },
+    "reward_intents": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "access",
+        "name": "Thalassara boss shortcut portals"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "access",
+        "name": "Stellar Moonsilver crafting"
+      }
+    ],
+    "source_notes": [
+      "The pinned historical spoiler recorded the pre-release six-Fanatic state. A post-release 2026-10-06 TibiaWiki cross-check for Make Believe reports five gong colours, eight simultaneous Elite Fanatics, the ordered vocation-Rival phase, sequential Maior Domus then Mimar Haffar rematches, permanent Phosphorus hazards, Fate Forge access and three boss shortcuts. It also states that Salgadora invasion credit requires damaging at least one Moonspawn Juggernaut, not the last hit. The chosen Oteryn journey follows the post-release state while preserving the original pinned source_refs unchanged.",
+      "Video reference https://www.youtube.com/watch?v=LJ5k5TZGiCQ, title 'Make Believe Quest [Summer Update 2026]', uploaded 2026-07-12 before production release. It supplies test-server observations for the Venore stealth route and encounter flow; where it conflicts with post-release evidence, the post-release state wins.",
+      "The post-release cross-check explicitly identifies Doctor Marrow (NPC) and gives his prison-cell dialogue sequence. Current Oteryn NPC supplement evidence held Doctor Marrow as a boss under the older summer-source classification, so Native wiring must reconcile or admit the NPC identity rather than coerce this talk stage onto a Creature identity.",
+      "Crystal summer supplies registered boss names and Wayland dialogue as separate comparison evidence; canonical donors remain on their original pins.",
+      "All behavior and reward delivery remain authored Oteryn choices. Named entities are reference identities until canonical bindings exist; Native placement, triggers, encounter wiring, persistence and gameplay execution remain WAITING_IMPLEMENTATION."
+    ],
+    "source_refs": [
+      {
+        "content_sha256": "0ea52b16d450096228409d5fa149e2579b2c790f72c0fcdf1b30ab2803993b6e",
+        "pageid": 110962,
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "revid": 1196603,
+        "url": "https://tibia.fandom.com/index.php?curid=110962&oldid=1196603"
+      },
+      {
+        "content_sha256": "9fb05d9aa179963c3f3dd52132afe1c71c166ce196330d75dda0045f0f0a4309",
+        "pageid": 110968,
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "revid": 1202338,
+        "url": "https://tibia.fandom.com/index.php?curid=110968&oldid=1202338"
+      },
+      {
+        "content_sha256": "58316636296a94be755e15233387a062209e60ca3614e87344f8dd7e56a87a46",
+        "pageid": 67437,
+        "provider": "tibiawiki_br",
+        "relation": "crosscheck",
+        "revid": 440735,
+        "url": "https://www.tibiawiki.com.br/index.php?curid=67437&oldid=440735"
+      }
+    ],
+    "stages": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s1",
+        "kind": "talk",
+        "next": [
+          "s2"
+        ],
+        "objective": "Accept Wayland Smythers' mission to locate Doctor Marrow.",
+        "targets": [
+          "Wayland Smythers",
+          "Doctor Marrow"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s2",
+        "kind": "use",
+        "next": [
+          "s3"
+        ],
+        "objective": "Use the cargo-crate disguise to cross the guarded Venore storehouse while Powerless, avoiding guards, noisy grates and sneeze-triggering webs before entering the loading teleport.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "cargo crate"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "storehouse guards"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "noisy grates"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "sneeze-triggering webs"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "Venore supply storehouse portal"
+          }
+        ],
+        "targets": [
+          "cargo crate",
+          "storehouse guards",
+          "noisy grates",
+          "sneeze-triggering webs",
+          "Venore supply storehouse portal"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s3",
+        "kind": "talk",
+        "next": [
+          "s4"
+        ],
+        "objective": "Ask Mayor Pocaro how to earn Salgadora's trust.",
+        "targets": [
+          "Mayor Pocaro"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s4",
+        "kind": "kill",
+        "next": [
+          "s5"
+        ],
+        "objective": "Participate in Salgadora's Moonspawn invasion and deal damage to at least one Moonspawn Juggernaut; the last hit is not required.",
+        "targets": [
+          "Moonspawn invasion",
+          "Moonspawn Juggernaut"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s5",
+        "kind": "talk",
+        "next": [
+          "s6"
+        ],
+        "objective": "Report the defence to Mayor Pocaro and learn about the white-robed cult.",
+        "targets": [
+          "Mayor Pocaro"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s6",
+        "kind": "kill",
+        "next": [
+          "s7"
+        ],
+        "objective": "Defeat a Cult Initiate in Recifar to obtain the disguise source.",
+        "targets": [
+          "Cult Initiate"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s7",
+        "kind": "use",
+        "next": [
+          "s8"
+        ],
+        "objective": "Use the initiate's corpse disguise and enter the cult portal.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "Cult Initiate corpse"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "Recifar cult portal"
+          }
+        ],
+        "targets": [
+          "Cult Initiate corpse",
+          "Recifar cult portal"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 5,
+        "key": "s8",
+        "kind": "use",
+        "next": [
+          "s9"
+        ],
+        "objective": "Strike the gong, observe the five-colour light sequence and activate the matching colour mechanisms in exactly the displayed order.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "Gong"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "five light beams"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "matching colour mechanisms"
+          }
+        ],
+        "targets": [
+          "Gong",
+          "five light beams",
+          "matching colour mechanisms"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 20,
+        "key": "s9",
+        "kind": "collect",
+        "next": [
+          "s10"
+        ],
+        "objective": "Gather twenty short-lived Moonsilver Crystals from Moonstone Miners for each Mimar Haffar shield cycle.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "Moonstone Miner"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "Moonsilver Crystals"
+          }
+        ],
+        "targets": [
+          "Moonstone Miner",
+          "Moonsilver Crystals"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 20,
+        "key": "s10",
+        "kind": "use",
+        "next": [
+          "s11"
+        ],
+        "objective": "Load ten Moonsilver Crystals into each Energy Cannon to reach one hundred charges per cannon and open Mimar Haffar's damage window.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "western Energy Cannon"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "eastern Energy Cannon"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "Moonsilver Crystals"
+          }
+        ],
+        "targets": [
+          "western Energy Cannon",
+          "eastern Energy Cannon",
+          "Moonsilver Crystals"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s11",
+        "kind": "kill",
+        "next": [
+          "s12"
+        ],
+        "objective": "Defeat Mimar Haffar within the encounter limit, controlling Trapped Souls and repeating the crystal-and-cannon shield cycle whenever his barrier returns.",
+        "targets": [
+          "Mimar Haffar",
+          "Trapped Soul",
+          "Big Moon Essence Tank"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s12",
+        "kind": "talk",
+        "next": [
+          "s13"
+        ],
+        "objective": "Find Doctor Marrow in the cult base and learn how Maior Domus blocks the inner sanctum.",
+        "targets": [
+          "Doctor Marrow"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s13",
+        "kind": "kill",
+        "next": [
+          "s14"
+        ],
+        "objective": "Defeat Maior Domus by building twenty Knight-or-Monk charges and thirty Sorcerer-Druid-Paladin charges, then using all three energized-platform damage windows and repeating the cycle as required.",
+        "targets": [
+          "Maior Domus",
+          "vocation charge carriers",
+          "energized platforms"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 8,
+        "key": "s14",
+        "kind": "use",
+        "next": [
+          "s15"
+        ],
+        "objective": "Reduce and position all eight Elite Fanatics so they are simultaneously Petrified on their richly ornamented floors before any recovers.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "Elite Fanatic"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "Petrified Fanatic"
+          },
+          {
+            "item_resolution": "unresolved",
+            "name": "Richly Ornamented Floor"
+          }
+        ],
+        "targets": [
+          "Elite Fanatic",
+          "Petrified Fanatic",
+          "Richly Ornamented Floor"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s15",
+        "kind": "kill",
+        "next": [
+          "s16"
+        ],
+        "objective": "Complete Phosphorus' first phase by defeating the five vocation Rivals in Knight, Paladin, Sorcerer, Druid and Monk order on their matching pedestals, then use each resulting vulnerability window until he retreats.",
+        "targets": [
+          "Knight Rival",
+          "Paladin Rival",
+          "Sorcerer Rival",
+          "Druid Rival",
+          "Monk Rival",
+          "Phosphorus"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s16",
+        "kind": "kill",
+        "next": [
+          "s17"
+        ],
+        "objective": "Defeat Maior Domus in the guardian rematch while avoiding the persistent Phosphorus hazards and rooting clouds.",
+        "targets": [
+          "Maior Domus",
+          "rooting clouds"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s17",
+        "kind": "kill",
+        "next": [
+          "s18"
+        ],
+        "objective": "Proceed through the opened portal and defeat Mimar Haffar in the guardian rematch while the persistent arena hazards remain active.",
+        "targets": [
+          "Mimar Haffar",
+          "rooting clouds"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s18",
+        "kind": "kill",
+        "next": [
+          "s19"
+        ],
+        "objective": "Defeat the final vulnerable Phosphorus while clearing the permanent curse with Shimmering Fields and managing Sanctified Draining Rifts and Disruptive Energy.",
+        "targets": [
+          "Phosphorus (Final)",
+          "Shimmering Field",
+          "Sanctified Draining Rift",
+          "Disruptive Energy"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s19",
+        "kind": "talk",
+        "next": [
+          "s20"
+        ],
+        "objective": "Return to Wayland Smythers and unlock the Fate Forge together with the permanent shortcuts to Mimar Haffar, Maior Domus and Phosphorus.",
+        "targets": [
+          "Wayland Smythers",
+          "Fate Forge",
+          "Thalassara boss shortcut portals"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s20",
+        "kind": "complete",
+        "next": [],
+        "objective": "Record completion and the selected Oteryn reward intents in the character journal.",
+        "targets": [
+          "Make Believe Quest"
+        ]
+      }
+    ],
+    "summary": "Infiltrate the moon cult, free Doctor Marrow's route and stop Phosphorus through the post-release Thalassara boss sequence.",
+    "wiki_title": "Make Believe Quest"
+  },
+  "runtime_enabled": false
+}

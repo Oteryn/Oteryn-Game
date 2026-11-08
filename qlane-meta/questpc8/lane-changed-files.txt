@@ -1,0 +1,9 @@
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss/world.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_npc.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_npc/questpc8_campaign.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs
+crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs

@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-content --lib world_reward_claims -- --nocapture",
+  "exit": 0,
+  "duration_seconds": 1.502
+}

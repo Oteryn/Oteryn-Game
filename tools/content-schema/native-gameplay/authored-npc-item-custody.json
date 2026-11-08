@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_AUTHORED_NPC_ITEM_CUSTODY/v1",
+  "inputs": [
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json",
+      "sha256": "af1367a098447ed4db829695b9219a38047864fa79584df0e1d68ab8543f9078",
+      "quest": "oteryn:quest.a_father_s_burden_quest"
+    }
+  ]
+}

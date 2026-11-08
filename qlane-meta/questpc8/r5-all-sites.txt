@@ -1,0 +1,199 @@
+apps/game-server/src/node/serve/qualification_fixture.rs:114:    use crate::durability::reward_claim_mint::{RewardClaimMintOutcome, RewardClaimMintRequest};
+apps/game-server/src/node/serve/qualification_fixture.rs:154:        let request = RewardClaimMintRequest {
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:9:    BindingReport, LeftOut, UnboundReason, bind_reward_claims,
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:493:            ("oteryn:reward-claim.kv.variant", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:494:            ("oteryn:reward-claim.kv.waiting", LeftOut::NotReady),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:495:            ("oteryn:reward-claim.kv.hours", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:496:            ("oteryn:reward-claim.kv.container", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:497:            ("oteryn:reward-claim.kv.two", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:498:            ("oteryn:reward-claim.kv.grant", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:580:                LeftOut::UnencodedField
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:582:            ("oteryn:reward-claim.kv.zero", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:583:            ("oteryn:reward-claim.kv.wide", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:584:            ("oteryn:reward-claim.kv.container", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:585:            ("oteryn:reward-claim.kv.stack", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:586:            ("oteryn:reward-claim.kv.plain_key", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:607:            LeftOut::ItemNotAdmitted
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:674:            .filter(|(_, why)| *why == LeftOut::NotReady)
+apps/game-server/tests/interaction_workflow.rs:81:fn stable_child_identity_is_reconstructed_from_the_same_semantic_tuple()
+apps/game-server/tests/interaction_workflow.rs:92:fn child_identity_preserves_parent_ancestry_and_bound_revisions() -> Result<(), InteractionError> {
+crates/gameplay/social/src/interaction/chest_use.rs:67:    RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/social/src/interaction/chest_use.rs:296:) -> Result<(ChildOccurrenceRef, RewardClaimMintRequest), ChestUseError> {
+crates/gameplay/social/src/interaction/chest_use.rs:311:    let mint_request = RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:35:    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:582:        request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:596:        request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:805:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:806:    RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:825:fn coins(command: CommandRef, claim_key: &str, quantity: u32) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1080:        let cases: Vec<(RewardClaimMintRequest, RewardClaimRefusal)> = vec![
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1716:        let key = RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2181:    mut request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2183:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2360:        let request = || -> TestResult<RewardClaimMintRequest> {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2846:    ) -> TestResult<RewardClaimMintRequest> {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:2:use crate::durability::reward_claim_mint::RewardClaimMintContent;
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:7:    mut request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:69:            bag.contents = vec![RewardClaimMintContent {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:95:                    bad.contents = vec![RewardClaimMintContent {
+crates/gameplay/combat/src/creature_area_heal.rs:619:                    let mut child_id = [0; 16];
+crates/gameplay/combat/src/creature_area_heal.rs:620:                    child_id.copy_from_slice(&child[..16]);
+crates/gameplay/combat/src/creature_area_heal.rs:621:                    DecisionOccurrenceId::from_bytes(child_id)
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:1127:    child_id: DecisionOccurrenceId,
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:2372:            let mut child_id = [0; 16];
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:2373:            child_id.copy_from_slice(&digest[..16]);
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:2374:            let child_id = DecisionOccurrenceId::from_bytes(child_id);
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:2383:                        child_id,
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:2430:                    child_id,
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:2456:                child_id,
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:2501:            child_id,
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:2582:                        occurrence: child_id,
+crates/gameplay/spell/src/creature_damage_spell/mod.rs:2655:                    occurrence: child_id,
+apps/game-server/tests/content_world_project_publication.rs:314:fn cleanup_rejects_child_identity_links_and_special_files() {
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:26:    pub child_ids:[[u8;16];3],
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:74:                        || facts.container_slot_equip_pattern || ids.contains(&selection.child_ids[index])
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:75:                        || check_uuid_v7(&selection.child_ids[index]).is_err() {return Err(NpcTradeError::InvalidInput)}
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:76:                    ids.push(selection.child_ids[index]);
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:120:        let ids:Vec<String>=selection.child_ids.iter().map(|id|id.iter().map(|b|format!("{b:02x}")).collect()).collect();
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:151:                    item_instance_id:selection.child_ids[index].to_vec(),world_id:world.as_bytes().to_vec(),quantity,lifecycle:ITEM_LIFECYCLE_LIVE,key_number:0,
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:164:            let id=selection.child_ids[index];
+crates/gameplay/content/src/content/world_reward_claims.rs:79:pub enum LeftOut {
+crates/gameplay/content/src/content/world_reward_claims.rs:145:    pub left_out: Vec<(String, LeftOut)>,
+crates/gameplay/content/src/content/world_reward_claims.rs:278:) -> Result<Result<Candidate, LeftOut>, ClaimsError> {
+crates/gameplay/content/src/content/world_reward_claims.rs:285:        return Ok(Err(LeftOut::OwnerExcluded));
+crates/gameplay/content/src/content/world_reward_claims.rs:291:        return Ok(Err(LeftOut::Variant));
+crates/gameplay/content/src/content/world_reward_claims.rs:294:        return Ok(Err(LeftOut::NotReady));
+crates/gameplay/content/src/content/world_reward_claims.rs:325:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:346:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:355:        return Ok(Err(LeftOut::ItemNotAdmitted));
+crates/gameplay/content/src/content/world_reward_claims.rs:1111:            Ok(Err(LeftOut::ItemNotAdmitted))
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:150:pub struct RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:162:pub struct RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:176:    pub contents: Vec<RewardClaimMintContent>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:354:    request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:458:    request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:504:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:517:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:532:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1021:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1268:    .bind(sqlx::types::Json(fluid::plan(request)))
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1309:    fluid::apply(tx, frozen, reservation).await?;
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1376:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1406:    .bind(sqlx::types::Json(fluid::plan(request)))
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1456:fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1513:    fluid::validate(request)?;
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1546:fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -> Result<[u8; 33]> {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1607:    let fluid_plan = fluid::plan(request);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1830:    fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1832:        RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1864:        let with = |transition: Option<&str>, achievement| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1878:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1900:        let key = |number: Option<u16>| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1910:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1914:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1918:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1932:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1933:        let with_quest = |number| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1982:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2037:        bag.contents = vec![RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2061:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2068:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2127:        container.contents = vec![RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint/arena.rs:17:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/arena.rs:102:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/monk.rs:13:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:12:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:111:fn validate_soul_war_request(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:130:        character: CharacterId, request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/grizzly.rs:13:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/grizzly.rs:46:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:6:pub(super) fn plan(request: &RewardClaimMintRequest) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:23:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:74:                contents::child_id(&reservation.transaction_id, ordinal, 3),
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:75:                contents::child_id(&reservation.transaction_id, ordinal, 1),
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:11:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:25:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:80:pub(super) fn capacity(request: &RewardClaimMintRequest) -> Option<i16> {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:93:pub(super) fn child_id(root: &[u8; 16], ordinal: usize, kind: u8) -> [u8; 16] {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:122:pub(super) fn plan(request: &RewardClaimMintRequest, reservation: &Reservation) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:126:fn plan_for_transaction(request: &RewardClaimMintRequest, transaction: &[u8; 16]) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:136:                    "transaction_id": uuid(&child_id(transaction, ordinal, 1)),
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:137:                    "event_id": uuid(&child_id(transaction, ordinal, 2)),
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:138:                    "item_instance_id": uuid(&child_id(transaction, ordinal, 3)),
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:153:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:158:    Ok(fluids.0 == fluid::plan(request)
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:171:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:227:        let transaction = child_id(&reservation.transaction_id, ordinal, 1);
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:228:        let event = child_id(&reservation.transaction_id, ordinal, 2);
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:229:        let item = child_id(&reservation.transaction_id, ordinal, 3);
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:327:    fn child_identities_are_stable_disjoint_and_keep_the_frozen_timestamp() {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:332:                let id = child_id(&root, ordinal, kind);
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:333:                assert_eq!(id, child_id(&root, ordinal, kind));
+crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_tests.rs:4029:    let child_identity = child.variant_child.clone().expect("source child identity");
+crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_tests.rs:4059:    assert_eq!((receipt.index, &receipt.child), (selected, &child_identity));
+crates/gameplay/quests/src/quest/loader.rs:238:            .filter(|track| super::in_runtime_scope(&track.quest))
+crates/gameplay/quests/src/quest/loader.rs:245:            .filter(|transition| super::in_runtime_scope(&transition.quest))
+crates/gameplay/quests/src/quest/world_callbacks.rs:136:    callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
+crates/gameplay/dispatch/src/gameplay_transport/hireling_services/purchase.rs:352:        child_ids: [
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:11:    RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:156:                            RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:169:                let request = RewardClaimMintRequest {
+crates/gameplay/quests/src/quest/mod.rs:78:pub(super) fn in_runtime_scope(quest: &str) -> bool {
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:9:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:105:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:623:    ) -> Option<crate::durability::reward_claim_mint::RewardClaimMintRequest> {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:626:            RewardClaimMintContent, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:661:            contents.push(RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:677:        Some(RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:6:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:67:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:9:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:15:    request: RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:203:            let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:12:pub(super) struct CatalogueChest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:30:fn cases() -> TestResult<Vec<CatalogueChest>> {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:121:                cases.push(CatalogueChest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:203:fn execute(cases: Vec<CatalogueChest>) -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:8:use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:111:    chest: &super::quest_catalogue_chests::CatalogueChest,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:119:    catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:456:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:600:    use crate::durability::reward_claim_mint::{RewardClaimMintRequest, RewardClaimMintError, RewardClaimRefusal};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:637:    let mut request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:7:    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:248:    let request = RewardClaimMintRequest {
+48:    execute(Case::Bear, "W15B_BEAR_CONTAINER")
+52:    execute(Case::Key, "W15B_KEY_CONTAINER")
+56:    execute(Case::Choice, "W15B_STORAGE_CHOICE")
+60:    execute(Case::Text, "W15B_TEXT_CONTAINER")
+64:    execute(Case::RootText, "W15B_LEAF_TEXT")
+68:    execute(Case::CrystalKey, "W15B_CRYSTAL_KEY")
+72:    execute(Case::FullCharge, "W15B_FULL_CHARGES")
+76:    execute(Case::Full, "W15B_CONTAINER_FULL")
+80:    execute(Case::Weight, "W15B_CONTAINER_WEIGHT")
+87:    execute(Case::DemonBoots, "QUESTS3_DEMON_BOOTS")
+91:    execute(Case::DemonHelmet, "QUESTS3_DEMON_HELMET")
+95:    execute(Case::DemonShield, "QUESTS3_DEMON_SHIELD")
+114:    scenario_case(Case::Catalogue, Some(chest), Some(activation))
+123:        Case::Catalogue => {
+137:        Case::DemonBoots => (
+144:        Case::DemonHelmet => (
+151:        Case::DemonShield => (
+158:        Case::RootText => (
+165:        Case::CrystalKey => (
+172:        Case::FullCharge => (
+179:        Case::Key => (
+189:        Case::Choice => (
+196:        Case::Text => (
+242:        let world = if matches!(case, Case::Choice) {
+253:                    Case::Text | Case::RootText => 4240,
+254:                    Case::CrystalKey => 2474,
+385:        if matches!(case, Case::Full | Case::Weight) {
+391:            let burdens = if matches!(case, Case::Full) {
+552:            let alternate = if matches!(case, Case::Choice) {
+664:                if matches!(case, Case::CrystalKey) {
+672:                if matches!(case, Case::FullCharge) {
+689:                if matches!(case, Case::RootText) {
+720:                if matches!(case, Case::Text) {
+761:                    matches!(case, Case::Choice)
+765:            if matches!(case, Case::Text) {

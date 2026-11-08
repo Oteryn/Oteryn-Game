@@ -1,0 +1,194 @@
+{
+  "classification": "OTERYN_AUTHORED_APPROXIMATION",
+  "completeness_scope": "CHOSEN_OTERYN_RECIPE_ONLY",
+  "data_complete": true,
+  "definition_profile": "oteryn_authored_v1",
+  "display_name": "Mastermind Potion Quest",
+  "identity": {
+    "key": "oteryn:quest.authored.mastermind_potion_quest",
+    "revision": "authored-r1"
+  },
+  "kind": "storyline",
+  "missing_data": [
+    {
+      "code": "quest_native_lowering_missing"
+    },
+    {
+      "code": "authored_trigger_and_delivery_bindings_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "canonical_reward_refs": [],
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "provenance": {
+    "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+    "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+  },
+  "readiness": "waiting_native_bindings",
+  "recipe": {
+    "adaptations": [
+      "The two caches are personal once-only rewards. Separate source gold amounts 78 and 123 are deliberately consolidated into one chosen final payout of 201 coins. Recommended Nightmare avoidance does not become a mandatory kill requirement."
+    ],
+    "repeat": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "kind": "once"
+    },
+    "requirements": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "min_level": 0,
+      "premium": true,
+      "prerequisites": []
+    },
+    "reward_intents": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 2,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7440",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Mastermind Potion"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 201,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3031",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Gold Coin"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7159",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Green Perch"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 2,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7158",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Rainbow Trout"
+      }
+    ],
+    "source_notes": [
+      "Base lists two Mastermind Potions, 78 gp and 123 gp, one Green Perch and two Rainbow Trout; spoiler distinguishes first wall cache and second fire cache.",
+      "All behavior and reward delivery are authored Oteryn choices; named entities are unresolved references, not canonical IDs. Native bindings, locations and runtime execution remain to be implemented."
+    ],
+    "source_refs": [
+      {
+        "content_sha256": "49a9bc66dadc47dd5f40204f0ac14cf022333fb7c5cf808db1f6c5a07fe75be8",
+        "pageid": 17060,
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "revid": 842378,
+        "url": "https://tibia.fandom.com/index.php?curid=17060&oldid=842378"
+      },
+      {
+        "content_sha256": "f34ae662bae2e0dfd37d4b337037d8fcf36d0724c8703040efc9baabf8583650",
+        "pageid": 18595,
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "revid": 289008,
+        "url": "https://tibia.fandom.com/index.php?curid=18595&oldid=289008"
+      }
+    ],
+    "stages": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s1",
+        "kind": "explore",
+        "next": [
+          "s2"
+        ],
+        "objective": "Enter Formorgar Mines and descend the first marked route past the Nightmare floor.",
+        "targets": [
+          "Formorgar Mines first cache route"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s2",
+        "kind": "use",
+        "next": [
+          "s3"
+        ],
+        "objective": "Open the first cache beside the mine wall.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "Formorgar first box beside wall"
+          }
+        ],
+        "targets": [
+          "Formorgar first box beside wall"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s3",
+        "kind": "explore",
+        "next": [
+          "s4"
+        ],
+        "objective": "Return to the entrance and follow the second route toward the fire.",
+        "targets": [
+          "Formorgar second cache route"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s4",
+        "kind": "use",
+        "next": [
+          "s5"
+        ],
+        "objective": "Open the second cache beside the fire.",
+        "target_items": [
+          {
+            "item_resolution": "unresolved",
+            "name": "Formorgar second box beside fire"
+          }
+        ],
+        "targets": [
+          "Formorgar second box beside fire"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s5",
+        "kind": "complete",
+        "next": [],
+        "objective": "Record completion and the selected Oteryn reward intents in the character journal.",
+        "targets": [
+          "Mastermind Potion Quest"
+        ]
+      }
+    ],
+    "summary": "Recover the two potion caches along separate Formorgar mine routes.",
+    "wiki_title": "Mastermind Potion Quest"
+  },
+  "runtime_enabled": false
+}

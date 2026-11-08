@@ -1,0 +1,73 @@
+{
+  "state": "Opening native PG GREEN; whole Wrath remains in progress",
+  "scope": "Opening hand-in only; full Wrath remains unqualified",
+  "test": "questpc8_wrath_native_opening_exact_materials_crate_and_replay",
+  "red": {
+    "postgres": true,
+    "duration_seconds": 101.964201091,
+    "point": "First Zalamon NPC_TALK greeting rejected; left Rejected, expected Accepted",
+    "log_sha256": "7d7519ff96b4f0cfd73548a0b073802285a95155da08b1d1ffb172515f1f0cf3"
+  },
+  "compile_gate": {
+    "workspace_all_targets": "PASS3m20s; production authoring present",
+    "fmt": "PASS"
+  },
+  "remaining": "Admit source NPC/greeting and exact crate output, then run GREEN; subsequent item-look disguise still QENGINE2-owned",
+  "item_admission": {
+    "red": "Direct existing callback validator rejects953 canonical NonStackable versus pinned harvest StackCapable",
+    "green": "2 local adapter regression tests passed in0.518s; production generation still running",
+    "canonical_mutated": false,
+    "source_packet_sha256": "75d32d5a109da7c9c5e51c3d977d8e02dc7682bab01216892d600881fbe11b42",
+    "test_file": "tools/content-migration/test_questpc8_nail_custody.py"
+  },
+  "latest_red": {
+    "postgres": true,
+    "duration_seconds": 99.213228266,
+    "point": "Command1 hi still Rejected after live lease binding and native landing validation",
+    "log_sha256": "86a06f54ecc075b215f4b4655f561d0e5bb9bda00dabc5d69c71088695b170a2"
+  },
+  "prepush2": {
+    "main": "e1ca3e003",
+    "merge": "40c63fb321f518c562344b60d08d2fcc6276e83c",
+    "conflicts": 0,
+    "generated": [
+      "native item provider",
+      "NPC placements",
+      "quest binding evidence including npc/quest-npc-dialogue-links.json",
+      "completion list",
+      "item-mint audit operation tags",
+      "world pins and deployment topology"
+    ],
+    "pin": "52b6c4243dc9774d0bb5a875881e6df7cb62a3909ec24507b5881efe6e01629c",
+    "post_merge_pin_refresh": "PASS; unchanged digest",
+    "duplicate_migrations": "PASS",
+    "unit_crates": [
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-npc"
+    ],
+    "unit_state": "four-crate run active; item/content run507/510 passed, three content failures collected",
+    "own_pg": "PASS217.555976812s",
+    "latest_workspace_check": "PASS5m18s with capability3 and required trait import",
+    "fmt": "PASS",
+    "main_attempt": {
+      "head": "f641d8d6c",
+      "result": "Aborted conflicts under owner fallback; retry after active runs to avoid changing their inputs"
+    }
+  },
+  "green": {
+    "postgres": true,
+    "duration_seconds": 217.555976812,
+    "marker": "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+    "log_sha256": "758d68438f76bb2cf7161dbe7c07d52991c14f57894c2a1a05232aea60f2f2a4",
+    "assertions": [
+      "source NPC and source map landing",
+      "missing materials retained",
+      "exact three nails and one wood charged",
+      "exact one marked crate minted",
+      "same command and cold reload cannot duplicate",
+      "whole quest not completed"
+    ]
+  }
+}

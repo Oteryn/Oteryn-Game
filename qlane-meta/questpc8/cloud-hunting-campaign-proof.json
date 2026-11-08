@@ -1,0 +1,53 @@
+{
+  "scope": "finite chosen hunting campaign and reusable atomic NPC reward/receipt predicates",
+  "source_engine": {
+    "branch": "claude/happy-davinci-ijz3wy-qengine2",
+    "head": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+    "reuse": "selected engine paths; preserve lane NPC executor and Smithhammer repair"
+  },
+  "red": {
+    "test": "questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
+    "duration_seconds": 171.08,
+    "marker": "HUNTING_CAMPAIGN hydras=650 journal_verified=true",
+    "failure": "expected extra 10000 XP; observed 0"
+  },
+  "green": {
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards -- --nocapture",
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "duration_seconds": 179.886708384,
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
+    "postgres": "18.6; retained local test cluster; real native deaths, command-7 dispatch, MINT and XP owners"
+  },
+  "units": {
+    "command": "cargo test --locked -p oteryn-gameplay-quests --lib quest::reward_callbacks::tests -- --nocapture",
+    "passed": 2,
+    "failed": 0,
+    "duration_seconds": 1.15
+  },
+  "checks_pending": [],
+  "proof_logs": {
+    "questpc8-campaign-red.log": "fb46687f369f378b2de616692c97efb54f6b50e00e66047e85cc09cc384f23ed",
+    "questpc8-campaign-green3.log": "65dd9d60f05b673a1a3616237dbfc3954ec2d94b8500c9e3ef43a911e2dd8206",
+    "questpc8-reward-units2.log": "bd482078200b02c0069c797e0cf0eb8bf15d472562c8daebc12548ca97da3195",
+    "questpc8-hunting-final-check.log": "eafd02ca4f79a1d4170f105e7444117f7ba3222acc364ab2cf74ccc60e542817",
+    "questpc8-hunting-final-clippy.log": "1d5d8b2c2b690ae0797bb283db747b410ef478c2d99b427ad0f857e98ed1f469",
+    "questpc8-engine-regenerate.log": "ae38a663203d49292fae62e01c1fc1af3e03ae676e42253d0826e09170742d84",
+    "questpc8-hunting-source-regression.log": "f64e5efa13f98604c345a1ade79ab9ef660554a1ec1977455c19cc1dc893aa97"
+  },
+  "validated_commit": "89ebe9ef9fccaadd3db132e6493f59cd01429aaa",
+  "checks": {
+    "fmt": "cargo fmt --all; exit 0",
+    "check": "all six changed crates, --all-features; exit 0, 61s",
+    "clippy": "all six changed crates, --all-targets --all-features -- -D warnings; exit 0, 189s",
+    "regeneration": "tools/content-migration/regenerate_content.py --resolve --no-stage; exit 0; world pin unchanged 2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+    "review": "read-only independent review of 89ebe9ef9 vs fced2532a; no concrete findings",
+    "source_regression": {
+      "test": "quest_l7_giant_smithhammer_four_source_states",
+      "passed": 1,
+      "duration_seconds": 36.07,
+      "marker": "POSTGRES_CASE_COMPLETED L7 giant-smithhammer four source states via USE"
+    }
+  }
+}

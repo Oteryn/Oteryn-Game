@@ -1,0 +1,68 @@
+{
+  "task_id": "questpc8-L7",
+  "task_complete": false,
+  "phase": "AUTHORING",
+  "observed_head": "8f745bc6c5e9218cc35176578299866e768b1494",
+  "head_note": "Operator WIP snapshot; no Git mutation command was issued by this agent. Later fixture repairs remain uncommitted.",
+  "product_files": [
+    "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l7_asymmetric.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs"
+  ],
+  "product_sha256": {
+    "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs": "0bfaedc34c79f8a2c44377a9f3a23fd839fd1a1c06a0e6ed3bf8b48f1fc8133f",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l7_asymmetric.rs": "05216b10318bf747ba489afbd38a5ac241b57f8f8a30da1e7b6d42a863220e15",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs": "5611227a9a8f79250eecf672182a2a6c394173f286951e22f1f47a4c245e3cf5"
+  },
+  "checks": {
+    "postgres": {
+      "exit_code": 0,
+      "passed": 1,
+      "failed": 0,
+      "duration_seconds": 30.16,
+      "marker": "POSTGRES_CASE_COMPLETED L7 giant-smithhammer four source states via USE",
+      "log": ".questpc8/l7-smithhammer-final.log",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib quest_l7_giant_smithhammer_four_source_states -- --nocapture",
+      "log_sha256": "fb8e46d5fa3c56c288cb9197df965c03d7ed83b10f86d3afd7592dd68b536fc9"
+    },
+    "unit": {
+      "exit_code": 0,
+      "passed": 1,
+      "failed": 0,
+      "duration_seconds": 0.01,
+      "log": ".questpc8/l7-projection-unit.log",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib quest_world_callbacks_source_binding_and_visible_collision_batch_are_atomic -- --nocapture",
+      "log_sha256": "8e1af4a0152bd43590e72ec578cfffc44ff98af4ec41dbd5f462f491bdfa04a5"
+    },
+    "clippy": {
+      "exit_code": 0,
+      "log": ".questpc8/l7-clippy-final.log",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings",
+      "log_sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e"
+    },
+    "fmt": {
+      "exit_code": 0,
+      "log": ".questpc8/l7-fmt-final.log",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "mounted_test_fmt": {
+      "exit_code": 0,
+      "command": "rustfmt --edition 2024 --check crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l7_asymmetric.rs"
+    }
+  },
+  "red": {
+    "duration_seconds": 27.97,
+    "log": ".questpc8/l7-smithhammer-red.log",
+    "failure": "open lever + absent rock advanced revision 1 -> 2"
+  },
+  "counts": {
+    "QUALIFIED": 3,
+    "UNFINISHED": 20,
+    "BLOCKED": 0
+  },
+  "new_whole_quest_qualifications": 0,
+  "qualified_elsewhere": 3,
+  "independent_review": "not triggered; no publication/frozen candidate",
+  "active_cargo_sessions": []
+}

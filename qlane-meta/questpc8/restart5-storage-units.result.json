@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-quests",
+    "--lib",
+    "storage_owner_",
+    "--",
+    "--nocapture"
+  ],
+  "exit": 0,
+  "duration_seconds": 0.865,
+  "log": ".questpc/restart5-storage-units.log"
+}

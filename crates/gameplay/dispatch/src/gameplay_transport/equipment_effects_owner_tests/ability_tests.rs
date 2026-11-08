@@ -372,12 +372,64 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
+    let later_main_profiles = PROFILE_ADDITIONS
+        .iter()
+        .filter(|(name, _)| matches!(*name, "WORLDCHG" | "SRV9-MARRIAGE"))
+        .map(|(_, count)| count)
+        .sum::<usize>();
+    assert_eq!(later_main_profiles, 42);
+    let baseline = ORIGINAL_PROFILES
+        + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
+        + additions.len()
+        - npc_additions.len()
+        - later_main_profiles; // Post-baseline main cohorts are already in the generated delta.
+    let custody: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json"
+    )))?;
+    assert_eq!(custody["schema"], 1);
+    assert_eq!(custody["base"], "1ae39c7fb9bef09c3cd50d16410374f4134b1676");
     assert_eq!(
-        profiles.records.len(),
-        ORIGINAL_PROFILES
-            + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
-            + additions.len()
+        custody["base_count"].as_u64(),
+        Some(u64::try_from(baseline)?)
     );
+    let manifest: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/spells.manifest.json"
+    )))?;
+    for (field, pin) in [
+        "item_profiles",
+        "item_profile_updates",
+        "starting_loadout_item_profiles",
+    ]
+    .into_iter()
+    .zip(custody["inputs"].as_array().ok_or("custody input pins")?)
+    {
+        assert_eq!(
+            pin["path"],
+            format!(
+                "content/{}",
+                manifest[field]["path"].as_str().ok_or("path")?
+            )
+        );
+        assert_eq!(pin["sha256"], manifest[field]["sha256"]);
+    }
+    let extra = custody["added_keys"]
+        .as_array()
+        .ok_or("custody additions")?;
+    let mut custody_keys = std::collections::BTreeSet::new();
+    for key in extra {
+        let key = key.as_str().ok_or("custody key")?;
+        assert!(custody_keys.insert(key), "duplicate custody identity");
+        assert!(
+            profiles
+                .records
+                .iter()
+                .any(|p| p.production_definition.production_key == key),
+            "missing custody identity {key}"
+        );
+    }
+    assert_eq!(profiles.records.len(), baseline + custody_keys.len());
     for id in [2949, 12369, 14156, 33330, 44179, 52732] {
         let key = format!("oteryn:item.tibia.i{id}");
         let record = profiles

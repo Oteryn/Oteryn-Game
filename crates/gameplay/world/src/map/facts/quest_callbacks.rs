@@ -21,6 +21,10 @@ pub enum QuestCallbackProjection {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
     },
+    Scene {
+        mutations: Vec<QuestSceneMutation>,
+        remove_self: bool,
+    },
     ItemCycle {
         position: TilePos,
         remove: Option<u64>,
@@ -101,6 +105,14 @@ impl CallbackStates {
                             expires: *expires,
                         },
                     );
+                }
+            }
+            QuestCallbackProjection::Scene {
+                mutations,
+                remove_self,
+            } => {
+                if !project_scene(self, owner, mutations, *remove_self) {
+                    return false;
                 }
             }
             QuestCallbackProjection::ItemCycle {
@@ -691,7 +703,15 @@ impl BundleFacts {
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8
             || !states.has_capacity(
-                passages.len() + replacements.len() + usize::from(projection.is_some()) * 8,
+                passages.len()
+                    + replacements.len()
+                    + match projection {
+                        Some(QuestCallbackProjection::Scene { mutations, .. }) => {
+                            mutations.len().saturating_mul(3).saturating_add(1)
+                        }
+                        Some(_) => 8,
+                        None => 0,
+                    },
             )
         {
             return false;
@@ -799,4 +819,121 @@ impl BundleFacts {
             .unwrap_or_else(|| tile.walkable());
         !ground_walkable || if changed { blocked } else { baseline }
     }
+}
+
+/// A fully resolved edit; only the projection owner can publish these together.
+#[derive(Clone, Debug)]
+pub enum QuestSceneMutation {
+    Restore {
+        key: u64,
+        revision: u64,
+        facts: EntryFacts,
+        passable: bool,
+    },
+    Remove {
+        key: u64,
+        revision: u64,
+    },
+    Replace {
+        key: u64,
+        revision: u64,
+        facts: EntryFacts,
+        passable: bool,
+    },
+    Create {
+        position: TilePos,
+        facts: EntryFacts,
+        passable: bool,
+    },
+}
+
+fn project_scene(
+    states: &mut CallbackStates,
+    owner: u64,
+    edits: &[QuestSceneMutation],
+    remove_self: bool,
+) -> bool {
+    if edits.len() > 32 {
+        return false;
+    }
+    for edit in edits {
+        if matches!(edit, QuestSceneMutation::Create { facts, .. } | QuestSceneMutation::Replace { facts, .. } | QuestSceneMutation::Restore { facts, .. } if facts.pickupable)
+        {
+            return false;
+        }
+        if let QuestSceneMutation::Remove { key, revision }
+        | QuestSceneMutation::Replace { key, revision, .. } = edit
+            && (*key == owner
+                || *revision == u64::MAX
+                || states.hidden.contains(key)
+                || states.changed.get(key).map_or(0, |(current, _)| *current) != *revision)
+        {
+            return false;
+        }
+    }
+    for edit in edits {
+        if let QuestSceneMutation::Restore { key, revision, .. } = edit
+            && (*key == owner
+                || *revision == u64::MAX
+                || !states.hidden.contains(key)
+                || states.changed.get(key).map_or(0, |(current, _)| *current) != *revision)
+        {
+            return false;
+        }
+    }
+    for edit in edits {
+        match edit {
+            QuestSceneMutation::Restore {
+                key,
+                revision,
+                facts,
+                passable,
+            } => {
+                states.hidden.remove(key);
+                states.changed.insert(*key, (revision + 1, *facts));
+                states.passable.insert(*key, *passable);
+            }
+            QuestSceneMutation::Remove { key, .. } => {
+                states.hidden.insert(*key);
+                states.passable.remove(key);
+            }
+            QuestSceneMutation::Replace {
+                key,
+                revision,
+                facts,
+                passable,
+            } => {
+                states.changed.insert(*key, (revision + 1, *facts));
+                states.passable.insert(*key, *passable);
+            }
+            QuestSceneMutation::Create {
+                position,
+                facts,
+                passable,
+            } => {
+                let Some(sequence) = states.movement_sequence.checked_add(1) else {
+                    return false;
+                };
+                let Some(entry) = EntryId::callback(sequence) else {
+                    return false;
+                };
+                states.movement_sequence = sequence;
+                states
+                    .movement_items
+                    .entry(*position)
+                    .or_default()
+                    .push(view::ComposedEntry {
+                        source: view::EntrySource::Added(entry),
+                        facts: *facts,
+                    });
+                if !passable {
+                    states.solid_items.insert(*position);
+                }
+            }
+        }
+    }
+    if remove_self {
+        states.hidden.insert(owner);
+    }
+    true
 }

@@ -35,7 +35,7 @@
 //! `QUESTSTATE0-RL-01`, `-05`, `-07`, `-08` and `QUESTGATE0-RL-10`; over a bound the load fails
 //! closed.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use oteryn_gameplay_quests::quest::{
@@ -226,6 +226,7 @@ pub struct QuestObligationRecord {
 pub struct QuestStateCopy {
     character_revision: Option<CharacterRevision>,
     tracks: BTreeMap<String, i64>,
+    projected_initials: BTreeSet<String>,
     states: BTreeMap<String, QuestStateRecord>,
     obligations: Vec<QuestObligationRecord>,
     xp_obligations: Vec<QuestXpObligation>,
@@ -239,6 +240,35 @@ impl QuestStateCopy {
         self.character_revision
     }
 
+    /// Project non-legacy initial values without manufacturing durable storage.
+    /// The copy bound is checked before changing the read view.
+    fn project_declared_initials(&mut self, catalogue: &QuestStateCatalogue) -> bool {
+        let missing: Vec<_> = catalogue.declared_tracks()
+            .filter(|track| !self.tracks.contains_key(&track.key))
+            .filter_map(|track| {
+                // Read-compatible source activation keeps the predecessor's
+                // absent-row meaning, just as the locked writer does.
+                let initial = self.states.get(&track.quest)
+                    .and_then(|state| oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                        catalogue, &track.quest, &state.definition_hash))
+                    .and_then(|defaults| defaults.get(&track.key))
+                    .copied().unwrap_or(track.initial);
+                (initial != -1).then_some((track.key.clone(), initial))
+            }).collect();
+        if self.tracks.len().saturating_add(missing.len()) > QUESTSTATE0_RL_08_TRACKS {
+            return false;
+        }
+        for (key, initial) in missing {
+            self.tracks.insert(key.clone(), initial);
+            self.projected_initials.insert(key);
+        }
+        true
+    }
+
+    fn durable_track(&self, key: &str) -> Option<&i64> {
+        if self.projected_initials.contains(key) { None } else { self.tracks.get(key) }
+    }
+
     /// Global quest-door storage semantics: absent storage reads as `-1`; any
     /// durable value for the source storage action id grants the door.
     #[must_use]
@@ -246,8 +276,7 @@ impl QuestStateCopy {
         // Crystal201189f storages.lua:3069 / torkada.lua:63-85; source door outside the historical generated sample.
         if action == oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_STORAGE {
             return self
-                .tracks
-                .get(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK)
+                .durable_track(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK)
                 == Some(&1);
         }
         // The donor's numeric action names the same storage that quest authoring
@@ -273,15 +302,14 @@ impl QuestStateCopy {
         bindings
             .iter()
             .find(|binding| binding.action == action)
-            .and_then(|binding| self.tracks.get(&binding.track))
+            .and_then(|binding| self.durable_track(&binding.track))
             .or_else(|| {
-                self.tracks
-                    .get(&format!("oteryn:quest-progress/storage/{action}"))
+                self.durable_track(&format!("oteryn:quest-progress/storage/{action}"))
             })
             .is_some_and(|value| *value != -1)
     }
     /// Stored track values with supported read projections (including the Monk shrine count).
-    /// A stored track without a row reads as its declared initial value.
+    /// Admission projects declared non-minus-one initials; legacy absence remains `-1`.
     #[must_use]
     pub fn tracks(&self) -> &BTreeMap<String, i64> {
         &self.tracks
@@ -348,6 +376,7 @@ impl QuestStateCopy {
             .filter(|revision| *revision == committed.original_character_revision)
             .map(|_| committed.committed_character_revision);
         for change in &committed.changes {
+            self.projected_initials.remove(&change.track);
             self.tracks.insert(change.track.clone(), change.after);
         }
         oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut self.tracks);
@@ -431,6 +460,11 @@ pub async fn admit_character_quest_state(
             retry: false,
         };
     };
+    if let Some(catalogue) = catalogue
+        && !copy.project_declared_initials(catalogue)
+    {
+        return QuestAdmission { copy: None, retry: false };
+    }
     match request_pending_obligations(
         sequencer, root, authority, node, fence, catalogue, &mut copy,
     )

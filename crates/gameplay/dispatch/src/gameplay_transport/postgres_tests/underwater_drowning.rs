@@ -419,7 +419,9 @@ fn scenario_in_world(
         world_change: None,                key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
+                use_range: 1, disguise: None,
                 selector: Selector {
+                    ordinal: None,
                     position: Some(position(trigger)),
                     unique: None,
                     action: None,
@@ -436,6 +438,7 @@ fn scenario_in_world(
                         maximum: 0,
                         set: 1,
                         preserve: false,
+                        read_only: false,
                     }]
                 } else {
                     vec![]
@@ -443,7 +446,9 @@ fn scenario_in_world(
                 offerings: vec![],
                 minimum_level: None,
                 experience: None,
-                monk_reward: None,
+                completes: false,
+                premium_required: false,
+                monk_reward: None, present: Vec::new(), required_travel: Vec::new(),
                 item_on_target: None,
                 return_on_failure: refused,
                 failure_message: None,

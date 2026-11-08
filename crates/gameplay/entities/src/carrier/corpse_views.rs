@@ -164,8 +164,7 @@ impl ChannelRuntimeV1 {
             .retain(|pinned| held.contains(pinned));
     }
 
-    /// Whether `actor`'s corpse projection is pinned against eviction.
-    #[cfg(any(test, feature = "test-support"))]
+    /// Whether `actor`'s corpse projection is pinned against production guardian eviction.
     pub fn corpse_projection_pinned(&self, actor: ExactActorRef) -> bool {
         self.carrier.corpse_projection_pins.contains(&actor)
     }

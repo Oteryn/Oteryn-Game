@@ -764,6 +764,7 @@ pub(super) async fn exercise(
             }
         }
         setup.storage.push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+            read_only: false,
             track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision".into(),
             minimum: 2,
             maximum: 2,

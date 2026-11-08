@@ -1,0 +1,82 @@
+{
+  "scope": "Three complete chosen finite retrieval programmes; documented conservative native counterparts preserve canonical recipes and Source records",
+  "validation_base": "89d5e1413b882e0c570bbd50fdc096fe44e46702",
+  "qengine2_checked": "412fba411; no ordinary authored guardian source implementation found",
+  "red": {
+    "tests": 3,
+    "duration_seconds": 5.81,
+    "marker": "POSTGRES_CASE_STARTED authored-{kormarak,mastermind,voodoo} after PostgreSQL fixture initialization",
+    "failure": "missing callback, before production bindings"
+  },
+  "green": {
+    "tests": 3,
+    "duration_seconds": 251.67,
+    "postgres": "real PostgreSQL18.6 fixtures; actual framed STEP/USE and native death owner, no chosen counters/receipts seeded",
+    "cases": [
+      {
+        "quest": "oteryn:quest.authored.voodoo_doll_quest",
+        "test": "questpc8_retrieval_voodoo_three_witches_both_boxes_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_voodoo",
+        "duration_seconds": 40.260110753,
+        "coverage": "Three native chamber Witch deaths, both exact native boxes, King doll3209 and inactive wand3046, fresh/replayed claims and cold quest copy."
+      },
+      {
+        "quest": "oteryn:quest.authored.mastermind_potion_quest",
+        "test": "questpc8_retrieval_mastermind_two_routes_exact_outputs_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_mastermind",
+        "duration_seconds": 168.413264571,
+        "coverage": "Premium refusal/admission, both native route anchors and cache ordinals, exact7440x2/gold201/7159x1/7158x2, legal gold stacks and no extra bag, replay and cold quest copy."
+      },
+      {
+        "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+        "test": "questpc8_retrieval_kormarak_native_guardian_body_outputs_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_kormarak",
+        "duration_seconds": 42.999984035,
+        "coverage": "Both native counterpart waypoints, actual native Demon Skeleton death, premature body refusal, exact3359x1/3354x1/3276x1/3287x13 atomic outputs, completion, replay and cold quest copy."
+      }
+    ]
+  },
+  "fixture_repair": "First run passed Voodoo but two multi-sector fixtures refused unsorted sector tables; sort by sy/sx corrected the fixture. All three cases then passed. The final post-PG change is a transparent fixture type alias required by Clippy, with identical data and behavior.",
+  "native_guardian": {
+    "unit_red_seconds": 1.281,
+    "unit_green": "11 passed2.988s; source/point exact totals54685/87813",
+    "compiled_artifact": "NATIVE_GUARDIAN_COMPILED,6.42353538s; actual bundle source, Demon Skeleton at32341,32124,-10, PeriodAll, respawn90000ms",
+    "world_digest": "dd0a866904036a1823db30d042fcfd9eb4db89b21ad7ea93b1916cdc52265a04",
+    "inputs_digest": "6448cbaad3e4614ed631ddf5a3ee700611ce843d3108aa7d130afd1ef6aeabe6",
+    "world_bytes": 31101808,
+    "added_sources": 1,
+    "added_points": 1
+  },
+  "checks": {
+    "world_callback_units": "17 PASS1.50s",
+    "reward_callback_units": "5 PASS0.74s, including concurrent bounded NPC output validation",
+    "native_item_profile_units": "16 PASS89.114s",
+    "profile_regeneration": "PASS40files; only3209 added, existing profiles unchanged",
+    "spawn_regeneration": "PASS --check",
+    "check": "PASS all features, four relevant crates",
+    "clippy": "PASS -D warnings, all targets/all features, same crates",
+    "fmt": "PASS cargo fmt and explicit auto-mounted fixture rustfmt",
+    "pins": "PASS repository pin-refresh and pin-check"
+  },
+  "canonical_source_records_modified": false,
+  "conservative_choices": "CONTRACT-NOTES.md records missing historical coffin/fire landmarks, exact native counterpart positions and chosen north-then-south order; full historical geography is not claimed.",
+  "logs": {
+    "questpc8-retrieval-red.log": "efd5456b68c6b2a12758ad3384682227c1d22cee66e0bd1d0bf509443ff87b0d",
+    "questpc8-retrieval-green.log": "351181438162f4b7276f71621becae2f22dea8bba492b9264e3d590b3f656ce4",
+    "questpc8-retrieval-green2.log": "2e217ee921b83678a6929be1ce783c3d820871b7fb57f80804ca28bd3b35fed6",
+    "questpc8-authored-spawn-red.log": "ea3284e5e42fb8978868411bf63e1f474c862658d0ed2f680d3908e36918c44e",
+    "questpc8-retrieval-spawn-units-final.log": "14781b649f42001ab2cf0eaea5b1ec693c14d2b6bc2d56447adbc4e4e8da9f5c",
+    "questpc8-retrieval-spawn-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "questpc8-retrieval-compiled-guardian.log": "d2aa8954bcf03ab5800ce49df44c328c9f5086084a74ae6d5cf720849cca5a66",
+    "questpc8-retrieval-pins.log": "5648263f67b4abb46abb6250d410c2ba069ea947b685e71d1c17277ecdd8507a",
+    "questpc8-retrieval-profiles.log": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa",
+    "questpc8-retrieval-profile-units.log": "aac91328cc0c6154028f7537e5139d9077ead684e69193b80bed67b8d243a879",
+    "questpc8-retrieval-profile-check.log": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa",
+    "questpc8-retrieval-world-units.log": "166d21d87049fe02c59d377728752827fc49d3c2beeb6f61f7c06df6738e5052",
+    "questpc8-retrieval-reward-units.log": "92052859a694c0d43a02fbdc23a489d9a0cc20ce021207199bc67f8670f1370c",
+    "questpc8-retrieval-check-final.log": "a326298e075a5f9cca6fd2b77e471ae5c6c1caa9039b4b7a5f63fa170dd12bbe",
+    "questpc8-retrieval-clippy-final.log": "579e2ef0b13206effdfcde1aee8197ce90ac585e9ed569b9edd79af74fccc696",
+    "questpc8-retrieval-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "superseded_kormarak_model": "Historical ordinary static spawn replaced by conditional guardian in kormarak-consolidation-validation.json; other recorded cases remain historical evidence."
+}
