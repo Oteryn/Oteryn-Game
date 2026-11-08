@@ -9,6 +9,7 @@
 mod account_services;
 pub mod bazaar;
 mod challenge;
+pub mod coin_purchase;
 pub use challenge::{ChallengeProof, LoginChallenge, TokenExchange};
 mod owner_characters;
 pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};

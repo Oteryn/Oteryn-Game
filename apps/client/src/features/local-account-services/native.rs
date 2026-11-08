@@ -38,6 +38,7 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
     window.button("Check receipt", 9, [675, 480, 190, 30])?;
     let retry = window.button("Retry same request", 10, [15, 535, 210, 30])?;
     let status = window.button("Check pending status", 11, [240, 535, 230, 30])?;
+    window.button("Get coins", 13, [485, 535, 135, 30])?;
     window.button("Return to characters", 99, [630, 535, 235, 30])?;
     window.output(&view.status_text(), [15, 585, 850, 145])?;
     if let Some(page) = &view.page {
@@ -173,6 +174,7 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
             }
             10 => return Some(Action::Retry),
             11 => return Some(Action::Status),
+            13 => return Some(Action::CoinShop),
             99 => return Some(Action::Back),
             _ => {}
         }

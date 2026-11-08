@@ -41,7 +41,8 @@ The payment provider implementation remains Platform-owned. The owner's revised
 scope explicitly ships native client contracts, types, UI and test-only mocks
 before Platform issuance. These integration gaps are deployment prerequisites,
 not client blockers. The [Character Bazaar/world-transfer v1 contract](../contracts/OTERYN_CHARACTER_BAZAAR_V1.md)
-defines the shipped client flow; the coin shop is the next client work item.
+and [coin purchase v1 contract](../contracts/OTERYN_COIN_PURCHASE_V1.md) define
+the shipped native flows and their test-only mock authorities.
 Missing live keys never block sandbox development. The task already authorizes
 Oteryn implementation without another approval request.
 
@@ -74,8 +75,8 @@ The client needs authenticated Platform APIs for package quotes, idempotent orde
 creation, order status, coin balance and receipts. It opens only validated HTTPS
 sandbox checkout URLs in the system browser; browser return is not payment proof.
 Refresh status/balance from Platform after return or explicit refresh. Platform
-must qualify the ledger/webhook PostgreSQL cases before this can be called DONE.
-The native coin-purchase contract will define these endpoints for the client and
+must qualify the ledger/webhook PostgreSQL cases before live activation.
+The native coin-purchase contract defines these endpoints for the client and
 its test-only mock provider. Platform must implement issuance before deployment;
 this does not prevent shipping and testing the native client flow now.
 

@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
+pub(crate) mod coins;
 
 pub(crate) type TestResult = Result<(), Box<dyn std::error::Error>>;
 pub(crate) const CHARACTER: &str = "01890a5d-ac96-774b-bcce-b302099a8058";
@@ -24,6 +25,7 @@ pub(crate) struct MockPlatform {
 }
 #[derive(Default)]
 pub(crate) struct Authority {
+    pub coins: Option<coins::CoinAuthority>,
     pub commands: BTreeMap<String, (BazaarRequest, OperationReceipt)>,
     pub requests: Vec<String>,
     pub effects: u32,
@@ -57,7 +59,11 @@ impl Authority {
         BazaarPage {
             version: 1,
             view,
-            balance: 1000 - u64::from(self.effects) * 50,
+            balance: self
+                .coins
+                .as_ref()
+                .map_or(1000, |c| c.balance.available_coins)
+                .saturating_sub(u64::from(self.effects) * 50),
             auctions: vec![Auction {
                 id: AUCTION.into(),
                 character_id: CHARACTER.into(),
@@ -88,7 +94,24 @@ impl Authority {
             recent_operations: self.commands.values().map(|(_, r)| r.clone()).collect(),
         }
     }
-    fn route(&mut self, method: &str, target: &str, body: &str, authorized: bool) -> (u16, String) {
+    fn route(
+        &mut self,
+        method: &str,
+        target: &str,
+        body: &str,
+        authorized: bool,
+        signature: Option<&str>,
+    ) -> (u16, String) {
+        if method == "POST" && target == "/mock-provider/webhook" {
+            return match self
+                .coins
+                .as_mut()
+                .map(|c| c.webhook(body.as_bytes(), signature.unwrap_or_default()))
+            {
+                Some(Ok(())) => (200, "{}".into()),
+                _ => (400, "{}".into()),
+            };
+        }
         if method == "POST" && target == "/oauth/token" {
             return (
                 200,
@@ -105,6 +128,13 @@ impl Authority {
         }
         if !authorized {
             return (401, String::new());
+        }
+        if let Some(reply) = self
+            .coins
+            .as_mut()
+            .and_then(|c| c.route(method, target, body))
+        {
+            return reply;
         }
         if method == "GET" && target == "/api/v1/game-auth/native-characters" {
             return (

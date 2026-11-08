@@ -6,6 +6,7 @@ impl MockPlatform {
         let listener = runtime.block_on(TcpListener::bind("127.0.0.1:0"))?;
         let base = format!("http://127.0.0.1:{}/", listener.local_addr()?.port());
         let authority = Arc::new(Mutex::new(Authority {
+            coins: Some(coins::CoinAuthority::new(base.clone())?),
             offline: true,
             ..Authority::default()
         }));
@@ -26,7 +27,8 @@ impl MockPlatform {
                 let mut line=head.lines().next().unwrap_or_default().split_whitespace();
                 let method=line.next().unwrap_or_default();let target=line.next().unwrap_or_default();
                 let authorized=head.lines().any(|line|line.eq_ignore_ascii_case("authorization: Bearer services-test-token"));
-                let (status,reply)={let Ok(mut state)=state.lock() else {return;};state.requests.push(text.clone());state.route(method,target,body,authorized)};
+                let signature=head.lines().find_map(|line| {let(key,value)=line.split_once(':')?;key.eq_ignore_ascii_case("x-sandbox-signature").then(||value.trim())});
+                let (status,reply)={let Ok(mut state)=state.lock() else {return;};state.requests.push(text.clone());state.route(method,target,body,authorized,signature)};
                 let _=stream.write_all(format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}",reply.len()).as_bytes()).await;
             }
         });

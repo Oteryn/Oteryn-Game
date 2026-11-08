@@ -107,7 +107,7 @@ pub(super) async fn authorize(
                         crate::account_services::run(
                             client,
                             &services,
-                            &config.account_services,
+                            config,
                             cancellation.clone(),
                         )
                         .await?

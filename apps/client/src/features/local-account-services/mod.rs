@@ -16,6 +16,7 @@ use std::{sync::Arc, time::Instant};
 
 #[derive(Debug, Clone)]
 pub enum Action {
+    CoinShop,
     Refresh(AuctionView),
     Next,
     Bid {
@@ -166,7 +167,7 @@ pub fn present(view: &View, cancel: CancellationToken) -> Action {
 pub(crate) async fn run(
     client: &NativeLoginClient,
     token: &AccessToken,
-    presenter: &Presenter,
+    config: &crate::NativeLoginConfig,
     cancel: CancellationToken,
 ) -> Result<(), crate::GameplayEntryError> {
     let mut view = View::default();
@@ -179,10 +180,30 @@ pub(crate) async fn run(
     )
     .await;
     loop {
-        let (returned, action) = ask(view, presenter, cancel.clone()).await?;
+        let (returned, action) = ask(view, &config.account_services, cancel.clone()).await?;
         view = returned;
         if matches!(action, Action::Back) || cancel.is_cancelled() {
             return Ok(());
+        }
+        if matches!(action, Action::CoinShop) {
+            crate::coin_shop::run(
+                client,
+                token,
+                &config.coin_shop,
+                &config.open_browser,
+                None,
+                cancel.clone(),
+            )
+            .await?;
+            controller::execute(
+                &mut view,
+                Action::Refresh(AuctionView::All),
+                client,
+                token,
+                cancel.clone(),
+            )
+            .await;
+            continue;
         }
         controller::execute(&mut view, action, client, token, cancel.clone()).await;
     }
