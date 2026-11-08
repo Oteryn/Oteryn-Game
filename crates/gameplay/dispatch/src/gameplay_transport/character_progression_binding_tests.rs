@@ -99,7 +99,11 @@ fn the_death_request_is_formed_from_the_session_binding() {
         &binding,
         crate::foundation::RuntimeScopeRefV1::channel(world, channel),
         [0x01; 32],
-        actor_spell::PlayerDeath { occurrence, cell },
+        actor_spell::PlayerDeath {
+            public_cause: None,
+            occurrence,
+            cell,
+        },
         cell,
     );
     assert_eq!(request.context, binding.context);

@@ -925,6 +925,7 @@ async fn qualify_live_respawn_retention(
     let context = fixture::context();
     let occurrence = PlayerDeathOccurrence::from_bytes(id(100)).map_err(fixture::debug)?;
     let request = CharacterDeathRequest {
+        public_cause: None,
         occurrence,
         context: context.clone(),
         policy_revision: "policy-1".into(),

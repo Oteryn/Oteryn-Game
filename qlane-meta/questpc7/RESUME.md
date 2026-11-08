@@ -1,3 +1,11 @@
+# Main3031 integration — 2026-11-08 02:39 UTC
+
+Inventory repair committed0750ab21c. Main b3864f14a merged without conflicts.
+Native provider regeneration, pin refresh, workspace all-targets check,
+strict content/dispatch/quests clippy, fmt and duplicate migrations PASS. Fresh post-merge changed-crate units pending under PREPUSH-2
+budget exception; previous source proof remains historical, not new-main proof.
+Continue Goblin three personal sign sites after publication. No scope changes.
+
 # Inventory repair publication — 2026-11-08 02:33 UTC
 
 All five collected unit assertion failures repaired as one batch. Four focused

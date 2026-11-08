@@ -34,12 +34,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -146,12 +145,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -282,12 +280,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -324,12 +321,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -369,12 +365,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -439,12 +434,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -610,12 +604,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -665,12 +658,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -751,12 +743,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -824,12 +815,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -975,12 +965,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1023,12 +1012,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1111,12 +1099,11 @@
       "whole_quest": "ACTIVE"
     },
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1152,12 +1139,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1197,12 +1183,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1279,12 +1264,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1324,12 +1308,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1368,12 +1351,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1407,12 +1389,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1508,12 +1489,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1709,12 +1689,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1775,12 +1754,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1818,12 +1796,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1866,12 +1843,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   },
   {
@@ -1942,12 +1918,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
-      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
-      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
-      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
-      "qualification_change": false
+      "main": "b3864f14a",
+      "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+      "proof": "qlane-meta/questpc7/MAIN3031-PROOF.json",
+      "qualification_change": false,
+      "unit_validation": "Five inventory regressions green before merge; fresh post-merge crate runs pending. PREPUSH-2 budget exception applies."
     }
   }
 ]
