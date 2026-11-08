@@ -26,3 +26,24 @@ Environment prerequisite, not a mechanic: all18 whole node-boot variants (six pr
 Coordinator-assigned new migration range: **2140–2149** (historical1230-range NPCFIX migrations are unchanged). The first engine slice supplies reusable `ConditionalNpcActor`: committed availability is projected per exact actor occurrence; turning off one placement cannot remove another quest's same-key NPC. Real PG RED233.289ms -> GREEN355.733ms plus the full entities crate tests, strict Clippy and fmt passed. Event/content bindings remain work in progress.
 
 Audit correction for the Beregar row: the native source rules `content/dialogues/quest-rules/quest-batch3-a-the_hidden_city_of_beregar.json` already include Maris's `hidden-path` and `hidden-path-repeat` branches; `NpcRuleCatalog::runtime` admits Beregar. Absence from the shared reward registries alone is not a missing native mechanic. Its new focused PG story is retained in the legacy handoff stash and is not claimed executed yet.
+
+## Verified follow-up (2026-11-08)
+
+- Beregar: the native `hidden-path` and `hidden-path-repeat` rules were already present;
+  the actual missing integration was Maris's published source placement. The pushed
+  M38 story now exercises live NPC dialogue and the fenced progress writer: eligible
+  grant/reconciliation/conflicting replay/repeat passed on PostgreSQL in
+  **257.887529366 s**, and the current-premium rejection case in **256.50464213 s**.
+  The shared-registry absence above is not evidence of a missing native callback.
+- Hoaxette's April presence now uses the committed reset calendar and exact-occurrence
+  actor owner. Its real PostgreSQL exercise passed before the auto-test mount relocation;
+  the relocated entry and the whole node-boot matrix still require qualification.
+- A Swan's source anchor is admitted without a collision exception. Zarifan's actual
+  source anchor required an explicit solid-object contact policy: the compiler's
+  real-map test passed in **108.88 s**, including rejection when permission is removed.
+  This policy does not grant movement through solid terrain or waive other holds.
+- The exact Platform checkout is now present at the required revision. The older
+  missing-checkout blocker above is obsolete; whole node-boot qualification remains pending.
+- M38 remains PARTIAL: the other conditional NPC bindings, remaining exact-cell contacts,
+  guarded special passages/ticket return, and Anna's explicit Targuna continuation
+  are not claimed complete by these slices.

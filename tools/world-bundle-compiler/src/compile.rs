@@ -664,6 +664,19 @@ fn cell_reason(cell: &CellFacts) -> Option<HoldReason> {
     }
 }
 
+// A reviewed source contact may occupy a solid object. This changes NPC admission
+// only; the tile remains solid to movement and every other terrain hold still applies.
+fn npc_contact_cell_reason(mut cell: CellFacts, solid_contact: bool) -> Option<HoldReason> {
+    if solid_contact {
+        cell.block_solid = false;
+    }
+    cell_reason(&cell)
+}
+
+#[cfg(test)]
+#[path = "compile/npc_contact_tests.rs"]
+mod npc_contact_tests;
+
 /// The admission rule of the game server's `NpcServiceModel`: the reason it holds `npc`, if any.
 fn admission(families: &Families, npc: &str) -> Option<HoldReason> {
     let Some(facts) = families.npcs.get(npc) else {
@@ -769,13 +782,10 @@ fn npcs_with(
         .map(|placement| {
             admission(families, &placement.npc)
                 .or_else(|| {
-                    let mut cell = facts.get(&placement.cell).copied().unwrap_or_default();
-                    // A reviewed source contact may occupy a solid object. This does not
-                    // make the tile walkable or waive walls, teleports, or floor changes.
-                    if families.npc_block_solid_contacts.contains(&placement.key) {
-                        cell.block_solid = false;
-                    }
-                    cell_reason(&cell)
+                    npc_contact_cell_reason(
+                        facts.get(&placement.cell).copied().unwrap_or_default(),
+                        families.npc_block_solid_contacts.contains(&placement.key),
+                    )
                 })
                 .or_else(|| {
                     spawn_cells
