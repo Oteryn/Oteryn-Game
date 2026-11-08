@@ -1,6 +1,6 @@
 {
   "quest": "oteryn:quest.opticording_sphere_quest",
-  "state": "FIVE_PHYSICAL_PROFILES_REGISTERED_THREE_PRIOR_GREEN_TWO_NEW_GREEN_PENDING",
+  "state": "FIVE_PHYSICAL_PROFILES_PG_GREEN_WHOLE_ROUTE_PENDING",
   "physical_selection": {
     "19063": "initial opticording sphere,200centioz",
     "23573": "broken opticording sphere,180centioz",
@@ -95,7 +95,21 @@
         "33313": 42.744960659
       },
       "log": "/tmp/questpc5-opticording-tools-red-pg.log",
-      "green": "queued after workspace/fmt/strictClippy; registered only after actualRED"
+      "green": "Both GREEN in five-case run, spectacles42.548140818s/cube42.833818165s"
+    },
+    "five_material_postgres_green": {
+      "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "cases": 5,
+      "total_seconds": 129.216,
+      "duration_seconds": {
+        "spectacles": 42.548140818,
+        "broken": 42.553117086,
+        "initial": 43.728897744,
+        "complete": 43.762685846,
+        "cube": 42.833818165
+      },
+      "log": "/tmp/questpc5-opticording-five-green-pg.log",
+      "assertions": "exact native backpack custody; zero quest progress rows; no whole-quest qualification"
     }
   },
   "source_limits": "Both pinned public quest-directory lookups lack dedicated Opticording implementation; retained mysterious_ornate egg callback is explicitly unavailable placeholder. BR raw URL403 does not block finite selected implementation.",

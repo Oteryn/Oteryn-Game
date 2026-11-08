@@ -26,13 +26,27 @@
     "state": "PASS"
   },
   "pending": [
-    "StrictClippy active",
-    "Own5OpticordingPGGREEN queued",
-    "Unfinished crate unit tests from interrupted historical run"
+    "Unfinished historical crate unit tests; full CI suite belongs to collector",
+    "Whole ten remaining quests and eleven recorded engine requests"
   ],
   "qualification": "13of23 whole quests qualified; no whole quest newly qualified by physical custody",
   "workspace_all_targets_seconds": 215,
   "fmt": "PASS",
   "native_freshness": "49filesPASS",
-  "item_mount_equivalence": "34114Items/252Mounts/479Itembindings/337RewardClaimsPASS"
+  "item_mount_equivalence": "34114Items/252Mounts/479Itembindings/337RewardClaimsPASS",
+  "strict_clippy": "PASS content/dispatch/durability/client-assets218s",
+  "own_postgres_green": {
+    "cases": 5,
+    "seconds": 129.216,
+    "server_version": "18.6",
+    "duration_seconds": {
+      "spectacles": 42.548140818,
+      "broken": 42.553117086,
+      "initial": 43.728897744,
+      "complete": 43.762685846,
+      "cube": 42.833818165
+    }
+  },
+  "post_green_workspace_seconds": 198,
+  "post_green_fmt_pincheck": "PASS unchanged c8c716fc... inputs/fa64b039... World"
 }

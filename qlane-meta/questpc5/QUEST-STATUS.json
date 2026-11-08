@@ -113,7 +113,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "engine_requests_file": "ENGINE-REQUESTS.md"
   },
@@ -145,7 +145,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "engine_request_2026_11_08": {
       "feature": "Claimant-fenced progress from actual looting of an Item issued by an exact Creature death",
@@ -214,7 +214,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -272,7 +272,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -334,7 +334,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -375,7 +375,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "engine_requests_file": "ENGINE-REQUESTS.md"
   },
@@ -428,7 +428,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -477,7 +477,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -485,7 +485,7 @@
     "title": "Opticording Sphere Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Five selected physical materials registered. Three spheres have realPG RED/GREEN; Blue Spectacles and Cube have realPG RED, GREEN pending. Whole15-stage route, boss data and bindings remain to author; foreign Bigfoot prerequisite read requested.",
+    "blocker": "Five selected physical materials passed real PostgreSQL RED/GREEN. Whole15-stage selected route, boss data and source bindings remain to author; read-only foreign Bigfoot prerequisite request is recorded.",
     "from_lanes": [
       "questpc2"
     ],
@@ -498,7 +498,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "physical_material_work": {
       "identities": [
@@ -510,14 +510,14 @@
       ],
       "source_unit_tests": "4PASS9.800s; exact HEAD script and foreign-slot rejection retained",
       "producer_registered": true,
-      "postgres": "3PASS PostgreSQL18.6; 43.240674663s/43.276256365s/43.406213542s; no seeded quest progress",
+      "postgres": "5PASS PostgreSQL18.6 in129.216s; individual42.548–43.763s; no seeded quest progress",
       "proof": "cloud-opticording-source-resolution.json",
       "generated_checks": "49nativefiles;exactly2newprofiles,3844existingunchanged;equipment3881;centralcounts/pins/duplicatesPASS",
       "next_tool_identities": [
         27522,
         33313
       ],
-      "next_tool_postgres": "RED2of2 PostgreSQL18.6 before registration,42.571715555/42.744960659s DefinitionNotFound; GREEN pending"
+      "next_tool_postgres": "27522RED42.571715555s->GREEN42.548140818s;33313RED42.744960659s->GREEN42.833818165s"
     },
     "engine_requests_file": "ENGINE-REQUESTS.md",
     "prerequisite_work": "Exact torches and selected order drafted; not registered. Foreign rank prerequisite needs read-only admission alongside a local transition; preserve would create a forbidden foreign effect."
@@ -555,7 +555,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "engine_request_refinement": {
       "reused_clock": "reward_callbacks/state_ops.rs:StateCondition::ElapsedAtLeast + StateMutation::SetNow, authoritative transaction clock already implemented",
@@ -607,7 +607,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "engine_requests_file": "ENGINE-REQUESTS.md"
   },
@@ -645,7 +645,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "engine_request_refinement": {
       "reused": [
@@ -690,7 +690,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -722,7 +722,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -760,7 +760,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "engine_requests_file": "ENGINE-REQUESTS.md"
   },
@@ -790,7 +790,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "engine_requests_file": "ENGINE-REQUESTS.md"
   },
@@ -849,7 +849,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -922,7 +922,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -1005,7 +1005,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -1056,7 +1056,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -1087,7 +1087,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
     "engine_requests_file": "ENGINE-REQUESTS.md"
   },
@@ -1170,7 +1170,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   },
   {
@@ -1230,7 +1230,7 @@
     "latest_main_integration": {
       "main": "3209d3d61",
       "proof": "cloud-main3209-integration-proof.json",
-      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicatesPASS; strictClippy active;5ownPGGREEN pending"
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     }
   }
 ]
