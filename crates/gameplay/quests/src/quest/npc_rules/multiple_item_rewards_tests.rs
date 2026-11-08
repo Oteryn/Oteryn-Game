@@ -20,6 +20,7 @@ fn m09_tower_reward_plan_admits_all_four_literal_arrow_outputs() -> Result<(), N
             now_epoch_seconds: 1_700_000_000,
             calendar_month: 11,
             level: 50,
+            premium_current: false,
             vocation: "oteryn:vocation.none",
             sex: 0,
             outfits: &outfits,
