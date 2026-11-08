@@ -21,6 +21,7 @@ pub mod play;
 pub mod premium;
 pub mod reentry;
 pub mod scene;
+pub mod screenshots;
 pub mod spell;
 #[cfg(windows)]
 pub mod win_mutex;
