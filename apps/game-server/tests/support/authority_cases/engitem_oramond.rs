@@ -118,7 +118,6 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         carried_use: None,
         creature_use: None,
         peer_use: None,
-        creature_use: None,
     };
     let context = crate::durability::quest_world_callback::QuestWorldContext {
         map_revision: "map-1".into(),
