@@ -7,4 +7,4 @@
 
 | mechanic | lane tag | migration numbers | quests it unblocks | state |
 |---|---|---|---|---|
-| Fenced live-player quest predicate for selected carried USE | questpc8 | none planned; own range remains 1300–1309 | The Colours of Magic | CLAIMED |
+| M43: fenced live-player quest predicate for selected carried USE | questpc8 | none; assigned range 2010–2019 | The Colours of Magic | CLAIMED |

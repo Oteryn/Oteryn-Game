@@ -118,6 +118,7 @@ pub struct QuestRewardAdmission<'a> {
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
     pub actor_conditions: Option<&'a super::QuestActorConditionProof>,
     pub carried_use: Option<&'a QuestCarriedUse>,
+    pub peer_use: Option<&'a super::quest_peer::QuestPeerUseProof>,
 }
 
 #[allow(
@@ -148,6 +149,15 @@ pub(crate) async fn apply(
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
+    }
+    match (&callback.peer_requires, admission.peer_use, admission.carried_use) {
+        (None, None, _) => {}
+        (Some(requirement), Some(peer), Some(carried)) => {
+            if !super::quest_peer::holds_in_transaction(tx, node, fence, peer, requirement, catalogue, carried).await? {
+                return Ok(false);
+            }
+        }
+        _ => return Ok(false),
     }
     if callback
         .cosmetic_targets()
