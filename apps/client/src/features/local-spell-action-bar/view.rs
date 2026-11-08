@@ -69,32 +69,52 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
         Form {
             title: "Spell action bar",
             labels: &[
-                "Slot 1 cast index",
-                "Slot 2 cast index",
-                "Slot 3 cast index",
-                "Slot 4 cast index",
+                "Slot number (1–12)",
+                "Server cast index (see live catalogue)",
             ],
-            buttons: &["Apply", "Cast 1", "Cast 2", "Cast 3", "Cast 4"],
+            buttons: &["Assign spell", "Clear slot", "Cast slot"],
             snapshot: |mailbox| {
                 let panel = &mailbox.spell_bar;
                 (
                     panel.open,
                     false,
-                    panel.bar.fields(),
+                    vec!["1".into(), String::new()],
                     format!(
-                        "{}\r\n{}",
+                        "{}\r\n{}\r\n{}",
                         oteryn_client_ui::spell_action_bar::panel_text(
                             panel,
                             &mailbox.spell_catalog.catalog
                         ),
-                        oteryn_client_ui::spell_action_bar::vitals_text(mailbox.vitals.as_ref())
+                        oteryn_client_ui::spell_action_bar::vitals_text(mailbox.vitals.as_ref()),
+                        oteryn_client_ui::spell_catalog::panel_text(&mailbox.spell_catalog)
                     ),
                 )
             },
             set_open: |mailbox, open| mailbox.spell_bar.open = open,
             submit: |mailbox, commands, action, fields| {
-                super::input::submit(mailbox, commands, action, &fields)
+                super::input::edit_slot(mailbox, commands, action, &fields)
             },
         },
     );
+}
+
+impl crate::play::PlayLink {
+    pub fn assign_spell_slot(&self, slot: usize, cast_index: Option<u32>) -> bool {
+        super::super::feature_0287_actor_spell_catalog::view::assign_cast_index(
+            &mut crate::play::mailbox::lock(&self.mailbox),
+            slot,
+            cast_index,
+        )
+    }
+    pub fn spell_slot_labels(&self) -> Vec<String> {
+        let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+        crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(&mut mailbox);
+        oteryn_client_ui::spell_action_bar::slot_labels(
+            &mailbox.spell_bar,
+            &mailbox.spell_catalog.catalog,
+        )
+    }
+    pub fn cast_spell_slot(&self, slot: std::num::NonZeroU32) {
+        super::input::send_cast(self, slot);
+    }
 }

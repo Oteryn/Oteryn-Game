@@ -115,6 +115,7 @@ pub mod skill_display;
 pub mod skill_progress;
 pub mod spectate;
 pub mod spell_presentation_candidate;
+pub mod spellbook_details;
 pub mod staff;
 pub mod staff_tools;
 pub mod stash;
