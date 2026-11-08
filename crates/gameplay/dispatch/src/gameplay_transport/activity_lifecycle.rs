@@ -156,6 +156,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
             }
+            // The transition lock excludes entrants, native retirement-empty
+            // excludes all participants, and the durable witness seals return.
+            // Join this Instance only; other Instances and the Channel keep serving.
+            owner.states.kill_source_owner.stop_and_join().await;
+            if !self
+                .runtime_view(&owner)
+                .finish_activity_daily_kills()
+                .await
+            {
+                deferred = true;
+                continue;
+            }
             match self
                 .root
                 .retire_activity_ground_step(&permit, self.character, self.holder, &proof)
