@@ -2102,3 +2102,16 @@ transactions, refusal after commit, rollback of an advance and release.
 Durability clippy -D warnings:98.792s; fmt check PASS. No generated content or
 command/capability ordinal changed. M51 remains PARTIAL pending native
 pillar/portal composition, recovery custody checks and kick/reset closure.
+
+## M51: custody checked before restoring a fight (third slice)
+
+The arena reader now proves exact run/session/scope/deadline ownership before
+allowing native opponent restoration. A still-current active run can adopt an
+unoccupied reservation through the same fenced owner; conflicting custody
+prevents restoration and follows the existing stale-run cleanup path.
+The dispatcher retains this result rather than respawning from progress alone.
+Source: movements_arena_enter.lua:22-30 and movements_arena_pit.lua:52-62.
+RED: missing owned predicate, E0425. GREEN real PG:5.10s, testing wrong run,
+wrong deadline, exact expiry and the existing contention/rollback checks.
+Durability + dispatch clippy -D warnings:122.612s; fmt PASS. No new migration.
+M51 remains PARTIAL: native pillar/portal projection and lifecycle closure follow.

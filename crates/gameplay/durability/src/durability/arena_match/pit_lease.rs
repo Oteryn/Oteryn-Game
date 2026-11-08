@@ -65,6 +65,29 @@ pub(super) async fn claim(
     Ok(true)
 }
 
+/// A restored projection must retain the exact run, session, scope and deadline.
+pub(super) async fn owned(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    state: &MatchState,
+    now_ms: i64,
+) -> Result<bool, DurabilityError> {
+    let Some((world, channel)) = scope(fence) else {
+        return Ok(false);
+    };
+    if state.session != *fence.game_session_id.as_bytes()
+        || state.scope_generation != fence.scope_ownership_generation.get()
+        || state.deadline_ms <= now_ms
+    {
+        return Ok(false);
+    }
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_svargrond_pit_leases WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND pit=$3 AND character_id=encode($4,'hex')::uuid AND game_session_id=encode($5,'hex')::uuid AND run_id=encode($6,'hex')::uuid AND scope_generation=$7::text::numeric AND expires_at_ms=$8 AND expires_at_ms>$9)")
+        .bind(world.as_slice()).bind(channel.as_slice()).bind(i16::from(state.pit))
+        .bind(fence.character_id.as_bytes().as_slice()).bind(state.session.as_slice()).bind(state.run.as_slice())
+        .bind(state.scope_generation.to_string()).bind(state.deadline_ms).bind(now_ms)
+        .fetch_one(&mut **tx).await?)
+}
+
 pub(super) async fn release(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,

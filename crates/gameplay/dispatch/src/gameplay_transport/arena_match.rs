@@ -229,7 +229,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_arena_match(self.character, self.holder, fence, command, payload)
             .await
             .ok()?;
-        if !read.dead
+        if !read.dead && read.pit_owned
             && (read.state.rank == 0
                 || (read.state.session == *admitted.game_session_id.as_bytes()
                     && read.state.scope_generation == fence.scope_ownership_generation.get()))
@@ -260,7 +260,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let stale = after.rank > 0
             && (after.session != *admitted.game_session_id.as_bytes()
                 || after.scope_generation != fence.scope_ownership_generation.get()
-                || (read.dead && matches!(after.phase, 1 | 2)));
+                || (read.dead && matches!(after.phase, 1 | 2))
+                || (!read.pit_owned && matches!(after.phase, 1 | 2)));
         let expired = matches!(after.phase, 1 | 2) && after.deadline_ms <= read.now_ms;
         if stale || expired {
             after = after.idle();

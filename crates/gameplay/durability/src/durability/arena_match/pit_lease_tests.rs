@@ -49,6 +49,23 @@ fn m51_postgres_pit_reservation_serializes_contenders_and_releases_atomically() 
                     .fetch_one(&fixture.pool)
                     .await?;
             assert_eq!(*owner.as_bytes(), state.run);
+            let mut read = fixture.pool.begin().await?;
+            assert!(owned(&mut read, fence, &state, clock).await?);
+            let mut stale = state.clone();
+            stale.run = h::id(232);
+            assert!(!owned(&mut read, fence, &stale, clock).await?);
+            stale = state.clone();
+            stale.deadline_ms += 1;
+            assert!(
+                !owned(&mut read, fence, &stale, clock).await?,
+                "a stale deadline cannot restore a pit projection"
+            );
+            assert!(
+                !owned(&mut read, fence, &state, state.deadline_ms).await?,
+                "expiry is exclusive"
+            );
+            read.rollback().await?;
+
             let mut move_tx = fixture.pool.begin().await?;
             let mut next = state.clone();
             next.pit = 2;

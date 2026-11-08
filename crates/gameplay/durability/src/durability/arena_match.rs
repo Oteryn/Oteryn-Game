@@ -71,6 +71,7 @@ pub fn identity(command: CommandRef, purpose: &[u8]) -> [u8; 16] {
 }
 
 pub struct MatchRead {
+    pub pit_owned: bool,
     pub state: MatchState,
     pub masks: [u8; 3],
     pub now_ms: i64,
@@ -118,8 +119,12 @@ impl DurabilityRoot {
                     let replay = replay(&mut tx, fence, command, &payload).await?;
                     let dead: bool = matches!(state.phase,1|2) && sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision>$2::text::numeric)")
                         .bind(fence.character_id.as_bytes().as_slice()).bind(state.entry_revision.to_string()).fetch_one(&mut *tx).await?;
+                    let pit_owned = !matches!(state.phase,1|2) || (!dead &&
+                        (pit_lease::owned(&mut tx,fence,&state,now_ms).await?
+                         || pit_lease::claim(&mut tx,fence,&state,now_ms).await?));
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(MatchRead {
+                        pit_owned,
                         state,
                         masks,
                         now_ms,
