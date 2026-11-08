@@ -268,6 +268,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
+    ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
