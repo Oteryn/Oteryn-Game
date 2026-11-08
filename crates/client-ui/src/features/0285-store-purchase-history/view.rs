@@ -8,7 +8,15 @@ pub fn panel_text(panel: &Panel) -> String {
         if page.entries.is_empty() {
             text.push_str("\r\nNo purchases on this page");
         }
-        for row in &page.entries {
+        let mut totals = std::collections::BTreeMap::new();
+        let mut shown = 0;
+        for row in page
+            .entries
+            .iter()
+            .filter(|row| super::state::matches_filter(panel, row))
+        {
+            shown += 1;
+            *totals.entry(row.currency.as_str()).or_insert(0u128) += u128::from(row.price);
             let identity = row
                 .order_id
                 .iter()
@@ -22,6 +30,12 @@ pub fn panel_text(panel: &Panel) -> String {
                 "\r\n{} — {} {} — {} ms since Unix epoch",
                 row.offer_key, row.price, row.currency, row.purchased_at_unix_ms
             ));
+        }
+        if shown == 0 {
+            text.push_str("\r\nNo purchases match filters on this page");
+        }
+        for (currency, amount) in totals {
+            text.push_str(&format!("\r\nFiltered page total: {amount} {currency}"));
         }
         text.push_str(if page.next_page_cursor.is_empty() {
             "\r\nEnd of purchase history"
