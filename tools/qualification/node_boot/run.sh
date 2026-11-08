@@ -373,6 +373,14 @@ client_certificate_file = "$BASE/node/secrets/platform-client.crt"
 client_key_file = "$BASE/node/secrets/platform-client.key"
 descriptor_revision = 1
 installed_at = $DESCRIPTOR_INSTALLED_AT
+[platform.public_projections]
+enabled = false
+character_online_sessions_enabled = false
+world_daily_kills_enabled = false
+source_authority = "oteryn:game:primary"
+client_certificate_file = "$BASE/node/secrets/public-projections.crt"
+client_key_file = "$BASE/node/secrets/public-projections.key"
+epoch_fence_file = "$BASE/public-projections/epoch-fence"
 [launch]
 authorization_file = "$BASE/state/$1"
 s2_authorization_file = "$BASE/state/s2-fresh-store.json"

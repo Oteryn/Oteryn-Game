@@ -1,0 +1,22 @@
+{
+  "id": "PUBPROJ-V2-KILLERS",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md",
+  "resource": "Public killers per V2 death; overflow holds whole snapshot",
+  "unit": "records",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 16
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Bounded complete replacement snapshots; overflow refuses the whole publication and retains its outbox. Private capture preserves the classified cohort and does not truncate to the public wire limit.",
+  "client_visible": false,
+  "boundary_tests": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2/tests.rs:v2_deaths_refuse_invalid_identity_order_and_over_bound_without_truncation"
+  ],
+  "consumers": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2.rs",
+    "crates/gameplay/native-admission-source/src/descriptor.rs"
+  ],
+  "notes": "PUBPROJ owner 2026-11-07. Allocation is next free on d34807f5b plus lane offset 50. V2 public projection only; V1 accepted surfaces are unchanged."
+}
