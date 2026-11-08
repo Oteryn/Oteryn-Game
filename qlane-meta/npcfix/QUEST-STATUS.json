@@ -77,7 +77,7 @@
       "content_tree_seconds": 411.744,
       "exit": 0
     },
-    "auto_mounted_pg": "new registration compiles; execution rerun pending",
+    "auto_mounted_pg": "PASS including frozen-calendar occupied-anchor deferral and retry",
     "workspace_check": {
       "exit": 0,
       "seconds": 703.271,
@@ -91,7 +91,8 @@
     },
     "fmt": "PASS",
     "merged_qmech": "a8c2bf20c",
-    "clippy_seconds": 523.514
+    "clippy_seconds": 523.514,
+    "latest_green_pg_seconds": 9.4342814
   },
   "mistrock_slice": {
     "state": "GREEN_FOCUSED",
@@ -150,15 +151,29 @@
     "scope": "Explicit solid-object contact permission; every other terrain hold and movement collision remain intact"
   },
   "conditional_return_slice": {
-    "state": "GREEN_ENTITIES_CALLER_PENDING",
+    "state": "GREEN_FOCUSED_BOOT_PENDING",
     "scope": "Defer CellOccupied only and retry exact source occurrence; strict errors remain visible",
     "red": "Error: CellOccupied",
     "green": {
       "focused_cases": 5,
       "pg_seconds": 0.23507951,
       "pg_marker": "POSTGRES_CASE_COMPLETED NPCFIX_M38 conditional NPC occurrence projection",
-      "clippy": "PASS all-targets all-features -D warnings"
+      "clippy": "PASS all-targets all-features -D warnings",
+      "server_focused_cases": 4,
+      "server_pg_seconds": 9.4342814,
+      "server_clippy": "PASS all-targets -D warnings",
+      "fmt": "PASS",
+      "pin_check": "PASS"
     },
-    "caller": "Hoaxette tick wiring and its additional tests retained locally for separate validation"
+    "caller": "Hoaxette timed-NPC tick now defers occupied anchors and retries later",
+    "api_commit": "90381fab932642f456fdf1580b5076487d4099c5",
+    "workspace_check": "running separately; not claimed passed"
+  },
+  "latest_authoring": {
+    "checks": "PASS exit 0",
+    "unit_modules": 114,
+    "unit_exit": 0,
+    "content_tree": "PASS exit 0",
+    "scope": "Zarifan content slice; no content changes in the return-retry slices"
   }
 }

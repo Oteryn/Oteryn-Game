@@ -68,6 +68,41 @@ fn m38_hoaxette_refuses_absent_calendar_unadmitted_catalogue_and_bad_anchor() {
     }
 }
 
+#[test]
+fn m38_hoaxette_return_defers_an_occupied_anchor_and_retries_next_tick() {
+    let boot = timed_boot(&["oteryn:npc.hoaxette"]);
+    let mut runtime = channel_runtime_with(8);
+    let blocker = runtime
+        .place_dynamic_npc(
+            "oteryn:npc.rascalio",
+            NpcPlacement {
+                x: 32380,
+                y: 32215,
+                floor: -7,
+                direction: MovementFacing::North,
+            },
+        )
+        .expect("occupied source anchor");
+    let mut timed = TimedNpcSpawns::from_boot(Some(&boot))
+        .with_seasonal(Some(&boot), &[], |_| true)
+        .with_calendar(Some((4, 1)));
+    timed
+        .reconcile(&mut runtime, 720)
+        .expect("deferred return is not a tick failure");
+    assert_eq!(runtime.npc_key(blocker), Some("oteryn:npc.rascalio"));
+    assert_eq!(runtime.visible_entities().npcs.len(), 1);
+    runtime
+        .remove_dynamic_npc_actor(blocker)
+        .expect("anchor becomes vacant");
+    timed
+        .reconcile(&mut runtime, 720)
+        .expect("return on the next tick");
+    let npcs = runtime.visible_entities().npcs;
+    assert_eq!(npcs.len(), 1);
+    assert_eq!(runtime.npc_key(npcs[0].actor), Some("oteryn:npc.hoaxette"));
+    assert_eq!((npcs[0].position.x, npcs[0].position.y), (32380, 32215));
+}
+
 pub(crate) fn m38_hoaxette_postgres_case() -> crate::bestiary_postgres_harness::TestResult {
     use crate::bestiary_postgres_harness::{Harness, configured_admin, runtime};
     let Some(admin) = configured_admin() else {
@@ -104,6 +139,15 @@ pub(crate) fn m38_hoaxette_postgres_case() -> crate::bestiary_postgres_harness::
                         return Err("same epoch replay changed its calendar".into());
                     }
                     timed = timed.with_calendar(Some(calendar));
+                    if epoch == 2 {
+                        let blocker = channel.place_dynamic_npc("oteryn:npc.rascalio", NpcPlacement {
+                            x: 32380, y: 32215, floor: -7, direction: MovementFacing::North,
+                        }).map_err(|e| format!("{e:?}"))?;
+                        timed.reconcile(&mut channel, 720).map_err(|e| format!("{e:?}"))?;
+                        assert_eq!(channel.npc_key(blocker), Some("oteryn:npc.rascalio"));
+                        assert_eq!(channel.visible_entities().npcs.len(), 1);
+                        channel.remove_dynamic_npc_actor(blocker).map_err(|e| format!("{e:?}"))?;
+                    }
                     timed.reconcile(&mut channel, 720).map_err(|e| format!("{e:?}"))?;
                     let npcs = channel.visible_entities().npcs;
                     if npcs.len() != usize::from(present) { return Err("Hoaxette presence does not match committed April calendar".into()); }

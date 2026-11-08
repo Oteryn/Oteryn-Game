@@ -54,7 +54,7 @@ impl ConditionalNpcSpawns {
             .calendar
             .is_some_and(|(month, day)| month == 4 && (1..=30).contains(&day));
         if let Some(hoaxette) = &mut self.hoaxette {
-            hoaxette.reconcile(runtime, present)?;
+            hoaxette.reconcile_or_defer(runtime, present)?;
         }
         Ok(())
     }

@@ -132,7 +132,6 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         carried_use: None,
         creature_use: None,
         peer_use: None,
-        creature_use: None,
     };
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h
