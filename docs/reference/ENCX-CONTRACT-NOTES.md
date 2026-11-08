@@ -1235,3 +1235,13 @@ Red evidence: `primal_entry_rejects_unversioned_party_member_before_shared_owner
 returned `Ready(Ok(()))` rather than `InvalidInput` before the fix.
 The unchanged deadline PG regression was rerun from the existing durability test
 binary: one case passed in 16.18 s; this is not a newly compiled PG binary.
+
+### M29: native presentation of a party level refusal
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`data/libs/functions/boss_lever.lua:183-218`, checks each party participant.
+The existing `Level` reply therefore does not identify the lever user. The
+native boss panel now explains that a party member fails the level requirement
+instead of showing the raw enum name. It does not infer a threshold or alter
+server admission. A rejected encoded reply is tested through the real client
+handler and panel projection, with pending cleared and no fabricated snapshot.
+No command, capability, migration, content input or generated registry changes.

@@ -334,3 +334,28 @@ fn endgame_chain_selection_covers_both_chains_without_claiming_progress()
     }
     Ok(())
 }
+
+#[test]
+fn primal_party_level_refusal_has_native_participant_feedback() {
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.fields[0] = "oteryn:boss.the_primal_menace".into();
+    assert!(request(&mut panel, Intent::Enter).is_some());
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Rejected,
+            payload: vec![8, 2, 32, 12],
+        }
+    ));
+    assert!(!panel.pending);
+    assert!(panel_text(&panel).contains("A party member does not meet the level requirement"));
+    assert!(
+        panel.snapshot.is_none(),
+        "a refusal cannot manufacture accepted boss state"
+    );
+}

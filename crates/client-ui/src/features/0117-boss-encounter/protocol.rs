@@ -109,7 +109,13 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
                 panel.feedback = None;
             }
             boss_encounter::BossActivityReply::Refused(reason) => {
-                panel.summary = format!("Boss request refused: {reason:?}");
+                // Crystal boss_lever.lua:183-218 checks the whole roster; Level
+                // does not identify the lever user as the participant who failed.
+                panel.summary = if reason == boss_encounter::BossActivityRefusal::Level {
+                    "A party member does not meet the level requirement.".into()
+                } else {
+                    format!("Boss request refused: {reason:?}")
+                };
                 panel.feedback = Some("The server refused the boss request");
             }
             _ => {
