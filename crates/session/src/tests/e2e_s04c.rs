@@ -91,11 +91,8 @@ fn e2e_s04c_public_channels_and_mute_replay() -> Result<(), BoxError> {
             room,
             text: text.into(),
         };
-        let plan: Vec<(
-            &str,
-            ChatIntent,
-            Option<(u8, ChatRoomSet, Option<ChatLine>)>,
-        )> = vec![
+        type Push = Option<(u8, ChatRoomSet, Option<ChatLine>)>;
+        let plan: Vec<(&str, ChatIntent, Push)> = vec![
             (
                 "open-world",
                 ChatIntent::OpenRoom(ChatRoom::World),

@@ -119,7 +119,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
         return Err("step=expert the served mode differs from Red Fist".into());
     }
     let health = victim.actor_vitals().map(|v| v.health).ok_or("victim vitals absent")?;
-    let attack = attacker.attack_target(Some(&victim_ref)).await?;
+    let attack = attacker.session_mut().attack_target(Some(&victim_ref)).await?;
     if attack.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(format!("step=attack {attack:?}").into());
     }

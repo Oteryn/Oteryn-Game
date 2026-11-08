@@ -18,10 +18,8 @@ pub(super) struct Observed {
     pub(super) solo_status: CommandStatus,
     pub(super) mana_before: u32,
     pub(super) mana_after: u32,
-    pub(super) max_mana: u32,
     pub(super) vitals_before: String,
     pub(super) vitals_after: String,
-    pub(super) cast_status: CommandStatus,
     pub(super) caster_effects: Vec<u8>,
     pub(super) member_effects: Vec<u8>,
     pub(super) refusal_disposition: casts::SpellCastDisposition,
@@ -132,7 +130,7 @@ fn spell_index(words: &str) -> TestResult<std::num::NonZeroU32> {
 async fn cast_through_cooldown(
     client: &mut DevClientSession,
     index: std::num::NonZeroU32,
-) -> TestResult<oteryn_dev_client::SpellCastOutcome> {
+) -> TestResult<oteryn_dev_client::CastOutcome> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     loop {
         let outcome = client
@@ -257,10 +255,8 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         solo_status: solo.status,
         mana_before: before.mana,
         mana_after: after.mana,
-        max_mana: after.max_mana,
         vitals_before: vitals_line(&before),
         vitals_after: vitals_line(&after),
-        cast_status: cast.status,
         caster_effects,
         member_effects,
         refusal_disposition: refused.disposition,
