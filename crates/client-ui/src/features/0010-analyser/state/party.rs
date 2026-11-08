@@ -116,6 +116,13 @@ pub fn split(rows: &[Member]) -> Option<Vec<Transfer>> {
 }
 pub fn text(panel: &Panel) -> String {
     use std::fmt::Write;
+    if let Some(imported) = &panel.party_import {
+        let mut text = imported.text();
+        if let Some(feedback) = panel.feedback {
+            let _ = write!(text, "\r\n{feedback}");
+        }
+        return text;
+    }
     let mut text = "Party Hunt\r\nConfirmed current-party members · each current connection interval\r\nName | seconds | kills | XP | loot items/value | supplies/cost | damage/healing\r\n".to_owned();
     for row in &panel.party {
         if !row.available {
