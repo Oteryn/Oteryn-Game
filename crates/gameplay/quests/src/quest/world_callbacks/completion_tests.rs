@@ -25,7 +25,7 @@ fn child_completion_keeps_the_parent_incomplete_and_requires_native_reward_admis
     assert!(child.effects.is_empty());
     assert_eq!(child.quest, "oteryn:quest.authored.waterskin_of_mead_quest");
     assert_ne!(child.quest, original.quest);
-    for invalid in 0..8 {
+    for invalid in 0..9 {
         let mut c = original.clone();
         match invalid {
             0 => c.effects.quest_completion = Some(c.quest.clone()),
@@ -35,7 +35,8 @@ fn child_completion_keeps_the_parent_incomplete_and_requires_native_reward_admis
             4 => c.reversible = true,
             5 => c.storage.iter_mut().for_each(|s| s.preserve = true),
             6 => c.actor_kind = ActorKind::Monster,
-            _ => c.effects.quest_completion = Some("oteryn:item.not_a_quest".into()),
+            7 => c.effects.quest_completion = Some("oteryn:item.not_a_quest".into()),
+            _ => c.effects.item_reward_cycle = Some(c.storage[0].track.clone()),
         }
         assert!(
             parse(&document(&c)).is_err(),
