@@ -19,7 +19,9 @@ pub(super) async fn settle(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     entry: &PendingKillSettlement,
 ) -> bool {
-    if !oteryn_gameplay_quests::quest::native_kills::tracks_creature(&entry.creature) {
+    if !oteryn_gameplay_quests::quest::native_kills::tracks_creature(&entry.creature)
+        && !oteryn_gameplay_quests::quest::source_deaths::tracks_creature(&entry.creature)
+    {
         return true;
     }
     let Some(frozen) = &entry.grizzly else {

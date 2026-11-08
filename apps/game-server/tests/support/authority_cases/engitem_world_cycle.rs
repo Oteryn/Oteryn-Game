@@ -45,7 +45,7 @@ fn engitem_world_cycle_mint_is_once_per_epoch_atomic_and_replay_safe() -> f::Tes
 }
 
 fn world() -> f::TestResult<Callback> {
-    let effects = serde_json::json!({"item_reward":{"item":"oteryn:item.tibia.i3031","count":2,"contents":[]},"item_reward_cycle":CYCLE,
+    let effects = serde_json::json!({"item_reward":{"item":"oteryn:item.tibia.i3031","count":2,"contents":[],"additional":[{"item":"oteryn:item.tibia.i3035","count":1}]},"item_reward_cycle":CYCLE,
         "transform":null,"facing":null,"magic":null,"portals":null,"item_cycle":null,"encounter":null});
     // Parse only after the real PG harness exists, so RED executes the database case.
     let _: world_callbacks::CallbackEffects = serde_json::from_value(effects.clone())?;
@@ -184,6 +184,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         fee_payment: None,
         actor_conditions: None,
         carried_use: None,
+        peer_use: None,
     };
     let context = crate::durability::quest_world_callback::QuestWorldContext {
         map_revision: "map-1".into(),
@@ -321,6 +322,12 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     let minted:(i64,i64,i64,i64)=sqlx::query_as("SELECT count(*),count(DISTINCT item_instance_id),count(DISTINCT claim_production_key),sum(quantity)::bigint FROM game_reward_claim_mint_receipts").fetch_one(&h.pool).await?;
     assert_eq!(minted, (3, 3, 3, 6));
+    let siblings:i64=sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts r CROSS JOIN LATERAL jsonb_array_elements(r.additional_plan) p JOIN game_item_instances i ON i.item_instance_id=(p->>'item_instance_id')::uuid WHERE p->>'production_key'='oteryn:item.tibia.i3035' AND i.quantity=1 AND i.lifecycle=1").fetch_one(&h.pool).await?;
+    assert_eq!(
+        siblings, 3,
+        "each admitted epoch has exactly one independent sibling; replay cannot duplicate it"
+    );
+
     let atomic:i64=sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts m JOIN game_character_quest_receipts q ON q.character_id=m.character_id AND q.cause_id=m.game_session_id AND q.cause_ordinal=m.command_id AND q.created_xact_id=m.created_xact_id WHERE q.transition_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
     assert_eq!(
         atomic, 3,
