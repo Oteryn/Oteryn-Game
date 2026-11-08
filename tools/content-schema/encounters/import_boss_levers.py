@@ -185,6 +185,8 @@ def capture(root, path, profiles, defaults, *, configuration=None):
     return row
 
 def capture_records(root, path, profiles, defaults):
+    if path.relative_to(root).as_posix() in m26_endgame_capture.ENDGAME_PATHS:
+        m26_endgame_capture.verify_source_file(path.relative_to(root).as_posix(), path.read_bytes())
     if path.relative_to(root).as_posix() == m26_endgame_capture.SOUL_PATH:
         configurations = m26_endgame_capture.soul_configurations(path.read_bytes(), table)
         return [capture(root, path, profiles, defaults, configuration=configuration)

@@ -86,3 +86,11 @@ def spite_hooks(root, table):
     if events != ['SoulWarBossesDeath'] or re.search(r'\bmType\.on\w+\s*=',text):
         return [], False
     return events, True
+
+
+ROTTEN_SOURCE_SHA256 = {'data-global/scripts/quests/rotten_blood_quest/rotten_bakragore.lua': '821b49caf5e1c55f8a0e9a83b5f1158e5f34d3b3876681c5d9adfb6eedd96189', 'data-global/scripts/quests/rotten_blood_quest/rotten_bakragore1.lua': 'f6c8fc46dfde8d43bec59b0a2355871afbd19e6cb745f3096456d40c2bdc59a1', 'data-global/scripts/quests/rotten_blood_quest/rotten_chagorz.lua': 'd3f632880a7e871e0303994905ef3e814b22d6f797e51b732d4ce7f7c49050c2', 'data-global/scripts/quests/rotten_blood_quest/rotten_ichgahal.lua': '0822f2c430b389aa74bc3109db975e2bb96cd69385e6fc8fe26991b9b69f9b7c', 'data-global/scripts/quests/rotten_blood_quest/rotten_murcion.lua': '48f572ec9c418340bb07490334a216e81f4361627495e5c221d2a2d45b71d727', 'data-global/scripts/quests/rotten_blood_quest/rotten_vemiath.lua': '9b163af79214effbb5e9d2bd3d54290c266b988b33a89d809a70563e24c0c6c5'}
+
+def verify_source_file(path, raw):
+    expected = SOUL_SHA if path == SOUL_PATH else ROTTEN_SOURCE_SHA256.get(path)
+    if expected is None or hashlib.sha256(raw).hexdigest() != expected:
+        raise ValueError('M26_SOURCE_SUBSTITUTION:' + path)

@@ -32,16 +32,18 @@ class EndgameRegionCustody(unittest.TestCase):
                 target.parent.mkdir(parents=True,exist_ok=True)
                 target.write_text(text)
                 rows.append({'path':path,'sha256':hashlib.sha256(text.encode()).hexdigest()})
-            with patch.object(capture.source,'SOUL_SHA',hashlib.sha256(soul.encode()).hexdigest()):
+            known={row['path']:row['sha256'] for row in rows if row['path']!=capture.source.SOUL_PATH}
+            with patch.object(capture.source,'SOUL_SHA',hashlib.sha256(soul.encode()).hexdigest()), patch.object(capture.source,'ROTTEN_SOURCE_SHA256',known):
                 positions=capture.source_levers(root,rows)
                 self.assertEqual(len(positions),12)
                 self.assertIn((6,10,15),positions)
                 self.assertIn((106,20,15),positions)
                 target.write_text(text+' -- substituted')
-                with self.assertRaisesRegex(ValueError,'source lever substitution'):
+                with self.assertRaisesRegex(ValueError,'M26_SOURCE_SUBSTITUTION'):
                     capture.source_levers(root,rows)
                 target.write_text('local lever6 = BossLever(config)\nlever6:position(config.position)')
                 rows[-1]['sha256']=hashlib.sha256(target.read_bytes()).hexdigest()
+                known[rows[-1]['path']]=rows[-1]['sha256']
                 with self.assertRaisesRegex(ValueError,'nonliteral Rotten Blood lever position'):
                     capture.source_levers(root,rows)
 

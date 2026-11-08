@@ -16,6 +16,7 @@ def source_levers(root, rows):
     positions = set()
     for path in sorted({row['path'] for row in rows}):
         raw = (root / path).read_bytes()
+        source.verify_source_file(path, raw)
         if not all(hashlib.sha256(raw).hexdigest() == row['sha256'] for row in rows if row['path'] == path):
             raise ValueError('endgame source lever substitution')
         text = re.sub(r'--[^\n]*', '', raw.decode())
