@@ -137,7 +137,7 @@ mod tests {
         };
         let state = BTreeMap::from([(counter.gate.clone(), 4)]);
         assert_eq!(
-            crate::quest::native_kills::active_for(&catalogue, &state),
+            crate::quest::native_kills::active_for(&catalogue, &state).as_slice(),
             std::slice::from_ref(&counter.key)
         );
         assert!(crate::quest::native_kills::active_for(&catalogue, &BTreeMap::new()).is_empty());
