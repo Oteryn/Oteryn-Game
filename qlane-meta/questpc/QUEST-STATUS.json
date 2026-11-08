@@ -11348,7 +11348,7 @@
     "next": "small finite compatibility reconstruction after this proof push; assertion unchanged"
   },
   "npc13_compatibility_repair": {
-    "state": "UNIT_GREEN; LIVE_PG_GREEN_PENDING",
+    "state": "GREEN; REAL_PG4_AND_DISPATCH_UNITS1600",
     "proof": "cloud-npc13-compatibility-validation.json",
     "unit_cases": 318,
     "unit_failures": 0,
@@ -11356,17 +11356,20 @@
     "historical_definition": "8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084",
     "active_definition_before": "8cad8ca2510445fc38fef2aeab01b400ecc5d44e0d451758bb21cf018654400b",
     "new_helper_lines": 50,
-    "live_pg_green": "pending build/run after compiling push; original PG cases unchanged",
+    "live_pg_green": "PASS4/4 PostgreSQL18.6;228.40s; saved8c649465 assertion unchanged",
     "checks": {
       "quest_units": "PASS318/318153.70s;0ignored",
       "strict_quest_clippy": "PASS12.22s",
-      "workspace_all_targets": "PASS8m03s",
+      "workspace_all_targets": "PASS11m09s latest",
       "fmt_all": "PASS",
-      "regeneration": "PASS native44; tree34111Items/252Mounts/1282NPCs; evidence/matrix/mint/equipment/SOURCE",
-      "world_pin": "PASS unchanged0d87e75b463e",
-      "live_pg_green": "PENDING under PREPUSH-2 cadence exception"
+      "regeneration": "PASS final native/tree/evidence/matrix/mint/equipment/SOURCE; runtime bytes unchanged",
+      "world_pin": "PASS final unchanged0d87e75b463e",
+      "live_pg_green": "PASS4/4;228.40s;PostgreSQL18.6",
+      "strict_dispatch_clippy": "PASS9m09s including lock wait latest",
+      "dispatch_units": "PASS1600/1600;1453.009s",
+      "duplicate_migrations": "PASS staged tree"
     },
-    "live_pg_followup": "PG control-loss traced to exchange_carried replacing Object targets with nonexistent vessel Items; one-line Item-only guard pending rebuilt four-case proof",
-    "carried_target_checkpoint": "WIP COMPILE_GREEN; workspace/strict dispatch Clippy/fmt/generation/pins/duplicate checks pass; corrected four-case PG and dispatch units pending under PREPUSH-2"
+    "live_pg_followup": "Object targets preserved; all four real PG cases pass with unchanged8cad8ca2 active definition",
+    "carried_target_checkpoint": "Runtime PUSHED47b3bb0f0; PG4/4 and1600dispatchunits GREEN"
   }
 }

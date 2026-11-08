@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "state": "NPC13_UNIT_GREEN; CARRIED_TARGET_FIX_COMPILE_GREEN; LIVE_PG_RERUN_PENDING",
+  "state": "GREEN; MECHANIC_PG4_AND_DISPATCH_UNITS1600_VALIDATED",
   "quest_scope": "Existing Hidden Threats/Draconia/Citizen definition compatibility; no new quest started",
   "baseline": "eaffb5405e78044593e547a9c6a5d0ce0117da4d",
   "historical_definition": "8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084",
@@ -29,7 +29,7 @@
     "duration_seconds": 153.7
   },
   "pending": [
-    "all four retained-key PG cases with corrected carried target; changed-dispatch units, workspace and strict Clippy"
+    "latest main integration and its separate validation"
   ],
   "migrations_changed": [],
   "logs": {
@@ -92,11 +92,13 @@
   "checks": {
     "quest_units": "PASS318/318153.70s;0ignored",
     "strict_quest_clippy": "PASS12.22s",
-    "workspace_all_targets": "PASS8m03s",
+    "workspace_all_targets": "PASS11m09s latest",
     "fmt_all": "PASS",
-    "regeneration": "PASS native44; tree34111Items/252Mounts/1282NPCs; evidence/matrix/mint/equipment/SOURCE",
-    "world_pin": "PASS unchanged0d87e75b463e",
-    "live_pg_green": "PENDING under PREPUSH-2 cadence exception"
+    "regeneration": "PASS latest native/tree/evidence/matrix/mint/equipment/SOURCE; no runtime diff",
+    "world_pin": "PASS latest unchanged0d87e75b463e",
+    "live_pg_green": "PASS4/4;228.40s;PostgreSQL18.6",
+    "strict_dispatch_clippy": "PASS9m09s including lock wait latest",
+    "dispatch_units": "PASS1600/1600;1453.009s"
   },
   "main_merge": {
     "head": "98d6ae8ce5e12d60916532c72353126f534fa20a",
@@ -105,7 +107,7 @@
     "tested_tree_restored": "9b326b567979e5f4d5d67f8d017d356bfaf2e43d"
   },
   "live_pg_followup": {
-    "state": "RED; carried-target classification repair pending rebuild",
+    "state": "GREEN; Item-only target guard confirmed all4cases",
     "version": 180006,
     "cases": 4,
     "failures": 4,
@@ -132,13 +134,13 @@
     "workspace_all_targets": "PASS8m56s; corrected Item-only guard present before dispatch compilation",
     "strict_dispatch_clippy": "PASS11m16s including Cargo lock wait; all-targets/all-features -Dwarnings",
     "fmt": "PASS workspace and explicit mounted PG helper",
-    "own_pg": "PENDING rebuilt binary for all4cases",
-    "changed_dispatch_unit_suite": "PENDING under owner cadence exception",
-    "regeneration": "PASS; content/apps/client-assets bytes unchanged",
-    "world_pin": "PASS unchanged0d87e75b463e92f54ba9bf5f851e1070135c42fc99f321385a4c909030cf6d44",
-    "duplicate_migrations": "PASS staged-tree checker"
+    "own_pg": "PASS4/4 PostgreSQL18.6;228.40s",
+    "changed_dispatch_unit_suite": "PASS1600/1600;1453.009s",
+    "regeneration": "PASS latest complete regeneration; content/apps/client-assets bytes unchanged",
+    "world_pin": "PASS latest refresh; unchanged0d87e75b463e92f54ba9bf5f851e1070135c42fc99f321385a4c909030cf6d44",
+    "duplicate_migrations": "PASS latest staged-tree checker"
   },
-  "latest_main_observed": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+  "latest_main_observed": "c77d436d8be39f348924e66d97928ffd69e61a8c",
   "checkpoint_logs": {
     "target_guard_compile": {
       "sha256": "267ae5c45135804d5ebfe60b68485b7ca770c98504efab1e1b32926187a82432",
@@ -149,6 +151,69 @@
       "bytes": 4807
     },
     "target_guard_pin": {
+      "sha256": "41b8cacdb1df5032bf356d058d24be2d5e9768ff5d9c29c684373f0365a0da17",
+      "bytes": 404
+    }
+  },
+  "active_definition_after": "8cad8ca2510445fc38fef2aeab01b400ecc5d44e0d451758bb21cf018654400b",
+  "postgres_green": {
+    "code_head": "47b3bb0f087bd20f1f8e71cf3b1ad47859f7d128",
+    "cases": [
+      {
+        "case": "Unknown",
+        "duration_seconds": 56.432453499,
+        "version": 180006
+      },
+      {
+        "case": "Works01",
+        "duration_seconds": 56.988909428,
+        "version": 180006
+      },
+      {
+        "case": "Works02",
+        "duration_seconds": 57.215794626,
+        "version": 180006
+      },
+      {
+        "case": "Works03",
+        "duration_seconds": 57.757796952,
+        "version": 180006
+      }
+    ],
+    "passed": 4,
+    "failed": 0,
+    "ignored": 0,
+    "duration_seconds": 228.4,
+    "original_saved_hash_assertions": "unchanged",
+    "active_hash_prints": 4,
+    "log_sha256": "6abcfec9ab41b6f4369fcc67dc6de58db9bb7d063c28f1aa3659550d44ac656f"
+  },
+  "dispatch_units": {
+    "code_head": "47b3bb0f087bd20f1f8e71cf3b1ad47859f7d128",
+    "selected": 1600,
+    "passed": 1600,
+    "failed": 0,
+    "slow": 32,
+    "duration_seconds": 1453.009,
+    "not_selected": 1277,
+    "scope": "Changed dispatch crate default-enabled units; broader PostgreSQL suite excluded as instructed; original ignored tests unchanged",
+    "fail_fast": false,
+    "log_sha256": "168748447c6cb403224bee4ee136bd0ebfcfc0d57ed6e28f5cb6bbb2b68a2d44"
+  },
+  "final_logs": {
+    "workspace": {
+      "sha256": "f3a22953d86809a685aca673e37c229999225b1503a8187d192c7faf1b37fef8",
+      "bytes": 5638
+    },
+    "clippy": {
+      "sha256": "c73d833ee166b841ac6d6324fb41b3c0ed0a48adb6fae2b47891f89ba99ac06e",
+      "bytes": 4806
+    },
+    "regeneration": {
+      "sha256": "cc1f43e32b8e401be97890ee80354dfd171a3550b2fc2768492b1ac0e3bb818f",
+      "bytes": 4311
+    },
+    "pin": {
       "sha256": "41b8cacdb1df5032bf356d058d24be2d5e9768ff5d9c29c684373f0365a0da17",
       "bytes": 404
     }

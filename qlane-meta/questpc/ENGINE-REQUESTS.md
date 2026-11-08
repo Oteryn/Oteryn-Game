@@ -14,7 +14,7 @@ Source URLs and immutable hashes are in CONTRACT-NOTES.md and QUEST-STATUS.json.
 | Replay-bound random quest outcomes and live condition predicates | Barbarian Test Quest | Mead math.random(5)>1, failed sip resets success0; exact counter/early-return behavior. Mammoth requires actual CONDITION_DRUNK. Replay cannot reroll. |
 | Item-arrival trigger and atomic world readset/corpse mutation/boss summon | Elemental Spheres Quest | Source onAddItem, all seven charged altars, exact corpse/object identity; failure grants no partial progress. |
 | Player-driven shared world-state predicates and fenced refill/object reset | Krailos Quest | Salt Lake dryness, six refill uses and toxin removal; machinery sabotage/reset. Do not substitute character-only flags. |
-| Retain actual historical NPC13 definition predecessor | Hidden Threats Quest / catalogue compatibility | Existing regression pins8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084. Keep its real historical definition/defaults; never replace the expected hash. |
+| RESOLVED: retain actual historical NPC13 definition predecessor | Hidden Threats Quest / catalogue compatibility | Existing regression pins8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084. Keep its real historical definition/defaults; never replace the expected hash. |
 
 | Carried-tool callback composes counter increment, temporary outfit and replay-bound random spawn | In Service of Yalahar Quest | Original sewer UIDs3071–3074: crowbar3304/9598, four once-only flags, Mission01 increment; Skeleton3s/BogRaider5s outfits and rat spawn branch. Never publish four flag writes with missing coupled effects. |
 
@@ -27,3 +27,10 @@ conversation end. Citizen uses that existing programme planner through a small
 local adapter; both mainland source stories pass on PostgreSQL18.6.
 
 | Fenced read-only STEP_IN prerequisite proof with source-ordered refusals | Bigfoot's Burden Quest | step_quest_trigger currently passes read_only_gate=None; execute rejects read-only callbacks without a proof. Preserve source guard ordering and return movement refusal without progress/receipt/revision writes. |
+
+## NPC13 request resolved in the questpc compatibility repair
+Code e3566291a and carried-target PG helper47b3bb0f0 retain the exact historical
+8c649465 predecessor without changing the active8cad8ca2 definition. Quest units
+318/318 and all4 retained-key PG cases PASS on PostgreSQL18.6 (228.40s).
+Cross-quest hash refusal and all original PG assertions remain. This closes
+only the compatibility request, not whole Hidden Threats Quest qualification.

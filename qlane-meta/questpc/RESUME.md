@@ -1,3 +1,58 @@
+## Current green checkpoint: publish proof, then finish main integration
+Runtime code47b3bb0f0 is unchanged. Own PG4/4 PASS on PostgreSQL18.6 in228.40s;
+dispatch nextest1600/1600 PASS1453.009s; workspace all-targets PASS11m09s;
+strict dispatch Clippy PASS9m09s; fmt, complete regeneration, pins and duplicate
+migration check PASS. All runtime bytes and world pin0d87e75b463e unchanged.
+This proof commit closes the compatibility request; whole Hidden Threats is not
+qualified. Counts remain63/114/1excluded. Do not redo these unchanged checks.
+Main nowc77d436d8 (QREADY1+2). Main prep remains merging98d6ae8ce in isolation;
+342/345 Quest units now pass (132.73s); collect/fix remaining three together:
+- catalogue_history exact three-key history inventory lost Draconia/Citizen;
+- owner_scope callback inventory must combine main entries without weakening Dawnport exclusion;
+- published_ungated_quest_hash_baseline (inspect exact old/new hash and owner).
+Logs /tmp/questpc-main-prep-quest-units-green.log. SOURCE cores are unchanged,
+source pin amended only via tooling after published prior-compiler verification.
+Preserve all draft resolutions, extra constructor fixes and pattern conflict fix;
+see /tmp/questpc-main-prep-NOTES.md. Original-tree guard file is immutable.
+Finish mainc77 reconciliation before starting more quests; reuse qengine614d00506
+only after reviewing its qualified source scope (it contains47baa but notc77).
+
+## Current: all mechanic and changed-crate units GREEN
+Runtime code is already pushed47b3bb0f0. Retained-key PG4/4 PASS228.40s on
+PostgreSQL18.6; active8cad8ca2 and original saved8c649465 assertions intact.
+Dispatch nextest1600/1600 PASS1453.009s,32slow,broaderPG excluded as instructed;
+original ignored tests unchanged. No test assertions weakened or removed.
+Fresh workspace all-targets PASS11m09s; strict dispatch Clippy PASS9m09s.
+Final own regeneration/pin running /tmp/questpc-pg-proof-regeneration.log,
+/tmp/questpc-pg-proof-pin.log, session12401. Source/runtime bytes must remain
+unchanged. Once done, update proof fields, commit proof only and PUSH immediately.
+Counts63/114/1excluded unchanged; compatibility is not whole Hidden Threats.
+Main prep remains isolated. SOURCE amendment now PASS with frozen cores intact;
+prior compiler d438262b proved equal published e3566291a then added to tool's
+explicit prior-pin inventory. Quest all-targets PASS; Quest units344 ran64fail,
+mostly shared invalid l6/paradox-first-exit callback. Focused departure RED
+running /tmp/questpc-main-prep-departure-red.log, session50261. Fix only explicit
+stateless passage restoration while keeping existing negative tests intact.
+Native registration PASS; profile33/34 passed;139vs160 closure was stale reward
+placeholders, now regenerated via reward_claim_authoring and quest_tree_authoring.
+Rerun complete profile set after regeneration. Main full typecheck still pending.
+
+## Current: NPC13 compatibility and carried-target PG GREEN
+Pushed head47b3bb0f0. All four retained-key cases PASS on PostgreSQL18.6:
+Unknown56.432453499s;Works0156.988909428s;Works0257.215794626s;
+Works0357.757796952s; total228.40s. Four active hashes remain8cad8ca2;
+original saved8c649465 assertion unchanged. Never claim whole Hidden Threats
+qualification from this component repair. Own counts remain63/114/1excluded.
+Changed-dispatch units RUNNING1600selected,4threads,no-fail-fast; log
+/tmp/questpc-target-guard-dispatch-units.log; session16814. PG log is
+/tmp/questpc-npc13-target-guard-pg.log and verifier is /tmp/questpc-verify-retained-key-pg.py.
+Do not mutate active runtime inputs while this unit run uses them.
+Main isolated prep at /tmp/questpc-main-prep has all74conflicts resolved for98d;
+latest main47baa adds four unrelated files. Guarded resolution application is
+/tmp/questpc-apply-reviewed-main-draft.py. Native regeneration now in prep;
+log /tmp/questpc-main-prep-native-register.log. Full main typecheck pending.
+Finish all selected unit failures together; refresh records/gates and push.
+
 ## Current checkpoint: preserve carried world-object targets
 One-line fixture repair in exchange_carried refreshes Item vessel handles only;
 world Object targets retain their original placement and revision. No runtime,
