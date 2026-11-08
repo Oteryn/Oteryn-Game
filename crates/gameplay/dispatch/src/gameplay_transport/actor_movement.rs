@@ -559,6 +559,51 @@ mod tests {
         crate::foundation::{ChannelId, NodeId, WorldId},
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
+    #[test]
+    fn qn6_diagonal_duration_is_tripled_and_fits_the_wire_ceiling() -> Result<(), String> {
+        use oteryn_protocol_oteryn::world_spatial::{
+            MAX_STEP_WAIT_MS, StepDisposition, StepResult, decode_step_result_receipt,
+            encode_step_result_paced,
+        };
+        struct SlowestGround;
+        impl GroundSpeedSource for SlowestGround {
+            fn ground_speed(&self, _: LogicalCell) -> u16 {
+                1000
+            }
+        }
+        let at = MovementLocalPosition {
+            x: 1,
+            y: 1,
+            floor: -1,
+        };
+        let cardinal = duration_onto(&SlowestGround, at, Some(10), CardinalStep::East)
+            .map_err(|e| format!("{e:?}"))?;
+        for direction in [
+            CardinalStep::NorthEast,
+            CardinalStep::SouthEast,
+            CardinalStep::SouthWest,
+            CardinalStep::NorthWest,
+        ] {
+            let diagonal = duration_onto(&SlowestGround, at, Some(10), direction)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                diagonal,
+                cardinal.checked_mul(3).ok_or("duration overflow")?
+            );
+            let receipt = StepResult {
+                disposition: StepDisposition::Moved,
+                step_wait_ms: u32::try_from(diagonal.as_millis()).map_err(|e| e.to_string())?,
+            };
+            assert_eq!(receipt.step_wait_ms, MAX_STEP_WAIT_MS);
+            let bytes = encode_step_result_paced(receipt, true).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                decode_step_result_receipt(&bytes, true).map_err(|e| format!("{e:?}"))?,
+                receipt
+            );
+        }
+        Ok(())
+    }
+
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
     }
