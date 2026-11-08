@@ -111,9 +111,9 @@
       "decision": "Avoid authoring a competing generic reward engine. Preserve main and existing quest semantics together; prepare resolutions offline while stable crate tests execute."
     },
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -142,9 +142,9 @@
       "decision": "Keep Tutorial owned and Dawnport excluded; only the selected crystal exit may lead to existing Dawnport. Retain original ambiguous source facts and record plain rope/unlit torch as conservative selected bindings."
     },
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     },
     "engine_request_2026_11_08": {
       "feature": "Claimant-fenced progress from actual looting of an Item issued by an exact Creature death",
@@ -210,9 +210,9 @@
       }
     ],
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -268,9 +268,9 @@
       }
     ],
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -330,9 +330,9 @@
       "world_digest": "5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b"
     },
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -371,9 +371,9 @@
     },
     "active_phase": "source facts resolved; prepare owned recipe while text binding is supplied by qengine2",
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -423,9 +423,9 @@
     "whole_postgres_seconds": 54.444058006,
     "world_pin": "639485b04a204b8efe593cbf76c0af353d3ad058d390d7f13bbb863dca3ce97c",
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -472,9 +472,9 @@
     "qualification_proof": "cloud-noodles-whole-proof.json",
     "whole_postgres_seconds": 94.317145358,
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -493,9 +493,9 @@
       "pointer": "/records/78/definition"
     },
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     },
     "physical_material_work": {
       "identities": [
@@ -541,9 +541,9 @@
       "shipping_checks": "PASS workspacealltargets4m16s,fmt,regeneration,equivalence,worldmetadata,pinrefresh/check,duplicates; focusedpostmerge tests/Clippy pending cadence exception"
     },
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     },
     "engine_request_refinement": {
       "reused_clock": "reward_callbacks/state_ops.rs:StateCondition::ElapsedAtLeast + StateMutation::SetNow, authoritative transaction clock already implemented",
@@ -592,9 +592,9 @@
       "scope": "Shared source admission only. KV6063 full-default bag is distinct from the owned quest6062 route; no whole Ornamented qualification inferred."
     },
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -629,9 +629,9 @@
     },
     "engine_request": "Daily restart/completion for authored NPC/world callback routes, reusing existing storage-time guards; qengine2 a1ea4e48 checked, no authored callback clock binding.",
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     },
     "engine_request_refinement": {
       "reused": [
@@ -673,9 +673,9 @@
       "The explicit native selection repairs source chest6151 item3031/comment power ring using the selected recipe and pinned Wiki item3050; original3031x1 remains visible in native_selection.original_reward. Never grant both."
     ],
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -705,9 +705,9 @@
       }
     ],
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -743,9 +743,9 @@
       "decision": "Reuse existing item-target taming; request only missing quest guard/atomic progress. Do not substitute a creature or drop the earned-turnips predicate."
     },
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -772,9 +772,9 @@
       "state": "requested; continue other own entries"
     },
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -830,9 +830,9 @@
     "qualification_evidence": "cloud-banshees-whole-proof.json",
     "integration_note": "Owner-authorized uncommitted QUESTPC8 migration1300 remains a local test prerequisite; collector must compose canonical PC8 PR from main before deployment. No foreign migration is shipped.",
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -903,9 +903,9 @@
     "known_fact_preservation_followup": "Complete: PG54.28s plus full tree/Imbuement/craft replay PASS; accepted canonical/native facts retained.",
     "dependent_fingerprint_evidence": "cloud-imbuement-fingerprint-proof.json",
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -986,9 +986,9 @@
     },
     "whole_route_evidence": "cloud-devil-complete-proof.json",
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -1037,9 +1037,9 @@
     "qualified_at": "2026-11-07",
     "qualification_evidence": "cloud-hoist-complete-proof.json",
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -1068,9 +1068,9 @@
       ]
     },
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -1150,9 +1150,9 @@
     "qualification_proof": "qlane-meta/questpc5/cloud-serpentine-whole-proof.json",
     "integration_note": "Post-QNPCFX regression reached original chest but Rejected when pending QUESTPC8 migration1300 was absent. Restore only owner-approved local uncommitted prerequisite for focused tests; no tracked copy; native route/premium/observation passed before chest.",
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   },
   {
@@ -1210,9 +1210,9 @@
     "qualified_at": "2026-11-07",
     "qualification_evidence": "cloud-thais-complete-proof.json",
     "latest_main_integration": {
-      "main": "47baa7bb8",
-      "proof": "cloud-soulpit-main-integration-proof.json",
-      "state": "331questunits,38NPCunits and all8existingfocused casesGREEN; newOpticording3PGRED registration underway"
+      "main": "c77d436d8",
+      "proof": "cloud-mainc77-integration-proof.json",
+      "state": "workspace postpin/fmt/nativegeneration/equipment/matrix/pins/duplicatesPASS; focusedPG andchangedcrateunits pending"
     }
   }
 ]

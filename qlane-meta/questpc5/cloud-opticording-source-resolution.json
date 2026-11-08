@@ -78,13 +78,13 @@
   "source_limits": "Both pinned public quest-directory lookups lack dedicated Opticording implementation; retained mysterious_ornate egg callback is explicitly unavailable placeholder. BR raw URL403 does not block finite selected implementation.",
   "generated_checks": {
     "equipment_union": 3879,
-    "lane_raw_delta": 119,
-    "lane_new_union": 115,
-    "immutable_equipment_baseline": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+    "lane_raw_delta": 108,
+    "lane_new_union": 104,
+    "immutable_equipment_baseline": "c77d436d8",
     "item_mount_equivalence": "34114Items/252MountsPASS",
     "world_metadata": "0of4changed",
-    "world_digest": "8bd9bf232a781a5eb3fb589677cf18e4df4f17507ed14c885e288f7d3054f452",
-    "world_inputs_digest": "bcdb83e410cf07240894e5f3d1bcd2ae71be626fbe6f1760ee513ac473a1161b",
+    "world_digest": "fa64b0398214387aefd8acb8881a2286c56d411c6b5e74871b60167ac3dd9c1c",
+    "world_inputs_digest": "18f9256418e493b121594be05399463a0b8f2ab224c99253f00714529c4d055c",
     "pin_refresh_check": "PASS",
     "duplicate_migrations": "PASS stagedtree"
   }

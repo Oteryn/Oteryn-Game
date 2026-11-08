@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "baseline_commit": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
-  "baseline_native_count": 3763,
+  "baseline_commit": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+  "baseline_native_count": 3774,
   "baseline_overlay_sources": [
     {
       "path": "content/items/definitions/starting-loadout-profiles.json",
@@ -9,7 +9,7 @@
     },
     {
       "path": "content/items/definitions/srx1-item-updates.json",
-      "sha256": "156691ec5634e1803787c2ea6fec244eebb7c279ed550d306e1d934f9b371bfd"
+      "sha256": "67052b942642b5c1a6c0b6bcea14d912a4ca6b30606bf4047743adb99d078b28"
     }
   ],
   "baseline_overlay_keys": [
@@ -21,8 +21,8 @@
     "oteryn:item.tibia.i21291"
   ],
   "shared_cohort_sha256": "f8b8d4c863a39fd1ebcf3fcaf40244108c9a60fbd827511b6420a8461f5998e3",
-  "baseline_sha256": "48128249fc0de26d061a2e86c43d64f10e5bc4be1f3e2185409453a89b3f6583",
-  "baseline_count": 3725,
+  "baseline_sha256": "c560e4cb46653bbc614b1be3177c212f5aadaced2aa50cd895e240b581339518",
+  "baseline_count": 3736,
   "profile_sha256": "6b903a6779a02a757736e80d04a368a1c3d117348ebac09ef3b929bae4a85140",
   "keys": [
     "oteryn:item.tibia.i10189",
@@ -41,7 +41,6 @@
     "oteryn:item.tibia.i1631",
     "oteryn:item.tibia.i19063",
     "oteryn:item.tibia.i21291",
-    "oteryn:item.tibia.i21982",
     "oteryn:item.tibia.i22158",
     "oteryn:item.tibia.i22160",
     "oteryn:item.tibia.i23572",
@@ -56,11 +55,8 @@
     "oteryn:item.tibia.i27262",
     "oteryn:item.tibia.i27270",
     "oteryn:item.tibia.i27847",
-    "oteryn:item.tibia.i2822",
-    "oteryn:item.tibia.i2823",
     "oteryn:item.tibia.i28476",
     "oteryn:item.tibia.i28477",
-    "oteryn:item.tibia.i2848",
     "oteryn:item.tibia.i28489",
     "oteryn:item.tibia.i28490",
     "oteryn:item.tibia.i28491",
@@ -76,20 +72,14 @@
     "oteryn:item.tibia.i2992",
     "oteryn:item.tibia.i3014",
     "oteryn:item.tibia.i3061",
-    "oteryn:item.tibia.i3068",
     "oteryn:item.tibia.i3210",
-    "oteryn:item.tibia.i3310",
-    "oteryn:item.tibia.i3323",
-    "oteryn:item.tibia.i3383",
     "oteryn:item.tibia.i3424",
     "oteryn:item.tibia.i3465",
     "oteryn:item.tibia.i3466",
     "oteryn:item.tibia.i348",
     "oteryn:item.tibia.i3571",
     "oteryn:item.tibia.i3572",
-    "oteryn:item.tibia.i3579",
     "oteryn:item.tibia.i3602",
-    "oteryn:item.tibia.i3734",
     "oteryn:item.tibia.i3987",
     "oteryn:item.tibia.i399",
     "oteryn:item.tibia.i3991",
@@ -108,7 +98,6 @@
     "oteryn:item.tibia.i44525",
     "oteryn:item.tibia.i44527",
     "oteryn:item.tibia.i44528",
-    "oteryn:item.tibia.i4871",
     "oteryn:item.tibia.i50195",
     "oteryn:item.tibia.i50263",
     "oteryn:item.tibia.i5097",
