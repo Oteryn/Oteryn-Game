@@ -89,17 +89,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && super::endgame_entry::encounter_for_boss_key(&intent.boss_key).is_some()
         {
-            use oteryn_gameplay_encounters::bosses::endgame_entry::EntryRefusal;
             match self.endgame_boss_entry(admitted, payload).await {
                 Ok(Err(reason)) => {
-                    return refusal(match reason {
-                        EntryRefusal::InvalidInput => ActivityRefusal::InvalidInput,
-                        EntryRefusal::Level => ActivityRefusal::Level,
-                        EntryRefusal::QuestAccess | EntryRefusal::BossChain => {
-                            ActivityRefusal::AuthorityRejected
-                        }
-                        EntryRefusal::ContentUnavailable => ActivityRefusal::ContentUnavailable,
-                    });
+                    return refusal(reason.into());
                 }
                 Err(CharacterProgressionError::AuthorityRejected) => {
                     return refusal(ActivityRefusal::AuthorityRejected);
@@ -285,9 +277,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     .connection(participant.source.game_session_id)?;
                 match self.endgame_boss_entry(member, payload).await {
                     Ok(Ok(())) => {}
-                    Ok(Err(_)) | Err(_) => {
-                        return refusal(ActivityRefusal::AuthorityRejected);
-                    }
+                    Ok(Err(reason)) => return refusal(reason.into()),
+                    Err(_) => return refusal(ActivityRefusal::AuthorityRejected),
                 }
             }
         }

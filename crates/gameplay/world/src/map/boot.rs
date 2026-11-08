@@ -825,6 +825,16 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
     ) -> Result<CollisionClass, StaticCellEngineError> {
         self.lookup(scope, cell)
     }
+    fn house_tiles_present(
+        &self,
+        scope: &EngineeringStaticCellScope,
+    ) -> Result<bool, StaticCellEngineError> {
+        if scope != &self.scope {
+            return Err(StaticCellEngineError::ScopeMismatch);
+        }
+        Ok(self.map.facts.has_house_tiles())
+    }
+
     fn same_index(
         &self,
         other: &dyn crate::content::native_cell_lookup::BundleCollisionLookup,
@@ -1556,6 +1566,7 @@ pub mod tests {
                 seed: [7; 32],
                 fungus: true,
                 grimvale_full_moon: false,
+                items: Vec::new(),
                 trader: None,
             })
             .boot(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?, served)?;
@@ -1612,6 +1623,51 @@ pub mod tests {
         let progress = runtime.realize_activation_spawn_window(0)?;
         assert_eq!(progress.remaining, 0);
         assert_eq!(runtime.spawn_point_creatures().len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn bundle_house_absence_comes_from_loaded_tiles_and_rejects_scope_substitution()
+    -> Result<(), Box<dyn Error>> {
+        let world_id = WorldId::decode(&id(1))?;
+        let channel_id = ChannelId::decode(&id(2))?;
+        let entry = crate::content::qualify_native_entry_room(world_id)?;
+        assert!(!entry.movement_cells().house_tiles().is_known_empty());
+        for house in [0, 42] {
+            let (bytes, load) = bundle_with_house("item:box", 0, "item:coin", 1, house);
+            let world = boot(&bytes, &pins(load, 2), world_id, channel_id, items)?;
+            let cells = world.movement_cells(entry.movement_cells())?;
+            assert_eq!(cells.house_tiles().is_known_empty(), house == 0);
+            let at = LogicalCell { x: 2, y: 0, z: 7 };
+            assert_eq!(
+                cells
+                    .house_tiles()
+                    .house_at(cells.scope(), at)
+                    .map(|house| house.is_none()),
+                if house == 0 {
+                    Ok(true)
+                } else {
+                    Err("House placement metadata unavailable")
+                }
+            );
+            let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+                cells.index()
+            else {
+                return Err("bundle collision index".into());
+            };
+            let mut foreign = cells.scope().clone();
+            foreign.map_revision = MapRevisionRef::new("different-native-map")?;
+            let spoofed = NativeEntryMovementCells::from_bundle(
+                entry.movement_cells(),
+                foreign,
+                index.clone(),
+                Arc::clone(&world.map.spell_tiles),
+            );
+            assert!(
+                !spoofed.house_tiles().is_known_empty(),
+                "another map cannot borrow an absence proof"
+            );
+        }
         Ok(())
     }
 

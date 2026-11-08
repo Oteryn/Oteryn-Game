@@ -303,8 +303,7 @@ pub(super) async fn prepare_channel(
         )
         .map_err(|_| BootError::Readiness("world change map projection"))?;
     }
-    let daily_items =
-        daily_world_changes::apply_items(bundle.as_ref().map(|world| world.facts()), &daily);
+    let daily_items = daily_world_changes::apply_items(bundle.as_ref(), &daily);
     event(&format!(
         "event=daily_world_change reset_epoch={} thawing={} their_masters_voice={} \
          oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs} \

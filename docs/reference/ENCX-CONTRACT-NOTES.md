@@ -1138,3 +1138,40 @@ oteryn-gameplay-durability, oteryn-gameplay-entities, oteryn-gameplay-items,
 oteryn-gameplay-monster-ai and oteryn-synthetic-client-harness. The previous
 f641-generation results are retained outside the repository and are superseded;
 the focused native provisioning and corpse regression results above are green.
+
+
+## W10 party prerequisite refusal fidelity
+
+Crystal 201189f `data/libs/functions/boss_lever.lua:183-218` validates every lever
+participant. The dispatch composition previously preserved a level refusal for
+the lever user but collapsed the identical teammate refusal into authority
+rejection. Both paths now use the shared EntryRefusal-to-ActivityRefusal
+conversion. This changes the reported reason only; all party, level, quest,
+content, current-authority and scope-handoff checks remain in place.
+
+The regression `endgame_entry_activity_refusal_keeps_a_low_level_teammate_as_level`
+first failed to compile without the conversion, then passed in 0.006s. It uses a
+valid level-500 leader and a level-499 teammate and proves the shared owner is
+not invoked. Primal's 500 requirement remains unchanged. No command, capability,
+mechanic ordinal, registry ID or migration was allocated.
+
+Fetched and integrated main 83acbdac3 before publication. Generated content,
+audit lists, quest evidence, metadata and pins are regenerated with repository
+tooling. Incoming main's existing qlane-meta files are inherited unchanged;
+this lane adds no scratch artifacts there. The full dispatch unit binary remains
+pending after reproducible memory kills at one build job, zero test debug info
+and 256 codegen units; PREPUSH-2 permits publication with that suite pending.
+This prerequisite/presentation fix does not mark W10, W11 or W16 DONE.
+
+
+Publication evidence on integrated main 83acbdac3: all 64 runnable encounters
+library tests passed in 3.004s (seven existing ignored cases unchanged), including
+the new teammate regression in 0.007s. The native Instance corpse PostgreSQL
+case executed and passed in 5.091s. Workspace/all-target check passed in
+249.571s, changed-crate/all-target clippy with warnings denied in 217.328s,
+fmt in 15.219s, duplicate migrations in 0.410s and pin-check in 26.707s.
+Equipment pin regeneration passed for 3,763 profiles with independent cohort
+and generated-union agreement. Client registration regeneration changed no files.
+Complete dispatch unit tests remain explicitly pending under PREPUSH-2; its
+monolithic test compiler was killed by the environment despite the recorded
+low-memory retries. No test, assertion or admission condition was weakened.

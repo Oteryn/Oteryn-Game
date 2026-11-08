@@ -20,6 +20,9 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
     map: &BundleMap,
     now: u64,
 ) {
+    crate::gameplay_transport::quest_callbacks::monsters::settle_authored_monster_puzzles(
+        runtime, map,
+    );
     for step in map.facts.take_monster_steps() {
         if let Some(TileEntries {
             protection_zone,
