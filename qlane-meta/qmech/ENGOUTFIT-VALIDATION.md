@@ -19,3 +19,17 @@ The source cases exercise production NPC dispatch, current account outfit/sex re
 Content gates passed on the merged data: `run_checks.py --part checks`, `run_checks.py --part unit-tests`, `validate_world_project_v2_to_tree.py`, and the World bundle compiler `pin-check`. Native regeneration preserved every incoming profile byte-for-byte and added only M36 item rows 14021/14022/14023.
 
 Focused Rust gates are recorded in the push report. No migration was added.
+
+## Final M36 rerun after committed qmech integrations
+
+The source executor and NPC teleport participants were composed without changing M36 grant ownership. Candidate includes the committed `0326dc2e5` integration. No further qmech/main merge is required or performed under the owner’s revised instruction.
+
+| PG case | elapsed seconds | result |
+|---|---:|---|
+| `engoutfit_source_outfits_are_durable_and_replay_safe` | 128.275630 | PASS |
+| `engoutfit_source_outfits_rollback_when_insert_is_suppressed` | 128.207112 | PASS |
+| `engoutfit_rock_steady_collection_commits_exact_handins_and_weapon` | 106.835140 | PASS |
+
+These cases again used the production NPC dispatcher and real PostgreSQL, in isolated test processes. The prior seven-case regression results above remain recorded.
+
+Final Rust gates: fmt/check passed for quests, durability and dispatch; Clippy passed for all targets/features with warnings denied. Focused outfit units: 3 passed. Recipe tests retained after exact duplicate removal: 3 passed. The borrowed kill-counter assertion test: 1 passed. Full quest-authoring checks/unit-tests, content-tree validation and pin-check passed. Merge-only duplicate test/match-arm definitions were removed without changing their assertions or behavior.
