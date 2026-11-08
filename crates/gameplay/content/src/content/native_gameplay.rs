@@ -32,7 +32,7 @@ mod questpc5_cook_bindings;
 mod questpc5_cook_bindings_tests;
 
 mod cosmetics_view;
-pub use cosmetics_view::NativeCosmeticsView;
+pub use cosmetics_view::{MARRIAGE_GRANT_KEY, MARRIAGE_PROVENANCE, NativeCosmeticsView};
 
 mod market_catalogue;
 

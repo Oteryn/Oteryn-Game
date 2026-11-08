@@ -266,6 +266,14 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
+        self.inner.movement_item(id)
+    }
+
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
+        self.inner.movement_items(pos)
+    }
+
     fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
         self.inner.movement_items(pos)
     }

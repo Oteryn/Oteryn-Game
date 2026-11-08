@@ -52,6 +52,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self
+            .use_shared_callback_handle(actor, command, source, target)
+            .await
+        {
+            return Some(outcome);
+        }
         if let (Some(ItemKey::Instance(source)), Some(MapUseTarget::Object(target))) =
             (source, intent.use_with_map_item.as_ref())
             && intent.use_with.is_none()

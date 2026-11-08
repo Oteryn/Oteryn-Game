@@ -40,6 +40,38 @@ impl DurabilityRoot {
         request: QuestTransitionRequest,
     ) -> Result<Option<CommittedQuestTransition>> {
         let binding = request_binding(character, &request);
+        self.reconcile_quest_binding(authority, character, request, binding)
+            .await
+    }
+
+    /// A retained native handover freezes its original source fingerprint. This reads
+    /// history under recovery authority; it never debits an Item or reauthorizes gameplay.
+    pub async fn reconcile_benevola_handover(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        handover: super::super::world_event::changes::counters::benevola::BenevolaHandover,
+    ) -> Result<Option<CommittedQuestTransition>> {
+        if !handover.valid() {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let request = QuestTransitionRequest {
+            transition_key: super::super::world_event::changes::counters::benevola::HANDOVER.into(),
+            cause: QuestCause::Command(handover.command),
+        };
+        let mut binding = request_binding(character, &request);
+        handover.bind(&mut binding)?;
+        self.reconcile_quest_binding(authority, character, request, binding)
+            .await
+    }
+
+    async fn reconcile_quest_binding(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        request: QuestTransitionRequest,
+        binding: [u8; 33],
+    ) -> Result<Option<CommittedQuestTransition>> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;

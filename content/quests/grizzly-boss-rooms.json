@@ -330,7 +330,7 @@
         31183,
         7
       ],
-      "connected_tiles": 220,
+      "connected_tiles": 218,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:156"
     },
@@ -666,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "68e0e7e12ecd8b617233d80410ef4bbdb41afb5f876ec85a37eb46bd8160f655",
+    "content/items/definitions/spell-native-profiles.json": "ddfd54a05eb97aeaa220b24549f5c8440602c0408e1e6fcdb8f7c56e8e83199f",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
