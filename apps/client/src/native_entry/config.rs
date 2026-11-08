@@ -40,6 +40,7 @@ pub struct NativeLoginConfig {
     pub select_character: crate::character_selection::CharacterSelector,
     pub account_services: crate::account_services::Presenter,
     pub coin_shop: crate::coin_shop::Presenter,
+    pub premium: crate::premium::Presenter,
 }
 
 impl Debug for NativeLoginConfig {
@@ -83,6 +84,7 @@ impl NativeLoginConfig {
             select_character: Arc::new(crate::character_selection::select),
             account_services: Arc::new(crate::account_services::present),
             coin_shop: Arc::new(crate::coin_shop::present),
+            premium: Arc::new(crate::premium::present),
         }))
     }
 }

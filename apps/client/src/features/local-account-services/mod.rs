@@ -16,6 +16,7 @@ use std::{sync::Arc, time::Instant};
 
 #[derive(Debug, Clone)]
 pub enum Action {
+    Premium,
     CoinShop,
     Refresh(AuctionView),
     Next,
@@ -184,6 +185,10 @@ pub(crate) async fn run(
         view = returned;
         if matches!(action, Action::Back) || cancel.is_cancelled() {
             return Ok(());
+        }
+        if matches!(action, Action::Premium) {
+            crate::premium::run(client, token, &config.premium, cancel.clone()).await?;
+            continue;
         }
         if matches!(action, Action::CoinShop) {
             crate::coin_shop::run(
