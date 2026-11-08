@@ -50,3 +50,5 @@
 | M19 — authoritative transaction clock in world callbacks (reuse existing quest clock) | qready1 | none planned; QMECH range 2090–2099 only | Bewitched; Threatened Dreams | CLAIMED |
 
 | M29 — Primal Ordeal Instance corpse stage/deadline and party prerequisite refusal | encx | 2200 reserved; coordinator-assigned 2200–2209 only | The Primal Ordeal | CLAIMED; party refusal fix transferred in ed8f218de, Instance corpse deadline implementation next |
+
+| M31 — native world-change activation, thresholds, raid bindings and journal/recipe lowering | engworldchg | 1840 reserved; explicit task allocation1840–1859 retained | All10 quests in MISSING-engworldchg.md | CLAIMED |
