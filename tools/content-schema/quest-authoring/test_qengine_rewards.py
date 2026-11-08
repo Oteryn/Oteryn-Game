@@ -41,6 +41,111 @@ class QuestRewards(unittest.TestCase):
         row['storage'].append({'track':'oteryn:quest-progress/atomic/16','minimum':0,'maximum':0,'set':1})
         with self.assertRaises((ValueError,ValidationError)):
             q.validate_callbacks(document)
+    def test_full_source_outfit_population_and_item_acquisition_bindings(self):
+        doc=self.author['document']
+        outfits={r['key']:r for r in doc['outfits']}
+        mappings={r['grant_key']:r for r in doc['grant_mappings']}
+        nx5=json.loads((q.ROOT/'tools/content-schema/cosmetics-authoring/nx5-authoring.json').read_bytes())['document']
+        self.assertEqual(len(outfits),131+len(nx5['outfits']))
+        for row in nx5['outfits']:
+            self.assertEqual(outfits[row['key']],row)
+        packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
+        self.assertEqual(len(packet['grants']),202)
+        for grant in packet['grants']:
+            mapping=mappings[grant['key']]
+            self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
+            if grant['kind']=='mount':continue
+            outfit=outfits[mapping['target']['outfit_key']]
+            self.assertEqual(sorted([outfit['female']['id'],outfit['male']['id']]),grant['look_types'])
+            if grant['kind']=='addon':self.assertEqual(mapping['target']['addon'],grant['addon'])
+        source_admissions=doc['item_acquisitions']
+        self.assertEqual(len(source_admissions),1)
+        self.assertEqual(source_admissions[0]['item_key'],'oteryn:item.tibia.i6579')
+        self.assertEqual(source_admissions[0]['catalogue_sha256'],q.sha(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json']))
+        self.assertEqual(source_admissions[0]['donor'],next(r['donor'] for r in packet['rules'] if r['item_id']==6579))
+        admission=packet['native_admission']
+        self.assertEqual(len(admission['corrections']),8)
+        self.assertEqual({r['family'] for r in admission['corrections']},{'Dream Warden','Glooth Engineer','Wedding','Jungle Explorer'})
+        capture=(q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
+        self.assertEqual(admission['source_packet_sha256'],q.sha(capture))
+        original=json.loads(capture)
+        self.assertEqual([r['item_id'] for r in packet['rules'] if r['item_id']!=21897], [r['item_id'] for r in original['rules']])
+        self.assertEqual(sum(r['item_id']==21897 for r in packet['rules']),1)
+        old=next(r for r in original['rules'] if r['mode']=='random_outfit')
+        native=next(r for r in packet['rules'] if r['mode']=='random_outfit')
+        self.assertEqual(len(native['choices']),len(old['choices']))
+        wedding=[r for r in native['choices'] if 'Wedding outfit' in r.get('feedback','')]
+        self.assertEqual(len(wedding),2)
+        self.assertTrue(all(r['grants']==['oteryn:item-grant.outfit.328-329.base'] for r in wedding))
+        jungle=outfits['oteryn:outfit.jungle_explorer']
+        self.assertEqual((jungle['female']['id'],jungle['male']['id']),(620,621))
+        self.assertFalse(jungle['starter_female'] or jungle['starter_male'])
+        self.assertTrue(jungle['premium'])
+
+    def test_complete_glider_recipe_preserves_every_source_taming_row(self):
+        original=json.loads((q.ROOT/'content/cosmetics/taming.json').read_bytes())
+        native=json.loads(self.outputs['content/cosmetics/taming-native.json'])
+        self.assertEqual(len(original),51)
+        self.assertEqual(len(native),51)
+        others=lambda rows:[r for r in rows if r['item_key']!='oteryn:item.tibia.i21897']
+        self.assertEqual(others(native),others(original))
+        expected=copy.deepcopy(next(r for r in original if r['item_key']=='oteryn:item.tibia.i21897'))
+        expected['required_items']=[f'oteryn:item.tibia.i{item}' for item in [21897,21898,21899,21901,21902,21905,21906]]
+        self.assertEqual(next(r for r in native if r['item_key']=='oteryn:item.tibia.i21897'),expected)
+        packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
+        rule=next(r for r in packet['rules'] if r['item_id']==21897)
+        self.assertEqual(rule['mode'],'pieces')
+        self.assertEqual(rule['required_items'],[21897,21898,21899,21901,21902,21905,21906])
+        self.assertFalse(rule['premium'])
+        physical=json.loads(self.outputs['content/items/definitions/spell-native-profiles.json'])
+        policies={r['production_definition']['production_key']:r for r in physical['records']}
+        for item in [21897,21898,21899,21901,21902,21905,21906]:
+            policy=policies[f'oteryn:item.tibia.i{item}']
+            self.assertTrue(policy['admission']['materializable'])
+            self.assertEqual(policy['admission']['legal_destinations'],['CharacterInventory','Ground'])
+            self.assertNotEqual(policy['admission']['stack_class'],'Unknown')
+
+        self.assertEqual(rule['choices'][0]['grants'],['oteryn:item-grant.mount.71'])
+        self.assertEqual(rule['choices'][0]['cues'],[{'binding':'canary.appearance:effect/magic_green','effect_id':15}])
+        grant=next(r for r in packet['grants'] if r['key']=='oteryn:item-grant.mount.71')
+        mappings={r['grant_key']:r for r in self.author['document']['grant_mappings']}
+        self.assertEqual(grant['mount_id'],71)
+        self.assertEqual(mappings[grant['key']]['target'],{'kind':'Mount','mount_key':'oteryn:content.mount.glooth_glider'})
+
+    def test_stock_mounts_bind_every_taming_and_item_acquisition(self):
+        doc=self.author['document']
+        mounts={row['key']:row for row in doc['mounts']}
+        mappings={row['grant_key']:row for row in doc['grant_mappings']}
+        self.assertEqual(len(mounts),250)
+        taming=json.loads((q.ROOT/'content/cosmetics/taming.json').read_bytes())
+        for rule in taming:
+            self.assertIn(rule['mount_key'],mounts)
+            self.assertEqual(mappings[rule['grant_key']],{'grant_key':rule['grant_key'],
+                'target':{'kind':'Mount','mount_key':rule['mount_key']},
+                'compatible_provenance':['mount-taming-v1']})
+        packet=json.loads((q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
+        for grant in packet['grants']:
+            if grant['kind']=='mount':
+                mapping=mappings[grant['key']]
+                self.assertEqual(mounts[mapping['target']['mount_key']]['look']['id'],grant['look_type'])
+                self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
+        self.assertEqual(mounts['oteryn:content.mount.wind_up_loco']['look']['id'],1459)
+
+    def test_endgame_native_bits_and_completed_parent_contract(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for family,items,bits in [('revenant',[34075,34076],[2,1]),('decaying_defender',[43899,43900],[1,2])]:
+            for index,stage in enumerate(['first','second']):
+                row=rows[f'l13-{family}-{stage}']
+                self.assertEqual(row['take'],[{'item':f'oteryn:item.tibia.i{items[index]}','count':1}])
+                self.assertEqual(row['outfit']['addons'],bits[index])
+                self.assertEqual(row['requires_outfits'],['oteryn:outfit.'+family])
+        for stage in ['base','first','second']:self.assertNotIn('minimum_level',rows['l13-rift-'+stage])
+        base=rows['l13-rift-base']
+        self.assertEqual(base['requires_completed_quests'],['oteryn:quest.ferumbras_ascension_quest'])
+        for parents in [[base['quest']],['oteryn:quest.INVALID'],['oteryn:quest.parent']*2,[f'oteryn:quest.parent_{i}' for i in range(9)]]:
+            bad=copy.deepcopy(self.callbacks)
+            next(c for c in bad['callbacks'] if c['key']==base['key'])['requires_completed_quests']=parents
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
 
     def test_native_trial_bindings_require_full_goals_and_one_shot_grants(self):
         document=json.loads(q.build()['content/quests/shared-reward-callbacks.json'])
@@ -342,9 +447,9 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),83)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),90)  # Seven L13 grants plus both Wizard grants.
         self.assertEqual(sum(c['outfit'] is None for c in callbacks),119)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))

@@ -230,12 +230,15 @@ async fn quantity(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-#[derive(Clone, Copy)]
-enum Cases {
+#[derive(Clone, Copy, Debug)]
+pub(super) enum Cases {
     Construction,
     Outcomes,
     Items,
     MusicBox,
+    StockOutcomes,
+    StockItems,
+    StockMusicBox,
 }
 
 #[test]
@@ -271,6 +274,20 @@ fn run_pairs(cases: Cases) -> TestResult {
         .map_err(Into::into);
     eprintln!(
         "SRVGAP2_TAMING POSTGRES_CASE_COMPLETED duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+pub(super) fn run_stock_case(case: Cases) -> TestResult {
+    if configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = run_pairs(case);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED S06_STOCK {case:?} duration={:?} success={}",
         started.elapsed(),
         result.is_ok()
     );

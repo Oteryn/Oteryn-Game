@@ -332,18 +332,51 @@ fn quest_callbacks_bundle_chest_advances_quest_once_after_catalogue_admission() 
 }
 
 fn scenario(quest: bool) -> TestResult {
-    let (claim, chest, unique, appearance, reward, quantity) = if quest {
-        (
-            "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
-            (32582, 31405, -15),
-            6284,
-            2472,
-            "oteryn:item.tibia.i9019",
-            1,
-        )
-    } else {
-        (CLAIM, CHEST, 6176, 2434, "oteryn:item.tibia.i3031", 56)
-    };
+    scenario_with_definition_ready_claim(quest, None)
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum DefinitionReadyClaim {
+    RuneEmblem,
+    BloodHerb,
+}
+
+pub(super) fn scenario_with_definition_ready_claim(
+    quest: bool,
+    ready: Option<DefinitionReadyClaim>,
+) -> TestResult {
+    let definition_ready = ready.is_some();
+    let (claim, chest, unique, appearance, reward, quantity) =
+        if matches!(ready, Some(DefinitionReadyClaim::BloodHerb)) {
+            (
+                "oteryn:reward-claim.kv.bloodherb",
+                (32769, 31968, -7),
+                6111,
+                3634,
+                "oteryn:item.tibia.i3734",
+                1,
+            )
+        } else if definition_ready {
+            (
+                "oteryn:reward-claim.kv.adoreduh",
+                (33136, 31601, -15),
+                6025,
+                2469,
+                "oteryn:item.tibia.i11603",
+                1,
+            )
+        } else if quest {
+            (
+                "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
+                (32582, 31405, -15),
+                6284,
+                2472,
+                "oteryn:item.tibia.i9019",
+                1,
+            )
+        } else {
+            (CLAIM, CHEST, 6176, 2434, "oteryn:item.tibia.i3031", 56)
+        };
     let transition =
         "oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest";
     let track = "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots";
@@ -359,6 +392,13 @@ fn scenario(quest: bool) -> TestResult {
             false,
         )
         .await?;
+        if definition_ready {
+            let server: String = sqlx::query_scalar("SELECT version()")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert!(server.starts_with("PostgreSQL "));
+            eprintln!("QENGINE2_DEFINITION_READY_SERVER {server}");
+        }
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -375,7 +415,9 @@ fn scenario(quest: bool) -> TestResult {
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let world = source_world(chest, unique, appearance, 0)?;
-        if quest {
+        // Blood Herb deliberately reaches literal USE without a preflight check:
+        // its regression must expose missing native admission at real dispatch.
+        if quest || matches!(ready, Some(DefinitionReadyClaim::RuneEmblem)) {
             let facts = crate::gameplay_transport::item_ref_admission::generation_item_facts(
                 native,
                 &TypedDefinitionRef {
@@ -498,6 +540,26 @@ fn scenario(quest: bool) -> TestResult {
             placement,
             expected_revision: 0,
         };
+        if definition_ready {
+            let mut owner = deps.owner(&harness, &authority);
+            owner.active_generation = Some(generation);
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            deps.initialize(&owner).await;
+            let mut attempt = admitted;
+            let mut stale_fence = fence;
+            stale_fence.character_lease_generation += 1;
+            attempt.item_fence = Some(stale_fence);
+            assert_eq!(
+                wire_uses(&owner, attempt, &[1], &target).await?,
+                [UseDisposition::Rejected]
+            );
+            let receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(receipts, 0);
+        }
         if quest {
             let lowered =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")

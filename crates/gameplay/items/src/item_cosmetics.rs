@@ -6,6 +6,7 @@ use oteryn_gameplay_domain::domain::appearance::{
     AccountUnlocks, AppearanceContent, EarnedCosmetic, Sex, UnlockFact,
 };
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
@@ -93,12 +94,36 @@ pub struct Catalogue {
     pub rules: Vec<Rule>,
 }
 
+/// Bind source-policy admission to these exact native rules, including all random outcomes.
+pub fn catalogue_sha256() -> [u8; 32] {
+    static DIGEST: OnceLock<[u8; 32]> = OnceLock::new();
+    *DIGEST.get_or_init(|| {
+        sha2::Sha256::digest(include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"
+        ))
+        .into()
+    })
+}
+
+/// Complete grant mappings alone never activate an excluded donor source.
+pub fn source_policy_allows(
+    rule: &Rule,
+    content: Option<&NativeCosmeticsView>,
+    item_key: &str,
+) -> bool {
+    let needs_admission = matches!(rule.mode, Mode::RandomOutfit | Mode::RandomMount)
+        || rule.donor.starts_with("data-crystal/scripts/special/");
+    !needs_admission
+        || content
+            .is_some_and(|c| c.allows_item_acquisition(item_key, &rule.donor, catalogue_sha256()))
+}
+
 pub fn catalogue() -> Option<&'static Catalogue> {
     static CATALOGUE: OnceLock<Option<Catalogue>> = OnceLock::new();
     CATALOGUE
         .get_or_init(|| {
             let c: Catalogue = serde_json::from_str(include_str!(
-                "../../../../tools/content-schema/native-gameplay/item-cosmetic-actions.json"
+                "../../../../tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"
             ))
             .ok()?;
             if c.schema != "OTERYN_ITEM_COSMETICS/v1"
@@ -168,7 +193,13 @@ fn valid_rule(c: &Catalogue, r: &Rule) -> bool {
             Mode::RandomMount => r.components.is_empty(),
             Mode::Pieces => {
                 r.choices.len() == 1
-                    && r.required_items.len() == 6
+                    && (2..=8).contains(&r.required_items.len())
+                    && r.required_items.iter().all(|id| *id > 0)
+                    && r.required_items
+                        .iter()
+                        .collect::<std::collections::BTreeSet<_>>()
+                        .len()
+                        == r.required_items.len()
                     && r.required_items.contains(&r.item_id)
             }
             Mode::Parts => {

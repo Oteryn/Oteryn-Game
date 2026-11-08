@@ -353,6 +353,13 @@
           "items": {
             "$ref": "#/$defs/grantMapping"
           }
+        },
+        "item_acquisitions": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/itemAcquisition"
+          }
         }
       }
     },
@@ -505,6 +512,42 @@
             "minLength": 1,
             "maxLength": 512
           }
+        }
+      }
+    },
+    "itemAcquisition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item_key",
+        "donor",
+        "catalogue_sha256",
+        "decision",
+        "source"
+      ],
+      "properties": {
+        "item_key": {
+          "type": "string",
+          "maxLength": 512,
+          "pattern": "^oteryn:item\\.[A-Za-z0-9:./_-]+$"
+        },
+        "donor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^[ -~]+$"
+        },
+        "catalogue_sha256": {
+          "type": "string",
+          "pattern": "^(?!0{64}$)[0-9a-f]{64}$"
+        },
+        "decision": {
+          "type": "string",
+          "maxLength": 1024,
+          "pattern": "^owner:[ -~]+$"
+        },
+        "source": {
+          "$ref": "#/$defs/citation"
         }
       }
     }

@@ -68,7 +68,7 @@ pub(super) async fn exercise(
     };
     let fence = admitted.item_fence.ok_or("current Item fence")?;
     let request = RewardClaimMintRequest {
-            additional_items: Vec::new(),
+        additional_items: Vec::new(),
         command: CommandRef::new(
             admitted.game_session_id,
             CommandId::new(8000).map_err(debug)?,

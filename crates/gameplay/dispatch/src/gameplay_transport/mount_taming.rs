@@ -91,7 +91,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && intent.use_with_map_item.is_none()
                 && intent.use_with_position.is_none();
             if !rules().iter().any(|rule| {
-                rule.item_key == key && (!self_use || rule.target_item_key.as_deref() == Some(key))
+                rule.single_item_use()
+                    && rule.item_key == key
+                    && (!self_use || rule.target_item_key.as_deref() == Some(key))
             }) {
                 return Ok(None);
             }
@@ -138,7 +140,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let item_id = match intent.target {
             UseTarget::ItemByDefinition(wanted) => {
                 let (key, revision) = index.definition_at(wanted).ok_or(reject)?;
-                if !rules().iter().any(|r| r.item_key == key) {
+                if !rules()
+                    .iter()
+                    .any(|r| r.single_item_use() && r.item_key == key)
+                {
                     return Ok(None);
                 }
                 inventory
@@ -178,7 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if !rules()
             .iter()
-            .any(|r| r.item_key == entry.item.definition.production_key)
+            .any(|r| r.single_item_use() && r.item_key == entry.item.definition.production_key)
         {
             return Ok(None);
         }
@@ -221,6 +226,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         });
         let rule = rules()
             .iter()
+            .filter(|rule| rule.single_item_use())
             .find(|r| {
                 r.item_key == entry.item.definition.production_key
                     && match (creature_target, item_target) {
