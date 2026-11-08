@@ -78,10 +78,10 @@
   "src": "TIBAUD-1",
   "area": "PvP",
   "feature": "Unjustified points i skull timer",
-  "status": "PARTIAL",
-  "gap": "Są stany PvP/warunki; brak pełnego Unjustified Points widget.",
+  "status": "DONE",
+  "gap": "",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0134-party-skull/state.rs:41 + skull_timer_projects_observed_remaining_time_without_inventing_an_expiry; PARTIAL: authoritative timer wire and live countdown remain"
+  "evidence": "apps/client/src/features/0134-party-skull/pvp_status.rs:3 + own_pvp_status_crosses_session_caller_and_rejects_bad_replies; crates/gameplay/dispatch/src/gameplay_transport/party_skull/status.rs:5 + own_pvp_route_preserves_legacy_query_and_gates_current_status"
  },
  {
   "id": "T022",
@@ -1498,10 +1498,10 @@
   "src": "OTCAUD1108",
   "area": "PvP",
   "feature": "Unjustified points i limity fragów",
-  "status": "PARTIAL",
-  "gap": "Brakuje liczników dziennych/tygodniowych/miesięcznych fragów, czasu czaszki i otwartych sytuacji PvP; obecny panel pokazuje tylko tarcze i czaszki.",
+  "status": "DONE",
+  "gap": "",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0134-party-skull/state.rs:74 + unjustified_widget_keeps_fractional_points_and_server_limits; PARTIAL: authoritative counts/limits/situations wire remains"
+  "evidence": "apps/client/src/features/0134-party-skull/pvp_status.rs:3 + frag_limits_and_open_situations_cross_caller_and_clear_on_refusal; crates/client-ui/src/features/0134-party-skull/view.rs:25 + own_pvp_status_crosses_session_caller_and_rejects_bad_replies"
  },
  {
   "id": "O071",
