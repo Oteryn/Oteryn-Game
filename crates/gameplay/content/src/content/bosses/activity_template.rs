@@ -134,9 +134,14 @@ pub struct QualifiedActivityRoomTemplate {
     server_digest: [u8; 32],
     client_digest: [u8; 32],
     activation_frame_binding_digest: [u8; 32],
+    spite_source_setup: Option<super::spite_closure::QualifiedSpiteClosure>,
 }
 
 impl QualifiedActivityRoomTemplate {
+    pub fn spite_source_setup(&self) -> Option<&super::spite_closure::QualifiedSpiteClosure> {
+        self.spite_source_setup.as_ref()
+    }
+
     pub fn activation_frame_binding_digest(&self) -> [u8; 32] {
         self.activation_frame_binding_digest
     }
@@ -452,12 +457,21 @@ impl ContentActivationController {
         let primal = (creature == super::primal_closure::PRIMAL_MENACE_KEY)
             .then(|| super::primal_closure::qualify(native))
             .flatten();
-        if !candidate.blockers.is_empty()
-            || !candidate.callbacks_known
+        // Only this exact captured source world proves the entry cleanup empty.
+        // A bundle map cannot borrow that proof from a different map capture.
+        let spite = source.and_then(|_| super::spite_closure::qualify(native, candidate));
+        if candidate.blockers.iter().any(|hook| {
+            spite
+                .as_ref()
+                .is_none_or(|closure| !closure.implements_setup(hook))
+        }) || !candidate.callbacks_known
             || unavailable_source_hooks(candidate).any(|hook| {
                 primal
                     .as_ref()
                     .is_none_or(|closure| !closure.implements(hook))
+                    && spite
+                        .as_ref()
+                        .is_none_or(|closure| !closure.implements(hook))
             })
         {
             return Err(R::SourceHookUnavailable);
@@ -530,6 +544,7 @@ impl ContentActivationController {
             server_digest: active.identity().server_artifact_digest(),
             client_digest: active.identity().client_artifact_digest(),
             activation_frame_binding_digest: parent.frame_binding().digest(),
+            spite_source_setup: spite,
         })
     }
 }

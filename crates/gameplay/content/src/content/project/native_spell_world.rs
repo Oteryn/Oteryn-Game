@@ -317,21 +317,29 @@ pub fn qualify(
 ) -> Result<QualifiedNativeSpellWorld, ProjectError> {
     if let Some(bundle) = source_region_bundle(bytes)? {
         let mut world = qualify(bundle.channel.as_bytes(), scope.clone())?;
-        let region = qualify_primal_region(bundle.primal.as_bytes(), scope)?;
-        for (cell, tile) in region.cells {
-            if world.cells.contains_key(&cell) {
-                return Err(invalid());
+        let mut regions = vec![qualify_primal_region(
+            bundle.primal.as_bytes(),
+            scope.clone(),
+        )?];
+        if let Some(endgame) = bundle.endgame {
+            regions.push(qualify_endgame_region(endgame.as_bytes(), scope)?);
+        }
+        for region in regions {
+            for (cell, tile) in region.cells {
+                if world.cells.contains_key(&cell) {
+                    return Err(invalid());
+                }
+                if let Some(known) = &tile {
+                    world.immutable_tiles.insert(cell, known.clone());
+                }
+                world.bounds[0] = world.bounds[0].min(cell.x);
+                world.bounds[1] = world.bounds[1].min(cell.y);
+                world.bounds[2] = world.bounds[2].max(cell.x);
+                world.bounds[3] = world.bounds[3].max(cell.y);
+                world.bounds[4] = world.bounds[4].min(cell.z);
+                world.bounds[5] = world.bounds[5].max(cell.z);
+                world.cells.insert(cell, tile);
             }
-            if let Some(known) = &tile {
-                world.immutable_tiles.insert(cell, known.clone());
-            }
-            world.bounds[0] = world.bounds[0].min(cell.x);
-            world.bounds[1] = world.bounds[1].min(cell.y);
-            world.bounds[2] = world.bounds[2].max(cell.x);
-            world.bounds[3] = world.bounds[3].max(cell.y);
-            world.bounds[4] = world.bounds[4].min(cell.z);
-            world.bounds[5] = world.bounds[5].max(cell.z);
-            world.cells.insert(cell, tile);
         }
         return Ok(world);
     }
@@ -651,28 +659,32 @@ pub fn client_projection(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
         let mut client: SourceWorldClientDocument =
             serde_json::from_slice(&client_projection(bundle.channel.as_bytes())?)
                 .map_err(|_| invalid())?;
-        let region: PrimalRegionDocument =
-            serde_json::from_str(&bundle.primal).map_err(|_| invalid())?;
-        for tile in region.tiles {
-            let [x, y, z] = tile.source_position;
-            let pending = !tile.semantics.unmaterialized_dynamic_items.is_empty();
-            client.cells.push(SourceWorldClientCell {
-                position: [x - 5854, y - 5298, -z],
-                ground: tile
-                    .semantics
-                    .ground
-                    .map(|id| format!("oteryn:terrain.source.crystal.id{id}")),
-                immutable_items: if pending {
-                    Vec::new()
-                } else {
-                    tile.semantics
-                        .top_ids
-                        .iter()
-                        .map(|id| format!("oteryn:item.source.crystal.id{id}"))
-                        .collect()
-                },
-                owner_pending: pending,
-            });
+        let mut regions = vec![bundle.primal];
+        regions.extend(bundle.endgame);
+        for bytes in regions {
+            let region: PrimalRegionDocument =
+                serde_json::from_str(&bytes).map_err(|_| invalid())?;
+            for tile in region.tiles {
+                let [x, y, z] = tile.source_position;
+                let pending = !tile.semantics.unmaterialized_dynamic_items.is_empty();
+                client.cells.push(SourceWorldClientCell {
+                    position: [x - 5854, y - 5298, -z],
+                    ground: tile
+                        .semantics
+                        .ground
+                        .map(|id| format!("oteryn:terrain.source.crystal.id{id}")),
+                    immutable_items: if pending {
+                        Vec::new()
+                    } else {
+                        tile.semantics
+                            .top_ids
+                            .iter()
+                            .map(|id| format!("oteryn:item.source.crystal.id{id}"))
+                            .collect()
+                    },
+                    owner_pending: pending,
+                });
+            }
         }
         return serde_json::to_vec(&client).map_err(|_| invalid());
     }
@@ -732,6 +744,8 @@ struct SourceRegionBundle {
     schema: String,
     channel: String,
     primal: String,
+    #[serde(default)]
+    endgame: Option<String>,
 }
 
 /// Resolve the unchanged channel document inside a provenance-checked carrier.
@@ -757,11 +771,19 @@ fn source_region_bundle(bytes: &[u8]) -> Result<Option<SourceRegionBundle>, Proj
     if bundle.schema != "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1"
         || hex(&crate::content::digest::sha256(bundle.channel.as_bytes())) != DOCUMENT_SHA
         || bundle.primal.as_bytes() != PRIMAL_SOURCE
+        || bundle
+            .endgame
+            .as_ref()
+            .is_some_and(|region| region.as_bytes() != ENDGAME_SOURCE)
     {
         return Err(invalid());
     }
     Ok(Some(bundle))
 }
+
+const ENDGAME_SOURCE: &[u8] = include_bytes!(
+    "../../../../../../tools/content-schema/native-gameplay/crystal-endgame-regions.json"
+);
 
 const PRIMAL_SOURCE: &[u8] = include_bytes!(
     "../../../../../../tools/content-schema/native-gameplay/crystal-primal-region.json"
@@ -769,12 +791,12 @@ const PRIMAL_SOURCE: &[u8] = include_bytes!(
 
 /// Source-qualified region facts. This type does not issue an activated room,
 /// artifact pin, mutable placement or encounter instance.
-pub(in crate::content) struct QualifiedPrimalRegion {
+pub(in crate::content) struct QualifiedSourceRegion {
     scope: EngineeringStaticCellScope,
     cells: BTreeMap<LogicalCell, Option<QualifiedSpellTile>>,
 }
 
-impl QualifiedPrimalRegion {
+impl QualifiedSourceRegion {
     pub(in crate::content) fn scope(&self) -> &EngineeringStaticCellScope {
         &self.scope
     }
@@ -816,18 +838,34 @@ struct PrimalRegionTile {
 pub(in crate::content) fn qualify_primal_region(
     bytes: &[u8],
     scope: EngineeringStaticCellScope,
-) -> Result<QualifiedPrimalRegion, ProjectError> {
-    // Crystal 201189f the_primal_manace.lua:8-20 defines source placements.
+) -> Result<QualifiedSourceRegion, ProjectError> {
+    qualify_captured_region(bytes, scope, PRIMAL_SOURCE, 510)
+}
+
+pub(in crate::content) fn qualify_endgame_region(
+    bytes: &[u8],
+    scope: EngineeringStaticCellScope,
+) -> Result<QualifiedSourceRegion, ProjectError> {
+    qualify_captured_region(bytes, scope, ENDGAME_SOURCE, 3683)
+}
+
+fn qualify_captured_region(
+    bytes: &[u8],
+    scope: EngineeringStaticCellScope,
+    expected: &[u8],
+    count: usize,
+) -> Result<QualifiedSourceRegion, ProjectError> {
+    // Crystal 201189f source lever tables define these exact placements.
     // The generator verifies map, appearances and item XML Git blobs before
     // emitting this exact document. Substituted or expanded input is rejected.
-    if bytes != PRIMAL_SOURCE
+    if bytes != expected
         || scope.coordinate_frame.as_str() != SOURCE_WORLD_FRAME
         || scope.map_revision.as_str() != SOURCE_WORLD_MAP
     {
         return Err(invalid());
     }
     let document: PrimalRegionDocument = serde_json::from_slice(bytes).map_err(|_| invalid())?;
-    if document.tiles.len() != 510 {
+    if document.tiles.len() != count {
         return Err(invalid());
     }
     let mut cells = BTreeMap::new();
@@ -856,7 +894,7 @@ pub(in crate::content) fn qualify_primal_region(
             return Err(invalid());
         }
     }
-    Ok(QualifiedPrimalRegion { scope, cells })
+    Ok(QualifiedSourceRegion { scope, cells })
 }
 
 #[cfg(test)]
@@ -880,6 +918,61 @@ mod tests {
     const SOURCE: &[u8] = include_bytes!(
         "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
     );
+    #[test]
+    fn m26_endgame_map_provenance_and_pending_teleport_owners_remain_explicit() {
+        let bundle = serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1",
+            "channel": std::str::from_utf8(SOURCE).unwrap(),
+            "primal": std::str::from_utf8(PRIMAL_SOURCE).unwrap(),
+            "endgame": std::str::from_utf8(ENDGAME_SOURCE).unwrap(),
+        }))
+        .unwrap();
+        let map = qualify(&bundle, scope()).expect("exact source regions");
+        let spite_entry = LogicalCell {
+            x: 33742 - 5854,
+            y: 31639 - 5298,
+            z: -14,
+        };
+        assert_eq!(
+            map.lookup(map.scope(), spite_entry),
+            Ok(CollisionClass::Walkable)
+        );
+        // The two boss placements contain real teleport Items. Source bytes
+        // cannot manufacture their mutable Item/interaction owner.
+        for (x, y) in [(33004, 32343), (33043, 32344)] {
+            let cell = LogicalCell {
+                x: x - 5854,
+                y: y - 5298,
+                z: -15,
+            };
+            assert_eq!(
+                map.lookup(map.scope(), cell),
+                Err(StaticCellEngineError::Unqualified)
+            );
+        }
+        let client: SourceWorldClientDocument =
+            serde_json::from_slice(&client_projection(&bundle).unwrap()).unwrap();
+        assert_eq!(client.cells.len(), 2833 + 510 + 3683);
+        assert!(
+            client
+                .cells
+                .iter()
+                .any(|cell| cell.position == [33742 - 5854, 31639 - 5298, -14]
+                    && !cell.owner_pending)
+        );
+        let region = qualify_endgame_region(ENDGAME_SOURCE, scope()).unwrap();
+        assert_eq!(region.cells.len(), 3683);
+        let mut foreign = scope();
+        foreign.generation_digest = [91; 32];
+        assert_eq!(
+            region.lookup(&foreign, spite_entry),
+            Err(StaticCellEngineError::ScopeMismatch)
+        );
+        let mut substituted = ENDGAME_SOURCE.to_vec();
+        substituted.push(b' ');
+        assert!(qualify_endgame_region(&substituted, scope()).is_err());
+    }
+
     #[test]
     fn source_region_bundle_admits_primal_and_projects_both_regions() {
         let bundle = serde_json::to_vec(&serde_json::json!({

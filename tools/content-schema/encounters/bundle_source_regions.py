@@ -18,7 +18,10 @@ def main():
     region = json.loads(primal)
     if region["source_revision"] != "201189f871d23597b82caf88fd611454a2ddefb8" or region["map_git_blob"] != "e61658ec0ab7b70ec35025ae969426d6fc57ae75":
         raise ValueError("unqualified Primal source capture")
-    result = json.dumps({"schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1", "channel": channel.decode(), "primal": primal.decode()}, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+    endgame = (source / "crystal-endgame-regions.json").read_bytes()
+    if json.loads(endgame)["source_revision"] != region["source_revision"]:
+        raise ValueError("endgame source revision mismatch")
+    result = json.dumps({"schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1", "channel": channel.decode(), "primal": primal.decode(), "endgame": endgame.decode()}, sort_keys=True, separators=(",", ":")).encode() + b"\n"
     if len(result) > 8 * 1024 * 1024:
         raise ValueError("source carrier capacity")
     args.output.write_bytes(result)

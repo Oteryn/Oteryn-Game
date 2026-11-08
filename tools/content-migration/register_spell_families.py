@@ -463,6 +463,9 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # custody; neither the visual pod nor a corpse is an inventory loot yield.
     import primal_item_profiles
     primal_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # M26: the source-backed Spite corpse and complete decay chain use the existing Item owner.
+    import m26_endgame_item_profiles
+    m26_endgame_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Carry the exact explicit-empty Lua witness into the frozen native provider too.
     import primal_reference_overlay
     primal_reference_overlay.apply_native(root, generated, NATIVE_MANIFEST, spell_import.canonical_bytes)
