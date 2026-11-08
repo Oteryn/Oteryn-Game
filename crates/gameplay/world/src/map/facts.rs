@@ -396,6 +396,11 @@ impl BundleFacts {
         self.doors.finish();
     }
 
+    /// Source house identities in the checked active map, for public catalogue qualification.
+    pub fn house_ids(&self) -> impl Iterator<Item = u32> + '_ {
+        self.houses.iter().map(|(_, id)| *id)
+    }
+
     /// Complete immutable House-marker presence after the boot scan finished.
     pub(crate) fn has_house_tiles(&self) -> bool {
         !self.houses.is_empty()
