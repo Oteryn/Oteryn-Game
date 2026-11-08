@@ -303,7 +303,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 owner.holder,
                 fence,
                 QuestCause::CreatureDeath(
-                    ExperienceRewardOccurrence::from_bytes([0xa5; 16]).map_err(debug)?,
+                    ExperienceRewardOccurrence::from_bytes(id(0xa5)).map_err(debug)?,
                 ),
                 &detached,
                 Arc::clone(&catalogue),

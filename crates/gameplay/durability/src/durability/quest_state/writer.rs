@@ -862,7 +862,9 @@ impl DurabilityRoot {
                     // Reading all Grizzly inputs does not reserve capacity for untouched tracks.
                     let written_keys: Vec<&str> = grizzly_plan.as_ref().map_or_else(
                         || keys.iter().copied().filter(|key| reward_callback.as_ref().is_none_or(|c|
-                            !c.requires.iter().any(|r| r.track == *key))).collect(),
+                            !c.requires.iter().any(|r| r.track == *key)))
+                            .filter(|key| transition.effects.iter().any(|effect| effect.track.as_str() == *key)
+                                || !catalogue.completion_tracks(quest).any(|read| read == *key)).collect(),
                         |plan| plan.changes.iter().map(|change| change.track.as_str()).collect(),
                     );
                     let new_tracks = written_keys.iter().filter(|key| !stored.contains_key(**key)).count();
