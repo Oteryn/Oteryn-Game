@@ -44,6 +44,11 @@ pub fn apply_result(panel: &mut DailyRewardPanel, response: &DailyRewardResponse
             if matches!(result.disposition, 1 | 2)
                 && let Some(wall) = &mut panel.wall
             {
+                let receipt = Some((wall.lane_day, wall.streak));
+                if !panel.claim_receipts.contains(&receipt) {
+                    panel.claim_receipts.copy_within(0..7, 1);
+                    panel.claim_receipts[0] = receipt;
+                }
                 wall.claimed = true;
                 wall.claim_enabled = false;
             }
