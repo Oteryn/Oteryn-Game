@@ -71,6 +71,13 @@ impl NativeDecision {
             oriental_trader,
             grimvale_full_moon: self.grimvale_full_moon,
             flower_month: self.flower_month,
+            stampede: false,
+            fire_from_the_earth: false,
+            world_counters: false,
+            counter_stages: [0; 8],
+            counter_generations: [0; 8],
+            counter_progress: [[0; 3]; 8],
+            shared_used_sources_mask: 0,
         })
     }
 }

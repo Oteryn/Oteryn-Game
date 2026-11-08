@@ -307,3 +307,43 @@ including build-lock wait. Formatting passed. At this cadence push, the
 combined dispatch/durability unit selection and the account-deletion,
 field-rune and upstream VIP PostgreSQL reruns are still building under the
 owner's PREPUSH-2 pending-tests exception; they are not claimed green.
+
+### Quest collector main merge (2026-11-08)
+
+Merged main 78294c081a099c96a57948573d5dbf0caf398abf as requested for PR 3031.
+Before the merge and after index reconciliation, the PUBPROJ diff against main
+was identical in size: 131 files, 7,581 insertions and 49 deletions. Accepted
+producers, configuration, fixtures and migrations 1350–1352/1354–1356 remain;
+1353 remains unallocated by PUBPROJ. The merged-index migration check passed.
+
+The four conflicts were generated prey-model fingerprints/reports. Repository
+simulation and registration regenerated them; calculated model values match
+main. World pins refreshed and checked against main's unchanged bundle digest.
+
+The sole reported afda5a518 CI failure was trade admission. Incoming main
+preserves typed unavailable-holder errors through offer/accept preflight and
+retries those reads within the existing admission budget, retaining classified
+business refusals. Before the fixture readiness repair, the original two-real-sessions
+atomic/replay/cancellation PostgreSQL scenario passed in 218.263 seconds.
+The incoming contention case exposed a one-shot source-map setup refusal;
+existing diagnostics reached the owner SQL boundary before returning false.
+The positive fixture now uses the existing bounded admission readiness retry.
+The contention case additionally requires the held root to prevent the first
+map commit, then requires the real committed map and accepted trade after
+release. It passed in 127.294 seconds. No admission window, production guard,
+or command-result assertion was relaxed.
+
+After the readiness repair, forced contention passed in 127.294 seconds,
+the original trade scenario in 133.988 seconds, inspection in 86.158 seconds,
+account deletion in 15.430 seconds and upstream VIP replay in 16.354 seconds.
+Final workspace all-target checking passed in 11m27s; formatting passed;
+changed-crate all-target clippy with warnings denied passed in 9m21s.
+Content's 322 unit tests and game-server's unit library passed. The remaining
+broad unit run is still in progress and is not claimed complete here.
+
+The complete focused PostgreSQL rerun passed 20/20 cases in 1551.003s
+combined execution time (individual durations 6.840–1036.811s).
+This includes forced/original trade, inspection, account deletion, VIP,
+field runes and all fourteen selected authority cases. The broad unit run
+remains pending under the owner's PREPUSH-2 cadence exception; content and
+game-server unit libraries are green. No new PUBPROJ numbers were allocated.

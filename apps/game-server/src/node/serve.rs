@@ -2988,7 +2988,7 @@ pub(crate) async fn realize_bundle_spawns(
     signalled: &CancellationToken,
 ) -> Result<Option<(usize, u64)>, BootError> {
     let refuse = || BootError::Readiness("creature spawn realization");
-    let sources = world
+    let mut sources = world
         .activation_spawns(|key| {
             let policy = runtime.companion_policy(key).ok()?;
             Some((
@@ -2997,7 +2997,78 @@ pub(crate) async fn realize_bundle_spawns(
             ))
         })
         .ok_or_else(refuse)?;
-    realize_activation_paced(runtime, sources, signalled).await
+    let bindings =
+        crate::durability::world_event::changes::counters::bindings().map_err(|_| refuse())?;
+    for source in &bindings.spawn_sources {
+        if runtime.world_change_cycles().is_none()
+            || !oteryn_gameplay_world_change::owner::counter_admitted(source.kind)
+        {
+            continue;
+        }
+        let point = &source.point;
+        let policy = runtime
+            .companion_policy(&point.creature)
+            .map_err(|_| refuse())?;
+        sources.push((
+            vec![(
+                (
+                    i32::from(point.cell.x),
+                    i32::from(point.cell.y),
+                    i16::from(point.cell.floor),
+                ),
+                point.respawn_ms,
+                point.creature.clone(),
+                u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
+                policy.blocked_by_nearby_players,
+            )],
+            5_000,
+        ));
+    }
+    let mut voice_sources = Vec::new();
+    if runtime.world_change_cycles().is_some()
+        && oteryn_gameplay_world_change::owner::counter_admitted(
+            oteryn_gameplay_world_change::counter::CounterKind::TheirMastersVoice,
+        )
+    {
+        use oteryn_gameplay_world::terrain_tools::{VOICE_MAGE_HOMES, VOICE_SERVANT_HOMES};
+        for (homes, key, cohort) in [
+            (
+                VOICE_SERVANT_HOMES.as_slice(),
+                "oteryn:creature.iron_servant",
+                "their_masters_voice.wave.0",
+            ),
+            (
+                VOICE_MAGE_HOMES.as_slice(),
+                "oteryn:creature.mad_mage",
+                "their_masters_voice.mage",
+            ),
+        ] {
+            let policy = runtime.companion_policy(key).map_err(|_| refuse())?;
+            for &(x, y, z) in homes {
+                let index = u16::try_from(sources.len()).map_err(|_| refuse())?;
+                voice_sources.push((index, cohort));
+                sources.push((
+                    vec![(
+                        (x, y, z),
+                        86_400_000,
+                        key.to_owned(),
+                        u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
+                        policy.blocked_by_nearby_players,
+                    )],
+                    5_000,
+                ));
+            }
+        }
+    }
+    let realized = realize_activation_paced(runtime, sources, signalled).await?;
+    if realized.is_some() {
+        for (source, cohort) in voice_sources {
+            runtime
+                .bind_world_spawn_source(source, cohort, 1)
+                .map_err(|_| refuse())?;
+        }
+    }
+    Ok(realized)
 }
 
 /// Realizes `sources` as one activation paced at most one `CREATUREAI0-RL-14` window per

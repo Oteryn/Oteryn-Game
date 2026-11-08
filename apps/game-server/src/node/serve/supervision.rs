@@ -1,4 +1,5 @@
 use super::*;
+use crate::map::boot::BundleCollisionIndexExt;
 
 pub(super) struct Serving<'a, 'f, 's> {
     pub(super) listener: &'a TcpListener,
@@ -49,6 +50,12 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         character: authority,
         node: proof,
         runtime,
+        map: match owners.movement_cells.index() {
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
+                Some(index.map())
+            }
+            _ => None,
+        },
         world: material.world,
         channel: material.channel,
         generation,
