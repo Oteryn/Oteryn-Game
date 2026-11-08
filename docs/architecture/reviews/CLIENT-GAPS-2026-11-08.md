@@ -77,7 +77,7 @@ Zasady przeciw dublowaniu:
 | T089 | Cyclopedia / Character | Misc Stats / skills/stamina | PARTIAL | Dane tekstowe; brak pełnej prezentacji i pasków. |
 | T090 | Cyclopedia / Character | Recent Deaths | PARTIAL | Stronicowanie jest; brak pełnej tabeli szczegółów. |
 | T091 | Cyclopedia / Character | Recent PvP Kills / Battle Results | PARTIAL | Brak pełnej tabeli i filtrów rodzajów zabójstw. |
-| T092 | Cyclopedia / Character | Achievements | PARTIAL | Brak pełnego sort/filter regular/secret. |
+| T092 | Cyclopedia / Character | Achievements | DONE | Brak pełnego sort/filter regular/secret.  Evidence: `apps/client/src/features/0199-cyclopedia-character/tests/achievements.rs:65 + t092_selecting_achievement_tab_loads_filterable_server_catalog` |
 | T093 | Cyclopedia / Character | Appearances / outfits/mounts/familiars | PARTIAL | Tekstowy odczyt; brak galerii wyglądów/mountów/familiarów. |
 | T094 | Cyclopedia / Character | Store Summary / services/hirelings | PARTIAL | Brak pełnego wizualnego zestawienia usług. |
 | T095 | Cyclopedia / Character | Item Summary / inventory/depot/stash/inboxes | PARTIAL | Jest Inspection/item summary; brak grid/list/filter wszystkich lokacji. |

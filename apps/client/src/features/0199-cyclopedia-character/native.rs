@@ -83,6 +83,7 @@ pub(in crate::play) fn submit(
         match id {
             112 => Intent::Previous,
             113 => Intent::Next,
+            104 => Intent::Achievements,
             _ => Intent::Tab,
         },
     )

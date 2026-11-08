@@ -637,9 +637,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Achievements",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnego sort/filter regular/secret.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0199-cyclopedia-character/tests/achievements.rs:65 + t092_selecting_achievement_tab_loads_filterable_server_catalog"
  },
  {
   "id": "T093",
