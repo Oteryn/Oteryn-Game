@@ -1,6 +1,51 @@
 use super::*;
 
 #[test]
+fn admitted_character_preferences_are_isolated_and_reloaded()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+    let root = std::env::temp_dir().join(format!("clientgap-scope-{}", std::process::id()));
+    std::fs::create_dir_all(&root)?;
+    let path = root.join("preferences.json");
+    let mut settings = SettingsState::new(Some(path.clone()));
+    let global = settings.preferences.clone();
+    let mut play = view()?;
+    play.set_own_identity([1; 16]);
+    settings.select_character(play.preference_character());
+    assert_eq!(settings.scope_label(), "Character settings");
+    let mut changed = settings.preferences.clone();
+    changed.ui_scale = 120;
+    changed.battle_lists[0].name = "Character one".into();
+    settings.apply(changed.clone());
+    play.set_own_identity([2; 16]);
+    settings.select_character(play.preference_character());
+    assert_eq!(settings.preferences, global);
+    settings.preferences.ui_scale = 130;
+    settings.apply(settings.preferences.clone());
+    settings.select_character(Some([1; 16]));
+    assert_eq!(settings.preferences, changed);
+    let mut restarted = SettingsState::new(Some(path));
+    restarted.select_character(Some([1; 16]));
+    assert_eq!(restarted.preferences, changed);
+    restarted.select_character(Some([2; 16]));
+    assert_eq!(restarted.preferences.ui_scale, 130);
+    restarted.select_character(None);
+    assert_eq!(restarted.scope_label(), "Local defaults for new characters");
+    assert_eq!(restarted.preferences, global);
+    let blocked = root.join("blocked.json");
+    std::fs::create_dir(&blocked)?;
+    let mut recovered = SettingsState::new(Some(blocked.clone()));
+    recovered.apply(changed.clone());
+    assert!(recovered.feedback.contains("could not save"));
+    std::fs::remove_dir(&blocked)?;
+    recovered.reset_defaults()?;
+    recovered.restore_backup()?;
+    assert_eq!(recovered.preferences, changed);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
 {
     use crate::play::{PreferenceStore, ReferencePreferences, SettingsState};

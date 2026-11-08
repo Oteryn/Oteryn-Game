@@ -141,6 +141,10 @@ impl LocalPlayState {
 }
 
 impl PlayView {
+    pub fn preference_character(&self) -> Option<[u8; 16]> {
+        self.scene.preference_character()
+    }
+
     pub(in crate::play) fn apply_preference_scale(
         &mut self,
     ) -> Result<(), oteryn_renderer::BatchError> {

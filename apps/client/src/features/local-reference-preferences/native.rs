@@ -92,6 +92,7 @@ impl Settings {
             }
         }
         let mut state = lock(&self.shared);
+        state.select_character(view.preference_character());
         state.sync_battle_lists(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
@@ -465,7 +466,10 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            SetWindowTextW(feedback, wide(&state.feedback).as_ptr());
+            SetWindowTextW(
+                feedback,
+                wide(&format!("{}\r\n{}", state.scope_label(), state.feedback)).as_ptr(),
+            );
             drop(state);
             std::thread::sleep(Duration::from_millis(20));
         }

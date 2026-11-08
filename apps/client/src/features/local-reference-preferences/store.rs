@@ -11,6 +11,12 @@ pub struct PreferenceStore {
 }
 
 impl PreferenceStore {
+    pub fn character_path(base: &Path, identity: [u8; 16]) -> PathBuf {
+        let name: String = identity.iter().map(|byte| format!("{byte:02x}")).collect();
+        base.with_extension("characters")
+            .join(format!("{name}.json"))
+    }
+
     /// Read a portable settings file with the same validation as local storage.
     pub fn read_transfer(path: &Path) -> io::Result<ReferencePreferences> {
         use std::io::Read;
@@ -47,10 +53,14 @@ impl PreferenceStore {
         self.path.with_extension("backup.json")
     }
 
-    pub fn replace_with_backup(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
+    pub fn replace_with_backup(
+        &mut self,
+        preferences: ReferencePreferences,
+        previous: &ReferencePreferences,
+    ) -> io::Result<()> {
         preferences.validate().map_err(io::Error::other)?;
         let mut backup = Self::defaults(self.backup_path());
-        backup.apply(self.preferences.clone())?;
+        backup.apply(previous.clone())?;
         self.apply(preferences)
     }
 

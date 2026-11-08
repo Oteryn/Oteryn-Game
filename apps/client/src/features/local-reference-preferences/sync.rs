@@ -8,6 +8,8 @@ use std::{
 };
 
 pub struct SettingsState {
+    base_path: Option<PathBuf>,
+    character: Option<[u8; 16]>,
     battle_edit: u64,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
@@ -18,6 +20,45 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn scope_label(&self) -> &'static str {
+        if self.character.is_some() {
+            "Character settings"
+        } else {
+            "Local defaults for new characters"
+        }
+    }
+
+    /// The admitted actor identity selects a local character namespace; no account identity
+    /// or credential is inferred from a window title or a character name.
+    pub fn select_character(&mut self, character: Option<[u8; 16]>) {
+        if character == self.character {
+            return;
+        }
+        let Some(base) = self.base_path.as_ref() else {
+            return;
+        };
+        let path = character.map_or_else(
+            || base.clone(),
+            |id| PreferenceStore::character_path(base, id),
+        );
+        let missing = !path.exists();
+        let mut selected = Self::new(Some(path));
+        if character.is_some() && missing {
+            match PreferenceStore::load(base.clone()) {
+                Ok(template) => selected.apply(template.preferences().clone()),
+                Err(error) => {
+                    selected.feedback =
+                        format!("Character defaults loaded; could not read local template: {error}")
+                }
+            }
+        }
+        self.store = selected.store;
+        self.preferences = selected.preferences;
+        self.feedback = selected.feedback;
+        self.character = character;
+        self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
+    }
+
     pub fn export_to(&self, path: &Path) -> io::Result<()> {
         PreferenceStore::export_to(&self.preferences, path)
     }
@@ -44,44 +85,14 @@ impl SettingsState {
             .store
             .as_mut()
             .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?;
-        store.replace_with_backup(preferences.clone())?;
-        self.preferences = preferences;
-        Ok(())
-    }
-
-    pub fn export_to(&self, path: &Path) -> io::Result<()> {
-        PreferenceStore::export_to(&self.preferences, path)
-    }
-
-    pub fn import_from(&mut self, path: &Path) -> io::Result<()> {
-        self.replace_saved(PreferenceStore::read_transfer(path)?)
-    }
-
-    pub fn reset_defaults(&mut self) -> io::Result<()> {
-        self.replace_saved(ReferencePreferences::default())
-    }
-
-    pub fn restore_backup(&mut self) -> io::Result<()> {
-        let path = self
-            .store
-            .as_ref()
-            .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?
-            .backup_path();
-        self.import_from(&path)
-    }
-
-    fn replace_saved(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
-        let store = self
-            .store
-            .as_mut()
-            .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?;
-        store.replace_with_backup(preferences.clone())?;
+        store.replace_with_backup(preferences.clone(), &self.preferences)?;
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         Ok(())
     }
 
     pub fn new(path: Option<PathBuf>) -> Self {
+        let base_path = path.clone();
         let (store, feedback) = match path {
             Some(path) => match PreferenceStore::load(path.clone()) {
                 Ok(store) => (Some(store), String::new()),
@@ -99,6 +110,8 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            base_path,
+            character: None,
             battle_edit: 0,
             store,
             preferences,
