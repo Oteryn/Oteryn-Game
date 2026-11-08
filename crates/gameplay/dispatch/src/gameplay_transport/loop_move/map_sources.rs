@@ -93,19 +93,14 @@ pub(super) async fn observe(
     // (e.g. a dead tree). Its read-only view exposes exactly the captured slots;
     // it never authorizes insertion or invents a movable container definition.
     let physical_capacity = generation_item_facts(native, &definition)
-        .ok()?
-        .container_capacity;
-    let slots = match physical_capacity {
-        Some(capacity) => usize::try_from(capacity)
-            .ok()?
-            .min(MAX_CONTAINER_VIEW_ENTRIES),
-        None if !facts.pickupable && !children.is_empty() => children.len(),
-        None => return Some(ContainerObservation::NotAContainer),
-    };
-    if slots == 0 || slots > MAX_CONTAINER_VIEW_ENTRIES || children.len() > slots {
-        return None;
-    }
-    let capacity = u8::try_from(slots).ok()?;
+        .ok()
+        .and_then(|facts| facts.container_capacity);
+    let capacity = crate::map::facts::captured_source_capacity(
+        physical_capacity,
+        facts.pickupable,
+        children.len(),
+        MAX_CONTAINER_VIEW_ENTRIES,
+    )?;
     let entries = children
         .into_iter()
         .filter(|child| !ground.taken_sources.contains(&child.placement_key))

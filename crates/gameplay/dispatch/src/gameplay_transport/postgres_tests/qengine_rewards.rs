@@ -156,6 +156,7 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "m09-tower" => &["mission"],
         "knight-sword" => &["forge"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
@@ -768,6 +769,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-m09-tower-") {
+        return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
+    }
     if name == "qengine-rewards-srvgap-disguise" {
         return super::srvgap_quest_disguise::exercise(owner, admitted, h).await;
     }
@@ -776,6 +780,9 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-authored-imported-talk" {
         return super::qengine_m01a_imported_talk::exercise(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-m01c-collection" {
+        return super::m01c_collection::exercise(owner, admitted, h).await;
     }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
