@@ -17,7 +17,7 @@ fn qmech_m21_postgres_map_container_source_view() -> TestResult {
     eprintln!("POSTGRES_STARTED M21 map container source view");
     let result = std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| source_view(false).map_err(|e| e.to_string()))?
+        .spawn(|| source_view(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M21 source-view thread panicked".to_owned())
         .flatten();
@@ -30,7 +30,7 @@ fn qmech_m21_postgres_map_container_source_view() -> TestResult {
     Ok(())
 }
 
-fn source_view(nested: bool) -> TestResult {
+fn source_view(nested: bool, immovable: bool) -> TestResult {
     run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "qmech_m21_source_view", true, false)
             .await?;
@@ -51,7 +51,7 @@ fn source_view(nested: bool) -> TestResult {
             let generation = controller.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native")?;
             let index = native.item_index().ok_or("native Item index")?;
-            let container_key = "oteryn:item.tibia.i2854";
+            let container_key = if immovable { "oteryn:item.tibia.i3634" } else { "oteryn:item.tibia.i2854" };
             let leaf_key = if nested {
                 "oteryn:item.tibia.i2970"
             } else {
@@ -70,13 +70,22 @@ fn source_view(nested: bool) -> TestResult {
             );
             if nested {
                 let mut bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(debug)?;
+                let inner_palette = if immovable {
+                    let backpack = reference("oteryn:item.tibia.i2854")?;
+                    let palette = u32::try_from(bundle.manifest.palette.len())?;
+                    bundle.manifest.palette.push(oteryn_world_bundle::bundle::PaletteEntry {
+                        key: "oteryn:item.tibia.i2854".into(), family: oteryn_world_bundle::bundle::Family::Item,
+                        id: backpack.get() - 1, terrain: None,
+                    });
+                    palette
+                } else { 3 };
                 let tile = bundle.sectors[0]
                     .tiles
                     .iter_mut()
                     .find(|t| t.x == 6)
                     .ok_or("source tile")?;
                 tile.items.push(oteryn_world_bundle::sector::Item {
-                    palette: 3,
+                    palette: inner_palette,
                     depth: 1,
                     attrs: Default::default(),
                 });
@@ -199,13 +208,43 @@ fn source_view(nested: bool) -> TestResult {
                 .ok_or("source placement")?,
                 reset_epoch: 0,
             };
+            if nested {
+                use crate::gameplay_transport::item_view::SessionItemView;
+                use crate::gameplay_transport::world_map::{MapViewSource, SessionMapView};
+                let overlay = crate::map::overlay::ChannelOverlay::new(
+                    world.base().clone(), deps.admitted.world_id, deps.admitted.channel_id);
+                let source = MapViewSource { overlay: &overlay, facts: world.facts(),
+                    content_generation: generation.identity().server_artifact_digest(), reset_epoch: 0 };
+                let mut handles = SessionItemView::resume(
+                    crate::gameplay_transport::item_view::ItemViewContinuity::default())
+                    .with_map_view().with_container_tree();
+                let snapshot = SessionMapView::default().snapshot(&mut handles, &source,
+                    crate::gameplay_transport::world_spatial::ActorPosition { x: 7, y: 0, floor: -7 })
+                    .map_err(debug)?;
+                let handle = handles.table().handle(&key).ok_or("captured source must advertise a live map handle")?;
+                let wire = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload).map_err(debug)?;
+                assert!(wire.tiles.iter().flat_map(|tile| &tile.items).any(|item|
+                    item.origin == oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle)),
+                    "the ordinary container command must be reachable from the wire snapshot");
+                use crate::gameplay_transport::container_view::{ContainerPlan, ContainerViewState};
+                use oteryn_protocol_oteryn::container_tree::{ContainerViewIntent, ContainerViewOutcome};
+                let mut containers = ContainerViewState::default();
+                let ContainerPlan::Observe(pending) = containers.plan(&mut handles,
+                    ContainerViewIntent::Open { handle, replace_view: None }).map_err(debug)?
+                    else { return Err("live source handle must resolve through command21".into()) };
+                assert_eq!(pending.key(), key);
+                let observation = owner.observe_container(deps.actor, Some(fence), pending.key()).await;
+                let (outcome, delta) = containers.apply(&mut handles, pending, observation).map_err(debug)?;
+                assert_eq!(outcome, ContainerViewOutcome::Opened);
+                assert!(delta.is_some(), "ordinary domain14 container view must be emitted");
+            }
             let observed = owner.observe_container(deps.actor, Some(fence), key).await;
             match observed {
                 Some(ContainerObservation::Container {
                     parent: None,
-                    capacity: 20,
+                    capacity,
                     entries,
-                }) if entries.len() == usize::from(nested) => {}
+                }) if capacity == if immovable { 1 } else { 20 } && entries.len() == usize::from(nested) => {}
                 other => {
                     return Err(format!(
                         "M21: qualified empty map container must open; observed {other:?}"
@@ -313,12 +352,63 @@ fn qmech_m21_postgres_nested_key_pickup() -> TestResult {
     eprintln!("POSTGRES_STARTED M21 nested key pickup");
     let result = std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| source_view(true).map_err(|e| e.to_string()))?
+        .spawn(|| source_view(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M21 nested key thread panicked".to_owned())
         .flatten();
     eprintln!(
         "POSTGRES_CASE_COMPLETED M21 nested key pickup duration={:.6}s success={}",
+        started.elapsed().as_secs_f64(),
+        result.is_ok()
+    );
+    result?;
+    Ok(())
+}
+
+#[test]
+fn qmech_m21_postgres_immovable_source_without_native_custody_policy() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    eprintln!("POSTGRES_STARTED M21 immovable source");
+    let result = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| source_view(true, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "M21 immovable source thread panicked".to_owned())
+        .flatten();
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED M21 immovable source duration={:.6}s success={}",
+        started.elapsed().as_secs_f64(),
+        result.is_ok()
+    );
+    result?;
+    Ok(())
+}
+
+#[test]
+fn qmech_m21_postgres_shared_ruby_real_reset() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    eprintln!("POSTGRES_STARTED M21 shared Ruby real reset");
+    let result = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            super::quest_world_callbacks::scenario(
+                "l6-small-ruby-reset",
+                super::l6_world_pickups::RUBY,
+                false,
+            )
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "M21 real-reset thread panicked".to_owned())
+        .flatten();
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED M21 shared Ruby real reset duration={:.6}s success={}",
         started.elapsed().as_secs_f64(),
         result.is_ok()
     );
