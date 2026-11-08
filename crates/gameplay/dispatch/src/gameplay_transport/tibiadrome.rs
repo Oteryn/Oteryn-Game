@@ -790,6 +790,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .collect::<String>()
         );
         Some(RewardClaimMintRequest {
+            backpack_outputs: false,
+            root_charges_remaining: None,
+            root_fluid_subtype: None,
             command,
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),

@@ -116,6 +116,8 @@ pub struct PendingKillSettlement {
     /// Frozen callback facts survive corpse replay and actor-slot reuse.
     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
     pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
+    /// The first prepared tutorial table survives retries and retained-corpse replay.
+    pub(super) tutorial_loot: Arc<OnceLock<crate::domain::loot_data::LootTableDefinition>>,
     /// Frozen under the existing party/Character locks before the first commit attempt.
     /// Clones and a requeued entry retain the original recipients and occurrence IDs.
     pub(super) task_board_recipients: Arc<OnceLock<Vec<TaskBoardKillRecipient>>>,
@@ -214,6 +216,7 @@ impl PendingKillSettlement {
             forge: None,
             echo: None,
             callback_loot: Vec::new(),
+            tutorial_loot: Arc::default(),
             task_board_recipients: Arc::default(),
             talisman: Arc::default(),
             boss_reward: None,
@@ -284,6 +287,12 @@ struct KillQueueState {
     /// At most one clock per bounded native corpse projection, including settled
     /// deaths whose original command may still replay. Pruned on every capture.
     activity_deaths: Vec<(ExactActorRef, CapturedActivityDeath)>,
+    /// Same retained-projection bound as activity_deaths; no uncommitted death is
+    /// recovered across a lost scope incarnation (D52).
+    tutorial_loot: Vec<(
+        ExactActorRef,
+        Arc<OnceLock<crate::domain::loot_data::LootTableDefinition>>,
+    )>,
     queued: VecDeque<PendingKillSettlement>,
     /// Admission order survives retries and release parks. Bounded by KILLRW-RL-01.
     accepted_order: VecDeque<CreatureDeathOccurrenceKey>,
@@ -726,6 +735,29 @@ impl KillSettlementQueue {
         Some(frozen)
     }
 
+    fn freeze_tutorial_loot(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+    ) -> Arc<OnceLock<crate::domain::loot_data::LootTableDefinition>> {
+        let mut state = self.state();
+        state
+            .tutorial_loot
+            .retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
+        if let Some((_, table)) = state
+            .tutorial_loot
+            .iter()
+            .find(|(actor, _)| *actor == target)
+        {
+            return Arc::clone(table);
+        }
+        let table = Arc::default();
+        if runtime.retains_corpse_projection(target) {
+            state.tutorial_loot.push((target, Arc::clone(&table)));
+        }
+        table
+    }
+
     pub fn append(&self, entry: PendingKillSettlement) -> AppendOutcome {
         let mut state = self.state();
         if state.holds(entry.facts.death) {
@@ -1050,6 +1082,36 @@ impl KillSettlementQueue {
         }
         state.reserved_loot_mints += extra;
         state.extra_loot_mints.push((death, extra));
+        true
+    }
+
+    /// Top up this death's existing take and extra reservations to its frozen
+    /// exact plan, under the same scope counter lock used by take/release.
+    fn ensure_loot_mint_reservation(
+        &self,
+        death: CreatureDeathOccurrenceKey,
+        initial: usize,
+        required: usize,
+    ) -> bool {
+        let mut state = self.state();
+        if !state.in_flight.iter().any(|(held, _, _, _)| *held == death) {
+            return false;
+        }
+        let held = initial
+            + state
+                .extra_loot_mints
+                .iter()
+                .filter(|(held, _)| *held == death)
+                .map(|(_, extra)| *extra)
+                .sum::<usize>();
+        let extra = required.saturating_sub(held);
+        if check_inflight_loot_mint_capacity(state.reserved_loot_mints, extra).is_err() {
+            return false;
+        }
+        state.reserved_loot_mints += extra;
+        if extra > 0 {
+            state.extra_loot_mints.push((death, extra));
+        }
         true
     }
 
@@ -1546,6 +1608,7 @@ pub fn record_creature_kill(
                             forge: None,
                             echo,
                             callback_loot: Vec::new(),
+                            tutorial_loot: Arc::default(),
                             task_board_recipients: Arc::default(),
                             talisman: Arc::default(),
                             boss_reward: None,
@@ -1871,6 +1934,7 @@ pub fn record_creature_kill(
         forge,
         echo,
         callback_loot,
+        tutorial_loot: Arc::default(),
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         grizzly: None,
@@ -1988,6 +2052,10 @@ fn accept_kill(
 ) -> AppendOutcome {
     if entry.soulpit_experience.is_none() {
         super::grizzly_kills::capture(runtime, queue, &mut entry);
+    }
+    super::quest_death_loot::capture(&mut entry);
+    if entry.creature == "oteryn:creature.the_corruptor" {
+        entry.tutorial_loot = queue.freeze_tutorial_loot(runtime, entry.target);
     }
     let target = entry.target;
     let creature = entry.creature.clone();
@@ -2455,6 +2523,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 admission: self,
                 fence,
                 event_rates: taken.event_rates,
+                initial_loot_mints: taken.loot_mints,
             }
             .settle(entry, taken.inflight_before())
             .await;
@@ -2554,6 +2623,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 struct DurableKillSettle<'s, 'a, 'f, 'g> {
+    initial_loot_mints: usize,
     event_rates: oteryn_gameplay_foundation::scheduled_events::EventRates,
     admission: &'s ComposedFreshAdmission<'a, 'f, 'g>,
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
@@ -3097,12 +3167,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             expected_character_revision,
             ..self.fence
         };
-        let Ok(mut loot_table) = admission.tutorial_corruptor_table(fence, &entry).await else {
-            return SettleReport {
-                verdict: SettleVerdict::Retry,
-                no_progression: false,
-            };
-        };
+        let mut loot_table = row.loot_table.clone();
         if let Some(race) = &row.race {
             let bonus = entry
                 .talisman
@@ -3163,8 +3228,46 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
         }
-        super::echo_warden::drops::append_callback_loot(&mut loot_table, &entry.callback_loot);
+        super::quest_death_loot::append(&mut loot_table, &entry);
+        // Ordinary stamina/event/duplex transforms must never remove or multiply
+        // the one-shot tutorial reward. Its arm is consumed by the atomic MINT.
+        let Ok((loot_table, tutorial_corruptor)) = admission
+            .tutorial_corruptor_table(fence, &entry, loot_table)
+            .await
+        else {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        };
+        // The cached first table can contain more ordinary rolls than this
+        // retry's live modifiers reserved. Charge only its positive shortfall;
+        // the existing take and extras are both released on every requeue/end.
+        if tutorial_corruptor.is_some()
+            && let Ok(plan) = plan_creature_loot(
+                loot_plan_seed(entry.facts.death),
+                &row.loot_table_ref,
+                &loot_table,
+            )
+            && !admission
+                .states
+                .attack
+                .lock()
+                .await
+                .kills()
+                .ensure_loot_mint_reservation(
+                    entry.facts.death,
+                    self.initial_loot_mints,
+                    plan.entries.len(),
+                )
+        {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
+            tutorial_corruptor,
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
             loot_table,

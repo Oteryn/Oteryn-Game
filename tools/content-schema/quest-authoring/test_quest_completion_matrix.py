@@ -102,14 +102,16 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             },
             self.result["summary"]["implementation_state"],
         )
-        # ITEMHOLD-Q adds Power Ring's full-charge amulet to W15b's ready claims.
-        self.assertEqual(128, self.result["summary"]["reward_claim_ready_refs"])
-        self.assertEqual(132, self.result["summary"]["reward_claim_placements"])
+        # QUEST-FINISH admits eight additional exact full-default charge claims.
+        # Resolving the remaining fluid Items moves two reward-only owners from
+        # data pending to implementation pending; SOURCE and runtime stay distinct.
+        self.assertEqual(132, self.result["summary"]["reward_claim_ready_refs"])
+        self.assertEqual(136, self.result["summary"]["reward_claim_placements"])
         self.assertEqual(
             {
-                "REWARD_CLAIM_DATA_PENDING": 10,
-                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 42,
-                "REWARD_CLAIM_USE_PENDING": 53 - enabled - verified,
+                "REWARD_CLAIM_DATA_PENDING": 3,
+                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 46,
+                "REWARD_CLAIM_USE_PENDING": 56 - enabled - verified,
                 "REWARD_CLAIM_USE_ENABLED": enabled,
                 "REWARD_CLAIM_USE_VERIFIED": verified,
             },

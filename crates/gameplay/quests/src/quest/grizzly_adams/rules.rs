@@ -218,6 +218,7 @@ pub fn plan_action(
             )?;
         }
     }
+    campaign::observe(state, action, &mut plan.transition)?;
     if plan.transition.changes.len() > super::super::QUESTSTATE0_RL_02 {
         return Err(GrizzlyRefusal::OutOfRange);
     }

@@ -73,6 +73,25 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
         with self.assertRaisesRegex(ValueError, "duplicate production key"):
             self.generate(base=document(0, 0, 1, 2, 3))
 
+    def test_collector_census_retains_the_frozen_base_and_exact_added_identities(self):
+        census = {'schema': 1, 'base': '1ae39c7fb9bef09c3cd50d16410374f4134b1676',
+                  'base_count': 3663, 'added_keys': ['3663', '3664']}
+        args = (self.SOURCE, document(*range(3665)), document(), document(0), document(1))
+        self.assertEqual(regenerate(*args, custody=census), (self.SOURCE, 3665))
+        with self.assertRaisesRegex(ValueError, 'source identity absent'):
+            regenerate(*args, custody={**census, 'added_keys': ['3663', 'missing']})
+        with self.assertRaisesRegex(ValueError, 'declared cohorts=3664'):
+            regenerate(*args, custody={**census, 'added_keys': ['3663']})
+
+    def test_collector_census_rejects_changed_baselines_and_duplicate_additions(self):
+        census = {'schema': 1, 'base': '1ae39c7fb9bef09c3cd50d16410374f4134b1676',
+                  'base_count': 3663, 'added_keys': ['3663']}
+        args = (self.SOURCE, document(*range(3664)), document(), document(0), document(1))
+        with self.assertRaisesRegex(ValueError, 'pinned custody baseline'):
+            regenerate(*args, custody={**census, 'base_count': 3662})
+        with self.assertRaisesRegex(ValueError, 'duplicate custody addition'):
+            regenerate(*args, custody={**census, 'added_keys': ['3663', '3663']})
+
 
 if __name__ == "__main__":
     unittest.main()

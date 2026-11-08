@@ -408,15 +408,82 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
 
+    let later_main_profiles = PROFILE_ADDITIONS
+        .iter()
+        .filter(|(name, _)| {
+            matches!(
+                *name,
+                "WORLDCHG"
+                    | "SRV9-MARRIAGE"
+                    | "QUESTPC4-STAG-ITEMS"
+                    | "QREADY1"
+                    | "QREADY2"
+                    | "W10-PRIMAL"
+                    | "SRVENC-W02"
+                    | "SEASON-W18-HOUSE"
+                    | "QENGINE-REWARDS"
+                    | "SEASON-W05D"
+            )
+        })
+        .map(|(_, count)| count)
+        .sum::<usize>();
+    assert_eq!(later_main_profiles, 2_119);
+    // BASE1ae39c7f has53 QENGINE2 records. Main's seven QUESTPC4 records
+    // are already enumerated in the generated custody delta, not in that base.
+    const QENGINE2_BASE_PROFILES: usize = 53;
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 7);
+    let baseline = ORIGINAL_PROFILES
+        + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
+        + QENGINE2_BASE_PROFILES
+        - npc_additions.len()
+        - later_main_profiles; // Post-baseline main cohorts are already in the generated delta.
+    let custody: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json"
+    )))?;
+    assert_eq!(custody["schema"], 1);
+    assert_eq!(custody["base"], "1ae39c7fb9bef09c3cd50d16410374f4134b1676");
     assert_eq!(
-        profiles.records.len(),
-        ORIGINAL_PROFILES
-            + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
-            + (additions.len() - 53)
-            // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
-            + 26
-            + 23
+        custody["base_count"].as_u64(),
+        Some(u64::try_from(baseline)?)
     );
+    let manifest: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/spells.manifest.json"
+    )))?;
+    for (field, pin) in [
+        "item_profiles",
+        "item_profile_updates",
+        "starting_loadout_item_profiles",
+    ]
+    .into_iter()
+    .zip(custody["inputs"].as_array().ok_or("custody input pins")?)
+    {
+        assert_eq!(
+            pin["path"],
+            format!(
+                "content/{}",
+                manifest[field]["path"].as_str().ok_or("path")?
+            )
+        );
+        assert_eq!(pin["sha256"], manifest[field]["sha256"]);
+    }
+    let extra = custody["added_keys"]
+        .as_array()
+        .ok_or("custody additions")?;
+    let mut custody_keys = std::collections::BTreeSet::new();
+    for key in extra {
+        let key = key.as_str().ok_or("custody key")?;
+        assert!(custody_keys.insert(key), "duplicate custody identity");
+        assert!(
+            profiles
+                .records
+                .iter()
+                .any(|p| p.production_definition.production_key == key),
+            "missing custody identity {key}"
+        );
+    }
+    assert_eq!(profiles.records.len(), baseline + custody_keys.len());
     // Independently replay the closed source packets' zero-speed facts;
     // the unchanged per-row raw-ability and unknown-speed checks below still
     // reject loss, invention or accidental overwrite of any prior owner rule.

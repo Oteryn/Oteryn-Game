@@ -225,7 +225,9 @@ mod tests {
         let callbacks = world_callbacks::load()?;
         let shrines: Vec<_> = callbacks
             .iter()
-            .filter(|c| c.quest == "oteryn:quest.the_way_of_the_monk_quest")
+            .filter(|c| {
+                c.quest == "oteryn:quest.the_way_of_the_monk_quest" && c.monk_reward.is_some()
+            })
             .collect();
         assert_eq!(shrines.len(), 10);
         let lowered =

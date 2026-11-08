@@ -24,7 +24,7 @@ mod combat;
 #[path = "grizzly_boss/vacancy.rs"]
 mod vacancy;
 #[path = "grizzly_boss/world.rs"]
-mod world;
+pub(super) mod world;
 
 #[test]
 fn grizzly_boss_portal_wire_occupied_spawn_expiry_and_relog_return() -> TestResult {

@@ -45,6 +45,14 @@ pub(super) fn prepare(
         return None;
     }
     offers.offers.extend(authored.offers);
+    let chosen: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/chosen-reward-offers.json"
+    ))
+    .ok()?;
+    if chosen.schema != 1 {
+        return None;
+    }
+    offers.offers.extend(chosen.offers);
     if offers.schema != 1
         || offers.offers.len() > 512
         || offers.offers.iter().any(|o| o.requires.len() > 8)

@@ -295,9 +295,13 @@ def test_callback_proof_refresh_preserves_reviewed_snapshots() -> None:
         directory = "tools/content-schema/quest-authoring/samples/completion242/"
         callback = "content/quests/world-callbacks.json"
         proof = [{"path": callback, "sha256": "old"}, {"path": "other", "sha256": "kept"}]
-        approval = {"proof_inputs": proof, "approved_core_digests": ["core"], "approved_graphs": ["graph"]}
-        receipt = {"proof_inputs": proof, "changes": ["reviewed"],
+        compiler = "tools/compiler.py"
+        compiler_inputs = [{"path": compiler, "sha256": "old"}]
+        approval = {"compiler_inputs": compiler_inputs, "proof_inputs": proof,
+                    "approved_core_digests": ["core"], "approved_graphs": ["graph"]}
+        receipt = {"compiler_inputs": compiler_inputs, "proof_inputs": proof, "changes": ["reviewed"],
                    "approval": {"path": directory + "source-fix-approval.json", "sha256": "old"}}
+        write(root, compiler, "# merged compiler\n")
         write(root, callback, {"schema": 1, "callbacks": []})
         write(root, directory + "source-fix-approval.json", approval)
         write(root, directory + "source-fix-receipt.json", receipt)
@@ -308,6 +312,7 @@ def test_callback_proof_refresh_preserves_reviewed_snapshots() -> None:
             rc.refresh_quest_callback_proof()
             assert first == [path.read_bytes() for path in paths]
         approval["proof_inputs"][0]["sha256"] = hashlib.sha256((root / callback).read_bytes()).hexdigest()
+        compiler_inputs[0]["sha256"] = sha(root, compiler)
         receipt["approval"]["sha256"] = hashlib.sha256(first[0]).hexdigest()
         assert json.loads(first[0]) == approval
         assert json.loads(first[1]) == receipt

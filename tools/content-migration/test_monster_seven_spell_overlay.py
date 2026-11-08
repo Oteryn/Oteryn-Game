@@ -40,8 +40,8 @@ class AcceptedOverlayTests(unittest.TestCase):
         # PREY-DIFF registers the generated tier and slot-value tables below;
         # C1 registers the Newhaven starting-loadout item profiles; SRX-1
         # registers the pinned item-profile supplement. QENGINE2 adds its
-        # source-qualified reward Item proof alongside the43 SEASON outputs.
-        self.assertEqual(len(actual.keys() - {qengine.PROOF}),43)
+        # source-qualified reward Item proof alongside the SEASON and quest constructor outputs.
+        self.assertEqual(len(actual.keys() - {qengine.PROOF}),45)
         self.assertIn(qengine.PROOF,actual)
         # Independently rebuild the complete pinned60-identity packet; a count
         # alone cannot authorize a missing, duplicate or substituted reward.
@@ -63,8 +63,10 @@ class AcceptedOverlayTests(unittest.TestCase):
             for field,value in row['attributes'].items():
                 self.assertEqual(by_key[key]['attributes'][field],value,(key,field))
         self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual)
+        self.assertIn('content/items/authored-static-admissions.json',actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
+        self.assertIn('content/cosmetics/outfits/native-cosmetics.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)
         self.assertIn('content/creatures/prey-slot-values.json',actual)
         self.assertIn('content/items/readable-profiles.json',actual)

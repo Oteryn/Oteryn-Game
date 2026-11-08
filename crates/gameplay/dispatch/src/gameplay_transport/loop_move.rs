@@ -337,6 +337,15 @@ impl LoopGroundCache {
         }
     }
 
+    /// An unresolved map MINT origin is still part of the scene census even
+    /// while its visual origin is hidden. None means the cache lock failed.
+    pub(super) fn pending_origin(&self, key: u64) -> Option<Option<CommandRef>> {
+        self.state
+            .lock()
+            .ok()
+            .map(|state| state.pending_origins.get(&key).copied())
+    }
+
     fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>) {
         self.state
             .lock()
@@ -844,11 +853,44 @@ fn drop_cell(
     Ok(ground_cell(to.x, to.y, to.floor))
 }
 
-/// A door's step-out consequence uses the same item-loop receipt and custody writer as
-/// ground moves. Its Channel lane is already held; reach is the vacated doorway, rather
-/// than the player's new tile (which can be two tiles from the donor's destination).
-#[allow(clippy::too_many_arguments, reason = "one fenced door item relocation")]
-pub(super) async fn relocate_door_item(
+/// Finite source-script relocation may span a small authored room. Both cells
+/// must exist on the same floor; ordinary item drops still use drop_cell.
+fn source_drop_cell(
+    base: &WorldBase,
+    from: (i32, i32, i16),
+    to: WorldTilePosition,
+) -> Result<Vec<u8>, LoopMoveResult> {
+    if from.2 != to.floor || from.0.abs_diff(to.x) > 32 || from.1.abs_diff(to.y) > 32 {
+        return Err(LoopMoveResult::TooFar);
+    }
+    let source = (
+        u16::try_from(from.0),
+        u16::try_from(from.1),
+        i8::try_from(from.2),
+    );
+    if !matches!(source, (Ok(x), Ok(y), Ok(floor)) if base.tile(x,y,floor).is_some()) {
+        return Err(LoopMoveResult::Refused(LoopMoveRefusal::Blocked));
+    }
+    // Validate the actual destination; no fictitious player/source position is used.
+    let destination = (
+        u16::try_from(to.x),
+        u16::try_from(to.y),
+        i8::try_from(to.floor),
+    );
+    if !matches!(destination, (Ok(x), Ok(y), Ok(floor)) if base.tile(x,y,floor).is_some()) {
+        return Err(LoopMoveResult::Refused(LoopMoveRefusal::Blocked));
+    }
+    Ok(ground_cell(to.x, to.y, to.floor))
+}
+
+/// A qualified source script uses the existing item-loop receipt/custody writer.
+/// Its caller holds the lane and proves the authored source/destination pair;
+/// voluntary moves retain their ordinary one-cell reach check.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one fenced source script item relocation"
+)]
+pub(super) async fn relocate_source_item(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     actor: ExactActorRef,
@@ -904,7 +946,7 @@ pub(super) async fn relocate_door_item(
         let Some(map) = admission.bundle_map() else {
             return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
         };
-        let Some(ground) = drop_cell(
+        let Some(ground) = source_drop_cell(
             map.overlay.base(),
             (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
             destination,

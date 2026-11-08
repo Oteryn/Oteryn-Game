@@ -25,6 +25,8 @@ use std::{
 };
 
 // D1093 mounts the existing source-bound compiler once, without a shared mod.rs edit.
+mod authored_items;
+
 pub mod cosmetics_loader;
 
 mod cosmetics_view;
@@ -1231,6 +1233,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay candidate Item binding conflict"));
             }
         }
+        authored_items::admit(&items, sections[5], &mut admitted)?;
         for record in &items.records {
             let binding = &record.production_binding;
             let external = binding
@@ -1358,7 +1361,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                         "native gameplay40450 closed candidate source policy",
                     ));
                 }
-            } else if record.production_binding_qualification.is_some() {
+            } else if record.production_binding_qualification.is_some()
+                && binding.source_key != authored_items::SOURCE
+            {
                 return Err(invalid("native gameplay unexpected Item candidate proof"));
             }
             exact(&binding.target, ProjectV2Family::Item)?;

@@ -48,12 +48,34 @@ fn comparison(op: NpcComparison, value: i64, maximum: Option<i64>) -> bool {
     }
 }
 
+fn program_sources(sources_list: &[String], schema: u32, quest: &str) -> bool {
+    if schema == 1 {
+        return sources(sources_list, quest);
+    }
+    let Some(name) = quest.strip_prefix("oteryn:quest.authored.") else {
+        return false;
+    };
+    let marker = format!(
+        "oteryn-authored:chosen-recipe:{}:authored-r1",
+        name.replace('_', "-")
+    );
+    schema == 2
+        && sources_list.iter().any(|source| source == &marker)
+        && sources_list.iter().all(|source| {
+            source == &marker
+                || source
+                    .strip_prefix("https://tibia.fandom.com/")
+                    .is_some_and(|tail| !tail.is_empty())
+        })
+}
+
 pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> {
     let mut quests = BTreeSet::new();
     let mut keys = BTreeSet::new();
     for program in &catalogue.programs {
         let document = &program.document;
-        if document.schema != 1
+        if !matches!(document.schema, 1 | 2)
+            || (document.schema == 2 && !document.quest.starts_with("oteryn:quest.authored."))
             || !valid_quest_key(&document.quest)
             || !quests.insert(document.program_key.as_ref().unwrap_or(&document.quest))
             || document
@@ -96,7 +118,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             if !valid_quest_key(&track.key)
                 || track.quest != document.quest
                 || !(track.min..=track.max).contains(&track.initial)
-                || !sources(&track.sources, &document.quest)
+                || !program_sources(&track.sources, document.schema, &document.quest)
                 || tracks.insert(&track.key, track).is_some()
             {
                 return Err(invalid(format!("invalid NPC track: {}", track.key)));
@@ -128,7 +150,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                 || rule.quest != document.quest
                 || !valid_quest_key(&rule.npc)
                 || !rule.npc.starts_with("oteryn:npc.")
-                || !sources(&rule.sources, &document.quest)
+                || !program_sources(&rule.sources, document.schema, &document.quest)
                 || rule.effects.len() > MAX_NPC_EFFECTS
                 || rule.guards.len() > 128
                 || rule.topics.as_ref().is_some_and(|topics| {

@@ -843,6 +843,7 @@ pub(super) async fn exercise(
         setup
             .storage
             .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+                read_only: false,
                 at_least: false,
                 increment: false,
 
