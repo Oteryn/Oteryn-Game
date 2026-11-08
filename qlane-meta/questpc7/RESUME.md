@@ -1,3 +1,72 @@
+# CURRENT EXACT RED before compiling WIP push — 2026-11-08 07:56 UTC
+
+PG18.6 green4 actuallyRED44.285881391s: Project(InvalidProject("v2 authoring
+profiles are not target sorted and unique")). Lexical reference ordering is
+correct; profile target.family instead uses Rust ProjectV2Family enum order.
+NEXT fix profile sort to enum order, regenerate tree/pins and rerun actualPG.
+No Thaian qualification claimed. Final official pin-refreshPASS68af40f4...
+Compiling WIP published under owner cadence exception; ownPGRED and unit rerun
+pending explicitly. Do not misread older notes saying all sorting fixed.
+
+# Compiling Thaian WIP publication — 2026-11-08 07:54 UTC
+
+Corrected tree regeneration PASS:1864Creatures, sortedcanonical references and
+profiles. Prey normal simulationPASS15cases/776creatures. Source stage9testsPASS.
+Workspace all-target checkPASS3m37s; fmtPASS; duplicate migrationPASS. Earlier
+strict content/dispatch/game-server clippyPASS. Final official pin-refresh runs.
+Own PG green4 rerun compiling. NO ThaianGREEN or whole Feaster qualification.
+Latest actualPG45.651741254s rejected unsorted profiles; helper now sorts both
+references and profiles. Full unit collection: game-server577pass/0fail/3existing
+ignores; content324pass/6fail/1existingignore. Five errors were sourceordering,
+one stale1863literal; all fixed via source/generator, corrected rerun pending.
+Dispatch units not reached. Preserve all assertions/bounds; only exact new
+inventory expectations updated. Disk-full check retry recovered by deleting
+completed own incremental sessions, now9GBfree; retryPASS, not a blocker.
+Publish compiling WIP under owner's PREPUSH-2 step3 budget exception; continue
+focused PG and changedcrate unit reruns immediately, then qualification commit.
+Main fetchedc77d436d8; merge-tree preview69conflicts (exactCallbackAPI mismatch
+unchanged). Prior actual mergeabort exception remains; never pretendmainmerged.
+
+# Thaian loader inventory correction — 2026-11-08 07:36 UTC
+
+Actual PostgreSQL18.6 rerun reached repository loading and rejected precisely
+62872 reference records against the historical62869 bound (42.866669788s).
+Normal inventory tool now derives the three-record Thaian cohort from its owned
+packet and source count30 from sources.json; only measured import budgets change,
+not runtime actor/item limits. World seal uses existing production provenance
+framing, validates old hashes and recomputes changed document lengths/digests.
+Current focused PG rerun and changed-crate checks compiling; no GREEN claim yet.
+Fetched main c77d436d8: #3037, callback conflict files unchanged. Nonmutating
+merge-tree preview confirms conflicts persist; existing qengine2 convergence
+request remains. Use owner's bounded merge exception, never discard either API.
+
+# Thaian canonical data regenerating — 2026-11-08 07:16 UTC
+
+Last pushed27b9eb0c7a756f0c9fce637940487fa7e3c2edc6. Its full unit run finished
+content330/dispatch2774/quests308,0failures,19preexistingignores. ActualPG final
+pin86.668771533s separate. No source data mutated until full run completed.
+New ThaianPG actualRED81.509290862s after realParaNorbert intro: native profile
+missing. Initial compile diagnostics fixed intro helper NPC handle return and
+numeric outfit policy; no test weakened. New begin() preserves original prefix
+assertions and full NPC handle. Thaian source Wiki48123/rev445240 reverified.
+Owned3canonical declarations/profiles +Wiki binding produced by existing
+Converter/Stage. Two small data installers: questpc7_thaian_authoring/native.py.
+Reuse ONLY admittedGhost melee ability0..80nonlethal/2s +visual48, truthful
+Ghost attestation; no fakeCanaryThaian file. KnownHP50000/noillusion/no pushing,
+7zero elemental resistances, Invisibility+Paralysis immunities, invis sensing.
+Sourceunknowns zeroXP/noloot/corpse,125speed/zeroarmor/defense conservative.
+Full tree generator auto refreshes Prey. Earlier generations exposed startup
+Cargo environment and stale Bestiary shard include; fixed environment atstart,
+new small inventory tool derives shard paths/Creaturecount from canonicalindex.
+Bestiary count823 retained. Root JSON compact format retained; no bulk dumps.
+Currently tree-generation4 pipeline runs with CARGO_BUILD_JOBS2 and envloaded,
+then repin_rust_inventory and focusedThaianPGGREEN. Logs in/workspace/scratch.
+Next finish PG/all-targetcheck/clippy/fmt, source tree/metadata/dupmigration
+checks and officialpins, then commitpush immediately. SourceRootnewdata needs
+content+dispatch and game-server checks (generated Rust inventory pins). No full
+workspace/PG suite. Full crate units budgetexception permitted, state honestly.
+Whole counts21QUALIFIED/4ACTIVE. Bigworld/capture/corpse routes stayqengine2.
+
 # Six perfume support Items PG QUALIFIED — publish now
 
 PG18.6 RED74.325341548s ->GREEN66.450643884s ->finalpinGREEN86.668771533s.

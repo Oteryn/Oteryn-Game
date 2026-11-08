@@ -203,11 +203,11 @@ async fn word(
     super::questpc7_outfit_items::talk(owner, a, npc, &mut seq, text).await?;
     Ok(())
 }
-pub(super) async fn exercise(
+pub(super) async fn begin(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
     h: &Harness,
-) -> TestResult {
+) -> TestResult<(Vec<Callback>,oteryn_protocol_oteryn::world_spatial_entities::EntityRef)> {
     let version: String = sqlx::query_scalar("SHOW server_version")
         .fetch_one(&h.pool)
         .await?;
@@ -247,6 +247,14 @@ pub(super) async fn exercise(
     word(owner, a, npc, "mission").await?;
     assert_eq!(value(owner, a, TRACK).await?, 0);
     assert_eq!(carried(h, 32582).await?, 1);
+    Ok((rows,npc))
+}
+pub(super) async fn exercise(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    a: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let (rows,npc)=begin(owner,a,h).await?;
     // Norbert's approach is also the entrance selector. A STEP callback needs
     // an actual crossing after accepting the mission, rather than a no-op walk.
     step(

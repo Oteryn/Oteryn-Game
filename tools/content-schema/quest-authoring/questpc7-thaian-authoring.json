@@ -1,0 +1,241 @@
+{
+  "schema": "OTERYN_QUESTPC7_THAIAN_AUTHORING/v1",
+  "source": {
+    "url": "https://www.tibiawiki.com.br/index.php?title=Thaian&oldid=445240",
+    "page_id": 48123,
+    "revision": 445240,
+    "wikitext_sha256": "16e5bf8f2bbaa579a3b87ad8708007b8556d4b5f214812f70df506435322e65e"
+  },
+  "choices": {
+    "experience": 0,
+    "speed": 125,
+    "armor": 0,
+    "defense": 0,
+    "loot": null,
+    "corpse": null,
+    "visual": "admitted ghost outfit48 approximation",
+    "melee": "reuse admitted Ghost melee ability and its real source attestation,0..80nonlethal/2s; not a Canary Thaian source claim"
+  },
+  "records": [
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.thaian",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.thaian",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.thaian",
+        "revision": "definition-r1"
+      },
+      "loot": null
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.thaian",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.thaian",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    }
+  ],
+  "profiles": [
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.thaian",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 50000,
+          "experience": 0,
+          "speed": 125,
+          "armor": 0,
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            }
+          ],
+          "immunities": [],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.ghost.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "details": {
+            "display_name": "Thaian",
+            "inspection": "Thaian",
+            "defense": 0,
+            "critical_chance_ppm": 0,
+            "reference_level": null,
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": false,
+              "exclusive_prey": false,
+              "forge": false,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.thaian",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 2000,
+              "chance_ppm": 0
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.ghost.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.thaian",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/48"
+        }
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source_key": "oteryn:source.tibiawiki",
+      "source_revision": "questpc7-thaian-wiki-445240-chosen-r1",
+      "identity_namespace": "mediawiki/page_id",
+      "external_id": "48123",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.thaian",
+        "revision": "definition-r1"
+      },
+      "disposition": "EXACT"
+    }
+  ]
+}

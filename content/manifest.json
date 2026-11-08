@@ -12,7 +12,7 @@
     },
     "Behavior": {
       "index": "content/behaviors/index.json",
-      "records": 3145
+      "records": 3146
     },
     "Charm": {
       "index": "content/charms/index.json",
@@ -20,7 +20,7 @@
     },
     "Creature": {
       "index": "content/creatures/definitions/index.json",
-      "records": 1863
+      "records": 1864
     },
     "Dialogue": {
       "index": "content/dialogues/definitions/index.json",
@@ -37,10 +37,6 @@
     "Encounter": {
       "index": "content/encounters/definitions/index.json",
       "records": 108
-    },
-    "Encounter.Raid": {
-      "index": "content/encounters/raids/index.json",
-      "records": 239
     },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
@@ -64,7 +60,7 @@
     },
     "Presentation": {
       "index": "content/presentations/definitions/index.json",
-      "records": 3145
+      "records": 3146
     },
     "Proficiency": {
       "index": "content/proficiencies/index.json",
@@ -274,7 +270,7 @@
       "path": "content/behaviors/behaviors-02500-02999.json"
     },
     {
-      "path": "content/behaviors/behaviors-03000-03144.json"
+      "path": "content/behaviors/behaviors-03000-03145.json"
     },
     {
       "path": "content/behaviors/index.json"
@@ -322,7 +318,7 @@
       "path": "content/creatures/definitions/creatures-01000-01499.json"
     },
     {
-      "path": "content/creatures/definitions/creatures-01500-01862.json"
+      "path": "content/creatures/definitions/creatures-01500-01863.json"
     },
     {
       "path": "content/creatures/definitions/index.json"
@@ -371,15 +367,6 @@
     },
     {
       "path": "content/encounters/definitions/index.json"
-    },
-    {
-      "path": "content/encounters/raids/catalogue.json"
-    },
-    {
-      "path": "content/encounters/raids/evidence-00000-00121.json"
-    },
-    {
-      "path": "content/encounters/raids/index.json"
     },
     {
       "path": "content/interactions/reward_claims/index.json"
@@ -694,7 +681,7 @@
       "path": "content/presentations/definitions/presentations-02500-02999.json"
     },
     {
-      "path": "content/presentations/definitions/presentations-03000-03144.json"
+      "path": "content/presentations/definitions/presentations-03000-03145.json"
     },
     {
       "path": "content/presentations/definitions/spell-native-profiles.json"
@@ -934,7 +921,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1870,
+          "record_count": 1871,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -942,7 +929,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "a051499f90d192d83f93cbeaed6efcaf45650b66ed261f661d5e9889aad9c149"
+          "sha256": "71a477c75e33d7715b1522d0dda75592abf5cfd6fc5e1fd63471ca9d27f60fa0"
         },
         {
           "creates_canonical_identities": false,
@@ -1041,7 +1028,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/definitions/spell-native-profiles.json",
-          "record_count": 1870,
+          "record_count": 1871,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
@@ -1049,7 +1036,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "b94a936eeac887eeeb807bf81ba5ae1bbd482d665404c247319421464c5bcea8"
+          "sha256": "45f1e2749553c50060285a4a8f93da77bee8f5452c08a43ab7596f9522e9140d"
         },
         {
           "creates_canonical_identities": false,

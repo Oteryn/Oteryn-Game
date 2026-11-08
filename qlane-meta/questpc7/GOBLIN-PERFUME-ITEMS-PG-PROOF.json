@@ -38,8 +38,8 @@
     "generated-checks": "PASS"
   },
   "content_units": "330passed,0failed,1preexistingignored in363.15s",
-  "dispatch_units": "RUNNING/PENDING under PREPUSH-2 budget exception; no reported assertion failures",
-  "quests_units": "unchanged quest crate source; previously308passed in21.72s; combined run queued after dispatch",
+  "dispatch_units": "2774passed,0failed,18preexistingignored in1078.55s; actual PG proofs are separate",
+  "quests_units": "308passed,0failed in20.30s",
   "world_pin": "56c72f4740ece774e68e3c843fb47db08ad3929e19d10a4d46b641f530a031f0",
   "pin_policy": "Official repository pin-refresh updated World pin and deployment references; no manual pins",
   "main_exception": {

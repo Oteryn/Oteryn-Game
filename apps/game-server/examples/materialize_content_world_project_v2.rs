@@ -438,7 +438,7 @@ fn limits() -> ProjectEvidenceLimits {
             + 62
             + (NPC_BULK_COUNT + NPC_BULK_MORE_COUNT) * 2,
         // The four monster-full-mechanics batches add four sources and reimport states.
-        max_import_records: 25 + 4,
+        max_import_records: 30,
         max_reimport_states: ENCOUNTER_COUNT + item_fx_audio_raw_import::STATE_COUNT + 4,
     }
 }
@@ -457,9 +457,9 @@ fn promote_beds(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Er
 fn main_world_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         // E06 mints 68 client-only Crystal market Items into the committed world.
-        max_reference_records: 62_801 + 68,
+        max_reference_records: 62_801 + 68 + 3,
         max_reimport_states: 404,
-        max_import_records: 29,
+        max_import_records: 30,
         ..limits()
     }
 }
@@ -529,7 +529,7 @@ fn reconciled_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         max_decoded_fields: 2_400_000,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + 26_194 + 2_564,
-        max_import_records: 29,
+        max_import_records: 30,
         max_reimport_states: 404,
         ..limits()
     }

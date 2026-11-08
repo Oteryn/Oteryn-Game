@@ -866,3 +866,20 @@ supplies portable nonstack vials, fixed17681, cumulative portable3120. Support
 admission does not enable an action or grant any item. When the engine route
 lands, choose ascending17672/17673/17674/17675 as the four transformed phases;
 this numeric phase mapping is a conservative lane rule, not an XML assertion.
+
+## Thaian canonical/native data final choices
+
+Pinned Wiki Thaian page48123/revision445240: HP50000 (line3), no illusion12,
+no pushing16-17, all listed elemental damage modifiers100%44-50, Invisibility
+and Paralysis immunities53. URL https://www.tibiawiki.com.br/index.php?title=Thaian&oldid=445240 .
+Final approximation supersedes the earlier unregistered0..100draft: reuse the
+already admitted Ghost melee ability0..80/2seconds and its existing nonlethal
+approximation status, with the truthful Ghost Canary source attestation. No
+Canary Thaian file or fake Tibia creature ID is invented. Only that melee
+reference and existing ghost visual48 are reused; Thaian health, immunity,
+invisibility sensing, and owned behavior remain distinct. ZeroXP/no loot or
+corpse,125speed,zero armor/defense remain conservative choices, not wiki facts.
+Disable unrelated Prey/Forge/personal-boss-reward eligibility. Add the three
+canonical declarations/profiles and explicit Wiki binding through existing
+Stage/Mapper; native overlay consumes the same authored packet. No world spawn
+or whole Feaster completion is claimed by the actor-admission slice.

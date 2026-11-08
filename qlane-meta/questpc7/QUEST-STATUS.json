@@ -160,6 +160,21 @@
       "constructor_reuse": "Existing wiki_authored.bundles invokes canary_batch.Converter.convert on authored temporary Lua and binds Wiki identity.",
       "draft": "/tmp/questpc7-authored-thaian.lua",
       "scope": "Boss Thaian is distinct from existing NPC The Thaian; no live corpse/XP or exact combat-source claim."
+    },
+    "thaian_progress": {
+      "state": "COMPILING_WIP_PG_RED_PROFILE_ENUM_ORDER",
+      "red_seconds": 81.509290862,
+      "red_error": "missing first-party Thaian native profile after real Para Norbert introduction",
+      "source": "https://www.tibiawiki.com.br/index.php?title=Thaian&oldid=445240",
+      "source_packet": "tools/content-schema/quest-authoring/questpc7-thaian-authoring.json",
+      "scope": "native actor admission support only; no boss clear or quest completion claim",
+      "reuse": "normal Converter and Stage/Mapper; exact existing Ghost melee ability/attestation and visual48 as documented approximations",
+      "whole_quest": "ACTIVE",
+      "loader_correction": "Measured reference inventory62869+3 and sources29+1, derived by inventory tooling; no runtime capacity changes.",
+      "workspace_all_targets": "PASS 3m37s",
+      "unit_failures": "Six collected; ordering and exact count source fixes applied, rerun pending",
+      "current_red": "Project(InvalidProject(\"v2 authoring profiles are not target sorted and unique\"))",
+      "red_seconds_latest": 44.285881391
     }
   },
   {

@@ -1,0 +1,56 @@
+{
+  "scope": "First-party Thaian native actor admission only; Feaster whole quest ACTIVE",
+  "source": "https://www.tibiawiki.com.br/index.php?title=Thaian&oldid=445240",
+  "postgres_version": "18.6",
+  "red": {
+    "duration_seconds": 81.509290862,
+    "error": "missing first-party Thaian native profile",
+    "log": "/workspace/scratch/questpc7-thaian-red3.log"
+  },
+  "loader_repairs": [
+    {
+      "duration_seconds": 33.103105454,
+      "error": "opened byte length differs from manifest",
+      "repair": "Repository-derived World document seal refreshed using existing provenance framing."
+    },
+    {
+      "duration_seconds": 42.866669788,
+      "error": "Project(LimitExceeded { resource: \"project reference records\", actual: 62872, limit: 62869 })",
+      "repair": "Regenerator derives three additional owned declarations and30 measured source records."
+    },
+    {
+      "duration_seconds": 45.651741254,
+      "error": "v2 authoring profiles are not target sorted and unique",
+      "repair": "Owned authoring merge sorts all records/profiles by family,key,revision; canonical Creature index stays sorted."
+    }
+  ],
+  "green": "PENDING; do not claim qualification",
+  "assertions": [
+    "real Para Norbert introduction and bell grant",
+    "canonical Thaian HP50000, chosen zeroXP, noillusion, two source immunities and invisibility sensing",
+    "existing Ghost visual48 and honestly attested admitted melee approximation",
+    "real runtime admission at32627,32077,-7 with50000health",
+    "no programme advancement and bell preserved"
+  ],
+  "source_stage_tests": {
+    "passed": 9,
+    "duration_seconds": 1.511
+  },
+  "validation": {
+    "workspace_all_targets": "PASS 3m37s on corrected source",
+    "fmt": "PASS",
+    "duplicate_migrations": "PASS",
+    "source_stage_tests": "9 passed 1.511s",
+    "crate_units": "Game-server577pass/3existingignores; content324pass/6fail/1existingignore. All six root causes fixed in source; corrected full rerun pending; dispatch not reached.",
+    "pg_rerun": "green4 currently compiling; no GREEN claim",
+    "publication": "Compiling WIP under owner PREPUSH-2 cadence exception; final pin refresh required before push"
+  },
+  "current_red": {
+    "duration_seconds": 44.285881391,
+    "error": "Project(InvalidProject(\"v2 authoring profiles are not target sorted and unique\"))",
+    "root_cause": "Authoring profile target family is Rust enum order, not lexical; canonical reference identity remains lexical.",
+    "next_fix": "Sort profiles with ProjectV2Family order, regenerate and rerun."
+  },
+  "publication": "Compiling WIP; PG remains RED, no qualification claim",
+  "final_bundle_digest": "68af40f4420f59cd459f6b0c15455a1bbf6251c81639a22ad6e8eb3485938564"
+}

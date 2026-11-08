@@ -57,9 +57,9 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
             // #1807 monster source mechanics and reconciled catalogue add 1_011 reference records,
             // measured: 62_801 on the merged repository source. E06 mints 68 client-only Crystal
             // market Items: 62_869, measured.
-            max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + 21_069 + 2_564 + 1_011 + 68,
+            max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + 21_069 + 2_564 + 1_011 + 68 + 3,
             // #1807 adds 4 monster-full-mechanics import batches: 29 v2 sources, measured.
-            max_import_records: 25 + 4,
+            max_import_records: 30,
             // #1807 adds 4 reimport states to g4-creature-crystal-1530-r1: 404, measured.
             max_reimport_states: 104 + 296 + 4,
         },

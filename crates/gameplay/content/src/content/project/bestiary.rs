@@ -31,13 +31,13 @@ const SHARDS: [(&str, &[u8]); 4] = [
         ),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01862.json",
+        "content/creatures/definitions/creatures-01500-01863.json",
         include_bytes!(
-            "../../../../../../content/creatures/definitions/creatures-01500-01862.json"
+            "../../../../../../content/creatures/definitions/creatures-01500-01863.json"
         ),
     ),
 ];
-const CREATURE_COUNT: usize = 1_863;
+const CREATURE_COUNT: usize = 1_864;
 const BESTIARY_COUNT: usize = 823;
 
 #[derive(Deserialize)]
@@ -519,7 +519,7 @@ mod tests {
                 .iter()
                 .all(|(_, bytes)| bytes.len() <= limits().max_document_bytes)
         );
-        assert_eq!(limits().max_reference_records, 1_863);
+        assert_eq!(limits().max_reference_records, 1_864);
     }
 
     #[test]
