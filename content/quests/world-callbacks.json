@@ -4678,6 +4678,37 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/grimvale-full-moon-entry",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33430,
+          "y": 31537,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 22761
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33419,
+        "y": 31539,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/quests/grimvale.lua:34-45"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/hellgate-bridge",
       "quest": "oteryn:quest.hellgate_quest",
       "trigger": "use",
@@ -6009,6 +6040,70 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/liquid_black/actions_chairteleport.lua:1-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/mages-tower-entry",
+      "quest": "oteryn:quest.the_mages_tower_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33143,
+          "y": 31527,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10840
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32942,
+        "y": 31594,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:75-83",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/movements/oramond/oramond_movements.lua:7-8,55-76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/mages-tower-exit",
+      "quest": "oteryn:quest.the_mages_tower_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32942,
+          "y": 31592,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10842
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33143,
+        "y": 31528,
+        "floor": -2
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:75-83",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/movements/oramond/oramond_movements.lua:7-8,55-76"
       ]
     },
     {

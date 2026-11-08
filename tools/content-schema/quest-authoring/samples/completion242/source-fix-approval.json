@@ -368,7 +368,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
-      "sha256": "7d6c0470aad6ea2df973a4c8e0092950af83109105793e92ae3717cab5429663"
+      "sha256": "739a451cf4dec4d7ff9367ecf656602c5804da73b8097f4b0dddb9e11ed511ae"
     },
     {
       "path": "tools/content-schema/quest-authoring/reward_aliases.py",
@@ -494,7 +494,7 @@
     },
     {
       "path": "content/quests/world-callbacks.json",
-      "sha256": "d38b235ae1461dd96d3b594f61d2dbc96aaf97fd03f44ba1d4db37903f54568b"
+      "sha256": "8c82810980c9dcc8ca7a83fe563da2b65d89356106ff2ede990f1d18b64006ac"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",

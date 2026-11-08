@@ -1435,6 +1435,12 @@
         "qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
         "result": "Canonical NPC reward repairs available; selected-player colour predicate and item-look disguise still absent."
       }
+    },
+    "collector_handoff": {
+      "branch_frozen_after_push": true,
+      "continuation_branch": "claude/happy-davinci-ijz3wy-questpc8b",
+      "proof": "collector-main-validation.json",
+      "whole_quest_qualification_unchanged": true
     }
   },
   {
@@ -1562,8 +1568,8 @@
       "Immediate/cold refusal, exact72000-second boundary, rejected no-op occurrence effects"
     ],
     "merged_revalidation": {
-      "proof": "canonical-father-migration-validation.json",
-      "result": "PASS on PostgreSQL18.6 after main47db34f09 and forward1307"
+      "proof": "collector-main-validation.json",
+      "result": "PASS on PostgreSQL18.6 after collector78294c081; prior qualification retained"
     }
   },
   {
@@ -1592,8 +1598,8 @@
       }
     ],
     "merged_revalidation": {
-      "proof": "canonical-father-migration-validation.json",
-      "result": "PASS on PostgreSQL18.6 after main47db34f09 and forward1307"
+      "proof": "collector-main-validation.json",
+      "result": "PASS on PostgreSQL18.6 after collector78294c081; prior qualification retained"
     }
   },
   {
@@ -1704,10 +1710,17 @@
         "scope": "Opening exact-material hand-in and replay only"
       },
       "post_main_revalidation": {
-        "schema_proof": "canonical-father-migration-validation.json",
-        "runtime_cases": "6/6 PASS; Wrath opening106.628s; see canonical-father-migration-validation.json",
-        "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05"
+        "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+        "result": "8/8 own native PG PASS; opening101.707s",
+        "proof": "collector-main-validation.json",
+        "whole_quest_complete": false
       }
+    },
+    "collector_handoff": {
+      "branch_frozen_after_push": true,
+      "continuation_branch": "claude/happy-davinci-ijz3wy-questpc8b",
+      "proof": "collector-main-validation.json",
+      "whole_quest_qualification_unchanged": true
     }
   },
   {

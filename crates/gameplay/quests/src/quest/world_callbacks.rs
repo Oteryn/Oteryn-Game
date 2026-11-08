@@ -272,6 +272,30 @@ struct Document {
     callbacks: Vec<Callback>,
 }
 
+/// Shared World prerequisites for exact native source callbacks. Ordinary quest
+/// travel and exits remain independent of these event-only predicates.
+pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)> {
+    if super::hive_access::gate(key).is_some() {
+        return Some(("hive_born", None));
+    }
+    match key {
+        "oteryn:quest-callback/fire-feathered-native-darkness"
+        | "oteryn:quest-callback/fire-feathered-native-life"
+        | "oteryn:quest-callback/fire-feathered-native-light" => {
+            Some(("the_fire_feathered_serpent", Some(3)))
+        }
+        "oteryn:quest-callback/grimvale-full-moon-entry" => Some(("grimvale", None)),
+        "oteryn:quest-callback/mages-tower-entry" => Some(("the_mage_s_tower", None)),
+        "oteryn:quest-callback/deeplings-native-boss-28574"
+        | "oteryn:quest-callback/deeplings-native-boss-28575"
+        | "oteryn:quest-callback/deeplings-native-boss-28576"
+        | "oteryn:quest-callback/deeplings-boss-28574"
+        | "oteryn:quest-callback/deeplings-boss-28575"
+        | "oteryn:quest-callback/deeplings-boss-28576" => Some(("deeplings", Some(3))),
+        _ => None,
+    }
+}
+
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
@@ -292,11 +316,18 @@ pub fn load() -> Result<Vec<Callback>, String> {
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
         return Err("callback bounds including Rotten Blood altar".into());
     }
+    callbacks.extend(super::fire_feathered_native::callbacks());
+    callbacks.extend(super::shared_world_progress::callbacks());
+    callbacks.extend(super::hive_access::callbacks());
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());
+    }
+    callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
+    if callbacks.len() > MAX_CALLBACKS {
+        return Err("callback bounds including native access".into());
     }
     Ok(callbacks)
 }
@@ -432,6 +463,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                     || (callback.effects.outfit_reward.is_some()
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
+                    || source.starts_with("crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 item.target_replacement == Some(0)
@@ -1227,6 +1259,128 @@ mod disguise_tests {
             tracks.insert(rule.track.clone(), value);
             assert_eq!(rule.active(&tracks), (10..=12).contains(&value));
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod worldchg_grimvale_tests {
+    #![allow(
+        clippy::expect_used,
+        reason = "canonical native source fixtures must exist"
+    )]
+    use super::*;
+
+    #[test]
+    fn worldchg_mage_native_entry_and_escape_are_stateless() {
+        let callbacks = load().expect("canonical callbacks");
+        let entry = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/mages-tower-entry")
+            .expect("native Mage entry callback");
+        let exit = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/mages-tower-exit")
+            .expect("native Mage escape callback");
+        assert_eq!(
+            entry.selector.position,
+            Some(Position {
+                x: 33143,
+                y: 31527,
+                floor: -2
+            })
+        );
+        assert_eq!(entry.selector.appearance, Some(10840));
+        assert_eq!(
+            entry.selector.unique, None,
+            "startup UID is not retained B3 metadata"
+        );
+        assert_eq!(
+            entry.teleport,
+            Some(Position {
+                x: 32942,
+                y: 31594,
+                floor: -8
+            })
+        );
+        assert_eq!(
+            world_change_requirement(&entry.key),
+            Some(("the_mage_s_tower", None))
+        );
+        assert_eq!(
+            exit.selector.position,
+            Some(Position {
+                x: 32942,
+                y: 31592,
+                floor: -8
+            })
+        );
+        assert_eq!(exit.selector.appearance, Some(10842));
+        assert_eq!(
+            exit.teleport,
+            Some(Position {
+                x: 33143,
+                y: 31528,
+                floor: -2
+            })
+        );
+        assert_eq!(
+            world_change_requirement(&exit.key),
+            None,
+            "escape always remains available"
+        );
+        assert!(entry.storage.is_empty() && exit.storage.is_empty());
+    }
+
+    #[test]
+    fn worldchg_grimvale_source_entry_is_exact_and_leaves_travel_stateless() -> Result<(), String> {
+        let callbacks = load()?;
+        let entry = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/grimvale-full-moon-entry")
+            .ok_or("Grimvale's source encounter entry has no native callback")?;
+        assert_eq!(entry.trigger, Trigger::StepIn);
+        assert_eq!(
+            entry.selector.position,
+            Some(Position {
+                x: 33430,
+                y: 31537,
+                floor: -11
+            })
+        );
+        assert_eq!(entry.selector.appearance, Some(22761));
+        assert_eq!(
+            entry.selector.action, None,
+            "literal source position binds bootstrap markers absent from B3"
+        );
+        assert_eq!(
+            entry.teleport,
+            Some(Position {
+                x: 33419,
+                y: 31539,
+                floor: -10
+            })
+        );
+        assert!(
+            entry.storage.is_empty(),
+            "the moon gate must not fabricate personal quest progress"
+        );
+        assert_eq!(
+            world_change_requirement(&entry.key),
+            Some(("grimvale", None))
+        );
+        assert!(entry.offerings.is_empty());
+        assert!(entry.return_on_failure);
+        let ordinary = callbacks
+            .iter()
+            .filter(|callback| {
+                callback.key.starts_with("oteryn:quest-callback/grimvale-")
+                    && callback.key != entry.key
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(ordinary.len(), 9);
+        assert!(ordinary.iter().all(|callback| callback.storage.is_empty()
+            && world_change_requirement(&callback.key).is_none()));
         Ok(())
     }
 }

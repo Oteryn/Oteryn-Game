@@ -1,3 +1,19 @@
+# Collector handoff: freeze this branch after the one merge push
+
+Collector main78294c081 is integrated with both main and questpc8 logic retained.
+Own migrations remain1300..1307; all352migrations passed PostgreSQL18.6 in3s.
+Own native PG8/8PASS365.597s, including atomic Father, source XP, read-only
+Secret Library and Wrath opening. Full Quest units323/323PASS36.05s; remaining
+focused merge regressions13/13PASS. Clippy13changed crates PASS. Exact46-output
+registration replay PASS294.478s; reviewed source approval snapshots unchanged.
+Final workspace check PASS347s; fmt PASS. See collector-main-validation.json.
+
+After the single collector push this branch is FROZEN. No new features or
+follow-up work here; continue only on claude/happy-davinci-ijz3wy-questpc8b.
+Whole Wrath and Colours qualification is unchanged; do not promote those entries
+from the successful opening/shared-mechanic slice. Full remaining suites go to CI
+under the latest owner speed rule. Historical checkpoints follow below.
+
 # questpc8 final report
 
 **Quest disposition: 1 QUALIFIED, 32 BLOCKED. All 33 assigned titles have a final status.**

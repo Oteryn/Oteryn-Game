@@ -204,6 +204,10 @@ pub fn load_embedded_quest_state(
     )
     .map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::fire_feathered_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::shared_world_progress::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::monk_shrines::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::threatened_dreams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -235,6 +239,19 @@ pub fn load_embedded_quest_state(
         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
     );
+    // These explicitly authored native adaptations carry their own source witnesses;
+    // their progress tracks are absent from the donor-lowered mission catalogue.
+    for callback in super::fire_feathered_native::callbacks()
+        .into_iter()
+        .chain(super::shared_world_progress::callbacks())
+    {
+        for storage in callback.storage {
+            lowered
+                .source_tracks
+                .entry(storage.track)
+                .or_insert_with(|| callback.sources.join(";"));
+        }
+    }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
     lowered.catalogue =
@@ -442,6 +459,34 @@ mod tests {
         }
         expected.insert(crate::quest::schrodinger_island::callback().key);
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        // Collector main adds these exact native World cohorts; no donor
+        // exclusion becomes an automatic admission through a loaded key.
+        let before_native = expected.len();
+        for index in 0..48 {
+            expected.insert(format!("oteryn:quest-callback/hive-native-gate-{index}"));
+        }
+        for index in [0, 1, 2, 3, 5] {
+            expected.insert(format!(
+                "oteryn:quest-callback/hive-native-objective-{index}"
+            ));
+        }
+        for suffix in [
+            "fire-feathered-native-darkness",
+            "fire-feathered-native-life",
+            "fire-feathered-native-light",
+            "hive-native-hatchlings",
+            "hive-native-fluid-preparation",
+            "deeplings-native-coral",
+            "deeplings-native-heart",
+            "deeplings-native-soul-net",
+            "deeplings-native-stair",
+            "deeplings-native-boss-28574",
+            "deeplings-native-boss-28575",
+            "deeplings-native-boss-28576",
+        ] {
+            assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
+        }
+        assert_eq!(expected.len() - before_native, 65);
         assert_eq!(
             callbacks
                 .into_iter()

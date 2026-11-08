@@ -27,3 +27,7 @@ implementation already merged here; retain the two requests above rather than
 creating another shared engine owner. Wrath's exact-material opening slice is
 implemented and has its own native PostgreSQL proof; that does not qualify the
 later disguise graph or the entire quest.
+
+Collector78294c081 handoff: questpc8 is frozen after its merge push. Existing
+engine requests and any later quest work continue on questpc8b; this does not
+claim whole Wrath or Colours qualification.

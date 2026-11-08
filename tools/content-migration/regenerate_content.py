@@ -501,7 +501,7 @@ def unresolved_worktree_paths() -> list[str]:
 
 
 def refresh_quest_callback_proof() -> None:
-    """Re-pin the callback inventory witness without changing reviewed core snapshots."""
+    """Re-pin merged compiler/callback inputs without changing reviewed snapshots."""
     directory = ROOT / "tools/content-schema/quest-authoring/samples/completion242"
     approval_path = directory / "source-fix-approval.json"
     receipt_path = directory / "source-fix-receipt.json"
@@ -509,6 +509,15 @@ def refresh_quest_callback_proof() -> None:
         return
     approval = json.loads(approval_path.read_bytes())
     receipt = json.loads(receipt_path.read_bytes())
+    if approval["compiler_inputs"] != receipt["compiler_inputs"]:
+        raise ValueError("source approval/receipt compiler inventory differs")
+    for document in (approval, receipt):
+        for descriptor in document["compiler_inputs"]:
+            relative = Path(descriptor["path"])
+            source = (ROOT / relative).resolve()
+            if relative.is_absolute() or ".." in relative.parts or not source.is_relative_to(ROOT):
+                raise ValueError("source compiler input escapes repository")
+            descriptor["sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
     callback_path = "content/quests/world-callbacks.json"
     digest = hashlib.sha256((ROOT / callback_path).read_bytes()).hexdigest()
     for document in (approval, receipt):

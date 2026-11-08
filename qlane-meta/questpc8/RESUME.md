@@ -1,3 +1,19 @@
+# Collector handoff: freeze this branch after the one merge push
+
+Collector main78294c081 is integrated with both main and questpc8 logic retained.
+Own migrations remain1300..1307; all352migrations passed PostgreSQL18.6 in3s.
+Own native PG8/8PASS365.597s, including atomic Father, source XP, read-only
+Secret Library and Wrath opening. Full Quest units323/323PASS36.05s; remaining
+focused merge regressions13/13PASS. Clippy13changed crates PASS. Exact46-output
+registration replay PASS294.478s; reviewed source approval snapshots unchanged.
+Final workspace check PASS347s; fmt PASS. See collector-main-validation.json.
+
+After the single collector push this branch is FROZEN. No new features or
+follow-up work here; continue only on claude/happy-davinci-ijz3wy-questpc8b.
+Whole Wrath and Colours qualification is unchanged; do not promote those entries
+from the successful opening/shared-mechanic slice. Full remaining suites go to CI
+under the latest owner speed rule. Historical checkpoints follow below.
+
 # Latest checkpoint: canonical Father migration reconciliation
 
 The post-merge own-PG run found one shared setup failure in all6cases:1315
@@ -1001,3 +1017,21 @@ Post-checkpoint lint repairs also remove the identical, unreachable second
 catalogue-npc harness branch; its first invocation and every test remain.
 Fresh workspace/fmt, complete quests-unit tests and six-crate clippy are queued.
 The ongoing scoped unit set still collects all other failures without fail-fast.
+
+Collector78294c081 merge in progress. All29text conflicts resolved; current
+merged source passes workspace all-target check291s. Full352-migration chain
+passes PostgreSQL18.6 in3s with explicit marker. Own1300..1307unchanged; no
+foreign migration renumbering. Full World/content regeneration runs before
+fresh changed-crate units and own native PG cases. Do not claim the post-merge
+runtime green yet. See collector-main-validation.json. Push ONCE after this
+integration; then this branch is FROZEN, new features go to questpc8b.
+
+Collector merge own native PG is GREEN8/8 in365.597s after source loot-fact
+reconciliation, real Prey simulation15cases/776creatures and native regeneration.
+Father atomic135.784s, legacy148.827s, full hand-ins148.984s; Secret Library99.456s,
+Hero128.101s, Venore129.230s, Winterlight78.322s, Wrath opening101.707s.
+All have captured PG markers; ordinary Corym and Queen XP assertions retained.
+Exact46-output registration replay GREEN294.478s with every byte comparison.
+Remaining focused-test correction accounts for main's exact65 native World
+callbacks while keeping every Dawnport exclusion; complete Quest tests queued.
+No source/runtime semantics were weakened; final check/clippy/fmt pending.
