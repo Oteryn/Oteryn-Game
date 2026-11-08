@@ -1,0 +1,3 @@
+Your work branch conflicts with the current head of claude/happy-davinci-ijz3wy-qmech (now 2c1802916). Merge origin/claude/happy-davinci-ijz3wy-qmech into your work branch now, resolve every conflict keeping BOTH sides (qmech's newer code and your mechanic), cargo check + your mechanic's tests, fmt, and push to your work branch (normal push). Paste the git ls-remote line. Then continue with your remaining mechanics; push every 10-15 minutes.
+
+If generated content (content.lock.json, items/index.json, manifest.json, spells.manifest.json, *-profiles.json, srx1-item-updates.json, grizzly-boss-rooms.json, pins) conflicts: resolve hand-written sources by hand, then rerun python3 tools/content-migration/regenerate_content.py instead of hand-editing JSON.
