@@ -540,3 +540,20 @@ through canonical main. Draccoon chosen recipe witness content/quests/definition
 c6bb54b0c423a165891b0ca32fb305a0963d1a06417249b0b317ec34cf65e708.
 All68 current chosen recipes contain no floating point values. No readiness
 promotion or whole-quest qualification is implied by registry admission.
+
+Definition-ready claim decision2026-11-08: the shared route already exists in
+main's dispatch/bundle_chest.rs and content/world_reward_claims.rs, also present
+on fetched questpc7. Qualify/reuse it instead of implementing a second resolver.
+The42-row derived completion queue only chooses test coverage; it never grants
+runtime authority. A claim with multiple placements must bind every source
+placement together. Canonical Adorned UH Rune reward11603 is the decorative
+silver rune emblem, not a charged healing rune. New source-position fixtures
+prove selector/item admission and ordinary dispatch behavior, not actual World
+population or ownership/completion of another lane's quest.
+
+Ready-claim admission RED: bloodherb is left out by the real native binder;
+11/54rewards have no native profile although canonical base records are ready.
+Pinned donor imports/canary/items-xml/items.xml SHA256 1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2
+revision47dfd51f45280a59a1d3e50ba7edd573d7234446 source lines: 21982:43508, 2822:5804, 2823:5809, 2848:5904, 3068:7082, 3310:8893, 3323:9111, 3383:9899, 3579:11347, 3734:11718, 4871:14211.
+All11 XML entries have no charges/duration/decayto/stopduration fields. Use the
+existing exact-bound physical importer; retain its canonical/instance guardrails.

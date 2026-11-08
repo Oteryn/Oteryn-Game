@@ -3161,7 +3161,11 @@
       "feature": "definition_ready_reward_claim_use_wiring",
       "quests_unblocked": 42,
       "gap": "REWARD_CLAIM_USE_PENDING",
-      "state": "NEXT"
+      "state": "IN_PROGRESS",
+      "remaining": [
+        "source placement/native item coverage and real-dispatch PostgreSQL qualification of the existing resolver"
+      ],
+      "reuse": "main bundle_chest.rs and content/world_reward_claims.rs; peer questpc7 implementation retained"
     }
   ],
   "owner_role": "Single shared quest engine owner for25lanes; coordinator ENGINE-REQUEST ordered by unblock count; collector wpkg; no PR; new migrations1550-1569",

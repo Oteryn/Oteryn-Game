@@ -29,10 +29,11 @@
     {
       "feature": "definition_ready_reward_claim_use",
       "quests_reported": 42,
-      "state": "NEXT",
+      "state": "IN_PROGRESS",
       "remaining": [
-        "bind canonical claim selectors to existing reward MINT through ordinary dispatch"
-      ]
+        "source placement/native item coverage and real-dispatch PostgreSQL qualification of the existing resolver"
+      ],
+      "reuse": "main bundle_chest.rs and content/world_reward_claims.rs; peer questpc7 implementation retained"
     },
     {
       "feature": "ground_item_mint_and_ground_use_with",

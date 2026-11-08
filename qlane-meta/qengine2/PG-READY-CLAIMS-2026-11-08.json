@@ -1,0 +1,48 @@
+{
+  "state": "WIP: native item admission repair pending",
+  "base": "614d005067a2a645539303ee2a8bb875f21cde85",
+  "baseline": {
+    "passed": 1,
+    "failed": 1,
+    "seconds": 69.898,
+    "postgres_server": "PostgreSQL18.6 Debian18.6-1.pgdg13+2",
+    "postgres_marker_seconds": 69.850013226,
+    "postgres_case": "definition_ready_claim_use_and_replay_dispatch_postgres",
+    "coverage_failure": "oteryn:reward-claim.kv.bloodherb ItemNotAdmitted",
+    "log": "/tmp/qengine2-ready-claims-baseline.log"
+  },
+  "missing_native_profiles": [
+    21982,
+    2822,
+    2823,
+    2848,
+    3068,
+    3310,
+    3323,
+    3383,
+    3579,
+    3734,
+    4871
+  ],
+  "pending": [
+    "real-dispatch Blood Herb RED before native admissions",
+    "all59claim/60placement coverage GREEN",
+    "five-case focused dispatch confirmation",
+    "dispatch non-PostgreSQL unit suite"
+  ],
+  "production_changes": 0,
+  "whole_quest_counts_changed": false,
+  "checks": {
+    "native_regeneration": "PASS; no derived content drift",
+    "pins": "PASS; World digest unchanged353cc02dcd0c7803ab80f804113813d0d10189291ee170d970f2757483163fcc",
+    "registry_and_item_audit_regeneration": "PASS; no diff",
+    "duplicate_migrations": "PASS; no output",
+    "fmt_all_check": "PASS",
+    "dispatch_all_targets_all_features_clippy": "PASS -D warnings;18m13s including build-lock wait",
+    "workspace_all_targets_final_source": "PASS13m33s including clippy build-lock wait"
+  },
+  "test_source_sha256": {
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/definition_ready_claims.rs": "603b61812614247cb43ae2fc3e1e73564312178f6121754906cdc7a20146be63",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_callbacks.rs": "44ae30181fc466aa76eb73be3bebdf9374b864b2ef5662008b9d433a168ead3d"
+  }
+}

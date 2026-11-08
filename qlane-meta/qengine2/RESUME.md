@@ -8,7 +8,7 @@ META 3.1.0 resolved at bound immutable commit; required dev/coding/debugging/
 review/verify/waves guidance read. Source env.sh for Cargo/PG commands:
 `source /workspace/oteryn-env/env.sh` (do not print its private URL).
 
-Scope: exactly 66 L1 outfit/addon entries. Counts: 11 QUALIFIED, 55 UNFINISHED,
+Scope: exactly 66 L1 outfit/addon entries. Current counts: 44 QUALIFIED, 22 UNFINISHED,
 0 BLOCKED. Original cross-lane evidence and source hashes remain in QUEST-STATUS.
 Preserve exclusions and other-lane/world-change ownership. Parent quest tracks
 retain their original owners; qualify all of an L1 outfit entry's reward paths.
@@ -1731,3 +1731,34 @@ loader::load_embedded_quest_state_with_bindings, compiled authored-bindings dir.
 Next42readyclaim/use: reuseexistingbundlechest resolver, prove59claims/60placements
 and54nativeItems; thenallW15bvariants andqueuedrequests. Readfacts/tmp/qengine2-
 reward-claim-next-facts.md. No productionquestpromotion; ownpacket44/66 unchanged.
+
+2026-11-08 definition-ready claim qualification IN PROGRESS. Remote and main
+confirmed current at614d00506; explicit push returned Everything up-to-date.
+Reuse main/questpc7's existing bundle_chest USE and world_reward_claims binder;
+no duplicate production resolver. New tests select42 definition-ready quests,
+59claims/60source placements with actual native Item admission; one canonical
+claim drives PostgreSQL stale fencing, USE, repeat and reconnect replay. This
+qualifies shared engine capability only; packet counts remain44/66. Focused logs:
+/tmp/qengine2-ready-claims-{baseline,final}.log. No artificial RED is claimed for
+already implemented behavior. Source-coordinate test geometry does not certify
+every deployed World bundle. W15b's broader variants remain the next separate
+engine work, alongside queued lane requests and22unfinished packet entries.
+
+Ready-claim baseline collected: actual PostgreSQL18.6 rune-emblem case PASS
+69.850013226s; source-placement coverage FAIL bloodherb ItemNotAdmitted. Static
+full54reward audit finds11missing native profiles, all plain portable and no
+XML charges/duration/decay/fluid instance fields. Existing profile custody is
+preserved. New Blood Herb literal USE regression and exhaustive coverage need
+RED/GREEN. WIP publication is under PREPUSH-2 cadence exception; no42-quest
+engine qualification claimed. Queued broad units/confirmation were stopped
+before execution to finish the compiling checkpoint; rerun after the push.
+See PG-READY-CLAIMS-2026-11-08.json. Reuse existing qengine_reward_item_profiles
+producer to capture these11 from pinned imports/canary/items-xml/items.xml;
+regenerate via repo tooling, do not hand-edit native profiles or cohort counts.
+
+WIP checkpoint gates PASS on final test source: cargo check --workspace
+--all-targets13m33s (includes lock wait); dispatch clippy alltargets/allfeatures
+-D warnings18m13s (includes wait); cargo fmt --all --check; native regeneration,
+registry/item-audit tooling, pin-refresh and duplicate migration check. No
+production data/code changes in this checkpoint. Own expanded PG RED/GREEN and
+non-PG dispatch unit run remain pending under PREPUSH-2 cadence exception.
