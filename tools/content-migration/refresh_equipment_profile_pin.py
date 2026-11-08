@@ -91,6 +91,10 @@ def main():
         original,
         json.loads((ROOT / "tools/content-schema/native-gameplay/questpc4-treasure-reward-profiles.json").read_bytes()),
     )
+    import qengine_equipment_cohort
+    source = qengine_equipment_cohort.refresh(
+        source, json.loads((ROOT / paths[2]).read_bytes())
+    )
     from m41_equipment_cohort import register
     generated, count = regenerate(
         register(source), *(json.loads((ROOT / p).read_text()) for p in paths)

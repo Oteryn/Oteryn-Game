@@ -128,7 +128,7 @@ pub(super) async fn npc(
             &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
         )
         .await
-        .map_err(|e| debug(e).into())
+        .map_err(debug)
 }
 
 pub(super) async fn ready(

@@ -366,7 +366,7 @@ fn scenario() -> TestResult {
         use crate::gameplay_transport::connection::FirstEntryOutcome;
         let trigger = Position { x: 33620, y: 31400, floor: -10 };
         let world = super::quest_world_callbacks::world(&Callback {
-world_change: None,
+admission: None, world_change: None,
             actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
             trigger: Trigger::Use, selector: Selector { native: None, position: Some(trigger), unique: None, action: None, appearance: None },
