@@ -1457,7 +1457,7 @@
     },
     "continuation_validation": {
       "proof": "unit-completion-validation.json",
-      "unit_run": "RUNNING",
+      "unit_run": "INTERRUPTED_FOR_MAIN_MERGE;6affected cases PASS after abort",
       "qualification_unchanged": true
     }
   },
@@ -1742,7 +1742,7 @@
     },
     "continuation_validation": {
       "proof": "unit-completion-validation.json",
-      "unit_run": "RUNNING",
+      "unit_run": "INTERRUPTED_FOR_MAIN_MERGE;6affected cases PASS after abort",
       "qualification_unchanged": true
     }
   },

@@ -1,3 +1,19 @@
+# Active checkpoint: authorized compiling-state push, then resume main merge
+
+Main advanced to83acbdac3 (QUESTPC4/#3029). Fail-fast push guard stopped
+publication before any push. Attempted merge produced64conflicted files;
+abort under owner15-minute merge budget and publish the last compiling state,
+then resume proper integration immediately. Latest main is NOT integrated.
+Product inputs/code remain exactly534ea6b23; only lane evidence changed.
+Full units stopped at1004PASS,3manifest/digest assertions during merge and
+3interrupted,1550not run. All6affected cases PASS on restored source in
+exact compiled-binary reruns; no tests weakened and no product change needed.
+Full suite success is not claimed. Native --check46 and pin-check PASS,
+Colours PG PASS105.90s, workspace/clippy/fmt/dups PASS on unchanged source.
+See unit-completion-validation.json, main_sync and failure recheck sections.
+Use the normal fail-fast push guard after resolving main; this one checkpoint
+uses only the explicitly owner-authorized aborted-merge exception.
+
 # Active checkpoint: full changed-crate units running
 
 Continuation questpc8b; original questpc8 remains frozen. Product source is

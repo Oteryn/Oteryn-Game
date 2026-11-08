@@ -4,7 +4,7 @@
   "checkpoint_utc": "2026-11-08T03:33:08.430057+00:00",
   "scope": "Evidence-only checkpoint; executable and product inputs unchanged",
   "unit_run": {
-    "state": "RUNNING",
+    "state": "INTERRUPTED_FOR_MAIN_MERGE",
     "selected": 2560,
     "passed_so_far": 810,
     "failed_so_far": 0,
@@ -15,7 +15,12 @@
     ],
     "filter": "not test(postgres) and not test(schema_tests) and not test(db_tests)",
     "log": "/tmp/questpc8b-complete-units.log",
-    "full_success_claimed": false
+    "full_success_claimed": false,
+    "passed_before_interrupt": 1004,
+    "assertion_failures_during_merge": 3,
+    "interrupted_cases": 3,
+    "not_run": 1550,
+    "seconds": 1146.628
   },
   "postgres": {
     "case": "questpc8_colours_native_envelope_and_self_marking_postgres",
@@ -144,5 +149,54 @@
     "state": "Both explicitly QUEUED in current QENGINE2 ENGINE-QUEUE.json"
   },
   "qualification_counts_unchanged": true,
-  "prepush2_cadence_exception": "Full changed-crate unit run continues after publication; no full completion claimed."
+  "prepush2_cadence_exception": "Publish last compiling evidence-only state under explicit merge-abort exception. Full unit qualification remains incomplete.",
+  "merge_induced_failure_recheck": {
+    "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b8cd666c09afb429",
+    "cases": [
+      {
+        "case": "gameplay_transport::item_use::crystal_parity_tests::i14_crystal_consumables_have_source_qualified_owners",
+        "exit": 0,
+        "seconds": 27.348724000010407,
+        "log": "/tmp/questpc8b-recheck-i14_crystal_consumables_have_source_qualified_owners.log"
+      },
+      {
+        "case": "gameplay_transport::item_use::crystal_parity_tests::i14_matching_restore_potions_and_foods_are_admitted",
+        "exit": 0,
+        "seconds": 27.58545385899197,
+        "log": "/tmp/questpc8b-recheck-i14_matching_restore_potions_and_foods_are_admitted.log"
+      },
+      {
+        "case": "gameplay_transport::item_use::crystal_parity_tests::i14_global_consumables_are_admitted",
+        "exit": 0,
+        "seconds": 27.4700775250094,
+        "log": "/tmp/questpc8b-recheck-i14_global_consumables_are_admitted.log"
+      },
+      {
+        "case": "gameplay_transport::item_use::crystal_parity_tests::i14_admitted_consumables_match_crystal",
+        "exit": 0,
+        "seconds": 27.406955561003997,
+        "log": "/tmp/questpc8b-recheck-i14_admitted_consumables_match_crystal.log"
+      },
+      {
+        "case": "gameplay_transport::loop_move::tests::the_content_revision_is_the_prefixed_digest",
+        "exit": 0,
+        "seconds": 0.006427839005482383,
+        "log": "/tmp/questpc8b-recheck-the_content_revision_is_the_prefixed_digest.log"
+      },
+      {
+        "case": "gameplay_transport::loop_move::tests::the_ground_cell_codec_is_the_item_owners",
+        "exit": 0,
+        "seconds": 0.005833160990732722,
+        "log": "/tmp/questpc8b-recheck-the_ground_cell_codec_is_the_item_owners.log"
+      }
+    ],
+    "result": "All6PASS on restored clean source; three failed native-manifest/digest checks were caused by attempted merge changing files under the old test binary."
+  },
+  "main_sync": {
+    "incoming": "83acbdac3720d7fe2df6c44d82623b7307806402",
+    "conflict_files": 64,
+    "state": "MERGE_ABORTED_FOR_AUTHORIZED_LAST_COMPILING_CHECKPOINT",
+    "authorization": "Owner PREPUSH-2 step1 retains the15-minute merge fallback: abort an unfinishable merge and push last compiling state, then continue integration.64files cannot be safely resolved in that budget.",
+    "next": "Resume this merge immediately after checkpoint publication; do not claim newest main is integrated."
+  }
 }
