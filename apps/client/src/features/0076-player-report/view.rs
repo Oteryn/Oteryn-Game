@@ -47,3 +47,6 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+
+#[path = "bug.rs"]
+pub(in crate::play) mod bug;

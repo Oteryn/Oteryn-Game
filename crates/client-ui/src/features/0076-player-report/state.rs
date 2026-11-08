@@ -5,6 +5,7 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub bug: BugDraft,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -32,4 +33,13 @@ impl Panel {
         self.pending = false;
         self.feedback = message.into();
     }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct BugDraft {
+    pub open: bool,
+    pub category: u8,
+    pub fields: [String; 3],
+    pub reviewed: Option<Vec<u8>>,
+    pub preview: String,
 }
