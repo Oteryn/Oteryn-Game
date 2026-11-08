@@ -1,35 +1,24 @@
-# questpc-n3 continuation
+# questpc continuation
 
-Branch: claude/happy-davinci-ijz3wy-questpc-pc2-n2-n3 from current main.
-Earlier pc2/n2 branches are frozen for collection; do not push to them.
+Publish to claude/happy-davinci-ijz3wy-qmech only. Earlier lane branches frozen.
+Local .lane/rows.md is not committed:178 historical rows,127 owned,51 explicit
+ownership/exclusion holds. Five DONE,12 TODO,110 WAITING-ENGINE.
 
-The full178-row historical packet is reconciled in local .lane/rows.md.
-51 rows are explicit ownership/exclusion holds;127 remain owned here.
-No historical reward-only qualification is promoted to full-path DONE.
+Five completion bindings: Adorned UH Rune, Barbarian Axe, Battle Axe, Blood
+Herb, Captain Iglues Treasure. Reuse QREADY1 native selectors/tests and the
+existing claim-obligation writer. Exact once completion after USE/refusal/replay.
 
-First batch: Adorned UH Rune, Barbarian Axe, Battle Axe, Blood Herb, Captain
-Iglues Treasure. Existing claim-obligation engine gains five exact0-to1
-completion bindings. Native item rewards and selectors stay source-bound.
-All17 QREADY1 cases PASS674.87s on PostgreSQL18.6, including exactly one
-completed state and completion receipt after native USE/refusal/replay for
-the five bound quests. The SHA proof was re-imported with the repository tool.
+Merged main e9276ad7e before owner stopped autonomous main merges.
+17/17 real PG cases PASS730.43s (PG18.6), proof imported by repository tool.
+All104 authoring unit modules, authoring checks, content-tree validation PASS.
+Workspace alltargets PASS8m34s; strict dispatch Clippy PASS4m32s; fmt PASS.
+Additional dispatch non-PG unit suite pending: regenerated identical embedded
+inputs triggered another rebuild; stopped for immediate owner publication
+cadence. Never report that interrupted suite as passing.
 
-Source regression RED: Adorned UH completion count0 instead of1,45.952s.
-Initial post-binding run12PASS/5FAIL661.37s exposed missing quest catalogue
-in the old item-only fixture. Added production catalogue and quest admission;
-all original assertions retained and completion receipt equality strengthened.
+Red evidence: Adorned completion count0 vs1,45.952s; Father material admission
+DefinitionNotFound87.088s reproduction stays local. Father's eleven-track
+acceptance stays atomic. Missing report is qlane-meta/qmech/MISSING-questpc-pc2.md.
 
-Father reproduction stays local: DefinitionNotFound87.088s. Its engine
-dependencies are tracked; never split eleven-track acceptance.
-
-Final source packets/matrix/NPC links regenerated. Native registration/pins,
-exact authoring checks/full unit runner/content-tree gates are running.
-Full workspace check4m49s, strict dispatch Clippy4m17s, fmt and307quest units
-PASS66.881s. Final post-generation compile/lint/fmt checks still required.
-Dispatch unit selection is running with other PG modules excluded; the17 own
-PG cases already ran for real. Do not claim that mixed interrupted unit run
-as a passing full suite. Do not commit .lane or its local reproductions.
-
-After publication, continue the12 remaining directly implementable standalone
-quests in batches5-8; current engine/ownership dependencies stay explicit.
-End only when every owned row is DONE/WAITING-ENGINE/BLOCKED.
+Continue on qmech shared queue; fetch+merge qmech before every push, regenerate
+derived files last, never merge main without explicit coordinator direction.

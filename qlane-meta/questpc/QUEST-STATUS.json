@@ -1,18 +1,18 @@
 {
   "task_id": "questpc-n3",
   "branch": "claude/happy-davinci-ijz3wy-questpc-pc2-n2-n3",
-  "base_main": "3b4696be310eb76fa02b2cfae4f7addcbb779dd3",
+  "base_main": "e9276ad7e",
   "historical_packet_commit": "b22d52b5b18267a2a454f94372d476e214573c1e",
   "packet_rows": 178,
   "owner_exclusions_or_transfers": 51,
   "current_owned_rows": 127,
   "counts": {
     "WAITING-ENGINE": 110,
-    "IN_PROGRESS": 5,
+    "DONE": 5,
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "VALIDATING: five completion bindings and real17-case PostgreSQL proof green; final authoring/publication gates running",
+  "batch_state": "READY: five standalone completion bindings;17PG730.43s,104 authoring modules/checks/tree, workspace alltargets, strict dispatch Clippy, fmt PASS. Additional dispatch non-PG unit suite pending (rebuild stopped for owner immediate publication cadence).",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -26,31 +26,31 @@
       "title": "A Piece of Cake",
       "canonical": "oteryn:quest.a_piece_of_cake",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "ENGITEM/map identity: source bridge item48227 remains typed unavailable by explicit owner decision (#2781 comment6549960114); merged SEASON W05d supplies independent Cake mechanics but retains this full-path dependency."
     },
     {
       "title": "A Pirate's Death to Me",
       "canonical": "oteryn:quest.authored.a_pirate_s_death_to_me",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "A Pirate's Tail Quest",
       "canonical": "oteryn:quest.a_pirates_tail",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Adorned UH Rune Quest",
       "canonical": "oteryn:quest.adorned_uh_rune_quest",
-      "state": "IN_PROGRESS",
-      "reason": "Code and all17 current-file PG cases green; final publication authoring gates pending."
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
     },
     {
       "title": "Adventures of Galthen Quest",
       "canonical": "oteryn:quest.adventures_of_galthen_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Afflicted Outfits Quest",
@@ -86,13 +86,13 @@
       "title": "Ancient Aucar Outfits Quest",
       "canonical": "oteryn:quest.ancient_aucar_outfits_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Annual Autumn Vintage",
       "canonical": "oteryn:quest.authored.annual_autumn_vintage",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Arito's Task Quest",
@@ -110,7 +110,7 @@
       "title": "Asura Palace Quest",
       "canonical": "oteryn:quest.authored.asura_palace_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Awash World Change",
@@ -133,8 +133,8 @@
     {
       "title": "Barbarian Axe Quest",
       "canonical": "oteryn:quest.barbarian_axe_quest",
-      "state": "IN_PROGRESS",
-      "reason": "Code and all17 current-file PG cases green; final publication authoring gates pending."
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
     },
     {
       "title": "Barbarian Outfits Quest",
@@ -151,8 +151,8 @@
     {
       "title": "Battle Axe Quest",
       "canonical": "oteryn:quest.battle_axe_quest",
-      "state": "IN_PROGRESS",
-      "reason": "Code and all17 current-file PG cases green; final publication authoring gates pending."
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
     },
     {
       "title": "Battle Mage Outfits Quest",
@@ -182,25 +182,25 @@
       "title": "Berserk Potion Quest",
       "canonical": "oteryn:quest.berserk_potion_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Berserker Treasure Quest",
       "canonical": "oteryn:quest.berserker_treasure_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Between the Lines Quest",
       "canonical": "oteryn:quest.between_the_lines_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Bewitched",
       "canonical": "oteryn:quest.authored.bewitched",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Bigfoot's Burden Quest",
@@ -223,14 +223,14 @@
     {
       "title": "Blood Herb Quest",
       "canonical": "oteryn:quest.blood_herb_quest",
-      "state": "IN_PROGRESS",
-      "reason": "Code and all17 current-file PG cases green; final publication authoring gates pending."
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
     },
     {
       "title": "Bloody Tusks Quest",
       "canonical": "oteryn:quest.bloody_tusks_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Bored Mini World Change",
@@ -253,20 +253,20 @@
     {
       "title": "Captain Iglues Treasure Quest",
       "canonical": "oteryn:quest.captain_iglues_treasure_quest",
-      "state": "IN_PROGRESS",
-      "reason": "Code and all17 current-file PG cases green; final publication authoring gates pending."
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
     },
     {
       "title": "Cartography 101 Quest",
       "canonical": "oteryn:quest.authored.cartography_101_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Cave Explorer Outfits Quest",
       "canonical": "oteryn:quest.cave_explorer_outfits_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Chakoya Iceberg Mini World Change",
@@ -278,7 +278,7 @@
       "title": "Child of Destiny Quest",
       "canonical": "oteryn:quest.authored.child_of_destiny_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Children of the Revolution Quest",
@@ -344,13 +344,13 @@
       "title": "Cults of Tibia Quest",
       "canonical": "oteryn:quest.cults_of_tibia_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Dangerous Depths Quest",
       "canonical": "oteryn:quest.dangerous_depths_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Darashia Dragon Quest",
@@ -380,13 +380,13 @@
       "title": "Dead Archer Quest",
       "canonical": "oteryn:quest.dead_archer_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Decaying Defender Outfits Quest",
       "canonical": "oteryn:quest.decaying_defender_outfits_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Deeper Fibula Quest",
@@ -422,7 +422,7 @@
       "title": "Demon's Lullaby",
       "canonical": "oteryn:quest.authored.demon_s_lullaby",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Demona Ring Quest",
@@ -464,7 +464,7 @@
       "title": "Draccoon Herald Outfits Quest",
       "canonical": "oteryn:quest.authored.draccoon_herald_outfits_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Draconia Quest",
@@ -476,13 +476,13 @@
       "title": "Dragon Corpse Quest",
       "canonical": "oteryn:quest.dragon_corpse_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Dragon Slayer Outfits Quest",
       "canonical": "oteryn:quest.authored.dragon_slayer_outfits_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Dragon Tower Quest",
@@ -572,7 +572,7 @@
       "title": "Falconer Outfits Quest",
       "canonical": "oteryn:quest.falconer_outfits_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Fanfare Quest",
@@ -584,13 +584,13 @@
       "title": "Feaster of Souls Quest",
       "canonical": "oteryn:quest.feaster_of_souls_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Feral Trappers Quest",
       "canonical": "oteryn:quest.feral_trappers_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Ferumbras' Ascension Quest",
@@ -632,7 +632,7 @@
       "title": "Fishing Box Quest",
       "canonical": "oteryn:quest.fishing_box_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Forgotten Knowledge Quest",
@@ -662,7 +662,7 @@
       "title": "Frost Dragon Quest",
       "canonical": "oteryn:quest.frost_dragon_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Fury Gates Mini World Change",
@@ -674,7 +674,7 @@
       "title": "Geomancer Quest",
       "canonical": "oteryn:quest.geomancer_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Ghoul Room Quest",
@@ -716,7 +716,7 @@
       "title": "Grave Danger Quest",
       "canonical": "oteryn:quest.grave_danger_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Griffin Shield Quest",
@@ -734,7 +734,7 @@
       "title": "Grimvale Quest",
       "canonical": "oteryn:quest.grimvale_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Hand of the Inquisition Outfits Quest",
@@ -746,7 +746,7 @@
       "title": "Heart of Destruction Quest",
       "canonical": "oteryn:quest.heart_of_destruction_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Heaven Blossom Quest",
@@ -758,7 +758,7 @@
       "title": "Hero of Rathleton Quest",
       "canonical": "oteryn:quest.hero_of_rathleton_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Hidden Threats Quest",
@@ -812,25 +812,25 @@
       "title": "Illuminated Warrior Outfits Quest",
       "canonical": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Illuminator Outfit Quest",
       "canonical": "oteryn:quest.illuminator_outfit_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Illuminator Outfits Quest",
       "canonical": "oteryn:quest.illuminator_outfits_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "In Service of Yalahar Quest",
       "canonical": "oteryn:quest.in_service_of_yalahar_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Insectoid Invasion World Change",
@@ -842,7 +842,7 @@
       "title": "Insectoid Outfits Quest",
       "canonical": "oteryn:quest.authored.insectoid_outfits_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Into The Bone Pit Quest",
@@ -854,7 +854,7 @@
       "title": "Inukaya Quest",
       "canonical": "oteryn:quest.inukaya_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Iron Hammer Quest",
@@ -866,7 +866,7 @@
       "title": "Iron Helmet Quest",
       "canonical": "oteryn:quest.iron_helmet_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Iron Ore Quest",
@@ -908,7 +908,7 @@
       "title": "Kilmaresh Quest",
       "canonical": "oteryn:quest.kilmaresh_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Kingdom of Kormarak Quest",
@@ -944,13 +944,13 @@
       "title": "Krailos Quest",
       "canonical": "oteryn:quest.krailos_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Last Creep Standing",
       "canonical": "oteryn:quest.authored.last_creep_standing",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Life Ring Quest",
@@ -962,7 +962,7 @@
       "title": "Lion Trophy Quest",
       "canonical": "oteryn:quest.lion_trophy_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Lion's Rock Quest",
@@ -974,7 +974,7 @@
       "title": "Liquid Black Quest",
       "canonical": "oteryn:quest.liquid_black_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Lone Medusa Quest",
@@ -1004,7 +1004,7 @@
       "title": "Machinery of War Quest",
       "canonical": "oteryn:quest.machinery_of_war_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Mad Mage Room Quest",
@@ -1028,7 +1028,7 @@
       "title": "Make Believe Quest",
       "canonical": "oteryn:quest.authored.make_believe_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Makeshift Warrior Outfits Quest",
@@ -1052,13 +1052,13 @@
       "title": "Measuring Tibia Quest",
       "canonical": "oteryn:quest.authored.measuring_tibia_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Medusa Shield Quest",
       "canonical": "oteryn:quest.medusa_shield_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     },
     {
       "title": "Minotaur Hell Quest",
@@ -1082,7 +1082,8 @@
       "title": "Mystery of the Valley Quest",
       "canonical": "oteryn:quest.authored.mystery_of_the_valley_quest",
       "state": "WAITING-ENGINE",
-      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route."
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
     }
-  ]
+  ],
+  "publication_branch": "claude/happy-davinci-ijz3wy-qmech"
 }

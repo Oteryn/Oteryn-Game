@@ -1,17 +1,20 @@
 # questpc-n3 retained engine dependencies
 
-Current main3b4696be and engine source925d8480 were inspected. Existing qualified
+Merged main e9276ad7e and engine source925d8480 were inspected. Existing
 QENGINE2 APIs are retained as delivery dependencies; no replacement engine is
-authored here. The local loop continues with standalone source claims whose
-existing engine is already on main.
+authored here. Continue with standalone claims whose engine is already on main.
 
 - ENGITEM/WPKG3: native11545-11552 material admission (real PG RED DefinitionNotFound87.09s); ENGNPC: source NPC final receipts/journal completion currently hardcoded false. Local reproduction retained.
 
   Needed by: A Father's Burden Quest
 
-- QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, current main3b4696be does not. Historical reward-only proof is insufficient for the full authored route.
+- ENGITEM/map identity: source bridge item48227 remains typed unavailable by explicit owner decision (#2781 comment6549960114); merged SEASON W05d supplies independent Cake mechanics but retains this full-path dependency.
 
-  Needed by: A Piece of Cake; A Pirate's Death to Me; A Pirate's Tail Quest; Adventures of Galthen Quest; Ancient Aucar Outfits Quest; Annual Autumn Vintage; Asura Palace Quest; Berserk Potion Quest; Berserker Treasure Quest; Between the Lines Quest; Bewitched; Bloody Tusks Quest; Cartography 101 Quest; Cave Explorer Outfits Quest; Child of Destiny Quest; Cults of Tibia Quest; Dangerous Depths Quest; Dead Archer Quest; Decaying Defender Outfits Quest; Demon's Lullaby; Draccoon Herald Outfits Quest; Dragon Corpse Quest; Dragon Slayer Outfits Quest; Falconer Outfits Quest; Feaster of Souls Quest; Feral Trappers Quest; Fishing Box Quest; Frost Dragon Quest; Geomancer Quest; Grave Danger Quest; Grimvale Quest; Heart of Destruction Quest; Hero of Rathleton Quest; Illuminated Warrior Outfits Quest; Illuminator Outfit Quest; Illuminator Outfits Quest; In Service of Yalahar Quest; Insectoid Outfits Quest; Inukaya Quest; Iron Helmet Quest; Kilmaresh Quest; Krailos Quest; Last Creep Standing; Lion Trophy Quest; Liquid Black Quest; Machinery of War Quest; Make Believe Quest; Measuring Tibia Quest; Medusa Shield Quest; Mystery of the Valley Quest
+  Needed by: A Piece of Cake
+
+- QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route.
+
+  Needed by: A Pirate's Death to Me; A Pirate's Tail Quest; Adventures of Galthen Quest; Ancient Aucar Outfits Quest; Annual Autumn Vintage; Asura Palace Quest; Berserk Potion Quest; Berserker Treasure Quest; Between the Lines Quest; Bewitched; Bloody Tusks Quest; Cartography 101 Quest; Cave Explorer Outfits Quest; Child of Destiny Quest; Cults of Tibia Quest; Dangerous Depths Quest; Dead Archer Quest; Decaying Defender Outfits Quest; Demon's Lullaby; Draccoon Herald Outfits Quest; Dragon Corpse Quest; Dragon Slayer Outfits Quest; Falconer Outfits Quest; Feaster of Souls Quest; Feral Trappers Quest; Fishing Box Quest; Frost Dragon Quest; Geomancer Quest; Grave Danger Quest; Grimvale Quest; Heart of Destruction Quest; Hero of Rathleton Quest; Illuminated Warrior Outfits Quest; Illuminator Outfit Quest; Illuminator Outfits Quest; In Service of Yalahar Quest; Insectoid Outfits Quest; Inukaya Quest; Iron Helmet Quest; Kilmaresh Quest; Krailos Quest; Last Creep Standing; Lion Trophy Quest; Liquid Black Quest; Machinery of War Quest; Make Believe Quest; Measuring Tibia Quest; Medusa Shield Quest; Mystery of the Valley Quest
 
 - QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest.
 
