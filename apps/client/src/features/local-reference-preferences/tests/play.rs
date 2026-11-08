@@ -1,6 +1,27 @@
 use super::*;
 
 #[test]
+fn action_bar_hotkeys_route_every_supported_slot() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::ReferencePreferences;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut preferences = ReferencePreferences::default();
+    let chords = ["F5", "F6", "F7", "F8"];
+    preferences.set_action_bar_hotkeys(&chords)?;
+    let mut router = crate::spell::SpellHotkeys::new()?;
+    for slot in 0..4 {
+        let event = NormalizedInputEvent::Key { code: KeyCode::new(62 + slot)?, state: ButtonState::Pressed, modifiers: Modifiers::NONE, repeat: false };
+        let routed = preferences.route_input(&[event])?;
+        assert_eq!(router.route(&routed).first().map(|slot| slot.get()), Some(u32::from(slot + 1)));
+        let release = NormalizedInputEvent::Key { code: KeyCode::new(62 + slot)?, state: ButtonState::Released, modifiers: Modifiers::NONE, repeat: false };
+        router.route(&preferences.route_input(&[release])?);
+    }
+    let before = preferences.clone();
+    assert!(preferences.set_action_bar_hotkeys(&["F5", "F5", "F7", "F8"]).is_err());
+    assert_eq!(preferences, before);
+    Ok(())
+}
+
+#[test]
 fn general_hotkey_presets_route_movement_and_preserve_other_bindings() -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{ReferencePreferences, SettingsState};
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
@@ -79,7 +100,7 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 6);
+    assert_eq!(SettingsPage::ALL.len(), 7);
 }
 
 #[test]

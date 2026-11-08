@@ -12,6 +12,7 @@ pub enum SettingsPage {
     #[default]
     Gameplay,
     Hotkeys,
+    BarHotkeys,
     Interface,
     Graphics,
     Sound,
@@ -19,9 +20,10 @@ pub enum SettingsPage {
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 7] = [
         Self::Gameplay,
         Self::Hotkeys,
+        Self::BarHotkeys,
         Self::Interface,
         Self::Graphics,
         Self::Sound,
@@ -32,6 +34,7 @@ impl SettingsPage {
         match self {
             Self::Gameplay => "Gameplay",
             Self::Hotkeys => "Controls / General Hotkeys",
+            Self::BarHotkeys => "Controls / Action Bar Hotkeys",
             Self::Interface => "Interface",
             Self::Graphics => "Graphics",
             Self::Sound => "Sound",

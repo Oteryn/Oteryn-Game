@@ -494,7 +494,8 @@ fn run(shared: Arc<Mutex<Shared>>) {
             lock(&shared).open = false;
             return;
         }
-        let bindings = preference_bindings().unwrap_or_default();
+        let mut bindings = preference_bindings().unwrap_or_default();
+        let mut binding_page = SettingsPage::Hotkeys;
         let mut held = None;
         let mut selected = -1;
         let mut message: MSG = std::mem::zeroed();
@@ -519,11 +520,31 @@ fn run(shared: Arc<Mutex<Shared>>) {
             {
                 state.page = *page;
             }
+            if binding_page != state.page {
+                binding_page = state.page;
+                bindings = preference_bindings()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter(|binding| {
+                        state.page != SettingsPage::BarHotkeys
+                            || binding.id.starts_with("local-spell-action-bar-spell-")
+                    })
+                    .collect();
+                held = None;
+                selected = -1;
+            }
+            for handle in [help, list, chord, rebind] {
+                ShowWindow(
+                    handle,
+                    if matches!(state.page, SettingsPage::Hotkeys | SettingsPage::BarHotkeys) {
+                        SW_SHOW
+                    } else {
+                        SW_HIDE
+                    },
+                );
+            }
             for (handles, page) in [
-                (
-                    &[help, list, chord, rebind, chat_on, chat_off][..],
-                    SettingsPage::Hotkeys,
-                ),
+                (&[chat_on, chat_off][..], SettingsPage::Hotkeys),
                 (
                     &[
                         mouse_preset,
@@ -718,6 +739,9 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 held = Some(state.preferences.clone());
             }
             let page_help = match state.page {
+                SettingsPage::BarHotkeys => {
+                    "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
+                }
                 SettingsPage::Graphics => {
                     "Renderer and window options use the supported native renderer. Additional controls are not available yet."
                 }

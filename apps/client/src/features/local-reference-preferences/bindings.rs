@@ -74,6 +74,17 @@ fn parse(value: &str) -> Result<Chord, PreferenceError> {
 }
 
 impl ReferencePreferences {
+    pub fn set_action_bar_hotkeys(&mut self, chords: &[&str; 4]) -> Result<(), PreferenceError> {
+        let mut candidate = self.clone();
+        for (slot, chord) in chords.iter().enumerate() {
+            parse(chord)?;
+            candidate.keybindings.insert(format!("local-spell-action-bar-spell-{}", slot + 1), chord.trim().to_ascii_uppercase());
+        }
+        candidate.validate_bindings()?;
+        *self = candidate;
+        Ok(())
+    }
+
     /// Chat-on keeps letters available for text; chat-off uses WASD movement.
     /// Apply all four together so a failed preset never leaves a half-edited map.
     pub fn general_hotkey_preset(&mut self, chat_on: bool) -> Result<(), PreferenceError> {
