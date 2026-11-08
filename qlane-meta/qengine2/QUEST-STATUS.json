@@ -3208,10 +3208,10 @@
     }
   },
   "prepush2": {
-    "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
-    "local_merge": "05911c4e6",
-    "merge_conflicts_resolved": 1,
-    "regeneration": "PASS full World rebuild followed by verified unchanged-World native/tree/central-list refresh for QNPCFX; pins refreshed",
+    "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+    "local_merge": "1e99701c6",
+    "merge_conflicts_resolved": 4,
+    "regeneration": "PASS incoming canonical World retained; native providers/tree/standardauthorers/pins regenerated; equivalence and metadata green",
     "audit_tags": "PASS repo updater, no diff",
     "quest_binding_evidence": "PASS310identities,6628exactJSONpointers",
     "item_mount_equivalence": "PASS34111items,252mounts",
@@ -3241,19 +3241,19 @@
       "mount_taming_postgres_real_dispatch_outcomes_refusals_replay_and_reload"
     ],
     "pending_log": "/tmp/qengine2-prepush2-backend/state.json",
-    "workspace_log": "/tmp/qengine2-glider-workspace-check2.log",
-    "fmt_log": "/tmp/qengine2-glider-fmt-check.log",
+    "workspace_log": "/tmp/qengine2-collector-workspace-check.log",
+    "fmt_log": "/tmp/qengine2-collector-fmt-check.log",
     "no_new_quest_qualification": true,
     "native_program_metadata_regression": {
       "red": "/tmp/qengine2-npc-metadata-red2.log",
       "green": "/tmp/qengine2-qnpcfx-quests-units-green2.log",
       "policy": "Preserve unaffected program hashes and predecessor metadata; changed authored semantics do not silently inherit NPC-only revision allowances"
     },
-    "workspace_result": "PASS workspace all targets,3m59s",
-    "fmt_result": "PASS",
+    "workspace_result": "PASS merged workspace all targets,6m20s",
+    "fmt_result": "PASS merged tree",
     "publication_policy": "PREPUSH-2 cadence exception: mandatory merge/regeneration/workspace/fmt green; listed tests continue after publication",
-    "clippy_result": "PASS changed3crates all targets,-Dwarnings,5m27s",
-    "clippy_log": "/tmp/qengine2-glider-clippy.log",
+    "clippy_result": "PASS changed engine crates,-Dwarnings,2m48s",
+    "clippy_log": "/tmp/qengine2-collector-clippy.log",
     "published_checkpoint": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
     "backend_unit_budget_result": {
       "log": "/tmp/qengine2-prepush2-backend/units.log",
@@ -3273,27 +3273,17 @@
       "Refresh QENGINE2 equipment source count60 via repo tooling; no unshipped peer cohorts imported"
     ],
     "current_followup": {
-      "state": "COMPILE_AND_FOCUSED_UNIT_GREEN; OWN_PG_PENDING",
-      "native_taming_rows": 51,
-      "direct_taming_rows": 50,
-      "construction_rows": 1,
-      "canonical_npc_input_repair": "Reuse main apply_input_rows; removed lane duplicate carried_input.rs",
-      "authoring_tests": "PASS32/32,48.918s; generated51-row catalogue reproduces",
-      "workspace_log": "/tmp/qengine2-glider-workspace-check2.log",
-      "clippy_log": "/tmp/qengine2-glider-clippy.log",
-      "focused_content_log": "/tmp/qengine2-glider-content-focused.log",
-      "own_pg": "Pending authored exchange, NPC XP hand-in, Father atomic acceptance, three Glider cases and legacy taming outcomes",
-      "focused_content": {
-        "passed": 10,
-        "failed": 0,
-        "ignored": 0,
-        "kind": "unit only; no PG claim",
-        "log": "/tmp/qengine2-glider-content-focused.log"
+      "state": "MERGED_COMPILE_FMT_CLIPPY_GENERATION_GREEN; PG_REFRESH_PENDING",
+      "authoring_tests": {
+        "passed": 32,
+        "seconds": 73.225,
+        "log": "/tmp/qengine2-collector-authoring-tests.log"
       },
-      "regeneration": "PASS native/tree/standard authorers/pins/equivalence/worldmetadata",
-      "world_metadata_log": "/tmp/qengine2-glider-world-metadata-green.log",
-      "equipment_scope": "Collector4a08b3ebb WORLDCHG/SRV9 additions were inspected and removed because their profile producer is not shipped on this branch",
-      "focused_dispatch_log": "/tmp/qengine2-focused-dispatch/state.json"
+      "world_inputs": "Identical to origin/main canonical World after merge; no manual pin edits",
+      "native_profile_delta": "Seven portable Glider profiles added; no existing profile values changed",
+      "equivalence_log": "/tmp/qengine2-collector-equivalence.log",
+      "world_metadata_log": "/tmp/qengine2-collector-world-metadata.log",
+      "pg_scope": "Seven GREEN cases remain proof of15ac677d3; merged1e99701c6 needs fresh focused PG execution"
     }
   },
   "engine_pg_qualification_2026_11_08": {
