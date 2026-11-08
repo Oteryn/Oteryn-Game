@@ -13005,7 +13005,7 @@
     "own_postgres_status": "Prior de3 physical145.418s and Rashid110.597s green; bank326.026s red. Fixture now follows existing wire resume boundary, keeps exact replay and all money/audit assertions. Fresh PG pending after push."
   },
   "coordinator_1020_publication": {
-    "main": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+    "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
     "conflicts": 0,
     "dropped": [
       "GNOPS Member",
@@ -13022,6 +13022,268 @@
       "/tmp/npcfix-evidence/dropped-display-authoring"
     ],
     "command": "NODE_BOOT_PROFILE=sorcerer NODE_BOOT_SPELLS=1 bash tools/qualification/node_boot/run.sh",
-    "unit_runner": "All105 modules/1131 tests passed before dropping the unpublished slice; no runtime source change in publication."
+    "unit_runner": "All105 modules/1131 tests passed before dropping the unpublished slice; no runtime source change in publication.",
+    "postgres_baseline": {
+      "exit": 0,
+      "seconds": 147.237,
+      "execution_proven": true,
+      "log": "/tmp/npcfix-evidence/checkpoint-actual-green.log",
+      "log_sha256": "7cd841d31a51c063208a8abfdfa92ddc183e193cbc141d6154e1fe13bffd8521",
+      "source": {
+        "binary": {
+          "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-0a76a41192128086",
+          "binary_sha256": "7a74054219fdfdf3ef96de280af76f151cccc630f2d493f1537d198c137ca668",
+          "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+          "source_build": {
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "runtime_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "packages": [
+              "oteryn-client-assets",
+              "oteryn-gameplay-dispatch"
+            ],
+            "build_only": true,
+            "jobs": 1,
+            "unit_status": "The complete original de3 dispatch unit process continues independently; no duplicate full unit run"
+          },
+          "postgres_configuration": "present; URL never printed"
+        },
+        "runtime_engine_and_test_body_unchanged": true,
+        "current_head": "50e5d9a89a756113243e3cb8261b480be1ec84f3",
+        "runtime_data_sha256": {
+          "content/content.lock.json": "99a5c23c3950d82b9d5c6c552060782909220f84e514e6f09a492d625215c172",
+          "content/world/definitions/declarations.json": "33fd6d6dab831abbb57eff611b7e0d4be4943224fdba079418091789057e4c82",
+          "content/npcs/authored-ground-cells.json": "92a3c98ed35c1ac52e5dc43cddf1b11bc92166cbb72892dd132de7f532fba0a2",
+          "tools/content-schema/npc-authoring/npcfix-qualified-placement-cases.json": "ed680da2dea49b3ad219861acd01bbc292f916ddf85ac09d7f20d6337af2817f"
+        },
+        "scope": "Existing physical/runtime classifier reads newly generated data; generated pins and authoring-example proof compile separately"
+      }
+    },
+    "additional_main_ci_probe": {
+      "command": "python3 tools/repository/test_validate_merge_group_pg_sim.py",
+      "error": "AssertionError: pwsh is required for WP1 native failure-propagation qualification",
+      "scope": "Optional incoming Main CI-only test; no local edit or runtime-crate failure."
+    },
+    "validation": {
+      "gates": [
+        {
+          "name": "generation",
+          "exit": 0,
+          "seconds": 318.499,
+          "command": [
+            "python3",
+            "/tmp/npcfix-evidence/publication-generation.py"
+          ]
+        },
+        {
+          "name": "check",
+          "exit": 0,
+          "seconds": 602.244,
+          "command": [
+            "cargo",
+            "check",
+            "--workspace",
+            "--all-targets"
+          ]
+        },
+        {
+          "name": "fmt",
+          "exit": 0,
+          "seconds": 26.842,
+          "command": [
+            "cargo",
+            "fmt",
+            "--all",
+            "--check"
+          ]
+        }
+      ],
+      "generated_stages": [
+        {
+          "name": "stats",
+          "command": [
+            "python3",
+            "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+          ],
+          "exit": 0,
+          "seconds": 6.812
+        },
+        {
+          "name": "stats-pin",
+          "command": [
+            "python3",
+            "tools/contracts/refresh_item_stats_promotion_pin.py"
+          ],
+          "exit": 0,
+          "seconds": 0.12
+        },
+        {
+          "name": "native",
+          "command": [
+            "python3",
+            "tools/content-migration/regenerate_content.py",
+            "--native-only",
+            "--skip-checks"
+          ],
+          "exit": 0,
+          "seconds": 170.383
+        },
+        {
+          "name": "audit",
+          "command": [
+            "python3",
+            "/tmp/npcfix-evidence/preserve-unchanged-output-times.py",
+            "crates/gameplay/durability/src/durability/item_mint_audit.tags",
+            "crates/gameplay/durability/src/durability/item_mint_audit/tests/write_once_wire.hex",
+            "--",
+            "python3",
+            "tools/contracts/update_item_audit_tags.py"
+          ],
+          "exit": 0,
+          "seconds": 0.212
+        },
+        {
+          "name": "matrix",
+          "command": [
+            "python3",
+            "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+          ],
+          "exit": 0,
+          "seconds": 1.529
+        },
+        {
+          "name": "bindings",
+          "command": [
+            "python3",
+            "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+          ],
+          "exit": 0,
+          "seconds": 37.43
+        },
+        {
+          "name": "raid_catalogue",
+          "command": [
+            "python3",
+            "tools/content-migration/raid_catalogue.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 1.378
+        },
+        {
+          "name": "craft_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/craft-authoring/craft_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.695
+        },
+        {
+          "name": "imbuement_content",
+          "command": [
+            "python3",
+            "tools/content-schema/imbuement-authoring/imbuement_content.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 7.28
+        },
+        {
+          "name": "charm_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/charm-authoring/charm_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.193
+        },
+        {
+          "name": "proficiency_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 5.564
+        },
+        {
+          "name": "reward_claim_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 5.917
+        },
+        {
+          "name": "starter_kit_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.592
+        },
+        {
+          "name": "weapon",
+          "command": [
+            "python3",
+            "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+          ],
+          "exit": 0,
+          "seconds": 0.687
+        },
+        {
+          "name": "crystal",
+          "command": [
+            "python3",
+            "tools/content-census/g4_item_crystal_binding_generator.py"
+          ],
+          "exit": 0,
+          "seconds": 8.265
+        },
+        {
+          "name": "pins",
+          "command": [
+            "cargo",
+            "run",
+            "--locked",
+            "--release",
+            "-p",
+            "oteryn-world-bundle-compiler",
+            "--",
+            "pin-refresh",
+            "."
+          ],
+          "exit": 0,
+          "seconds": 70.492
+        },
+        {
+          "name": "duplicates",
+          "command": [
+            "bash",
+            ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+          ],
+          "exit": 0,
+          "seconds": 0.718
+        }
+      ],
+      "runtime_content_and_quest_data_identical_to": "50e5d9a89a756113243e3cb8261b480be1ec84f3",
+      "changed_runtime_crates": [],
+      "clippy_and_changed_crate_units": "Not applicable: final publication changes no Rust crates.",
+      "counts_unchanged": {
+        "QUALIFIED": 272,
+        "EXCLUDED": 24,
+        "PENDING": 7,
+        "AUTHORED; QUALIFICATION PENDING": 14,
+        "SUPERSEDED": 2,
+        "QUALIFIED_OTHER_LANE": 1
+      }
+    }
   }
 }
