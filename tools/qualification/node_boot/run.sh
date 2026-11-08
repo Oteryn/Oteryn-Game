@@ -459,6 +459,25 @@ stage() { # name prerequisite... -- function
     echo "--- postgres sessions"
     echo "SELECT pid, usename, application_name, state, wait_event_type, wait_event, now() - backend_start, now() - xact_start, now() - state_change, left(regexp_replace(query, '\\s+', ' ', 'g'), 160) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND pid <> pg_backend_pid() ORDER BY backend_start" \
       | psql_admin oteryn_node_boot 2>&1 | tail -n 30 || true
+    # The holder is alive but always busy: show which statements and tables keep it so.
+    echo "--- postgres statements on the holder (60 samples)"
+    for _ in $(seq 1 60); do
+      echo "SELECT state || ' ' || left(regexp_replace(query, '\\s+', ' ', 'g'), 200) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND usename <> 'oteryn_node_boot_admin'" \
+        | psql_admin oteryn_node_boot 2>/dev/null || true
+      sleep 0.05
+    done | sort | uniq -c | sort -rn | head -n 25
+    echo "--- postgres table writes and scans over 10 s"
+    psql_admin oteryn_node_boot 2>&1 <<'SQL' | tail -n 30 || true
+CREATE TEMP TABLE node_boot_stat_before AS
+  SELECT relid, n_tup_ins + n_tup_upd + n_tup_del AS writes, coalesce(seq_scan, 0) + coalesce(idx_scan, 0) AS scans
+  FROM pg_stat_user_tables;
+SELECT pg_sleep(10);
+SELECT pg_stat_clear_snapshot();
+SELECT s.relname, (s.n_tup_ins + s.n_tup_upd + s.n_tup_del) - b.writes AS writes, (coalesce(s.seq_scan, 0) + coalesce(s.idx_scan, 0)) - b.scans AS scans
+  FROM pg_stat_user_tables s JOIN node_boot_stat_before b USING (relid)
+  WHERE (s.n_tup_ins + s.n_tup_upd + s.n_tup_del) - b.writes + (coalesce(s.seq_scan, 0) + coalesce(s.idx_scan, 0)) - b.scans > 0
+  ORDER BY 2 DESC, 3 DESC LIMIT 25;
+SQL
     echo "--- postgres"; docker logs --tail 40 "$PG_CONTAINER" 2>&1 | grep -E 'ERROR|FATAL|STATEMENT' || true
     echo "--- platform"; compose logs --no-color --tail 40 platform nginx 2>&1 || true
   fi
