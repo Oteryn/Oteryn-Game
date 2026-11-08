@@ -1249,3 +1249,12 @@ The same native presentation now explains server-provided `PartyCount` and
 `Position` refusals without guessing a roster size or coordinates. The encoded
 reply regression proves confirmed boss state is preserved and entry can be
 retried after either refusal; the existing Cooldown presentation is unchanged.
+
+### M29: reject a refusal inside a success envelope
+The production refusal encoder pairs `BossActivityReply::Refused` exclusively
+with `CommandStatus::Rejected` (`crates/gameplay/dispatch/src/gameplay_transport/boss_activity.rs:365-367`).
+The native client now enforces that pairing. `Accepted` and `DuplicateReplay`
+envelopes carrying party size, position or level refusals are malformed, not
+accepted entry results. Tests cover all six combinations, preserving the last
+confirmed snapshot and summary, clearing pending, and showing invalid-data feedback.
+This is protocol consistency, not a new game prerequisite or wire allocation.
