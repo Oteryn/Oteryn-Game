@@ -4,13 +4,17 @@
 
 use windows_sys::Win32::Foundation::HWND;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DestroyWindow, MoveWindow, SW_HIDE, SW_SHOW, SetWindowTextW, ShowWindow,
-    WS_CHILD, WS_VISIBLE,
+    CreateWindowExW, DestroyWindow, ES_MULTILINE, ES_READONLY, MoveWindow, SW_HIDE, SW_SHOW,
+    SendMessageW, SetWindowTextW, ShowWindow, WS_CHILD, WS_VISIBLE, WS_VSCROLL,
 };
 use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use winit::window::Window;
 
-pub(super) struct Hud(HWND);
+use windows_sys::Win32::UI::Controls::{EM_GETFIRSTVISIBLELINE, EM_LINESCROLL};
+pub(super) struct Hud {
+    hwnd: HWND,
+    text: std::cell::RefCell<String>,
+}
 
 fn wide(text: &str) -> Vec<u16> {
     text.encode_utf16().chain(Some(0)).collect()
@@ -21,14 +25,14 @@ impl Hud {
         let RawWindowHandle::Win32(handle) = window.window_handle().ok()?.as_raw() else {
             return None;
         };
-        // A STATIC control displays the spell status, HP/MP bars and numbers without taking
-        // keyboard focus from gameplay. Win32 copies both strings during creation.
+        // The read-only multiline HUD keeps long condition lists scrollable.
+        // Win32 copies both strings during creation.
         let hwnd = unsafe {
             CreateWindowExW(
                 0,
-                wide("STATIC").as_ptr(),
+                wide("EDIT").as_ptr(),
                 wide("").as_ptr(),
-                WS_CHILD | WS_VISIBLE,
+                WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
                 8,
                 8,
                 900,
@@ -39,21 +43,32 @@ impl Hud {
                 std::ptr::null(),
             )
         };
-        (!hwnd.is_null()).then_some(Self(hwnd))
+        (!hwnd.is_null()).then_some(Self {
+            hwnd,
+            text: Default::default(),
+        })
     }
 
     pub(super) fn update(&self, text: Option<&str>, bounds: [u16; 4]) {
         unsafe {
             MoveWindow(
-                self.0,
+                self.hwnd,
                 i32::from(bounds[0]),
                 i32::from(bounds[1]),
                 i32::from(bounds[2]),
                 i32::from(bounds[3]),
                 1,
             );
-            SetWindowTextW(self.0, wide(text.unwrap_or("")).as_ptr());
-            ShowWindow(self.0, if text.is_some() { SW_SHOW } else { SW_HIDE });
+            let visible = text.is_some();
+            let text = text.unwrap_or("");
+            let mut last = self.text.borrow_mut();
+            if last.as_str() != text {
+                let first = SendMessageW(self.hwnd, EM_GETFIRSTVISIBLELINE, 0, 0);
+                SetWindowTextW(self.hwnd, wide(text).as_ptr());
+                SendMessageW(self.hwnd, EM_LINESCROLL, 0, first);
+                text.clone_into(&mut last);
+            }
+            ShowWindow(self.hwnd, if visible { SW_SHOW } else { SW_HIDE });
         }
     }
 }
@@ -62,7 +77,7 @@ impl Drop for Hud {
     fn drop(&mut self) {
         // DestroyWindow is also safe if the parent already destroyed its child.
         unsafe {
-            DestroyWindow(self.0);
+            DestroyWindow(self.hwnd);
         }
     }
 }

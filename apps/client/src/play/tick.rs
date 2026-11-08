@@ -36,6 +36,7 @@ impl PlayView {
         self.world_context_feedback = link.world_context_feedback();
         self.project_death(link).map_err(|_error| UNAVAILABLE)?;
         self.vitals = link.actor_vitals();
+        self.sync_resource_hud(link);
         let party = link.party_skull_panel();
         let icon_now = std::time::Instant::now();
         if self.preferences().creature_bars

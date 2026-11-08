@@ -108,7 +108,7 @@ Zasady przeciw dublowaniu:
 | T015 | Battle list | Wiele list, sort/filter, rename | PARTIAL | Jedna lista; brak zarządzania wieloma listami, filtrowania i ich nazw. |
 | O014 | Battle list | Battle list i wybór celu | PARTIAL | Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora. |
 | T010 | Game window | HUD i sidebar: dock/show/hide/order/layout | PARTIAL | Osobne okna Win32 zamiast pełnego dokowania i zapisu rozmiarów/kolejności paneli. |
-| T011 | Game window | HP/mana, soul/stamina, conditions/rest | PARTIAL | Dane i teksty są; brak pełnej konfigurowalnej prezentacji pasków/łuków/ikon. |
+| T011 | Game window | HP/mana, soul/stamina, conditions/rest | DONE | Konfigurowalne wartości HP/MP/soul/stamina, belki i łuki oraz ikony warunków/rest korzystają z istniejących zapytań sesji; HUD nie otwiera paneli i nie zmienia profilu Cyklopedii. evidence: apps/client/src/play/resource_hud.rs:142 + t011_server_resources_reach_configurable_hud_without_opening_windows |
 | T012 | Game window | Światło i efekty wizualne | PARTIAL | Światło i zdarzenia są; brak całego zestawu widocznych efektów i konfiguracji referencji. |
 | T162 | Game window | Monk harmony/serene/combo i HUD controls | PARTIAL | Harmony/serene tekstowo są; brak pełnych pasków/combo i niezależnych ustawień HUD mnicha. |
 | O010 | Game window | Górne menu i przyciski okien | DONE | Wspólne menu i przyciski otwierają/zamykają rzeczywiste panele przez ich wejścia, respektują skróty i pokazują stan otwarcia. evidence: apps/client/src/play/window_controls.rs:28 + o010_o037_window_buttons_toggle_real_panels_and_have_distinct_icons |

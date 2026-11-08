@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            resources,
             arcs,
             interface,
             profile_name,
@@ -161,6 +162,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
                 }
             }
+            resources.show(state.page == SettingsPage::Interface);
             for (index, handle) in hud_checks.iter().enumerate() {
                 let page = if index < 3 {
                     SettingsPage::Interface
@@ -279,6 +281,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     }
                     match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
                         (Ok(scale), Ok(volume)) => {
+                            resources.apply(&mut preferences.resource_hud);
                             preferences.ui_scale = scale;
                             preferences.audio.master_volume = volume;
                             preferences.audio.muted = SendMessageW(mute, BM_GETCHECK, 0, 0) == 1;
@@ -330,6 +333,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     usize::from(state.preferences.audio.muted),
                     0,
                 );
+                resources.sync(&state.preferences.resource_hud);
                 for (control, checked) in hud_checks.iter().zip([
                     state.preferences.hud_bars,
                     state.preferences.show_harmony,

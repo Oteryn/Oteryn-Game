@@ -6,8 +6,12 @@ use interface_controls::InterfaceControls;
 #[path = "arc_controls.rs"]
 mod arc_controls;
 use arc_controls::ArcControls;
+#[path = "resource_controls.rs"]
+mod resource_controls;
+use resource_controls::ResourceControls;
 
 pub(super) struct Controls {
+    pub(super) resources: ResourceControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
     pub(super) profile_name: HWND,
@@ -46,6 +50,7 @@ impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
             let arcs = ArcControls::new(hwnd)?;
+            let resources = ResourceControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
                 hwnd,
@@ -268,7 +273,7 @@ impl Controls {
                 )
             })
             .collect::<Vec<_>>();
-            let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
+            let feedback = control(hwnd, "STATIC", "", 0, [10, 430, 710, 40], 0);
             if [
                 profile_name,
                 profile_save,
@@ -307,6 +312,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                resources,
                 arcs,
                 interface,
                 profile_name,

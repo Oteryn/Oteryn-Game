@@ -104,6 +104,7 @@ impl Outbox {
         if let Some(launcher) = &mailbox.coin_shop {
             launcher.end();
         }
+        mailbox.hud_resource = Default::default();
         mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
@@ -152,6 +153,7 @@ impl Outbox {
         if let Some(launcher) = &mailbox.coin_shop {
             launcher.end();
         }
+        mailbox.hud_resource = Default::default();
         mailbox.arena.end();
         mailbox.properties.end();
         mailbox.weapon_proficiency = Default::default();

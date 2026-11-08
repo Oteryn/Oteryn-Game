@@ -177,6 +177,7 @@ impl ApplicationHandler for Application {
         self.poll_entry();
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
+            play.view.enable_resource_hud(true);
         }
         if let Some(play) = &mut self.play
             && let Err(end) = play.view.tick(&play.link)

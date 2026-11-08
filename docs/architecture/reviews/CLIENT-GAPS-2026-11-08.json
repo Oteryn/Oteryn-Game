@@ -49,9 +49,10 @@
   "src": "TIBAUD-1",
   "area": "Game window",
   "feature": "HP/mana, soul/stamina, conditions/rest",
-  "status": "PARTIAL",
-  "gap": "Dane i teksty są; brak pełnej konfigurowalnej prezentacji pasków/łuków/ikon.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Konfigurowalne wartości HP/MP/soul/stamina, belki i łuki oraz ikony warunków/rest korzystają z istniejących zapytań sesji; HUD nie otwiera paneli i nie zmienia profilu Cyklopedii.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/play/resource_hud.rs:142 + t011_server_resources_reach_configurable_hud_without_opening_windows"
  },
  {
   "id": "T012",

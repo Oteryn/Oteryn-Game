@@ -24,6 +24,7 @@ pub struct PlayView {
     served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
     world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
+    resource_hud: resource_hud::ViewState,
     party_icon_epoch: std::time::Instant,
     party_icons_refresh: Option<std::time::Instant>,
     party_icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
@@ -81,6 +82,7 @@ impl PlayView {
             world_clock: None,
             served_channel: None,
             world_weather: None,
+            resource_hud: Default::default(),
             party_icon_epoch: std::time::Instant::now(),
             party_icons_refresh: None,
             party_icons: Vec::new(),
@@ -123,12 +125,14 @@ mod end;
 mod input;
 mod mailbox;
 mod refusal_details;
+mod resource_hud;
 mod session_loop;
 mod session_stepper;
 #[cfg(windows)]
 mod status_window;
 mod stepper;
 mod tick;
+pub use resource_hud::ResourceHudOptions;
 mod window_controls;
 pub use window_controls::window_icon;
 
