@@ -34,6 +34,23 @@ impl PlayLink {
             6..=8 => self.team_finder_decide((action - 4) as u8),
             9 => self.team_finder_publish_fields(fields),
             10 => self.team_finder_advertise(None),
+            11 => {
+                let parse = |index: usize| fields.get(index)?.trim().parse::<u16>().ok();
+                let Some((level, mask, target, open)) = parse(11).zip(parse(12)).zip(parse(13)).zip(parse(14)).map(|(((l,m),t),o)| (l,m,t,o)) else { return false; };
+                if mask > 255 || target > 3 || open > 1 { return false; }
+                let mut mailbox = lock(&self.mailbox);
+                mailbox.discovery.teams.filter = oteryn_client_ui::team_finder::TeamFilter {
+                    name: fields.get(10).cloned().unwrap_or_default(), level: (level != 0).then_some(level), vocation_mask: mask as u8, target: target as u8, only_open: open == 1
+                };
+                mailbox.discovery.teams.selected_row = 0;
+                true
+            },
+            12 => {
+                let mut mailbox = lock(&self.mailbox);
+                mailbox.discovery.teams.filter = Default::default();
+                mailbox.discovery.teams.selected_row = 0;
+                true
+            },
             _ => false,
         }
     }

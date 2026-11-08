@@ -1,5 +1,8 @@
 //! Server-owned weekly Task Board panel.
 mod input;
+#[path = "view/soulseals.rs"]
+mod soulseals;
+pub use soulseals::{soulseals_key, soulseals_text};
 mod protocol;
 pub use input::{creature_choices, creature_name, open_key};
 #[path = "protocol/talisman.rs"]
@@ -23,6 +26,7 @@ pub enum Intent {
 pub struct TaskBoardPanel {
     pub selected: bool,
     pub open: bool,
+    pub soulseals_open: bool,
     pub pending: bool,
     pub state: Option<task_board::TaskBoardReply>,
     pub feedback: Option<&'static str>,
