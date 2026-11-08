@@ -560,9 +560,10 @@ fn scenario_case(
             "runtime-scope-assignment:1",
             if name.starts_with("qengine-rewards-l12-") {
                 128
-            } else if native_story || (native_upper && name.ends_with("-complete")) {
-                6
-            } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+            } else if native_story
+                || (native_upper && name.ends_with("-complete"))
+                || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
+            {
                 6
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13 // Twelve distinct source NPCs and the player.
