@@ -477,7 +477,7 @@ pub(super) async fn prepare_in_transaction(
             }
         }));
     }
-    let reset:Option<String>=sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid FOR SHARE OF a,e")
+    let reset:Option<String>=sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)")
         .bind(r.destination_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(reset) = reset else {
         return Ok(Err(ActivityRefusal::AuthorityRejected));
