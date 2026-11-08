@@ -6,6 +6,9 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod carried;
+#[cfg(test)]
+mod carried_exchange_tests;
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
@@ -117,6 +120,9 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    /// Explicit selected-instance exchange; legacy carried tools keep their no-item-grant contract.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub carried_exchange: bool,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -131,6 +137,8 @@ pub struct RewardCallback {
     pub requires_premium: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub requires_completed_quests: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_outfits: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -239,6 +247,25 @@ struct Document {
     callbacks: Vec<RewardCallback>,
 }
 
+/// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
+    let mut callbacks = load()?;
+    if let Some(bindings) = catalogue.authored_bindings() {
+        callbacks.extend(bindings.reward_callbacks().cloned());
+    }
+    if callbacks.len() > super::authored_bindings::MAX_BOUND_STAGES
+        || callbacks
+            .iter()
+            .map(|c| &c.key)
+            .collect::<BTreeSet<_>>()
+            .len()
+            != callbacks.len()
+    {
+        return Err("authored/base reward binding collision or bound".into());
+    }
+    Ok(callbacks)
+}
+
 pub fn load() -> Result<Vec<RewardCallback>, String> {
     embedded_document().map(|document| document.callbacks)
 }
@@ -259,6 +286,10 @@ fn embedded_document() -> Result<Document, String> {
         }
     }
     parse_document(&serde_json::to_string(&source).map_err(|e| e.to_string())?)
+}
+
+pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), String> {
+    parse_document(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }
 
 #[cfg(test)]
@@ -412,16 +443,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
-            || c.carried_item.as_ref().is_some_and(|item| {
-                c.take
-                    != [ItemAmount {
-                        item: item.clone(),
-                        count: 1,
-                    }]
-                    || c.give.is_some()
-                    || c.fee.is_some()
-                    || !c.requires_actor_conditions.is_empty()
-            })
+            || !c.valid_carried_use()
             || c.forbids_outfits.len() > 8
             || c.forbids_outfits.iter().collect::<BTreeSet<_>>().len() != c.forbids_outfits.len()
             || c.forbids_outfits
@@ -447,6 +469,15 @@ fn parse_document(text: &str) -> Result<Document, String> {
                 !slug(&r.outfit, "oteryn:outfit.", b"_", 128) || !(1..=3).contains(&r.addons)
             })
             || c.minimum_level == Some(0)
+            || c.requires_completed_quests.len() > 8
+            || c.requires_completed_quests
+                .iter()
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.requires_completed_quests.len()
+            || c.requires_completed_quests
+                .iter()
+                .any(|key| key == &c.quest || !slug(key, "oteryn:quest.", b"._", 128))
             || c.requires_addons.len() > 8
             || c.requires_addons
                 .iter()
@@ -714,6 +745,32 @@ fn extend_document(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn completed_parent_requirements_are_bounded_unique_and_read_only() -> Result<(), String> {
+        let original = super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/l13-rift-base")
+            .ok_or("Rift base")?;
+        assert_eq!(
+            original.requires_completed_quests,
+            ["oteryn:quest.ferumbras_ascension_quest"]
+        );
+        for parents in [
+            vec![original.quest.clone()],
+            vec!["oteryn:quest.INVALID".into()],
+            vec!["oteryn:quest.parent".into(); 2],
+            (0..9).map(|i| format!("oteryn:quest.parent_{i}")).collect(),
+        ] {
+            let mut row = serde_json::to_value(&original).map_err(|e| e.to_string())?;
+            row["requires_completed_quests"] = serde_json::json!(parents);
+            assert!(
+                super::parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string())
+                    .is_err()
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn level_and_positive_addon_guards_preserve_one_shot_bases() -> Result<(), String> {
         let original = super::load()?

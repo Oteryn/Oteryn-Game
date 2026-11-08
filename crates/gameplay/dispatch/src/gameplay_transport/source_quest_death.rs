@@ -41,7 +41,7 @@ pub(super) fn capture(
     queue: &KillSettlementQueue,
     entry: &mut PendingKillSettlement,
 ) {
-    let Ok(mut cache) = queue.2.lock() else {
+    let Ok(mut cache) = queue.3.lock() else {
         return;
     };
     cache
@@ -135,7 +135,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
         };
         let attack = self.states.attack.lock().await;
-        let Ok(mut cache) = attack.kills().2.lock() else {
+        let Ok(mut cache) = attack.kills().3.lock() else {
             return;
         };
         cache.sessions.retain(|snapshot| {

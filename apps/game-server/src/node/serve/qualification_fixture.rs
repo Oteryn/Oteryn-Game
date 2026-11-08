@@ -166,6 +166,7 @@ async fn prepare_items(
             item,
             quantity: 1,
             contents: Vec::new(),
+            additional_items: Vec::new(),
             root_text: None,
             root_fluid_subtype: None,
             root_charges_remaining: None,

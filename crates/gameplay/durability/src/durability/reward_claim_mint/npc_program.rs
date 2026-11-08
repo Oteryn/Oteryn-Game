@@ -64,6 +64,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         return Ok(Err(RewardClaimMintError::InvalidInput));
     }
     let request = RewardClaimMintRequest {
+        additional_items: Vec::new(),
         root_charges_remaining: None,
         root_fluid_subtype: None,
         command,

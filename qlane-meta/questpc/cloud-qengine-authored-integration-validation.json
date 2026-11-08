@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "source_snapshot": "dd35529b6f1c61042e798723f71768109f9573f8",
+  "main": "b3864f14a",
+  "checks": {
+    "workspace_all_targets": "PASS7m33s after final generation",
+    "strict_clippy_four_changed_crates": "PASS6m31s",
+    "fmt_all": "PASS",
+    "native_generation": "PASS44 files; QENGINE source cohort60",
+    "tree_equivalence": "PASS34111Items/252Mounts/1282NPCs",
+    "frozen_source_receipt": "PASS all SOURCE cores unchanged",
+    "duplicate_migrations": "PASS",
+    "world_pin_refresh": "PASS; unchanged26bf812c23df",
+    "quest_units": "316PASS/1unchangedNPC13FAIL105.295s",
+    "focused_pg": "compiling; no post-integration PG green claim"
+  },
+  "migrations_reused_unchanged": [
+    1550,
+    1551,
+    1552
+  ],
+  "own_migrations": [
+    1290,
+    1292,
+    1293,
+    1295,
+    1296
+  ],
+  "logs": {
+    "workspace": {
+      "sha256": "3da17b59a3f8c6536f4d6bc06dace763bb9a35e97df8df84bf81405f9ac008db",
+      "bytes": 3723
+    },
+    "clippy": {
+      "sha256": "1aaa1eee7bd93c525b45ae6ddfe6bed7e658efb864708a30d76f99896362a372",
+      "bytes": 5111
+    },
+    "fmt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "native": {
+      "sha256": "0b0a5724d25eff9c6b82fceeeeb3c85037e3241602a7905cdaa3e0c6a8797658",
+      "bytes": 411
+    },
+    "pin_refresh": {
+      "sha256": "4fc3b148a5c4b0fd2594895d014c143460d7e5cf303bd4c00e62e31c779484fa",
+      "bytes": 404
+    },
+    "quest_units": {
+      "sha256": "4a7b42414c47409bf273ab0c6c9f1d5e8e1b62d952479a81fb3678a708000503",
+      "bytes": 173901
+    }
+  }
+}

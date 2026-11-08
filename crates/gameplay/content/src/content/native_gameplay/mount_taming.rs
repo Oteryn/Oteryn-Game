@@ -20,6 +20,10 @@ pub struct TamingRule {
     /// `creature_key` is populated. Donor: `data-global/scripts/actions/mounts/mounts.lua:16,31,48,71`.
     #[serde(default)]
     pub target_item_key: Option<String>,
+    /// Complete construction recipe, executed by the existing atomic item-recipe owner.
+    /// Empty retains the ordinary selected-item taming contract.
+    #[serde(default)]
+    pub required_items: Vec<String>,
     #[serde(default)]
     pub creature_key: String,
     pub mount_key: String,
@@ -38,6 +42,11 @@ pub struct TamingRule {
 /// One retained uniform draw selects success or a uniformly selected failure, as Canary's
 /// two independent draws do. Zero is success; 1..=N identify authored failure rows.
 impl TamingRule {
+    /// Multi-piece construction must never enter the one-item taming transaction.
+    pub fn single_item_use(&self) -> bool {
+        self.required_items.len() <= 1
+    }
+
     pub fn decide(&self, draw: u64) -> u8 {
         let n = self.failures.len().max(1) as u64;
         let bucket = ((u128::from(draw) * u128::from(100 * n)) >> 64) as u64;
@@ -64,7 +73,7 @@ pub fn rules() -> &'static [TamingRule] {
     static RULES: OnceLock<Vec<TamingRule>> = OnceLock::new();
     RULES.get_or_init(|| {
         let Ok(rules): Result<Vec<TamingRule>, _> = serde_json::from_str(include_str!(
-            "../../../../../../content/cosmetics/taming.json"
+            "../../../../../../content/cosmetics/taming-native.json"
         )) else {
             return Vec::new();
         };
@@ -79,6 +88,20 @@ pub fn rules() -> &'static [TamingRule] {
                 .unwrap_or(&rule.creature_key);
             if !pairs.insert((&rule.item_key, target))
                 || (rule.creature_key.is_empty() == rule.target_item_key.is_none())
+                || rule.required_items.len() > 8
+                || (!rule.required_items.is_empty()
+                    && (rule.target_item_key.is_none()
+                        || rule.chance != 100
+                        || !rule.required_items.contains(&rule.item_key)
+                        || rule
+                            .required_items
+                            .iter()
+                            .collect::<std::collections::BTreeSet<_>>()
+                            .len()
+                            != rule.required_items.len()
+                        || rule.required_items.iter().any(|key| {
+                            !key.starts_with("oteryn:item.") || key.len() > 128 || !key.is_ascii()
+                        })))
                 || !(1..=100).contains(&rule.chance)
                 || rule.failures.len() > 3
                 || (rule.chance != 100 && rule.failures.is_empty())
@@ -283,6 +306,20 @@ mod tests {
     #[test]
     fn glooth_glider_item_target_rule() {
         assert_item_target(21897, 21897, "oteryn:content.mount.glooth_glider");
+        let rule = rule_for(21897)[0];
+        let expected: Vec<_> = [21897, 21898, 21899, 21901, 21902, 21905, 21906]
+            .into_iter()
+            .map(|id| format!("oteryn:item.tibia.i{id}"))
+            .collect();
+        assert_eq!(rule.required_items, expected);
+        assert!(
+            !rule.single_item_use(),
+            "construction cannot fall through to a one-piece grant"
+        );
+        assert_eq!(
+            rules().iter().filter(|rule| rule.single_item_use()).count(),
+            50
+        );
     }
 
     /// S06 keeps Global's 15% Wild Horse rule and admits every donor row. Crystal has 51 rows;

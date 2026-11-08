@@ -114,6 +114,7 @@ use oteryn_gameplay_quests::quest::{QUESTSTATE0_RL_07, valid_quest_key};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
+mod additional;
 mod arena;
 pub mod boss_reward;
 mod charges;
@@ -126,10 +127,10 @@ mod fluid;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
-mod quest_participants;
 mod quest_actor_conditions;
-pub use quest_actor_conditions::QuestActorConditionProof;
+mod quest_participants;
 pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
+pub use quest_actor_conditions::QuestActorConditionProof;
 mod soul_war;
 mod tibiadrome;
 mod viola_book;
@@ -188,6 +189,8 @@ pub struct RewardClaimMintRequest {
     pub quantity: u32,
     /// The exact complete container contents. No child is dropped on refusal.
     pub contents: Vec<RewardClaimMintContent>,
+    /// Additional top-level rewards, committed with this same claim.
+    pub additional_items: Vec<RewardClaimMintContent>,
     /// Immutable source-authored text on the top-level reward.
     pub root_text: Option<String>,
     /// Source-resolved fluid subtype of the top-level reward.
@@ -574,7 +577,9 @@ impl DurabilityRoot {
                             return Ok(Err(RewardClaimMintError::ConflictingCause));
                         }
                         let reservation = decode_reservation(&row)?;
-                        if !contents::reservation_matches(&row, &request, &reservation)? {
+                        if !contents::reservation_matches(&row, &request, &reservation)?
+                            || !additional::reservation_matches(&row, &request, &reservation)?
+                        {
                             return Ok(Err(RewardClaimMintError::ConflictingCandidate));
                         }
                         if load_receipt(&mut tx, request.command).await?.is_none() {
@@ -852,7 +857,9 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(RewardClaimMintError::ConflictingCandidate));
                     }
-                    if !contents::reservation_matches(&row, &frozen.request, &reservation)? {
+                    if !contents::reservation_matches(&row, &frozen.request, &reservation)?
+                        || !additional::reservation_matches(&row, &frozen.request, &reservation)?
+                    {
                         return Ok(Err(RewardClaimMintError::ConflictingCandidate));
                     }
                     let identity_reused: bool = sqlx::query_scalar(
@@ -1108,6 +1115,20 @@ async fn admit(
         Ok(destination) => destination,
         Err(refusal) => return Ok(Err(RewardClaimMintError::Refused(refusal))),
     };
+    let count = entries
+        .len()
+        .checked_add(1)
+        .and_then(|n| n.checked_add(request.additional_items.len()));
+    if count.is_none_or(|n| n > request.backpack.container_capacity.unwrap_or(0) as usize)
+        || destination
+            .placement_ordinal
+            .checked_add(request.additional_items.len() as u64)
+            .is_none()
+    {
+        return Ok(Err(RewardClaimMintError::Refused(
+            RewardClaimRefusal::MainBackpackFull,
+        )));
+    }
     // QUEST-STATE-0 §5.4: the open obligations, read under the `character_root`
     // row lock that every quest writer and every claim takes.
     if request.quest_transition.is_some() {
@@ -1256,11 +1277,11 @@ async fn apply_claim(
            character_id, claim_family, claim_production_key, claim_revision_ref, \
            intent_binding, transaction_id, event_id, item_instance_id, quantity, \
            destination_parent_item_instance_id, destination_ordinal, occurred_at, \
-           envelope_sha256, committed_at, contents_capacity, contents_plan, root_text, fluid_plan, charges_plan) \
+           envelope_sha256, committed_at, contents_capacity, contents_plan, root_text, additional_capacity, additional_plan, fluid_plan, charges_plan) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            $4, $5, $6, $7, encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
            encode($10,'hex')::uuid, $11, encode($12,'hex')::uuid, $13::text::numeric(20,0), \
-           $14, $15, $16, $17, $18, $19, $20, $21)",
+           $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)",
     )
     .bind(command.game_session_id().as_bytes().as_slice())
     .bind(command.command_id().get().to_string())
@@ -1281,6 +1302,8 @@ async fn apply_claim(
     .bind(contents::capacity(request))
     .bind(sqlx::types::Json(contents::plan(request, reservation)))
     .bind(&request.root_text)
+    .bind(additional::capacity(request))
+    .bind(sqlx::types::Json(additional::plan(request, reservation)))
     .bind(sqlx::types::Json(fluid::plan(request)))
     .bind(sqlx::types::Json(charges::plan(request)))
     .execute(&mut **tx)
@@ -1323,6 +1346,7 @@ async fn apply_claim(
         .await?;
     }
     contents::apply(tx, frozen, reservation, envelope, tuple).await?;
+    additional::apply(tx, frozen, reservation, envelope, tuple, destination).await?;
     fluid::apply(tx, frozen, reservation).await?;
     charges::apply(tx, frozen, reservation).await?;
     Ok(CommittedRewardClaimMint {
@@ -1360,7 +1384,7 @@ async fn load_reservation(
     Ok(sqlx::query(
         "SELECT intent_binding, character_id::text, world_id::text, channel_id::text, \
                 transaction_id::text, event_id::text, item_instance_id::text, occurred_at, \
-                work_units_used, contents_capacity, contents_plan, root_text, fluid_plan, charges_plan \
+                work_units_used, contents_capacity, contents_plan, root_text, additional_capacity, additional_plan, fluid_plan, charges_plan \
            FROM game_reward_claim_mint_reservations \
           WHERE game_session_id = encode($1,'hex')::uuid \
             AND command_id = $2::text::numeric(20,0)",
@@ -1399,11 +1423,11 @@ async fn insert_reservation(
         "INSERT INTO game_reward_claim_mint_reservations(game_session_id, command_id, \
            character_id, world_id, channel_id, claim_family, claim_production_key, \
            claim_revision_ref, intent_binding, transaction_id, event_id, item_instance_id, \
-           occurred_at, work_units_used, reserved_at, contents_capacity, contents_plan, root_text, fluid_plan, charges_plan) \
+           occurred_at, work_units_used, reserved_at, contents_capacity, contents_plan, root_text, additional_capacity, additional_plan, fluid_plan, charges_plan) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6, $7, $8, $9, \
            encode($10,'hex')::uuid, encode($11,'hex')::uuid, encode($12,'hex')::uuid, $13, 0, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $14, $15, $16, $17, $18)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $14, $15, $16, $17, $18, $19, $20)",
     )
     .bind(request.command.game_session_id().as_bytes().as_slice())
     .bind(request.command.command_id().get().to_string())
@@ -1421,6 +1445,8 @@ async fn insert_reservation(
     .bind(contents::capacity(request))
     .bind(sqlx::types::Json(contents::plan(request, reservation)))
     .bind(&request.root_text)
+    .bind(additional::capacity(request))
+    .bind(sqlx::types::Json(additional::plan(request, reservation)))
     .bind(sqlx::types::Json(fluid::plan(request)))
     .bind(sqlx::types::Json(charges::plan(request)))
     .execute(&mut **tx)
@@ -1529,6 +1555,7 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
         return Err(RewardClaimMintError::InvalidInput);
     }
     contents::validate(request)?;
+    additional::validate(request)?;
     fluid::validate(request)?;
     charges::validate(request)?;
     Ok(())
@@ -1615,6 +1642,19 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
             canonical.extend_from_slice(&child.quantity.to_be_bytes());
             canonical.extend_from_slice(&child.key_number.unwrap_or(0).to_be_bytes());
             if let Some(text) = &child.text {
+                canonical.push(0x54);
+                push_text(&mut canonical, text.as_bytes()).map_err(from_transfer_input)?;
+            }
+        }
+    }
+    if !request.additional_items.is_empty() {
+        canonical.push(0x53);
+        canonical.extend_from_slice(&(request.additional_items.len() as u32).to_be_bytes());
+        for item in &request.additional_items {
+            push_facts(&mut canonical, &item.item).map_err(from_transfer_input)?;
+            canonical.extend_from_slice(&item.quantity.to_be_bytes());
+            canonical.extend_from_slice(&item.key_number.unwrap_or(0).to_be_bytes());
+            if let Some(text) = &item.text {
                 canonical.push(0x54);
                 push_text(&mut canonical, text.as_bytes()).map_err(from_transfer_input)?;
             }
@@ -1856,6 +1896,7 @@ mod tests {
     fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
         use crate::foundation::{CommandId, GameSessionId};
         RewardClaimMintRequest {
+            additional_items: Vec::new(),
             command: CommandRef::new(
                 GameSessionId::decode(&id(50)).expect("session"),
                 CommandId::new(7).expect("command"),

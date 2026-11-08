@@ -196,6 +196,7 @@ fn scenario(
         if full {
             for index in 0..20 {
                 let request = RewardClaimMintRequest {
+        additional_items: Vec::new(),
                     command: CommandRef::new(
                         admitted.game_session_id,
                         CommandId::new(100 + index).map_err(debug)?,

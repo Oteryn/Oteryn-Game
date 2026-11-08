@@ -176,7 +176,7 @@ impl DurabilityRoot {
         if native_key!=native.is_some() || native.as_ref().is_some_and(|death|!death.valid(&request)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
+        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         if reward_callbacks.iter().any(|c| c.participants.iter().enumerate().any(|(i,_)|
             oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&c.key,i) == request.transition_key)) {
@@ -249,7 +249,7 @@ impl DurabilityRoot {
         }
         let callback = if context.is_some() {
             Some(
-                oteryn_gameplay_quests::quest::world_callbacks::load()
+                oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)
                     .map_err(|_| CharacterProgressionError::InvalidInput)?
                     .into_iter()
                     .find(|c| c.key == request.transition_key)
@@ -282,7 +282,7 @@ impl DurabilityRoot {
         // Value-bearing or context-dependent callbacks cannot use a weaker generic caller.
         if context.is_none()
             && (native_world_rule
-                || oteryn_gameplay_quests::quest::world_callbacks::load()
+                || oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)
                     .map_err(|_| CharacterProgressionError::InvalidInput)?
                     .iter()
                     .any(|c| {

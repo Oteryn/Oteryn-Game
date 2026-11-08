@@ -34,7 +34,8 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
 ) -> Option<Step> {
-    let callbacks = reward_callbacks::load().ok()?;
+    let catalogue = admission.quest_catalogue.as_deref()?;
+    let callbacks = reward_callbacks::load_for(catalogue).ok()?;
     let mut offers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
@@ -49,7 +50,6 @@ pub(super) fn prepare(
     if offers.schema != 1 || offers.offers.iter().any(|o| o.requires.len() > 8) {
         return None;
     }
-    let catalogue = admission.quest_catalogue.as_deref()?;
     quest_dialogue::prepare(
         admission,
         actor,

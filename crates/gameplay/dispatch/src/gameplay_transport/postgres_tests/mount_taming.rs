@@ -290,11 +290,14 @@ async fn quantity(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-#[derive(Clone, Copy)]
-enum Cases {
+#[derive(Clone, Copy, Debug)]
+pub(super) enum Cases {
     Outcomes,
     Items,
     MusicBox,
+    StockOutcomes,
+    StockItems,
+    StockMusicBox,
 }
 
 #[test]
@@ -322,4 +325,18 @@ fn run_pairs(cases: Cases) -> TestResult {
         .join()
         .map_err(|_| "mount taming e2e panicked")?
         .map_err(Into::into)
+}
+
+pub(super) fn run_stock_case(case: Cases) -> TestResult {
+    if configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = run_pairs(case);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED S06_STOCK {case:?} duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
 }

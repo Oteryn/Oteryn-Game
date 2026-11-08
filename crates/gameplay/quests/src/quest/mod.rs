@@ -18,6 +18,7 @@
 
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
+pub mod authored_bindings;
 #[cfg(test)]
 pub mod batch3_a;
 mod catalogue_history;
@@ -302,6 +303,7 @@ pub struct QuestStateCatalogue {
     hashes: BTreeMap<String, [u8; 32]>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
+    authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -432,6 +434,7 @@ impl QuestStateCatalogue {
             hashes,
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
+            authored_bindings: None,
         })
     }
 
@@ -457,8 +460,11 @@ impl QuestStateCatalogue {
                 .chain(transitions)
                 .collect(),
         )?;
-        extended.npc_legacy.clone_from(&self.npc_legacy);
-        extended.predecessors.clone_from(&self.predecessors);
+        // Existing definitions may include the immutable native binding document in their hash.
+        extended.hashes.extend(self.hashes.clone());
+        extended.npc_legacy = self.npc_legacy.clone();
+        extended.predecessors = self.predecessors.clone();
+        extended.authored_bindings = self.authored_bindings.clone();
         Ok(extended)
     }
 
@@ -469,6 +475,18 @@ impl QuestStateCatalogue {
     }
 
     #[must_use]
+    pub fn authored_world_callbacks(&self) -> Option<&[world_callbacks::Callback]> {
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| runtime.world.as_slice())
+    }
+
+    pub fn authored_bindings(&self) -> Option<&authored_bindings::Bindings> {
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| &runtime.source)
+    }
+
     pub fn content_revision(&self) -> &str {
         &self.content_revision
     }

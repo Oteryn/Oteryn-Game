@@ -1,3 +1,41 @@
+## Integration ready/push — next step
+Combined main b3864f14a and qualified QENGINE2dd35529b6 compile. Final workspace
+PASS7m33s, strict quest/dispatch/durability/social Clippy PASS6m31s, fmt PASS.
+Native generation44, source cohort60, Item/Mount tree and central indices PASS;
+SOURCE cores unchanged; duplicate migrations and world pin-refresh PASS. World
+pin remains26bf812c23df. Quest units317:316PASS/only unchanged NPC13FAIL105.295s.
+Focused PG source/reward regressions compiling in /tmp/questpc-qengine-focused-pg.log.
+No post-integration PG green claim yet; PREPUSH-2 cadence exception explicit.
+Two own source death capture references now use queue.3 because main inserted
+public stats at2. SQL retains additional-root and fluid/charge plans with exact
+matching placeholder/bind order; empty fields preserve single-root callers.
+Next finish focused PG, then use the existing authored binding API for owned
+on-demand Kingsday recipe. Loyal Subject canonical ID is
+ oteryn:achievement/loyal_subject (remove spaces in code); King Tibianus is an
+admitted NPC with captured candidate cell x32311,y32172,z6,NORTH. Existing NPC
+placement scope tooling can add only that captured cell; no invented actor.
+New qdata/qbind refs checked still1ae39c7f; qready fixed packet overlaps unchanged.
+No Kingsday code written yet. Keep runtime inputs stable during PG execution.
+
+## Active integration — restart here
+Last pushed88b8aa395. Main b3864f14a merged cleanly as local73d07e130.
+QENGINE2 qualifieddd35529b6 is merging (MERGE_HEAD); all textual conflicts
+resolved, native regeneration running. Remote latestdf01fc4e8 is WIP native kill
+bindings and intentionally excluded. Reuse existing authored-stage engine for
+packet recipes rather than adding generic engine code. Borrow migrations1550–52
+unchanged; own1290/1292/1293/1295/1296 unchanged. SQL retains fluid/charge plans
+and additional-root plans, with explicit matching column/parameter/bind order.
+Father eleven-track acceptance unchanged; cape gets empty additional_items.
+Full dispatch selection interrupted before runtime input changes:784/1597 PASS,
+no complete-green claim; SIGINT is control, not semantic failure. Full log under
+/tmp/questpc-dispatch-units-all-non-postgres.log; interruption proof in status.
+Next inspect native generator outcome, compile workspace and repair every missing
+new struct field together, then fmt/changed-crate clippy/central generation/pins
+and focused engine+own PG. Push compiled integration under PREPUSH-2 cadence if
+long tests pending. Bigfoot scratch lossless lowerer/tests are in
+/tmp/questpc-next-bigfoot; first four gates still need fenced read-only StepIn
+proof support (step path passes None to executor). No Bigfoot callback published.
+
 ## Inventory repair/evidence push gates
 Workspace all-targets PASS7m30s; changed quest crate Clippy PASS11.46s; fmt PASS.
 Native/central generation and duplicate migration check PASS. World pin refresh

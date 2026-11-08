@@ -11226,5 +11226,58 @@
     "focused_dispatch_and_own_pg": "8PASS366.844s",
     "dispatch_units": "1597 selected excluding Postgres names; running, no complete-green claim",
     "qualification_change": false
+  },
+  "qengine_authored_integration": {
+    "state": "Ready to push: main and qualified QENGINE2 reused; final compile/fmt/clippy/regeneration/pins pass; focused PG pending",
+    "main": "b3864f14a",
+    "local_main_merge": "73d07e130",
+    "qualified_engine_snapshot": "dd35529b6f1c61042e798723f71768109f9573f8",
+    "latest_engine_head_checked": "df01fc4e8; WIP native kills excluded from this reuse",
+    "reused_features": [
+      "Immutable catalogue-scoped authored NPC/map/carried/StepIn binding API",
+      "Additional physical reward roots and complete cosmetic piece recipes",
+      "Selected-instance carried exchanges"
+    ],
+    "shared_migrations_consumed_as_is": [
+      1550,
+      1551,
+      1552
+    ],
+    "own_migrations_unchanged": [
+      1290,
+      1292,
+      1293,
+      1295,
+      1296
+    ],
+    "source_conflict_repairs": [
+      "Keep exact owned reward transition recognition and catalogue-aware lookup",
+      "Preserve questpc NPC offers/programmes and callback default fields",
+      "Retain fluid/charge and additional-root SQL columns with matching bind order",
+      "Father cape additional_items empty; eleven-track acceptance unchanged",
+      "Main public statistics shifted source death capture from tuple field2 to3; corrected both own references",
+      "Legacy single-root callers explicitly use empty additional roots; existing additional-items variables preserved",
+      "Incoming additional-root plain contents explicitly carry no fluid subtype/charges; key-less tests use key_number=None"
+    ],
+    "unit_interruption": {
+      "selected": 1597,
+      "passed_before_required_engine_integration": 784,
+      "complete": false,
+      "reason": "Reuse qualified QENGINE2 authored binding implementation; stop before runtime input changes",
+      "log_sha256_before_stop": "72c2283bb9ae2f970f8268380ee6d82d7a1493e58ce49055747197e2af9f33f7"
+    },
+    "next": "Regenerate native/central/pins; compile workspace and repair all constructor/type mismatches together; focused own and reused engine PG; push cadence under PREPUSH-2 if tests pending",
+    "checks": {
+      "workspace_all_targets": "PASS7m33s after final generation",
+      "strict_clippy_four_changed_crates": "PASS6m31s",
+      "fmt_all": "PASS",
+      "native_generation": "PASS44 files; QENGINE source cohort60",
+      "tree_equivalence": "PASS34111Items/252Mounts/1282NPCs",
+      "frozen_source_receipt": "PASS all SOURCE cores unchanged",
+      "duplicate_migrations": "PASS",
+      "world_pin_refresh": "PASS; unchanged26bf812c23df",
+      "quest_units": "316PASS/1unchangedNPC13FAIL105.295s",
+      "focused_pg": "compiling; no post-integration PG green claim"
+    }
   }
 }
