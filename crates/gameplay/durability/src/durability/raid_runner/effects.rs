@@ -342,8 +342,8 @@ pub(super) async fn acknowledge(
         let finished = sqlx::query("UPDATE game_world_raid_firings f SET state=2 WHERE firing_id=encode($1,'hex')::uuid AND state=1 AND EXISTS(SELECT 1 FROM game_world_raid_targets t WHERE t.firing_id=f.firing_id) AND NOT EXISTS(SELECT 1 FROM game_world_raid_targets t LEFT JOIN game_world_raid_channel_runs r USING(firing_id,channel_id) WHERE t.firing_id=f.firing_id AND (r.state IS NULL OR r.state=1)) AND NOT EXISTS(SELECT 1 FROM game_world_raid_effects e WHERE e.firing_id=f.firing_id AND e.state=1)")
             .bind(id.firing_id.as_slice()).execute(&mut **tx).await?;
         if finished.rows_affected() != 0 {
-            sqlx::query("UPDATE game_world_raid_scheduler_clocks SET last_end_at_ms=GREATEST(last_end_at_ms,$2) WHERE reset_epoch=(SELECT reset_epoch FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid) AND world_id=(SELECT f.world_id FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
-                .bind(id.firing_id.as_slice()).bind(now).execute(&mut **tx).await?;
+            sqlx::query("UPDATE game_world_raid_scheduler_clocks SET last_end_at_ms=GREATEST(last_end_at_ms,$2) WHERE reset_epoch=(SELECT reset_epoch FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid) AND world_id=(SELECT f.world_id FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid AND f.raid_key<>$3 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
+                .bind(id.firing_id.as_slice()).bind(now).bind(crate::durability::raid_schedule::FEROXA_KEY).execute(&mut **tx).await?;
         }
     }
     if matches!(
