@@ -41,6 +41,7 @@ pub struct ConsoleFilter {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Console {
+    pub communication: super::CommunicationRules,
     pub pending: Option<oteryn_client_runtime::chat::ChatIntent>,
     pub tab: ConsoleTab,
     pub mode: ComposerMode,
@@ -73,6 +74,9 @@ impl Console {
     }
 
     pub fn accepts(&self, line: &ChatLine) -> bool {
+        if !self.communication.accepts(line) {
+            return false;
+        }
         let tab = match line {
             ChatLine::Local { .. } => ConsoleTab::Local,
             ChatLine::Private { .. } => ConsoleTab::Private,

@@ -224,3 +224,23 @@ fn console_tab_sends_to_the_selected_server_room() {
         })
     );
 }
+
+#[test]
+fn communication_lists_filter_without_destroying_confirmed_history() -> Result<(), &'static str> {
+    let mut panel = ChatPanel {
+        lines: vec![ChatLine::Private {
+            speaker_name: "Alice".into(),
+            text: "keep history".into(),
+        }],
+        ..Default::default()
+    };
+    panel.console.communication = CommunicationRules::parse(" alice ", "", "", true, false)?;
+    assert!(!panel_text(&panel).contains("keep history"));
+    assert_eq!(panel.lines.len(), 1);
+    panel.console.communication = CommunicationRules::parse("ALICE", "Alice", "alice", true, true)?;
+    assert!(panel_text(&panel).contains("keep history"));
+    panel.console.communication = CommunicationRules::parse("", "", "ALICE", false, false)?;
+    assert!(!panel_text(&panel).contains("keep history"));
+    assert!(CommunicationRules::parse(&"x".repeat(121), "", "", false, false).is_err());
+    Ok(())
+}

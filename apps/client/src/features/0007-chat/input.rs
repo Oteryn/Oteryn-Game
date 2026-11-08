@@ -21,6 +21,9 @@ impl PlayLink {
         mailbox.chat.console.mode = mode;
         *mailbox.chat.console.filter_mut() = filter;
     }
+    pub fn chat_communication(&self, rules: oteryn_client_ui::chat::CommunicationRules) {
+        apply_communication(&mut lock(&self.mailbox), rules);
+    }
     /// Save the visible, confirmed transcript to a user-selected file.
     pub fn chat_save_log(&self, path: &std::path::Path, append: bool) -> std::io::Result<()> {
         let transcript = oteryn_client_ui::chat::panel_text(&lock(&self.mailbox).chat);
@@ -76,4 +79,14 @@ pub(in crate::play) fn write_log(
         .open(path)?;
     file.write_all(transcript.as_bytes())?;
     file.flush()
+}
+
+pub(in crate::play) fn apply_communication(
+    mailbox: &mut Mailbox,
+    rules: oteryn_client_ui::chat::CommunicationRules,
+) {
+    mailbox.chat_public.console.communication = rules.clone();
+    mailbox.chat_private.communication = rules.clone();
+    mailbox.chat_party_room.communication = rules.clone();
+    mailbox.chat.console.communication = rules;
 }

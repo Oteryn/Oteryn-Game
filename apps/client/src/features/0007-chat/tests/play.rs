@@ -189,3 +189,35 @@ fn console_channel_reply_releases_only_the_matching_composer() {
     );
     assert!(!link.chat_panel().pending);
 }
+
+#[test]
+fn communication_preferences_reach_all_chat_presentations() -> Result<(), Error> {
+    let (link, _incoming, outbox) = play_channel();
+    let line = ChatLine::Private {
+        speaker_name: "Alice".into(),
+        text: "hidden message".into(),
+    };
+    outbox.chat_public_state(ChatRoomSet::default(), vec![line]);
+    link.chat_communication(oteryn_client_ui::chat::CommunicationRules::parse(
+        "Alice", "", "", false, false,
+    )?);
+    assert!(!panel_text(&link.chat_panel()).contains("hidden message"));
+    let mailbox = crate::play::mailbox::lock(&link.mailbox);
+    assert!(
+        mailbox
+            .chat_public
+            .console
+            .communication
+            .ignored
+            .contains("alice")
+    );
+    assert!(mailbox.chat_private.communication.ignored.contains("alice"));
+    assert!(
+        mailbox
+            .chat_party_room
+            .communication
+            .ignored
+            .contains("alice")
+    );
+    Ok(())
+}

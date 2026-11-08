@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ChatPanel {
+    pub communication: crate::chat::CommunicationRules,
     pub selected: bool,
     pub list: Option<ChatChannelList>,
     pub channel: Option<u16>,

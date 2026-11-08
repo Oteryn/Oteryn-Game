@@ -28,6 +28,12 @@ const INPUT_MODE: usize = 113;
 const LOG_PATH: usize = 115;
 const LOG_SAVE: usize = 116;
 const LOG_APPEND: usize = 117;
+const IGNORE_NAMES: usize = 120;
+const WHITELIST: usize = 121;
+const BLACKLIST: usize = 122;
+const IGNORE_PRIVATE: usize = 123;
+const IGNORE_YELLS: usize = 124;
+const RULES_APPLY: usize = 125;
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 
 #[derive(Default)]
@@ -40,8 +46,10 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let id = w & 0xffff;
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
-                && ((matches!(id, SEND | HIDE_YELLS | INPUT_MODE | LOG_SAVE | LOG_APPEND)
-                    && note == BN_CLICKED as usize)
+                && ((matches!(
+                    id,
+                    SEND | HIDE_YELLS | INPUT_MODE | LOG_SAVE | LOG_APPEND | RULES_APPLY
+                ) && note == BN_CLICKED as usize)
                     || (id == TABS && note == LBN_SELCHANGE as usize)
                     || PrivateControls::accepts(id, note))
             {
@@ -97,7 +105,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             1100,
-            630,
+            820,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -231,6 +239,54 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [470, 545, 210, 28],
             WS_TABSTOP,
         );
+        let mut communication_fields = Vec::new();
+        for (x, label, id) in [
+            (10, "Ignored names (comma separated)", IGNORE_NAMES),
+            (370, "Always allow these names", WHITELIST),
+            (730, "Blocked names", BLACKLIST),
+        ] {
+            control(hwnd, "STATIC", label, id + 10, [x, 595, 340, 24], 0);
+            communication_fields.push(control(
+                hwnd,
+                "EDIT",
+                "",
+                id,
+                [x, 620, 340, 28],
+                WS_BORDER | WS_TABSTOP,
+            ));
+        }
+        let ignore_private = control(
+            hwnd,
+            "BUTTON",
+            "Ignore private messages",
+            IGNORE_PRIVATE,
+            [10, 660, 340, 28],
+            BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
+        );
+        let ignore_yells = control(
+            hwnd,
+            "BUTTON",
+            "Ignore yells",
+            IGNORE_YELLS,
+            [370, 660, 340, 28],
+            BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Apply communication lists",
+            RULES_APPLY,
+            [730, 660, 340, 28],
+            WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "STATIC",
+            "Allowed names override ignore and blocked lists. History is retained.",
+            139,
+            [10, 710, 1060, 28],
+            0,
+        );
         let mut tabs = Vec::new();
         let mut preferences_initialized = false;
         let mut private = PrivateControls::new(hwnd);
@@ -258,6 +314,36 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     hide_yells,
                     BM_SETCHECK,
                     usize::from(preferences.hide_yells),
+                    0,
+                );
+                let rules = &mailbox.chat.console.communication;
+                for (control, names) in communication_fields.iter().zip([
+                    &rules.ignored,
+                    &rules.whitelist,
+                    &rules.blacklist,
+                ]) {
+                    SetWindowTextW(
+                        *control,
+                        wide(
+                            &names
+                                .iter()
+                                .map(String::as_str)
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                        )
+                        .as_ptr(),
+                    );
+                }
+                SendMessageW(
+                    ignore_private,
+                    BM_SETCHECK,
+                    usize::from(rules.ignore_private),
+                    0,
+                );
+                SendMessageW(
+                    ignore_yells,
+                    BM_SETCHECK,
+                    usize::from(rules.ignore_yells),
                     0,
                 );
                 preferences_initialized = true;
@@ -297,6 +383,26 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
             for action in std::mem::take(&mut actions.0) {
                 if private.action(action, &mut mailbox, &commands) {
+                    continue;
+                }
+                if action == RULES_APPLY {
+                    let values: Vec<_> = communication_fields
+                        .iter()
+                        .map(|control| read_text(*control))
+                        .collect();
+                    match oteryn_client_ui::chat::CommunicationRules::parse(
+                        &values[0],
+                        &values[1],
+                        &values[2],
+                        SendMessageW(ignore_private, BM_GETCHECK, 0, 0) != 0,
+                        SendMessageW(ignore_yells, BM_GETCHECK, 0, 0) != 0,
+                    ) {
+                        Ok(rules) => {
+                            super::super::input::apply_communication(&mut mailbox, rules);
+                            mailbox.chat.feedback = Some("Communication lists applied".into());
+                        }
+                        Err(error) => mailbox.chat.feedback = Some(error.into()),
+                    }
                     continue;
                 }
                 if matches!(action, LOG_SAVE | LOG_APPEND) {
