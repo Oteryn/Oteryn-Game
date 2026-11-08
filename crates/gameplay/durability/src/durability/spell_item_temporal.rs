@@ -252,9 +252,8 @@ pub async fn drain_due_field_chains_in_transaction(
     }
     check_scope_transaction(tx, authority).await?;
     let world = authority.world_bytes();
-    let channel = authority.channel_bytes().ok_or(SpellItemError::Rejected(
-        "Channel Item timer scope required",
-    ))?;
+    let channel = authority.channel_bytes();
+    let instance = authority.runtime_scope().instance_id();
     let mut changed = 0;
     while changed < limit {
         let rows=sqlx::query(r#"SELECT i.item_instance_id::text,i.state_revision::text,i.quantity,p.source_stage,
@@ -283,12 +282,13 @@ pub async fn drain_due_field_chains_in_transaction(
        AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
        AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id AND done.source_stage=p.source_stage)
        AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
+         OR (g.world_id=i.world_id AND game_instance_corpse_stage_current(i.item_instance_id,i.world_id,encode($5,'hex')::uuid,$3::text::numeric,g.stack_ordinal))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
           AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
           AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
       ORDER BY p.expires_at_unix_ms,i.item_instance_id,p.source_stage LIMIT $4 FOR UPDATE OF i,p"#)
-        .bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string()).bind(1_i64).fetch_all(&mut **tx).await?;
+        .bind(world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(authority.generation().to_string()).bind(1_i64).bind(instance.map(|id| id.to_vec())).fetch_all(&mut **tx).await?;
         if rows.is_empty() {
             break;
         }
@@ -336,9 +336,9 @@ pub async fn drain_due_field_chains_in_transaction(
             };
             let ordinal: Option<String> = row.try_get("ordinal")?;
             let equipment_revision: Option<String> = row.try_get("equipment_revision")?;
-            sqlx::query("INSERT INTO game_spell_field_temporal_receipts(source_stage,transaction_id,event_id,item_instance_id,world_id,channel_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal,source_slot,equipment_revision_before,source_stack_ordinal) VALUES($18,$1::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,1,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$9::uuid,$10::uuid,$11::text::numeric,$12::text::numeric,$13::uuid,$14::text::numeric,$15,$16::text::numeric,$17)")
-            .bind(&transaction).bind(&event).bind(&item).bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string())
-            .bind(&revision).bind(kind).bind(&character).bind(&session).bind(&lease).bind(&connection).bind(&parent).bind(&ordinal).bind(slot).bind(&equipment_revision).bind(stack).bind(stage)
+            sqlx::query("INSERT INTO game_spell_field_temporal_receipts(source_stage,transaction_id,event_id,item_instance_id,world_id,channel_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal,source_slot,equipment_revision_before,source_stack_ordinal,instance_id) VALUES($18,$1::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,1,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$9::uuid,$10::uuid,$11::text::numeric,$12::text::numeric,$13::uuid,$14::text::numeric,$15,$16::text::numeric,$17,encode($19,'hex')::uuid)")
+            .bind(&transaction).bind(&event).bind(&item).bind(world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(authority.generation().to_string())
+            .bind(&revision).bind(kind).bind(&character).bind(&session).bind(&lease).bind(&connection).bind(&parent).bind(&ordinal).bind(slot).bind(&equipment_revision).bind(stack).bind(stage).bind(instance.map(|id| id.to_vec()))
             .execute(&mut **tx).await?;
             let target: Option<String> = row.try_get("target_production_key")?;
             let affected = if let Some(target) = target {

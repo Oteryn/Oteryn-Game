@@ -6,6 +6,9 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod colours_peer;
+#[cfg(test)]
+mod peer_tests;
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
@@ -161,6 +164,9 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    /// Read-only condition on the selected other live player, checked atomically.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub peer_requires: Option<TrackRequirement>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -301,6 +307,7 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
         combined.tracks.extend(document.tracks);
         combined.callbacks.extend(document.callbacks);
     }
+    colours_peer::append_after_opening(&mut combined)?;
     validate_document(combined)
 }
 
@@ -358,18 +365,19 @@ fn validate_document(document: Document) -> Result<Document, String> {
                         .iter()
                         .any(|owner| owner.as_str() != track.quest.as_str())
             } else {
-                !document
-                    .callbacks
-                    .iter()
-                    .any(|c| c.requires.iter().any(|r| r.track == track.key))
-                    || document.callbacks.iter().any(|c| {
-                        c.storage
-                            .iter()
-                            .map(|s| s.track.as_str())
-                            .chain(c.state_ops.iter().map(|s| s.track.as_str()))
-                            .chain(c.participants.iter().flat_map(QuestParticipant::tracks))
-                            .any(|key| key == track.key)
-                    })
+                !document.callbacks.iter().any(|c| {
+                    c.requires
+                        .iter()
+                        .chain(c.peer_requires.iter())
+                        .any(|r| r.track == track.key)
+                }) || document.callbacks.iter().any(|c| {
+                    c.storage
+                        .iter()
+                        .map(|s| s.track.as_str())
+                        .chain(c.state_ops.iter().map(|s| s.track.as_str()))
+                        .chain(c.participants.iter().flat_map(QuestParticipant::tracks))
+                        .any(|key| key == track.key)
+                })
             }
         {
             return Err(format!(
@@ -432,6 +440,12 @@ fn validate_document(document: Document) -> Result<Document, String> {
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         let requires: BTreeSet<_> = c.requires.iter().map(|s| &s.track).collect();
         if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || c.peer_requires.as_ref().is_some_and(|requirement| {
+                c.carried_item.is_none()
+                    || c.storage.iter().all(|state| state.preserve)
+                    || !slug(&requirement.track, "oteryn:", b"._/:-", 128)
+                    || requirement.minimum > requirement.maximum
+            })
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || match &c.world_claim {
@@ -609,7 +623,8 @@ fn validate_document(document: Document) -> Result<Document, String> {
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none() && callback.world_claim.is_none() {
+    if callback.minimum_level.is_none() && callback.world_claim.is_none() && callback.peer_requires.is_none() {
+
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
@@ -649,7 +664,10 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
         }
     }
     let callbacks = document.callbacks;
-    let requires: Vec<_> = callbacks.iter().flat_map(|c| &c.requires).collect();
+    let requires: Vec<_> = callbacks
+        .iter()
+        .flat_map(|c| c.requires.iter().chain(c.peer_requires.iter()))
+        .collect();
     for callback in &callbacks {
         for operation in &callback.state_ops {
             if tracks
@@ -1214,7 +1232,7 @@ mod tests {
         for (key, expected) in [
             (
                 "oteryn:quest.outfit_and_addon_quests",
-                "87f6476714ed0ad9ea3a2eb7c54e0a2d34f263f536be9d6c143153629d2f328d",
+                "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
             ),
             (
                 "oteryn:quest.the_ice_islands_quest",

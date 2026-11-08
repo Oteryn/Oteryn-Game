@@ -13,6 +13,9 @@ pub enum Facing {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Complete a separately owned child quest with this native once-only reward.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quest_completion: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
     /// An existing, preserved local quest epoch; commands never create reward cycles.
@@ -208,6 +211,19 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }) {
         return false;
     }
+    if effects.quest_completion.as_ref().is_some_and(|quest| {
+        !super::super::valid_quest_key(quest)
+            || !quest.starts_with("oteryn:quest.")
+            || quest == &callback.quest
+            || callback.trigger != Trigger::Use
+            || callback.reversible
+            || callback.opening_only
+            || callback.actor_kind != ActorKind::Player
+            || effects.item_reward.is_none()
+            || callback.storage.iter().all(|s| s.preserve)
+    }) {
+        return false;
+    }
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
     if effects.item_reward.as_ref().is_some_and(|reward| {
@@ -222,7 +238,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 && (1..=100).contains(&count)
         };
         callback.trigger != Trigger::Use
-            || callback.storage.is_empty()
+            || !callback.has_personal_state()
             || callback
                 .storage
                 .iter()
@@ -241,7 +257,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }) || (callback.facing.is_some() && effects.facing.is_some())
         || effects.outfit_reward.as_ref().is_some_and(|r| {
             callback.trigger != Trigger::Use
-                || callback.storage.is_empty()
+                || !callback.has_personal_state()
                 || callback
                     .storage
                     .iter()
@@ -268,7 +284,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if effects.item_presence.as_ref().is_some_and(|presence| {
         !pos(presence.position)
             || presence.appearance == 0
-            || (!callback.storage.is_empty()
+            || (callback.has_personal_state()
                 && !callback.requires_world_admission
                 && !callback.opening_only)
             || effects.portals.is_some()
@@ -283,7 +299,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if operations > 1
         || (operations > 0
             && (!lever
-                || !callback.storage.is_empty()
+                || callback.has_personal_state()
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {
