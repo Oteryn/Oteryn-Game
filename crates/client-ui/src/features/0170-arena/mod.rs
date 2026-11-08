@@ -15,4 +15,7 @@ pub use protocol::{DromeAction, DromeReply, Intent, apply_result, request};
 pub use state::ArenaPanel;
 pub use view::panel_text;
 #[cfg(test)]
+#[path = "tests/e2e_w17.rs"]
+mod e2e_w17;
+#[cfg(test)]
 mod tests;
