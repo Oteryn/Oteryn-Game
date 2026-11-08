@@ -60,9 +60,10 @@
   "src": "TIBAUD-1",
   "area": "Game window",
   "feature": "Światło i efekty wizualne",
-  "status": "PARTIAL",
-  "gap": "Światło i zdarzenia są; brak całego zestawu widocznych efektów i konfiguracji referencji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Światło i przełączniki pozostają spięte z serwerem; wszystkie efekty/missile z przypiętego katalogu mają klatki, timing, kierunek i wygasanie; słowa udanego czaru pochodzą z katalogu serwera. Zdarzenia przechodzą rzeczywisty reducer i PlayView.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/scene.rs:11 + t012_server_effects_and_missiles_reach_animated_scene_and_respect_options + t012_spell_words_use_server_catalog_only_after_server_success + t012_verified_effects_animate_once_and_missiles_keep_direction + t012_effect_sprites_remain_visible_in_complete_darkness"
  },
  {
   "id": "T015",

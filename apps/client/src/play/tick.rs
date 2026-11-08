@@ -50,6 +50,7 @@ impl PlayView {
             self.party_icons_refresh = Some(icon_now);
         }
         self.party_icons = party.icons;
+        self.sync_spell_words(link);
         self.project_presentation(std::time::Instant::now())
             .map_err(|_| UNAVAILABLE)?;
         let battle = link.battle_instinct_status_panel();

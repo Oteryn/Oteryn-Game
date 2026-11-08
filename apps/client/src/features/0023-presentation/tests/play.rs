@@ -375,3 +375,6 @@ fn novelty_server_effects_decode_into_distinct_native_bursts_and_expire()
     }
     Ok(())
 }
+
+#[path = "visual_sprites.rs"]
+mod visual_sprites;

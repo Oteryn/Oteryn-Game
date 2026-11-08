@@ -26,6 +26,8 @@ impl AppearanceIndex {
         Ok(Self {
             objects: convert_all(message.object)?,
             outfits: convert_all(message.outfit)?,
+            effects: convert_all(message.effect)?,
+            missiles: convert_all(message.missile)?,
         })
     }
 
@@ -72,7 +74,7 @@ impl AppearanceIndex {
             .get(&look_type)
             .ok_or(AssetError::UnknownAppearance { id: look_type })?;
         let pattern_x = direction % appearance.pattern_width;
-        entry(appearance, sheets, (pattern_x, 0, 0), 0..1)
+        entry(appearance, sheets, (pattern_x, 0, 0), 0..1, 0)
     }
 
     /// The cells to draw for one entry, chosen as the Tibia client does. `floor` is the native
@@ -102,6 +104,7 @@ impl AppearanceIndex {
             sheets,
             (pattern_x, pattern_y, pattern_z),
             0..appearance.layers,
+            0,
         )
     }
 }

@@ -33,6 +33,7 @@ pub struct PlayView {
     battle_instinct_refresh: Option<std::time::Instant>,
     sounds: Vec<SoundCue>,
     visuals: Vec<VisualCue>,
+    spell_words: std::collections::BTreeMap<u32, String>,
     pub(crate) tutorial_overlay: tutorial_overlay::Overlay,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
@@ -91,6 +92,7 @@ impl PlayView {
             battle_instinct_refresh: None,
             sounds: Vec::new(),
             visuals: Vec::new(),
+            spell_words: std::collections::BTreeMap::new(),
             tutorial_overlay: Default::default(),
             own,
             facing: StepDir::South,

@@ -23,6 +23,10 @@ struct AppearancesMsg {
     object: Vec<AppearanceMsg>,
     #[prost(message, repeated, tag = "2")]
     outfit: Vec<AppearanceMsg>,
+    #[prost(message, repeated, tag = "3")]
+    effect: Vec<AppearanceMsg>,
+    #[prost(message, repeated, tag = "4")]
+    missile: Vec<AppearanceMsg>,
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -64,7 +68,12 @@ struct AnimationMsg {
 }
 
 #[derive(Clone, PartialEq, Message)]
-struct PhaseMsg {}
+struct PhaseMsg {
+    #[prost(uint32, optional, tag = "1")]
+    duration_min: Option<u32>,
+    #[prost(uint32, optional, tag = "2")]
+    duration_max: Option<u32>,
+}
 
 #[derive(Clone, PartialEq, Message)]
 struct FlagsMsg {
@@ -116,7 +125,7 @@ struct HeightMsg {
     elevation: Option<u32>,
 }
 
-/// Frame group 0 of one object appearance. Animation phases are kept; only phase 0 is drawn.
+/// Frame group 0 of an appearance. Visual effects resolve all animation phases.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Appearance {
     pub id: u32,
@@ -125,6 +134,8 @@ pub struct Appearance {
     pub pattern_depth: u32,
     pub layers: u32,
     pub phases: u32,
+    /// Validated mean duration per phase, milliseconds.
+    pub phase_ms: Vec<u32>,
     /// Sprite ids ordered `[phase][depth][height][width][layer]`; 0 is an empty cell.
     pub sprite_ids: Vec<u32>,
     pub displacement_x: u32,
@@ -211,6 +222,8 @@ pub struct ResolvedEntry {
 pub struct AppearanceIndex {
     objects: HashMap<u32, Appearance>,
     outfits: HashMap<u32, Appearance>,
+    effects: HashMap<u32, Appearance>,
+    missiles: HashMap<u32, Appearance>,
 }
 
 include!("appearance_methods_1.rs");
@@ -263,63 +276,26 @@ fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
     (pattern_x, pattern_y, z % appearance.pattern_depth)
 }
 
-/// The cells of one pattern of `appearance`, phase 0, over `layers`.
-fn entry(
-    appearance: &Appearance,
-    sheets: &SpriteSheets,
-    (pattern_x, pattern_y, pattern_z): (u32, u32, u32),
-    layers: std::ops::Range<u32>,
-) -> Result<ResolvedEntry, AssetError> {
-    let mut cells = Vec::new();
-    for layer in layers {
-        let index = ((pattern_z * appearance.pattern_height + pattern_y)
-            * appearance.pattern_width
-            + pattern_x)
-            * appearance.layers
-            + layer;
-        // Phase 0 is the first block, so the index needs no phase term.
-        let sprite_id = appearance
-            .sprite_ids
-            .get(index as usize)
-            .copied()
-            .ok_or(AssetError::UnknownSprite { sprite_id: 0 })?;
-        if sprite_id == 0 {
-            continue;
-        }
-        let (cells_x, cells_y) = sheets.layout(sprite_id)?.cells();
-        for cell_y in 0..cells_y {
-            for cell_x in 0..cells_x {
-                cells.push(DrawCell {
-                    sprite_id,
-                    cell_x,
-                    cell_y,
-                    offset_x: (cell_x as i32 + 1 - cells_x as i32) * CELL_PX as i32
-                        - appearance.displacement_x as i32,
-                    offset_y: (cell_y as i32 + 1 - cells_y as i32) * CELL_PX as i32
-                        - appearance.displacement_y as i32,
-                });
-            }
-        }
-    }
-    if cells.len() > MAX_ENTRY_CELLS {
-        return Err(AssetError::TooManyCells { cells: cells.len() });
-    }
-    Ok(ResolvedEntry {
-        cells,
-        elevation: appearance.elevation,
-        ground: appearance.ground,
-        ground_border: appearance.ground_border,
-        on_bottom: appearance.on_bottom,
-        on_top: appearance.on_top,
-    })
-}
+include!("appearance_entry.rs");
 
 fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
     let info = object.frame_group.into_iter().next()?.sprite_info?;
     let flags = object.flags.unwrap_or_default();
-    let phases = info
-        .animation
-        .map_or(1, |animation| animation.sprite_phase.len().max(1) as u32);
+    let phase_ms: Vec<u32> = info.animation.map_or_else(Vec::new, |animation| {
+        animation
+            .sprite_phase
+            .into_iter()
+            .map(|phase| {
+                let low = phase.duration_min.unwrap_or(100);
+                let high = phase.duration_max.unwrap_or(low).max(low);
+                (low / 2 + high / 2).clamp(1, 10_000)
+            })
+            .collect()
+    });
+    if phase_ms.len() > 256 {
+        return None;
+    }
+    let phases = phase_ms.len().max(1) as u32;
     let (width, height, depth, layers) = (
         info.pattern_width.unwrap_or(1).max(1),
         info.pattern_height.unwrap_or(1).max(1),
@@ -345,6 +321,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         pattern_depth: depth,
         layers,
         phases,
+        phase_ms,
         sprite_ids: info.sprite_id,
         displacement_x,
         displacement_y,
@@ -365,3 +342,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
 }
 
 include!("appearance_tests_1.rs");
+
+include!("visual_tests.rs");
+
+include!("visual.rs");

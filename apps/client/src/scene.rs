@@ -157,9 +157,15 @@ impl Scene {
     /// Rebuilds base sprites before appending this frame's transient visual quads.
     pub(crate) fn presentation_base(
         &mut self,
-    ) -> Result<(&TileView, &mut SpriteBatch), BatchError> {
+    ) -> Result<(&TileView, &AtlasImage, &mut SpriteBatch), BatchError> {
         self.rebuild_sprites()?;
-        Ok((&self.view, &mut self.sprites))
+        self.sprites.lighting.emissive_from = Some(self.sprites.len());
+        let atlas = self
+            .lit_atlas
+            .as_ref()
+            .or(self.presentation_atlas.as_deref())
+            .unwrap_or_else(|| self.world.atlas());
+        Ok((&self.view, atlas, &mut self.sprites))
     }
 
     /// Current target, if any.
@@ -333,3 +339,6 @@ mod minimap;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;
+
+#[path = "features/0023-presentation/scene.rs"]
+mod visual_scene;

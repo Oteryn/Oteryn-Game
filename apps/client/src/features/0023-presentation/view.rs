@@ -1,6 +1,8 @@
 //! Transient combat overlays use server positions, including the own actor and hidden attackers.
 //! Item effects retain their donor colours; fireworks expand into eight emissive sparks.
-//! Other magic effects retain the existing hit pulse until official sprites are resolved.
+//! Magic effects and missiles resolve the verified catalog, with bounded offline placeholders.
+#[path = "visual.rs"]
+mod visual;
 #[path = "icons.rs"]
 mod icons;
 #[path = "resources.rs"]

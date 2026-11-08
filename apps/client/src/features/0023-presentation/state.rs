@@ -146,7 +146,7 @@ pub mod native;
 pub use native::{AudioOutput, NativeAudio};
 
 pub const MAX_VISUAL_CUES: usize = 64;
-pub const VISUAL_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1000);
+pub const VISUAL_LIFETIME: std::time::Duration = std::time::Duration::from_millis(30_000);
 
 #[derive(Debug, Clone)]
 pub struct VisualCue {

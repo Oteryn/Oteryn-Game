@@ -25,12 +25,19 @@ impl PlayView {
 
     pub(in crate::play) fn project_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
         // Palette pixels remain emissive: overlays must be legible in dark areas.
-        let atlas = self.local.world();
-        let atlas = atlas.atlas();
+        let (frames, changed) = if self.preferences().show_effects {
+            self.scene.visual_frames(&self.visuals, now, self.floor)?
+        } else {
+            (Vec::new(), false)
+        };
+        if changed {
+            self.weather_scene();
+            self.light_scene()?;
+        }
         let resource_options = resources::Options::from(self.preferences());
         let effects = self.preferences().show_effects;
         let creature_bars = self.preferences().creature_bars;
-        let (view, batch) = self.scene.presentation_base()?;
+        let (view, atlas, batch) = self.scene.presentation_base()?;
         resources::draw(
             batch,
             view,
@@ -84,19 +91,20 @@ impl PlayView {
             return Ok(());
         }
         let mut lines = std::collections::BTreeMap::new();
-        for cue in &self.visuals {
+        for (index, cue) in self.visuals.iter().enumerate() {
             let age = now.saturating_duration_since(cue.received);
             if age >= VISUAL_LIFETIME {
                 continue;
             }
-            let progress = age.as_secs_f32() / VISUAL_LIFETIME.as_secs_f32();
+            let progress = age.as_secs_f32();
+            let frame = frames.get(index).and_then(Option::as_deref);
             match cue.kind {
                 PresentationEventKind::ValueText {
                     position,
                     primary,
                     secondary,
                     ..
-                } if position.floor == self.floor => {
+                } if position.floor == self.floor && progress < 1.0 => {
                     let tile = TileCoord::new(position.x, position.y);
                     if !view.contains(tile) {
                         continue;
@@ -115,7 +123,14 @@ impl PlayView {
                     position,
                     effect_id,
                     ..
-                } if position.floor == self.floor && progress < 0.5 => {
+                } if position.floor == self.floor => {
+                    if let Some(draws) = frame {
+                        visual::sprites(batch, view, atlas, position, draws)?;
+                        continue;
+                    }
+                    if progress >= 0.5 {
+                        continue;
+                    }
                     let tile = TileCoord::new(position.x, position.y);
                     if !view.contains(tile) {
                         continue;
@@ -171,6 +186,18 @@ impl PlayView {
                             color,
                         )?;
                     }
+                }
+                PresentationEventKind::SpellWords {
+                    position, spell, ..
+                } if position.floor == self.floor && progress < 1.0 => {
+                    if let Some(words) = self.spell_words.get(&spell) {
+                        visual::words(batch, view, atlas, position, words, progress)?;
+                    }
+                }
+                PresentationEventKind::Missile { from, to, .. }
+                    if from.floor == self.floor && to.floor == self.floor =>
+                {
+                    visual::missile(batch, view, atlas, from, to, progress, frame)?;
                 }
                 _ => {}
             }

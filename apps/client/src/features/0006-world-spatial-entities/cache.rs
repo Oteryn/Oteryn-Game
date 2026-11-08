@@ -19,6 +19,7 @@ pub(super) struct PresentationCache {
     glyphs: BTreeMap<char, u16>,
     outfits: BTreeMap<(u32, u32), Vec<Draw>>,
     image: Option<Arc<AtlasImage>>,
+    visuals: BTreeMap<(u32, bool, u32, [i32; 2]), Vec<Draw>>,
     packed_cells: usize,
     #[cfg(test)]
     counts: [usize; 3], // asset loads, base unpacks, atlas packs
@@ -39,6 +40,7 @@ impl PresentationCache {
         self.pixels.clear();
         self.glyphs.clear();
         self.outfits.clear();
+        self.visuals.clear();
         self.image = None;
         self.packed_cells = 0;
     }
@@ -196,3 +198,5 @@ fn unpack(atlas: &AtlasImage) -> Vec<u8> {
     }
     cells
 }
+
+include!("cache_visuals.rs");
