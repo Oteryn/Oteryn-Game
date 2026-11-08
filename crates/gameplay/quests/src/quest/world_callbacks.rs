@@ -483,7 +483,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || !(imported_explore::admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                    phase::authored_source(callback, source) || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                    phase::authored_source(callback, source)
+                        || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                         || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                         || (callback.effects.outfit_reward.is_some()
                             && source
