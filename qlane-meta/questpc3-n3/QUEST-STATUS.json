@@ -1,7 +1,7 @@
 {
   "lane": "questpc3",
   "branch": "claude/happy-davinci-ijz3wy-questpc3b-n3",
-  "base_main": "e9276ad7e0720974a542221aaf1f12947476c4ab",
+  "base_main": "a16f196762d66ef27f76a02545960ec8b4283295",
   "scope_total": 22,
   "owned_retained": 6,
   "other_owner_excluded": 16,
@@ -10,7 +10,7 @@
   "blocked": 2,
   "engine_heads": {
     "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
-    "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+    "ENGITEM": "183f49bc11a1e84ce1633b40e19b54a1b952da51",
     "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
     "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
   },
@@ -19,7 +19,7 @@
       "quest": "The Beginning Quest",
       "canonical": "oteryn:quest.the_beginning_quest",
       "status": "WAITING-ENGINE",
-      "owner": "ENGITEM / QENGINE2",
+      "owner": "QENGINE2 (ground MINT/cart); World movement owner (bridge refusal)",
       "feature": "Source ground-branch birth and five physical USE_WITH cart deliveries; retain prior NPC/reward work when collector delivers it.",
       "evidence": {
         "path": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
@@ -32,7 +32,7 @@
       "quest": "The First Dragon Quest",
       "canonical": "oteryn:quest.the_first_dragon_quest",
       "status": "WAITING-ENGINE",
-      "owner": "ENGNPC / ENGENC",
+      "owner": "QENGINE2 (annual guard, conditional reward, boss integration); ENGENC lifecycle reuse",
       "feature": "Recurring Jan14-Feb12 NPC date guard and named per-player boss cooldown/room cleanup; current delayed-spawn timing is value-free and excludes players.",
       "evidence": {
         "path": "crates/gameplay/quests/src/quest/npc_rules.rs",
@@ -45,7 +45,7 @@
       "quest": "The Tainted Souls Quest",
       "canonical": "oteryn:quest.the_tainted_soul",
       "status": "WAITING-ENGINE",
-      "owner": "ENGITEM / ENGENC",
+      "owner": "QENGINE2 (live use/credit); Items/Content (recipe qualification); ENGITEM composition after B4",
       "feature": "Atomic whole-target-stack talisman conversion, live-creature cleansing including summons, 100-soul gate and20h Ekatrix reset. Never replace cleansing with kills.",
       "evidence": {
         "path": "crates/gameplay/items/src/item_craft.rs",
@@ -90,17 +90,22 @@
     "scope_audit": "PASS; exact6 retained packet identities; no NOT STARTED/IN_PROGRESS rows remain",
     "gameplay": "No new gameplay qualification claimed. Earlier PG proofs belong to previous branch only.",
     "generated_files": "No lane-authored content/schema/world/generator/serve input changed relative to merged main6ef6b0cad; accepted main generated files preserved unchanged. Automatic server PG/migration registrations rebuilt by cargo. No derived file was hand-edited.",
-    "workspace_check": "PASS cargo check --workspace --all-targets on maine9276ad7e;7m 05s; /tmp/questpc3-n3-client-main-workspace.log",
-    "fmt": "PASS cargo fmt --all --check on maine9276ad7e",
-    "duplicate_migrations": "PASS repository duplicate-migration check; no lane migration changes",
-    "final_main_sync": "PASS maine9276ad7e merged first; fixed validation snapshot; four engine-gap source blobs unchanged and two collector callback sets absent",
+    "workspace_check": "PASS cargo check --workspace --all-targets on maina16f19676;7m 08s; /tmp/questpc3-n3-routing-workspace.log",
+    "fmt": "PASS cargo fmt --all --check",
+    "duplicate_migrations": "PASS repository duplicate-migration check; no own migration changes",
+    "final_main_sync": "Maina16f19676 merge began before the no-autonomous-main-merge rule; completed and qualified. Future merges require coordinator MERGE MAIN or SHIP NOW.",
     "upstream_focused_pg": "PostgreSQL18.6 reset-lock case PASS8.450s on preceding3b4696be3 tree, MAINRED1108 PG EXECUTED marker. Its test and migration1553 unchanged by SEASON; no current-head PG claim made.",
-    "authored_runtime_delta": "NONE relative to origin/main; current lane changes are handoff records only. No new gameplay PG result or whole-quest DONE status asserted."
+    "authored_runtime_delta": "NONE relative to origin/main; current lane changes are handoff records only. No new gameplay PG result or whole-quest DONE status asserted.",
+    "request_source_audit": "PASS star-herb capture matches committed donor inventory revision9f5a72c6, git blobd76b2fcd9c9411ee9839f55e9d5d9c563a73e50d and SHA256f3ffe07cf0538c6a072cc0145e340ea9bf1a74a83601e3e7c42c6a90d03f13e4; recipe/queue evidence checked",
+    "pin_lock_verify": "PASS cargo metadata --locked --no-deps; Cargo.lock, content pins/generated tree, client world digest and preproduction world manifest byte-identical to merged main snapshot",
+    "request_routing_audit": "PASS all six questpc3 QENGINE2 queue keys retained; additional Items/Content B4 and Beginning bridge B1/B7 boundaries explicit; Lua capture SHA verified against committed inventory"
   },
-  "previous_base_main": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+  "previous_base_main": "e9276ad7e0720974a542221aaf1f12947476c4ab",
   "main_delivery": "MAINRED1108 runtime reset-epoch locked reads1553 reused unchanged. This repairs native boss/reset reading but does not provide the missing quest callback, annual date guard, target-stack conversion or world-clock contract. Subsequent SEASON6ef6b0cad merged unchanged. Its seasonal NPC adapter is specific to Santa/Brutus/bakers; it does not supply the outstanding NPC annual/day guard, Threatened appearances, world callback clock operations or target-stack conversion. Client settings/login challenge deliveries e9276ad7e merged unchanged; all four cited quest engine-gap blobs remain identical.",
   "engine_delivery_notes": {
     "ENGNPC": "Paid-travel confirmation ownership repaired and current main merged; annual/day-of-month guard still absent. Existing16-track capacity changes do not close these quest requests.",
-    "SEASON": "Current main adds fixed Santa/Brutus/baker projections; no change to the four cited quest-engine gap blobs."
-  }
+    "SEASON": "Current main adds fixed Santa/Brutus/baker projections; no change to the four cited quest-engine gap blobs.",
+    "ENGITEM": "183f49bc1 deduplicates sixteen-track ownership to ENGNPC and publishes active queue. questpc3 entries remain in historical audit; whole-stack conversion B4 explicitly needs Items/Content outside ENGITEM allocation. Current ENGINE-REQUESTS.md supplies discoverable exact contracts and verified retained star-herb source."
+  },
+  "engine_request_packet": "qlane-meta/questpc3-n3/ENGINE-REQUESTS.md"
 }

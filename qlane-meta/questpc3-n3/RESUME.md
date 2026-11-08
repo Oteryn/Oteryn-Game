@@ -1,6 +1,6 @@
 # questpc3 n3 current handoff
 
-Base main: `e9276ad7e0720974a542221aaf1f12947476c4ab`. Branch: `claude/happy-davinci-ijz3wy-questpc3b-n3`.
+Base main: `a16f196762d66ef27f76a02545960ec8b4283295`. Branch: `claude/happy-davinci-ijz3wy-questpc3b-n3`.
 
 This branch starts from current main. Earlier branches are frozen for collector packaging; no earlier feature was recreated or merged independently. The local loop ledger is `.lane/rows.md` and remains uncommitted.
 
@@ -34,3 +34,7 @@ SEASON PUBLICATION QUALIFIED: `cargo check --workspace --all-targets` PASS7m52s 
 Client settings and native login challenge main delivery e9276ad7e merged unchanged. ENGNPC e22dff551 paid-travel ownership fix inspected; date/day guard still absent. All four engine-gap source blobs unchanged; collector callbacks absent. Six terminal dispositions remain valid. Rechecking workspace/fmt; no lane-authored runtime or content change.
 
 CLIENT-MAIN PUBLICATION QUALIFIED: maine9276ad7e integrated unchanged; workspace all-targets PASS7m 05s; fmt and duplicate check PASS. All six retained quest dispositions remain4WAITING-ENGINE/2BLOCKED. Main client settings/login changes and ENGNPC paid-travel confirmation fix do not close a missing quest contract. Only lane-owned handoff records changed relative to main; no runtime/content/schema input authored and no new gameplay qualification or PG result asserted. Current local ledger remains uncommitted.
+
+ENGITEM ROUTING AUDIT:183f49bc1 active queue omits questpc3 and retains its requests in legacy audit. QENGINE2 already queues six owned features; do not duplicate those. New ENGINE-REQUESTS.md makes the current requests discoverable, includes the Items/Content B4 boundary and Beginning bridge request18/B1/B7. Star-herb source capture independently matches committed inventory blobd76b2fcd9c9411ee9839f55e9d5d9c563a73e50d and SHA256f3ffe07cf0538c6a072cc0145e340ea9bf1a74a83601e3e7c42c6a90d03f13e4. Maina16f19676 client parity changes merged unchanged; required push verification will include the raw exact-ref ls-remote line. No new gameplay completion.
+
+ROUTING/PUBLICATION QUALIFIED: workspace all-targets PASS7m 08s; fmt/duplicate checks PASS; locked cargo metadata PASS; tracked pins/lock/generated content identical to maina16f19676. Request packet preserves six existing QENGINE2 entries and explicitly routes frontendB4/bridgeB1-B7 instead of treating ENGITEM legacy audit as active implementation. All six quests remain4WAITING-ENGINE/2BLOCKED, no new gameplay result. Main merge was already in progress when rule changed; finish this publication, then no more autonomous main merges. Future Cargo commands use one build job; no concurrent Cargo jobs. Every push must be followed by raw exact-ref git ls-remote output.
