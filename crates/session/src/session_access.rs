@@ -76,6 +76,12 @@ impl<S: SessionStream> Session<S> {
             && refusal.expected_command_id == 0
             && refusal.expected_server_sequence == 0
         {
+            if let Some(queue) = admission_queue::decode_queue(accepted_envelope.payload())? {
+                return Err(SessionError::AdmissionQueued {
+                    code: refusal.error_code,
+                    queue,
+                });
+            }
             return Err(SessionError::AdmissionRefused {
                 code: refusal.error_code,
             });

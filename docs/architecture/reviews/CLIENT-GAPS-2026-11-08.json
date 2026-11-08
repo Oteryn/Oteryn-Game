@@ -15,9 +15,9 @@
   "area": "Login",
   "feature": "Pozycja kolejki i odliczanie",
   "status": "PARTIAL",
-  "gap": "Odliczanie, automatyczne ponowienie i anulowanie są podłączone do istniejącej odmowy capacity; brak autorytatywnej pozycji kolejki oraz jej producenta/protokołu na serwerze (`68169ce25`).",
+  "gap": "Dodano ograniczony wire pozycji/odliczania (pola ProtocolError 16/17) i odbiór przez rzeczywiste Session::admit; pozostaje producent kolejki FIFO serwera oraz przekazanie pozycji do okna logowania.",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/native_entry/tests/queue_progress.rs:11 + capacity_progress_and_cancel_cross_real_gateway_and_tls_admission; apps/client/src/native_entry/tests.rs:213 + capacity_exceeded_retries_once; Pozostaje: autorytatywna pozycja kolejki i producent/protokół serwera."
+  "evidence": "crates/session/tests/admission_queue.rs:7 + server_queue_metadata_survives_the_real_session_admission_reader; Pozostaje: producent FIFO i podłączenie pozycji do UI."
  },
  {
   "id": "T004",

@@ -246,4 +246,10 @@ message ProtocolError {
   uint64 expected_server_sequence = 5;
 
   reserved 6 to 15;
+
+  // Optional authenticated node-capacity queue detail (T003).
+  // Both are absent, or position is 1..128 and retry is 1..30000ms.
+  // Only ADMISSION_CAPACITY_EXCEEDED (1115), transport-fatal and uncorrelated.
+  uint32 admission_queue_position = 16;
+  uint32 admission_retry_after_ms = 17;
 }

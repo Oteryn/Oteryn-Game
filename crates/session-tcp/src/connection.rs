@@ -24,7 +24,8 @@ pub async fn admit(
     Session::admit(stream, admission)
         .await
         .map_err(|error| match error {
-            SessionError::AdmissionRefused { code } => Some(code),
+            SessionError::AdmissionRefused { code }
+            | SessionError::AdmissionQueued { code, .. } => Some(code),
             _ => None,
         })
 }

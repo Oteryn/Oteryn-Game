@@ -19,6 +19,7 @@ pub mod actor_spell;
 pub mod actor_spell_catalog;
 pub mod actor_spell_item_v2;
 pub mod actor_spell_v2;
+pub mod admission_queue;
 pub mod analyser;
 pub mod analyser_catalogue;
 pub mod analyser_party;
