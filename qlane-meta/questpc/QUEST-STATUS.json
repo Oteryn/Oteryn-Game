@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b Premium writer and Asura wiring WIP;merge0326dc2e5 now,retaining both sides;no DONE claim.",
+  "batch_state": "M01b compiled WIP publication under owner cadence:0326 merge aborted;Premium latch precedes Character lock;own profile rejects unsupported predicates;PG still pending.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -1099,7 +1099,7 @@
       "Geomancer Quest",
       "Asura Palace Quest"
     ],
-    "validation": "WIP Premium owner+Asura:373units,112authoring modules/checks/tree,workspace check and three-crate Clippy pass;newPG pending;coordinator merge requested"
+    "validation": "WIP Current Premium+Asura:focused4Rust/7Python/fmt PASS;all4PGcases building/running;no Asura PG qualification yet"
   },
   "publication_validation": {
     "postgres_cases": 17,

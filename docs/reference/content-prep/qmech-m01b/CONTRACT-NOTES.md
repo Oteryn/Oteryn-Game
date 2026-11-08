@@ -65,9 +65,11 @@ transaction provider: cached session flags cannot authorize this write. After
 restoring Current Premium, replay must preserve zero credit; a fresh entry is
 required. Re-entry and replay after success stay at one.
 
-The existing Admission promotion/regular_blessings flags have no World writer
-implementation in the checked qmech source. They fail closed rather than being
-silently ignored. Neither is needed by these bound exploration stages. Quest
-prerequisites still fail closed in the producer. Existing minimum_level is
+The bounded M01b profile rejects promotion/regular_blessings declarations;
+neither is needed by these bound exploration stages. The Premium latch-before-
+Character-lock implementation is reused from inspected qmech M03 code. The
+coordinator-requested0326 merge was aborted under the subsequent owner decision;
+only the older already committed base is retained. Quest prerequisites still
+fail closed in the producer. Existing minimum_level is
 emitted for eligible recipes and remains owned by the locked progression read;
 Fire Axe's level60 mapping is tested, but its physical anchor is not activated.

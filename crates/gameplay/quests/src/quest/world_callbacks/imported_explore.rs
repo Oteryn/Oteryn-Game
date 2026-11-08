@@ -18,6 +18,10 @@ pub(super) fn admitted(callback: &Callback) -> bool {
         && callback.trigger == Trigger::StepIn
         && callback.actor_kind == ActorKind::Player
         && callback.requires_world_admission
+        && callback
+            .admission
+            .as_ref()
+            .is_none_or(|a| a.premium && !a.regular_blessings && !a.promotion)
         && callback.selector.position == Some(native.position)
         && callback.selector.appearance == Some(native.appearance)
         && native.ordinal == 0
@@ -85,6 +89,16 @@ mod tests {
             .ok_or("bound Asura entry")?;
         assert!(callback.admission.as_ref().is_some_and(|a| a.premium));
         assert!(super::admitted(&callback));
+        let mut unsupported = callback.clone();
+        unsupported
+            .admission
+            .as_mut()
+            .ok_or("Premium policy")?
+            .promotion = true;
+        assert!(
+            !super::admitted(&unsupported),
+            "this bounded explore profile cannot silently admit an unsupported predicate"
+        );
         let required = gated_binding(&callback)?.ok_or("bound Premium occurrence")?;
         let mut stripped = callback;
         stripped.admission = None;

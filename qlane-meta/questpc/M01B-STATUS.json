@@ -20,7 +20,7 @@
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
-    "focused_profile_tests": "4 included in373 passing units;Premium policy hash binding included",
+    "focused_profile_tests": "RED1failure0.02s,thenGREEN4passed0.03s",
     "authoring_modules": "112 passed,0 failed",
     "authoring_checks": "PASS",
     "content_tree": "PASS",
@@ -32,9 +32,12 @@
     "world_pin_verify": "pending after coordinator merge",
     "postgres_scope": "316cc6842 source tree before qmech41edb50ef merge; no lane SQL changes",
     "post_merge_postgres": "PENDING under PREPUSH-2 cadence exception; rerun all M01b native cases with the next entry batch",
-    "postgres_asura": "PENDING: native Current Premium and replay case written,not run"
+    "postgres_asura": "PENDING: all4 M01b PG cases are building/running; no current-Premium PG success claimed",
+    "focused_authoring_tests": "7passed2.975s",
+    "own_files_fmt": "PASS explicit rustfmt check",
+    "merge_policy": "0326dc2e5 merge ABORTED by owner; no further qmech/main merges"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Merge coordinator qmech0326dc2e5 preserving both sides;regenerate;check/focused tests/fmt;push own branch,then run all4 M01b PG cases. Remaining43 routes/53 stages;M01b remains PARTIAL."
+  "continuation": "Finish current4-case PG run,fix failures if any,continue43 routes/53 stages. Push mechanic slices only; no merges. Entire M01b remains PARTIAL."
 }

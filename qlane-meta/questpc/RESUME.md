@@ -60,3 +60,12 @@ and quests+durability+dispatch strict Clippy PASS. Asura PG remains PENDING.
 Four incoming compile faults repaired without weakening assertions. Owner now
 requests merge of qmech0326dc2e5;retain both sides,regenerate,check/focused tests/
 fmt,normal push own branch with exact ls-remote proof,then run all4 M01b PG cases.
+
+OWNER OVERRIDE:0326dc2e5 merge ABORTED;do not merge qmech/main again.
+Current scoped Premium code reuses M03 latch-before-Character-lock ordering,
+while M01b rejects unsupported promotion/blessing declarations in its profile.
+Focused RED1failure0.02s -> GREEN4Rust0.03s;7Python2.975s and own-files fmt PASS.
+WIP publication is explicit:Asura PG is not yet qualified. Four real PG cases
+are building/running via cargo test -p oteryn-gameplay-dispatch --lib m01b_
+-- --nocapture --test-threads=1. Finish them before any DONE claim;continue
+43routes/53stages afterwards. Push every10-15min,no subagents,no merges.
