@@ -12,7 +12,8 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
         native = {r['definition']['identity']['key']: r['definition']
                   for path in index['shards'] for r in tree.read(root, path)['records']}
         source = {r['identity']['key']: r for r in tree.claim_catalogue(root)}
-        for suffix in ('timering3', 'trollcave1', 'weddingring1'):
+        for suffix in ('timering3', 'trollcave1', 'weddingring1', 'edrongoblin1',
+                       'ghoulroom1', 'silveramulet', 'stealhring1'):
             key = 'oteryn:reward-claim.kv.' + suffix
             with self.subTest(claim=key):
                 self.assertEqual(native[key]['readiness'], 'ready')
@@ -25,13 +26,29 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
         self.assertEqual(native[desert]['data_holds'], [])
         self.assertIn('native_contents', native[desert])
         self.assertEqual(source[desert]['data_holds'][0]['item'], 'oteryn:item.tibia.i3084')
-        changed = {key for key in native if native[key] != source[key]}
+        # Compiler-only bookkeeping is not part of the public claim schema.
+        # Compare every public member, retaining unknown/private-member detection
+        # except for these two explicit SOURCE compiler annotations.
+        annotations = {'_source_baseline_item_hold', '_source_hold_categories'}
+        for key, claim in native.items():
+            self.assertFalse(annotations & claim.keys(), key)
+        public_source = {key: {field: value for field, value in claim.items()
+                               if field not in annotations}
+                         for key, claim in source.items()}
+        changed = {key for key in native if native[key] != public_source[key]}
         self.assertEqual(changed, {
             'oteryn:reward-claim.kv.madmageroom3', triangle, desert,
-            'oteryn:reward-claim.kv.ornamentedshield',
-            'oteryn:reward-claim.kv.present_box', 'oteryn:reward-claim.kv.powerring2',
+            'oteryn:reward-claim.kv.powerring2',
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',
             'oteryn:reward-claim.kv.weddingring1',
+            'oteryn:reward-claim.kv.edrongoblin1', 'oteryn:reward-claim.kv.ghoulroom1',
+            'oteryn:reward-claim.kv.silveramulet', 'oteryn:reward-claim.kv.stealhring1',
+        })
+        self.assertEqual({key: claim['_source_hold_categories']
+                          for key, claim in source.items() if '_source_hold_categories' in claim}, {
+            'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
+            'oteryn:reward-claim.kv.present_box': ['item'],
+            triangle: ['item'],
         })
 
 

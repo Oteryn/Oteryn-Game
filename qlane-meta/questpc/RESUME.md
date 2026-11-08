@@ -1,3 +1,14 @@
+## Current batch: complete PostgreSQL confirmation and main integration
+Eight real PostgreSQL18.6 cases PASS346.538s, including Kingsday137.917757112s,
+Citizen male95.358513847s/female97.328409195s, four retained-key cases and
+filled-fluid MINT/replay. All384 affected NPC/Quest units PASS389.497s.
+Main f5b584ef161eb93c951cb8579a1b3e5538935b1b incorporated; generated reports
+and provenance refreshed with repository tooling. Final quest-authoring checks PASS; all108 unit modules (1143 cases) PASS;
+tree validation, workspace all-targets6m34s, fmt and strict Clippy1m31s PASS.
+See cloud-completion-greetings-validation.json for retained RED and GREEN proof.
+No new quest count:63 recorded scoped qualifications,114 not done,1 exclusion.
+No new quest should start before this batch is pushed.
+
 ## Publish compiling repair checkpoint; eight-case PG confirmation building
 All384 affected NPC+Quest units PASS389.497s,0skipped. Three Kingsday recipe/
 source checks PASS0.531s. Final workspace all-targets PASS6m16s; strict changed

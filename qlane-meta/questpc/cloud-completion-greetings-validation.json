@@ -1,5 +1,5 @@
 {
-  "state": "compiling repair checkpoint; all affected units and publication compile/content gates GREEN; eight-case PostgreSQL confirmation building",
+  "state": "GREEN: main merged, generated files refreshed, all publication gates passed",
   "base_origin_head": "ca32e1a335d48bd54ff286f881c84b77c2433920",
   "baseline_units": {
     "selected": 2875,
@@ -38,9 +38,7 @@
     "oteryn-gameplay-npc"
   ],
   "validation_scope": "Owner PREPUSH-2: full unit suites of both changed crates (384 tests), plus all six original focused PG cases and both Citizen source stories; workspace all-targets, strict clippy, fmt and generated files. CI owns broader dependent suites.",
-  "pending": [
-    "eight focused PostgreSQL cases including both Citizen source stories"
-  ],
+  "pending": [],
   "units_green": {
     "selected": 384,
     "passed": 384,
@@ -89,5 +87,70 @@
     "log": "/tmp/questpc-completion-greetings-pin.log",
     "sha256": "a4fd9aa7ba6be8a8929f85832a21a5c47a7e53a756c7f451e5836c413efb789b"
   },
-  "publication_rule": "Owner PREPUSH-2 cadence exception; explicit PG pending; no claim of PR readiness before PG confirmation"
+  "publication_rule": "PREPUSH-2 plus night-retro authoring checks/full unit runner/content tree; own8PG and384 Rust units GREEN. No new runtime change after source proof2806. Physical node boot not rerun for this metadata/test batch.",
+  "pg_green": {
+    "source_head": "2806d1b2cce855d7ed4bd28e01ddcb1e1020acac",
+    "passed": 8,
+    "failed": 0,
+    "run_seconds": 346.538,
+    "postgres": "18.6 / server_version_num180006",
+    "case_seconds": {
+      "hidden_threats_Unknown": 54.238104139,
+      "hidden_threats_Works01": 54.282313338,
+      "hidden_threats_Works02": 56.838850186,
+      "hidden_threats_Works03": 56.829486317,
+      "qengine-rewards-questpc-kingsday": 137.917757112,
+      "qengine-rewards-questpc-citizen-male-story": 95.358513847,
+      "qengine-rewards-questpc-citizen-female-story": 97.328409195,
+      "l6_reward_fluids": 53.553616314
+    },
+    "log": "/tmp/questpc-completion-greetings-pg.log",
+    "sha256": "ee1fbf62e7903239fc98caf1c784e18c8f7436a83e0064d6495b654dbac4f7c2"
+  },
+  "main_merge": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+  "generated_report_repair": "Regenerated callback coverage and qualification from pinned external chest sources: unchanged 162 supported-unqualified denominator; compiler-only SOURCE annotations tested separately from every public native member.",
+  "full_regeneration": {
+    "command": "python3 tools/content-migration/regenerate_content.py --resolve",
+    "log_sha256": "1617aa3ebae406283a0c2599797c0061cf02b84e7267e0a69026b1600db63517",
+    "result": "PASS; repository world content tests 5/5 PASS55.69s; unchanged World digest6e61347f"
+  },
+  "report_sources": [
+    {
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/chest.lua",
+      "sha256": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
+      "sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+    }
+  ],
+  "final_publication_gates": {
+    "quest_authoring_checks": {
+      "result": "PASS",
+      "log_sha256": "2003b16ba1a2c3f2788cbe91b6f6c13ea4678c1fa081a204959a65f55549b4c4"
+    },
+    "quest_authoring_unit_tests": {
+      "result": "PASS",
+      "log_sha256": "033d409154c0c88a637cc6698d2c8ea9201bf93226eb70f0373f8eb9a96c58e5",
+      "modules": 108,
+      "cases": 1143,
+      "existing_conditional_skips": 8
+    },
+    "content_tree": {
+      "result": "PASS",
+      "log_sha256": "a313ad80565c45393bbc1b4508ba246042c8681ad7c2dc7e9adbdbd173ff4d49"
+    },
+    "workspace_all_targets": {
+      "result": "PASS",
+      "log_sha256": "13b144765d8fb8c927d758c7785fef1f5ecc834557f107e02c58d0145f01e527"
+    },
+    "fmt_all_check": {
+      "result": "PASS",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "strict_changed_crate_clippy": {
+      "result": "PASS",
+      "log_sha256": "36eac5b80bd960b04b759528dd60943bf6d8c13172246c093f53ffacc6f69b01"
+    }
+  }
 }

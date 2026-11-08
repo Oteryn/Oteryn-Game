@@ -11,14 +11,14 @@
   "qualification_boundary": "QUALIFIED is explicitly scoped per row. Standalone source contracts prove every original reward claim and native source placement through production USE, replay and refusal. Additional authored programme routes are retained separately and are not certified by claim tests. Historical source readiness holds remain unchanged. BLOCKED is reserved for owner exclusions. Current owner rule: only this packet's owned quests belong to this lane; large generic engine features belong to qengine2 and require an ENGINE-REQUEST.",
   "binding_queue_boundary": "Historical binding queues are not exhaustive runtime registries. Their null fields identify outstanding composition/evidence, not proof that no bespoke adapter exists.",
   "inputs": {
-    "tools/content-schema/quest-authoring/samples/completion-matrix/all373.json": "6de3467edfd66bafc99b591007b932a2b76a2ad2a637c021d65b14dc8e7c7717",
+    "tools/content-schema/quest-authoring/samples/completion-matrix/all373.json": "bcbb545d68038e64ffa9e445a49f70f74adf0b32ab63c21995d918a9dbb60280",
     "content/quests/missions/completion-binding-plan.json": "4de2cc50a6d453e2644bad81de6a40c1109b5186bbdec3dcb8eb87f63186b157",
     "content/quests/missions/source-lowered-binding-plan.json": "7d114019d6a30b203341776efdb747363cd2d30e8f2caef3f6e0c40a276d111e",
     "docs/repository/QUEST_CALLBACK_COVERAGE.json": "a79a16f57ee52ee8927d79fe2768e9899717ecf56284de84912de8c96cecdd55",
     "tools/content-schema/quest-authoring/samples/authored68/recipes.json": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
-    "content/quests/definitions/quests-00000-00099.json": "21b89ca0c70e084167878dad85a1aa948d938d0b601e63bfe65241ef3cb0c9b0",
-    "content/quests/definitions/quests-00100-00199.json": "b371bf031ca52390e837c92ba2e2b65d76218ec37fc46f454aebab18eeb9107c",
-    "content/quests/definitions/quests-00200-00299.json": "8de026361aae0bbad44c0bba51fea2316e86379946b8b9af4cd6d5a602de263e",
+    "content/quests/definitions/quests-00000-00099.json": "9913b64f2ab4d92c527fffee473deee1ac30a80f431e8b89e522cab0365d72eb",
+    "content/quests/definitions/quests-00100-00199.json": "61b6fb2a7b630ab507c5555d8e92a2f92f2ac19ce465f2568e87f178e7b5ec6f",
+    "content/quests/definitions/quests-00200-00299.json": "6eb0f95803a5559a30fd3e33c4753f7ace6b6856ba9cea906fd5bb58d350b47b",
     "content/quests/definitions/quests-00300-00351.json": "4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a"
   },
   "fresh_pg": {
@@ -8019,7 +8019,7 @@
       "first_unqualified_stage": {
         "key": "s10",
         "kind": "collect",
-        "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
+        "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
         "targets": [
           "Winning Lottery Ticket"
         ]
@@ -8639,7 +8639,7 @@
       "first_unqualified_stage": {
         "key": "s2",
         "kind": "collect",
-        "objective": "Odszukaj świątynię Inukayi i odbierz pierwszy fragment statuy.",
+        "objective": "Odszukaj \u015bwi\u0105tyni\u0119 Inukayi i odbierz pierwszy fragment statuy.",
         "targets": [
           "Fragment of a Statue (1st)",
           "Inukaya Shrine"
@@ -10902,7 +10902,7 @@
       "1295_quest_stateless_paid_receipts.sql",
       "1296_quest_paid_sale_mint_occurrences.sql"
     ],
-    "canonical_npc_migrations": "1310–1315 unchanged from main; duplicate lane NPC bootstrap, Marlin, item-source and Father proof removed",
+    "canonical_npc_migrations": "1310\u20131315 unchanged from main; duplicate lane NPC bootstrap, Marlin, item-source and Father proof removed",
     "atomic_father": "exact eleven-track acceptance retained in1290; value/XP proof consumed from main1315",
     "unit_run2": {
       "total": 346,
@@ -11463,7 +11463,7 @@
     }
   },
   "completion_greeting_repair": {
-    "state": "compiling repair checkpoint; all affected units and publication compile/content gates GREEN; eight-case PostgreSQL confirmation building",
+    "state": "GREEN: main merged, generated files refreshed, all publication gates passed",
     "base_origin_head": "ca32e1a335d48bd54ff286f881c84b77c2433920",
     "baseline_units": {
       "selected": 2875,
@@ -11502,9 +11502,7 @@
       "oteryn-gameplay-npc"
     ],
     "validation_scope": "Owner PREPUSH-2: full unit suites of both changed crates (384 tests), plus all six original focused PG cases and both Citizen source stories; workspace all-targets, strict clippy, fmt and generated files. CI owns broader dependent suites.",
-    "pending": [
-      "eight focused PostgreSQL cases including both Citizen source stories"
-    ],
+    "pending": [],
     "units_green": {
       "selected": 384,
       "passed": 384,
@@ -11553,6 +11551,71 @@
       "log": "/tmp/questpc-completion-greetings-pin.log",
       "sha256": "a4fd9aa7ba6be8a8929f85832a21a5c47a7e53a756c7f451e5836c413efb789b"
     },
-    "publication_rule": "Owner PREPUSH-2 cadence exception; explicit PG pending; no claim of PR readiness before PG confirmation"
+    "publication_rule": "PREPUSH-2 plus night-retro authoring checks/full unit runner/content tree; own8PG and384 Rust units GREEN. No new runtime change after source proof2806. Physical node boot not rerun for this metadata/test batch.",
+    "pg_green": {
+      "source_head": "2806d1b2cce855d7ed4bd28e01ddcb1e1020acac",
+      "passed": 8,
+      "failed": 0,
+      "run_seconds": 346.538,
+      "postgres": "18.6 / server_version_num180006",
+      "case_seconds": {
+        "hidden_threats_Unknown": 54.238104139,
+        "hidden_threats_Works01": 54.282313338,
+        "hidden_threats_Works02": 56.838850186,
+        "hidden_threats_Works03": 56.829486317,
+        "qengine-rewards-questpc-kingsday": 137.917757112,
+        "qengine-rewards-questpc-citizen-male-story": 95.358513847,
+        "qengine-rewards-questpc-citizen-female-story": 97.328409195,
+        "l6_reward_fluids": 53.553616314
+      },
+      "log": "/tmp/questpc-completion-greetings-pg.log",
+      "sha256": "ee1fbf62e7903239fc98caf1c784e18c8f7436a83e0064d6495b654dbac4f7c2"
+    },
+    "main_merge": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+    "generated_report_repair": "Regenerated callback coverage and qualification from pinned external chest sources: unchanged 162 supported-unqualified denominator; compiler-only SOURCE annotations tested separately from every public native member.",
+    "full_regeneration": {
+      "command": "python3 tools/content-migration/regenerate_content.py --resolve",
+      "log_sha256": "1617aa3ebae406283a0c2599797c0061cf02b84e7267e0a69026b1600db63517",
+      "result": "PASS; repository world content tests 5/5 PASS55.69s; unchanged World digest6e61347f"
+    },
+    "report_sources": [
+      {
+        "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/chest.lua",
+        "sha256": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
+        "sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+      }
+    ],
+    "final_publication_gates": {
+      "quest_authoring_checks": {
+        "result": "PASS",
+        "log_sha256": "2003b16ba1a2c3f2788cbe91b6f6c13ea4678c1fa081a204959a65f55549b4c4"
+      },
+      "quest_authoring_unit_tests": {
+        "result": "PASS",
+        "log_sha256": "033d409154c0c88a637cc6698d2c8ea9201bf93226eb70f0373f8eb9a96c58e5",
+        "modules": 108,
+        "cases": 1143,
+        "existing_conditional_skips": 8
+      },
+      "content_tree": {
+        "result": "PASS",
+        "log_sha256": "a313ad80565c45393bbc1b4508ba246042c8681ad7c2dc7e9adbdbd173ff4d49"
+      },
+      "workspace_all_targets": {
+        "result": "PASS",
+        "log_sha256": "13b144765d8fb8c927d758c7785fef1f5ecc834557f107e02c58d0145f01e527"
+      },
+      "fmt_all_check": {
+        "result": "PASS",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "strict_changed_crate_clippy": {
+        "result": "PASS",
+        "log_sha256": "36eac5b80bd960b04b759528dd60943bf6d8c13172246c093f53ffacc6f69b01"
+      }
+    }
   }
 }

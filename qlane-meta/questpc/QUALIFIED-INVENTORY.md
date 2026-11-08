@@ -1,8 +1,8 @@
 # Recorded questpc qualification inventory
 
-Origin checkpoint: ca32e1a335d48bd54ff286f881c84b77c2433920.
+Runtime proof checkpoint: 2806d1b2cce855d7ed4bd28e01ddcb1e1020acac.
 
-63 historical scoped qualifications; many certify the standalone source reward contract. Current-main Kingsday completion and NPC greeting regressions are under repair; this inventory is not a current whole-quest green certification.
+63 historical scoped qualifications; many certify the standalone source reward contract. Kingsday completion and NPC greeting regressions now pass all eight focused PostgreSQL cases and 384 affected Rust units. This inventory remains a scoped record, not a whole-quest certification.
 
 | Recorded quest | Qualified scope |
 | --- | --- |
