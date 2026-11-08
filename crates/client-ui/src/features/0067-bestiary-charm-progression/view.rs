@@ -49,6 +49,7 @@ pub fn bestiary_text(panel: &Panel) -> String {
             );
         }
     }
+    out.push_str(&bestiary_detail_text(panel));
     out.push_str("Creature names, illustrations, combat statistics, resistances and loot are not supplied by this progress snapshot.\r\n");
     out
 }
@@ -99,4 +100,52 @@ pub fn charms_text(panel: &Panel) -> String {
         panel.fields[1], panel.feedback
     );
     out
+}
+
+fn bestiary_detail_text(panel: &Panel) -> String {
+    use std::fmt::Write;
+    let selected = panel.fields[1].parse::<u32>().ok();
+    let Some(reply) = &panel.reply else {
+        return String::new();
+    };
+    let Some(race) = reply
+        .bestiary
+        .iter()
+        .find(|race| Some(race.race.get()) == selected)
+    else {
+        return "Select a confirmed creature to inspect its discovery card\r\n".into();
+    };
+    let mut text = format!(
+        "Selected creature — race {}\r\nCurrent stage: {}/3\r\n",
+        race.race,
+        race.unlocked_stage()
+    );
+    if let Some((index, goal)) = race
+        .kill_thresholds
+        .iter()
+        .enumerate()
+        .find(|(_, goal)| race.kill_count < **goal)
+    {
+        let _ = write!(
+            text,
+            "Next discovery: stage {}, {} kills remaining\r\n",
+            index + 1,
+            goal.saturating_sub(race.kill_count)
+        );
+    } else {
+        text.push_str("All discovery stages complete\r\n");
+    }
+    for charm in reply
+        .charms
+        .charms
+        .iter()
+        .filter(|charm| charm.assigned_race == Some(race.race))
+    {
+        let _ = write!(
+            text,
+            "Assigned charm {}: {:?}, stage {}\r\n",
+            charm.charm, charm.kind, charm.unlocked_stage
+        );
+    }
+    text
 }

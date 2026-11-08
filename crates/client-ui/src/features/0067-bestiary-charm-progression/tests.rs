@@ -131,3 +131,32 @@ fn charm_selector_uses_confirmed_costs_and_eligible_races() -> Result<(), &'stat
     assert_eq!(panel.fields[0], "7");
     Ok(())
 }
+
+#[test]
+fn selected_bestiary_card_shows_confirmed_discovery_goal() -> Result<(), &'static str> {
+    use oteryn_client_runtime::charm_progression::{
+        CharmProgressionOutcome, CharmProgressionReply, bestiary::BestiaryRaceProgress,
+    };
+    let mut panel = Panel {
+        selected: true,
+        reply: Some(CharmProgressionReply {
+            outcome: CharmProgressionOutcome::Query,
+            fee_gold: 0,
+            charms: Default::default(),
+            bestiary: vec![BestiaryRaceProgress {
+                race: std::num::NonZeroU32::new(4).ok_or("race")?,
+                kill_count: 7,
+                kill_thresholds: [5, 10, 20],
+            }],
+        }),
+        ..Default::default()
+    };
+    panel.select_race(false);
+    let card = bestiary_text(&panel);
+    assert!(card.contains("Selected creature — race 4"));
+    assert!(card.contains("Current stage: 1/3"));
+    assert!(card.contains("Next discovery: stage 2, 3 kills remaining"));
+    panel.fields[1] = "999".into();
+    assert!(bestiary_text(&panel).contains("Select a confirmed creature"));
+    Ok(())
+}

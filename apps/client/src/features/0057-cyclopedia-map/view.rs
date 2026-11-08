@@ -36,6 +36,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Previous analyser",
                 "Next analyser",
                 "Refresh section",
+                "Previous creature",
+                "Next creature",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -61,6 +63,17 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         mailbox.discovery.inspection.category =
                             values.get(2).cloned().unwrap_or_default();
                     }
+                    return;
+                }
+                if action == 18 || action == 19 {
+                    mailbox
+                        .properties
+                        .charm_progression
+                        .select_race(action == 18);
+                    mailbox
+                        .properties
+                        .cyclopedia_map
+                        .navigate(oteryn_client_ui::cyclopedia_map::Section::Bestiary);
                     return;
                 }
                 if action == 17 {
