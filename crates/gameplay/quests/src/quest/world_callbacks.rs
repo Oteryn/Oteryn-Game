@@ -383,7 +383,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .iter()
                 .any(|r| !valid_pos(r.position) || r.appearance == 0)
             || (!callback.world_requirements.is_empty()
-                && (!!callback.has_personal_state()
+                && ((callback.has_personal_state() && !callback.requires_world_admission)
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
@@ -638,7 +638,7 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                     .map(|operation| operation.quest_effect()),
             )
             .collect(),
-        completes: false,
+        completes: callback.effects.completes_quest,
         experience: callback.experience,
     })
 }
@@ -1534,3 +1534,6 @@ pub fn completion_transition(callback: &Callback) -> Option<QuestTransition> {
 
 #[cfg(test)]
 mod completion_tests;
+
+#[cfg(test)]
+mod m07_trials_tests;
