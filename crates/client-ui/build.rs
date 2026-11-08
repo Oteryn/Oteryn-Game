@@ -2,12 +2,15 @@
 #[path = "../../tools/architecture-check/src/client_fragments.rs"]
 mod client_fragments;
 
+#[path = "build_support/spell_metadata.rs"]
+mod spell_metadata;
 use std::path::Path;
 
 fn run() -> Result<(), String> {
     let manifest = std::env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?;
     let root = Path::new(&manifest).join("../..");
     let out = std::env::var("OUT_DIR").map_err(|e| e.to_string())?;
+    spell_metadata::generate(&root, Path::new(&out))?;
     for path in [
         "crates/client-ui/src/features",
         "crates/protocol-oteryn/capabilities",

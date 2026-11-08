@@ -85,3 +85,20 @@ pub fn select_relative(panel: &mut Panel, forward: bool) {
     };
     panel.page = panel.selection / 16;
 }
+
+/// Exact profession keys come from the shared, pinned content metadata.
+pub fn set_vocation(panel: &mut Panel, text: &str) -> bool {
+    let text = text.trim().to_lowercase().replace(' ', "_");
+    if !text.is_empty() && !super::VOCATIONS.contains(&text.as_str()) {
+        panel.filter_error = true;
+        return false;
+    }
+    let vocation = (!text.is_empty()).then_some(text);
+    if panel.vocation != vocation {
+        panel.page = 0;
+        panel.selection = 0;
+    }
+    panel.vocation = vocation;
+    panel.filter_error = false;
+    true
+}

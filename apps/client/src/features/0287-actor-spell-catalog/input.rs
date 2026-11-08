@@ -45,3 +45,46 @@ pub(super) fn assign(mailbox: &mut crate::play::mailbox::Mailbox, slot: usize) -
     mailbox.spell_bar.feedback = format!("Selected spell assigned to slot {}", slot + 1);
     true
 }
+
+impl PlayLink {
+    pub fn spell_catalog_search(
+        &self,
+        search: &str,
+        level: &str,
+        group: &str,
+        learned: bool,
+        vocation: &str,
+    ) -> bool {
+        let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+        filter(
+            &mut mailbox,
+            &[
+                search.into(),
+                level.into(),
+                group.into(),
+                u8::from(learned).to_string(),
+                vocation.into(),
+            ],
+        )
+    }
+}
+pub(super) fn filter(mailbox: &mut crate::play::mailbox::Mailbox, values: &[String]) -> bool {
+    use oteryn_client_ui::spell_catalog::protocol;
+    if values.len() != 5 || !matches!(values[3].as_str(), "0" | "1") {
+        mailbox.spell_catalog.filter_error = true;
+        return false;
+    }
+    if !protocol::set_filters(
+        &mut mailbox.spell_catalog,
+        &values[1],
+        &values[2],
+        values[3] == "1",
+    ) || !protocol::set_vocation(&mut mailbox.spell_catalog, &values[4])
+    {
+        return false;
+    }
+    if mailbox.spell_catalog.filter != values[0] {
+        protocol::navigate(&mut mailbox.spell_catalog, &values[0], 0);
+    }
+    true
+}

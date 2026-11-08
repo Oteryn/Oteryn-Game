@@ -1446,9 +1446,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Lista czarów i wyszukiwanie",
-  "status": "PARTIAL",
-  "gap": "Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Wyszukiwanie nazwy/formuły łączy się z filtrami profesji, grupy, poziomu i learned; karta zawiera koszty i rzeczywisty cooldown. Profesje są metadanymi z tego samego przypiętego contentu co serwer, a uprawnienia/cooldown pozostają obserwacjami serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/input.rs:50 + o059_profession_search_filters_confirmed_catalog_through_real_caller + o059_detail_card_consumes_server_cooldown_observation"
  },
  {
   "id": "O066",

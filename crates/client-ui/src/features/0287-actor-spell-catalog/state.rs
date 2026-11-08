@@ -10,6 +10,7 @@ pub struct Panel {
     pub selection: usize,
     pub max_level: Option<u32>,
     pub group: Option<u32>,
+    pub vocation: Option<String>,
     pub learned_only: bool,
     pub filter_error: bool,
 }
@@ -41,5 +42,9 @@ impl Panel {
                 .group
                 .is_none_or(|group| entry.cooldown_groups.contains(&group))
             && (!self.learned_only || entry.learned)
+            && self
+                .vocation
+                .as_ref()
+                .is_none_or(|vocation| super::professions(entry).contains(&vocation.as_str()))
     }
 }

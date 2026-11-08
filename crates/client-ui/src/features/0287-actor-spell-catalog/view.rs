@@ -6,7 +6,7 @@ pub fn panel_text(panel: &Panel) -> String {
         return "Spell catalogue unavailable in this session".into();
     }
     if panel.filter_error {
-        return "Enter a positive maximum level and cooldown group, or leave blank".into();
+        return "Enter a positive level/group and a valid profession, or leave blank".into();
     }
     let entries: Vec<_> = panel
         .catalog
@@ -69,7 +69,7 @@ pub fn detail_text(panel: &Panel, bar: &oteryn_client_runtime::spell::ActionBar)
         "unknown".into()
     };
     format!(
-        "Selected spell\r\n{} — {}\r\nLevel: {} | Mana: {}{} | Soul: {}\r\nLearned: {} | Available: {}\r\nCooldown: {}\r\nGroups: {:?} | Rune: {:?}\r\n",
+        "Selected spell\r\n{} — {}\r\nLevel: {} | Mana: {}{} | Soul: {}\r\nLearned: {} | Available: {}\r\nCooldown: {}\r\nGroups: {:?} | Rune: {:?}\r\nReference professions: {:?}\r\n",
         entry.name,
         entry.words,
         entry.level,
@@ -80,6 +80,7 @@ pub fn detail_text(panel: &Panel, bar: &oteryn_client_runtime::spell::ActionBar)
         entry.available,
         cooldown,
         entry.cooldown_groups,
-        entry.rune_item
+        entry.rune_item,
+        super::professions(entry)
     )
 }

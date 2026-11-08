@@ -1,5 +1,8 @@
 //! oteryn-choice: native local view of confirmed server facts, with no gameplay authority.
 mod input;
+#[path = "state/metadata.rs"]
+mod metadata;
+pub use metadata::{VOCATIONS, professions};
 pub mod protocol;
 mod state;
 mod view;

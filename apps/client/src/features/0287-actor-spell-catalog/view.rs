@@ -22,6 +22,7 @@ fn form(archive: bool) -> crate::play::feature_0115_mail::view::native::Form {
             "Maximum level (blank: all)",
             "Cooldown group (blank: all)",
             "Learned only (0 / 1)",
+            "Profession (blank: all; e.g. druid, knight, monk)",
         ],
         buttons: &[
             "Search",
@@ -38,16 +39,7 @@ fn form(archive: bool) -> crate::play::feature_0115_mail::view::native::Form {
         set_open: |mailbox, value| mailbox.spell_catalog.open = value,
 
         submit: |mailbox, _, action, values| {
-            if values.len() != 4 || !matches!(values[3].as_str(), "0" | "1") {
-                mailbox.spell_catalog.filter_error = true;
-                return;
-            }
-            if !oteryn_client_ui::spell_catalog::protocol::set_filters(
-                &mut mailbox.spell_catalog,
-                &values[1],
-                &values[2],
-                values[3] == "1",
-            ) {
+            if !super::input::filter(mailbox, &values) {
                 return;
             }
             if let Some(filter) = values.first() {
@@ -101,6 +93,7 @@ fn snapshot(mailbox: &crate::play::mailbox::Mailbox) -> (bool, bool, Vec<String>
                 .group
                 .map_or_else(String::new, |group| group.to_string()),
             u8::from(panel.learned_only).to_string(),
+            panel.vocation.clone().unwrap_or_default(),
         ],
         format!(
             "{}\r\n{}",

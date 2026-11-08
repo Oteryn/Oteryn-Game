@@ -136,3 +136,6 @@ fn o080_archive_has_its_own_window_lifetime_and_menu_request()
     assert!(!link.spell_catalog_panel().archive_open);
     Ok(())
 }
+
+#[path = "profession.rs"]
+mod profession;

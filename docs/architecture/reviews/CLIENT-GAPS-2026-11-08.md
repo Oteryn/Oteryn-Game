@@ -154,7 +154,7 @@ Zasady przeciw dublowaniu:
 | T031 | Skills | Umiejętności, progress, loyalty | DONE | Natywne belki ośmiu umiejętności, wybór widocznych statystyk i potwierdzone level/progress/loyalty są podłączone do panelu. evidence: apps/client/src/play/status_window.rs:20 + nx7_complete_skills_native_play_queue_decode_and_display + t031_skill_widget_projects_confirmed_progress_and_configures_rows |
 | T032 | Skills | Spell list / spellbook | PARTIAL | Jest katalog po name/words; brak wszystkich filtrów vocation/level/premium/group i pełnej książki czarów. |
 | T033 | Skills | Magical Archive i przypisanie czaru | PARTIAL | Katalog i sloty są; brak osobnego pełnego archiwum i graficznego przypisywania. |
-| O059 | Skills | Lista czarów i wyszukiwanie | PARTIAL | Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły. |
+| O059 | Skills | Lista czarów i wyszukiwanie | DONE | Wyszukiwanie nazwy/formuły łączy się z filtrami profesji, grupy, poziomu i learned; karta zawiera koszty i rzeczywisty cooldown. Profesje są metadanymi z tego samego przypiętego contentu co serwer, a uprawnienia/cooldown pozostają obserwacjami serwera. evidence: apps/client/src/features/0287-actor-spell-catalog/input.rs:50 + o059_profession_search_filters_confirmed_catalog_through_real_caller + o059_detail_card_consumes_server_cooldown_observation |
 | O080 | Skills | Cyklopedia: Magical Archive | PARTIAL | Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci. |
 
 ## cg_ui
