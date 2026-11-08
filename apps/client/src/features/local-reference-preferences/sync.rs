@@ -50,6 +50,7 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 
 pub struct SettingsState {
     window_action: Option<&'static str>,
+    battle_edit: u64,
     magical_archive_requested: bool,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
@@ -111,6 +112,7 @@ impl SettingsState {
             .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?;
         store.replace_with_backup(preferences.clone())?;
         self.preferences = preferences;
+        self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         Ok(())
     }
 
@@ -133,6 +135,7 @@ impl SettingsState {
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
             window_action: None,
+            battle_edit: 0,
             magical_archive_requested: false,
             store,
             preferences,
@@ -199,11 +202,23 @@ impl SettingsState {
             .ok_or_else(|| "Preference storage is unavailable".to_owned())
             .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()));
         // A disk error must not disable local controls for this process.
+        if self.preferences.battle_lists != preferences.battle_lists {
+            self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         self.preferences = preferences;
         self.feedback = match result {
             Ok(()) => "Applied and saved".into(),
             Err(error) => format!("Applied for this session; could not save: {error}"),
         };
+    }
+
+    pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
+        let mut preferences = self.preferences.clone();
+        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
+        {
+            self.apply(preferences);
+            self.battle_edit = edit;
+        }
     }
 
     pub fn restore(

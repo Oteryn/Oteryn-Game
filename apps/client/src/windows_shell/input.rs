@@ -27,7 +27,7 @@ impl Application {
             }
         }
         if let Some(play) = &mut self.play {
-            self.settings.restore(&mut play.view);
+            self.settings.restore(&mut play.view, &play.link);
             if play.view.audio_input(events) {
                 self.settings.capture(&mut play.view);
                 return;

@@ -363,7 +363,7 @@ impl ApplicationHandler for Application {
         }
         self.poll_entry();
         if let Some(play) = &mut self.play {
-            self.settings.restore(&mut play.view);
+            self.settings.restore(&mut play.view, &play.link);
         }
         if let Some(play) = &mut self.play
             && let Err(end) = play.view.tick(&play.link)

@@ -6,7 +6,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         link,
         Form {
             title: "Boss encounter / Bosstiary",
-            labels: &["Boss key", "Slot (1-2)", "Hazard level (1-12)"],
+            labels: &[
+                "Boss key",
+                "Slot (1-2)",
+                "Hazard level (1-12)",
+                "Search boss records",
+            ],
             buttons: &[
                 "Refresh",
                 "Next page",
@@ -22,13 +27,21 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Next rewards",
                 "Lower hazard",
                 "Raise hazard",
+                "Previous boss",
+                "Next boss",
+                "Boss category",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.boss_encounter;
                 (
                     panel.open,
                     panel.pending,
-                    panel.fields.to_vec(),
+                    panel
+                        .fields
+                        .iter()
+                        .cloned()
+                        .chain(Some(panel.browser_search.clone()))
+                        .collect(),
                     oteryn_client_ui::boss_encounter::panel_text(panel)
                         .replace("\r\n", "\n")
                         .replace('\n', "\r\n"),
@@ -40,7 +53,23 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     return;
                 }
                 for (index, value) in values.into_iter().enumerate() {
-                    super::super::input::edit(&mut mailbox.boss_encounter, index, value);
+                    if index == 3 {
+                        mailbox.boss_encounter.browser_search = value;
+                    } else {
+                        super::super::input::edit(&mut mailbox.boss_encounter, index, value);
+                    }
+                }
+                if matches!(action, 14 | 15) {
+                    oteryn_client_ui::boss_encounter::select_boss(
+                        &mut mailbox.boss_encounter,
+                        action == 15,
+                    );
+                    return;
+                }
+                if action == 16 {
+                    mailbox.boss_encounter.browser_category =
+                        mailbox.boss_encounter.browser_category.next();
+                    return;
                 }
                 let intent = match action {
                     0 => Intent::Refresh,

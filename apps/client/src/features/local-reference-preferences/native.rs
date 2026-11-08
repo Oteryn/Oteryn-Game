@@ -169,7 +169,7 @@ impl Settings {
         }
         events
     }
-    pub(super) fn restore(&self, view: &mut PlayView) {
+    pub(super) fn restore(&self, view: &mut PlayView, link: &oteryn_client::play::PlayLink) {
         let mut viewport = [960, 540];
         unsafe {
             let mut rect: RECT = std::mem::zeroed();
@@ -178,6 +178,7 @@ impl Settings {
             }
         }
         let mut state = lock(&self.shared);
+        state.sync_battle_lists(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
         }
