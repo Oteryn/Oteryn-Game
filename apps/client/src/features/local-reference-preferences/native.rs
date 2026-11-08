@@ -60,6 +60,20 @@ impl Settings {
             let menu = CreateMenu();
             if !menu.is_null() {
                 AppendMenuW(menu, MF_STRING, 25001, wide("Settings...").as_ptr());
+                let windows = CreatePopupMenu();
+                if !windows.is_null() {
+                    for (index, (_, label)) in
+                        oteryn_client::play::WINDOW_ACTIONS.iter().enumerate()
+                    {
+                        AppendMenuW(windows, MF_STRING, 25100 + index, wide(label).as_ptr());
+                    }
+                    AppendMenuW(
+                        menu,
+                        MF_POPUP,
+                        windows as usize,
+                        wide("Game windows").as_ptr(),
+                    );
+                }
                 if SetMenu(self.parent, menu) == 0 {
                     DestroyMenu(menu);
                 }
@@ -72,6 +86,9 @@ impl Settings {
                 (&*self.shared as *const Arc<Mutex<Shared>>) as usize,
             );
         }
+    }
+    pub(super) fn take_window_events(&self) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        lock(&self.shared).take_window_events()
     }
     pub(super) fn input(
         &mut self,
@@ -131,6 +148,14 @@ unsafe extern "system" fn menu_proc(
             let shared = &*(data as *const Arc<Mutex<Shared>>);
             open(Arc::clone(shared));
             return 0;
+        }
+        if msg == WM_COMMAND {
+            let index = (w & 0xffff).wrapping_sub(25100);
+            if let Some((id, _)) = oteryn_client::play::WINDOW_ACTIONS.get(index) {
+                let shared = &*(data as *const Arc<Mutex<Shared>>);
+                lock(shared).queue_window(id);
+                return 0;
+            }
         }
         DefSubclassProc(hwnd, msg, w, l)
     }

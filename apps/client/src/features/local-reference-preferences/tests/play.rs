@@ -338,3 +338,20 @@ fn t162_monk_hud_has_independent_visibility() -> Result<(), Box<dyn std::error::
     assert_eq!(play.scene().sprites().len() + 6, shown);
     Ok(())
 }
+
+#[test]
+fn o010_menu_uses_live_window_inputs_after_rebinding() -> Result<(), Box<dyn std::error::Error>> {
+    let mut state = crate::play::SettingsState::new(None);
+    state
+        .preferences
+        .rebind("0287-actor-spell-catalog-open", "Alt+U")?;
+    assert!(state.queue_window("0287-actor-spell-catalog-open"));
+    assert!(!state.queue_window("unknown"));
+    let raw = state.take_window_events();
+    let (events, _) = state.input(&raw);
+    let (link, _, _) = crate::play::play_channel();
+    assert!(link.spell_catalog_input(&events));
+    assert!(link.spell_catalog_panel().open);
+    assert!(state.take_window_events().is_empty());
+    Ok(())
+}
