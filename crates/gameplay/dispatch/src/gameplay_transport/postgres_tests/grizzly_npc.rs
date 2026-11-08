@@ -20,6 +20,8 @@ use oteryn_gameplay_quests::quest::{grizzly_adams as quest, log::QuestLogContent
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[path = "grizzly_npc/campaign_routing.rs"]
+mod campaign_routing;
 #[path = "grizzly_npc/batches.rs"]
 mod batches;
 #[path = "grizzly_npc/boss_dialogue.rs"]
@@ -482,6 +484,19 @@ fn scenario(case: u8) -> TestResult {
                 value(&owner, &authority, quest::KILL_COUNTER_BASE + 1).await?,
                 0
             );
+        } else if case == 7 {
+            wire::talk_refused(
+                &mut owner, &mut admitted, npc, &[(3, "hi"), (4, "campaign")],
+            ).await?;
+            assert_eq!(value(&owner, &authority, quest::JOIN_STORAGE).await?, 1);
+            // Fixture-only predecessor state, matching seed(); runtime reward guards stay enabled.
+            let mut setup = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *setup).await?;
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,11,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT(character_id,track_key) DO UPDATE SET value=11")
+                .bind(id(41).as_slice()).bind(quest::campaign::PHASE).bind(quest::QUEST).execute(&mut *setup).await?;
+            setup.commit().await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
+            wire::talk(&mut owner, &mut admitted, npc, &[(5, "hi"), (6, "campaign")]).await?;
         } else if case == 5 {
             questpc8_campaign::exercise(&mut owner, &mut admitted, npc, &h, &authority, &journal)
                 .await?;

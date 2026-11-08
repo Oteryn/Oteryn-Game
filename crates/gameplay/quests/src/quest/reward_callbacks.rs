@@ -1342,15 +1342,15 @@ mod tests {
         for (key, expected) in [
             (
                 "oteryn:quest.outfit_and_addon_quests",
-                "87f6476714ed0ad9ea3a2eb7c54e0a2d34f263f536be9d6c143153629d2f328d",
+                "f37a54a3aa987e9539e416932db32476440c6d05d2a220ccada66760a4497b77",
             ),
             (
                 "oteryn:quest.the_ice_islands_quest",
-                "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
+                "870e7f4526301756d2cc0aa1a7df63fbb47a23fd991182cd912dfe4d3b4e5ad2",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
-                "0df1f07a25989a00e27d16a890e8598556f37bcb08deb2a3b2feab8958747414",
+                "670d3cc7ac7a8220c0adf01618504ad1b8815d3818906c117142eae84a8ee592",
             ),
         ] {
             let hash = lowered

@@ -68,6 +68,14 @@ pub(super) fn prepare(
         runtime,
         |context, topic, _, tracks| {
             let text = intent.text.trim().to_ascii_lowercase();
+            // The completed campaign retains Grizzly's harmless reminder dialogue.
+            if context.2 == oteryn_gameplay_quests::quest::grizzly_adams::NPC
+                && text == "campaign"
+                && tracks.get(oteryn_gameplay_quests::quest::grizzly_adams::campaign::PHASE)
+                    == Some(&11)
+            {
+                return None;
+            }
             let eligible = |storage: &[Storage]| {
                 storage.iter().all(|s| {
                     tracks

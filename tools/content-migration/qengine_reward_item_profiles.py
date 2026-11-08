@@ -34,10 +34,8 @@ CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
 
 
 def physical_authoring(prior):
-    """Keep source identity metadata independent of later taxonomy enrichment."""
-    authoring = copy.deepcopy(prior['authoring'])
-    authoring.pop('taxonomy', None)
-    return authoring
+    """Capture Item identity; derived taxonomy and equipment metadata keep native owners."""
+    return {'item': copy.deepcopy(prior['authoring']['item'])}
 
 
 def capture(root=ROOT):
