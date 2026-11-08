@@ -12,7 +12,7 @@ category = "gameplay"
 release-role = "production"
 
 [features]
-test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-entities/test-support", "oteryn-gameplay-foundation/test-support"]
+test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-entities/test-support", "oteryn-gameplay-foundation/test-support", "oteryn-gameplay-quests/test-support"]
 
 [dependencies]
 oteryn-gameplay-encounter-rules = { version = "=0.1.0", path = "../encounter-rules" }

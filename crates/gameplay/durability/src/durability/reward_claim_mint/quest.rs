@@ -108,6 +108,19 @@ pub struct QuestRewardFeePayment {
 pub struct QuestCarriedUse {
     pub source: [u8; 16],
     pub intent: Vec<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub corpse: Option<QuestCorpseUse>,
+}
+
+/// Server-observed operands retained under the item lane until the quest commits.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct QuestCorpseUse {
+    pub item: [u8; 16],
+    pub actor_position: [i32; 3],
+    pub map_revision: String,
+    pub content_revision: String,
+    pub placement_context: Vec<u8>,
 }
 
 /// The runtime supplies its admitted generation and the normal wheel-aware capacity lookup.
@@ -140,6 +153,10 @@ pub(crate) async fn apply(
         return Ok(false);
     };
     if callback.carried_item.is_some() != admission.carried_use.is_some()
+        || callback.corpse_target.is_some()
+            != admission
+                .carried_use
+                .is_some_and(|use_| use_.corpse.is_some())
         || admission.carried_use.is_some_and(|use_| {
             use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
         })
@@ -148,6 +165,32 @@ pub(crate) async fn apply(
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
+    }
+    if let Some(target) = &callback.corpse_target {
+        let content_revision = format!(
+            "sha256:{}",
+            admission
+                .native
+                .source_digest()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        );
+        if admission
+            .carried_use
+            .and_then(|use_| use_.corpse.as_ref())
+            .is_none_or(|observed| observed.content_revision != content_revision)
+            || admission
+                .native
+                .item_policy(&target.item, &target.revision)
+                .is_none()
+            || !admission.native.policies().policies().iter().any(|policy| {
+                policy.definition_key == target.creature
+                    && policy.definition_revision == target.creature_revision
+            })
+        {
+            return Ok(false);
+        }
     }
     if callback
         .cosmetic_targets()

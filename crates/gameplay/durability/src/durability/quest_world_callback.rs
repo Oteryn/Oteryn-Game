@@ -20,6 +20,7 @@ pub struct QuestWorldContext {
     pub movement_revision: u64,
 }
 
+mod corpse_use;
 #[path = "quest_world_callback/reward_inputs.rs"]
 mod reward_inputs;
 
@@ -45,6 +46,9 @@ pub(super) async fn consume_reward_inputs(
     let super::quest_state::QuestCause::Command(_) = request.cause else {
         return Ok(false);
     };
+    if !corpse_use::validate(tx, fence, callback, carried_use).await? {
+        return Ok(false);
+    }
     let keys: Vec<_> = callback
         .take
         .iter()

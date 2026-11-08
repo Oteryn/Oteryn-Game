@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "tracks": [{
+    "writable": true,
+    "key": "oteryn:quest-progress/engine-corpse-fixture",
+    "quest": "oteryn:quest.engine_corpse_fixture",
+    "initial": 0, "min": 0, "max": 1,
+    "sources": ["engine fixture"]
+  }],
+  "callbacks": [{
+    "key": "oteryn:quest-reward/engine-corpse-fixture",
+    "quest": "oteryn:quest.engine_corpse_fixture",
+    "npc": "oteryn:npc.engine_fixture",
+    "carried_item": "oteryn:item.tibia.i5908",
+    "corpse_target": {
+      "item": "oteryn:item.tibia.i5964", "revision": "definition-r1",
+      "creature": "oteryn:creature.rat", "creature_revision": "definition-r1"
+    },
+    "keywords": ["fixture"], "topic": 0, "next_topic": 0, "completes": false,
+    "storage": [{"track":"oteryn:quest-progress/engine-corpse-fixture", "minimum":0,"maximum":0,"set":1}],
+    "take": [{"item":"oteryn:item.tibia.i5908","count":1}],
+    "give": null, "outfit": null, "exact_take": false,
+    "achievement": null, "reply": ["Fixture."], "sources": ["engine fixture"]
+  }]
+}

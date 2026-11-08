@@ -118,6 +118,15 @@ pub struct AchievementProgress {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct CorpseTarget {
+    pub item: String,
+    pub revision: String,
+    pub creature: String,
+    pub creature_revision: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct RewardCallback {
     pub key: String,
     pub quest: String,
@@ -125,6 +134,9 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    /// A carried USE requires an exact live native corpse of this source race.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub corpse_target: Option<CorpseTarget>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -244,6 +256,8 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    #[cfg(feature = "test-support")]
+    include_str!("reward_callbacks/corpse_fixture.json"),
 ];
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
@@ -396,6 +410,14 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
+            || c.corpse_target.as_ref().is_some_and(|target| {
+                c.carried_item.is_none()
+                    || !slug(&target.item, "oteryn:item.", b"._/:-", 256)
+                    || !slug(&target.creature, "oteryn:creature.", b"._/:-", 128)
+                    || [&target.revision, &target.creature_revision]
+                        .iter()
+                        .any(|revision| revision.is_empty() || revision.len() > 128)
+            })
             || c.carried_item.as_ref().is_some_and(|item| {
                 c.take
                     != [ItemAmount {
@@ -542,7 +564,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none() {
+    if callback.minimum_level.is_none() && callback.corpse_target.is_none() {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
@@ -738,6 +760,39 @@ mod tests {
         }
         Ok(())
     }
+    #[test]
+    fn carried_corpse_targets_require_closed_definition_and_race() -> Result<(), String> {
+        let original = super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/l10-brotherhood-use-follower")
+            .ok_or("carried source")?;
+        let mut row = serde_json::to_value(original).map_err(|e| e.to_string())?;
+        row["corpse_target"] = serde_json::json!({
+            "item": "oteryn:item.tibia.i5964", "revision": "definition-r1",
+            "creature": "oteryn:creature.rat", "creature_revision": "definition-r1"
+        });
+        let document = |row| serde_json::json!({"schema":1,"callbacks":[row]}).to_string();
+        let mut parsed = super::parse(&document(row.clone()))?;
+        let mut callback = parsed.pop().ok_or("corpse callback")?;
+        let binding = gated_binding(&callback)?.ok_or("corpse binding")?;
+        callback
+            .corpse_target
+            .as_mut()
+            .ok_or("corpse target")?
+            .creature_revision = "other-r1".into();
+        assert_ne!(gated_binding(&callback)?, Some(binding));
+        for field in ["item", "revision", "creature", "creature_revision"] {
+            let mut invalid = row.clone();
+            invalid["corpse_target"][field] = "".into();
+            assert!(super::parse(&document(invalid)).is_err(), "{field}");
+        }
+        row.as_object_mut()
+            .ok_or("callback")?
+            .remove("carried_item");
+        assert!(super::parse(&document(row)).is_err());
+        Ok(())
+    }
+
     #[test]
     fn carried_quest_tools_bind_exactly_one_input_and_negative_ownership() -> Result<(), String> {
         let original = super::load()?

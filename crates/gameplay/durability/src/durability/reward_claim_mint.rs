@@ -123,7 +123,7 @@ mod monk;
 pub(crate) mod quest;
 mod quest_actor_conditions;
 mod quest_participants;
-pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
+pub use quest::{QuestCarriedUse, QuestCorpseUse, QuestRewardAdmission, QuestRewardFeePayment};
 pub use quest_actor_conditions::QuestActorConditionProof;
 mod santa;
 pub use santa::{

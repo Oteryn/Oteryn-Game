@@ -346,11 +346,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
+        target: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
         };
-        use crate::durability::reward_claim_mint::{QuestCarriedUse, QuestRewardAdmission};
+        use crate::durability::reward_claim_mint::{
+            QuestCarriedUse, QuestCorpseUse, QuestRewardAdmission,
+        };
         use oteryn_gameplay_quests::quest::reward_callbacks;
         let Some(item_fence) = command.item_fence else {
             return Ok(None);
@@ -411,12 +414,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
+            .filter(|c| c.corpse_target.is_some() == target.is_some())
             .collect::<Vec<_>>();
         if bound.is_empty() {
             return Ok(None);
         }
         if intent.use_with.is_some()
-            || intent.use_with_map_item.is_some()
+            || intent.use_with_map_item.is_some() != target.is_some()
             || intent.use_with_position.is_some()
             || !self
                 .states
@@ -490,9 +494,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|g| g.native_gameplay())
             .ok_or(())?;
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+        let corpse = if let Some(target) = target {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
+            if !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+                || states.is_dead(actor)
+                || !states.spell_idle(&runtime, actor, command.game_session_id)
+                || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                    .is_none()
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let corpse = match target {
+                ItemKey::Instance(item) => item,
+                ItemKey::Entity(identity) => {
+                    let Some(corpse) = runtime.bound_corpse(identity) else {
+                        return Ok(Some(outcome(UseDisposition::StaleState)));
+                    };
+                    corpse.item.item_instance_id
+                }
+                _ => return Ok(Some(outcome(UseDisposition::Rejected))),
+            };
+            if !self
+                .states
+                .player_trades
+                .physical(command.game_session_id, Some(corpse))
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let position = runtime
+                .read_actor_position(actor)
+                .map_err(|_| ())?
+                .position();
+            let map = self.bundle_map().ok_or(())?;
+            Some(QuestCorpseUse {
+                item: corpse,
+                actor_position: [position.x, position.y, i32::from(position.floor)],
+                map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                content_revision: format!(
+                    "sha256:{}",
+                    super::quest_callbacks::hex(&runtime.content_pin().server_artifact_digest())
+                ),
+                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+            })
+        } else {
+            None
+        };
         let use_ = QuestCarriedUse {
             source,
             intent: encoded,
+            corpse,
         };
         let result = self
             .revision_sequencer
