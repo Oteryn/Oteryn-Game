@@ -189,7 +189,7 @@ Zasady przeciw dublowaniu:
 | T160 | Modal dialogs | Blessings / death protection overview | PARTIAL | Stan i death notices są; brak pełnego dedykowanego Blessings dialog. |
 | T166 | Modal dialogs | Nagging / balancing / generic notices | PARTIAL | Wiadomości serwera są; brak dedykowanych interaktywnych dialogów i dont-show-again. |
 | O040 | Modal dialogs | Ogólne dialogi modalne serwera | MISSING | Brakuje ogólnego handlera dialogu z identyfikatorem, listą wyborów i przyciskami oraz odpowiedzią wyboru do serwera. |
-| T123 | Proficiency | Weapon perks/rank i shape/reshape | PARTIAL | Operacje/katalog są; ręczne id/perk index/slot/revision zamiast pełnego wyboru wizualnego. |
+| T123 | Proficiency | Weapon perks/rank i shape/reshape | DONE | Evidence: apps/client/src/features/0195-weapon-proficiency/input.rs:6 + proficiency_session_routes_state_from_native_selection_into_exact_paid_revision |
 | T017 | PvP | Unjustified points i skull timer | PARTIAL | Są stany PvP/warunki; brak pełnego Unjustified Points widget. |
 | O066 | PvP | Unjustified points i limity fragów | PARTIAL | Brakuje liczników dziennych/tygodniowych/miesięcznych fragów, czasu czaszki i otwartych sytuacji PvP; obecny panel pokazuje tylko tarcze i czaszki. |
 | T144 | Rewards | Daily wall/streak/jokers/claim/pick items | PARTIAL | 30-day wall/claim są; brak pełnego kalendarza, historii i pick-items dialog. |

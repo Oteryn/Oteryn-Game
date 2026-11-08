@@ -888,9 +888,10 @@
   "src": "TIBAUD-1",
   "area": "Proficiency",
   "feature": "Weapon perks/rank i shape/reshape",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Operacje/katalog są; ręczne id/perk index/slot/revision zamiast pełnego wyboru wizualnego.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0195-weapon-proficiency/input.rs:6 + proficiency_session_routes_state_from_native_selection_into_exact_paid_revision"
  },
  {
   "id": "T124",
