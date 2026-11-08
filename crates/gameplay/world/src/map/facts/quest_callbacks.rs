@@ -1,6 +1,10 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
 
+#[path = "quest_item_batch.rs"]
+mod item_batch;
+pub use item_batch::QuestMapItemMove;
+
 #[derive(Clone, Debug)]
 struct MovementDecay {
     revision: u64,
@@ -19,6 +23,11 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// Each read revision, including cells which do not change, fences the batch.
+    ReadsetTransforms {
+        entries: Vec<(u64, u64, Option<EntryFacts>)>,
+        reset: Option<(u64, EntryFacts)>,
+    },
     Portals {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
@@ -46,6 +55,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
 }
 
@@ -67,6 +77,44 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::ReadsetTransforms { entries, reset } => {
+                let keys: BTreeSet<_> = entries.iter().map(|(key, _, _)| *key).collect();
+                if entries.is_empty()
+                    || entries.len() > 8
+                    || keys.len() != entries.len()
+                    || keys.contains(&owner)
+                    || entries.iter().any(|(key, expected, _)| {
+                        *expected == u64::MAX
+                            || self.hidden.contains(key)
+                            || self.changed.get(key).map_or(0, |(revision, _)| *revision)
+                                != *expected
+                    })
+                {
+                    return false;
+                }
+                if let Some((due, restore)) = reset {
+                    let Some(revision) = self
+                        .changed
+                        .get(&owner)
+                        .map_or(0, |(r, _)| *r)
+                        .checked_add(1)
+                    else {
+                        return false;
+                    };
+                    self.movement_decays.insert(
+                        (*due, owner),
+                        MovementDecay {
+                            revision,
+                            restore: *restore,
+                        },
+                    );
+                }
+                for (key, revision, after) in entries {
+                    if let Some(after) = after {
+                        self.changed.insert(*key, (revision + 1, *after));
+                    }
+                }
+            }
             QuestCallbackProjection::TimedTransform { due, restore } => {
                 let Some(revision) = self
                     .changed
@@ -214,6 +262,7 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
+            + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
     }
@@ -835,7 +884,10 @@ impl BundleFacts {
             .palette
             .iter()
             .filter(|p| p.facts.appearance_id == appearance);
-        let replacement = entries.next()?;
+        let Some(replacement) = entries.next() else {
+            // Source transforms may name a served state which is never placed in the base map.
+            return self.movement_definitions.get(&appearance).copied();
+        };
         if entries.next().is_some() {
             return None;
         }
@@ -985,7 +1037,7 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos) {
+        if states.solid_items.contains(&pos) || states.batch_blockers.contains(&pos) {
             return true;
         }
         let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
@@ -1133,5 +1185,63 @@ mod lifecycle_tests {
         assert!(facts.apply_quest_callback(1, 3, active, &[], &[], false, None));
         assert_eq!(facts.expire_movement_items(10_000_001), 0);
         assert_eq!(facts.object_revision(1), 4);
+    }
+}
+
+#[cfg(test)]
+mod readset_tests {
+    use super::*;
+    #[test]
+    fn multi_cell_readset_refuses_stale_unchanged_cell_without_partial_writes() {
+        let facts = BundleFacts::default();
+        let before = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 9935,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let after = EntryFacts {
+            appearance_id: 9933,
+            ..before
+        };
+        // A transformed source state need not occur anywhere in the pinned base palette.
+        let mut served = BundleFacts::default();
+        served.movement_definitions.insert(9933, after);
+        let key = placement_key(
+            TilePos {
+                x: 33352,
+                y: 31126,
+                floor: -5,
+            },
+            1,
+        );
+        assert_eq!(
+            key.and_then(|key| served.quest_callback_replacement(key, 9933)),
+            Some(after)
+        );
+
+        let projection = QuestCallbackProjection::ReadsetTransforms {
+            entries: vec![(10, 0, Some(after)), (11, 0, None)],
+            reset: Some((5_000_000, before)),
+        };
+        assert!(facts.apply_quest_callback(1, 0, after, &[], &[], false, Some(&projection)));
+        assert_eq!(facts.object_revision(10), 1);
+        assert_eq!(facts.object_revision(11), 0);
+        assert_eq!(facts.expire_movement_items(4_999_999), 0);
+        assert_eq!(facts.expire_movement_items(5_000_000), 1);
+        assert!(facts.apply_quest_callback(11, 0, after, &[], &[], false, None));
+        let stale = QuestCallbackProjection::ReadsetTransforms {
+            entries: vec![(10, 1, Some(before)), (11, 0, None)],
+            reset: None,
+        };
+        assert!(!facts.apply_quest_callback(1, 2, after, &[], &[], false, Some(&stale)));
+        assert_eq!(facts.object_revision(1), 2);
+        assert_eq!(facts.object_revision(10), 1);
+        assert_eq!(facts.object_revision(11), 1);
+        assert_eq!(facts.next_movement_decay_time(), None);
     }
 }
