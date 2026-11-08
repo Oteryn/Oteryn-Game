@@ -457,6 +457,25 @@ impl ChatRuntime {
         ))
     }
 
+    /// Reconcile every customer after the NPC owner commits a relocation.
+    pub(super) fn close_relocated_npc(&self, runtime: &ChannelRuntimeV1, npc: ExactActorRef) {
+        let customers = self
+            .sessions
+            .lock()
+            .ok()
+            .map(|sessions| {
+                sessions
+                    .iter()
+                    .filter(|(_, entry)| entry.engaged == Some(npc))
+                    .map(|(session, _)| *session)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        for session in customers {
+            self.close_out_of_range(runtime, session);
+        }
+    }
+
     /// The range check after a committed move or relocation of the customer `session`
     /// (NPC-BEHAVIOUR-0 §7, `NPC0-RL-07`): a conversation whose NPC is gone, on another floor or
     /// more than [`TALK_RANGE_TILES`] tiles away closes, and the NPC's walk-away line waits for

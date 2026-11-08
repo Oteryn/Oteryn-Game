@@ -1,5 +1,6 @@
 //! World raid scheduling from the verified generated catalogue. Channel effects
 //! are consumed by the existing dispatch/monster owner after durable admission.
+pub(super) mod world_changes;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::raid_schedule::{
@@ -21,6 +22,7 @@ pub(super) struct RaidScheduler<'a, 'f, 's> {
     pub character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub node: &'a NodeIncarnationProof,
     pub runtime: &'a Mutex<ChannelRuntimeV1>,
+    pub map: Option<&'a crate::map::boot::BundleMap>,
     pub world: WorldId,
     pub channel: ChannelId,
     pub generation: u64,
@@ -86,9 +88,9 @@ fn source_order(raid: &CatalogueRaid) -> (u8, u16) {
 
 // W10 owns Stampede's day roll. The raid owner retains firing deduplication,
 // the native sixteen-creature area, announcements, replay and reset cleanup.
-fn stampede_day(candidate: &mut RaidScheduleCandidate, world: WorldId, epoch: u64, now_ms: i64) {
+fn stampede_day(candidate: &mut RaidScheduleCandidate, _world: WorldId, _epoch: u64, _now_ms: i64) {
     if candidate.key.as_str() == "raid:porthope.stampede" {
-        candidate.eligible = super::serve::daily_world_changes::roll(world, epoch, now_ms).stampede;
+        // The durable reset/event owner checks the committed Stampede decision.
         candidate.global_margin_ms = 0;
     }
 }
@@ -195,6 +197,7 @@ pub(super) async fn run(scheduler: RaidScheduler<'_, '_, '_>, stop: &Cancellatio
     let mut next_check = 0_i64;
     loop {
         let now_ms = i64::try_from(oteryn_error_codes::unix_ms()).unwrap_or(i64::MAX);
+        world_changes::observe(&scheduler, generation).await;
         if now_ms >= next_check {
             {
                 let runtime = scheduler.runtime.lock().await;
@@ -425,35 +428,50 @@ mod tests {
                 .to_string(),
         )
         .map_err(debug)?;
-        let (old_cells, bundle) = furyosa_test_cells(world, channel, Some(1), true)?;
+        let current = (2..10_000_u64)
+            .find(|epoch| {
+                crate::durability::world_event::changes::roll(world, *epoch, 0)
+                    .is_ok_and(|day| day.fury_gates == Some("fury_gates/thais"))
+            })
+            .ok_or("active Thais Fury epoch")?;
+        let previous = current - 1;
+        let (old_cells, bundle) = furyosa_test_cells(world, channel, Some(previous), true)?;
         let (active_layers_epoch, active_layers) = world_change_layers(&old_cells);
         let mut scheduler = RaidScheduler {
             root: &h.root,
             character: &authority,
             node: &h.node,
             runtime: &runtime,
+            map: None,
             world,
             channel,
             generation: 1,
-            reset_epoch: 1,
+            reset_epoch: previous,
             bundle_digest: Some(bundle),
             active_layers_epoch,
             active_layers,
         };
-        for epoch in [1_i64, 2] {
+        for epoch in [previous, current] {
             sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01')").bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(bundle.as_slice()).execute(&h.pool).await?;
         }
-        sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,2)")
-            .bind(world.as_bytes().as_slice())
-            .execute(&h.pool)
-            .await?;
+        sqlx::query(
+            "INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric)",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(current.to_string())
+        .execute(&h.pool)
+        .await?;
+        h.root
+            .world_changes(world, current)
+            .await?
+            .ok_or("current Fury day")?;
         // Yesterday's boot still has an active Fury, but independently current epoch2 rejects it.
         for now_ms in [0, 60_000] {
             let request = RaidSchedulerCheck {
                 world,
                 channel,
                 generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
-                reset_epoch: 1,
+                reset_epoch: previous,
                 now_ms,
                 bundle_digest: bundle,
                 candidates: candidates(&catalogue, &scheduler, now_ms, bundle).map_err(debug)?,
@@ -470,12 +488,12 @@ mod tests {
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(count, 0, "stale boot cannot create schedule state");
-        scheduler.reset_epoch = 2;
+        scheduler.reset_epoch = current;
         assert!(
             !candidates(&catalogue, &scheduler, 120_000, bundle).map_err(debug)?[0].eligible,
             "old geometry cannot be rebound to the new epoch"
         );
-        let (offday, off_digest) = furyosa_test_cells(world, channel, Some(2), false)?;
+        let (offday, off_digest) = furyosa_test_cells(world, channel, Some(current), false)?;
         assert_eq!(off_digest, bundle);
         (scheduler.active_layers_epoch, scheduler.active_layers) = world_change_layers(&offday);
         for now_ms in [120_000, 180_000] {
@@ -488,7 +506,7 @@ mod tests {
                 world,
                 channel,
                 generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
-                reset_epoch: 2,
+                reset_epoch: current,
                 now_ms,
                 bundle_digest: bundle,
                 candidates: proposals,
@@ -504,7 +522,7 @@ mod tests {
         let (undated, _) = furyosa_test_cells(world, channel, None, true)?;
         (scheduler.active_layers_epoch, scheduler.active_layers) = world_change_layers(&undated);
         assert!(!candidates(&catalogue, &scheduler, 240_000, bundle).map_err(debug)?[0].eligible);
-        let (active, _) = furyosa_test_cells(world, channel, Some(2), true)?;
+        let (active, _) = furyosa_test_cells(world, channel, Some(current), true)?;
         (scheduler.active_layers_epoch, scheduler.active_layers) = world_change_layers(&active);
         let proposals = candidates(&catalogue, &scheduler, 240_000, bundle).map_err(debug)?;
         assert!(proposals[0].eligible);
@@ -512,7 +530,7 @@ mod tests {
             world,
             channel,
             generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
-            reset_epoch: 2,
+            reset_epoch: current,
             now_ms: 240_000,
             bundle_digest: bundle,
             candidates: proposals,
@@ -563,6 +581,9 @@ mod tests {
         };
         let mut active = 0;
         for epoch in 1..=1000 {
+            candidate.eligible =
+                oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), epoch, 1, 1)
+                    .stampede;
             stampede_day(&mut candidate, world, epoch, 0);
             let selected = candidate.eligible;
             stampede_day(&mut candidate, world, epoch, 86_399_000);

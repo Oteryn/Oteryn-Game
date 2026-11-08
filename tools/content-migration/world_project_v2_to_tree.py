@@ -536,7 +536,7 @@ def main() -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 389:
+    if len(service_records) != 399:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     # Regular quest blessings use the same canonical Service family as sales.

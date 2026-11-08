@@ -65,7 +65,7 @@ impl BlessingCatalogue {
             return false;
         }
         let Ok(declarations) = serde_json::from_str::<serde_json::Value>(include_str!(
-            "../../../../../content/services/blessings/blessing-00000-00007.json"
+            "../../../../../content/services/blessings/blessing-00000-00009.json"
         )) else {
             return false;
         };

@@ -5604,7 +5604,7 @@
       "remaining_scope": "Four wholequestsIN_PROGRESS. Bridge/log8, coat replacement, fiveGROUNDwood/cart; otherquest remainingcomponents per status. No further work by this thread."
     },
     "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
-    "phase": "Batch20 life sites PG-qualified; publish after PREPUSH-2 gates, then quizRED from prepared drafts and remaining units",
+    "phase": "Collector integration compiling/generated publication under PREPUSH-2 step3 cadence exception; source branch then frozen",
     "previous_batch": {
       "id": "carlos-report-paid-fur-merge",
       "phase": "Forward1110 guard namespace/ACL hardening applied after actualPG RED; GREEN/regressions and deterministic gates running",
@@ -9976,19 +9976,25 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T23:46:42.864077+00:00",
+    "updated_at": "2026-11-08T00:33:31.976072+00:00",
     "standing_validation_rule": "PREPUSH-2: fetch+merge main before every push; regenerate generated files/pins/central lists with repo tooling; every changed-crate unit suite plus own real-PG cases; workspace all-targets check and fmt. At30min, may push compiling generated state with step3 tests explicitly pending.",
     "main_merge_validation": {
-      "main": "e1ca3e003",
-      "merge_commit": "0943c20b7",
-      "conflicts": "7 resolved: main visibility/roll integration, combine Callback fields, generated incoming receipt/variant inputs refreshed by repository tooling",
-      "compatibility": "29 lane QuestTransition literals explicitly world_changeNone; Stampede capture/restore retained via main NativeDecision, historical missing flag defaultsfalse;21unitPASS",
-      "regeneration_route": "No content/world inputs changed; five materializer-source diffs only ignore default-public visibility, serialized public field omitted. Full legacy replay stopped; use repo tree/native generators, inventory repin and official final pin-refresh; validate Item/Mount equivalence/world-metadata.",
-      "latest_main": "47db34f09",
-      "latest_merge": "8531be3dc",
-      "latest_conflicts": "6 conflicts resolved: retain Santiago/Rookgaard plus native NPC book admission; both map/chest and Grizzly producers preserved; derived native inputs refreshed",
-      "compatibility_fixes": "3 incoming one-root reward requests backpack_outputsfalse; existing NPC sealed item permit and existing Spell channel permit route through one shared SQL writer viaunder50-line helper; canonical blessing registration regenerated from8existing rows rather than incoming stale4",
-      "latest_reuse": "Reuse main apply_input_rows single SQL writer; remove lane InputAuthority helper, retain spell channel check and sealed NPC item permit. Source change is the same arity-fix integration already required by QNPCFX."
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+      "conflicts": 27,
+      "resolution": "Preserve main shared-added-object source/custody guards plus questpc3 fairy temporary transforms; combine quest trade obligations with Yasir/Yeo position binding; include all17 NPC revision inputs and both template sets. Reuse main daily9draw/committed scheduler authority while preserving Stampede125permille boundary/replay tests; union movement definitions25796/25797. Main blessing10 is exact superset of own8. Derived conflicts use main then official regeneration.",
+      "checks": {
+        "workspace_all_targets": "PASS6m13s /tmp/questpc3-collector-final-workspace-check.log",
+        "fmt": "PASS /tmp/questpc3-collector-final-fmt.log; explicit mounted worldchg fixture formatted",
+        "world_change_units": "PASS22/22 0.03s /tmp/questpc3-collector-world-change-units.log",
+        "generated": "PASS canonical tree, all family producers, native44, Grizzly30/30, blessing10, binding evidence/all373 matrix/audit tags, metadata and materialized97/97",
+        "pins": "PASS World37645a4ee7b0ae79f1e95a47d49d134a29535a4959eeca302318f4be536bc02d; /tmp/questpc3-collector-pin-refresh.log",
+        "migrations": "CLEAR duplicates; canonical0999-1008 10/10 byte-identical to main; own1220-1229 unchanged",
+        "post_merge_own_pg": "BUILDING nine focused cases /tmp/questpc3-collector-own-pg.log, no post-merge GREEN claimed yet",
+        "remaining_crate_units": "PENDING client-assets/client-ui/game-server/gameplay-content/dispatch/durability/encounter-rules/foundation/npc/quests/social/world; world-change22PASS"
+      },
+      "migrations": "Duplicate check CLEAR; only own1220-1229, canonical0999-1008 retained from main; no1200-1205 duplicates",
+      "freeze": "FROZEN for collector after this sole integration push. No new features here; continuation branch claude/happy-davinci-ijz3wy-questpc3b. Unqualified exit draft remains stashed.",
+      "cadence_exception": "Explicit PREPUSH-2 step3 exception: fetch/main+generation/pins+workspace/fmt gatesPASS. Post-merge ownPG and12remaining crate suites pending; pre-merge2353 units and own lava76982ms/life73622ms/quiz158101ms proofs retained, not claimed as post-merge validation."
     },
     "standing_engine_rule": {
       "owner": "qengine2",

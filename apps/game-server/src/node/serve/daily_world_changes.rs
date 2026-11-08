@@ -1,8 +1,6 @@
-//! W05b: the server save rolls the day's world changes at Channel boot and applies the admitted
-//! ones to the live map (`oteryn_gameplay_world_change::daily`).
+//! W05b/WORLDCHG-Q: apply the reset owner's committed daily decision to the live map.
 //!
-//! The draws hang off the committed reset epoch and the World, so a restart within the day rolls
-//! the same day again; no extra durable state is needed.
+//! World/event durability owns the decision; this module only projects its admitted effects.
 
 use super::bundle_npcs::NpcBoot;
 use super::event;
@@ -11,12 +9,10 @@ use crate::map::overlay::TilePos;
 use oteryn_gameplay_world_change::daily::DailyWorldChanges;
 use sha2::{Digest, Sha256};
 
-/// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
-pub(in crate::node) fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorldChanges {
-    let (month, day) = utc_month_day(unix_ms);
-    roll_calendar(world, reset_epoch, month, day)
-}
+#[cfg(test)]
+use crate::durability::world_event::changes::utc_month_day;
 
+#[cfg(test)]
 pub(super) fn roll_calendar(
     world: WorldId,
     reset_epoch: u64,
@@ -87,7 +83,25 @@ pub(super) fn apply(
             })
         })
         .map(|town| ("oteryn:npc.yasir", town.yasir_position()));
-    for (key, (x, y, z)) in changes.npcs().chain(trader) {
+    use oteryn_gameplay_world_change::{counter::CounterKind as K, owner::counter_admitted};
+    // Retained NPC anchors for Orockle/Benevola; adjacent admitted Navigator tile
+    // and the audited Seacrest Guardian are explicit native geometry choices.
+    let shared_npcs = [
+        (K::HiveBorn, "oteryn:npc.orockle", (33448, 31309, 7)),
+        (K::Overhunting, "oteryn:npc.benevola", (32596, 31745, 7)),
+        (K::Deeplings, "oteryn:npc.navigator", (33638, 31377, 9)),
+        // Explicit native barter station, not an asserted donor Yeo coordinate.
+        (K::FireFeathered, "oteryn:npc.yeo", (33554, 31624, 14)),
+        (
+            K::FireFeathered,
+            "oteryn:npc.guardian_of_the_deep_seas",
+            (33553, 31624, 14),
+        ),
+    ]
+    .into_iter()
+    .filter(|(kind, _, _)| changes.world_counters && counter_admitted(*kind))
+    .map(|(_, key, at)| (key, at));
+    for (key, (x, y, z)) in changes.npcs().chain(trader).chain(shared_npcs) {
         if !npc_boot.is_some_and(|boot| boot.admits(key)) {
             continue;
         }
@@ -133,27 +147,6 @@ pub(super) fn apply_items(
     placed
 }
 
-/// The UTC (month, day) of `unix_ms` (days-from-civil inverted).
-pub(super) fn utc_month_day(unix_ms: i64) -> (u8, u8) {
-    let days = unix_ms.div_euclid(86_400_000) + 719_468;
-    let era = days.div_euclid(146_097);
-    let day_of_era = days - era * 146_097;
-    let year_of_era =
-        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
-    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-    let shifted_month = (5 * day_of_year + 2) / 153;
-    let day = day_of_year - (153 * shifted_month + 2) / 5 + 1;
-    let month = if shifted_month < 10 {
-        shifted_month + 3
-    } else {
-        shifted_month - 9
-    };
-    (
-        u8::try_from(month).unwrap_or(1),
-        u8::try_from(day).unwrap_or(1),
-    )
-}
-
 #[cfg(test)]
 #[allow(clippy::expect_used, reason = "test fixtures")]
 pub(crate) mod tests {
@@ -161,6 +154,11 @@ pub(crate) mod tests {
     use crate::foundation::{ChannelId, NodeId, NpcPlacementTable};
     use crate::gameplay_transport::NpcTalkBook;
     use std::sync::Arc;
+
+    fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorldChanges {
+        crate::durability::world_event::changes::roll(world, reset_epoch, unix_ms)
+            .expect("authored daily candidates")
+    }
 
     fn world() -> WorldId {
         WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).expect("world")

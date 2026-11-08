@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "091760f379b90e80a6aefde46495db1ceeb8b694cc3902d77c7aed6033669ef6",
+  "input_sha256": "adbc61ac86391556186f12d1964f550518a14d76b4604e4c363489603192a54f",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2048,7 +2048,6 @@
     "oteryn:creature.defiler",
     "oteryn:creature.demon_outcast",
     "oteryn:creature.demon_parrot",
-    "oteryn:creature.demon_skeleton",
     "oteryn:creature.destroyer",
     "oteryn:creature.devoted_radiant_acolyte",
     "oteryn:creature.devoted_radiant_inquisitor",
@@ -2485,7 +2484,6 @@
     "oteryn:creature.scorpion",
     "oteryn:creature.sea_captain",
     "oteryn:creature.sea_serpent",
-    "oteryn:creature.seacrest_serpent",
     "oteryn:creature.serpent_spawn",
     "oteryn:creature.shaburak_demon",
     "oteryn:creature.shaburak_lord",
@@ -2648,7 +2646,6 @@
     "oteryn:creature.zombie"
   ],
   "unsettleable_creatures": [
-    "oteryn:creature.abyssal_calamary",
     "oteryn:creature.acid_blob",
     "oteryn:creature.acolyte_of_darkness",
     "oteryn:creature.acolyte_of_the_cult",
@@ -2821,7 +2818,6 @@
     "oteryn:creature.defiler",
     "oteryn:creature.demon_outcast",
     "oteryn:creature.demon_parrot",
-    "oteryn:creature.demon_skeleton",
     "oteryn:creature.destroyer",
     "oteryn:creature.devoted_radiant_acolyte",
     "oteryn:creature.devoted_radiant_inquisitor",
@@ -2836,6 +2832,7 @@
     "oteryn:creature.dire_penguin",
     "oteryn:creature.diremaw",
     "oteryn:creature.distorted_phantom",
+    "oteryn:creature.doom_deer",
     "oteryn:creature.doomsday_cultist",
     "oteryn:creature.dragolisk",
     "oteryn:creature.dragon",
@@ -3025,6 +3022,7 @@
     "oteryn:creature.jungle_moa",
     "oteryn:creature.juvenile_bashmu",
     "oteryn:creature.killer_caiman",
+    "oteryn:creature.killer_rabbit",
     "oteryn:creature.knight_s_apparition",
     "oteryn:creature.knowledge_elemental",
     "oteryn:creature.kollos",
@@ -3249,7 +3247,6 @@
     "oteryn:creature.scorpion",
     "oteryn:creature.sea_captain",
     "oteryn:creature.sea_serpent",
-    "oteryn:creature.seacrest_serpent",
     "oteryn:creature.serpent_spawn",
     "oteryn:creature.shaburak_demon",
     "oteryn:creature.shaburak_lord",

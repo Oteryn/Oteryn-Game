@@ -29,6 +29,7 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_character_world_callback(", "durability/character_revision_sequencer.rs"),
     (".commit_charm_command(", "durability/character_revision_sequencer.rs"),
     (".commit_cyclopedia(", "durability/character_revision_sequencer/cyclopedia.rs"),
+    (".commit_npc_marriage(", "durability/character_revision_sequencer/npc_marriage.rs"),
     (".commit_npc_purchase(", "durability/character_revision_sequencer/npc_purchase.rs"),
     (".commit_npc_travel(", "durability/character_revision_sequencer/npc_travel.rs"),
     (".commit_proficiency_catalyst(", "durability/character_revision_sequencer/proficiency_catalyst.rs"),

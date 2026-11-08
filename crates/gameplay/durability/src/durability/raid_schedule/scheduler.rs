@@ -91,6 +91,7 @@ impl DurabilityRoot {
             }
         }
         drop(keys);
+        let requirements = crate::durability::world_event::changes::raid_requirements()?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -134,9 +135,16 @@ impl DurabilityRoot {
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND f.raid_key<>'raid:porthope.stampede' AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            let world_changes = if request.candidates.iter().any(|candidate| requirements.contains_key(candidate.key.as_str())) {
+                crate::durability::world_event::changes::load(&mut tx, request.world, request.reset_epoch).await?
+            } else { None };
             let mut fired = Vec::new();
             let mut retry_activity = false;
             for candidate in request.candidates {
+                if let Some(required) = requirements.get(candidate.key.as_str())
+                    && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
+                    continue;
+                }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };
                 // W10 day activation is independent of the legacy first-winner

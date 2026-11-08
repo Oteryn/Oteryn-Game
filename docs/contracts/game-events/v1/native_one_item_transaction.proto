@@ -680,6 +680,8 @@ message OneItemNpcTradeV1 {
   optional OneItemHirelingPackageV1 hireling_package = 16;
   optional string house_key = 17; // world_id + key name the House; channel_id is origin provenance
   optional OneItemHouseFurnitureKitV1 house_furniture_kit = 18; // mutually exclusive with package
+  optional uint32 fluid_subtype = 19; // NPC-TRADE-3: 0..20, Item fluid state, never quantity
+  optional uint32 full_charges = 20; // NPC-TRADE-3: exact pinned native default charges
 }
 
 // Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using

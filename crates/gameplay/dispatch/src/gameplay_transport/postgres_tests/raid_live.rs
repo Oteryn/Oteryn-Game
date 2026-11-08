@@ -36,6 +36,11 @@ fn raids_global_postgres_badger_map_runtime_e2e() -> TestResult {
 }
 
 #[test]
+fn worldchg_postgres_stampede_map_runtime_e2e() -> TestResult {
+    run_case("worldchg_stampede_map", "raid:porthope.stampede", 16, false)
+}
+
+#[test]
 fn raids_global_postgres_sugar_mommy_map_runtime_boss_death_e2e() -> TestResult {
     run_case("raids_global_boss_e2e", "raid:candia.sugarmommy", 1, true)
 }
@@ -144,11 +149,12 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         area.to.y = area.to.y.max(source_area.to.y);
     }
     assert_eq!(area.from.floor, area.to.floor);
-    if key.as_str() == "raid:porthope.stampede" {
+    if flower { assert_eq!(selected.definition.announcements.len(), 4); }
+    else if key.as_str() == "raid:porthope.stampede" {
         assert_eq!(selected.definition.announcements.len(), 1);
-        assert_eq!(selected.definition.announcements[0].text, "Stampede! The Ape God has stirred up Tiquanda's elephants again!");
-    } else if flower {
-        assert_eq!(selected.definition.announcements.len(), 4);
+        assert_eq!(selected.definition.announcements[0].delay_ms, 1_000);
+        assert_eq!(selected.definition.announcements[0].text,
+            "Stampede! The Ape God has stirred up Tiquanda's elephants again!");
     } else {
         assert!(selected.definition.announcements.is_empty());
     }
