@@ -3,6 +3,60 @@ use super::*;
 use oteryn_protocol_oteryn::inspection::catalogue::{MAX_CATEGORIES, Page, Query, SCAN_LIMIT};
 use std::collections::BTreeSet;
 
+// Native inspection category names, including empty classes and equipment slots.
+const FILTER_CATEGORIES: &[&str] = &[
+    "Bed",
+    "Carpet",
+    "Container",
+    "Depot",
+    "Door",
+    "Dummy",
+    "Key",
+    "Ladder",
+    "MagicField",
+    "Mailbox",
+    "RewardChest",
+    "Rune",
+    "Teleport",
+    "TrashHolder",
+    "Ammunition",
+    "Axe",
+    "Club",
+    "Distance",
+    "Fist",
+    "Shield",
+    "Spellbook",
+    "Sword",
+    "Wand",
+    "head",
+    "body",
+    "legs",
+    "feet",
+    "weapon hand",
+    "shield hand",
+    "neck",
+    "finger",
+    "container",
+    "extra slot",
+    "both hands",
+    "wand/rod",
+];
+
+pub(super) fn category(record: &ItemProfileRecord) -> Option<String> {
+    let semantics = &record.semantics;
+    if let Known(classification) = &semantics.classification
+        && let Known(kind) = classification.item_type
+    {
+        return Some(format!("{kind:?}"));
+    }
+    if let Known(weapon) = &semantics.weapon
+        && let Known(kind) = weapon.weapon_type
+    {
+        return Some(format!("{kind:?}"));
+    }
+    None
+}
+
 pub(super) async fn query(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     query: Query,
@@ -32,7 +86,10 @@ pub(super) fn project_page(
     mut lookup: impl FnMut(u32) -> Option<Option<InspectedItem>>,
 ) -> Reply {
     let mut items = Vec::new();
-    let mut categories = BTreeSet::new();
+    let mut categories: BTreeSet<String> = FILTER_CATEGORIES
+        .iter()
+        .map(|name| (*name).to_owned())
+        .collect();
     let mut cursor = query.after();
     let mut next = None;
     for _ in 0..SCAN_LIMIT {

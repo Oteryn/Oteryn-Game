@@ -47,6 +47,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Toggle POI layer",
                 "Browse items",
                 "Next items",
+                "Previous item",
+                "Next item",
+                "Market offers",
+                "Loot sources",
+                "Next loot sources",
+                "Next market offers",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -66,6 +72,21 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             set_open: |mailbox, value| mailbox.properties.cyclopedia_map.open = value,
             submit: |mailbox, commands, action, values| {
                 if actions::navigate_section(mailbox, action, &values) {
+                    return;
+                }
+                if (28..=33).contains(&action) {
+                    match action {
+                        28 | 29 => {
+                            mailbox.discovery.inspection.select_item(action == 28);
+                        }
+                        30 | 33 => actions::item_market(mailbox, commands, action == 33),
+                        31 | 32 => actions::item_sources(mailbox, commands, action == 32),
+                        _ => {}
+                    }
+                    mailbox
+                        .properties
+                        .cyclopedia_map
+                        .navigate(oteryn_client_ui::cyclopedia_map::Section::Items);
                     return;
                 }
                 if action == 26 || action == 27 {
@@ -181,9 +202,7 @@ fn section_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
         }
         Section::Bosses => oteryn_client_ui::boss_encounter::panel_text(&mailbox.boss_encounter),
         Section::Analytics => oteryn_client_ui::analyser::panel_text(&mailbox.analyser),
-        Section::Items => {
-            oteryn_client_ui::inspection::catalogue_text(&mailbox.discovery.inspection)
-        }
+        Section::Items => items::text(mailbox),
         Section::Houses => oteryn_client_ui::house::panel_text(&mailbox.properties.house.model),
     };
     format!("Cyclopedia > {}\r\n{body}", panel.section.title())
@@ -215,3 +234,11 @@ mod actions;
 #[cfg(test)]
 #[path = "view/tests.rs"]
 mod navigation_tests;
+
+#[cfg(any(windows, test))]
+#[path = "view/items.rs"]
+mod items;
+
+#[cfg(test)]
+#[path = "view/item_tests.rs"]
+mod item_tests;

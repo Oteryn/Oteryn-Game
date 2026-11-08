@@ -509,10 +509,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Items: kategorie/search/statystyki/źródła",
-  "status": "PARTIAL",
-  "gap": "Brak powiązanych ofert rynku i pełnych źródeł łupu; katalog ma teraz serwerowe stronicowanie oraz filtry nazw i kategorii.",
+  "status": "DONE",
+  "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/inspection/catalogue.rs:6 + catalogue_pages_advance_over_sparse_records_and_filter_public_templates; apps/client/src/features/0057-cyclopedia-map/view/actions.rs:83 + item_browser_round_trip_uses_paged_public_catalogue_protocol; catalogue_inspection_route_decodes_filters_and_encodes_continuation; PARTIAL: linked market offers and complete drop sources remain."
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/item_tests.rs:136 + item_acquisition_sources_round_trip_to_matching_creatures_and_market_offers; crates/gameplay/dispatch/src/gameplay_transport/inspection/sources.rs:16 + catalogue_loot_sources_require_current_item_revision_and_nonzero_probability; catalogue_inspection_route_decodes_filters_and_encodes_continuation; catalogue_scope_change_invalidates_definition_and_source_cursors"
  },
  {
   "id": "T079",

@@ -51,6 +51,7 @@ impl Outbox {
         let state = &mut mailbox.discovery;
         *state = Default::default();
         state.loot.selected = session.server_mechanic_selected(98);
+        state.inspection.invalidate_catalogue();
         state.inspection.selected = session.server_mechanic_selected(132);
         state.leader.selected = session.server_mechanic_selected(200);
         state.teams.selected = session.server_mechanic_selected(232);

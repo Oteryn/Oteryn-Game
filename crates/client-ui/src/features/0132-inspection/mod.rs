@@ -4,7 +4,7 @@ mod protocol;
 mod state;
 mod view;
 pub use input::open_key;
-pub use protocol::{apply_result, request, request_page};
+pub use protocol::{apply_result, request, request_page, request_sources};
 pub use state::Panel;
 pub use view::{catalogue_text, panel_text};
 

@@ -16,6 +16,8 @@ use std::{collections::HashMap, sync::Mutex};
 mod catalogue;
 #[path = "inspection_imbuements.rs"]
 mod imbuement_text;
+#[path = "inspection/sources.rs"]
+mod sources;
 
 macro_rules! authority_methods {
     () => {
@@ -125,6 +127,9 @@ pub(super) async fn inspect(
             })
         }
         Request::CataloguePage(query) => catalogue::query(owner, query).await,
+        Request::CatalogueSources { definition, after } => {
+            sources::query(owner, definition, after).await
+        }
         Request::Catalogue(reference) => {
             let definition = {
                 let runtime = owner.runtime.lock().await;
@@ -365,10 +370,8 @@ fn details(
             attributes.push((label.to_owned(), value));
         }
     };
-    if let Known(classification) = &s.classification
-        && let Known(item_type) = classification.item_type
-    {
-        add("category", format!("{item_type:?}"));
+    if let Some(category) = catalogue::category(record) {
+        add("category", category);
     }
     if let Known(value) = &presentation.description {
         add("Description", value.clone());
@@ -1298,3 +1301,7 @@ async fn permission(
 #[cfg(test)]
 #[path = "inspection/catalogue_tests.rs"]
 mod catalogue_tests;
+
+#[cfg(test)]
+#[path = "inspection/sources_tests.rs"]
+mod sources_tests;

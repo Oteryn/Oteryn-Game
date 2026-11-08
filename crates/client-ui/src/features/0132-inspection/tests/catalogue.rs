@@ -64,3 +64,162 @@ fn public_catalogue_paging_uses_wire_filters_and_keeps_confirmed_page_on_refusal
     assert!(request_page(&mut panel, true).is_none());
     Ok(())
 }
+
+#[test]
+fn catalogue_sources_keep_separate_item_and_creature_cursors()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut panel = Panel {
+        selected: true,
+        catalogue_definition: "40000".into(),
+        catalogue_query: Some(catalogue::Query::new(0, "", "").map_err(|_| "query")?),
+        catalogue_page: Some(catalogue::Page {
+            next: Some(40000),
+            categories: vec![],
+        }),
+        ..Default::default()
+    };
+    panel.catalogue.insert(
+        40000,
+        InspectedItem {
+            slot: 0,
+            definition_ref: 40000,
+            count: 1,
+            tier: 0,
+            name: "Sword".into(),
+            attributes: vec![],
+        },
+    );
+    let request = request_sources(&mut panel, false).ok_or("sources")?;
+    assert_eq!(
+        decode_request(&request.payload).map_err(|_| "request")?,
+        Request::CatalogueSources {
+            definition: 40000,
+            after: 0
+        }
+    );
+    let reply = Reply {
+        status: 1,
+        requests: vec![],
+        items: vec![InspectedItem {
+            slot: 0,
+            definition_ref: 40000,
+            count: 1,
+            tier: 0,
+            name: "Sword".into(),
+            attributes: vec![("Dropped by".into(), "Dragon".into())],
+        }],
+        catalogue: Some(catalogue::Page {
+            next: Some(256),
+            categories: vec![],
+        }),
+    };
+    apply_result(
+        &mut panel,
+        &ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: encode_reply(&reply).map_err(|_| "reply")?,
+        },
+    );
+    assert_eq!(panel.catalogue_sources, ["Dragon"]);
+    assert_eq!(panel.catalogue_source_next, Some(256));
+    let page = request_page(&mut panel, true).ok_or("catalogue next")?;
+    assert_eq!(
+        decode_request(&page.payload).map_err(|_| "request")?,
+        Request::CataloguePage(catalogue::Query::new(40000, "", "").map_err(|_| "query")?)
+    );
+    apply_result(
+        &mut panel,
+        &ServerMechanicResponse {
+            command_id: 2,
+            server_sequence: 2,
+            status: CommandStatus::Rejected,
+            payload: vec![],
+        },
+    );
+    let source = request_sources(&mut panel, true).ok_or("sources next")?;
+    assert_eq!(
+        decode_request(&source.payload).map_err(|_| "request")?,
+        Request::CatalogueSources {
+            definition: 40000,
+            after: 256
+        }
+    );
+    let mut wrong = reply;
+    wrong.items[0].definition_ref = 39999;
+    if let Some(page) = &mut wrong.catalogue {
+        page.next = Some(512);
+    }
+    apply_result(
+        &mut panel,
+        &ServerMechanicResponse {
+            command_id: 3,
+            server_sequence: 3,
+            status: CommandStatus::Accepted,
+            payload: encode_reply(&wrong).map_err(|_| "reply")?,
+        },
+    );
+    assert_eq!(panel.catalogue_sources, ["Dragon"]);
+    assert_eq!(panel.catalogue_source_next, Some(256));
+    request_page(&mut panel, false).ok_or("restart catalogue")?;
+    let invalid_page = Reply {
+        status: 1,
+        requests: vec![],
+        items: vec![InspectedItem {
+            slot: 0,
+            definition_ref: 40000,
+            count: 1,
+            tier: 0,
+            name: "Sword".into(),
+            attributes: vec![],
+        }],
+        catalogue: Some(catalogue::Page {
+            next: Some(256),
+            categories: vec![],
+        }),
+    };
+    apply_result(
+        &mut panel,
+        &ServerMechanicResponse {
+            command_id: 4,
+            server_sequence: 4,
+            status: CommandStatus::Accepted,
+            payload: encode_reply(&invalid_page).map_err(|_| "reply")?,
+        },
+    );
+    assert_eq!(
+        panel.catalogue_page.as_ref().and_then(|page| page.next),
+        Some(40000)
+    );
+    Ok(())
+}
+
+#[test]
+fn catalogue_item_selection_clears_sources_when_the_selected_template_changes() {
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    for id in [10, 20] {
+        panel.catalogue.insert(
+            id,
+            InspectedItem {
+                slot: 0,
+                definition_ref: id,
+                count: 1,
+                tier: 0,
+                name: format!("Item {id}"),
+                attributes: vec![],
+            },
+        );
+    }
+    assert!(panel.select_item(false));
+    assert_eq!(panel.catalogue_definition, "10");
+    panel.catalogue_source_definition = 10;
+    panel.catalogue_sources.push("Dragon".into());
+    assert!(panel.select_item(false));
+    assert_eq!(panel.catalogue_definition, "20");
+    assert!(panel.catalogue_sources.is_empty());
+    assert_eq!(panel.catalogue_source_definition, 0);
+}

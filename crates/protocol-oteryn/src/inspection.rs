@@ -36,6 +36,10 @@ pub enum Request {
     },
     Catalogue(u32),
     CataloguePage(catalogue::Query),
+    CatalogueSources {
+        definition: u32,
+        after: u32,
+    },
     /// 1 ask, 2 grant, 3 revoke, 4 allow all, 5 disable allow all, 6 poll requests.
     Permission {
         action: u8,
@@ -128,6 +132,9 @@ pub fn encode_request(request: Request) -> Result<Vec<u8>> {
         Request::Catalogue(reference) if reference != 0 => {
             push_varint_field(&mut out, 4, u64::from(reference))
         }
+        Request::CatalogueSources { definition, after } if definition != 0 => {
+            push_message_field(&mut out, 7, &catalogue::encode_sources(definition, after));
+        }
         Request::CataloguePage(query) => {
             push_message_field(&mut out, 6, &catalogue::encode_query(query))
         }
@@ -192,6 +199,10 @@ pub fn decode_request(input: &[u8]) -> Result<Request> {
                 }
                 Request::Catalogue(n)
             }
+            58 => {
+                let (definition, after) = catalogue::decode_sources(read_bytes(input, cursor)?)?;
+                Request::CatalogueSources { definition, after }
+            }
             50 => Request::CataloguePage(catalogue::decode_query(read_bytes(input, cursor)?)?),
             42 => {
                 let mut action = None;
@@ -243,15 +254,13 @@ pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>> {
     if reply.items.len() > MAX_ITEMS {
         return Err(WireError::LimitExceeded);
     }
-    if let Some(page) = &reply.catalogue
+    if reply.catalogue.is_some()
         && (reply.status != 1
             || !reply.requests.is_empty()
-            || reply.items.iter().any(|item| {
-                item.slot != 0
-                    || item.count != 1
-                    || item.tier != 0
-                    || page.next.is_some_and(|next| item.definition_ref > next)
-            })
+            || reply
+                .items
+                .iter()
+                .any(|item| item.slot != 0 || item.count != 1 || item.tier != 0)
             || reply
                 .items
                 .windows(2)

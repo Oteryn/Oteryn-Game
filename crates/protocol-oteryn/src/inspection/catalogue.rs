@@ -4,6 +4,7 @@ pub const MAX_SEARCH_BYTES: usize = 48;
 pub const MAX_CATEGORY_BYTES: usize = 32;
 pub const MAX_CATEGORIES: usize = 64;
 pub const SCAN_LIMIT: usize = 256;
+pub const SOURCES_PER_PAGE: usize = 10;
 
 /// Fixed capacity keeps the existing inspection request a Copy value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,7 +54,7 @@ impl Query {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Page {
-    /// Last scanned definition, including records without public presentation data.
+    /// Last scanned definition or creature row, according to the request variant.
     pub next: Option<u32>,
     pub categories: Vec<String>,
 }
@@ -137,4 +138,26 @@ pub(super) fn decode_page(input: &[u8]) -> Result<Page> {
     let page = Page { next, categories };
     encode_page(&page)?;
     Ok(page)
+}
+
+pub(super) fn encode_sources(definition: u32, after: u32) -> Vec<u8> {
+    let mut out = Vec::new();
+    push_varint_field(&mut out, 1, u64::from(definition));
+    push_varint_field(&mut out, 2, u64::from(after));
+    out
+}
+pub(super) fn decode_sources(input: &[u8]) -> Result<(u32, u32)> {
+    let (mut definition, mut after) = (None, None);
+    fields(input, |key, input, cursor| {
+        match key {
+            8 => set_once(&mut definition, read_uint32(input, cursor)?)?,
+            16 => set_once(&mut after, read_uint32(input, cursor)?)?,
+            _ => return bad(),
+        }
+        Ok(())
+    })?;
+    let definition = definition
+        .filter(|value| *value != 0)
+        .ok_or(WireError::Malformed)?;
+    Ok((definition, after.ok_or(WireError::Malformed)?))
 }

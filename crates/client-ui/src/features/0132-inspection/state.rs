@@ -2,6 +2,11 @@ use super::*;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub catalogue: std::collections::BTreeMap<u32, InspectedItem>,
+    pub catalogue_query: Option<catalogue::Query>,
+    pub catalogue_market_requested: Option<u32>,
+    pub catalogue_sources: Vec<String>,
+    pub catalogue_source_next: Option<u32>,
+    pub catalogue_source_definition: u32,
     pub catalogue_page: Option<catalogue::Page>,
     pub catalogue_categories: std::collections::BTreeSet<String>,
     pub catalogue_definition: String,
@@ -20,13 +25,18 @@ pub(super) fn item_categories(item: &InspectedItem) -> impl Iterator<Item = &str
 }
 impl Panel {
     pub fn categories(&self) -> Vec<&str> {
-        self.catalogue
-            .values()
-            .flat_map(item_categories)
-            .chain(self.catalogue_categories.iter().map(String::as_str))
-            .collect::<std::collections::BTreeSet<_>>()
-            .into_iter()
-            .collect()
+        let mut categories = std::collections::BTreeMap::new();
+        for category in self
+            .catalogue_categories
+            .iter()
+            .map(String::as_str)
+            .chain(self.catalogue.values().flat_map(item_categories))
+        {
+            categories
+                .entry(category.to_lowercase())
+                .or_insert(category);
+        }
+        categories.into_values().collect()
     }
     pub fn select_category(&mut self, previous: bool) {
         let categories = self.categories();
@@ -45,5 +55,58 @@ impl Panel {
         } else {
             categories[index - 1].to_owned()
         };
+    }
+}
+
+impl Panel {
+    pub(super) fn clear_sources(&mut self) {
+        self.catalogue_market_requested = None;
+        self.catalogue_sources.clear();
+        self.catalogue_source_next = None;
+        self.catalogue_source_definition = 0;
+    }
+    pub fn select_item(&mut self, previous: bool) -> bool {
+        if !self.selected || self.pending || self.catalogue.is_empty() {
+            return false;
+        }
+        let ids: Vec<_> = self.catalogue.keys().copied().collect();
+        let selected = self.catalogue_definition.parse::<u32>().ok();
+        let index = ids
+            .iter()
+            .position(|id| Some(*id) == selected)
+            .map_or(0, |index| {
+                if previous {
+                    (index + ids.len() - 1) % ids.len()
+                } else {
+                    (index + 1) % ids.len()
+                }
+            });
+        if selected != Some(ids[index]) {
+            self.clear_sources();
+        }
+        self.catalogue_definition = ids[index].to_string();
+        true
+    }
+}
+
+impl Panel {
+    pub fn invalidate_catalogue(&mut self) {
+        self.catalogue.clear();
+        self.catalogue_query = None;
+        self.catalogue_page = None;
+        self.catalogue_categories.clear();
+        self.catalogue_definition.clear();
+        self.clear_sources();
+        if matches!(
+            self.last_request,
+            Some(
+                Request::Catalogue(_)
+                    | Request::CataloguePage(_)
+                    | Request::CatalogueSources { .. }
+            )
+        ) {
+            self.pending = false;
+            self.last_request = None;
+        }
     }
 }

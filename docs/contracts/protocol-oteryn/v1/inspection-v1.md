@@ -128,3 +128,26 @@ it does not mean the catalogue ended. A missing cursor ends the scan. Clients pr
 the last confirmed page on rejection, reset pagination when filters change, and do not
 interpret an old single-template response as a catalogue page. Continuation refs are
 session-local content indices and are never persisted as durable identities.
+
+### Item acquisition sources
+
+Singular request field 7 is a source-query submessage: field 1 uint32 is the nonzero
+public item definition ref, and field 2 uint32 is the last scanned creature row (zero
+starts the scan). Both fields are required and singular. This is a separate cursor
+space from item catalogue paging. It shares capability 132, command 153, the content
+pin check, and the existing inspection rate budget.
+
+A successful source reply contains one public template (slot zero, quantity one,
+tier zero) with the requested definition ref and name. Its label/value pairs are
+`Dropped by` and the public creature name, at most ten matching creatures per page.
+The existing field 4 page metadata carries a creature continuation cursor and no
+category names. At most 256 pinned creature profiles are scanned per query. The source
+list follows admitted loot tables, including nested entries, the current item revision,
+and nonzero probabilities; unknown or unadmitted loot facts are omitted. An empty
+source page is not a claim that an item is unobtainable. No private inventory, instance,
+quest, account or player inspection data is part of the source response.
+
+Clients correlate the one returned item with the requested definition and retain the
+confirmed item page independently of the creature cursor. Market sources use the
+existing read-only capability-63 Browse operation with the same definition ref; source
+navigation must never create, accept or cancel a market offer.

@@ -53,6 +53,7 @@ impl Mailbox {
         self.boss_rewards.pending = Default::default();
         self.discovery.loot.pending = Default::default();
         self.discovery.inspection.pending = Default::default();
+        self.discovery.inspection.invalidate_catalogue();
         self.discovery.leader.pending = Default::default();
         self.discovery.teams.pending = Default::default();
         self.discovery.history.pending = Default::default();
