@@ -208,7 +208,7 @@ Zasady przeciw dublowaniu:
 | T156 | Tutorial | Player Guide / compendium / recommendations | DONE | Zakładki Player Guide i Recommendations są w oknie Ctrl+Shift+N, obok komunikatów samouczka i server-save (`0ef49c5a8`). |
 | O017 | Tutorial | Kompendium: poradnik, aktualizacje i pomoc | DONE | Kompendium ma kategorie Guide, Recommendations, Updates (feed pakietu), Features i Help z informacjami o raportach i zgodzie (`dc3a78120`). |
 | T119 | Wheel | Punkty, slots/perks i reset | PARTIAL | Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków. |
-| T120 | Wheel | Presets i copy/import code/URL | PARTIAL | Save allocation jest; brak nazwanych presetów i wymiany buildów code/URL. |
+| T120 | Wheel | Presets i copy/import code/URL | DONE | Evidence: apps/client/src/features/0148-wheel-allocation/presets.rs:57 + wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views |
 
 ## OWNER
 

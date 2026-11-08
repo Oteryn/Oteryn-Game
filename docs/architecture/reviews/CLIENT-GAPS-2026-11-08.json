@@ -869,9 +869,10 @@
   "src": "TIBAUD-1",
   "area": "Wheel",
   "feature": "Presets i copy/import code/URL",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Save allocation jest; brak nazwanych presetów i wymiany buildów code/URL.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0148-wheel-allocation/presets.rs:57 + wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views"
  },
  {
   "id": "T121",
