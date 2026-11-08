@@ -48,7 +48,7 @@
     },
     "Item": {
       "index": "content/items/index.json",
-      "records": 34111
+      "records": 34114
     },
     "Loot": {
       "index": "content/loot/index.json",
@@ -607,7 +607,7 @@
       "path": "content/items/definitions/items-33500-33999.json"
     },
     {
-      "path": "content/items/definitions/items-34000-34110.json"
+      "path": "content/items/definitions/items-34000-34113.json"
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"
@@ -775,6 +775,9 @@
       "path": "crates/gameplay/content/src/content/native_gameplay/quest_collectible_pin.rs"
     },
     {
+      "path": "crates/gameplay/content/src/content/native_gameplay/questpc5_cook_material_pin.rs"
+    },
+    {
       "path": "imports/canary/batches.json"
     },
     {
@@ -860,6 +863,9 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/quest-collectible-bindings.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/questpc5-cook-material-bindings.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1016,7 +1022,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3762,
+          "record_count": 3766,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1024,7 +1030,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "5b277c2186736e8062d9670cdb43ff0a6873508b9ef5b55edf021d6c231a3c7c"
+          "sha256": "68e0e7e12ecd8b617233d80410ef4bbdb41afb5f876ec85a37eb46bd8160f655"
         },
         {
           "creates_canonical_identities": false,

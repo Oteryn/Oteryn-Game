@@ -748,8 +748,19 @@ mod tests {
             assert!(entry.dialogue_keywords.is_empty());
             assert!(entry.source_name_templates);
         }
-        assert!(book.get("oteryn:npc.palimuth").is_none());
-        assert!(book.get("oteryn:npc.spectulus").is_none());
+        // Independently admitted reward NPCs retain their baseline entries.
+        // The requested native list may change only the exact requested identities.
+        for (reference, _) in model.npcs() {
+            if !keys.contains(&reference.key.as_str()) {
+                assert_eq!(
+                    book.get(&reference.key),
+                    old.get(&reference.key),
+                    "unrequested native greeting changed: {}",
+                    reference.key
+                );
+            }
+        }
+        assert!(book.get("oteryn:npc.unqualified").is_none());
         Ok(())
     }
 

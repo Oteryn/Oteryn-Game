@@ -19,6 +19,19 @@ class SharedRewardProfiles(unittest.TestCase):
                 native.provider_order, native.spell_import.canonical_bytes)
         return json.loads(generated[q.PROFILE])
 
+    def test_oramond_exact_source_root_is_portable_stack100_at_weight200(self):
+        profile = next(r for r in q.capture()['records']
+                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i21291')
+        self.assertEqual(profile['admission'], {
+            'materializable': True, 'stack_class': 'StackCapable',
+            'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(profile['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 200})
+        self.assertEqual(profile['semantics']['stack']['value']['stack_max'],
+                         {'state': 'KNOWN', 'value': 100})
+        for group in ('charges', 'temporal', 'container'):
+            self.assertEqual(profile['semantics'][group], {'state': 'NOT_APPLICABLE'})
+
     def test_known_physical_conflict_is_refused(self):
         profile = copy.deepcopy(self.profile)
         row = next(r for r in profile['records']

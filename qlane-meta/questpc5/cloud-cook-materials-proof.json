@@ -1,6 +1,6 @@
 {
   "scope": "Three exact Cook material physical-custody cases only, not whole quest",
-  "state": "PG_RED_CONFIRMED",
+  "state": "PHYSICAL_CUSTODY_SLICE_QUALIFIED_WHOLE_QUEST_UNFINISHED",
   "source_facts": "imports/tibiawiki/facts/items-stats.json:11596,11615,11634; client appearance2dfa943b independent IDs/name/take flags",
   "red": {
     "log": "/tmp/questpc5-cook-materials-red.log",
@@ -22,5 +22,45 @@
     "error": "DefinitionNotFound",
     "all_executed": true
   },
-  "green": null
+  "green": {
+    "log": "/tmp/questpc5-cook-root-own-green.log",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "cases": [
+      {
+        "item": 44525,
+        "seconds": 137.245648036,
+        "body_seconds": 0.71799708
+      },
+      {
+        "item": 44527,
+        "seconds": 111.044914276,
+        "body_seconds": 0.415577894
+      },
+      {
+        "item": 44528,
+        "seconds": 121.909254318,
+        "body_seconds": 0.543567802
+      }
+    ],
+    "assertions": "One exact active native Item in real character backpack, no quest state seeded/completed"
+  },
+  "authoring_units": {
+    "tests": 3,
+    "passed": 3,
+    "duration_seconds": 6.241,
+    "log": "/tmp/questpc5-cook-material-authoring-units2.log"
+  },
+  "data": {
+    "producer": "tools/content-migration/questpc5_cook_item_profiles.py",
+    "canonical_items": [
+      44525,
+      44527,
+      44528
+    ],
+    "core_count": 34114,
+    "binding_extension": "36-line finite private adapter, generated proof SHA, exact3-ID/family/revision guard, existing admitted-binding map",
+    "engine_reuse_check": "qengine2@279a9cff8717636d82b7dfb37be8d0bc46ad1b7d has no implementation for these three identities",
+    "scope": "Physical custody only; charge/lifetime/script semantics remain UNKNOWN. Plain custody policy has no intrinsic speed bonus."
+  },
+  "whole_quest_qualified": false
 }

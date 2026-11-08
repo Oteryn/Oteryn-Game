@@ -173,6 +173,8 @@ def main() -> int:
     editor = load(LEGACY / "editor" / "author.json")
     sources = load(LEGACY / "provenance" / "sources.json")
     imports = load(LEGACY / "provenance" / "imports.json")
+    import questpc5_cook_item_profiles as cook_materials
+    cook_materials.extend_reference(reference, sources, ROOT)
 
     family_assignments = load(FIELD_CENSUS)["family_assignments"]
     wave1 = load(WAVE1_STAGED)

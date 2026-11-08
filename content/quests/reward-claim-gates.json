@@ -36,7 +36,7 @@
         }
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
       ]
     },
@@ -51,7 +51,7 @@
         }
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
       ]
     },
@@ -66,7 +66,7 @@
         }
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",

@@ -30,12 +30,21 @@
         600,
         600
       ],
-      "scope": "Exact item identities resolved; canonical/native custody and custom-use bindings not yet implemented. Item5884 remains unrelated."
+      "scope": "Exact3canonical/native physical records and carried custody PG GREEN; custom-use, NPC contacts and whole route remain to author."
     },
     "physical_material_red": {
       "proof": "cloud-cook-materials-proof.json",
       "postgres": "18.6",
-      "state": "all3 exact native-custody cases RED DefinitionNotFound; canonical/native item data to author next"
+      "state": "3/3 realPG GREEN afterRED; canonical/native physical custody slice qualified, whole quest still unfinished"
+    },
+    "physical_materials_progress": {
+      "proof": "cloud-cook-materials-proof.json",
+      "native_items": [
+        44525,
+        44527,
+        44528
+      ],
+      "whole_recipe_qualified": false
     }
   },
   {
@@ -364,7 +373,7 @@
     "active_batch": {
       "scope": "Exact donor21291 physical backpack custody only; no whole-route qualification",
       "postgres_red_log": "/tmp/questpc5-oramond-root-red.log",
-      "state": "PG RED43.444505809s; proposed native profile and3unit tests saved under /tmp/questpc5-root-pending-* until current stable-tree crate tests finish; not yet admitted.",
+      "state": "Exact5root native backpack custody PG GREEN131.165344988s; physical slice qualified, whole daily route still unfinished.",
       "proof": "cloud-oramond-root-proof.json"
     }
   },

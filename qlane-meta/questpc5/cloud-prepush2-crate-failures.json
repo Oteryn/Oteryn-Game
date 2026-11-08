@@ -20,10 +20,11 @@
     "embedded migrator: rebuild against stable current test schema, no assertion relaxed",
     "source scope: exact set includes canonical Schrodinger native callback",
     "Father native bounds: use canonical main narrow0..1 domain; legacy sentinel stays reader-only",
-    "native greetings: remove additive-merge duplicate generic branch which shadowed exact pipe defaults"
+    "native greetings: remove additive-merge duplicate generic branch which shadowed exact pipe defaults",
+    "native requested-list scope: preserve every unrequested NPC baseline entry across all model NPCs; retain requested-source and unknown-NPC assertions"
   ],
-  "rerun": "/tmp/questpc5-final-crate-units4.log",
-  "state": "full2537-case rerun active; only inventory total failure observed so far, corrected with exact baseline overlay union; final rerun pending",
+  "rerun": "/tmp/questpc5-cook-root-crate-units.log",
+  "state": "all failures collected and fixed together; fresh5crate unit rerun queued after item-data generation",
   "inventory_followup": {
     "baseline": "f641d8d6c",
     "base_added_profiles": 136,
@@ -39,5 +40,16 @@
       "previous_expected": 3800
     },
     "fix": "Repository generator now records baseline native union and overlay hashes; test still validates all136 exact keys and original raw/unknown-speed assertions, plus exact disjoint3-key existing-overlay partition."
+  },
+  "completed_rerun": {
+    "log": "/tmp/questpc5-final-crate-units4.log",
+    "tests": 2537,
+    "passed": 2535,
+    "failed": 2,
+    "duration_seconds": 1921.431,
+    "failures": [
+      "equipment native union count3 existing overlay entries",
+      "native greeting scoped-list test assumed independently qualified Palimuth was absent"
+    ]
   }
 }

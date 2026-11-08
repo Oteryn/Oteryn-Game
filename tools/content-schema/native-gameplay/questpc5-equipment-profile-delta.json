@@ -17,9 +17,13 @@
     "oteryn:item.tibia.i3572",
     "oteryn:item.tibia.i7991"
   ],
+  "shared_cohort_keys": [
+    "oteryn:item.tibia.i21291"
+  ],
+  "shared_cohort_sha256": "5dcd48898cdf620181b135577e989896ae8c890363a4ff64182cf8502367a969",
   "baseline_sha256": "0460b8a17656a13c9148b6518c821f079f0f10560cbc614edddb16cf8a485204",
   "baseline_count": 3626,
-  "profile_sha256": "5b277c2186736e8062d9670cdb43ff0a6873508b9ef5b55edf021d6c231a3c7c",
+  "profile_sha256": "68e0e7e12ecd8b617233d80410ef4bbdb41afb5f876ec85a37eb46bd8160f655",
   "keys": [
     "oteryn:item.tibia.i10189",
     "oteryn:item.tibia.i10217",
@@ -38,6 +42,7 @@
     "oteryn:item.tibia.i12510",
     "oteryn:item.tibia.i16251",
     "oteryn:item.tibia.i1631",
+    "oteryn:item.tibia.i21291",
     "oteryn:item.tibia.i21982",
     "oteryn:item.tibia.i22158",
     "oteryn:item.tibia.i22160",
@@ -109,6 +114,9 @@
     "oteryn:item.tibia.i4097",
     "oteryn:item.tibia.i4099",
     "oteryn:item.tibia.i44158",
+    "oteryn:item.tibia.i44525",
+    "oteryn:item.tibia.i44527",
+    "oteryn:item.tibia.i44528",
     "oteryn:item.tibia.i4827",
     "oteryn:item.tibia.i4831",
     "oteryn:item.tibia.i4871",

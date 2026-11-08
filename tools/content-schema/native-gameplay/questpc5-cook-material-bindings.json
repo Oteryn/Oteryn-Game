@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "path": "imports/tibiawiki/facts/items-stats.json",
+      "sha256": "24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae"
+    },
+    {
+      "path": "imports/tibiawiki/source-evidence/stack-default-successor8/global-own-itemid-index.json",
+      "sha256": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190"
+    },
+    {
+      "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+    }
+  ],
+  "bindings": [
+    {
+      "source_key": "oteryn:source.tibiawiki",
+      "source_revision": "fandom-r1047591",
+      "identity_namespace": "tibiawiki/item_id",
+      "external_id": "44525",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44525",
+        "revision": "definition-r1"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.tibiawiki",
+      "source_revision": "fandom-r1047595",
+      "identity_namespace": "tibiawiki/item_id",
+      "external_id": "44527",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44527",
+        "revision": "definition-r1"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.tibiawiki",
+      "source_revision": "fandom-r1046764",
+      "identity_namespace": "tibiawiki/item_id",
+      "external_id": "44528",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44528",
+        "revision": "definition-r1"
+      },
+      "disposition": "EXACT"
+    }
+  ],
+  "items": [
+    {
+      "identity": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44525",
+        "revision": "definition-r1"
+      },
+      "witness": {
+        "page_id": 104249,
+        "revision_id": 1047591,
+        "content_sha256": "5f58bda6575ee8208129ce38d20c7f670f2b6c5a9e62af579a762f78da8f8a66",
+        "weight": 1800
+      },
+      "assumption": "Selected Oteryn portable quest material has zero intrinsic speed bonus; no scripted use, charge or lifetime is activated by this custody admission."
+    },
+    {
+      "identity": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44527",
+        "revision": "definition-r1"
+      },
+      "witness": {
+        "page_id": 104250,
+        "revision_id": 1047595,
+        "content_sha256": "635adc918782aa053c00be4992948637048a50f19a302453fa0a365c8994293e",
+        "weight": 600
+      },
+      "assumption": "Selected Oteryn portable quest material has zero intrinsic speed bonus; no scripted use, charge or lifetime is activated by this custody admission."
+    },
+    {
+      "identity": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44528",
+        "revision": "definition-r1"
+      },
+      "witness": {
+        "page_id": 104252,
+        "revision_id": 1046764,
+        "content_sha256": "87d1ac9c6799d5d3606c86c971fc8f6008b09086c856eb83eab5260319c2ec9f",
+        "weight": 600
+      },
+      "assumption": "Selected Oteryn portable quest material has zero intrinsic speed bonus; no scripted use, charge or lifetime is activated by this custody admission."
+    }
+  ]
+}

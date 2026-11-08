@@ -27,6 +27,9 @@ use std::{
 // D1093 mounts the existing source-bound compiler once, without a shared mod.rs edit.
 pub mod cosmetics_loader;
 mod quest_collectibles;
+mod questpc5_cook_bindings;
+#[cfg(test)]
+mod questpc5_cook_bindings_tests;
 
 mod cosmetics_view;
 pub use cosmetics_view::NativeCosmeticsView;
@@ -1198,6 +1201,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             }
         }
         quest_collectibles::extend(&mut admitted, &items.records)?;
+        questpc5_cook_bindings::extend(&mut admitted)?;
         for record in &items.records {
             let binding = &record.production_binding;
             let external = binding

@@ -325,7 +325,7 @@
         "You have recorded the six seals. Enter the final chamber, claim your boots and platinum, then leave through the magic portal. This chosen trial takes no soul pact."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb",
         "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
       ]
     },
@@ -8284,7 +8284,7 @@
         "The village is safer. Take this guardian ring. Recover the Book of Wisdom and bring it to me."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb"
       ],
       "minimum_level": 2,
       "experience": 800
@@ -8335,7 +8335,7 @@
         "Your tour is complete. Defeat ten Trolls on the training route, then report back."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb"
       ],
       "minimum_level": 2
     },
@@ -8366,7 +8366,7 @@
         "Welcome to Newhaven. Visit the training school and the village supply point, then return for your defence task."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb"
       ],
       "minimum_level": 2
     },
@@ -8404,7 +8404,7 @@
         "Thank you for the Book of Wisdom. Take this scarf and the rest of your training experience."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:197b9fd94777a73a4e4691cef5003b535cb899ef6ea3d6ec6f05b82d45dbf3bb"
       ],
       "minimum_level": 2,
       "experience": 800,
