@@ -73,15 +73,6 @@ pub(super) fn prepare(
         return None;
     }
     offers.offers.extend(authored.offers);
-    let map_offers: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/npc-offers/questpc5-targuna-map.json"
-    ))
-    .ok()?;
-    if map_offers.schema != 1 {
-        return None;
-    }
-    offers.offers.extend(map_offers.offers);
-
     let markers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/npc-offers/m16-targuna-marker.json"
     ))
@@ -181,19 +172,29 @@ pub(super) fn prepare(
 
 #[cfg(test)]
 #[test]
-fn sterling_marker_offer_requires_the_source_morla_report() -> Result<(), serde_json::Error> {
+fn sterling_marker_offer_and_refusal_follow_the_source_topics() -> Result<(), serde_json::Error> {
     let offers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/npc-offers/m16-targuna-marker.json"
     ))?;
-    assert_eq!(offers.offers.len(), 1);
+    assert_eq!(offers.offers.len(), 2);
     let offer = &offers.offers[0];
     assert_eq!(offer.npc, "oteryn:npc.sterling");
     assert_eq!((offer.topic, offer.next_topic), (0, 2));
     assert!(
-        offer
-            .requires
+        offer.requires.is_empty(),
+        "the mission question precedes the Morla check"
+    );
+    let refusal = &offers.offers[1];
+    assert_eq!(refusal.npc, offer.npc);
+    assert_eq!((refusal.topic, refusal.next_topic), (2, 0));
+    assert!(
+        refusal
+            .storage
             .iter()
-            .any(|r| r.track.ends_with("/morla_done") && r.minimum == 1 && r.maximum == 1)
+            .any(|r| r.track.ends_with("/morla_done")
+                && r.minimum == 0
+                && r.maximum == 0
+                && r.preserve)
     );
     Ok(())
 }

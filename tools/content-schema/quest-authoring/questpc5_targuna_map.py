@@ -6,8 +6,8 @@ ROOT=Path(__file__).resolve().parents[3]
 REVISION="9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
 SOURCE_PATH="data-global/npc/sterling.lua"
 SOURCE_SHA256="3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9"
-DOCUMENTS={'content/quests/npc-callbacks/questpc5-targuna-map.json': {'schema': 1,
-                                                            'callbacks': [{'key': 'oteryn:quest-reward/targuna-sterling-treasure-mark',
+DOCUMENTS={'content/quests/npc-callbacks/m16-targuna-marker.json': {'schema': 1,
+                                                            'callbacks': [{'key': 'oteryn:quest-reward/targuna/sterling-mark-treasure',
                                                                            'quest': 'oteryn:quest.targuna_quest',
                                                                            'npc': 'oteryn:npc.sterling',
                                                                            'keywords': ['yes'],
@@ -45,7 +45,7 @@ DOCUMENTS={'content/quests/npc-callbacks/questpc5-targuna-map.json': {'schema': 
                                                                                                      'floor': -7},
                                                                                         'kind': 'cross',
                                                                                         'text': 'Treasure'}}]},
- 'content/quests/npc-offers/questpc5-targuna-map.json': {'schema': 1,
+ 'content/quests/npc-offers/m16-targuna-marker.json': {'schema': 1,
                                                          'offers': [{'npc': 'oteryn:npc.sterling',
                                                                      'keywords': ['mission'],
                                                                      'topic': 0,

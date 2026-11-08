@@ -7,7 +7,7 @@ use oteryn_protocol_oteryn::{
     npc_service::NpcIntentDisposition, personal_map_marks::PersonalMapMarks,
 };
 use std::sync::Arc;
-const KEY: &str = "oteryn:quest-reward/targuna-sterling-treasure-mark";
+const KEY: &str = "oteryn:quest-reward/targuna/sterling-mark-treasure";
 const PREFIX: &str = "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/";
 #[test]
 fn questpc5_personal_map_query_reproves_controller_and_reads_postgres_facts() -> TestResult {

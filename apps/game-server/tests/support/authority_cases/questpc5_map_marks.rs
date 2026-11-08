@@ -13,7 +13,7 @@ use oteryn_gameplay_quests::quest::{
 };
 use std::sync::Arc;
 
-const KEY: &str = "oteryn:quest-reward/targuna-sterling-treasure-mark";
+const KEY: &str = "oteryn:quest-reward/targuna/sterling-mark-treasure";
 const QUEST: &str = "oteryn:quest.targuna_quest";
 const MARKED: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/treasure_marked";
