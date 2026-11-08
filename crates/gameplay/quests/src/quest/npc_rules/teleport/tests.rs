@@ -33,6 +33,7 @@ fn plan(
         calendar_month: 11,
         premium_current: false,
         level: 100,
+        premium_current: false,
         vocation: "oteryn:vocation.knight",
         sex: 0,
         outfits: &outfits,
