@@ -250,7 +250,7 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
                     _ => {}
                 }
             }
-            SetWindowTextW(status, wide(&format!("Map centre: {}, {} · Floor {} · {} tiles per cell\r\nGreen: observed ground; gray: observed space. Select a marker to edit its label.", map.x, map.y, map.floor, map.zoom)).as_ptr());
+            SetWindowTextW(status, wide(&format!("Map centre: {}, {} · Floor {} · {} tiles per cell\r\nGreen: remembered ground. Select a marker to edit its label.", map.x, map.y, map.floor, map.zoom)).as_ptr());
             SetWindowTextW(feedback, wide(&map.feedback).as_ptr());
             if held != map.markers {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
