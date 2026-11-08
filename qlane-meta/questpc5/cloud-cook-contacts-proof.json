@@ -1,0 +1,56 @@
+{
+  "scope": "20 Years a Cook Quest contacts and source trashcan USE only; whole quest remains unfinished",
+  "red": {
+    "postgres": "18.6",
+    "duration_seconds": 200.312729627,
+    "error": "NothingToUse instead of Committed at the retained trashcan",
+    "log": "/tmp/questpc5-postmain-cook-focused2.log"
+  },
+  "green": {
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-cook-contacts duration=188.228502994s success=true",
+    "contact_body_seconds": 48.784006978,
+    "case": "questpc5_twenty_years_contacts_issue_one_exact_empty_ratha_container",
+    "log": "/tmp/questpc5-trashcan-focused.log",
+    "assertions": [
+      "Trashcan USE before Cheaty assignment cannot commit or advance state",
+      "Cheaty source NPC mission starts exactly phase0",
+      "Actual World USE on retained trashcan commits and teleports to Draccoon lair",
+      "Source Draccoon mission advances phase1 and grants one exact44527 empty container in native backpack",
+      "Replay cannot grant a second container",
+      "Contact slice does not falsely complete whole Cook quest"
+    ]
+  },
+  "focused_run": {
+    "selected": 13,
+    "passed": 13,
+    "compiled_source_target_seconds": 84.013,
+    "exact_native_callback_inventory_seconds": 5.367,
+    "client_asset_unit_tests": 10
+  },
+  "source_fix": {
+    "key": "oteryn:terrain.tibia.i44563",
+    "source_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "flags": [
+      "unmove"
+    ],
+    "portable_item_admission": false,
+    "raw_b3_rewritten": false,
+    "pin": "90bc36d6943638a13d0083c9d24d10e04e524c649db738f95ebbb6d046689151"
+  },
+  "checks": {
+    "workspace_all_targets_seconds": 246,
+    "strict_clippy_seconds": 433,
+    "fmt": "PASS",
+    "duplicate_migrations": "PASS",
+    "equipment_pin": "PASS",
+    "canonical_content_equivalence": "PASS",
+    "python_cook_geometry": 3,
+    "python_grizzly_regression": 3,
+    "python_mtime": 3,
+    "python_orchestrator": 13,
+    "fresh_workspace_all_targets_seconds": 340,
+    "generated_binding_matrix_geometry_equipment_freshness": "PASS"
+  },
+  "remaining": "2253 selected crate-unit rerun in progress,653passed so far; main6f61ac15d integration pending under documented merge-budget exception; whole Cook remains unfinished."
+}

@@ -1,0 +1,87 @@
+{
+  "quest": "oteryn:quest.targuna_quest",
+  "classification": "SOURCE_FACTS_ONLY_NOT_QUALIFIED",
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "path": "data-global/scripts/quests/targuna/actions_reliable_ram.lua",
+    "sha256": "0d1ad48c53672f9392c057ecaeb02dd146fc7f28d1c393c89b8388ab51ab9c8f",
+    "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/targuna/actions_reliable_ram.lua"
+  },
+  "facts": {
+    "ram_is_map_item": {
+      "item": 53439,
+      "position": [
+        31926,
+        31896,
+        7
+      ],
+      "lines": [
+        7,
+        8,
+        9,
+        21,
+        22,
+        26
+      ]
+    },
+    "turnips": {
+      "item": 53073,
+      "consume": 1,
+      "lines": [
+        12,
+        38,
+        43
+      ]
+    },
+    "reward": {
+      "mount_donor_id": 250,
+      "client_appearance": 1934,
+      "canonical": "oteryn:content.mount.reliable_ram",
+      "lines": [
+        13,
+        14,
+        44
+      ]
+    },
+    "earned_turnips_guard": {
+      "required": 1,
+      "lines": [
+        36,
+        37,
+        38
+      ]
+    },
+    "replay_refusal": {
+      "lines": [
+        31,
+        32,
+        33
+      ]
+    },
+    "completion": {
+      "lines": [
+        45,
+        48,
+        49,
+        50
+      ]
+    }
+  },
+  "existing_support": "Object-item taming exists. QENGINE2 e6bacdda6 adds construction items but no quest-progress predicate/atomic quest completion in taming. Do not substitute creature taming or skip the earned-turnips guard.",
+  "engine_request": "Quest-guarded object taming with atomic mount grant and quest-progress write.",
+  "additional_source": {
+    "path": "data-global/npc/emiliana.lua",
+    "sha256": "df5227b88b39c47254c03316c58582674015f242d795ea0beefa77f455004dd0",
+    "lines": [
+      65,
+      177,
+      178,
+      181
+    ]
+  },
+  "portable_item_state": {
+    "53073": "canonical exists, physicalKnown weight200, movable/pickupable true; not materializable yet",
+    "53074": "canonical Adventurer Backpack already materializable, weight1800; retain existing owner"
+  }
+}

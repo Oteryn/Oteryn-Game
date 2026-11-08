@@ -1,0 +1,30 @@
+{
+  "quest": "oteryn:quest.tutorial",
+  "scope": "Selected Tutorial only; authoring excluded Dawnport is out of scope",
+  "state": "SOURCE_FACTS_RESOLVED_NOT_QUALIFIED",
+  "wounded_creature": {
+    "path": "imports/tibiawiki/facts/creatures/creatures-00500-00999.json",
+    "pointer": "/records/345",
+    "sha256": "43ab3eea195785519453c84a6f262e558cb6780c20d16d5e1450afc88db1d6b1",
+    "page": 32666,
+    "revision": 403827,
+    "page_raw_sha256": "c1acb9bcfafe54c6a22c12ddc17f6cfcc3233f57378a7b4afc81180633531d1e",
+    "url": "https://www.tibiawiki.com.br/index.php?curid=32666&oldid=403827",
+    "health": 10,
+    "experience": 150,
+    "source_named": "Wounded Cave Draptor"
+  },
+  "item_selection": {
+    "rope": "oteryn:item.tibia.i3003",
+    "torch": "oteryn:item.tibia.i2920",
+    "basis": "Conservative selected plain rope and unlit torch; retain original ambiguous SOURCE fields. Exact pinned Canary XML declares rope3003 at6628 and torch2920 at6290.",
+    "source": "imports/canary/items-xml/items.xml",
+    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "lines": [
+      6290,
+      6628
+    ]
+  },
+  "existing_mechanism": "native_kill_goals.rs already supports bounded phase/counter and exact creature origin goals, used by qualified Newhaven. Reuse it; do not write another generic kill counter.",
+  "next": "Author exact source-backed Wounded Cave Draptor data and selected finite route; preserve once-only rewards and avoid an extra StarterKit/backpack grant. Need actual native kill, loot, rope climb and crystal USE PG, not seeded own progress."
+}

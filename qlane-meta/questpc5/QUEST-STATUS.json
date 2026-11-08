@@ -91,9 +91,24 @@
       "cause": "Non-production World compilation skips provisional palette entry44563; ordinal1 is absent from the live source tile, so USE returns NothingToUse.",
       "decision": "Admit only exact44563 as immovable common Terrain from pinned official client unmove flag, with no Item alias or portable grant. Preserve raw B3 source bytes; regenerate the palette and World pins with repository tools.",
       "pg_red": "PostgreSQL18.6, cook_native_contacts, 200.312729627s, NothingToUse at questpc5_oramond_roots.rs:197",
-      "green": "pending realPG after pin regeneration",
+      "green": "PG18.6 PASS188.228502994s, contacts body48.784006978s; all13focused PASS including actualcompiledtarget84.013s andexactcallbackinventory5.367s. See cloud-cook-contacts-proof.json; no wholequestqualification.",
       "main_merge": "83acbdac3 attempted twice; 69 conflicting files across overlapping reward APIs/startup converters; aborted under owner15-minute exception, no conflict markers retained. Main b3864f14a remains merged.",
-      "checkpoint_checks": "PASS workspacealltargets246s; fmt; PythonCook3,Grizzly3,mtime3,orchestrator13; equipment pin; complete content equivalence; duplicate migration stagedtree; world pinrefresh/check90bc36d6943638a13d0083c9d24d10e04e524c649db738f95ebbb6d046689151. FreshCookPG and crate-unit repairs pending under PREPUSH-2 cadence exception. StrictClippy in progress."
+      "checkpoint_checks": "PASS workspacealltargets246s; fmt; PythonCook3,Grizzly3,mtime3,orchestrator13; equipment pin; complete content equivalence; duplicate migration stagedtree; world pinrefresh/check90bc36d6943638a13d0083c9d24d10e04e524c649db738f95ebbb6d046689151. FreshCookPG and crate-unit repairs pending under PREPUSH-2 cadence exception. StrictClippy in progress. StrictClippyPASS433s.",
+      "latest_main": "6f61ac15d fetched after focused GREEN; same shared world-reward integration conflicts remain. Owner merge-budget exception; retain compiling state until reconciliation is prepared without mutating running unit inputs."
+    },
+    "additional_engine_request": {
+      "feature": "Reconcile main3029 world-reward API with existing premium/completion/read-only callback support",
+      "needed_by": [
+        "20 Years a Cook Quest",
+        "Thais Lighthouse Quest",
+        "Serpentine Tower Quest"
+      ],
+      "where": [
+        "gameplay-dispatch quest_callbacks/execute.rs",
+        "gameplay-durability quest_world_callback",
+        "gameplay-durability reward_claim_mint/quest.rs"
+      ],
+      "decision": "Avoid authoring a competing generic reward engine. Preserve main and existing quest semantics together; prepare resolutions offline while stable crate tests execute."
     }
   },
   {
@@ -110,6 +125,16 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/58/definition"
+    },
+    "source_resolution": {
+      "proof": "cloud-tutorial-source-resolution.json",
+      "wounded_creature": "Retained Wiki page32666@403827 gives exact10HP and150XP; no missing-fact blocker. Canonical native actor/route still to author.",
+      "chosen_items": [
+        "oteryn:item.tibia.i3003",
+        "oteryn:item.tibia.i2920"
+      ],
+      "reuse": "Existing native_kill_goals.rs and grizzly_kills/native_goals.rs; do not build a second generic kill counter.",
+      "decision": "Keep Tutorial owned and Dawnport excluded; only the selected crystal exit may lead to existing Dawnport. Retain original ambiguous source facts and record plain rope/unlit torch as conservative selected bindings."
     }
   },
   {
@@ -601,6 +626,14 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/79/definition"
+    },
+    "source_resolution": "cloud-targuna-ram-source.json: ram is exact map item53439 at31926,31896,z7; turnips53073; donor mount250/client1934, canonicaloteryn:content.mount.reliable_ram. Existing objecttaming cannot atomically gate/update quest progress.",
+    "engine_request": {
+      "feature": "Quest-guarded object taming with atomic mount grant and quest-progress write",
+      "needed_by": "Targuna Quest",
+      "where": "gameplay-content mount_taming; gameplay-durability item_use/mount_taming.rs",
+      "checked_qengine2": "e6bacdda6",
+      "decision": "Reuse existing item-target taming; request only missing quest guard/atomic progress. Do not substitute a creature or drop the earned-turnips predicate."
     }
   },
   {

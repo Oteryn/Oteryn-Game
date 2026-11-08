@@ -1,3 +1,17 @@
+## Cook contact proof ready to push — 2026-11-08 04:16 UTC
+
+The fresh workspace check passed in 340 seconds. Formatting, strict Clippy (433 seconds), generated binding/matrix/geometry/equipment checks, and the World pin checks passed. All 13 focused tests passed, including the real Cook contact case on PostgreSQL 18.6 in 188.228502994 seconds. See `cloud-cook-contacts-proof.json`.
+
+The full selected crate-unit rerun is still running against stable source data: 653 of 2253 passed at this checkpoint, with no failures. Do not merge or regenerate mutable content in this checkout while it runs. The earlier 48 failures were grouped in `cloud-main3031-unit-failures.json`; the exact native-callback inventory repair is now green. No test or assertion was removed.
+
+Main has advanced to `6f61ac15d`. The prior merge attempt had 69 conflicting files spanning startup converters and overlapping world-reward APIs; it was aborted under the owner's merge-budget exception. Prepare integration in `/tmp/questpc5-main3029-resolution` without mutating the active test inputs. The shared API integration request and Targuna's quest-guarded object-taming request were reported to the coordinator.
+
+Whole-quest qualifications remain 13 of 23. Cook's contacts are green; Ratha, Fryclops and the remaining route are still work in progress. Targuna's map-item ram and Tutorial's 10-HP wounded draptor have retained source proofs in this directory. Reuse the existing native kill-goal mechanism for Tutorial. Never stage the untracked foreign migration `1300_questpc8_reward_backpack_outputs.sql`.
+
+## Cook contact slice PG GREEN — 2026-11-08 04:10 UTC
+
+Focused13/13PASS: PG18.6 contactcase188.228502994s(body48.784006978s), actualcompiledtrashcantarget84.013s, exactnativeinventory5.367s, clientassets10PASS. StrictClippyPASS433s. Cookactual USE nowteleports andDraccoongrants44527exactlyonce; beforeassignmentUSE/replay/wholequestnoncompletion guardsallretained. Proofcloud-cook-contacts-proof.json. Compilecheckpoint8fab7d60balreadypushed. Full2253unitrerunrunningstableinputs; do not merge main incheckoutduringtests. Main83acmerge69conflictsunderownerbudgetexception stillneedsreconciliation; offlineresolutionfiles/tmp/questpc5-main3029-resolution, no sourcechanges. SentENGINE-REQUESTworld-reward APIintegration andTargunaquest-guarded objecttaming; sourcefactproofcloud-targuna-ram-source.json. Wholequalificationcountstill13; no wholeCookpromotion.
+
 ## Compiling static-target checkpoint — 2026-11-08 03:57 UTC
 
 WorkspacealltargetsPASS246s;fmtPASS; generated native/central/evidence outputs current; equipment/equivalencePASS; dupmigrationsPASS; worldpinrefresh/checkPASS90bc36d6943638a13d0083c9d24d10e04e524c649db738f95ebbb6d046689151. Cook/Grizzly/mtimePython3each andorchestrator13PASS. StrictClippyfinishing; freshCookPG plus compiled-target unit and exact-native-inventory test queued. Publishing compilingWIP underPREPUSH-2cadenceexception; no newqualification. Keep source stable duringtests; prepare main83acmerge resolutions in/tmp only.
