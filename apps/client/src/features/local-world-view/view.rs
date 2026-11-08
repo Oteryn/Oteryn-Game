@@ -49,6 +49,7 @@ impl PlayView {
         next.anchor = TileCoord::new(0, 0);
         next.local.set_world(Arc::new(world));
         next.live_map = true;
+        next.remember_minimap(map);
         next.rebuild()?;
         *self = next;
         Ok(())
@@ -94,6 +95,7 @@ impl PlayView {
         self.scene.retain_target(target)?;
         self.light_scene()?;
         self.weather_scene();
+        self.project_minimap_memory();
         self.scene
             .set_minimap(self.live_map && self.preferences().panel_visible("minimap"))?;
         self.project_presentation(std::time::Instant::now())

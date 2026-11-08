@@ -65,6 +65,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub minimap: crate::play::feature_local_minimap::view::MinimapMemory,
     #[serde(default = "shortcuts::default_shortcuts")]
     pub shortcuts: Vec<String>,
     #[serde(default)]
@@ -93,6 +95,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            minimap: Default::default(),
             shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
@@ -112,6 +115,7 @@ impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+            || !self.minimap.valid()
             || !shortcuts::valid(&self.shortcuts)
             || !self.controls.valid()
             || !self.skills_layout.valid()
@@ -147,14 +151,21 @@ impl std::error::Error for PreferenceError {}
 
 #[derive(Debug, Clone)]
 pub(crate) struct LocalPlayState {
+    pub(in crate::play) minimap_binding:
+        Option<crate::play::feature_local_minimap::view::MinimapBinding>,
+    pub(in crate::play) minimap_edit: u64,
+    pub(in crate::play) minimap_origin: Option<oteryn_session::ActorPosition>,
     world: Arc<World>,
-    preferences: ReferencePreferences,
+    pub(in crate::play) preferences: ReferencePreferences,
     viewport: [u32; 2],
 }
 
 impl LocalPlayState {
     pub(crate) fn new(world: World) -> Self {
         Self {
+            minimap_binding: None,
+            minimap_edit: 0,
+            minimap_origin: None,
             world: Arc::new(world),
             preferences: ReferencePreferences::default(),
             viewport: [960, 540],

@@ -30,6 +30,9 @@ const _: () = assert!(
 #[derive(Debug, Clone)]
 pub struct Scene {
     minimap: bool,
+    pub(crate) minimap_memory: crate::play::MinimapMemory,
+    pub(crate) minimap_floor: i16,
+    pub(crate) minimap_origin: Option<oteryn_session::ActorPosition>,
     world: Arc<World>,
     lit_atlas: Option<AtlasImage>,
     /// `None` draws no map: the session is on a floor the loaded map does not cover.
@@ -97,6 +100,9 @@ impl Scene {
             .collect();
         let mut scene = Self {
             minimap: false,
+            minimap_memory: Default::default(),
+            minimap_floor: 0,
+            minimap_origin: None,
             world,
             lit_atlas: None,
             anchor,

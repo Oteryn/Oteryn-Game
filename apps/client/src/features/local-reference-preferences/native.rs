@@ -25,6 +25,8 @@ type Shared = SettingsState;
 mod controls_window;
 #[path = "help_native.rs"]
 mod help_window;
+#[path = "../local-minimap/native.rs"]
+mod minimap_window;
 #[path = "profiles_native.rs"]
 mod profile_window;
 #[path = "shortcuts_native.rs"]
@@ -188,7 +190,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 120..=123)
+                && matches!(id, 103 | 106 | 110..=113 | 120..=124)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -240,7 +242,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             760,
-            540,
+            590,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -389,7 +391,15 @@ fn run(shared: Arc<Mutex<Shared>>) {
             [510, 310, 210, 30],
             0,
         );
-        let feedback = control(hwnd, "STATIC", "", 0, [10, 350, 710, 120], 0);
+        let minimap_page = control(
+            hwnd,
+            "BUTTON",
+            "Minimap transfer...",
+            124,
+            [10, 350, 210, 30],
+            0,
+        );
+        let feedback = control(hwnd, "STATIC", "", 0, [10, 390, 710, 120], 0);
         if [
             help,
             list,
@@ -404,6 +414,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             help_page,
             controls_page,
             shortcuts_page,
+            minimap_page,
             feedback,
             transfer_label,
             transfer_path,
@@ -448,6 +459,12 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == 124 {
+                    drop(state);
+                    minimap_window::open(Arc::clone(&shared), hwnd);
+                    state = lock(&shared);
+                    continue;
+                }
                 if action == 123 {
                     drop(state);
                     shortcuts_window::open(Arc::clone(&shared), hwnd);

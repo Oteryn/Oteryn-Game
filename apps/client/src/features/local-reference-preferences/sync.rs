@@ -13,6 +13,7 @@ pub struct SettingsState {
     character: Option<[u8; 16]>,
     battle_edit: u64,
     skills_edit: u64,
+    minimap_edit: u64,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
     control_input: super::controls::ControlInput,
@@ -66,6 +67,7 @@ impl SettingsState {
         self.character = character;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
+        self.minimap_edit = self.battle_edit;
     }
 
     pub fn export_to(&self, path: &Path) -> io::Result<()> {
@@ -98,6 +100,7 @@ impl SettingsState {
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
+        self.minimap_edit = self.battle_edit;
         Ok(())
     }
 
@@ -127,6 +130,7 @@ impl SettingsState {
             character: None,
             battle_edit: 0,
             skills_edit: 0,
+            minimap_edit: 0,
             store,
             preferences,
             feedback,
@@ -204,6 +208,9 @@ impl SettingsState {
         if self.preferences.battle_lists != preferences.battle_lists {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
+        if self.preferences.minimap != preferences.minimap {
+            self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         if self.preferences.skills_layout != preferences.skills_layout {
             self.skills_edit = crate::play::feature_0017_attack::view::next_edit();
         }
@@ -238,6 +245,14 @@ impl SettingsState {
         view: &mut PlayView,
         viewport: [u32; 2],
     ) -> Result<(), PreferenceError> {
+        if view.local.minimap_edit > self.minimap_edit {
+            let edit = view.local.minimap_edit;
+            let mut preferences = self.preferences.clone();
+            preferences.minimap = view.preferences().minimap.clone();
+            self.apply(preferences);
+            self.minimap_edit = edit;
+        }
+        view.local.minimap_edit = self.minimap_edit;
         view.set_world_viewport(viewport)?;
         if view.preferences() != &self.preferences {
             view.set_preferences(self.preferences.clone())?;
