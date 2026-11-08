@@ -78,6 +78,7 @@ pub(super) fn capture(
                     transition: (*key).into(),
                     creature: entry.creature.clone(),
                     observed_revision: snapshot.observed_revision,
+                    definition_hash: None,
                     source: NativeDeathSource::Source(SourceDeathContext {
                         scope,
                         scope_generation: generation,
