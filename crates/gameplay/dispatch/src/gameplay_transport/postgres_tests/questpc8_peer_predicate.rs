@@ -45,7 +45,7 @@ async fn exercise(h: &Harness) -> TestResult {
     }], vec![]).map_err(debug)?;
     let requirement = TrackRequirement { track: TRACK.into(), minimum: 2, maximum: 2 };
     let carried = QuestCarriedUse { source: id(90), intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&UseIntent {
-        target: UseTarget::ItemByDefinition(std::num::NonZeroU32::new(1).unwrap()),
+        target: UseTarget::ItemByDefinition(std::num::NonZeroU32::new(1).ok_or("nonzero native item index")?),
         use_with: Some(peer.target), use_with_map_item: None, use_with_position: None,
     }).map_err(debug)? };
     assert!(!check(h, actor, &peer, &requirement, &catalogue, &carried).await?, "absent peer state uses declared default");
