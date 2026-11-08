@@ -246,5 +246,174 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         ));
         assert_eq!(snapshot(h, &quest).await?, after);
     }
+    // This is a final-boundary fixture: a fenced fixture transition establishes
+    // prior mission progress; the actual shipped source programme owns completion.
+    for (offset, npc, quest, previous_mission) in [
+        (0, "malor", "the_djinn_war_efreet_faction", 3),
+        (10, "gabel", "the_djinn_war_marid_faction", 2),
+    ] {
+        let quest = format!("oteryn:quest.{quest}");
+        let source = NpcRuleCatalog::runtime().map_err(fixture::debug)?;
+        let program = source.program(&quest).ok_or("missing shipped finale")?;
+        let digest = program
+            .digest
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>();
+        let tracks = program
+            .document
+            .tracks
+            .iter()
+            .map(|t| QuestTrack {
+                key: t.key.clone(),
+                quest: quest.clone(),
+                initial: t.initial,
+                min: t.min,
+                max: t.max,
+            })
+            .collect::<Vec<_>>();
+        let mission2 = tracks
+            .iter()
+            .find(|t| t.key.ends_with("/mission02"))
+            .ok_or("mission02")?
+            .key
+            .clone();
+        let mission3 = tracks
+            .iter()
+            .find(|t| t.key.ends_with("/mission03"))
+            .ok_or("mission03")?
+            .key
+            .clone();
+        let seed = format!("oteryn:quest-transition/engnpc-final-boundary/{npc}");
+        let catalogue = Arc::new(
+            QuestStateCatalogue::new(
+                "content-1",
+                tracks.clone(),
+                vec![
+                    QuestTransition {
+                        key: format!("oteryn:quest-npc-pin/{digest}"),
+                        quest: quest.clone(),
+                        effects: vec![QuestEffect {
+                            track: mission2.clone(),
+                            from: QuestComparison::Any,
+                            effect: QuestEffectKind::Computed,
+                        }],
+                        completes: false,
+                        experience: None,
+                        world_change: None,
+                    },
+                    QuestTransition {
+                        key: seed.clone(),
+                        quest: quest.clone(),
+                        effects: vec![
+                            QuestEffect {
+                                track: mission2,
+                                from: QuestComparison::Eq(-1),
+                                effect: QuestEffectKind::Set(previous_mission),
+                            },
+                            QuestEffect {
+                                track: mission3.clone(),
+                                from: QuestComparison::Eq(-1),
+                                effect: QuestEffectKind::Set(2),
+                            },
+                        ],
+                        completes: false,
+                        experience: None,
+                        world_change: None,
+                    },
+                ],
+            )
+            .map_err(fixture::debug)?,
+        );
+        let revision: u64 = h.root_revision().await?.parse()?;
+        let seeded = h
+            .root
+            .commit_character_quest_transition(
+                &authority,
+                &h.node,
+                fixture::fence(revision)?,
+                crate::durability::quest_state::QuestTransitionRequest {
+                    transition_key: seed,
+                    cause: crate::durability::quest_state::QuestCause::Command(CommandRef::new(
+                        session,
+                        CommandId::new(9900 + offset).map_err(fixture::debug)?,
+                    )),
+                },
+                catalogue.clone(),
+            )
+            .await
+            .map_err(fixture::debug)?;
+        assert!(matches!(seeded,QuestTransitionOutcome::Committed(ref r) if !r.completes));
+        let finish = program
+            .document
+            .rules
+            .iter()
+            .find(|r| r.completes)
+            .ok_or("final rule")?;
+        let request = NpcProgramRequest {
+            command: CommandRef::new(
+                session,
+                CommandId::new(9901 + offset).map_err(fixture::debug)?,
+            ),
+            npc: format!("oteryn:npc.{npc}"),
+            trigger: NpcRuleTrigger::Say,
+            message: "yes".into(),
+            topic: 2,
+            transition_key: finish.key.clone(),
+        };
+        let fence = fixture::fence(revision + 1)?;
+        let before = snapshot(h, &quest).await?;
+        let mut refused = request.clone();
+        refused.topic = 1;
+        assert!(matches!(
+            h.root
+                .commit_character_npc_program(
+                    &authority,
+                    &h.node,
+                    &permit,
+                    fence,
+                    refused,
+                    catalogue.clone(),
+                    &Content
+                )
+                .await
+                .map_err(fixture::debug)?
+                .transition,
+            QuestTransitionOutcome::Refused(_)
+        ));
+        assert_eq!(snapshot(h, &quest).await?, before);
+        let result = h
+            .root
+            .commit_character_npc_program(
+                &authority,
+                &h.node,
+                &permit,
+                fence,
+                request.clone(),
+                catalogue.clone(),
+                &Content,
+            )
+            .await
+            .map_err(fixture::debug)?;
+        assert!(
+            matches!(result.transition,QuestTransitionOutcome::Committed(ref r) if r.completes && r.changes.len()==2)
+        );
+        let after = snapshot(h, &quest).await?;
+        assert_eq!(after.0, (revision + 2).to_string());
+        assert_eq!(after.7, Some((revision + 2).to_string()));
+        assert_eq!(after.5, before.5 + 1);
+        assert_eq!(after.6, before.6 + 1);
+        let replay = h
+            .root
+            .commit_character_npc_program(
+                &authority, &h.node, &permit, fence, request, catalogue, &Content,
+            )
+            .await
+            .map_err(fixture::debug)?;
+        assert!(
+            matches!(replay.transition,QuestTransitionOutcome::AlreadyCommitted(ref r) if r.completes)
+        );
+        assert_eq!(snapshot(h, &quest).await?, after);
+    }
     Ok(())
 }

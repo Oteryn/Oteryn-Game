@@ -12,6 +12,9 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 PIN = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:"
 QUESTS = {
+    "djinn_war_efreet": "oteryn:quest.the_djinn_war_efreet_faction",
+    "djinn_war_marid": "oteryn:quest.the_djinn_war_marid_faction",
+    "white_raven_monastery": "oteryn:quest.the_white_raven_monastery_quest",
     "bigfoot_burden": "oteryn:quest.bigfoot_s_burden_quest",
     "fathers_burden": "oteryn:quest.a_father_s_burden_quest",
     "hot_cuisine": "oteryn:quest.hot_cuisine_quest",

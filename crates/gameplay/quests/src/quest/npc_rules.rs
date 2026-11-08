@@ -504,6 +504,9 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_djinn_war_efreet_faction"
+                                | "oteryn:quest.the_djinn_war_marid_faction"
+                                | "oteryn:quest.the_white_raven_monastery_quest"
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
@@ -759,3 +762,6 @@ mod draconia_source_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod engnpc_finales;
