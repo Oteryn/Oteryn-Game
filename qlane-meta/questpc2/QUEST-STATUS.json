@@ -752,7 +752,8 @@
         }
       ],
       "qualification_scope": "Oldrak NPC start/decline/finish steps only; source defender waves and hallowed-axe grant remain unqualified. No whole quest completion inferred.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "npc_slice_proof": "qlane-meta/questpc2/BATCH-oldrak-npc-green-2026-11-08.json"
     },
     {
       "canonical": "oteryn:quest.desert_dungeon_quest",
@@ -1758,13 +1759,9 @@
     }
   },
   "current_batch": {
-    "name": "Oldrak source NPC dialogue steps",
-    "state": "PG_RED_BUILD_RUNNING",
-    "log": "/tmp/questpc2b-oldrak-red.log",
-    "source_sha256": "dc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40",
-    "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-    "source_path": "data-global/npc/oldrak.lua",
-    "source_lines": "102-124,151-153"
+    "name": "Oldrak supported NPC steps",
+    "state": "GREEN_NPC_SLICE",
+    "proof": "qlane-meta/questpc2/BATCH-oldrak-npc-green-2026-11-08.json"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1795,12 +1792,12 @@
     "BATCH-main-qworld-2026-11-07.json",
     "BATCH-hero-pipe-noop-2026-11-08.json",
     "BATCH-main-b386-compile-checkpoint-2026-11-08.json",
-    "BATCH-book-speed-and-main-pg-green-2026-11-08.json"
+    "BATCH-book-speed-and-main-pg-green-2026-11-08.json",
+    "BATCH-oldrak-npc-green-2026-11-08.json"
   ],
   "next_batch": {
-    "state": "AUTHORING_ON_CONTINUATION",
-    "branch": "claude/happy-davinci-ijz3wy-questpc2b",
-    "task": "Qualify existing supported NPC access, request large encounter effects from qengine2; do not edit frozen parent."
+    "state": "MAIN_INTEGRATION_REQUIRED",
+    "task": "Reattempt main83acbdac3 integration preserving both implementations; saved44conflict paths. Do not openPR. Source defender-wave mechanisms remain qengine2owned."
   },
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",

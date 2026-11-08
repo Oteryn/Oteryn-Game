@@ -893,3 +893,11 @@ remain from that merge; publish the final receipt with the next green slice.
   NativeDoneabsent0anddonor-1both satisfy theonlyinitialDone<1guard. Noaxe
   grant,fee,item919orwavequalification inthisslice. Requestbigfeaturesfrom
   qengine2; narrowlypinnedNPCsource admission is a smalllocaldatahelper.
+
+- PREPUSHmain83acbdac3attempt:44conflictsacrosssourceexecution,persistence,
+  worldcaptureandderivedfiles. Keepbothimplementations; no blindtheirs/ours.
+  Ownerauthorizesabortwhenunsafeinside15min. LocalOldrak5251checkpointfirst,
+  thenabortmerge; publishcompilingstateafterchecksandcontinueintegration.
+  Sourcecustody39unitfailures sharedoneextra per-fileguard; sameexactOldrak
+  custodychecksnowcoverbothgates. Fullrerun289/290:soleexpectedactivation
+  closureupdatedfornewdemon_oakprogramme, allotherlegacy/hashassertionskept.
