@@ -140,6 +140,8 @@ pub mod store;
 pub mod vip_presence;
 #[path = "features/0195-weapon-proficiency/mod.rs"]
 pub mod weapon_proficiency;
+#[path = "features/0448-weapon-proficiency-state/mod.rs"]
+pub mod weapon_proficiency_state;
 
 #[path = "features/0053-world-event/mod.rs"]
 pub mod world_event;

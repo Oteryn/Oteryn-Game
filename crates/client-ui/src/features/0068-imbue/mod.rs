@@ -1,7 +1,11 @@
 //! Imbuement shrine panel state and command construction.
+#[path = "../0447-imbuement-details/protocol.rs"]
+pub mod details;
 mod input;
+mod view;
 pub use input::open_key;
 pub use oteryn_client_runtime::imbue::{ImbueCommand, ImbueResponse, ItemHandle, imbuement};
+pub use view::{panel_text, selected_detail_text, slot_label};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -12,14 +16,109 @@ pub enum Intent {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ImbuePanel {
+    pub details_selected: bool,
+    pub details_pending: Option<ItemHandle>,
+    pub details_attempted: bool,
+    pub details: Option<oteryn_client_runtime::imbuement_details::Reply>,
+    pub details_feedback: Option<&'static str>,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
+    pub refresh_required: bool,
     pub item: Option<ItemHandle>,
     pub slot: u8,
     pub offer: usize,
     pub window: Option<imbuement::ImbuementWindow>,
     pub feedback: Option<&'static str>,
+}
+
+impl ImbuePanel {
+    pub fn invalidate_item_scope(&mut self) {
+        *self = Self {
+            selected: self.selected,
+            details_selected: self.details_selected,
+            open: self.open,
+            feedback: Some("Select an item in the current activity and refresh it"),
+            ..Self::default()
+        };
+    }
+
+    pub fn select_item(&mut self, item: ItemHandle) {
+        if self.pending || self.item == Some(item) {
+            return;
+        }
+        self.item = Some(item);
+        self.window = None;
+        self.details = None;
+        self.details_pending = None;
+        self.details_attempted = false;
+        self.details_feedback = None;
+        self.refresh_required = false;
+        self.slot = 0;
+        self.offer = 0;
+        self.feedback = Some("Refresh the selected item at the shrine");
+    }
+    pub fn select_slot(&mut self, slot: u8) -> bool {
+        if !self.selected
+            || self.pending
+            || self
+                .window
+                .as_ref()
+                .is_none_or(|window| slot >= window.slot_count)
+        {
+            return false;
+        }
+        self.slot = slot;
+        true
+    }
+    pub fn select_offer(&mut self, offer: usize) -> bool {
+        if !self.selected
+            || self.pending
+            || self
+                .window
+                .as_ref()
+                .is_none_or(|window| offer >= window.offers.len())
+        {
+            return false;
+        }
+        self.offer = offer;
+        true
+    }
+    pub fn can_apply(&self) -> bool {
+        self.selected
+            && self.item.is_some()
+            && !self.pending
+            && self.window.as_ref().is_some_and(|window| {
+                self.slot < window.slot_count
+                    && self.offer < window.offers.len()
+                    && !window
+                        .applied
+                        .iter()
+                        .any(|applied| applied.slot == self.slot)
+                    && (!self.details_selected
+                        || self.details.as_ref().is_some_and(|details| {
+                            let offer = &window.offers[self.offer];
+                            Some(details.item) == self.item
+                                && details.quotes.iter().any(|quote| {
+                                    quote.family == offer.family
+                                        && quote.tier == offer.tier
+                                        && quote.recipe_available
+                                })
+                        }))
+            })
+    }
+    pub fn can_clear(&self) -> bool {
+        self.selected
+            && self.item.is_some()
+            && !self.pending
+            && self.window.as_ref().is_some_and(|window| {
+                self.slot < window.slot_count
+                    && window
+                        .applied
+                        .iter()
+                        .any(|applied| applied.slot == self.slot)
+            })
+    }
 }
 
 pub fn request(panel: &mut ImbuePanel, intent: Intent) -> Option<ImbueCommand> {
@@ -34,16 +133,31 @@ pub fn request(panel: &mut ImbuePanel, intent: Intent) -> Option<ImbueCommand> {
         }
     };
     let action = match intent {
-        Intent::Refresh => imbuement::ImbuementAction::Query,
+        Intent::Refresh => {
+            panel.refresh_required = false;
+            imbuement::ImbuementAction::Query
+        }
         Intent::Apply => {
+            if !panel.can_apply() {
+                panel.feedback = Some(
+                    "Select an empty slot and an available offer; refresh missing material details",
+                );
+                return None;
+            }
+            let window = panel.window.as_ref()?;
+            (panel.slot < window.slot_count).then_some(())?;
             let index = u8::try_from(panel.offer).ok()?;
-            panel.window.as_ref()?.offers.get(panel.offer)?;
+            window.offers.get(panel.offer)?;
             imbuement::ImbuementAction::Apply {
                 slot: panel.slot,
                 imbuement: index,
             }
         }
         Intent::Clear => {
+            if !panel.can_clear() {
+                panel.feedback = Some("Select an occupied slot to clear");
+                return None;
+            }
             (panel.slot < panel.window.as_ref()?.slot_count).then_some(())?;
             imbuement::ImbuementAction::Clear { slot: panel.slot }
         }
@@ -70,49 +184,23 @@ pub fn apply_result(panel: &mut ImbuePanel, response: &ImbueResponse) {
     };
     if let Some(window) = &reply.window {
         panel.window = Some(window.clone());
+        panel.details = None;
+        panel.details_pending = None;
+        panel.details_attempted = false;
+        panel.details_feedback = None;
         panel.slot = panel.slot.min(window.slot_count.saturating_sub(1));
         panel.offer = panel.offer.min(window.offers.len().saturating_sub(1));
+    } else if matches!(
+        reply.result,
+        imbuement::ImbuementResult::Ok | imbuement::ImbuementResult::RevisionChanged
+    ) {
+        // Mutation replies carry no new slot snapshot. Never present the old quote as current.
+        panel.window = None;
+        panel.details = None;
+        panel.details_pending = None;
+        panel.details_attempted = false;
+        panel.refresh_required = true;
     }
-}
-
-#[must_use]
-pub fn panel_text(panel: &ImbuePanel) -> String {
-    let mut text = if let Some(window) = &panel.window {
-        format!(
-            "{} slots; clear cost: {} gold\n",
-            window.slot_count, window.clear_gold
-        )
-    } else {
-        "No imbuement state loaded\n".to_owned()
-    };
-    if let Some(window) = &panel.window {
-        for applied in &window.applied {
-            text.push_str(&format!(
-                "Slot {}: family {}, tier {}, {} ms remaining\n",
-                applied.slot, applied.family, applied.tier, applied.remaining_ms
-            ));
-        }
-        for (index, offer) in window.offers.iter().enumerate() {
-            text.push_str(&format!(
-                "Offer {index}: family {}, tier {}, {} gold{}\n",
-                offer.family,
-                offer.tier,
-                offer.gold,
-                if offer.requires_premium {
-                    " (premium)"
-                } else {
-                    ""
-                }
-            ));
-        }
-    }
-    if panel.pending {
-        text.push_str("Request pending\n");
-    }
-    if let Some(feedback) = panel.feedback {
-        text.push_str(feedback);
-    }
-    text
 }
 
 #[cfg(test)]

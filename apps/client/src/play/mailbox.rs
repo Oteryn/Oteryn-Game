@@ -382,6 +382,8 @@ impl Outbox {
         mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
+        mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
@@ -393,6 +395,7 @@ impl Outbox {
         mailbox.stash_end();
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
+        mailbox.imbue_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -426,6 +429,8 @@ impl Outbox {
         }
         mailbox.arena.end();
         mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
+        mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
@@ -437,6 +442,7 @@ impl Outbox {
         mailbox.stash_end();
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
+        mailbox.imbue_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -542,6 +548,8 @@ impl Drop for PlayLink {
             launcher.end();
         }
         mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
+        mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
