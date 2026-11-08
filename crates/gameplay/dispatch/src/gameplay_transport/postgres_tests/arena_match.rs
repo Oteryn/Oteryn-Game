@@ -18,14 +18,29 @@ fn arena_match_real_connection_status_and_full_match() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            scenario(false).map_err(|e| e.to_string())?;
-            scenario(true).map_err(|e| e.to_string())
+            scenario(false, false).map_err(|e| e.to_string())?;
+            scenario(true, false).map_err(|e| e.to_string())
         })?
         .join()
         .map_err(|_| "arena match scenario panicked")??;
     eprintln!("SV15 POSTGRES_CASE_COMPLETED: 10 real opponents, fee, reward, replay, exit, reload");
     Ok(())
 }
+#[test]
+fn arena_match_credited_portal_timeout_restores_pillar() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "arena timeout scenario panicked")??;
+    eprintln!("M51 POSTGRES_CASE_COMPLETED credited_portal_timeout duration={:?}", started.elapsed());
+    Ok(())
+}
+
 async fn command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -43,7 +58,7 @@ async fn command(
     assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
     wire::decode_match_result(&bytes).map_err(debug)
 }
-fn scenario(funded: bool) -> TestResult {
+fn scenario(funded: bool, expire: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "arena_match", false, false).await?;
@@ -81,7 +96,7 @@ fn scenario(funded: bool) -> TestResult {
                 let index = native.item_index()?;
                 Some(crate::map::facts::ItemDefinition {
                     reference: index.definition_ref("Item", key, "definition-r1")?,
-                    solid: Some(false),
+                    solid: Some(key.ends_with(".i1841")),
                     blocks_projectile: false,
                     pickupable: false,
                     door: false,
@@ -268,9 +283,37 @@ fn scenario(funded: bool) -> TestResult {
                 crate::gameplay_transport::arena_match::pit_exit_open(&owner, admitted.game_session_id),
                 "credited death opens the source pit without another client command"
             );
+            let (x, y) = crate::durability::arena_match::donor::CENTERS[usize::from(pit - 1)];
+            let map = owner.bundle_map().ok_or("arena map")?;
+            let pos = crate::map::overlay::TilePos { x: (x - 6) as u16, y: y as u16, floor: -7 };
+            let mut projected = Vec::new();
+            crate::map::view::compose_into(map.overlay.base(), map.overlay.tile(pos), &map.facts, pos, &mut projected).map_err(debug)?;
+            assert!(projected.iter().any(|entry| entry.facts.appearance_id == 5022), "credited death creates the native next-pit portal");
+            assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 1841), "credited death removes the source pillar");
+            if expire {
+                crate::gameplay_transport::arena_match::expire_pit(&owner, admitted.game_session_id);
+                {
+                    let mut runtime = deps.runtime.lock().await;
+                    crate::gameplay_transport::arena_match::tick(&owner, &mut runtime);
+                    let at = runtime.read_actor_position(deps.actor).map_err(debug)?.position();
+                    assert_eq!((at.x, at.y, at.floor), crate::durability::arena_match::donor::KICK);
+                    assert!(runtime.companion_snapshot_including_dead(target).is_err());
+                }
+                assert!(!crate::gameplay_transport::arena_match::pit_exit_open(&owner, admitted.game_session_id));
+                projected.clear();
+                crate::map::view::compose_into(map.overlay.base(), map.overlay.tile(pos), &map.facts, pos, &mut projected).map_err(debug)?;
+                assert!(projected.iter().any(|entry| entry.facts.appearance_id == 1841));
+                assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 5022));
+                return Ok(());
+            }
             let advanced = command(&owner, &mut admitted, A::Advance).await?;
             assert_eq!(advanced.disposition, D::Applied, "pit {pit}: {advanced:?}");
             assert_eq!(advanced.state.pit, if pit == 10 { 0 } else { pit + 1 });
+            projected.clear();
+            crate::map::view::compose_into(map.overlay.base(), map.overlay.tile(pos), &map.facts, pos, &mut projected).map_err(debug)?;
+            assert!(projected.iter().any(|entry| entry.facts.appearance_id == 1841), "leaving resets the source pillar");
+            assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 5022));
+
         }
         let victories: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_victories")
             .fetch_one(&harness.pool)
