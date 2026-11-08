@@ -49,6 +49,8 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
+source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
+NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_GAMEPLAY_ENV=()
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Default: the canonical imported book. The r21 reference artifact stays selectable explicitly.
@@ -258,7 +260,7 @@ PY_STAGE
   sudo install -d -o root -g root -m 0755 "$BASE/gameplay"
   sudo cp -R "$WORK/gameplay/." "$BASE/gameplay/"
   sudo chmod -R a+rX "$BASE/gameplay"
-  evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1)"
+  evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1) activation_wait_seconds=$NODE_ACTIVATION_WAIT_SECONDS"
 fi
 MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
@@ -520,7 +522,7 @@ SQL
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
-  await_log "event=content_activated .*activation_sequence=1 " 60
+  await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
@@ -639,7 +641,7 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   remember node_c "$node"
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
-  await_log "event=content_activated .*activation_sequence=1 " 60
+  await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
   sudo kill -TERM "$NODE_PID"
   for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
