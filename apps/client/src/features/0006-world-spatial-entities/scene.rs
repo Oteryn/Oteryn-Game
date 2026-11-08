@@ -3,6 +3,9 @@ use super::*;
 use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
+    pub(crate) fn set_name_visibility(&mut self, visibility: [bool; 3]) {
+        self.name_visibility = visibility;
+    }
     pub fn name_count(&self) -> usize {
         self.names.len()
     }
@@ -94,7 +97,14 @@ impl Scene {
             } else {
                 self.actor_draws.push((tile, draws));
             }
-            if self.view.contains(tile) {
+            let name_group = if is_own {
+                0
+            } else if entity.kind == oteryn_session::EntityKind::Player {
+                1
+            } else {
+                2
+            };
+            if self.view.contains(tile) && self.name_visibility[name_group] {
                 let mut marker = None;
                 oteryn_client_ui::forge_creature::protocol::replace(
                     &mut marker,

@@ -256,7 +256,7 @@ fn spawn_window(shared: Arc<Mutex<Shared>>) {
     let fallback = Arc::clone(&shared);
     if std::thread::Builder::new()
         .name("local-settings".into())
-        .spawn(move || run(shared))
+        .spawn(move || dialog::run(shared))
         .is_err()
     {
         let mut state = lock(&fallback);
@@ -273,7 +273,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223)
+                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -315,33 +315,6 @@ unsafe fn text(hwnd: HWND) -> String {
         String::from_utf16_lossy(&buffer[..length.max(0) as usize])
     }
 }
-struct SettingsControls {
-    pages: HWND,
-    help: HWND,
-    list: HWND,
-    chord: HWND,
-    rebind: HWND,
-    mouse_preset: HWND,
-    delay_label: HWND,
-    delay: HWND,
-    controls_apply: HWND,
-    rotation_label: HWND,
-    rotation: HWND,
-    label: HWND,
-    scale: HWND,
-    volume: HWND,
-    mute: HWND,
-    apply: HWND,
-    transfer_label: HWND,
-    transfer_path: HWND,
-    import: HWND,
-    export: HWND,
-    backup: HWND,
-    defaults: HWND,
-    hud_checks: Vec<HWND>,
-    feedback: HWND,
-}
 
-include!("native/create_settingscontrols.rs");
-
-include!("native/run.rs");
+#[path = "dialog.rs"]
+mod dialog;

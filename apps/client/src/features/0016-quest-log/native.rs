@@ -102,7 +102,7 @@ unsafe fn create_questcontrols(hwnd: HWND) -> QuestControls {
         control(
             hwnd,
             "STATIC",
-            "Find quest number or status",
+            "Find number, status or known mission",
             112,
             10,
             10,
