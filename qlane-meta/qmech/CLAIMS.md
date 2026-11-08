@@ -70,7 +70,7 @@
 
 | M38: conditional NPC presence, stationary/water admission, returns/tickets and Mistrock binding | npcfix | 2140–2149 reserved by coordinator; none allocated yet | Five checked rows in MISSING-npcfix.md, including The Hidden City of Beregar — Way to Beregar | CLAIMED |
 
-| M42: dispatch existing UTC cooking planner and typed ingredient operations | questpc7 | none planned; M42 allocation 2080–2089 only | Hot Cuisine | CLAIMED |
+| M42: dispatch existing UTC cooking planner and typed ingredient operations | questpc7 | 2080 reserved for typed cooking input/repeat-reward proof; M42 range 2080–2089 | Hot Cuisine | CLAIMED |
 | M41 — achievement in the NPC transaction and corpse-provenance-bound hand-ins | wpkg | 2130 reserved; only 2130–2139 permitted | Kilmaresh; The Order of the Stag finale | CLAIMED |
 
 | M26: qualified Soul War and Rotten Blood boss rooms with source-faithful Bakragore cooldown | srvgap2 | none allocated yet; reserve 2270–2279 only | Soul War Quest; Rotten Blood Quest | CLAIMED |
