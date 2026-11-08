@@ -6,7 +6,8 @@ pub fn panel_text(panel: &Panel) -> String {
     let mut text = format!("Team Finder\r\n{}", panel.feedback);
     match &panel.result {
         Some(TeamFinderResult::Browse { listings, .. }) => {
-            for row in listings {
+            for index in panel.visible_indices() {
+                let row = &listings[index];
                 text.push_str(&format!(
                     "\r\n{}: level {}–{}, {} free, {:?}",
                     row.name,
