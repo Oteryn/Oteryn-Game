@@ -18,7 +18,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Colours: head,body,legs,feet",
                 "Content revision",
             ],
-            buttons: &["Apply"],
+            buttons: &["Apply", "Previous outfit", "Next outfit"],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.appearance;
                 (
@@ -36,6 +36,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 }
                 for (index, value) in values.into_iter().enumerate() {
                     super::input::edit(panel, index, value);
+                }
+                if matches!(action, 1 | 2) {
+                    panel.cycle_outfit(action == 2);
+                    return;
                 }
                 let intent = match action {
                     0 => oteryn_client_ui::appearance::Intent::Apply,
