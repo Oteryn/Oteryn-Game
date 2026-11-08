@@ -66,6 +66,22 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
         characters.select(0);
         worlds.select(0);
         receipts.select(0);
+        if let Some(q) = &view.quote {
+            if let Some(i) = page
+                .owned_characters
+                .iter()
+                .position(|c| c.id == q.character_id)
+            {
+                characters.select(i);
+            }
+            if let Some(i) = page
+                .worlds
+                .iter()
+                .position(|w| w.id == q.destination_world_id)
+            {
+                worlds.select(i);
+            }
+        }
     }
     next.enable(view.page.as_ref().is_some_and(|p| p.next_cursor.is_some()));
     bid.enable(!view.pending());
@@ -75,7 +91,7 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
     status.enable(view.pending());
     let mut previous = None;
     loop {
-        transfer.enable(view.can_transfer());
+        let event = window.event();
         let selected = list.selected();
         if selected != previous {
             if let Some(a) = view
@@ -92,7 +108,16 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
                 .selected()
                 .and_then(|i| p.owned_characters.get(i))
         });
-        match window.event() {
+        let quote_matches = view.quote.as_ref().is_some_and(|q| {
+            character.is_some_and(|c| c.id == q.character_id)
+                && view
+                    .page
+                    .as_ref()
+                    .and_then(|p| worlds.selected().and_then(|i| p.worlds.get(i)))
+                    .is_some_and(|w| w.id == q.destination_world_id)
+        });
+        transfer.enable(view.can_transfer() && quote_matches);
+        match event {
             1 => return Some(Action::Refresh(AuctionView::All)),
             2 => return Some(Action::Refresh(AuctionView::Own)),
             3 => return Some(Action::Refresh(AuctionView::History)),
@@ -133,7 +158,7 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
                 window.explain("Choose a character and destination world.");
             }
             8 => {
-                if view.can_transfer() {
+                if view.can_transfer() && quote_matches {
                     return Some(Action::Transfer {confirmed:window.confirm(&format!("{}\nGame rechecks offline, guild, house and market restrictions before committing.", view.transfer_description(view.quote.as_ref()?)))});
                 }
             }

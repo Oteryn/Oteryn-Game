@@ -30,6 +30,7 @@ pub(crate) struct Authority {
     pub fail_after_commit: bool,
     pub pending_first: bool,
     pub paginate: bool,
+    pub fail_pages: bool,
     pub offline: bool,
     pub lease_active: bool,
     pub in_guild: bool,
@@ -120,6 +121,9 @@ impl Authority {
             );
         }
         if method == "GET" && target.starts_with("/api/v1/native-account/bazaar/auctions?") {
+            if self.fail_pages {
+                return (503, String::new());
+            }
             let view = if target.contains("view=own") {
                 AuctionView::Own
             } else if target.contains("view=history") {

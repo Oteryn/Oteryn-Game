@@ -165,12 +165,7 @@ async fn apply(
             return Ok(());
         }
         Action::Status => {
-            if let Some(id) = view
-                .pending
-                .as_ref()
-                .map(|r| r.request_id.as_str())
-                .or(view.unresolved.as_deref())
-            {
+            if let Some(id) = view.pending_id() {
                 let receipt = client.bazaar_status(token, id, cancel).await?;
                 accept(view, receipt);
             }
@@ -222,10 +217,10 @@ fn accept(view: &mut View, receipt: OperationReceipt) {
     {
         view.pending = None;
     }
-    if receipt.state != OperationState::Pending
-        && view.unresolved.as_deref() == Some(receipt.request_id.as_str())
-    {
-        view.unresolved = None;
+    if receipt.state == OperationState::Pending {
+        view.unresolved.insert(receipt.request_id.clone());
+    } else {
+        view.unresolved.remove(&receipt.request_id);
     }
     view.feedback = match receipt.state {
         OperationState::Pending => {

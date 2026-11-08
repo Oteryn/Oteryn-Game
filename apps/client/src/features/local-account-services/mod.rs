@@ -50,7 +50,7 @@ pub struct View {
     pub feedback: String,
     pub selected_view: AuctionView,
     pending: Option<BazaarRequest>,
-    unresolved: Option<String>,
+    unresolved: std::collections::BTreeSet<String>,
     quote_until: Option<Instant>,
 }
 impl Default for View {
@@ -63,25 +63,31 @@ impl Default for View {
                 .into(),
             selected_view: AuctionView::All,
             pending: None,
-            unresolved: None,
+            unresolved: Default::default(),
             quote_until: None,
         }
     }
 }
 impl View {
     pub fn pending(&self) -> bool {
-        self.pending.is_some() || self.unresolved.is_some()
+        self.pending.is_some() || !self.unresolved.is_empty()
     }
     pub fn can_retry(&self) -> bool {
         self.pending.is_some()
     }
+    fn pending_id(&self) -> Option<&str> {
+        self.pending
+            .as_ref()
+            .map(|r| r.request_id.as_str())
+            .or_else(|| self.unresolved.iter().next().map(String::as_str))
+    }
     fn install_page(&mut self, page: BazaarPage) {
-        if !self.pending() {
-            self.unresolved = page
-                .recent_operations
-                .iter()
-                .find(|receipt| receipt.state == OperationState::Pending)
-                .map(|receipt| receipt.request_id.clone());
+        for receipt in &page.recent_operations {
+            if receipt.state == OperationState::Pending {
+                self.unresolved.insert(receipt.request_id.clone());
+            } else {
+                self.unresolved.remove(&receipt.request_id);
+            }
         }
         self.page = Some(page);
     }
@@ -114,12 +120,7 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
-        if let Some(id) = self
-            .pending
-            .as_ref()
-            .map(|p| p.request_id.as_str())
-            .or(self.unresolved.as_deref())
-        {
+        if let Some(id) = self.pending_id() {
             text.push_str(&format!(
                 "\nUnresolved operation {id}: check status before another action."
             ));
