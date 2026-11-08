@@ -1,0 +1,480 @@
+{
+  "schema": 1,
+  "lane": "questpc2",
+  "branch": "claude/happy-davinci-ijz3wy-questpc2-n2-n3",
+  "base_main": "3b4696be310eb76fa02b2cfae4f7addcbb779dd3",
+  "scope_source": {
+    "ref": "2f12120aaec72a2dbfac209eb61c563ea1eadd6e",
+    "path": "qlane-meta/questpc2/LANE-L3.json"
+  },
+  "counts": {
+    "packet_rows": 35,
+    "owned_quests": 29,
+    "previously_pushed_done": 3,
+    "waiting_engine": 26,
+    "blocked": 0,
+    "excluded_other_lanes": 6
+  },
+  "qualification_note": "This audit adds no gameplay implementation and no new whole-quest qualification. Requests identify a first remaining shared dependency, not an exhaustive implementation plan. Previously pushed partial NPC slices remain partial.",
+  "quests": [
+    {
+      "quest": "25 Years of Tibia Quest",
+      "canonical": "oteryn:quest.25_years_of_tibia_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "QENGINE2",
+      "feature": "live_blessing_and_promotion_predicates",
+      "acceptance": "Check all regular blessings and vocation promotion under the same fence as time-machine admission; level/premium alone are insufficient.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/67/definition",
+        "identity": "oteryn:quest.25_years_of_tibia_quest"
+      }
+    },
+    {
+      "quest": "Asura Palace Quest",
+      "canonical": "oteryn:quest.authored.asura_palace_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "participant_scoped_kill_to_door",
+      "acceptance": "Credit the selected chamber participant and open the corresponding door only after that participant's two required defenders die; a global creature-name counter is insufficient.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/87/definition",
+        "identity": "oteryn:quest.authored.asura_palace_quest"
+      }
+    },
+    {
+      "quest": "Barbarian Arena Quest",
+      "canonical": "oteryn:quest.barbarian_arena_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "arena_room_progression",
+      "acceptance": "Ten ordered rooms per tier with exclusive occupancy, death-driven next-room admission and tier completion. Existing fixed-roster Encounter is reusable admission, not a ten-room controller.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/12/definition",
+        "identity": "oteryn:quest.barbarian_arena_quest"
+      }
+    },
+    {
+      "quest": "Bewitched",
+      "canonical": "oteryn:quest.authored.bewitched",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "QENGINE2",
+      "feature": "world_callback_transaction_clock_operations",
+      "acceptance": "Daily personal cauldron contribution must reset from the authoritative clock; award the chosen 1000 XP only after Bane-Bringer credit. Reuse the pending world-clock implementation.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/89/definition",
+        "identity": "oteryn:quest.authored.bewitched"
+      }
+    },
+    {
+      "quest": "Chakoya Iceberg Mini World Change",
+      "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+      "state": "EXCLUDED",
+      "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/92/definition",
+        "identity": "oteryn:quest.authored.chakoya_iceberg_mini_world_change"
+      }
+    },
+    {
+      "quest": "Child of Destiny Quest",
+      "canonical": "oteryn:quest.authored.child_of_destiny_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "training_target_hit_credit",
+      "acceptance": "Deliver fenced spear-hit and magic-missile-hit training events to quest progress. A USE packet or NPC message must not stand in for a successful target hit.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/93/definition",
+        "identity": "oteryn:quest.authored.child_of_destiny_quest"
+      }
+    },
+    {
+      "quest": "Cults of Tibia Quest",
+      "canonical": "oteryn:quest.cults_of_tibia_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "cults_boss_phase_closures",
+      "acceptance": "Execute the Essence of Malice multi-actor encounter and participant settlement; Gerimor's already pushed assignments do not prove boss completion.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/26/definition",
+        "identity": "oteryn:quest.cults_of_tibia_quest"
+      }
+    },
+    {
+      "quest": "Dangerous Depths Quest",
+      "canonical": "oteryn:quest.dangerous_depths_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGNPC",
+      "feature": "atomic_large_npc_item_clock_receipt",
+      "acceptance": "Commit Gnomus measurements (nine writes) / charting (ten writes) atomically; task reports combine item grant, points and SetNowPlus. Retain Father's Burden eleven-track atomic write unchanged.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/27/definition",
+        "identity": "oteryn:quest.dangerous_depths_quest"
+      }
+    },
+    {
+      "quest": "Deeplings World Change",
+      "canonical": "oteryn:quest.deeplings_worldchange",
+      "state": "EXCLUDED",
+      "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/30/definition",
+        "identity": "oteryn:quest.deeplings_worldchange"
+      }
+    },
+    {
+      "quest": "Demon Wars World Change",
+      "canonical": "oteryn:quest.authored.demon_wars_world_change",
+      "state": "EXCLUDED",
+      "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/95/definition",
+        "identity": "oteryn:quest.authored.demon_wars_world_change"
+      }
+    },
+    {
+      "quest": "Devovorga's Essence Mini World Change",
+      "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "state": "EXCLUDED",
+      "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/97/definition",
+        "identity": "oteryn:quest.authored.devovorga_s_essence_mini_world_change"
+      }
+    },
+    {
+      "quest": "Down the Drain Mini World Change",
+      "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
+      "state": "EXCLUDED",
+      "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/98/definition",
+        "identity": "oteryn:quest.authored.down_the_drain_mini_world_change"
+      }
+    },
+    {
+      "quest": "Elemental Spheres Quest",
+      "canonical": "oteryn:quest.elemental_spheres_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGNPC",
+      "feature": "live_level_vocation_npc_item_plan",
+      "acceptance": "Arkulius requires live level/vocation predicates in the same source NPC item/quest receipt. Do not copy these values into ordinary quest tracks.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/37/definition",
+        "identity": "oteryn:quest.elemental_spheres_quest"
+      }
+    },
+    {
+      "quest": "Elvenbane Quest",
+      "canonical": "oteryn:quest.authored.elvenbane_quest",
+      "state": "DONE",
+      "delivery": "Previously pushed; collector integration pending. Not a claim that current main contains this implementation.",
+      "proof": {
+        "ref": "23852002b803e2d01021518c146b503d91f4c625",
+        "path": "qlane-meta/questpc2/BATCH-main-3020-integration-2026-11-07.json",
+        "case": "elvenbane_source_treasure_exit_and_journal_via_wire",
+        "postgres_version_num": 180006,
+        "duration_seconds": 150.647
+      },
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00300-00351.json",
+        "json_pointer": "/records/1/definition",
+        "identity": "oteryn:quest.authored.elvenbane_quest"
+      }
+    },
+    {
+      "quest": "Forgotten Knowledge Quest",
+      "canonical": "oteryn:quest.forgotten_knowledge_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "halls_of_hope_boss_phase_closures",
+      "acceptance": "Provide encounter-owned Dragon King and Last Lore Keeper phases, vulnerable forms and participant settlement. Albinius's pushed tome and portal donations are only prerequisite slices.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/45/definition",
+        "identity": "oteryn:quest.forgotten_knowledge_quest"
+      }
+    },
+    {
+      "quest": "Grimvale Quest",
+      "canonical": "oteryn:quest.grimvale_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "feroxa_form_transition_and_reset",
+      "acceptance": "Run the selected full-moon Feroxa form transitions and encounter reset. Maeryn's pushed helmet-choice dialogue neither starts nor completes this fight.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/55/definition",
+        "identity": "oteryn:quest.grimvale_quest"
+      }
+    },
+    {
+      "quest": "Heart of Destruction Quest",
+      "canonical": "oteryn:quest.heart_of_destruction_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "otherworld_boss_phase_settlement",
+      "acceptance": "Bind vulnerability/vortex phase deaths to the admitted Otherworld party and settle World Devourer completion through the encounter owner.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/57/definition",
+        "identity": "oteryn:quest.heart_of_destruction_quest"
+      }
+    },
+    {
+      "quest": "Hero of Rathleton Quest",
+      "canonical": "oteryn:quest.hero_of_rathleton_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "jaccus_generator_phase_controller",
+      "acceptance": "Execute Jaccus Maxxen's generator/construct-dependent vulnerability transitions and final death settlement; a static monster list does not execute the phase closure.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/58/definition",
+        "identity": "oteryn:quest.hero_of_rathleton_quest"
+      }
+    },
+    {
+      "quest": "Make Believe Quest",
+      "canonical": "oteryn:quest.authored.make_believe_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "moonspawn_damage_and_multi_actor_phase_controller",
+      "acceptance": "Damage participation must count without last hit; cannon/shield repeats, vocation charge windows, eight simultaneous Petrified Fanatics and persistent Phosphorus hazards remain encounter-owned.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00300-00351.json",
+        "json_pointer": "/records/15/definition",
+        "identity": "oteryn:quest.authored.make_believe_quest"
+      }
+    },
+    {
+      "quest": "Ravenous Madness Quest",
+      "canonical": "oteryn:quest.authored.ravenous_madness_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "QENGINE2",
+      "feature": "room_scoped_native_kill_credit",
+      "acceptance": "Accept Trollwut death credit only while the credited participant is inside his chamber, excluding doorway kills. The published authored KillCounter has no room/participant-position predicate.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00300-00351.json",
+        "json_pointer": "/records/27/definition",
+        "identity": "oteryn:quest.authored.ravenous_madness_quest"
+      }
+    },
+    {
+      "quest": "Rise of Devovorga",
+      "canonical": "oteryn:quest.authored.rise_of_devovorga",
+      "state": "EXCLUDED",
+      "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00300-00351.json",
+        "json_pointer": "/records/28/definition",
+        "identity": "oteryn:quest.authored.rise_of_devovorga"
+      }
+    },
+    {
+      "quest": "Rotten Blood Quest",
+      "canonical": "oteryn:quest.rotten_blood_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "rotten_blood_additional_source_closures",
+      "acceptance": "Implement Chagorz/Murcion extra_monster_closure and Bakragore nonliteral.timeToFightAgain before template admission. Ichgahal/Vemiath do not share those capture blockers.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/93/definition",
+        "identity": "oteryn:quest.rotten_blood_quest"
+      }
+    },
+    {
+      "quest": "Soul War Quest",
+      "canonical": "oteryn:quest.soul_war_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "goshnar_phase_and_sanity_controller",
+      "acceptance": "Execute Megalomania Aspect of Power, splinter, sanity and vulnerability cycles. W02 entry/receipt support exists; soul_war.lua still has additional_zone_closure and multiple-lever capture blockers.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/6/definition",
+        "identity": "oteryn:quest.soul_war_quest"
+      }
+    },
+    {
+      "quest": "The Annihilator Quest",
+      "canonical": "oteryn:quest.the_annihilator_quest",
+      "state": "DONE",
+      "delivery": "Previously pushed; collector integration pending. Not a claim that current main contains this implementation.",
+      "proof": {
+        "ref": "2f12120aaec72a2dbfac209eb61c563ea1eadd6e",
+        "path": "qlane-meta/questpc2/BATCH-annihilator-complete-source-route-2026-11-07.json",
+        "case": null,
+        "postgres_version_num": 180006,
+        "duration_seconds": 108.32
+      },
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00000-00099.json",
+        "json_pointer": "/records/88/definition",
+        "identity": "oteryn:quest.the_annihilator_quest"
+      }
+    },
+    {
+      "quest": "The Demon Oak Quest",
+      "canonical": "oteryn:quest.demon_oak",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGNPC",
+      "feature": "npc_bank_item_magic_atomic_receipt",
+      "acceptance": "Oldrak's Hallowed Axe transaction must atomically take the Axe and exact 1000 gold including bank, grant the Hallowed Axe and commit its magic effect. Source NPC topic state must remain one owner.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/31/definition",
+        "identity": "oteryn:quest.demon_oak"
+      }
+    },
+    {
+      "quest": "The Desert Dungeon Quest",
+      "canonical": "oteryn:quest.desert_dungeon_quest",
+      "state": "DONE",
+      "delivery": "Previously pushed; collector integration pending. Not a claim that current main contains this implementation.",
+      "proof": {
+        "ref": "2f12120aaec72a2dbfac209eb61c563ea1eadd6e",
+        "path": "qlane-meta/questpc2/BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json",
+        "case": null,
+        "postgres_version_num": 180006,
+        "duration_seconds": 126.049
+      },
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/33/definition",
+        "identity": "oteryn:quest.desert_dungeon_quest"
+      }
+    },
+    {
+      "quest": "The Dream Courts Quest",
+      "canonical": "oteryn:quest.the_dream_courts_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGNPC",
+      "feature": "live_player_name_dialogue_match",
+      "acceptance": "Stricken Soul's source branch matches the current character's name after its confirmations; NpcRuleInput lacks that name. Do not hardcode a name or pre-set the house-access flag.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/21/definition",
+        "identity": "oteryn:quest.the_dream_courts_quest"
+      }
+    },
+    {
+      "quest": "The Inquisition Quest",
+      "canonical": "oteryn:quest.the_inquisition_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGNPC",
+      "feature": "source_npc_committed_magic_effect",
+      "acceptance": "Five guard interviews require source magic-effect branches in the fenced NPC owner; storage-only evaluation rejects MagicEffect. Keep Henricus recruitment as a partial slice.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/28/definition",
+        "identity": "oteryn:quest.the_inquisition_quest"
+      }
+    },
+    {
+      "quest": "The Order of the Lion Quest",
+      "canonical": "oteryn:quest.the_order_of_the_lion_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "fugue_encounter_closure",
+      "acceptance": "Run Fugue's encounter-owned phases and participant victory settlement before Kesar's final report; native boss entry alone is not proof of this closure.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/33/definition",
+        "identity": "oteryn:quest.the_order_of_the_lion_quest"
+      }
+    },
+    {
+      "quest": "The Pits of Inferno Quest",
+      "canonical": "oteryn:quest.the_pits_of_inferno_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "QENGINE2",
+      "feature": "live_world_callback_premium_predicate",
+      "acceptance": "Enforce the chosen premium requirement at the initial hub STEP admission, together with level 80. World Callback has minimum_level but no live premium condition; a final reward premium check admits non-premium traversal too early.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00000-00099.json",
+        "json_pointer": "/records/89/definition",
+        "identity": "oteryn:quest.the_pits_of_inferno_quest"
+      }
+    },
+    {
+      "quest": "The Roost of the Graveborn Quest",
+      "canonical": "oteryn:quest.the_roost_of_the_graveborn_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "roost_sequential_boss_phase_settlement",
+      "acceptance": "Bind Fatal Bug/adventurer-group and later Roost boss deaths, ritual attunements and final settlement to the admitted encounter participants.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/81/definition",
+        "identity": "oteryn:quest.the_roost_of_the_graveborn_quest"
+      }
+    },
+    {
+      "quest": "Tower Defence Quest",
+      "canonical": "oteryn:quest.tower_defence_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGNPC",
+      "feature": "atomic_multi_type_npc_grant",
+      "acceptance": "Commit Bunny's four chosen fifty-arrow reward types with the completion flag in one receipt. Source NPC item_exchange_keys permits at most one grant type; RewardCallback.give has one root. Do not invent a reward bag or split completion from three of the grants.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/55/definition",
+        "identity": "oteryn:quest.tower_defence_quest"
+      }
+    },
+    {
+      "quest": "Twenty Miles Beneath the Sea Quest",
+      "canonical": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGNPC",
+      "feature": "live_equipped_item_npc_predicate",
+      "acceptance": "Check the chosen Helmet of the Deep prerequisite from the live equipped head slot when accepting the underwater mission. NpcRuleGuard::Equipped exists but neither storage-only nor plain-item NPC planners admit it.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/59/definition",
+        "identity": "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+      }
+    },
+    {
+      "quest": "Within the Tides Quest",
+      "canonical": "oteryn:quest.within_the_tides_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "ENGENC",
+      "feature": "timira_multi_stage_water_encounter",
+      "acceptance": "Execute Timira's successive bucket/corrupted-water stages, creature replacement and delayed room evacuation. Candidate still carries config.encounter and additional_zone_closure; do not substitute Tarun's unrelated Lost Brother source storage.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/83/definition",
+        "identity": "oteryn:quest.within_the_tides_quest"
+      }
+    },
+    {
+      "quest": "Goblin Merchant Quest",
+      "canonical": "oteryn:quest.goblin_merchant_quest",
+      "state": "WAITING-ENGINE",
+      "engine_owner": "QENGINE2",
+      "feature": "live_creature_item_use_transform_and_credit",
+      "acceptance": "Guardcatcher must target the live adventurer, remove exactly that actor and grant its captured carried form with bounded per-character credit. Reuse the queued Tainted Souls live-creature item-use mechanism; world-object ItemOnTarget is insufficient.",
+      "current_definition": {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "json_pointer": "/records/51/definition",
+        "identity": "oteryn:quest.goblin_merchant_quest"
+      }
+    }
+  ],
+  "audit_source_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+}
