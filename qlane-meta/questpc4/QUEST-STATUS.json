@@ -11032,5 +11032,18 @@
     "pin_check": "PASS, no content input changes",
     "sql": "none; no new PostgreSQL path in this slice",
     "remaining": "Wire source-specific lifecycle callbacks, puzzle stages, all five assigned quests and PG stories; M07 remains PARTIAL"
+  },
+  "m07_callback_reset_adapter": {
+    "state": "TESTED_ENGINE_SLICE",
+    "red": "/tmp/questpc4-m07-binding-red2.log: new callback effect is rejected before implementation",
+    "green": "quests/world 9/9 PASS 0.056s; dispatch3/3 PASS62.167s",
+    "adapter_test": "m07_callback_adapter_preflights_real_bundle_before_publishing_remote_reset PASS0.053s",
+    "postgres": "Mead18.6 completed marker62.042849635s success=true",
+    "clippy": "quests/world/dispatch all-targets all-features -D warnings PASS3m51s",
+    "workspace_check": "PASS --workspace --all-targets",
+    "fmt": "PASS",
+    "pin_check": "PASS",
+    "migrations": "duplicate check PASS; no SQL changes",
+    "remaining": "M07 PARTIAL: lifecycle source bindings, puzzle wiring and five assigned quest stories remain"
   }
 }

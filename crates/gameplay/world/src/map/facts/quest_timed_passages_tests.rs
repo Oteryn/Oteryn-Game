@@ -34,6 +34,9 @@ fn m07_remote_wall_and_lever_restore_on_distinct_source_deadlines() -> Result<()
         }],
         source_reset: Some((8_000_000, lever)),
     };
+    assert!(facts.quest_timed_passages_ready(1, 1, &walls));
+    assert_eq!(facts.object_revision(2), 1, "preflight must not publish");
+    assert_eq!(facts.next_movement_decay_time(), None);
     assert!(facts.apply_quest_callback(1, 1, entry(2773), &[], &[], false, Some(&walls)));
     let pagodas = QuestCallbackProjection::TimedPassages {
         due: 15_000_000,
@@ -89,6 +92,7 @@ fn m07_remote_reset_cannot_overwrite_newer_revision_or_partially_publish() -> Re
         entries: vec![change(2, 1), change(3, 0)],
         source_reset: None,
     };
+    assert!(!facts.quest_timed_passages_ready(1, 1, &stale));
     assert!(!facts.apply_quest_callback(1, 1, lever, &[], &[], false, Some(&stale)));
     assert_eq!(facts.object_revision(1), 1);
     assert!(!facts.base_hidden(2));

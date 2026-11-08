@@ -81,3 +81,42 @@ impl CallbackStates {
         true
     }
 }
+
+impl BundleFacts {
+    /// Preflight the same bounded projection before reserving durable quest inputs.
+    pub fn quest_timed_passages_ready(
+        &self,
+        owner: u64,
+        expected: u64,
+        projection: &QuestCallbackProjection,
+    ) -> bool {
+        let QuestCallbackProjection::TimedPassages {
+            entries,
+            source_reset,
+            ..
+        } = projection
+        else {
+            return false;
+        };
+        let Ok(states) = self.callbacks.lock() else {
+            return false;
+        };
+        if expected == u64::MAX
+            || states
+                .changed
+                .get(&owner)
+                .map_or(0, |(revision, _)| *revision)
+                != expected
+            || !states.has_capacity(
+                entries
+                    .len()
+                    .saturating_mul(3)
+                    .saturating_add(1 + usize::from(source_reset.is_some())),
+            )
+        {
+            return false;
+        }
+        let mut staged = (**states).clone();
+        staged.project(owner, projection, false)
+    }
+}

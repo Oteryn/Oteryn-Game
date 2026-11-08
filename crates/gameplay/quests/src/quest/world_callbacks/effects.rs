@@ -53,6 +53,9 @@ pub struct CallbackEffects {
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
+    /// Restore remote passage objects independently of the source object.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
@@ -364,7 +367,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()
                 || effects.encounter.is_some()
-                || !callback.passages.is_empty()
+                || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
+        })
+        || effects.passages_reset_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay)
+                || callback.actor_kind != ActorKind::Player
+                || callback.trigger != Trigger::Use
+                || callback.reversible
+                || callback.passages.is_empty()
+                || callback
+                    .passages
+                    .iter()
+                    .any(|p| p.create_on_close.is_some())
+                || effects.portals.is_some()
+                || effects.item_presence.is_some()
+                || effects.item_cycle.is_some()
+                || effects.encounter.is_some()
         })
         || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())

@@ -112,3 +112,27 @@ fn m07_clear_area_requires_native_personal_stage_and_bounded_same_floor() -> Res
     assert!(parse(&encode(&c)).is_err());
     Ok(())
 }
+
+#[test]
+fn m07_remote_passage_reset_has_explicit_targets_and_bounded_deadline() -> Result<(), String> {
+    let callback = trial()?;
+    let mut value = serde_json::to_value(callback).map_err(|error| error.to_string())?;
+    value["passages"] = serde_json::json!([{
+        "position":{"x":33134,"y":32289,"floor":-8},
+        "appearance":2074,
+        "replacement":2075,
+        "create_on_close":null
+    }]);
+    value["effects"]["passages_reset_after_ms"] = 15000.into();
+    parse(&serde_json::json!({"schema":1,"callbacks":[value.clone()]}).to_string())?;
+    for invalid in 0..3 {
+        let mut bad = value.clone();
+        match invalid {
+            0 => bad["passages"] = serde_json::json!([]),
+            1 => bad["effects"]["passages_reset_after_ms"] = 0.into(),
+            _ => bad["effects"]["passages_reset_after_ms"] = 3600001.into(),
+        }
+        assert!(parse(&serde_json::json!({"schema":1,"callbacks":[bad]}).to_string()).is_err());
+    }
+    Ok(())
+}
