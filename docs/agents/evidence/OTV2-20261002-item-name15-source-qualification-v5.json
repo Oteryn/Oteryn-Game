@@ -27,7 +27,7 @@
   },
   "input_digests": {
     "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
-    "crates/gameplay/content/src/content/item_name_promotion.rs": "a27a43fd97d7de7af97fb157715fdd57d74eb2842af6a465c33aacd89fcf92b1",
+    "crates/gameplay/content/src/content/item_name_promotion.rs": "781e6901a592220f0d8f9b2f5647139e6c727e0562221106a99e408e7e97a858",
     "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "42ca530585913bf767f947c0b549c2226092d77b97fcbac32a18a438ae8fb4a6",
     "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "7b5ef171482f6db3cf654ff81d66a7c689224df5f5fcf506276b1c01929be75e",
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",

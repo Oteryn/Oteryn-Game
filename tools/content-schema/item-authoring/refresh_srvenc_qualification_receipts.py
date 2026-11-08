@@ -26,6 +26,7 @@ def main():
             reason="Combined qualified Soulpit and Sugar owner footprints; frozen source facts unchanged",
             generator=previous.HERE + Path(__file__).name,
             require_new_or_identical=True,
+            regenerate_owned_successor=True,
         )
         if (
             recipe[0] != "lower_wiki_stack_default_successor8_packet"

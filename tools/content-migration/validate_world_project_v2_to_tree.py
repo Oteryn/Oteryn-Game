@@ -688,6 +688,11 @@ def main() -> int:
         require((ROOT / relative).is_file() and (ROOT / relative).read_bytes() == expected,
                 f"SPELL_IMPORT_DRIFT:{relative}")
     reference = load(LEGACY / "definitions" / "reference.json")
+    # Crystal201189f the_primal_menace.lua:79,118 explicitly declares corpse
+    # 39530 and loot={}; replay the same hash-checked tree-first admission as
+    # the producer before exact family/definition equivalence. Legacy stays raw.
+    from primal_reference_overlay import apply_reference as apply_primal_reference
+    apply_primal_reference(reference["records"], ROOT)
     # Equivalence is protected legacy plus the accepted tree-first reward Item packet.
     from quest_reward_item_semantics import apply_admissions
     apply_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)

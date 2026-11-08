@@ -1591,3 +1591,68 @@ successors (proof v4, stack receipt v12, name v5, Mantra/numeric v10), permits o
 byte-identical owned reruns, and keeps all source facts and qualification scopes.
 No migration, command, capability or mechanic number is allocated by these CI
 repairs. Final validation results are recorded below after the complete run.
+
+### PR #3034: main47 repair validation receipts
+
+Main `47baa7bb872498ba9c5b30cf070c330f85cefba8` is included by a normal
+merge. Its floor-transform lane proof and finite 8 MiB cosmetics provisioning
+bound are retained; both provisioning regression tests pass. The key-33 inventory
+was regenerated with its producer and all ten Rust integration checks pass
+(4.127 s execution; 604.608 s including the fresh integration-target build).
+
+All 15 world-metadata job commands pass (96.042 s). The full item-authoring job
+passes (535.891 s). All 19 Content tree / Item+Mount equivalence job commands pass
+(867.879 s); no CI timeout or workflow limit was changed. Exact equivalence replays
+the same hash-checked Primal empty-loot admission as the producer, preserving all
+family-count and full-definition equality checks. Fifty original semantic packet
+sections across nineteen existing evidence files remain unchanged; all published
+qualification receipts remain byte-identical to main.
+
+The official map recorder passes with `LEGACY_WIRE_VERIFIED`: 324 updates,
+5,431,963 bytes, and digest
+`212408a7b0779ef39613a505339751452e860ead8f1d1252d277c6584515e4db`.
+Its walk executes for 6.22 s (785.299 s including the build). The merged gate
+inventory's exact comparisons also pass, including the actual single activity
+cast gate and the new Primal PostgreSQL scenario's explicit Source-room seam.
+
+Focused PostgreSQL evidence on the combined tree (admin URL present; each case
+executes against PostgreSQL rather than the route-less guard):
+
+- `primal_ordeal_postgres_qualified_production_room_is_reachable`: 102.942 s.
+- `primal_hazard_postgres_kill_unlock_selection_replay_cap_and_fences`: 74.597 s.
+- `c11_monk_real_dispatch_ascetic_party_serene_refund_and_stance_reload_postgres`: 76.748 s.
+- `primal_menace_postgres_native_cadence_spawns_and_retires_actual_beasts`: 83.372 s.
+- `srvenc_tibiadrome_postgres_real_source_hall_runs_an_irregular_native_wave`: 99.104 s.
+- `srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewards_postgres`: 129.716 s.
+- `utility_runes_animate_real_dispatch_owns_skeleton_and_consumes_corpse`: 65.296 s.
+- `utility_runes_animate_real_dispatch_refuses_black_skull`: 78.286 s.
+- `soulpit_native_entry_refuses_insufficient_wave_capacity_without_burning_core_postgres`: 74.700 s.
+- `soulpit_native_item_use_entry_return_and_animus_query_postgres`: 67.769 s.
+- `soulpit_production_owner_spawns_native_wave_and_timeout_returns_without_mastery_postgres`: 59.600 s.
+- `soulpit_shared_entry_debits_core_and_commits_real_instance_session_postgres`: 64.646 s.
+- `soulpit_terminal_return_requires_checkpoint_and_interrupt_never_grants_mastery_postgres`: 59.419 s.
+- `soulpit_shared_entry_uses_current_trusted_gm_group_not_forged_hint_postgres`: 55.698 s.
+
+Final combined-tree checks are green:
+
+- Changed-crate unit tests: 7,086 passed across all 17 changed crates; 1,872.072 s
+  execution (2,647.218 s including compilation). The 28 pre-existing ignored
+  tests retain their original annotations; no test was weakened or skipped by
+  this repair. The world-change lifted cases and all nine gate inventories pass.
+- Focused PostgreSQL run: all 60 selected checks pass, 1,500.695 s execution
+  (2,222.387 s including the shared-build wait). Both reported animate-rune cases,
+  the reported Primal room and monk cases, Source Sugar personal rewards,
+  production Tibiadrome, native Instance corpse replay/fences and the merged
+  Soulpit entry/lifecycle/GM/Animus checks executed with the admin URL present.
+- `cargo check --workspace --all-targets`: 237.870 s.
+- Clippy for all 17 changed crates, all targets/features, `-D warnings`: 272.887 s.
+- `cargo fmt --all --check`: 15.598 s.
+- `architecture-check workspace .`: 5.314 s.
+- Final producer `pin-refresh`: 43.278 s; `pin-check`: 49.653 s.
+- `dup-migrations.sh HEAD`: 0.602 s, no duplicate numbers.
+
+The published candidate includes the requested normal main merges and preserves
+its substantive diff against main. This repair allocates no new numbers and
+changes no merged migration or CI workflow. The branch remains frozen after the
+single combined repair push; subsequent writes are limited to owner-sent CI fixes
+or requested main merges.

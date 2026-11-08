@@ -107,7 +107,7 @@ const INVENTORY: &[Entry] = &[
         state: COMBAT_ENABLE,
         // Activity registration validates its combat room against the active content pin.
         calls: &[
-            ("gameplay_transport/activity_runtime.rs", 2),
+            ("gameplay_transport/activity_runtime.rs", 1),
             ("gameplay_transport/native_combat_cast.rs", 2),
             ("gameplay_transport/rune_use_bridge/revision.rs", 1),
         ],
@@ -930,6 +930,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     // its qualified room remains None.
     (
         "gameplay_transport/postgres_tests/prey_loot_measurement.rs",
+        1,
+    ),
+    // Primal's regression binds only its real activated Source room, never a Bundle substitute.
+    (
+        "gameplay_transport/postgres_tests/primal_menace_native.rs",
         1,
     ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),

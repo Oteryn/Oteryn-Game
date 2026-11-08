@@ -145,6 +145,7 @@ def refresh(
     reason="W15c owner footprint; original source records and closed scope unchanged",
     generator=HERE + Path(__file__).name,
     require_new_or_identical=False,
+    regenerate_owned_successor=False,
 ):
     module, kind, source, expected, version = recipe
     raw = (root / source).read_bytes()
@@ -210,7 +211,16 @@ def refresh(
         and destination.exists()
         and destination.read_bytes() != encoded
     ):
-        raise ValueError(f"successor already exists with different bytes: {output}")
+        # Only this producer's exact successor lineage may be recomputed. The
+        # candidate above was rebuilt from the hash-checked frozen source, so
+        # refreshed input pins never copy mutable successor source facts.
+        existing = json.loads(destination.read_bytes())
+        if (
+            not regenerate_owned_successor
+            or existing.get("input_footprint_refresh")
+            != packet["input_footprint_refresh"]
+        ):
+            raise ValueError(f"successor already exists with different bytes: {output}")
     destination.write_bytes(encoded)
     compiler = root / HERE / (module + ".py")
     text = compiler.read_text()

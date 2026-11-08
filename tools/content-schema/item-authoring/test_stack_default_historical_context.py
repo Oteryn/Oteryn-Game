@@ -1,10 +1,12 @@
 """Historical evidence reproduction never bypasses current source/Native guards."""
 
 import copy
+import hashlib
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import check_stack_default_historical_context as check
 import historical_world_owner_context as world_context
@@ -12,6 +14,58 @@ import refresh_spkg2_qualification_receipts as refresh
 
 
 class ContextTests(unittest.TestCase):
+    def test_own_rebuild_preserves_frozen_facts_and_rejects_foreign_lineage(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            source = "docs/source-v1.json"
+            raw = b'{"records":[{"id":7,"value":"frozen fact"}],"closed_scope":[7]}\n'
+            (root / "docs").mkdir()
+            (root / source).write_bytes(raw)
+            compiler = root / refresh.HERE / "fixture.py"
+            compiler.parent.mkdir(parents=True)
+            compiler.write_text(
+                'PROOF="docs/source-v1.json"\nPROOF_SHA = "' + "0" * 64 + '"\n'
+            )
+            recipe = ("fixture", "PROOF", source, hashlib.sha256(raw).hexdigest(), 4)
+            args = {
+                "generator": "tools/content-schema/item-authoring/refresh_srvenc_qualification_receipts.py",
+                "require_new_or_identical": True,
+                "regenerate_owned_successor": True,
+            }
+            with patch.object(
+                refresh, "original_marker", return_value=b"checked marker"
+            ):
+                refresh.refresh(root, recipe, **args)
+                dest = root / "docs/source-v4.json"
+                original = json.loads(dest.read_bytes())
+                # Model stale producer input pins and an altered mutable successor
+                # fact: recomputation must retain the immutable source facts.
+                changed = dict(
+                    original,
+                    records=[{"id": 7, "value": "tampered successor"}],
+                    input_pins=[],
+                )
+                dest.write_text(json.dumps(changed))
+                refresh.refresh(root, recipe, **args)
+                rebuilt = json.loads(dest.read_bytes())
+                self.assertEqual(rebuilt["records"], json.loads(raw)["records"])
+                self.assertEqual(rebuilt["closed_scope"], [7])
+                for field, value in [
+                    ("generator", "foreign.py"),
+                    ("supersedes", "foreign-v1.json"),
+                    ("sha256", "0" * 64),
+                ]:
+                    with self.subTest(field=field):
+                        foreign = json.loads(dest.read_bytes())
+                        foreign["input_footprint_refresh"][field] = value
+                        dest.write_text(json.dumps(foreign))
+                        before = dest.read_bytes()
+                        with self.assertRaisesRegex(ValueError, "already exists"):
+                            refresh.refresh(root, recipe, **args)
+                        self.assertEqual(dest.read_bytes(), before)
+                        dest.write_text(json.dumps(rebuilt))
+                self.assertEqual((root / source).read_bytes(), raw)
+
     def test_sugar_shard_without_qualified_marker_cannot_be_hidden(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
