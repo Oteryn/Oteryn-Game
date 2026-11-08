@@ -48,7 +48,7 @@ fn engitem_literal_reward_text_is_atomic_refused_and_replayed() -> f::TestResult
         .map_err(Into::into)
 }
 
-struct Weights<'a>(&'a NativeGameplayState);
+pub(super) struct Weights<'a>(pub(super) &'a NativeGameplayState);
 impl ItemWeightLookup for Weights<'_> {
     fn generation_digest(&self) -> [u8; 32] {
         self.0.source_digest()
@@ -60,14 +60,14 @@ impl ItemWeightLookup for Weights<'_> {
             .ok_or(ItemWeightRefused::Unknown)
     }
 }
-fn definition(item: u32) -> TypedDefinitionRef {
+pub(super) fn definition(item: u32) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
         production_key: format!("oteryn:item.tibia.i{item}"),
         revision_ref: "definition-r1".into(),
     }
 }
-fn command(n: u64) -> f::TestResult<CommandRef> {
+pub(super) fn command(n: u64) -> f::TestResult<CommandRef> {
     Ok(CommandRef::new(
         GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
         CommandId::new(n).map_err(f::debug)?,
@@ -147,10 +147,46 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         (0, 0),
         "no backpack: no partial text or quest progress"
     );
+    equip_backpack(h, &authority, native, &weights).await?;
+    assert!(matches!(
+        apply(callback.clone(), catalogue.clone())
+            .await
+            .map_err(f::debug)?,
+        QuestTransitionOutcome::Committed(_)
+    ));
+    let read = || {
+        sqlx::query_as::<_,(String,i64,i64)>("SELECT t.text,(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_character_quest_receipts) FROM game_item_texts t").fetch_one(&h.pool)
+    };
+    assert_eq!(read().await?, (body.into(), 1, 1));
+    let atomic: bool = sqlx::query_scalar("SELECT m.root_text=t.text AND (s.plan #>> '{give,text}')=t.text AND t.writer_character_id IS NULL AND t.text_revision=1 AND t.xmin=m.xmin AND m.xmin=s.xmin AND s.xmin=q.xmin FROM game_item_texts t JOIN game_reward_claim_mint_receipts m USING(item_instance_id) JOIN game_quest_reward_sources s ON s.mint_transaction_id=m.transaction_id JOIN game_character_quest_receipts q ON (q.character_id,q.cause_id,q.cause_ordinal,q.transition_key)=(s.character_id,s.cause_id,s.cause_ordinal,s.transition_key)")
+        .fetch_one(&h.pool).await?;
+    assert!(
+        atomic,
+        "exact text, source, MINT and progress share one transaction"
+    );
+    assert!(matches!(
+        apply(callback, catalogue).await.map_err(f::debug)?,
+        QuestTransitionOutcome::AlreadyCommitted(_)
+    ));
+    assert_eq!(
+        read().await?,
+        (body.into(), 1, 1),
+        "exact replay never remints or rewrites text"
+    );
+    Ok(())
+}
+
+// Shared engine-only native item fixture; no quest data or direct custody SQL.
+pub(super) async fn equip_backpack(
+    h: &f::Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    native: &NativeGameplayState,
+    weights: &Weights<'_>,
+) -> f::TestResult {
     let mut minted = h
         .root
         .freeze_item_mint(
-            &authority,
+            authority,
             &h.node,
             ItemMintRequest {
                 cause: ItemMintCause::for_test(
@@ -186,7 +222,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     let permit = minted.fresh_death_lane_permit().await;
     let ItemMintOutcome::Committed(bag) = h
         .root
-        .commit_item_mint(&permit, &authority, &h.node, &mut minted)
+        .commit_item_mint(&permit, authority, &h.node, &mut minted)
         .await
         .map_err(f::debug)?
     else {
@@ -196,7 +232,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     let mut transfer = h
         .root
         .freeze_item_transfer(
-            &authority,
+            authority,
             &h.node,
             fence,
             ItemTransferRequest {
@@ -210,7 +246,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 ruleset_revision: "ruleset-1".into(),
                 sim_revision: "sim-1".into(),
             },
-            &weights,
+            weights,
         )
         .await
         .map_err(f::debug)?;
@@ -220,35 +256,10 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             .map_err(f::debug)?;
     assert!(matches!(
         h.root
-            .commit_item_transfer(&lane, &authority, &h.node, fence, &mut transfer, &weights)
+            .commit_item_transfer(&lane, authority, &h.node, fence, &mut transfer, weights)
             .await
             .map_err(f::debug)?,
         ItemTransferOutcome::Committed(_)
     ));
-    assert!(matches!(
-        apply(callback.clone(), catalogue.clone())
-            .await
-            .map_err(f::debug)?,
-        QuestTransitionOutcome::Committed(_)
-    ));
-    let read = || {
-        sqlx::query_as::<_,(String,i64,i64)>("SELECT t.text,(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_character_quest_receipts) FROM game_item_texts t").fetch_one(&h.pool)
-    };
-    assert_eq!(read().await?, (body.into(), 1, 1));
-    let atomic: bool = sqlx::query_scalar("SELECT m.root_text=t.text AND (s.plan #>> '{give,text}')=t.text AND t.writer_character_id IS NULL AND t.text_revision=1 AND t.xmin=m.xmin AND m.xmin=s.xmin AND s.xmin=q.xmin FROM game_item_texts t JOIN game_reward_claim_mint_receipts m USING(item_instance_id) JOIN game_quest_reward_sources s ON s.mint_transaction_id=m.transaction_id JOIN game_character_quest_receipts q ON (q.character_id,q.cause_id,q.cause_ordinal,q.transition_key)=(s.character_id,s.cause_id,s.cause_ordinal,s.transition_key)")
-        .fetch_one(&h.pool).await?;
-    assert!(
-        atomic,
-        "exact text, source, MINT and progress share one transaction"
-    );
-    assert!(matches!(
-        apply(callback, catalogue).await.map_err(f::debug)?,
-        QuestTransitionOutcome::AlreadyCommitted(_)
-    ));
-    assert_eq!(
-        read().await?,
-        (body.into(), 1, 1),
-        "exact replay never remints or rewrites text"
-    );
     Ok(())
 }
