@@ -156,6 +156,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QNPCFX", 1),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
+    ("QUESTPC4-TREASURE-REWARDS", 5),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
@@ -301,6 +302,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("WORLDCHG", 40),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
+    // M19: four exact Items in qready1-quest-item-profiles.json.
+    ("QREADY1-CLOCKS", 4),
     // BEGIN GENERATED QREADY PROFILE ADDITIONS
     // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
     // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json

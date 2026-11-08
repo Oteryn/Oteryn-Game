@@ -69,3 +69,10 @@ The positive elapsed guard prevents command IDs from manufacturing reward epochs
 (52.713960823 seconds). `qready1_world_clocks` additionally exercises both
 registered callbacks through wire USE in a composed PostgreSQL dispatch fixture;
 that fixture is not a full quest walkthrough or night-spawn qualification.
+
+Regeneration scope: M19 changes Native Item providers and a Native placement,
+not legacy WorldProjectV2 inputs. Use `regenerate_content.py --native-only`
+for provider/cohort/raid registries, the authored landmark overlay for the B3
+placement, and the World bundle compiler's `pin-refresh` for Native World pins.
+The equipment cohort is independently fixed at the four source-qualified IDs;
+the pin tool rejects duplicate IDs or any changed zero-speed qualification.

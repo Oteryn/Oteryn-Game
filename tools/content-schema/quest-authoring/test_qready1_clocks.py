@@ -30,6 +30,22 @@ class Qready1ClockBindings(unittest.TestCase):
         for number in [12023, 25783]:
             self.assertEqual(['Ground'], rows[f'oteryn:item.tibia.i{number}']['admission']['legal_destinations'])
 
+    def test_equipment_cohort_requires_all_four_exact_source_identities(self):
+        import copy
+        sys.path.insert(0, str(ROOT / 'tools/content-migration'))
+        import qready1_clock_equipment_pin as pin
+        packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/qready1-quest-item-profiles.json').read_bytes())
+        source = (ROOT / 'crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs').read_text()
+        self.assertEqual(source, pin.refresh(source, packet))
+        bad = copy.deepcopy(packet)
+        bad['records'][0] = copy.deepcopy(bad['records'][1])
+        with self.assertRaisesRegex(ValueError, 'M19_CLOCK_SOURCE_COHORT'):
+            pin.refresh(source, bad)
+        bad = copy.deepcopy(packet)
+        bad['records'][0]['attributes']['speed_bonus'] = 1
+        with self.assertRaisesRegex(ValueError, 'M19_CLOCK_SPEED_SOURCE_CHANGED'):
+            pin.refresh(source, bad)
+
     def test_authored_cauldron_is_installed_below_the_swamp_and_overlay_is_idempotent(self):
         capture = json.loads((ROOT / clocks.LANDMARK).read_bytes())
         x, y, floor = capture['position']
