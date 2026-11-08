@@ -30,10 +30,10 @@ def sha(value):
 
 
 def donor_inputs():
-    paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
+    paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
-    paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn')]
+    paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -64,12 +64,12 @@ def build():
               'sha256': sha(inputs['data/XML/outfits.xml'])}
     xml = ET.fromstring(inputs['data/XML/outfits.xml'])
     # Explicit identities for the two sex-specific donor display names.
-    aliases = {'Noblewoman': 'Nobleman', 'Norsewoman': 'Norseman'}
+    aliases = {'Noblewoman': 'Nobleman', 'Norsewoman': 'Norseman', 'Retro Noblewoman': 'Retro Nobleman'}
     groups = {}
     for row in xml:
         name = aliases.get(row.get('name'), row.get('name'))
-        # Explicit owner-selected quest rewards may use admitted looks labelled store by the donor.
-        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name in ('Royal Costume', 'Dragon Slayer')):
+        # S06 admits source definitions; ownership still requires an acquisition receipt.
+        if row.get('enabled') == 'yes':
             groups.setdefault(name, {})[row.get('type')] = row.attrib
     appearance = ROOT / 'imports/cipsoft-appearances/outfits'
     manifest_raw = (appearance / 'manifest.json').read_bytes()
@@ -100,20 +100,36 @@ def build():
             'starter_male': male['unlocked'] == 'yes', 'starter_addons_female': 0,
             'starter_addons_male': 0, 'premium': female['premium'] == 'yes',
             'unlock_sources': [source], 'source': source})
-        for addon in range(addons + 1):
-            target = {'kind': 'Outfit', 'outfit_key': key} if addon == 0 else {
-                'kind': 'Addon', 'outfit_key': key, 'addon': addon}
-            mappings.append({'grant_key': f'{key}/quest-grant/{addon}', 'target': target,
-                             'compatible_provenance': [PROVENANCE]})
-    # Reuse the existing source item-action owner. Matching both source look
-    # identities is required; a source label alone never admits a grant.
-    item_packet=json.loads((ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
-    scoped={'oteryn:outfit.afflicted','oteryn:outfit.soil_guardian','oteryn:outfit.crystal_warlord'}
+    item_capture_raw=(ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
+    item_admission=load_module('qengine_item_admission','tools/content-schema/quest-authoring/qengine_item_acquisitions.py')
+    table_parser=load_module('qengine_cosmetic_source_tables','tools/content-migration/event_item_actions.py')
+    acquisition_path='data-crystal/scripts/special/addon_doll.lua'
+    acquisition_source={'reference':'crystal:'+acquisition_path,'revision':PIN,'sha256':sha(inputs[acquisition_path])}
+    source_rows,_=table_parser.table(inputs[acquisition_path].decode(),'outfits')
+    item_admission.extend_catalogue(outfits,source_rows,looks,addon_patterns,acquisition_source)
+    item_packet=item_admission.build(json.loads(item_capture_raw),outfits,source,sha(item_capture_raw))
+    construction=load_module('qengine_item_construction','tools/content-schema/quest-authoring/qengine_item_construction.py')
+    construction_path='data-global/scripts/actions/mounts/mounts.lua'
+    construction.append_glider(item_packet, inputs[construction_path].decode(), inputs['data/XML/mounts.xml'],
+        table_parser, json.loads((ROOT/'content/presentations/bindings/client-ids.json').read_bytes()),
+        {'reference':'crystal:'+construction_path,'revision':PIN,'sha256':sha(inputs[construction_path])})
+    # Retain every source row, but bind construction costs to the existing atomic
+    # pieces owner. The ordinary one-item taming path cannot execute these rows.
+    native_taming=json.loads((ROOT/'content/cosmetics/taming.json').read_bytes())
+    recipes={f"oteryn:item.tibia.i{r['item_id']}":r for r in item_packet['rules'] if r['mode']=='pieces'}
+    for rule in native_taming:
+        if recipe:=recipes.get(rule['item_key']):
+            rule['required_items']=[f'oteryn:item.tibia.i{item}' for item in recipe['required_items']]
     for outfit in outfits:
-        if outfit['key'] not in scoped:continue
-        looks=sorted([outfit['female']['id'],outfit['male']['id']])
+        key=outfit['key']
+        for addon in range(outfit['addon_count']+1):
+            target={'kind':'Outfit','outfit_key':key} if addon==0 else {'kind':'Addon','outfit_key':key,'addon':addon}
+            mappings.append({'grant_key':f'{key}/quest-grant/{addon}','target':target,'compatible_provenance':[PROVENANCE]})
+    # Every native source grant must match the complete admitted sex pair.
+    for outfit in outfits:
+        outfit_looks=sorted([outfit['female']['id'],outfit['male']['id']])
         for grant in item_packet['grants']:
-            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=looks:continue
+            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=outfit_looks:continue
             target={'kind':'Outfit','outfit_key':outfit['key']} if grant['kind']=='outfit' else {
                 'kind':'Addon','outfit_key':outfit['key'],'addon':grant['addon']}
             mappings.append({'grant_key':grant['key'],'target':target,'compatible_provenance':[item_packet['provenance']]})
@@ -132,6 +148,11 @@ def build():
                     mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
                         'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
+    mount_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
+                    'sha256': sha(inputs['data/XML/mounts.xml'])}
+    mount_population = load_module('qengine_mount_population', 'tools/content-schema/quest-authoring/qengine_mounts.py')
+    mounts, mount_mappings = mount_population.populate(ROOT, inputs, looks, mount_source, item_packet)
+    mappings.extend(mount_mappings)
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
     palette_path = 'tools/game-atlas-appearances/export.py'
     palette_source = {'reference': palette_path + '#outfit_color', 'revision': 'rounded-hsi-133-v1',
@@ -142,7 +163,12 @@ def build():
         'source_appearances_sha256': manifest['inputs']['appearances']['sha256'],
         'palette': {'key': 'oteryn:palette.outfit', 'revision': 'rounded-hsi-133-v1',
                     'colours': [list(atlas.outfit_color(i)) for i in range(133)], 'source': palette_source},
-        'outfits': outfits, 'mounts': [], 'grant_mappings': mappings,
+        'outfits': outfits, 'mounts': mounts, 'grant_mappings': mappings,
+        'item_acquisitions': [{'item_key':f"oteryn:item.tibia.i{r['item_id']}",
+            'donor':r['donor'],'catalogue_sha256':sha(encoded(item_packet)),
+            'decision':'owner:S06:source-bound-native-item-acquisitions:2026-11-07',
+            'source':acquisition_source} for r in item_packet['rules']
+            if r['mode']=='random_outfit' and r['donor'].startswith(acquisition_path+':')],
         'fallbacks': {sex: {'outfit_key': 'oteryn:outfit.citizen', 'colours': [0, 0, 0, 0]}
                       for sex in ('female', 'male')}}
     cosmetics = load_module('qengine_cosmetics_authoring', 'tools/content-schema/cosmetics-authoring/cosmetics_authoring.py')
@@ -154,7 +180,9 @@ def build():
     cosmetics.validate(nx5)
     nx5_doc = nx5['document']
     doc['outfits'].extend(nx5_doc['outfits'])
-    doc['mounts'] = nx5_doc['mounts']
+    # Retain main's existing mount identities and source promotions.
+    nx5_mounts = {row['key']: row for row in nx5_doc['mounts']}
+    doc['mounts'] = [nx5_mounts.get(row['key'], row) for row in mounts]
     grant_keys = {row['grant_key'] for row in mappings}
     for row in nx5_doc['grant_mappings']:
         if row['grant_key'] not in grant_keys:
@@ -167,19 +195,34 @@ def build():
     quest_outfits = len(outfits) - len(nx5_doc['outfits'])
     for path in sorted(cosmetics.promotion_paths(doc)):
         parts = path.split('/')
-        nx5_path = path if parts[1] == 'mounts' else None
+        nx5_path = None
+        if parts[1] == 'mounts':
+            mount_key = doc['mounts'][int(parts[2])]['key']
+            for index, row in enumerate(nx5_doc['mounts']):
+                if row['key'] == mount_key:
+                    nx5_path = '/mounts/' + str(index) + '/' + parts[3]
+                    break
         if parts[1] == 'outfits' and int(parts[2]) >= quest_outfits:
             nx5_path = '/outfits/' + str(int(parts[2]) - quest_outfits) + '/' + parts[3]
         if nx5_path is not None:
             author['promotions'].append({**nx5_promotions[nx5_path], 'path': path})
             continue
-        citation=palette_source if path == '/palette' else source
+        citation=palette_source if path == '/palette' else mount_source if path.startswith('/mounts/') else source
+        source_kind='OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA'
+        if path=='/item_acquisitions':
+            citation=acquisition_source
+            source_kind='OWNER_DECISION'
+        if path.startswith('/outfits/'):
+            row=outfits[int(path.split('/')[2])]
+            citation=row['source']
+            if citation==acquisition_source and (path.rsplit('/',1)[-1]=='premium' or path.rsplit('/',1)[-1].startswith('starter_')):
+                source_kind='OWNER_DECISION'
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}
         author['promotions'].append({'path': path, 'value': cosmetics.pointer(doc, path),
             'state': 'PROMOTED', 'decision': DECISION,
-            'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
+            'source_kind': source_kind,
             'source': citation})
     callbacks = []
     def storage(track, before, after, maximum=None, preserve=False):
@@ -890,6 +933,29 @@ def build():
                 forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
             callbacks[-1]['sources'].append(provenance)
+    # L13: original native parent bases remain with their existing reward owners.
+    for family,npc,items,bits,achievement in [
+            ('revenant','flickering_soul',[34075,34076],[2,1],'unleash_the_beast'),
+            ('decaying_defender','bloodshade_rotten',[43899,43900],[1,2],'fully_decayed')]:
+        for index,(item,bit) in enumerate(zip(items,bits)):
+            add('l13-'+family+'-'+('first' if index==0 else 'second'),family+'_outfits_quest',npc,['accessory'],[],
+                take=[(item,1)],outfit=(family,bit),achievement='oteryn:achievement/'+achievement if index==1 else None)
+            callbacks[-1].update(carried_item=f'oteryn:item.tibia.i{item}',minimum_level=250,requires_premium=True,
+                requires_outfits=['oteryn:outfit.'+family],forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
+            if index==1:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':bits[0]}]
+            path='data/scripts/actions/items/usable_outfit_items.lua'
+            callbacks[-1]['sources'].append(f'crystal:{PIN}:{path}:26-31:sha256:{sha(inputs[path])}')
+    add('l13-rift-base','rift_warrior_outfits_quest','cledwyn',['rift warrior outfit'],[],outfit=('rift_warrior',0))
+    callbacks[-1].update(requires_premium=True,forbids_outfits=['oteryn:outfit.rift_warrior'],
+        requires_completed_quests=['oteryn:quest.ferumbras_ascension_quest'])
+    callbacks[-1]['sources'].append('owner:chosen-Cledwyn-completed-Ferumbras-base-attestation:read-only-parent')
+    for bit,stage in [(1,'first'),(2,'second')]:
+        add('l13-rift-'+stage,'rift_warrior_outfits_quest','cledwyn',[stage],[],take=[(22516,100)],outfit=('rift_warrior',bit),
+            topic=3,achievement='oteryn:achievement/rift_warrior' if bit==2 else None)
+        callbacks[-1].update(requires_premium=True,requires_outfits=['oteryn:outfit.rift_warrior'],
+            forbids_addons=[{'outfit':'oteryn:outfit.rift_warrior','addons':bit}])
+        if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.rift_warrior','addons':1}]
+    source_offer('cledwyn',['addon'],0,3,[])
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -898,7 +964,9 @@ def build():
         authoring_bytes=encoded(author))
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
-    generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
+    generated = {'content/cosmetics/taming-native.json':encoded(native_taming),
+            'tools/content-schema/native-gameplay/item-cosmetic-actions-native.json':encoded(item_packet),
+            'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
@@ -989,6 +1057,8 @@ def validate_callbacks(document):
         declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
+        if callback['quest'] in callback.get('requires_completed_quests',[]):
+            raise ValueError('self-dependent reward completion '+callback['key'])
         storage=callback['storage']
         if callback.get('carried_item') is not None and (
                 callback['take']!=[{'item':callback['carried_item'],'count':1}]

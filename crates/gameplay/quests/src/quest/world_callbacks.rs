@@ -30,6 +30,7 @@ pub enum Trigger {
 
 mod counterparts;
 mod effects;
+mod state_operations;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
@@ -275,6 +276,9 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "CallbackEffectSet::is_empty")]
     pub effects: CallbackEffectSet,
     pub storage: Vec<Storage>,
+    /// Transaction-clock operations use the same bounded evaluator as NPC rewards.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub state_operations: Vec<super::reward_callbacks::StateOperation>,
     /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub world_requirements: Vec<WorldRequirement>,
@@ -309,6 +313,23 @@ pub struct Callback {
     pub sources: Vec<String>,
 }
 
+impl Callback {
+    pub fn has_state(&self) -> bool {
+        !self.storage.is_empty() || !self.state_operations.is_empty()
+    }
+    pub fn has_state_writes(&self) -> bool {
+        self.storage
+            .iter()
+            .any(|state| !state.preserve && !state.read_only)
+            || self.state_operations.iter().any(state_operations::mutates)
+    }
+    /// Each accepted use has its own ordinary MINT occurrence, guarded by an
+    /// elapsed-time predicate and timestamp write in that same transaction.
+    pub fn has_repeating_clock(&self) -> bool {
+        state_operations::refreshes_clock(self)
+    }
+}
+
 fn default_use_range() -> u8 {
     1
 }
@@ -328,7 +349,9 @@ impl Callback {
     /// A pure quest-state predicate, with no Quest mutation or receipt.
     #[must_use]
     pub fn is_read_only(&self) -> bool {
-        !self.storage.is_empty() && self.storage.iter().all(|storage| storage.read_only)
+        !self.storage.is_empty()
+            && self.state_operations.is_empty()
+            && self.storage.iter().all(|storage| storage.read_only)
     }
 }
 
@@ -364,6 +387,14 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
+/// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    match catalogue.authored_world_callbacks() {
+        Some(callbacks) => Ok(callbacks.to_vec()),
+        None => load(),
+    }
+}
+
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
@@ -442,6 +473,10 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     Ok(())
 }
 
+pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
+}
+
 fn parse(text: &str) -> Result<Vec<Callback>, String> {
     parse_with_provenance(text, false)
 }
@@ -457,7 +492,12 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
         let valid_pos = |p: Position| (-15..=0).contains(&p.floor);
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
-        let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
+        let unique_storage: BTreeSet<_> = callback
+            .storage
+            .iter()
+            .map(|s| &s.track)
+            .chain(callback.state_operations.iter().map(|s| &s.track))
+            .collect();
         if !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
@@ -482,6 +522,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 && selector.ordinal.is_some_and(|ordinal| ordinal != 0))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
             || !effects::valid(callback)
+            || !state_operations::valid(callback)
             || callback
                 .effects
                 .teleport_effect
@@ -489,7 +530,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (callback.actor_kind == ActorKind::Monster
                 && (callback.selector.position.is_none()
                     || callback.trigger == Trigger::Use
-                    || !callback.storage.is_empty()
+                    || callback.has_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.teleport.is_some()
@@ -504,13 +545,12 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || callback.effects.item_cycle.is_some()
                     || !callback.passages.is_empty()))
             || ((callback.requires_world_admission || callback.opening_only)
-                && (callback.storage.iter().all(|state| state.preserve)
-                    || callback.native_rule.is_some()))
+                && (!callback.has_state_writes() || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
                     || callback.lever.is_none()
                     || !callback.reversible
-                    || callback.storage.is_empty()
+                    || !callback.has_state()
                     || callback.offerings.is_empty()
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
@@ -526,7 +566,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 .iter()
                 .any(|r| !valid_pos(r.position) || r.appearance == 0)
             || (!callback.world_requirements.is_empty()
-                && (!callback.storage.is_empty()
+                && (callback.has_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
@@ -536,6 +576,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || callback.effects.item_reward.is_some()
                     || callback.effects.outfit_reward.is_some()))
             || !effects::valid(callback)
+            || !state_operations::valid(callback)
             || callback
                 .facing
                 .is_some_and(|facing| facing > 3 || callback.teleport.is_none())
@@ -551,7 +592,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || !effects::valid(callback)
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
-            || unique_storage.len() != callback.storage.len()
+            || unique_storage.len() != callback.storage.len() + callback.state_operations.len()
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
                     || !matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
@@ -576,7 +617,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         || callback.passages.len() != 1
                         || callback.lever.is_none()
                         || !callback.reversible
-                        || !callback.storage.is_empty()
+                        || callback.has_state()
                         || callback.teleport.is_some()
                         || callback.item_on_target.is_some()
                         || !callback.offerings.is_empty()
@@ -586,10 +627,10 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         || callback.success_message.is_some()
                 })
             })
-            || callback.storage.len() > MAX_EFFECTS
+            || callback.storage.len() + callback.state_operations.len() > MAX_EFFECTS
             || callback
                 .minimum_level
-                .is_some_and(|level| level == 0 || callback.storage.is_empty())
+                .is_some_and(|level| level == 0 || !callback.has_state())
             || callback.present.len() > MAX_EFFECTS
             || callback
                 .present
@@ -622,7 +663,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     })
             })
             || ((!callback.present.is_empty() || !callback.required_travel.is_empty())
-                && (callback.storage.is_empty() || callback.is_read_only()))
+                && (!callback.has_state() || callback.is_read_only()))
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -630,7 +671,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback.monk_reward.as_ref().is_some_and(|reward| {
                 callback.quest != super::monk_shrines::QUEST
                     || callback.trigger != Trigger::Use
-                    || callback.storage.is_empty()
+                    || !callback.has_state()
                     || reward.item_source_id.is_some_and(|id| {
                         ![50267, 50271, 50269, 50273, 50274, 50272, 50268].contains(&id)
                     })
@@ -643,7 +684,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         .contains(&key)
                     })
             })
-            || (!callback.offerings.is_empty() && callback.storage.is_empty())
+            || (!callback.offerings.is_empty() && !callback.has_state())
             || callback.sources.is_empty()
             || (authored
                 && (!callback.key.starts_with("oteryn:quest-callback/authored-")
@@ -667,7 +708,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
                     || (item.reusable && (item.count != 1 || item.replacement.is_some()))
-                    || callback.storage.is_empty()
+                    || !callback.has_state()
                     || callback.trigger != Trigger::Use
                     || item.count == 0
                     || item.count > 100
@@ -767,6 +808,7 @@ fn extend_callbacks(
                 });
             }
         }
+        state_operations::extend_tracks(callback, &mut tracks)?;
         // Pure gates must not acquire a generic transition: even ADD(0)
         // creates a Character revision, quest state and receipt.
         if callback.is_read_only() {
@@ -787,8 +829,9 @@ fn extend_callbacks(
                     track: callback
                         .storage
                         .first()
+                        .map(|s| &s.track)
+                        .or_else(|| callback.state_operations.first().map(|s| &s.track))
                         .ok_or("missing value guard")?
-                        .track
                         .clone(),
                     from: QuestComparison::Any,
                     effect: QuestEffectKind::Computed,
@@ -807,47 +850,50 @@ fn extend_callbacks(
 pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
     let bound_index = callback.storage.iter().position(|state| !state.preserve);
+    let mut effects: Vec<_> = callback
+        .storage
+        .iter()
+        .enumerate()
+        .map(|(index, state)| QuestEffect {
+            track: state.track.clone(),
+            from: QuestComparison::Between(state.minimum, state.maximum),
+            effect: match callback.native_rule {
+                Some(rule) => QuestEffectKind::Native(rule),
+                None if state.preserve => QuestEffectKind::Add(0),
+                None if state.at_least => match binding.filter(|_| Some(index) == bound_index) {
+                    Some(binding) => QuestEffectKind::RaiseToWithBinding {
+                        value: state.set,
+                        binding,
+                    },
+                    None => QuestEffectKind::RaiseTo(state.set),
+                },
+                None if state.increment => match binding.filter(|_| Some(index) == bound_index) {
+                    Some(binding) => QuestEffectKind::AddWithBinding {
+                        delta: state.set,
+                        binding,
+                    },
+                    None => QuestEffectKind::Add(state.set),
+                },
+                None => match binding.filter(|_| Some(index) == bound_index) {
+                    Some(binding) => QuestEffectKind::SetWithBinding {
+                        value: state.set,
+                        binding,
+                    },
+                    None => QuestEffectKind::Set(state.set),
+                },
+            },
+        })
+        .collect();
+    state_operations::append_effects(
+        callback,
+        binding.filter(|_| bound_index.is_none()),
+        &mut effects,
+    );
     Ok(QuestTransition {
         world_change: callback.world_change.clone(),
         key: callback.key.clone(),
         quest: callback.quest.clone(),
-        effects: callback
-            .storage
-            .iter()
-            .enumerate()
-            .map(|(index, state)| QuestEffect {
-                track: state.track.clone(),
-                from: QuestComparison::Between(state.minimum, state.maximum),
-                effect: match callback.native_rule {
-                    Some(rule) => QuestEffectKind::Native(rule),
-                    None if state.preserve => QuestEffectKind::Add(0),
-                    None if state.at_least => {
-                        match binding.filter(|_| Some(index) == bound_index) {
-                            Some(binding) => QuestEffectKind::RaiseToWithBinding {
-                                value: state.set,
-                                binding,
-                            },
-                            None => QuestEffectKind::RaiseTo(state.set),
-                        }
-                    }
-                    None if state.increment => match binding.filter(|_| Some(index) == bound_index)
-                    {
-                        Some(binding) => QuestEffectKind::AddWithBinding {
-                            delta: state.set,
-                            binding,
-                        },
-                        None => QuestEffectKind::Add(state.set),
-                    },
-                    None => match binding.filter(|_| Some(index) == bound_index) {
-                        Some(binding) => QuestEffectKind::SetWithBinding {
-                            value: state.set,
-                            binding,
-                        },
-                        None => QuestEffectKind::Set(state.set),
-                    },
-                },
-            })
-            .collect(),
+        effects,
         completes: callback.completes,
         experience: callback.experience,
     })
@@ -1342,7 +1388,7 @@ mod tests {
             assert_eq!(callback.trigger, Trigger::Use);
             assert_eq!(callback.selector.unique, Some(unique));
             assert_eq!(callback.teleport, Some(destination));
-            assert!(callback.storage.is_empty());
+            assert!(!callback.has_state());
             assert!(callback.sources.iter().all(|source| {
                 source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
             }));
@@ -1929,8 +1975,10 @@ mod worldchg_grimvale_tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(ordinary.len(), 9);
-        assert!(ordinary.iter().all(|callback| callback.storage.is_empty()
-            && world_change_requirement(&callback.key).is_none()));
+        assert!(
+            ordinary.iter().all(|callback| !callback.has_state()
+                && world_change_requirement(&callback.key).is_none())
+        );
         Ok(())
     }
 }

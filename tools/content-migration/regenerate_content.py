@@ -88,6 +88,7 @@ AUTHORING_TOOLS = (
     "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
     "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
     "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+    "tools/content-migration/qengine_equipment_audit.py",
 )
 
 CHECKS = (
@@ -626,6 +627,8 @@ def main() -> int:
     if args.native_only:
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
+        run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+        refresh_quest_callback_proof()
         run(["python3", "tools/content-migration/register_spell_families.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
         run(["python3", "tools/content-migration/raid_catalogue.py", "content"])
@@ -633,6 +636,7 @@ def main() -> int:
         for census in ("equipment", "audit_sites", "room_sites"):
             run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
         run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
+        run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
         if not args.skip_checks:
             run(["python3", "tools/content-migration/register_spell_families.py", "--check"])
         return 0
@@ -646,6 +650,7 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
     refresh_quest_callback_proof()
     # Source-backed field regeneration uses the same explicit source root as its tests.

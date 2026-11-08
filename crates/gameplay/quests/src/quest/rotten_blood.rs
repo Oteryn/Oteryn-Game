@@ -35,6 +35,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
     Callback {
 use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],
+        state_operations: Vec::new(),
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,

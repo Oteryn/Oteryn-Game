@@ -633,7 +633,8 @@ impl NpcTalkBook {
                         || dark_messages.is_some()
                         || isle_messages.is_some()
                         || native_quest
-                        || reward_callback_npc(&reference.key),
+                        || reward_callback_npc(&reference.key)
+                        || native_npcs.contains(&reference.key.as_str()),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {

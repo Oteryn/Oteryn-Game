@@ -20,6 +20,7 @@ pub mod admission_binding;
 
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
+pub mod authored_bindings;
 #[cfg(test)]
 pub mod batch3_a;
 pub mod carried_step;
@@ -208,11 +209,22 @@ pub enum QuestEffectKind {
     },
     /// The database transaction time, in Unix seconds.
     SetNow,
+    /// The same database transaction clock, pinned to physical admission terms.
+    SetNowWithBinding {
+        binding: [u8; 32],
+    },
     /// A source `computed: expression` effect with no closed kind yet: its transition is
     /// `NOT_SUPPORTED` until an amendment adds one (§4).
     Computed,
     /// A source-specific bounded rule over its complete locked snapshot.
     Native(native_rules::NativeRule),
+    /// Preserve this track until another effect's original locked value reaches a threshold.
+    /// Reused from questpc3 262618b3; the index remains inside this transition.
+    SetWhenAtLeast {
+        other_effect: u8,
+        minimum: i64,
+        value: i64,
+    },
 }
 
 impl QuestEffectKind {
@@ -246,10 +258,23 @@ impl QuestEffectKind {
                 out.extend_from_slice(&binding);
             }
             Self::SetNow => out.push(3),
+            Self::SetNowWithBinding { binding } => {
+                out.push(12);
+                out.extend_from_slice(&binding);
+            }
             Self::Computed => out.push(4),
             Self::Native(rule) => {
                 out.push(5);
                 rule.encode(out);
+            }
+            Self::SetWhenAtLeast {
+                other_effect,
+                minimum,
+                value,
+            } => {
+                out.extend_from_slice(&[11, other_effect]);
+                out.extend_from_slice(&minimum.to_be_bytes());
+                out.extend_from_slice(&value.to_be_bytes());
             }
         }
     }
@@ -340,6 +365,8 @@ pub struct QuestStateCatalogue {
     hashes: BTreeMap<String, [u8; 32]>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
+    authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
+    native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -418,7 +445,7 @@ impl QuestStateCatalogue {
                 return Err(E::InvalidEffect(transition.key));
             }
             let mut seen = BTreeSet::new();
-            for effect in &transition.effects {
+            for (index, effect) in transition.effects.iter().enumerate() {
                 let Some(track) = track_map.get(&effect.track) else {
                     return Err(E::UnknownTrack(effect.track.clone()));
                 };
@@ -442,6 +469,15 @@ impl QuestStateCatalogue {
                     | QuestEffectKind::RaiseTo(value)
                     | QuestEffectKind::RaiseToWithBinding { value, .. } => {
                         (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::SetWhenAtLeast {
+                        other_effect,
+                        value,
+                        ..
+                    } => {
+                        usize::from(other_effect) < transition.effects.len()
+                            && usize::from(other_effect) != index
+                            && (track.min..=track.max).contains(&value)
                     }
                     _ => true,
                 };
@@ -475,6 +511,8 @@ impl QuestStateCatalogue {
             hashes,
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
+            authored_bindings: None,
+            native_recipe_evidence: None,
         })
     }
 
@@ -500,7 +538,12 @@ impl QuestStateCatalogue {
                 .chain(transitions)
                 .collect(),
         )?;
-        extended.npc_legacy.clone_from(&self.npc_legacy);
+        // Existing definitions may include the immutable native binding document in their hash.
+        extended.hashes.extend(self.hashes.clone());
+        extended.npc_legacy = self.npc_legacy.clone();
+        extended.predecessors = self.predecessors.clone();
+        extended.authored_bindings = self.authored_bindings.clone();
+        extended.native_recipe_evidence = self.native_recipe_evidence.clone();
         Ok(extended)
     }
 
@@ -512,6 +555,7 @@ impl QuestStateCatalogue {
         &self,
         transition: QuestTransition,
     ) -> Result<Self, QuestCatalogueError> {
+        let changed_quest = transition.quest.clone();
         let mut transitions: Vec<_> = self.transitions.values().cloned().collect();
         transitions.push(transition);
         let mut updated = Self::new(
@@ -519,7 +563,16 @@ impl QuestStateCatalogue {
             self.tracks.values().cloned().collect(),
             transitions,
         )?;
+        updated.hashes.extend(
+            self.hashes
+                .iter()
+                .filter(|(quest, _)| **quest != changed_quest)
+                .map(|(quest, hash)| (quest.clone(), *hash)),
+        );
         updated.npc_legacy.clone_from(&self.npc_legacy);
+        updated.predecessors = self.predecessors.clone();
+        updated.authored_bindings = self.authored_bindings.clone();
+        updated.native_recipe_evidence = self.native_recipe_evidence.clone();
         Ok(updated)
     }
 
@@ -530,6 +583,18 @@ impl QuestStateCatalogue {
     }
 
     #[must_use]
+    pub fn authored_world_callbacks(&self) -> Option<&[world_callbacks::Callback]> {
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| runtime.world.as_slice())
+    }
+
+    pub fn authored_bindings(&self) -> Option<&authored_bindings::Bindings> {
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| &runtime.source)
+    }
+
     pub fn content_revision(&self) -> &str {
         &self.content_revision
     }
@@ -565,10 +630,11 @@ impl QuestStateCatalogue {
         stored: &BTreeMap<String, i64>,
         now: i64,
     ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
-        if transition
-            .effects
-            .iter()
-            .any(|effect| effect.effect == QuestEffectKind::Computed)
+        if transition.effects.iter().enumerate().any(|(index,effect)| {
+            effect.effect==QuestEffectKind::Computed || matches!(effect.effect,
+                QuestEffectKind::SetWhenAtLeast {other_effect,..}
+                    if usize::from(other_effect)==index || usize::from(other_effect)>=transition.effects.len())
+        })
         {
             return Err(QuestRefusal::NotSupported);
         }
@@ -606,7 +672,7 @@ impl QuestStateCatalogue {
         transition
             .effects
             .iter()
-            .zip(current)
+            .zip(current.iter().copied())
             .map(|(effect, (track, before))| {
                 let after = match effect.effect {
                     QuestEffectKind::RaiseTo(value)
@@ -617,8 +683,17 @@ impl QuestStateCatalogue {
                     QuestEffectKind::Add(delta) | QuestEffectKind::AddWithBinding { delta, .. } => {
                         before.checked_add(delta)
                     }
-                    QuestEffectKind::SetNow => Some(now),
+                    QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. } => {
+                        Some(now)
+                    }
                     QuestEffectKind::Computed => None,
+                    QuestEffectKind::SetWhenAtLeast {
+                        other_effect,
+                        minimum,
+                        value,
+                    } => current
+                        .get(usize::from(other_effect))
+                        .map(|(_, observed)| if *observed >= minimum { value } else { before }),
                     QuestEffectKind::Native(_) => native_after
                         .as_ref()
                         .and_then(|after| after.get(&effect.track).copied()),

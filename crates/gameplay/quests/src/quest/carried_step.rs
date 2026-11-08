@@ -149,6 +149,7 @@ pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
  present: vec![],
  required_travel: vec![],
 
+        state_operations: Vec::new(),
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         world_requirements: Vec::new(),

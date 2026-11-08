@@ -213,7 +213,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         })
         || (!inputs.is_empty()
             && (callback.trigger != Trigger::Use
-                || callback.storage.is_empty()
+                || !callback.has_state()
                 || callback.is_read_only()
                 || effects.scene.is_some()
                 || effects.portals.is_some()
@@ -236,13 +236,14 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.item_on_target.as_ref().is_some_and(|input| {
                 input.reusable || input.replacement.is_some() || input.target_replacement.is_some()
             })
-            || callback.storage.is_empty()
-            || callback
-                .storage
-                .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || !callback.has_state()
+            || (!callback.has_repeating_clock()
+                && callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || !super::super::reward_callbacks::valid_item_reward(reward)
-    }) || (callback.completes && (callback.storage.is_empty() || callback.is_read_only()))
+    }) || (callback.completes && (!callback.has_state() || callback.is_read_only()))
     {
         return false;
     }
@@ -261,11 +262,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 && (1..=100).contains(&count)
         };
         callback.trigger != Trigger::Use
-            || callback.storage.is_empty()
-            || callback
-                .storage
-                .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || !callback.has_state()
+            || (!callback.has_repeating_clock()
+                && callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || !item(&reward.item, reward.count)
             || reward.contents.len() > 20
             || reward.contents.iter().any(|c| {
@@ -274,7 +276,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }) || (callback.facing.is_some() && effects.facing.is_some())
         || effects.outfit_reward.as_ref().is_some_and(|r| {
             callback.trigger != Trigger::Use
-                || callback.storage.is_empty()
+                || !callback.has_state()
                 || callback
                     .storage
                     .iter()
@@ -301,7 +303,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if effects.item_presence.as_ref().is_some_and(|presence| {
         !pos(presence.position)
             || presence.appearance == 0
-            || (!callback.storage.is_empty()
+            || (callback.has_state()
                 && !callback.requires_world_admission
                 && !callback.opening_only)
             || effects.portals.is_some()
@@ -317,7 +319,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if operations > 1
         || (operations > 0
             && (!lever
-                || (effects.scene.is_none() && !callback.storage.is_empty())
+                || (effects.scene.is_none() && callback.has_state())
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {

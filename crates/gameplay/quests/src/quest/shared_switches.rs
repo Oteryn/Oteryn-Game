@@ -47,6 +47,7 @@ fn activation_callbacks() -> impl Iterator<Item = Callback> {
  present: vec![],
  required_travel: vec![],
 
+        state_operations: Vec::new(),
 world_change: None,
         key:r.key.into(),quest:"oteryn:quest.the_ancient_tombs_quest".into(),trigger:Trigger::Use,actor_kind:Default::default(),
         selector:Selector {
@@ -174,6 +175,7 @@ pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
  present: vec![],
  required_travel: vec![],
 
+        state_operations: Vec::new(),
 world_change: None,
             key:gate.key.into(),quest:gate.quest.into(),trigger:Trigger::StepIn,actor_kind:Default::default(),
             selector:Selector {

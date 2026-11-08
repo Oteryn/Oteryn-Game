@@ -25,14 +25,24 @@ async fn count(h: &Harness, track: &str) -> TestResult<i64> {
     .fetch_one(&h.pool)
     .await?)
 }
-async fn death(
+pub(super) async fn death(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     creature: &str,
     command: u64,
 ) -> TestResult {
+    let target = queue_death(owner, admitted, creature, command).await?;
+    drain_deaths(owner, admitted, &[target]).await
+}
+
+pub(super) async fn queue_death(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    creature: &str,
+    command: u64,
+) -> TestResult<crate::foundation::ExactActorRef> {
     use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
-    use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink};
+    use crate::gameplay_transport::kill_reward::KillSink;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;
     owner.refresh_quest_session(session, false).await;
@@ -44,7 +54,7 @@ async fn death(
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
-    {
+    let target = {
         let mut runtime = owner.runtime.lock().await;
         let at = runtime
             .read_actor_position(actor)
@@ -101,15 +111,30 @@ async fn death(
                 Some(observed),
             );
         }
+        target
+    };
+    Ok(target)
+}
+
+pub(super) async fn drain_deaths(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    targets: &[crate::foundation::ExactActorRef],
+) -> TestResult {
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+    let session = admitted.game_session_id;
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    // Both duplicate projections and drains have settled before reclaiming the fixture slot.
+    for target in targets {
+        owner.runtime.lock().await.remove_encounter_actor(*target).map_err(debug)?;
     }
-    assert_eq!(
-        owner.drain_kill_rewards(session).await,
-        DrainOutcome::Drained
-    );
-    assert_eq!(
-        owner.drain_kill_rewards(session).await,
-        DrainOutcome::Drained
-    );
     Ok(())
 }
 

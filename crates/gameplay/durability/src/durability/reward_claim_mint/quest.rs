@@ -1,4 +1,5 @@
 //! Quest exchanges borrow the existing complete backpack MINT and custody owners.
+
 use super::*;
 use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
 use crate::durability::account_achievement::{
@@ -185,6 +186,18 @@ pub(crate) async fn apply(
         })
     {
         return Ok(false);
+    }
+    // Reuse questpc7's read-only completion predicate. The caller holds the
+    // Character root lock, which serializes this character's quest writes.
+    if !callback.requires_completed_quests.is_empty() {
+        let completed:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=ANY($2::text[]) AND completed_character_revision IS NOT NULL")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(&callback.requires_completed_quests).fetch_one(&mut **tx).await?;
+        if completed
+            != i64::try_from(callback.requires_completed_quests.len())
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+        {
+            return Ok(false);
+        }
     }
     if let Some(minimum) = callback.minimum_level {
         let level:Option<i64>=sqlx::query_scalar("SELECT level::bigint FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
@@ -440,6 +453,25 @@ pub(crate) async fn give_world(
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
+    let claim_key = if callback.has_repeating_clock() {
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:quest-exchange:v1\0")
+            .chain_update(fence.character_id.as_bytes())
+            .chain_update(command.game_session_id().as_bytes())
+            .chain_update(command.command_id().get().to_string().as_bytes())
+            .chain_update(b":")
+            .chain_update(callback.key.as_bytes())
+            .finalize();
+        format!(
+            "oteryn:quest-exchange/{}",
+            digest
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        )
+    } else {
+        callback.key.clone()
+    };
     let Some(transaction) = mint_with_source(
         tx,
         tuple,
@@ -447,7 +479,7 @@ pub(crate) async fn give_world(
         fence,
         command,
         &callback.key,
-        &callback.key,
+        &claim_key,
         reward,
         admission,
     )
@@ -461,7 +493,7 @@ pub(crate) async fn give_world(
     if let Some(input) = &callback.item_on_target {
         take.push(
             oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
- fluid_subtype: None,
+                fluid_subtype: None,
 
                 item: input.item.clone(),
                 count: input.count,
@@ -469,9 +501,13 @@ pub(crate) async fn give_world(
         );
     }
     take.sort_by(|left, right| left.item.cmp(&right.item));
-    let plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
+    let mut plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
         "storage": callback.storage, "take": take, "present": [], "give": reward,
         "outfit": null, "world_callback": callback});
+    if !callback.state_operations.is_empty() {
+        plan["state_ops"] = serde_json::to_value(&callback.state_operations)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,encode($6,'hex')::uuid,ARRAY[]::text[])")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
         .bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan)
@@ -484,9 +520,12 @@ pub(crate) async fn give_world(
     reason = "the existing MINT owner requires the same Quest, authority, content and request tuple"
 )]
 async fn mint(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>, tuple: SelectedType2Tuple,
-    node: &NodeIncarnationProof, fence: CurrentCharacterGameplayFence,
-    command: CommandRef, callback: &RewardCallback,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tuple: SelectedType2Tuple,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
+    callback: &RewardCallback,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
@@ -510,7 +549,8 @@ async fn mint(
                 .collect::<String>()
         )
     } else if callback.per_occurrence_mint {
-        let plan = serde_json::to_value(callback).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let plan =
+            serde_json::to_value(callback).map_err(|_| DurabilityError::InvalidStoredState)?;
         sqlx::query_scalar("SELECT game_quest_reward_mint_claim_key(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5)")
             .bind(fence.character_id.as_bytes().as_slice())
             .bind(command.game_session_id().as_bytes().as_slice())
@@ -519,7 +559,18 @@ async fn mint(
     } else {
         callback.key.clone()
     };
-    mint_with_source(tx, tuple, node, fence, command, &callback.key, &claim_key, reward, admission).await
+    mint_with_source(
+        tx,
+        tuple,
+        node,
+        fence,
+        command,
+        &callback.key,
+        &claim_key,
+        reward,
+        admission,
+    )
+    .await
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -589,36 +640,38 @@ async fn mint_with_source(
         source_placement: key.into(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
-        contents: (if reward.backpack_outputs.is_empty() { &reward.contents } else { &reward.backpack_outputs })
-            .iter()
-            .map(|i| {
-                if i.fluid_subtype.is_some() {
-                    use oteryn_gameplay_content::content::{
-                        ReferenceItemField, ReferenceItemFluid,
-                    };
-                    let policy = admission
-                        .native
-                        .item_policy(&i.item, "definition-r1")
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                    if !matches!(
-                        &policy.record().semantics.fluid,
-                        ReferenceItemField::Known(ReferenceItemFluid {
-                            fluid_type: ReferenceItemField::NotApplicable
-                        })
-                    ) {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
+        contents: (if reward.backpack_outputs.is_empty() {
+            &reward.contents
+        } else {
+            &reward.backpack_outputs
+        })
+        .iter()
+        .map(|i| {
+            if i.fluid_subtype.is_some() {
+                use oteryn_gameplay_content::content::{ReferenceItemField, ReferenceItemFluid};
+                let policy = admission
+                    .native
+                    .item_policy(&i.item, "definition-r1")
+                    .ok_or(DurabilityError::InvalidStoredState)?;
+                if !matches!(
+                    &policy.record().semantics.fluid,
+                    ReferenceItemField::Known(ReferenceItemFluid {
+                        fluid_type: ReferenceItemField::NotApplicable
+                    })
+                ) {
+                    return Err(DurabilityError::InvalidStoredState);
                 }
-                Ok(RewardClaimMintContent {
-                    fluid_subtype: i.fluid_subtype,
-                    item: resolve(&i.item)?,
-                    quantity: u32::from(i.count),
-                    key_number: None,
-                    text: None,
-                    charges_remaining: None,
-                })
+            }
+            Ok(RewardClaimMintContent {
+                fluid_subtype: i.fluid_subtype,
+                item: resolve(&i.item)?,
+                quantity: u32::from(i.count),
+                key_number: None,
+                text: None,
+                charges_remaining: None,
             })
-            .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
+        })
+        .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
         root_text: None,
         root_fluid_subtype: None,
         root_charges_remaining: None,

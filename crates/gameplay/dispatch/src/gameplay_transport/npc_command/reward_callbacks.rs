@@ -32,7 +32,8 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
 ) -> Option<Step> {
-    let callbacks = reward_callbacks::load().ok()?;
+    let catalogue = admission.quest_catalogue.as_deref()?;
+    let callbacks = reward_callbacks::load_for(catalogue).ok()?;
     let mut offers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
