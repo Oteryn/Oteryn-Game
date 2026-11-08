@@ -151,3 +151,16 @@ compares all 23 closed reward/movement/terminal policies against the canonical
 native catalogue, retaining full-record equality and the existing identity and
 custody guards. It failed for all 23 records before the fix and passed after it.
 The whole canonical Item-policy qualification then passed in 15.752 seconds.
+
+## Existing throne on Ahau's boss cell
+
+The pinned OTBM closure puts Item 31483 on `[34008,31696,10]`, the exact
+BossLever boss position. The captured tile and DAT policy both state
+`block_solid=false`; the production native catalogue previously had no policy
+for this existing Item and therefore conservatively blocked the boss cell.
+Crystal [`data/items/items.xml:58927-58929`](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L58927-L58929)
+names the throne; the pinned DAT and loader supply its immutable, non-pickupable,
+passable physics. `galthen_boss_furniture.py` reuses the source Item decoder,
+preserves its existing exact Crystal binding and grants only Ground custody.
+The native decoder compares the complete record against its generated source pin.
+No canonical Item identity or static WorldObject alias is added.

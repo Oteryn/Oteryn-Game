@@ -10,6 +10,8 @@ mod boss_corpse_terminal;
 mod boss_movement_bindings;
 #[path = "native_gameplay/boss_reward_bindings.rs"]
 mod boss_reward_bindings;
+#[path = "native_gameplay/galthen_furniture.rs"]
+mod galthen_furniture;
 #[path = "native_gameplay/m25_corpse_items.rs"]
 mod m25_corpse_items;
 
@@ -1268,6 +1270,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         let m25_items = m25_corpse_items::qualified_records()?;
         m25_corpse_items::admit_exact_bindings(&mut admitted, &m25_items)?;
         source_reward_items.extend(m25_items);
+        source_reward_items.push(galthen_furniture::qualified_record()?);
         for record in &items.records {
             let binding = &record.production_binding;
             let external = binding
@@ -2107,7 +2110,11 @@ mod tests {
         )?;
         let artifact = compile_native_gameplay(baseline.compiled(), &supplied)?;
         let admitted = decode(&artifact.server_artifact)?;
-        for corpse in ["oteryn:item.tibia.i42069", "oteryn:item.tibia.i44687"] {
+        for corpse in [
+            "oteryn:item.tibia.i42069",
+            "oteryn:item.tibia.i44687",
+            "oteryn:item.tibia.i31483",
+        ] {
             assert!(
                 admitted
                     .state

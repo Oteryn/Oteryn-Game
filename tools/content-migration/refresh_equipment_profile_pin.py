@@ -31,6 +31,7 @@ SRX3_SOURCES = (
     ("SRX3-BOSS-YIELDS", "boss_reward_yield_profiles",
      (239, 3028, 3081, 3097, 3384, 3583, 3723, 7428, 7642, 7643, 23373, 23374, 23375, 23535)),
     ("M25-GALTHEN-CORPSES", "m25_corpse_items", ()),
+    ("M25-GALTHEN-THRONE", "galthen_boss_furniture", ()),
 )
 
 
