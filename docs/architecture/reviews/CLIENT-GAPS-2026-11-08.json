@@ -992,8 +992,8 @@
   "area": "House",
   "feature": "Podium: outfit/mount/creature/item",
   "status": "PARTIAL",
-  "gap": "Dodano tekstowy preview outfit/mount/item z kierunkiem; brak graficznego preview i przełączników creature podium.",
-  "evidence": "crates/client-ui/src/features/0150-house-podium/view.rs:2 + podium_previews_the_draft_separately_from_committed_projection; left: Dodano tekstowy preview outfit/mount/item z kierunkiem; brak graficznego preview i przełączników creature podium.",
+  "gap": "Display kind 3 to creature (nie item); formularz i preview są zgodne z istniejącym wire i rzeczywistym callerem. Pozostają graficzny preview, item display oraz pełne przełączniki creature (niezdefiniowane w PODIUM_V1).",
+  "evidence": "apps/client/src/features/0150-house-podium/protocol.rs:6 + podium_creature_selection_uses_the_existing_wire_and_creature_preview; left: graficzny preview, item display i dodatkowe flagi creature",
   "lane": "cg_ui"
  },
  {
