@@ -296,6 +296,7 @@ impl Turn<'_, '_, '_, '_> {
             // map cutover owns switching this established ground-speed source.
             player_step_duration(&EngineeringGroundSpeed, cell(destination), speed)
         }
+        .and_then(|duration| duration.checked_mul(if direction.is_diagonal() { 3 } else { 1 }))
         .ok_or(MovementError::NotQualified)?;
         let cooldowns = if stairhop {
             use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
@@ -350,6 +351,10 @@ fn cardinal(direction: StepDirection) -> (CardinalStep, MovementFacing) {
         StepDirection::East => (CardinalStep::East, MovementFacing::East),
         StepDirection::South => (CardinalStep::South, MovementFacing::South),
         StepDirection::West => (CardinalStep::West, MovementFacing::West),
+        StepDirection::NorthEast => (CardinalStep::NorthEast, MovementFacing::North),
+        StepDirection::SouthEast => (CardinalStep::SouthEast, MovementFacing::South),
+        StepDirection::SouthWest => (CardinalStep::SouthWest, MovementFacing::South),
+        StepDirection::NorthWest => (CardinalStep::NorthWest, MovementFacing::North),
     }
 }
 
@@ -414,7 +419,7 @@ fn resolve_destination(
         )?;
         return Ok((destination, destination.floor != origin.floor));
     }
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     let destination = MovementLocalPosition {
         x: origin
             .x

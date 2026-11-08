@@ -78,6 +78,30 @@ mod tests {
     use super::super::*;
 
     #[test]
+    fn geomancer_explore_entry_has_its_own_zero_initial_counter() -> Result<(), String> {
+        let callbacks = load()?;
+        let callback = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/geomancer/s1/entry")
+            .ok_or("bound Geomancer entry")?;
+        assert!(super::admitted(callback));
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(|e| format!("{e:?}"))?,
+            std::slice::from_ref(callback),
+        )?;
+        let track = catalogue
+            .track("oteryn:quest-progress/chosen-source/geomancer_quest/s1")
+            .ok_or("Geomancer explore counter")?;
+        assert_eq!((track.initial, track.min, track.max), (0, 0, 1));
+        assert!(
+            catalogue
+                .track("oteryn:quest-progress/chosen-source/longsword_quest/s1")
+                .is_none()
+        );
+        Ok(())
+    }
+
+    #[test]
     fn imported_explore_counter_and_visit_start_at_zero() -> Result<(), String> {
         let callbacks = load()?;
         let callback = callbacks
