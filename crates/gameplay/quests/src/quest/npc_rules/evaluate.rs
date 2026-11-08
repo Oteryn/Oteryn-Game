@@ -290,6 +290,23 @@ pub(super) fn plan(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_with_teleport(catalogue, input, resolutions, storage_only, false)
+}
+
+pub(super) fn plan_teleport(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_with_teleport(catalogue, input, &BTreeMap::new(), true, true)
+}
+
+fn plan_with_teleport(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+    resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
+    storage_only: bool,
+    allow_teleport: bool,
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
     }
@@ -340,6 +357,11 @@ pub(super) fn plan(
             }
             for effect in &rule.effects {
                 if storage_only
+                    && !(allow_teleport
+                        && matches!(
+                            effect,
+                            NpcRuleEffect::Teleport { .. } | NpcRuleEffect::MagicEffect { .. }
+                        ))
                     && !matches!(
                         effect,
                         NpcRuleEffect::Set { .. }
