@@ -4,6 +4,7 @@ use oteryn_session::{AppliedDelta, MAX_QUEUED_EVENTS, ServerMessage};
 impl PlayView {
     pub(in crate::play) fn apply_server_messages(&mut self, messages: &ServerMessageInbox) {
         for message in messages.iter() {
+            self.game_notifications.observe(message);
             if self.server_messages.len() == MAX_QUEUED_EVENTS {
                 self.server_messages.pop_front();
             }

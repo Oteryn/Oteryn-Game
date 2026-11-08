@@ -21,6 +21,9 @@ impl Application {
                     return;
                 }
             }
+            if play.view.notification_input(events) {
+                return;
+            }
             play.view.observe_creature_pointer(events);
             if play.link.use_with_cancel_input(events) {
                 return;

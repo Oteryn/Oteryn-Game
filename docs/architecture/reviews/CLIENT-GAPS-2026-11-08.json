@@ -1401,9 +1401,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Banery i powiadomienia gry",
-  "status": "PARTIAL",
-  "gap": "Brakuje ogólnego systemu konfigurowalnych banerów/okienek zdarzeń; dostępne są komunikaty samouczka i HUD.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/local-game-notifications/state.rs:31 + game_notices_follow_real_delivery_configuration_expiry_and_reconnect; apps/client/src/features/local-game-notifications/native.rs:53 + raids_global_client_dispatch_preserves_messages_across_step_and_renders_each_kind"
  },
  {
   "id": "O043",

@@ -168,7 +168,7 @@ Zasady przeciw dublowaniu:
 | T118 | Exaltation | Tier effects i rezultat exaltation | PARTIAL | Są wyniki forge i item effects; brak pełnej prezentacji tier bonuses i wyniku. |
 | T116 | Forge | Fusion/convergence i transfer/convergence | PARTIAL | Numeric operation/item handles/occurrence zamiast selektora i podglądu przedmiotów. |
 | T117 | Forge | Dust/slivers/cores/limit i historia | PARTIAL | Odczyt/mutacje/historia są; brak pełnego confirmation/result dialog. |
-| O041 | Game window | Banery i powiadomienia gry | PARTIAL | Brakuje ogólnego systemu konfigurowalnych banerów/okienek zdarzeń; dostępne są komunikaty samouczka i HUD. |
+| O041 | Game window | Banery i powiadomienia gry | DONE | evidence: apps/client/src/features/local-game-notifications/state.rs:31 + game_notices_follow_real_delivery_configuration_expiry_and_reconnect; apps/client/src/features/local-game-notifications/native.rs:53 + raids_global_client_dispatch_preserves_messages_across_step_and_renders_each_kind |
 | T121 | Gems | Reveal/socket/unsocket/dismantle/enhance | PARTIAL | Komendy/selektory są; brak kompletnej wizualnej prezentacji gem/mod i atelier. |
 | T134 | House | Guest/subowner/door ACL, bid/leave/notice | DONE | Montaż play.json, natywne okno i submit/HouseResult są już w cgmech; dodano informacje o braku środków, limicie i konieczności odświeżenia. |
 | T135 | House | Transfer/move-out/furniture wrapping | PARTIAL | Dodano potwierdzenie dokładnego itemu i celu wrap/place; pozostaje pełny wybór transfer/move-out i pozostałe potwierdzenia. |
