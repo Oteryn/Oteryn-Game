@@ -6,7 +6,7 @@ mod state;
 mod view;
 pub use input::open_key;
 pub use protocol::request;
-pub use state::SkillProgressPanel;
+pub use state::{SKILL_LABELS, SkillProgressPanel};
 pub use view::panel_text;
 
 #[cfg(test)]
