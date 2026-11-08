@@ -1,0 +1,85 @@
+// A journey can lose its socket before logout, or be cancelled by its deadline.
+// Fresh admission must observe the owning server's terminal release, including
+// control-loss detection and grace; qualification never edits session state.
+async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
+    // Existing loss qualification allows 60s for detection and 100s for release.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(160);
+    let mut connection =
+        tokio::time::timeout_at(deadline, sqlx::PgConnection::connect(clients.url))
+            .await
+            .map_err(|_| "character release database connect deadline")??;
+    wait_release(deadline, async || {
+        Ok(!sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \
+             WHERE world_id=encode($1,'hex')::uuid AND session_state<>3 \
+             AND (account_id=$2::text::uuid OR character_id=encode($3,'hex')::uuid))",
+        )
+        .bind(clients.world.as_slice())
+        .bind(&clients.accounts[index])
+        .bind(clients.characters[index].as_slice())
+        .fetch_one(&mut connection)
+        .await?)
+    })
+    .await?;
+    tokio::time::timeout_at(deadline, connection.close())
+        .await
+        .map_err(|_| "character release database close deadline")??;
+    Ok(())
+}
+
+async fn wait_release(
+    deadline: tokio::time::Instant,
+    mut released: impl AsyncFnMut() -> TestResult<bool>,
+) -> TestResult {
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            if released().await? {
+                return Ok(());
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    })
+    .await
+    .map_err(|_| "previous journey character was not terminally released after loss/grace")?
+}
+
+#[cfg(test)]
+mod character_release_tests {
+    use super::*;
+
+    #[test]
+    fn character_release_waits_through_active_loss_and_grace() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let started = tokio::time::Instant::now();
+                let mut states = [2, 1, 1, 3].into_iter();
+                wait_release(started + Duration::from_secs(5), async || {
+                    Ok(states.next() == Some(3))
+                })
+                .await?;
+                assert!(started.elapsed() >= Duration::from_millis(300));
+                assert_eq!(states.next(), None);
+                Ok(())
+            })
+    }
+
+    #[test]
+    fn character_release_never_qualifies_a_live_or_unreadable_session() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let deadline = tokio::time::Instant::now() + Duration::from_millis(10);
+                assert!(wait_release(deadline, async || Ok(false)).await.is_err());
+                let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+                assert!(
+                    wait_release(deadline, async || Err("session read failed".into()))
+                        .await
+                        .is_err()
+                );
+                Ok(())
+            })
+    }
+}

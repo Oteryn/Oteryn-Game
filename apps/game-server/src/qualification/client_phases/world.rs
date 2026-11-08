@@ -6,6 +6,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 
 include!("character_core.rs");
+include!("character_release.rs");
 include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");
 include!("full_e2ef5_mount.rs");
@@ -244,6 +245,9 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     full_e2ef7::run_packet(clients).await;
     include!("full_e2ef6_mount.rs");
     full_e2ef5::run(clients, &world).await;
+    for index in 0..clients.accounts.len() {
+        wait_character_released(clients, index).await?;
+    }
     include!("full_e2ef4_mount.rs");
     let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
     let mut client = connect_world(clients, 0x71).await?;
@@ -436,6 +440,7 @@ pub(super) async fn connect_character(
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    wait_character_released(clients, index).await?;
     let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
     let grant = Grant {
         signing: clients.signing,

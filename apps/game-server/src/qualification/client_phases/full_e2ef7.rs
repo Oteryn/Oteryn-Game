@@ -91,7 +91,8 @@ async fn exchange(
     Ok(client
         .session_mut()
         .gated_command(command.capability, command.command_type, &command.payload)
-        .await?)
+        .await
+        .map_err(|error| format!("ranking query {query:?}: {error}"))?)
 }
 
 async fn query(
@@ -221,7 +222,9 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xa0).await?;
+    let mut client = connect_world(clients, 0xa0)
+        .await
+        .map_err(|error| format!("ranking initial admission: {error}"))?;
     let initial_session = client.join_snapshot().game_session_id;
     let mut saved = Vec::new();
     let result: TestResult = async {
@@ -454,6 +457,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             }
         }
     }
+    drop(client);
     row.finish(result);
     additional_rows(clients).await;
     continuation_rows(clients).await;
@@ -907,6 +911,7 @@ async fn additional_rows(clients: &SeamClients<'_>) {
             }
         }
     }
+    drop(light);
     row.finish(&result);
 
     let mut gate = JourneyRow::new("S13a", PARTY_GATE_ACTIONS);

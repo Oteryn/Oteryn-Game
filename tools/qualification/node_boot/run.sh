@@ -450,6 +450,8 @@ stage() { # name prerequisite... -- function
   else
     STATUS[$name]="FAIL(exit $rc)"
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
+    echo "--- session close events"
+    grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
     echo "--- last node events"; tail -n 40 "$node_log" 2>/dev/null || true
     echo "--- postgres"; docker logs --tail 40 "$PG_CONTAINER" 2>&1 | grep -E 'ERROR|FATAL|STATEMENT' || true
     echo "--- platform"; compose logs --no-color --tail 40 platform nginx 2>&1 || true
