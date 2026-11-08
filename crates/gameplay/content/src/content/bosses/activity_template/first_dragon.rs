@@ -1,5 +1,5 @@
 //! Explicit chosen s5 adapter; the full Spirit of Fertility source capture stays closed.
-//! Crystal201189f creaturescripts_death_dragon_essence.lua:11 and death_fallen.lua:12
+//! Crystal9f5a72c creaturescripts_death_dragon_essence.lua:11 and death_fallen.lua:12
 //! supply the final creature and portal landing; actions_lever.lua:6 supplies cooldown.
 use super::{ActivityTemplateRefusal, BossLeverCandidate};
 use crate::content::native_gameplay::NativeGameplayState;

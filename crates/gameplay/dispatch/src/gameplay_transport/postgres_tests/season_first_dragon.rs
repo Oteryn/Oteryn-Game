@@ -283,9 +283,23 @@ fn scenario(victory: bool) -> TestResult {
         );
         guard.rollback().await?;
         owner.quest_catalogue = Some(std::sync::Arc::new(catalogue.clone()));
-        owner
-            .refresh_quest_session(admitted.game_session_id, false)
-            .await;
+        owner.admit_quest_session(&admitted).await;
+        {
+            let sessions = owner
+                .states
+                .quest_sessions
+                .lock()
+                .map_err(|_| "source quest copy lock")?;
+            assert_eq!(
+                sessions
+                    .get(&admitted.game_session_id)
+                    .and_then(|entry| entry.copy.as_ref())
+                    .and_then(|copy| copy.tracks().get(TRIALS))
+                    .copied(),
+                Some(2),
+                "normal quest admission must install the completed source trials before handoff"
+            );
+        }
         let clock: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
                 .fetch_one(&h.pool)
@@ -428,10 +442,10 @@ fn scenario(victory: bool) -> TestResult {
         assert_eq!(timers, (1_200_000, 72_000_000));
         if victory {
             settle_selected_boss(&destination, &admitted).await?;
-            let completed: (i64,i64,bool) = sqlx::query_as("SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT value FROM game_character_quest_tracks WHERE track_key=$2),(SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key=$3)")
+            let completed: (Option<i64>,Option<i64>,Option<bool>) = sqlx::query_as("SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT value FROM game_character_quest_tracks WHERE track_key=$2),(SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key=$3)")
                 .bind("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5")
                 .bind("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s6").bind(QUEST).fetch_one(&h.pool).await?;
-            assert_eq!(completed, (1, 1, true));
+            assert_eq!(completed, (Some(1), Some(1), Some(true)));
             let exit_after: i64 = sqlx::query_scalar("SELECT exit_deadline / 1000 + 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid")
                 .bind(handoff.as_slice()).fetch_one(&h.pool).await?;
             h.root
