@@ -11,6 +11,49 @@ pub struct PreferenceStore {
 }
 
 impl PreferenceStore {
+    /// Read a portable settings file with the same validation as local storage.
+    pub fn read_transfer(path: &Path) -> io::Result<ReferencePreferences> {
+        use std::io::Read;
+        let mut bytes = Vec::new();
+        std::fs::File::open(path)?
+            .take((1 << 20) + 1)
+            .read_to_end(&mut bytes)?;
+        if bytes.len() > 1 << 20 {
+            return Err(io::Error::other("Settings file exceeds 1 MiB"));
+        }
+        let preferences: ReferencePreferences =
+            serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        preferences.validate().map_err(io::Error::other)?;
+        Ok(preferences)
+    }
+
+    /// Exports never replace existing files, including the active preferences.
+    pub fn export_to(preferences: &ReferencePreferences, path: &Path) -> io::Result<()> {
+        use std::io::Write;
+        preferences.validate().map_err(io::Error::other)?;
+        let bytes = serde_json::to_vec_pretty(preferences).map_err(io::Error::other)?;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path)?;
+        if let Err(error) = file.write_all(&bytes).and_then(|()| file.sync_all()) {
+            let _ = std::fs::remove_file(path);
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    pub fn backup_path(&self) -> PathBuf {
+        self.path.with_extension("backup.json")
+    }
+
+    pub fn replace_with_backup(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
+        preferences.validate().map_err(io::Error::other)?;
+        let mut backup = Self::defaults(self.backup_path());
+        backup.apply(self.preferences.clone())?;
+        self.apply(preferences)
+    }
+
     pub fn defaults(path: PathBuf) -> Self {
         Self {
             path,
