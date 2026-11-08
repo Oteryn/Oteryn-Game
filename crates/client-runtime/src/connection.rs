@@ -12,6 +12,14 @@ const CAPACITY_EXCEEDED: u32 = 1115;
 /// Retries of the same grant on 1103/1108, and Gateway re-logins on 1106.
 const MAX_GRANT_RETRIES: u32 = 3;
 
+/// Observable retry timing; it carries no invented queue position or grant material.
+#[derive(Debug, Clone, Copy)]
+pub struct AdmissionWait {
+    pub code: u32,
+    pub started: Instant,
+    pub retry_in: Duration,
+}
+
 /// Composition adapter for one grant and its transport. Reconciliation keeps the same login attempt.
 pub trait AdmissionAttempt {
     type Output;
@@ -22,6 +30,7 @@ pub trait AdmissionAttempt {
         &mut self,
         cancellation: CancellationToken,
     ) -> impl Future<Output = Result<(), Self::Error>>;
+    fn waiting(&mut self, _wait: AdmissionWait) {}
     fn usable_until(&self) -> Instant;
     fn rejected(class: AdmissionPublicClass) -> Self::Error;
 }
@@ -68,6 +77,11 @@ pub async fn enter<A: AdmissionAttempt>(
         if Instant::now() + delay >= attempt.usable_until() {
             return Err(A::rejected(class));
         }
+        attempt.waiting(AdmissionWait {
+            code,
+            started: Instant::now(),
+            retry_in: delay,
+        });
         match cancellable(cancellation.clone(), tokio::time::sleep(delay)).await {
             Cancellable::Completed(()) => {}
             Cancellable::Cancelled => return Err(A::rejected(class)),
