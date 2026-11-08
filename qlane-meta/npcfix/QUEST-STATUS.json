@@ -167,7 +167,7 @@
     },
     "caller": "Hoaxette timed-NPC tick now defers occupied anchors and retries later",
     "api_commit": "90381fab932642f456fdf1580b5076487d4099c5",
-    "workspace_check": "running separately; not claimed passed"
+    "workspace_check": "PASS after preserving both collected M20 test sets under distinct namespaces"
   },
   "latest_authoring": {
     "checks": "PASS exit 0",
@@ -175,5 +175,19 @@
     "unit_exit": 0,
     "content_tree": "PASS exit 0",
     "scope": "Zarifan content slice; no content changes in the return-retry slices"
+  },
+  "workspace_compile_repair": {
+    "state": "GREEN",
+    "source": "crates/gameplay/quests/src/quest/reward_callbacks/recipe_tests.rs",
+    "red": "E0428: two m20 recipe test function names defined multiple times",
+    "fix": "Keep both collected bodies in a distinct test namespace; all assertions retained",
+    "focused_tests": 5,
+    "focused_seconds": 0.03,
+    "clippy": "PASS quests all-targets -D warnings",
+    "production_behavior_change": false,
+    "workspace_all_targets": "PASS",
+    "fmt": "PASS",
+    "pin_check": "PASS sequential rerun after concurrent verification was killed",
+    "duplicate_migrations": "PASS"
   }
 }
