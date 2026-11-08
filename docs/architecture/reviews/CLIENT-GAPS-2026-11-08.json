@@ -1077,10 +1077,10 @@
   "src": "TIBAUD-1",
   "area": "Appearance",
   "feature": "Outfits/mounts/addons/colors",
-  "status": "PARTIAL",
-  "gap": "Apply przez klucze/mask/colors/revision; brak galerii i preview.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0025-appearance/state.rs:40 + gallery_navigation_uses_catalogue_and_never_changes_confirmed_selection; PARTIAL: rendered previews and mount gallery remain"
+  "evidence": "apps/client/src/features/0025-appearance/view/preview_window.rs:23 + appearance_preview_renders_pinned_pixels_and_keeps_server_selection_authoritative; native outfit/mount gallery and rendered preview from pinned sprites, colour masks and addons; mount artwork bound to the server cosmetics digest; existing Apply wire preserves server authority"
  },
  {
   "id": "T150",

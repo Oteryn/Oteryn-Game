@@ -28,6 +28,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Feet colour",
                 "Addon 1",
                 "Addon 2",
+                "Previous mount",
+                "Next mount",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.appearance;
@@ -59,6 +61,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     panel.toggle_addon(if action == 7 { 1 } else { 2 });
                     return;
                 }
+                if matches!(action, 9 | 10) {
+                    panel.cycle_mount(action == 10);
+                    return;
+                }
                 let intent = match action {
                     0 => oteryn_client_ui::appearance::Intent::Apply,
                     _ => return,
@@ -67,4 +73,13 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
         },
     );
+    preview_window::open(link);
 }
+
+#[cfg(any(windows, test))]
+#[path = "view/preview.rs"]
+pub(in crate::play) mod preview;
+
+#[cfg(windows)]
+#[path = "view/preview_window.rs"]
+mod preview_window;
