@@ -1052,3 +1052,29 @@ duplicate migration check clean. Main78294c081 already merged; fetch again at
 publication. Pending tests and burst fix are explicit above. Publish compiling
 WIP under owner's PREPUSH-2 budget exception, then immediately continue the
 queued-burst RED/GREEN plan. Do not claim new whole quests or ENGINE-DONE yet.
+
+02:03UTC actual kill qualification: sequential PG PASS108.630s and queued burst
+PG PASS133.793s, total242.436s, two real POSTGRES_CASE_COMPLETED success markers.
+The suspected burst bug was already prevented by main6738c1da7a writer.rs:709-710
+(removes unchanged native effects). Do NOT apply the prepared burst-fix script;
+no additional production fix is needed. Initial review missed that existing
+filter. Keep the new real queued-burst regression and shared queue/drain helpers.
+Original mechanic RED remains unknown kill53.880s; actual new sequential/burst
+GREEN and earlier retained Dragon Slayer134.14s now prove the shared slice.
+Final native regeneration, workspace check, clippy, fmt are running before push.
+Only full dispatch/durability crate suites remain under PREPUSH-2 budget exception.
+Then ENGINE-DONE authored_native_kill_counters; larger68-binding feature still
+needs world item delivery + explicit native admission + world PG qualification.
+Navigation facts for those: /tmp/qengine2-native-admission-facts.txt and peer
+world-delivery diff653feac45. Whole-quest44/66 unchanged.
+
+02:13UTC kill slice publication GREEN: two own real PG cases PASS242.436s,
+workspace6m20s, strict all-feature engine lib clippy3m01s, fmt, native/central
+regeneration, NPC310/6628 binding evidence, item audit tags/wire, Item34111/
+Mount252 equivalence, world metadata and duplicate-migration checks all PASS.
+Full dispatch/durability crate unit completion is pending under PREPUSH-2 budget
+exception; no full-suite success claim. Push qualified slice now, then continue
+world item delivery (peer653feac45), explicit native binding admission and world
+real-dispatch tests. Do NOT implement the disproved queued-gate bug: existing
+main6738c1da7a guard already preserves native unchanged effects. Packet44/66 and
+larger68-binding feature IN_PROGRESS remain unchanged.

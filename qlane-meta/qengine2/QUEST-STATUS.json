@@ -3396,7 +3396,7 @@
     "full_backend_units": "Still pending under PREPUSH-2 budget exception; no full-suite success claimed"
   },
   "authored_kill_binding_slice": {
-    "status": "IN_PROGRESS",
+    "status": "QUALIFIED",
     "reuse": "questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7 threshold operation; existing native death queue/fenced writer",
     "red": {
       "test": "authored_bindings_native_kill_threshold_completion_postgres",
@@ -3413,8 +3413,6 @@
     },
     "whole_quest_qualification_changed": false,
     "pending": [
-      "own PG rerun after fixture actor cleanup",
-      "queued-burst PG regression and native gate-revision fix",
       "full durability/dispatch crate suites (PREPUSH-2 budget exception)"
     ],
     "first_green_attempt": {
@@ -3424,29 +3422,63 @@
       "log": "/tmp/qengine2-authored-kill-green.log"
     },
     "workspace_check": {
-      "result": "PASS after all three redundant-borrow fixes",
-      "seconds": 311,
-      "log": "/tmp/qengine2-kill-workspace2.log"
+      "result": "PASS",
+      "seconds": 380,
+      "log": "/tmp/qengine2-kill-qualified-workspace.log"
     },
-    "fmt_check": "PASS /tmp/qengine2-kill-fmt2.log",
+    "fmt_check": "PASS /tmp/qengine2-kill-qualified-fmt.log",
     "retained_counter_pg": {
       "test": "qengine_l12_dragon_slayer_native_trial_story",
       "seconds": 134.14,
       "result": "PASS before fixture cleanup",
       "log": "/tmp/qengine2-kill-legacy-pg.log"
     },
-    "queued_burst_followup": "Required before qualification: preserve unchanged native gate revision, prove multiple deaths captured from one snapshot with PG RED/GREEN",
     "clippy": {
       "result": "PASS",
-      "seconds": 133,
+      "seconds": 181,
       "packages": [
         "oteryn-gameplay-quests",
         "oteryn-gameplay-durability",
         "oteryn-gameplay-dispatch"
       ],
       "scope": "all-features lib, -D warnings",
-      "log": "/tmp/qengine2-kill-clippy2.log"
+      "log": "/tmp/qengine2-kill-qualified-clippy.log"
     },
-    "publication": "Compiling WIP; PREPUSH-2 step-3 budget exception; no ENGINE-DONE qualification"
+    "publication": "GREEN slice; full dispatch/durability unit completion remains pending under PREPUSH-2 budget exception",
+    "existing_burst_guard": {
+      "sha": "6738c1da7ad5cf35110145fe33dfa9ea377ab0d7",
+      "file": "crates/gameplay/durability/src/durability/quest_state/writer.rs:709",
+      "behavior": "unchanged native effects removed before receipt/track writes; no new fix needed"
+    },
+    "pg_green": {
+      "passed": 2,
+      "failed": 0,
+      "seconds": 242.436,
+      "log": "/tmp/qengine2-authored-kill-burst-red.log",
+      "cases": [
+        {
+          "test": "authored_bindings_native_kill_threshold_completion_postgres",
+          "seconds": 108.63,
+          "marker_seconds": 108.386509862,
+          "result": "PASS"
+        },
+        {
+          "test": "authored_bindings_queued_kill_burst_postgres",
+          "seconds": 133.793,
+          "marker_seconds": 133.560697677,
+          "result": "PASS"
+        }
+      ],
+      "completion_markers": 2,
+      "execution": "real native lethal queue, ordinary NPC start; duplicate projections/drains; no SQL quest seeds"
+    },
+    "generated_checks": {
+      "native_regeneration": "PASS;44 spell imports,30 Grizzly rooms, equipment expected60",
+      "central_authorers": "PASS all8 plus NPC binding evidence310 identities/6628 pointers and item audit tags/wire reproduction",
+      "item_mount_equivalence": "PASS34111Items/252Mounts",
+      "world_metadata": "PASS",
+      "duplicate_migrations": "PASS",
+      "logs_prefix": "/tmp/qengine2-kill-qualified-"
+    }
   }
 }

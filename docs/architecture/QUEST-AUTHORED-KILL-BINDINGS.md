@@ -34,3 +34,9 @@ It reuses questpc3 commit `262618b3cd9fce9de09ee83064de6f31e95aa8e7`.
 The shared synthetic fixture drives native combat and ordinary NPC dialogue in
 `authored_kill_bindings::authored_bindings_native_kill_threshold_completion_postgres`.
 It does not qualify the fixture's named packet quest.
+
+The queued regression is `authored_bindings_queued_kill_burst_postgres`: three
+real deaths are captured before settlement, then credited exactly once each.
+Main commit `6738c1da7ad5cf35110145fe33dfa9ea377ab0d7` already preserves the mission epoch by removing unchanged
+native effects before receipt/track writes (`quest_state/writer.rs:709–710`).
+Ordinary mission and reset writes continue to advance the gate revision.

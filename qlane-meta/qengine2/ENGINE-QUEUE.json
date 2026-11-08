@@ -8,10 +8,9 @@
       "state": "IN_PROGRESS",
       "api": "quest::authored_bindings::Bindings::attach; catalogue-scoped callback resolution",
       "remaining": [
-        "generic kill bindings",
         "world item delivery",
         "explicit native content admission",
-        "real-dispatch world and kill qualification"
+        "real-dispatch world qualification"
       ]
     },
     {
@@ -107,6 +106,18 @@
       ],
       "scope": "Engine capability only; no whole quest qualification",
       "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)"
+    },
+    {
+      "feature": "authored_native_kill_counters",
+      "state": "QUALIFIED",
+      "code_sha": "df01fc4e8bd2dff2e2857a43bcb52d32f2cbc3ed",
+      "api": "authored_bindings::{Trigger::Kill, KillCounter, Bindings::attach}; native_kills::{counter_for,active_for,tracks_creature_for}; QuestStateCatalogue::completes_after",
+      "pg_passed": 2,
+      "pg_seconds": 242.436,
+      "retained_legacy_pg_seconds": 134.14,
+      "threshold_effect_reuse": "questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7",
+      "burst_guard_reuse": "existing main 6738c1da7ad5cf35110145fe33dfa9ea377ab0d7 writer.rs:709-710",
+      "whole_quest_qualification_changed": false
     }
   ]
 }

@@ -406,12 +406,12 @@ Remote-tracking decision: this checkout has only main in remote.origin.fetch. A 
 
 Collector synchronization 2026-11-08: merge canonical78294c081 as1e99701c6, retain incoming World/NPC changes and original migrations1330-1349. The previously inapplicable WORLDCHG/SRV9 equipment cohorts now ship on main and are preserved; own count60 comes from repo tooling. Native profile comparison against main shows only seven added Glider keys, zero changed existing profiles. World files match main exactly; reuse its generated World package, regenerate native/tree/central outputs and refresh/check pins, avoiding raw donor recapture or handwritten hashes. Seven PostgreSQL18.6 cases qualify source15ac only until the merged binary is tested. Error-codes build.rs watches HEAD; avoid an unnecessary rebuild by keeping HEAD stable between focused test invocations, or run the exact existing clean-source binary with isolated cases and server/duration proof. No build-source diagnostic is faked or modified.
 
-2026-11-08 authored kill burst review: writer.rs currently writes every track's
-committed_character_revision, including an unchanged native gate Add(0).
-NativeQuestDeath::admit compares that gate revision with the captured revision.
-Two valid deaths queued from one snapshot can therefore reject the second after
-settling the first. Existing sequential kill tests refresh between deaths and
-cannot cover this. Before qualifying the generic kill slice, add a real queued
-burst PG regression and preserve unchanged native-gate revisions only for native
-kill settlement; ordinary mission/reset gate writes must retain the barrier.
-This is actionable work in this lane, not a dependency or final blocker.
+2026-11-08 authored kill burst review correction: the suspected unchanged-gate
+revision bug is already prevented by commit6738c1da7ad5cf35110145fe33dfa9ea377ab0d7 in
+crates/gameplay/durability/src/durability/quest_state/writer.rs:709-710:
+`if native.is_some() {changes.retain(|change|change.before!=change.after);}`.
+The real three-death queued burst passed PostgreSQL in133.793s without a new
+production fix. Preserve this existing guard; ordinary non-native mission/reset
+writes retain their revision barrier. The original review missed this earlier
+filter before the track-upsert loop. Retain the new regression; do not apply
+/tmp/qengine2-apply-burst-fix.py (redundant and unnecessary).

@@ -18,11 +18,16 @@ fn authored_bindings_native_kill_threshold_completion_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-kills")
 }
 
+#[test]
+fn authored_bindings_queued_kill_burst_postgres() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-authored-kills-burst")
+}
+
 async fn value(h: &Harness, track: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key=$2),0)").bind(QUEST).bind(track).fetch_one(&h.pool).await?)
 }
 
-pub(super) async fn exercise(owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted:&mut AdmittedSession,h:&Harness) -> TestResult {
+pub(super) async fn exercise(owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted:&mut AdmittedSession,h:&Harness,burst:bool) -> TestResult {
     let bindings=Bindings::parse(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../quests/src/quest/authored_bindings/fixtures/kill.json")))?;
     let start=bindings.reward_callbacks().next().cloned().ok_or("start binding")?;
     let base=QuestStateCatalogue::empty(owner.quest_catalogue.as_ref().ok_or("catalogue")?.content_revision()).ok_or("empty catalogue")?;
@@ -37,6 +42,21 @@ pub(super) async fn exercise(owner: &mut ComposedFreshAdmission<'_, '_, '_>, adm
     assert_eq!(value(h,COUNT).await?,0,"inactive gate earns no credit");
     assert_eq!(super::qengine_rewards::wire_reward(owner,admitted,npc,&start,false).await?.0,NpcIntentDisposition::Ok);
     assert_eq!(value(h,PHASE).await?,4,"arbitrary declared gate value");
+    if burst {
+        let mut targets = Vec::new();
+        for command in 88101..=88103 {
+            targets.push(super::qengine_kill_stories::queue_death(owner, admitted, "oteryn:creature.rat", command).await?);
+        }
+        assert_eq!(value(h,COUNT).await?,0,"capture alone cannot credit a kill");
+        super::qengine_kill_stories::drain_deaths(owner,admitted,&targets).await?;
+        assert_eq!(value(h,COUNT).await?,3,"all deaths captured from one committed snapshot must settle");
+        assert_eq!(value(h,PHASE).await?,5,"only final queued kill advances the gate");
+        let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND transition_key=$2").bind(QUEST).bind(STEP).fetch_one(&h.pool).await?;
+        assert_eq!(receipts,3,"each queued death credits once despite duplicate projections and drains");
+        let completed:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes").bind(QUEST).fetch_one(&h.pool).await?;
+        assert_eq!(completed,1,"only the threshold occurrence completes");
+        return Ok(());
+    }
     for expected in 1..=3 {
         super::qengine_kill_stories::death(owner,admitted,"oteryn:creature.rat",88000+expected).await?;
         assert_eq!(value(h,COUNT).await?,i64::try_from(expected)?);
