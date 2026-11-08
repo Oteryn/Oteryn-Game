@@ -67,7 +67,16 @@ pub fn preview_teleport(
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    evaluate(&source, request, tracks, now, eligibility)
+    evaluate(
+        &source,
+        request,
+        tracks,
+        now,
+        NpcEvaluationFacts {
+            eligibility,
+            player_name: None,
+        },
+    )
 }
 
 pub(super) fn evaluate(
@@ -75,7 +84,7 @@ pub(super) fn evaluate(
     request: &NpcProgramRequest,
     tracks: &BTreeMap<String, i64>,
     now: i64,
-    eligibility: &NpcEligibility,
+    facts: NpcEvaluationFacts<'_>,
 ) -> std::result::Result<
     Option<NpcTeleportPlan>,
     oteryn_gameplay_quests::quest::npc_rules::NpcRuleError,
@@ -84,14 +93,15 @@ pub(super) fn evaluate(
         npc: &request.npc,
         trigger: request.trigger,
         message: &request.message,
+        player_name: facts.player_name,
         topic: request.topic,
         tracks,
         inventory: &NpcInventorySnapshot::default(),
         now_epoch_seconds: now,
         calendar_month: utc_calendar_month(now)?,
-        level: eligibility.level,
-        premium_current: eligibility.premium_current,
-        vocation: &eligibility.vocation,
+        level: facts.eligibility.level,
+        premium_current: facts.eligibility.premium_current,
+        vocation: &facts.eligibility.vocation,
         sex: 0,
         outfits: &BTreeMap::new(),
     })
@@ -123,7 +133,7 @@ pub(super) async fn insert(
         .bind(plan.program_digest.as_slice()).bind(a.occurrence.as_bytes().as_slice()).bind(a.world_id.as_bytes().as_slice())
         .bind(a.destination.x).bind(a.destination.y).bind(a.destination.floor).bind(&plan.reply).bind(plan.next_topic)
         .bind(items::ends(plan)).bind(i32::try_from(items::end_delay(plan)).map_err(|_| DurabilityError::InvalidStoredState)?)
-        .bind(!plan.track_changes.is_empty()).execute(&mut **tx).await?;
+        .bind(!plan.track_changes.is_empty() || plan.completes).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_character_pending_arrivals(character_id,occurrence_id,world_id,tile_x,tile_y,tile_floor,source_npc_teleport) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,true)")
         .bind(character.as_bytes().as_slice()).bind(a.occurrence.as_bytes().as_slice()).bind(a.world_id.as_bytes().as_slice())
         .bind(a.destination.x).bind(a.destination.y).bind(a.destination.floor).execute(&mut **tx).await?;

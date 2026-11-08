@@ -144,6 +144,9 @@ pub struct AchievementProgress {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
+    /// Personal display fact created atomically with this dialogue progress receipt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub map_mark: Option<super::map_marks::QuestMapMark>,
     pub key: String,
     pub quest: String,
     pub npc: String,
@@ -153,6 +156,9 @@ pub struct RewardCallback {
     /// Read-only condition on the selected other live player, checked atomically.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub peer_requires: Option<TrackRequirement>,
+    /// Exact native live creature selected by a carried quest tool.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creature_target: Option<String>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -272,6 +278,9 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    // Appended: tests index the shared document as DOCUMENTS[0].
+    include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -446,7 +455,18 @@ fn validate_document(document: Document) -> Result<Document, String> {
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         let requires: BTreeSet<_> = c.requires.iter().map(|s| &s.track).collect();
-        if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+        if c.map_mark
+            .as_ref()
+            .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
+            || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || c.creature_target.as_ref().is_some_and(|key| {
+                c.carried_item.is_none()
+                    || c.peer_requires.is_some()
+                    || c.give.as_ref().is_some_and(|give| {
+                        give.count != 1 || !give.contents.is_empty() || !give.additional.is_empty()
+                    })
+                    || !slug(key, "oteryn:creature.", b"_", 160)
+            })
             || c.peer_requires.as_ref().is_some_and(|requirement| {
                 c.carried_item.is_none()
                     || c.storage.iter().all(|state| state.preserve)
@@ -463,7 +483,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
                         count: 1,
                         fluid_subtype: None,
                     }]
-                    || c.give.is_some()
+                    || (c.give.is_some() && c.creature_target.is_none())
                     || c.fee.is_some()
                     || !c.requires_actor_conditions.is_empty()
             })
@@ -607,7 +627,10 @@ fn validate_document(document: Document) -> Result<Document, String> {
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none() && callback.peer_requires.is_none() {
+    if callback.minimum_level.is_none()
+        && callback.peer_requires.is_none()
+        && callback.creature_target.is_none()
+    {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
@@ -1285,6 +1308,10 @@ mod tests {
 #[cfg(test)]
 #[path = "reward_callbacks/readable_text_tests.rs"]
 mod readable_text_tests;
+
+#[cfg(test)]
+#[path = "reward_callbacks/map_mark_tests.rs"]
+mod map_mark_tests;
 
 #[cfg(test)]
 mod multiple_rewards_tests;

@@ -140,3 +140,60 @@ fn achievements_shell_input_pages_refusal_retry_and_logout() -> Result<(), Error
         .join()
         .map_err(|_| "achievements scenario panicked")?
 }
+
+#[test]
+fn account_browser_follows_real_page_commands_before_global_secret_filtering() -> Result<(), Error>
+{
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_ui::account_achievements::{
+        AchievementFilter, catalog_next_request, catalog_rows,
+    };
+    let (link, mut commands, outbox) = play_channel();
+    outbox.achievements_initialize();
+    crate::play::mailbox::lock(&link.mailbox)
+        .achievements
+        .catalog
+        .enabled = true;
+    link.achievements_request(Intent::Refresh);
+    assert!(matches!(
+        commands.try_recv(),
+        Ok(PlayCommand::AccountAchievements(0))
+    ));
+    let row = |i, secret| AccountAchievementRow {
+        key: format!("oteryn:achievement/a{i}"),
+        name: format!("Award {i}"),
+        description: "Earned in play".into(),
+        grade: 1,
+        points: if secret { 100 } else { 1 },
+        earned_at: 1,
+        secret,
+    };
+    outbox.achievements_result(&Response::Page(AccountAchievementsResult {
+        page: 0,
+        fact_count: 65,
+        total_points: 164,
+        has_more: true,
+        rows: (0..64).map(|i| row(i, false)).collect(),
+    }));
+    let next = catalog_next_request(&mut crate::play::mailbox::lock(&link.mailbox).achievements)
+        .ok_or("next page")?;
+    link.commands.send(PlayCommand::AccountAchievements(next))?;
+    assert!(matches!(
+        commands.try_recv(),
+        Ok(PlayCommand::AccountAchievements(1))
+    ));
+    outbox.achievements_result(&Response::Page(AccountAchievementsResult {
+        page: 1,
+        fact_count: 65,
+        total_points: 164,
+        has_more: false,
+        rows: vec![row(64, true)],
+    }));
+    let mut p = link.achievements_panel();
+    assert!(p.catalog.ready);
+    p.catalog.filter = AchievementFilter::Secret;
+    let rows = catalog_rows(&p.catalog);
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].key, "oteryn:achievement/a64");
+    Ok(())
+}

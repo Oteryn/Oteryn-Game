@@ -1,0 +1,24 @@
+{
+  "mechanic": "M01b",
+  "branch": "claude/happy-davinci-ijz3wy-qm-questpc",
+  "state": "IN_PROGRESS",
+  "scope": {
+    "routes": 46,
+    "explore_stages": 56,
+    "first_wired_route": "Longsword Quest",
+    "first_wired_stage": "s1"
+  },
+  "validation": {
+    "quest_unit_tests": "329 passed,0 failed,23.00s",
+    "focused_profile_tests": "2 passed,0 failed,0.03s",
+    "authoring_modules": "107 passed,0 failed after authored-recipe lookup fix",
+    "authoring_checks": "PASS",
+    "content_tree": "PASS",
+    "clippy": "quests+dispatch all-targets/all-features -D warnings PASS4m04s",
+    "postgres_catalogue": "PASS PostgreSQL18.6,7.422163852s",
+    "postgres_native_step": "counter/wrong-tile/revisit assertions passed; corrected immediate replay rerun in progress, not yet green"
+  },
+  "migration_range": "2000-2009",
+  "migrations_used": [],
+  "continuation": "Finish native replay validation, then extend all assigned EXPLORE bindings. Do not mark the entire mechanic DONE from this first slice."
+}
