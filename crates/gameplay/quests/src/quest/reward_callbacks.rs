@@ -276,6 +276,7 @@ struct Document {
 }
 
 const DOCUMENTS: &[&str] = &[
+    include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
@@ -802,7 +803,10 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 mod tests {
     #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
-        let mut callback = super::load()?.into_iter().next().ok_or("callback")?;
+        let mut callback = super::load()?
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/sam-backpack")
+            .ok_or("sam backpack callback")?;
         callback.storage = (0..16)
             .map(|i| super::Storage {
                 track: format!("oteryn:quest-progress/atomic/{i}"),
