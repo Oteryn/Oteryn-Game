@@ -110,3 +110,17 @@ fn m40_neighbor_commit_still_refuses_jumps_floor_changes_and_no_move() -> Result
     }
     Ok(())
 }
+
+#[test]
+fn m40_shared_duration_keeps_house_and_channel_steps_on_the_source_beat() {
+    use crate::movement::speed::{EngineeringGroundSpeed, player_directional_step_duration};
+    let at = LogicalCell { x: 4, y: 5, z: 7 };
+    assert_eq!(
+        player_directional_step_duration(&EngineeringGroundSpeed, at, 220, CardinalStep::East),
+        Some(std::time::Duration::from_millis(300))
+    );
+    assert_eq!(
+        player_directional_step_duration(&EngineeringGroundSpeed, at, 220, CardinalStep::NorthEast),
+        Some(std::time::Duration::from_millis(900))
+    );
+}

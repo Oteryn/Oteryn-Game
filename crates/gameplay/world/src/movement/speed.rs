@@ -18,6 +18,9 @@ use std::time::Duration;
 pub mod creature_speed_fixture;
 
 pub use oteryn_gameplay_characters::speed::*;
+#[path = "speed/m40.rs"]
+mod m40;
+pub use m40::player_directional_step_duration;
 
 /// The effective speed of the player `actor` of `session` at the owner time `now`: the level
 /// term and the actor's active `SPEED` condition delta from the Channel runtime's condition
