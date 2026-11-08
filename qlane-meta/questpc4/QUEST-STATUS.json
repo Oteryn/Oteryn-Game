@@ -10790,5 +10790,31 @@
   "ci_471_broad_unit_followup": {
     "result": "7122 passed; service-count and key33 proof assertions failed; NPC case SIGKILL and final compiler case SIGTERM during memory recovery. Not a green full run.",
     "scope": "These are outside the five owner-reported CI leaves; preserve the failures for follow-up, do not weaken tests."
+  },
+  "main3031_merge": {
+    "main": "b3864f14a",
+    "merge_commit": "14a8f69b1",
+    "resolution": "Normal merge through repository additive drivers; no unresolved conflicts. Preserve lane and PUBPROJ behaviours. No migration number clashes.",
+    "retained_diff": "309 files changed,58056 insertions,704 deletions before final metadata update",
+    "regeneration": "Native-only, equipment3763, registry fragments and pin-refresh PASS; no generated diff.",
+    "validation": "Own four PG cases PASS93.660s, fresh donor --check EXIT0, native/equipment/registry/pin regeneration PASS, inventory2/2 PASS50.45s, workspace alltargets PASS8m19s, dispatch alltargets/allfeatures clippy -Dwarnings PASS4m45s on unchanged merged code, fmt PASS. Full dispatch unit run in progress under owner PREPUSH-2 step3 cadence allowance; not claimed green.",
+    "donor_check": "Fresh merged-tree --check EXIT0; /tmp/questpc4-b386-donor-check-exit.txt DONOR_CHECK_EXIT=0. No capture changes needed after merge.",
+    "postgres": {
+      "command": "cargo nextest run -p oteryn-gameplay-dispatch --all-features -E 'test(map_harvest::worldchg_thawing_)' --no-fail-fast --test-threads 2 --success-output final",
+      "pg_required": true,
+      "passed": 4,
+      "failed": 0,
+      "total_seconds": 93.66,
+      "durations_seconds": {
+        "active": 52.963,
+        "inactive": 47.107,
+        "ordinary": 44.864,
+        "stale_epoch": 40.694
+      },
+      "proof": "All WORLDCHG-Q PG EXECUTED and POSTGRES_CASE_COMPLETED markers; THAWING_NEXTTEST_EXIT=0; /tmp/questpc4-b386-thawing-pg.log"
+    },
+    "workspace_check": "cargo check --workspace --all-targets --keep-going PASS8m19s; /tmp/questpc4-b386-workspace-check.log",
+    "duplicate_migrations": 0,
+    "publication": "One pending authorized push includes CI repair3c104f740 and normal main merge14a8f69b1. Fresh fetch behindmain0; retained lane diff309files/+58056/-704 before final notes."
   }
 }
