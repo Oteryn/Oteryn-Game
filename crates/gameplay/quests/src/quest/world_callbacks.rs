@@ -102,7 +102,10 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+#[cfg(test)]
+mod mammoth_tests;
 mod native;
+mod nomads_window;
 use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
@@ -151,11 +154,14 @@ impl ActorKind {
     }
 }
 
-/// A static native anchor, optionally guarded by an ordered durable Ground stack.
+/// A static native anchor or a closed mutable Ground-only prerequisite.
+pub use ground_stack::GroundStackEntry as GroundStackItem;
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
     pub position: Position,
+    /// Zero only for a mutable Ground stack; otherwise the legacy map appearance.
     pub appearance: u16,
     /// Exact durable Ground roots, bottom first, in addition to the static anchor.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -205,7 +211,7 @@ pub struct Callback {
     /// Evaluated with SET_NOW against the fenced writer transaction clock.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<super::reward_callbacks::StateOperation>,
-    /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.
+    /// Immutable map predicates use the Channel turn; portable stacks use the fenced SQL receipt.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub world_requirements: Vec<WorldRequirement>,
     /// Checked against the progression owner in the same fenced quest transaction.
@@ -260,6 +266,19 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
     }
 }
 
+/// Closed read-only source gates. They create no synthetic personal quest state.
+pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>> {
+    (key == nomads_window::KEY).then(nomads_window::requirements)
+}
+
+impl Callback {
+    /// Canary action_horn.lua:38-50: mammoth progress requires a currently active
+    /// Drunk condition, never the historical mead counters or a cached quest flag.
+    pub fn requires_live_drunk(&self) -> bool {
+        self.key == "oteryn:quest-callback/qm48/mammoth"
+    }
+}
+
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 /// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
 pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
@@ -271,6 +290,9 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(
+        &serde_json::json!({"schema":1,"callbacks":[nomads_window::callback()?]}).to_string(),
+    )?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
     ))?);
@@ -294,6 +316,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
@@ -359,7 +384,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
-        if operation_tracks.len() != callback.state_ops.len()
+        if (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
+            || operation_tracks.len() != callback.state_ops.len()
             || !operation_tracks.is_disjoint(&unique_storage)
             || callback.storage.len() + callback.state_ops.len() > MAX_EFFECTS
             || callback.state_ops.iter().any(|op| !op.valid())
@@ -426,7 +452,11 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.world_requirements.len() > MAX_EFFECTS
             || callback.world_requirements.iter().any(|r| {
                 !valid_pos(r.position)
-                    || r.appearance == 0
+                    || (r.appearance == 0
+                        && !(r.ground_stack.is_some()
+                            && ((callback.has_personal_state()
+                                && callback.requires_world_admission)
+                                || nomads_window::exact(callback))))
                     || r.ground_stack.as_ref().is_some_and(|stack| {
                         callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
                     })
