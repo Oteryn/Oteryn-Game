@@ -34,6 +34,11 @@ pub fn overview_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String
     }) else {
         return Vec::new();
     };
+    general_cards(stats)
+}
+fn general_cards(
+    stats: oteryn_client_runtime::cyclopedia_character::GeneralStats,
+) -> Vec<(&'static str, String)> {
     let mut cards = vec![
         ("Level", stats.level.to_string()),
         ("Experience", stats.experience.to_string()),
@@ -222,4 +227,27 @@ pub fn store_blessings(p: &CyclopediaCharacterPanel) -> String {
     p.store
         .as_ref()
         .map_or_else(String::new, |s| s.blessings.join("\r\n"))
+}
+
+pub fn misc_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String)> {
+    let Some(stats) = p
+        .misc_general
+        .filter(|_| p.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc)
+    else {
+        return Vec::new();
+    };
+    general_cards(stats)
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, card)| (i == 2 || i >= 5).then_some(card))
+        .collect()
+}
+pub fn misc_bars(p: &CyclopediaCharacterPanel) -> Option<[(u16, u16); 2]> {
+    let stats = p
+        .misc_general
+        .filter(|_| p.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc)?;
+    Some([
+        (stats.stamina_minutes.min(2520), 2520),
+        (stats.offline_training_minutes.min(720), 720),
+    ])
 }

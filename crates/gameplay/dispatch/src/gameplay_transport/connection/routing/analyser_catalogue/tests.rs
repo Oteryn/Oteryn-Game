@@ -51,7 +51,7 @@ fn analyser_catalogue_route_enforces_selection_and_bounded_request()
                     let payload = oteryn_protocol_oteryn::analyser_catalogue::encode_request(&[1])?;
                     let command = oteryn_protocol_oteryn::ClientCommandView {
                         command_id: 1,
-                        command_type: 731,
+                        command_type: 734,
                         payload: &payload,
                     };
                     assert!(matches!(

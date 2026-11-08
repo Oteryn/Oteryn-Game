@@ -6,8 +6,8 @@ impl Outbox {
         result: &oteryn_session::GatedCommandResult,
     ) {
         match command.kind {
-            731 => self.analyser_catalogue_result(result),
-            732 => oteryn_client_ui::analyser::party::result(&mut lock(&self.0).analyser, result),
+            734 => self.analyser_catalogue_result(result),
+            735 => oteryn_client_ui::analyser::party::result(&mut lock(&self.0).analyser, result),
             _ => {}
         }
     }

@@ -1,10 +1,14 @@
 use super::*;
 
-pub(super) async fn authorize(
+pub(super) async fn access_token(
     client: &NativeLoginClient,
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
-) -> Result<(NativeTicket, String, Option<String>, String), GameplayEntryError> {
+    services: bool,
+) -> Result<oteryn_platform_client::native_login::AccessToken, GameplayEntryError> {
+    if cancellation.is_cancelled() {
+        return Err(rejected(PublicClass::RetryLogin));
+    }
     let mut entropy = [0_u8; 32];
     secure_random(&mut entropy).map_err(retry_login)?;
     let pkce = PkceMaterial::from_entropy(&entropy).map_err(retry_login)?;
@@ -19,9 +23,12 @@ pub(super) async fn authorize(
     .map_err(retry_login)?;
     let redirect = LoopbackRedirect::bind().await.map_err(retry_login)?;
     let redirect_uri = redirect.redirect_uri();
-    let url = client
-        .authorization_url(&redirect_uri, state.as_str(), pkce.challenge())
-        .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
+    let url = if services {
+        client.account_services_authorization_url(&redirect_uri, state.as_str(), pkce.challenge())
+    } else {
+        client.authorization_url(&redirect_uri, state.as_str(), pkce.challenge())
+    }
+    .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     if !(config.open_browser)(url.as_str()) {
         return Err(rejected(PublicClass::RetryLogin));
     }
@@ -30,7 +37,7 @@ pub(super) async fn authorize(
         .await_code(&flow, cancellation.clone())
         .await
         .map_err(retry_login)?;
-    let token = super::challenge::exchange(
+    super::challenge::exchange(
         client,
         config,
         code.expose().expose(),
@@ -38,7 +45,15 @@ pub(super) async fn authorize(
         &redirect_uri,
         cancellation.clone(),
     )
-    .await?;
+    .await
+}
+
+pub(super) async fn authorize(
+    client: &NativeLoginClient,
+    config: &NativeLoginConfig,
+    cancellation: CancellationToken,
+) -> Result<(NativeTicket, String, Option<String>, String), GameplayEntryError> {
+    let mut token = access_token(client, config, cancellation.clone(), false).await?;
     let platform = PlatformClientConfig::new(&config.platform_url)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     let directory_client = oteryn_platform_client::PlatformClient::new(platform)
@@ -84,6 +99,32 @@ pub(super) async fn authorize(
                 if !(config.open_browser)(&url) {
                     return Err(rejected(PublicClass::RetryLogin));
                 }
+            }
+            SelectionAction::AccountServices => {
+                let services = access_token(client, config, cancellation.clone(), true).await;
+                match services {
+                    Ok(services) => {
+                        crate::account_services::run(
+                            client,
+                            &services,
+                            config,
+                            cancellation.clone(),
+                        )
+                        .await?
+                    }
+                    Err(_) => {
+                        let mut view = crate::account_services::View::default();
+                        view.feedback = "Account services sign-in was not completed. Return to character selection to try again.".into();
+                        let _ = crate::account_services::ask(
+                            view,
+                            &config.account_services,
+                            cancellation.clone(),
+                        )
+                        .await?;
+                    }
+                }
+                // Visiting account services may outlive the normal token; acquire fresh game-only authority.
+                token = access_token(client, config, cancellation.clone(), false).await?;
             }
             SelectionAction::Refresh => {}
             SelectionAction::Cancel => return Err(rejected(PublicClass::RetryLogin)),

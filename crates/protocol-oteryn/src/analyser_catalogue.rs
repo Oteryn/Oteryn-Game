@@ -1,5 +1,5 @@
 //! Read-only names and currency identity for active-generation analyser item references.
-pub const COMMAND_TYPE_ANALYSER_ITEM_QUERY: u32 = 731;
+pub const COMMAND_TYPE_ANALYSER_ITEM_QUERY: u32 = 734;
 pub const MAX_ITEMS: usize = 16;
 pub const MAX_NAME_BYTES: usize = 120;
 pub const MAX_REPLY_BYTES: usize = 1 + MAX_ITEMS * (4 + 2 + MAX_NAME_BYTES + 8);

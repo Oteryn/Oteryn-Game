@@ -1,5 +1,5 @@
 //! Confirmed current-party accounting, valued with explicit client-supplied unit prices.
-pub const COMMAND_TYPE_ANALYSER_PARTY_QUERY: u32 = 732;
+pub const COMMAND_TYPE_ANALYSER_PARTY_QUERY: u32 = 735;
 pub const MAX_PRICES: usize = 2048;
 pub const MAX_MEMBERS: usize = 50;
 pub const MAX_BYTES: usize = 65536;

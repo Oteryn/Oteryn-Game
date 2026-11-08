@@ -1,6 +1,6 @@
 # Party accounting query
 
-Command 732 requires selected capabilities 10 and 42. Membership comes from the fenced durable party owner; the caller cannot supply member identities. All counters concern each member's current analyser connection interval. Retiring/replacing the connection resets its counters. Offline or unselected member measurements are explicitly unavailable. Counters are advisory and never move currency or items.
+Command 735 requires selected capabilities 10 and 42. Membership comes from the fenced durable party owner; the caller cannot supply member identities. All counters concern each member's current analyser connection interval. Retiring/replacing the connection resets its counters. Offline or unselected member measurements are explicitly unavailable. Counters are advisory and never move currency or items.
 
 ## Request
 

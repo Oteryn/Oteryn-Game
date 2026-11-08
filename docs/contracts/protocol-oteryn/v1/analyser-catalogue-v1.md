@@ -1,6 +1,6 @@
 # Analyser item metadata
 
-CLIENTGAP-ANALYTICS adds optional read-only command 731 under capability 10.
+CLIENTGAP-ANALYTICS adds optional read-only command 734 under capability 10.
 Existing fact and snapshot bytes are unchanged. The query has no persistent effect.
 The normal ingress capability, command-id and rate gates apply; the owner rechecks
 current actor, session, lease, connection and runtime scope under the runtime lock.

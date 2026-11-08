@@ -4,7 +4,7 @@
   "id": "0010-analyser-item-query",
   "status": "supported",
   "commands": [
-    731
+    734
   ],
   "direction": "client_to_server",
   "capability": 10,

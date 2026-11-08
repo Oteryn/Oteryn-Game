@@ -164,6 +164,7 @@ pub(super) struct Mailbox {
     pub(super) potion_durations: oteryn_client_ui::potion_durations::PotionDurationsPanel,
     pub(super) item_forge: oteryn_client_ui::item_forge::ItemForgePanel,
     pub(super) store: oteryn_client_ui::store::StorePanel,
+    pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
     pub(super) weapon_proficiency: oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,
 
@@ -376,9 +377,14 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        if let Some(launcher) = &mailbox.coin_shop {
+            launcher.end();
+        }
         mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
+        mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
@@ -390,6 +396,7 @@ impl Outbox {
         mailbox.stash_end();
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
+        mailbox.imbue_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -418,8 +425,13 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        if let Some(launcher) = &mailbox.coin_shop {
+            launcher.end();
+        }
         mailbox.arena.end();
         mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
+        mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
@@ -431,6 +443,7 @@ impl Outbox {
         mailbox.stash_end();
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
+        mailbox.imbue_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -532,7 +545,12 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        if let Some(launcher) = &mailbox.coin_shop {
+            launcher.end();
+        }
         mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
+        mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();

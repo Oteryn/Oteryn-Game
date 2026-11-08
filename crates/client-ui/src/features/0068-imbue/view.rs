@@ -1,1 +1,114 @@
-// Concern implementation is exported by the feature module.
+use super::ImbuePanel;
+
+#[must_use]
+pub fn slot_label(panel: &ImbuePanel, slot: u8) -> String {
+    let Some(window) = &panel.window else {
+        return String::new();
+    };
+    if slot >= window.slot_count {
+        return String::new();
+    }
+    window
+        .applied
+        .iter()
+        .find(|applied| applied.slot == slot)
+        .map_or_else(
+            || format!("Slot {}: empty", slot + 1),
+            |applied| {
+                format!(
+                    "Slot {}: family {}, tier {}, {} seconds left",
+                    slot + 1,
+                    applied.family,
+                    applied.tier,
+                    applied.remaining_ms / 1000
+                )
+            },
+        )
+}
+
+#[must_use]
+pub fn selected_detail_text(panel: &ImbuePanel) -> String {
+    let Some(window) = &panel.window else {
+        return "Select an item and refresh its shrine state".into();
+    };
+    let mut text = format!(
+        "Selected {}\nClear cost: {} gold\n",
+        slot_label(panel, panel.slot),
+        window.clear_gold
+    );
+    if let Some(offer) = window.offers.get(panel.offer) {
+        text.push_str(&format!("Selected offer: family {}, tier {}\nApply cost: {} gold{}\nSuccess chance: 100% (no protection charge)\n", offer.family, offer.tier, offer.gold, if offer.requires_premium { " (premium required)" } else { "" }));
+        if let Some(quote) = panel
+            .details
+            .as_ref()
+            .filter(|details| Some(details.item) == panel.item)
+            .and_then(|details| {
+                details
+                    .quotes
+                    .iter()
+                    .find(|quote| quote.family == offer.family && quote.tier == offer.tier)
+            })
+        {
+            if quote.recipe_available {
+                text.push_str("Required materials (main backpack):\n");
+                for material in &quote.materials {
+                    text.push_str(&format!(
+                        "  {} × {}\n",
+                        material.quantity, material.definition_key
+                    ));
+                }
+            } else {
+                text.push_str("No admitted recipe is available for this offer.\n");
+            }
+        } else if panel.details_pending.is_some() {
+            text.push_str("Loading material requirements…\n");
+        } else if let Some(message) = panel.details_feedback {
+            text.push_str(message);
+            text.push('\n');
+        } else {
+            text.push_str("Material details are unavailable in this session.\n");
+        }
+    }
+    text
+}
+
+#[must_use]
+pub fn panel_text(panel: &ImbuePanel) -> String {
+    let mut text = if let Some(window) = &panel.window {
+        format!(
+            "{} slots; clear cost: {} gold\n",
+            window.slot_count, window.clear_gold
+        )
+    } else {
+        "No imbuement state loaded\n".to_owned()
+    };
+    if let Some(window) = &panel.window {
+        for applied in &window.applied {
+            text.push_str(&format!(
+                "Slot {}: family {}, tier {}, {} ms remaining\n",
+                applied.slot, applied.family, applied.tier, applied.remaining_ms
+            ));
+        }
+        for (index, offer) in window.offers.iter().enumerate() {
+            text.push_str(&format!(
+                "Offer {index}: family {}, tier {}, {} gold{}\n",
+                offer.family,
+                offer.tier,
+                offer.gold,
+                if offer.requires_premium {
+                    " (premium)"
+                } else {
+                    ""
+                }
+            ));
+        }
+    }
+    text.push_str(&selected_detail_text(panel));
+    if panel.pending {
+        text.push_str("Request pending\n");
+    }
+    if let Some(feedback) = panel.feedback {
+        text.push_str(feedback);
+    }
+    text
+}

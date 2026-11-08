@@ -193,7 +193,7 @@ fn analyser_metadata_reply_is_matched_and_coin_prices_cannot_duplicate_gold()
     assert!(super::set_item_price(&mut panel, "9", "25"));
     assert_eq!(panel.loot_value(), 100); // Unknown identities never count as non-currency.
     let command = catalogue_request(&mut panel).ok_or("query")?;
-    assert_eq!((command.capability, command.kind), (10, 731));
+    assert_eq!((command.capability, command.kind), (10, 734));
     assert!(catalogue_request(&mut panel).is_none());
     let rows = vec![
         ItemInfo {
@@ -491,7 +491,7 @@ fn party_prices_changed_while_pending_never_publish_stale_settlements() -> Resul
         ..Default::default()
     };
     let command = super::party::request(&mut panel).ok_or("request")?;
-    assert_eq!((command.capability, command.kind), (10, 732));
+    assert_eq!((command.capability, command.kind), (10, 735));
     assert!(super::party::request(&mut panel).is_none());
     assert!(super::set_item_price(&mut panel, "7", "100"));
     let reply = oteryn_client_runtime::raw_feature::GatedCommandResult {

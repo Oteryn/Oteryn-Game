@@ -70,7 +70,7 @@ fn analyser_item_query_and_reply_use_the_production_command_mailbox()
     let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
         return Err("wrong command".into());
     };
-    assert_eq!((command.capability, command.kind), (10, 731));
+    assert_eq!((command.capability, command.kind), (10, 734));
     assert_eq!(
         oteryn_session::analyser_catalogue::decode_request(&command.payload)?,
         vec![1]
@@ -127,7 +127,7 @@ fn merged_analyser_controls_keep_selectors_prices_resolve_and_reset_distinct()
     assert_eq!(mailbox.analyser.supply_prices.get(&1), Some(&7));
     controls(&mut mailbox, &link.commands, Tool::ALL.len() + 3, vec![]);
     assert!(
-        matches!(incoming.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if command.kind == 731)
+        matches!(incoming.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if command.kind == 734)
     );
     controls(&mut mailbox, &link.commands, 7, vec![]);
     assert_eq!(mailbox.analyser.tool, Tool::Impact);
@@ -210,7 +210,7 @@ fn analyser_party_query_and_confirmed_table_use_production_mailbox()
     let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
         return Err("party query".into());
     };
-    assert_eq!((command.capability, command.kind), (10, 732));
+    assert_eq!((command.capability, command.kind), (10, 735));
     assert!(decode_request(&command.payload)?.is_empty());
     let result = oteryn_session::GatedCommandResult {
         command_id: 1,

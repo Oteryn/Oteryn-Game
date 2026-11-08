@@ -49,7 +49,7 @@ fn party_accounting_route_requires_both_capabilities_and_valid_prices()
                         crate::gameplay_transport::party_command::SessionPartyView::default();
                     let command = oteryn_protocol_oteryn::ClientCommandView {
                         command_id: 1,
-                        command_type: 732,
+                        command_type: 735,
                         payload: &[0, 0],
                     };
                     let offered = [

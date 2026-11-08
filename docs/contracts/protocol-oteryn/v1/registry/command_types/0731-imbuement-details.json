@@ -1,0 +1,10 @@
+{
+  "id": 731,
+  "name": "IMBUEMENT_DETAILS",
+  "owner_decision": "CLIENTGAP-SYSTEMS L159",
+  "capability": 447,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/imbuement-details-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/imbuement-details-v1.md#reply",
+  "max_payload_bytes": 11,
+  "max_result_payload_bytes": 32768
+}

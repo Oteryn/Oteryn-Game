@@ -36,7 +36,12 @@ pub(in crate::play) fn purchase(
 }
 
 // Game identities replace Crystal's modal selection of an owned Hireling.
-pub(in crate::play) fn customization(panel: &mut StorePanel, name: &str, sex: &str, identity: &str) {
+pub(in crate::play) fn customization(
+    panel: &mut StorePanel,
+    name: &str,
+    sex: &str,
+    identity: &str,
+) {
     panel.hireling_name = name.into();
     panel.hireling_sex = sex.parse().unwrap_or(0);
     let hex: String = identity.chars().filter(|c| *c != '-').collect();
@@ -148,6 +153,7 @@ mod windows {
         let weak = std::sync::Arc::downgrade(&link.mailbox);
         let rollback = weak.clone();
         let commands = link.commands.clone();
+        let coin_shop = lock(&link.mailbox).coin_shop.clone();
         if std::thread::Builder::new()
             .name("store-panel".into())
             .spawn(move || {
@@ -192,6 +198,7 @@ mod windows {
                         let buy =
                             control(hwnd, "BUTTON", "Purchase selected offer…", 4, 235, 35, 0);
                         let next = control(hwnd, "BUTTON", "Next catalogue page", 5, 275, 30, 0);
+                        let get_coins = control(hwnd, "BUTTON", "Get coins (sandbox)", 9, 550, 30, 0);
                         control(hwnd, "STATIC", "Hireling name / sex (1 male, 2 female) / identity (UUID)", 0, 310, 35, 0);
                         let name = control(hwnd, "EDIT", "", 6, 350, 25, WS_BORDER);
                         let sex = control(hwnd, "EDIT", "1", 7, 380, 25, WS_BORDER);
@@ -215,6 +222,7 @@ mod windows {
                                 let panel = &mut mailbox.store;
                                 let command = {
                                     match action {
+                                        9 => { if let Some(launcher) = &coin_shop { launcher.start(); } None }
                                         2 | 5 if !panel.pending => {
                                             let mut text = [0u16; 256];
                                             let len = GetWindowTextW(
@@ -313,6 +321,7 @@ mod windows {
                                 displayed = panel.catalogue.clone();
                             }
                             EnableWindow(next, i32::from(panel.selected && !panel.pending && panel.catalogue.as_ref().is_some_and(|p| !p.next_page_cursor.is_empty())));
+                            EnableWindow(get_coins, i32::from(coin_shop.as_ref().is_some_and(|launcher|launcher.can_start())));
                             EnableWindow(refresh, i32::from(panel.selected && !panel.pending));
                             EnableWindow(
                                 buy,
