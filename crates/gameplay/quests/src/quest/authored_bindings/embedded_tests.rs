@@ -30,7 +30,7 @@ fn imported_chosen_recipe_admission_preserves_original_source_holds() -> Result<
     let quest = "oteryn:quest.in_service_of_yalahar_quest";
     bindings.quests[0].quest = quest.into();
     for stage in &mut bindings.quests[0].stages {
-        let super::super::Trigger::NpcDialogue { callback } = &mut stage.trigger else {
+        let super::super::Trigger::NpcDialogue { callback, .. } = &mut stage.trigger else {
             return Err("expected NPC dialogue fixture".into());
         };
         callback.quest = quest.into();
@@ -84,5 +84,84 @@ fn imported_chosen_recipe_admission_preserves_original_source_holds() -> Result<
             "imported admission accepted mutation {mutation}"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn talk_stage_callback_group_is_closed_and_part_of_the_catalogue() -> Result<(), String> {
+    let original: Value = serde_json::from_str(include_str!("fixtures/talk.json"))
+        .map_err(|error| error.to_string())?;
+    let mut document = original.clone();
+    let mut alternative = document["quests"][0]["stages"][0]["trigger"]["callback"].clone();
+    alternative["key"] = "oteryn:quest-reward/authored-talk-alternative".into();
+    alternative["npc"] = "oteryn:npc.palimuth".into();
+    document["quests"][0]["stages"][0]["trigger"]["alternatives"] =
+        serde_json::json!([alternative]);
+    let bindings = Bindings::parse(document.to_string().as_bytes())?;
+    assert_eq!(bindings.reward_callbacks().count(), 2);
+    let base =
+        crate::quest::QuestStateCatalogue::empty("talk-group-test").ok_or("content revision")?;
+    let attached = bindings.attach(&base)?;
+    assert!(
+        attached
+            .transition("oteryn:quest-reward/authored-talk-alternative")
+            .is_some()
+    );
+    let before = Bindings::parse(original.to_string().as_bytes())?.attach(&base)?;
+    assert_ne!(
+        attached.definition_hash(&bindings.quests[0].quest),
+        before.definition_hash(&bindings.quests[0].quest)
+    );
+    let mut duplicate = document.clone();
+    duplicate["quests"][0]["stages"][0]["trigger"]["alternatives"][0]["key"] =
+        document["quests"][0]["stages"][0]["trigger"]["callback"]["key"].clone();
+    assert!(Bindings::parse(duplicate.to_string().as_bytes()).is_err());
+    let mut foreign = document;
+    foreign["quests"][0]["stages"][0]["trigger"]["alternatives"][0]["storage"][0]["track"] =
+        "oteryn:quest-progress/foreign".into();
+    assert!(Bindings::parse(foreign.to_string().as_bytes()).is_err());
+    Ok(())
+}
+
+#[test]
+fn imported_talk_reuses_owned_bounded_state_operations() -> Result<(), String> {
+    let mut document: Value = serde_json::from_str(include_str!("fixtures/talk.json"))
+        .map_err(|error| error.to_string())?;
+    let operation = serde_json::json!({
+        "track":"oteryn:quest-progress/authored-kills/count",
+        "from":{"kind":"between","minimum":0,"maximum":2},
+        "effect":{"kind":"add","value":1}
+    });
+    document["quests"][0]["stages"][0]["trigger"]["callback"]["state_ops"] =
+        serde_json::json!([operation]);
+    let bindings = Bindings::parse(document.to_string().as_bytes())?;
+    let base =
+        crate::quest::QuestStateCatalogue::empty("talk-state-ops").ok_or("content revision")?;
+    let catalogue = bindings.attach(&base)?;
+    let callback = bindings.reward_callbacks().next().ok_or("callback")?;
+    let transition = catalogue.transition(&callback.key).ok_or("transition")?;
+    let tracks = std::collections::BTreeMap::from([
+        ("oteryn:quest-progress/authored-kills/phase".into(), 0),
+        ("oteryn:quest-progress/authored-kills/count".into(), 2),
+    ]);
+    let changes = catalogue
+        .evaluate(transition, &tracks, 0)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(
+        changes
+            .iter()
+            .find(|change| change.track.ends_with("/count"))
+            .ok_or("counter")?
+            .after,
+        3
+    );
+    let mut foreign = document.clone();
+    foreign["quests"][0]["stages"][0]["trigger"]["callback"]["state_ops"][0]["track"] =
+        "oteryn:quest-progress/foreign".into();
+    assert!(Bindings::parse(foreign.to_string().as_bytes()).is_err());
+    let mut overflow = document;
+    overflow["quests"][0]["stages"][0]["trigger"]["callback"]["state_ops"][0]["from"]["maximum"] =
+        3.into();
+    assert!(Bindings::parse(overflow.to_string().as_bytes()).is_err());
     Ok(())
 }

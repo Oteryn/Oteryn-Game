@@ -477,3 +477,53 @@ fn translation_stamp_is_scoped_to_the_exact_actor_and_current_owner() {
     );
     assert_eq!(carrier.slots, before);
 }
+
+#[test]
+fn qn6_adjacent_commit_rejects_nonsteps_and_stale_diagonal_snapshots() -> Result<(), CarrierError> {
+    let mut actor = super::fixtures::MovementActorFixture::new(
+        MovementLocalPosition {
+            x: 5,
+            y: 5,
+            floor: -1,
+        },
+        false,
+    )?;
+    let before = actor.current_position()?;
+    for next in [
+        MovementLocalPosition {
+            x: 5,
+            y: 5,
+            floor: -1,
+        },
+        MovementLocalPosition {
+            x: 7,
+            y: 6,
+            floor: -1,
+        },
+        MovementLocalPosition {
+            x: 6,
+            y: 6,
+            floor: 0,
+        },
+    ] {
+        assert_eq!(
+            actor.borrow_position().commit_adjacent(before, next),
+            Err(CarrierError::MovementNonCardinal)
+        );
+        assert_eq!(actor.current_position()?, before);
+    }
+    let next = MovementLocalPosition {
+        x: 6,
+        y: 4,
+        floor: -1,
+    };
+    let committed = actor.borrow_position().commit_adjacent(before, next)?;
+    assert_eq!(committed.position(), next);
+    assert_eq!(committed.revision(), before.revision() + 1);
+    assert_eq!(
+        actor.borrow_position().commit_adjacent(before, next),
+        Err(CarrierError::PositionSnapshotMismatch)
+    );
+    assert_eq!(actor.current_position()?, committed);
+    Ok(())
+}

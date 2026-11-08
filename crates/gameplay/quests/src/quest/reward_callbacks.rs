@@ -9,6 +9,8 @@ use std::collections::{BTreeMap, BTreeSet};
 mod colours_peer;
 #[cfg(test)]
 mod peer_tests;
+#[cfg(test)]
+mod recipe_tests;
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
@@ -155,6 +157,9 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    /// Exact second carried operand; its selected instance must accompany the ingress.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_target: Option<String>,
     /// Read-only condition on the selected other live player, checked atomically.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub peer_requires: Option<TrackRequirement>,
@@ -225,6 +230,30 @@ impl OutfitReward {
     }
 }
 impl RewardCallback {
+    fn valid_carried_inputs(&self) -> bool {
+        let selected = |key: &str| {
+            self.take
+                .iter()
+                .any(|input| input.item == key && input.count == 1 && input.fluid_subtype.is_none())
+        };
+        match (&self.carried_item, &self.carried_target) {
+            (Some(source), Some(target)) => {
+                source != target
+                    && selected(source)
+                    && selected(target)
+                    && self.give.is_some()
+                    && self.peer_requires.is_none()
+                    && self.creature_target.is_none()
+            }
+            (None, Some(_)) => false,
+            (Some(source), None) => {
+                matches!(self.take.as_slice(), [input]
+                if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
+                    && (self.give.is_none() || self.creature_target.is_some())
+            }
+            (None, None) => true,
+        }
+    }
     pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
         self.outfit.iter().chain(&self.outfits)
     }
@@ -282,6 +311,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
 ];
@@ -479,17 +509,9 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
-            || c.carried_item.as_ref().is_some_and(|item| {
-                c.take
-                    != [ItemAmount {
-                        item: item.clone(),
-                        count: 1,
-                        fluid_subtype: None,
-                    }]
-                    || (c.give.is_some() && c.creature_target.is_none())
-                    || c.fee.is_some()
-                    || !c.requires_actor_conditions.is_empty()
-            })
+            || !c.valid_carried_inputs()
+            || c.carried_item.is_some()
+                && (c.fee.is_some() || !c.requires_actor_conditions.is_empty())
             || c.forbids_outfits.len() > 8
             || c.forbids_outfits.iter().collect::<BTreeSet<_>>().len() != c.forbids_outfits.len()
             || c.forbids_outfits
@@ -634,6 +656,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
+        && callback.carried_target.is_none()
     {
         return Ok(None);
     }
@@ -788,13 +811,22 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                 from: QuestComparison::Between(state.minimum, state.maximum),
                 effect: if state.preserve {
                     QuestEffectKind::Add(0)
-                } else if let Some(binding) = binding.filter(|_| Some(index) == bound_effect) {
-                    QuestEffectKind::SetWithBinding {
-                        value: state.set,
-                        binding,
-                    }
                 } else {
-                    QuestEffectKind::Set(state.set)
+                    match (
+                        state.at_least,
+                        binding.filter(|_| Some(index) == bound_effect),
+                    ) {
+                        (true, Some(binding)) => QuestEffectKind::RaiseToWithBinding {
+                            value: state.set,
+                            binding,
+                        },
+                        (false, Some(binding)) => QuestEffectKind::SetWithBinding {
+                            value: state.set,
+                            binding,
+                        },
+                        (true, None) => QuestEffectKind::RaiseTo(state.set),
+                        (false, None) => QuestEffectKind::Set(state.set),
+                    }
                 },
             })
             .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
@@ -1251,7 +1283,8 @@ mod tests {
             ),
             (
                 "oteryn:quest.the_ice_islands_quest",
-                "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
+                // M47 adds the canonical four-track native mead transition.
+                "ce91fb477a2477dfa81674b40bb86149ee17e775b0d1ee623bfac428ae3e7fe4",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
