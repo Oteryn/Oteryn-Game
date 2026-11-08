@@ -119,9 +119,11 @@ fn duration_onto(
     source: &impl GroundSpeedSource,
     onto: MovementLocalPosition,
     speed: Option<u16>,
+    direction: CardinalStep,
 ) -> Result<Duration, MovementError> {
     speed
         .and_then(|speed| player_step_duration(source, cell(onto), speed))
+        .and_then(|duration| duration.checked_mul(if direction.is_diagonal() { 3 } else { 1 }))
         .ok_or(MovementError::NotQualified)
 }
 
@@ -321,7 +323,7 @@ fn step_in_channel_inner(
             if blocking.blocks(cell(position)) {
                 return failure(MovementError::Blocked);
             }
-            let duration = duration_onto(&proof, position, speed)?;
+            let duration = duration_onto(&proof, position, speed, direction)?;
             return runtime
                 .commit_source_step(proof)
                 .map(|snapshot| (snapshot, duration))
@@ -384,7 +386,7 @@ fn step_in_channel_inner(
         source_step.is_some(),
     );
     let pos = expected.position();
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     let Some(x) = pos.x.checked_add(dx) else {
         return failure(MovementError::CoordinateOverflow);
     };
@@ -400,8 +402,13 @@ fn step_in_channel_inner(
         return failure(MovementError::Blocked);
     }
     let duration = match &source_step {
-        Some(proof) => duration_onto(proof, actual_destination, speed)?,
-        None => duration_onto(&EngineeringGroundSpeed, actual_destination, speed)?,
+        Some(proof) => duration_onto(proof, actual_destination, speed, direction)?,
+        None => duration_onto(
+            &EngineeringGroundSpeed,
+            actual_destination,
+            speed,
+            direction,
+        )?,
     };
     let selection = MovementEngineeringSelection {
         owner_context: runtime.pinned_movement_context(),
@@ -457,7 +464,7 @@ fn bundle_step(
     if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
-    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
     runtime
         .commit_source_step(proof)
         .map(|snapshot| (snapshot, duration))
@@ -498,14 +505,14 @@ fn baseline_step(
         if blocking.blocks(cell(p)) {
             return Err(MovementError::Blocked);
         }
-        let duration = duration_onto(&proof, p, speed)?;
+        let duration = duration_onto(&proof, p, speed, direction)?;
         return runtime
             .commit_source_step(proof)
             .map(|snapshot| (snapshot, duration))
             .map_err(MovementError::Actor);
     }
     let pos = expected.position();
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     let x = pos
         .x
         .checked_add(dx)
@@ -522,7 +529,7 @@ fn baseline_step(
     if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
-    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
     let selection = MovementEngineeringSelection {
         owner_context,
         content_scope: scope,

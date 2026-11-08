@@ -4,6 +4,7 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
+mod conditional_cells;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod effects;
@@ -423,6 +424,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(content) = self.states.quest_callbacks.fixture.get() {
             return content;
         }
+        if let Some(callbacks) = self
+            .quest_catalogue
+            .as_deref()
+            .and_then(|c| c.authored_world_callbacks())
+        {
+            return callbacks;
+        }
         callbacks()
     }
 
@@ -735,6 +743,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
                     && matches(map, c, resolved.placement_key)
+                    && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
         let [callback] = selected.as_slice() else {

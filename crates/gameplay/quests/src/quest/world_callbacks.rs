@@ -27,11 +27,13 @@ pub enum Trigger {
     StepOut,
 }
 
+#[cfg(test)]
+mod admission_tests;
 mod clock;
 mod counterparts;
 mod effects;
-mod imported_explore;
 mod ground_stack;
+mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
@@ -160,9 +162,23 @@ pub struct WorldRequirement {
     pub ground_stack: Option<Vec<GroundStackEntry>>,
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Admission {
+    #[serde(default)]
+    pub regular_blessings: bool,
+    #[serde(default)]
+    pub promotion: bool,
+    #[serde(default)]
+    pub premium: bool,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
+    /// Live Character predicates, evaluated by the fenced receipt owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission: Option<Admission>,
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
@@ -245,6 +261,14 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
+/// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    match catalogue.authored_world_callbacks() {
+        Some(callbacks) => Ok(callbacks.to_vec()),
+        None => load(),
+    }
+}
+
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
@@ -268,7 +292,11 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
+    ))?);
     callbacks.extend(super::carried_step::callbacks());
+    callbacks.extend(super::children_puzzle::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
         return Err("callback bounds including native source callbacks".into());
@@ -294,6 +322,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     Ok(callbacks)
 }
 
+pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
+}
+
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeSet::new();
@@ -301,8 +333,12 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
         }
-        let selector = serde_json::to_vec(&(callback.trigger, &callback.selector))
-            .map_err(|error| error.to_string())?;
+        let selector = serde_json::to_vec(&(
+            callback.trigger,
+            &callback.selector,
+            super::children_puzzle::binding(&callback.key).map(|(_, solved)| solved),
+        ))
+        .map_err(|error| error.to_string())?;
         if !selectors.insert(selector) {
             return Err("duplicate callback selector across registries".into());
         }
@@ -441,6 +477,13 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .minimum_level
                 .is_some_and(|level| level == 0 || !callback.has_personal_state())
+            || callback.admission.as_ref().is_some_and(|a| {
+                (!a.regular_blessings && !a.promotion && !a.premium)
+                    || callback.actor_kind != ActorKind::Player
+                    || !callback.has_personal_state()
+                    || callback.reversible
+                    || callback.opening_only
+            })
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -686,6 +729,9 @@ mod clock_tests;
 
 #[cfg(test)]
 mod literal_text_tests;
+
+#[cfg(test)]
+mod ground_stack_tests;
 
 #[cfg(test)]
 mod cycle_tests;
@@ -1636,35 +1682,22 @@ mod qn1_lifecycle_tests {
 }
 
 #[cfg(test)]
-mod srv7_mount_reward_tests {
+mod qn1_cells_tests {
     #[test]
-    fn srv7_world_mount_reward_requires_once_only_progress() -> Result<(), String> {
-        let mut value: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../../content/quests/shared-outfit-callbacks.json"
-        ))
-        .map_err(|e| e.to_string())?;
-        let callback = &mut value["callbacks"][0];
-        callback["effects"]
-            .as_object_mut()
-            .ok_or("effects")?
-            .remove("outfit_reward");
-        callback["requires_world_admission"] = true.into();
-        callback["effects"]["mount_reward"] =
-            serde_json::json!({"mount":"oteryn:content.mount.reliable_ram"});
-        callback["sources"] = serde_json::json!([
-            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/actions_reliable_ram.lua:20-50"
-        ]);
-        super::parse(&value.to_string())?;
-        for storage in value["callbacks"][0]["storage"]
-            .as_array_mut()
-            .ok_or("storage")?
-        {
-            storage["set"] = storage["minimum"].clone();
+    fn children_levers_bind_both_completion_branches() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let levers: Vec<_> = callbacks
+            .iter()
+            .filter(|c| c.key.contains("qn1-children-lever-"))
+            .collect();
+        assert_eq!(levers.len(), 10);
+        for callback in levers {
+            super::parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string())?;
+            assert_eq!(callback.lever, Some([9125, 9126]));
+            assert_eq!(callback.effects.reset_after_ms, Some(5000));
+            assert_eq!(callback.storage[0].minimum, 14);
+            assert_eq!(callback.storage[0].maximum, 14);
         }
-        assert!(
-            super::parse(&value.to_string()).is_err(),
-            "repeatable mount grants must fail closed"
-        );
         Ok(())
     }
 }
