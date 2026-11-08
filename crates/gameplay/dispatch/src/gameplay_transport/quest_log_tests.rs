@@ -691,6 +691,36 @@ mod connection {
     }
 
     #[test]
+    fn tracker_list_only_has_a_bounded_reply_and_no_domain_delta() -> TestResult {
+        run(async {
+            let authority = QuestAuthority::new(Some(listed()));
+            let (end, frames) = serve(
+                &authority,
+                session(selected(&[16]))?,
+                &[query(1, &QuestLogQuery::ListOnly)?],
+            )
+            .await?;
+            let payload = oteryn_protocol_oteryn::quest_log::encode_quest_log(&list_view())
+                .map_err(|e| format!("{e:?}"))?;
+            assert!(
+                payload.len()
+                    <= oteryn_protocol_oteryn::quest_log::MAX_QUEST_LOG_QUERY_RESULT_BYTES
+            );
+            let mut expected = snapshot(Some((1, &QuestLog::default())));
+            expected.push(encode_command_result(
+                1,
+                1,
+                1,
+                CommandStatus::Accepted,
+                &payload,
+            )?);
+            assert_eq!(frames, expected);
+            assert_eq!(ended(end)?.quest_log.revision, 1);
+            Ok(())
+        })
+    }
+
+    #[test]
     fn domain_16_and_command_22_need_capability_16() -> TestResult {
         run(async {
             // Without capability 16: no domain 16, and command 22 is refused before any read.
@@ -885,4 +915,43 @@ mod connection {
             Ok(())
         })
     }
+}
+
+#[test]
+fn tracker_list_only_does_not_change_the_visible_line_or_continuity() {
+    let facts = Facts::with(&[(RATS_START, 1), (RATS_STAGE, 1)]);
+    let mut continuity = QuestLogContinuity::FRESH;
+    let (mut state, _) =
+        QuestLogState::snapshot(&mut continuity, changed(facts.clone(), 1)).expect("snapshot");
+    state
+        .query(
+            &mut continuity,
+            &QuestLogQuery::Quest {
+                quest_index: RATS_INDEX,
+            },
+            changed(facts.clone(), 1),
+        )
+        .expect("query")
+        .expect("domain");
+    let before = continuity;
+    let sent = state.sent.clone();
+    let view = state.view;
+    let version = state.version;
+    let bytes = QuestLogState::list_only(changed(facts.clone(), 2)).expect("list");
+    let log = decode_quest_log(&bytes).expect("valid");
+    assert!(
+        matches!(log.view, Some(QuestLogView::List(ref list)) if list.iter().any(|q| q.quest_index == RATS_INDEX))
+    );
+    assert!(log.tracked.is_empty());
+    assert_eq!(continuity, before);
+    assert_eq!(state.sent, sent);
+    assert_eq!(state.view, view);
+    assert_eq!(state.version, version);
+    assert!(
+        state
+            .refresh(&mut continuity, changed(facts, 2))
+            .expect("refresh")
+            .is_none()
+    );
+    assert!(QuestLogState::list_only(QuestLogObservation::Unavailable).is_none());
 }

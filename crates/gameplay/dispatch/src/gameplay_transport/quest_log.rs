@@ -11,7 +11,8 @@
 //!   closes at every reconnect and transfer, and the last payload sent.
 //! - **Query.** Over the rate, malformed, with the copy not loaded, or naming a quest that is not
 //!   listed, a query is `REJECTED` with an empty payload and changes nothing. Otherwise it is
-//!   `ACCEPTED` with an empty payload and the whole domain follows as a delta.
+//!   `ACCEPTED` with an empty payload and the whole domain follows as a delta. ListOnly instead
+//!   returns a bounded list-only result without changing the view, tracked set or revision.
 //! - **Refresh.** Every [`QUEST_LOG_REFRESH`] the connection asks the owner for a copy changed
 //!   since the one it projected; a committed receipt that changes what the domain shows sends a
 //!   delta.
@@ -233,6 +234,14 @@ fn advance(revision: &mut u64) -> Result<u64, QuestLogFault> {
 }
 
 impl QuestLogState {
+    /// Independent tracker polling must not steal the visible quest line.
+    pub fn list_only(observation: QuestLogObservation) -> Option<Vec<u8>> {
+        let QuestLogObservation::Changed(source) = observation else {
+            return None;
+        };
+        encode_quest_log(&project(Some(&source), Some(RequestedView::List), &[])).ok()
+    }
+
     /// The domain 16 snapshot of a new connection: no view, the carried tracked quests, above
     /// every revision the session has seen.
     pub fn snapshot(
@@ -278,6 +287,7 @@ impl QuestLogState {
         let content = &*source.content.0;
         let (view, tracked) = match query {
             QuestLogQuery::List => (Some(RequestedView::List), continuity.tracked),
+            QuestLogQuery::ListOnly => return None,
             QuestLogQuery::Quest { quest_index } => {
                 if !content.is_listed(&*source.copy, *quest_index) {
                     return None;
