@@ -1014,7 +1014,7 @@ impl DurabilityRoot {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
-                        && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
+                        && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context, (&recovery, &node)).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
