@@ -96,7 +96,7 @@ pub struct WorldItemTraining {
 
 impl DurabilityRoot {
     /// One source-owned due pass; no caller event, caster cost or synthetic command.
-    /// The live Channel owner must remain held around this await. A successful
+    /// The live runtime scope owner must remain held around this await. A successful
     /// return proves the actual SQL COMMIT; an unknown COMMIT is reconciled by
     /// the same immutable source schedule on the next pass.
     pub async fn drain_spell_item_deadlines(
@@ -124,9 +124,12 @@ impl DurabilityRoot {
                         )
                         .await?;
                         if authority.channel_bytes().is_none() {
-                            // The current physical Item schedule namespace is Channel-owned.
-                            // Never run an Instance's due pass against its origin Channel.
-                            return Ok(0);
+                            // Crystal 201189f data/items/items.xml:73328-73347:
+                            // the Primal corpse has the same absolute source chain
+                            // inside its exact Instance, never its origin Channel.
+                            return super::spell_item_temporal::drain_due_field_chains_in_transaction(
+                                &mut tx, &authority, 500,
+                            ).await;
                         }
                         let restarted =
                             super::field_removal::retire_restarted_fields(&mut tx, &authority, 500)

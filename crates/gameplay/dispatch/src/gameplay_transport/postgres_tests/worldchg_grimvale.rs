@@ -31,6 +31,10 @@ fn worldchg_grimvale_native_entry_requires_current_moon_without_quest_writes() -
 }
 
 fn scenario() -> TestResult {
+    scenario_with_bindings(false)
+}
+
+pub(super) fn scenario_with_bindings(prove_bindings: bool) -> TestResult {
     // Fixture state is the real encounter's already-open source portal. This does not
     // assert that a full moon fires Feroxa or fabricate the donor's five-percent draw.
     let callback: Callback = serde_json::from_value(serde_json::json!({
@@ -253,6 +257,9 @@ fn scenario() -> TestResult {
             .await?
             .ok_or("active day")?;
         assert!(active.grimvale_full_moon);
+        if prove_bindings {
+            super::engworldchg::assert_binding_lifecycle(&h, world_id, 1).await?;
+        }
         owner.reset_epoch = 1;
         super::quest_world_callbacks::wire(
             &owner,
@@ -370,6 +377,16 @@ fn scenario() -> TestResult {
         assert_eq!(registered.selector, callback.selector);
         assert_eq!(registered.teleport, callback.teleport);
         assert!(registered.storage.is_empty());
+        if prove_bindings {
+            super::engworldchg::assert_native_quest_transition(
+                &h,
+                &owner,
+                admitted.game_session_id,
+                "grimvale",
+                "oteryn:quest.grimvale_mini_world_change",
+            )
+            .await?;
+        }
         drop(owner);
         drop(authority);
         drop(seal);
