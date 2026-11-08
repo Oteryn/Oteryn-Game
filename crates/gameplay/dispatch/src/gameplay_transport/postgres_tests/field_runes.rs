@@ -850,6 +850,10 @@ async fn field_scenario_inner(
             .map_err(debug)?;
     }
     let mut owner = dependencies.owner(&harness, &authority);
+    // Equipped scenarios explicitly advance residual evaluation to application+11s.
+    // Keep ambient connection turns at their simulation instant until then: SQL
+    // latency must not inject a real nine-second fire pulse into replay checks.
+    let _simulation_clock = equipped(scenario).then(|| owner.freeze_owner_clock_for_test());
     owner.emit = |_, line| {
         eprintln!(
             "FIELD-RUNES owner module={} event={} code={:?}",
@@ -2865,7 +2869,7 @@ async fn drive_player_field(
             assert_eq!(
                 player_health(owner, target, session).await?,
                 original - initial_damage,
-                "the actual player entry owner enforces protection and World policy; replay does no extra damage"
+                "scenario={scenario:?} output={output} step={id} replay={replay}: the actual player entry owner enforces protection and World policy; replay does no extra damage"
             );
         }
         let harm:(i64,i64)=sqlx::query_as("SELECT count(*),COALESCE(sum(damage),0)::bigint FROM game_character_pvp_harm WHERE octet_length(field_occurrence)=32").fetch_one(&harness.pool).await?;

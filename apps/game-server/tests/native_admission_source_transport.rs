@@ -404,6 +404,12 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::PublishCharacterProfileV1
                     | Operation::PublishWorldOnlineV1
                     | Operation::PublishWorldTotalsV1
+                    | Operation::PublishCharacterDeathsV2
+                    | Operation::PublishGuildV2
+                    | Operation::PublishHouseV2
+                    | Operation::PublishCharacterOnlineSessionV2
+                    | Operation::PublishWorldDailyKillsV2
+                    | Operation::PublishPublicProjectionWatermarkV2
                     | Operation::PublishPublicProjectionWatermarkV1
                     | Operation::ListPendingBazaarCommandsV1
                     | Operation::ReadBazaarCommandIntentV1
@@ -485,6 +491,12 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::PublishCharacterProfileV1
                 | Operation::PublishWorldOnlineV1
                 | Operation::PublishWorldTotalsV1
+                | Operation::PublishCharacterDeathsV2
+                | Operation::PublishGuildV2
+                | Operation::PublishHouseV2
+                | Operation::PublishCharacterOnlineSessionV2
+                | Operation::PublishWorldDailyKillsV2
+                | Operation::PublishPublicProjectionWatermarkV2
                 | Operation::PublishPublicProjectionWatermarkV1
                 | Operation::ListPendingBazaarCommandsV1
                 | Operation::ReadBazaarCommandIntentV1
