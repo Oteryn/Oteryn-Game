@@ -111,7 +111,6 @@ pub(in crate::play) use window::open_window;
 #[path = "native_window.rs"]
 mod window;
 
-
 #[cfg(windows)]
 #[path = "view/controls.rs"]
 mod controls;

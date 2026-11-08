@@ -256,7 +256,7 @@ impl Controls {
                     hwnd,
                     "BUTTON",
                     label,
-                    120 + index,
+                    160 + index,
                     [
                         10 + (index % 4) as i32 * 175,
                         310 + (index / 4) as i32 * 30,

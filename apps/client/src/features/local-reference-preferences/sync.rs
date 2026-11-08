@@ -65,7 +65,6 @@ pub struct SettingsState {
     pub(super) help_report_pending: bool,
     base_path: Option<PathBuf>,
     character: Option<[u8; 16]>,
-    battle_edit: u64,
     skills_edit: u64,
     pub(crate) item_hotkeys_edit: u64,
     minimap_edit: u64,
@@ -181,7 +180,6 @@ impl SettingsState {
         self.minimap_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
-        self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         Ok(())
     }
 
@@ -210,7 +208,6 @@ impl SettingsState {
             control_epoch: std::time::Instant::now(),
             base_path,
             character: None,
-            battle_edit: 0,
             skills_edit: 0,
             item_hotkeys_edit: 0,
             minimap_edit: 0,
@@ -255,7 +252,7 @@ impl SettingsState {
     }
 
     pub fn input(&mut self, events: &[NormalizedInputEvent]) -> (Vec<NormalizedInputEvent>, bool) {
-        self.input_in_context(events, self.preferences.hotkey_profiles.chat_on)
+        self.input_in_context(events, self.preferences.hotkey_contexts.chat_on)
     }
 
     pub fn input_from_play(
@@ -335,9 +332,6 @@ impl SettingsState {
             .ok_or_else(|| "Preference storage is unavailable".to_owned())
             .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()));
         // A disk error must not disable local controls for this process.
-        if self.preferences.battle_lists != preferences.battle_lists {
-            self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
-        }
         if self.preferences.archive_bindings != preferences.archive_bindings {
             self.archive_edit = crate::play::feature_0017_attack::view::next_edit();
         }
@@ -358,54 +352,6 @@ impl SettingsState {
             Ok(()) => "Applied and saved".into(),
             Err(error) => format!("Applied for this session; could not save: {error}"),
         };
-    }
-
-    pub fn sync_archive_bindings(&mut self, link: &crate::play::PlayLink) {
-        let mut prefs = self.preferences.clone();
-        if let Some(edit) =
-            link.sync_archive_bindings(&mut prefs.archive_bindings, self.archive_edit)
-        {
-            self.apply(prefs);
-            self.archive_edit = edit;
-        }
-    }
-
-    pub fn sync_spellbook_filter(&mut self, link: &crate::play::PlayLink) {
-        let mut prefs = self.preferences.clone();
-        if let Some(edit) =
-            link.sync_spellbook_filter(&mut prefs.spellbook_filter, self.spellbook_edit)
-        {
-            self.apply(prefs);
-            self.spellbook_edit = edit;
-        }
-    }
-
-    pub fn sync_skills_layout(&mut self, link: &crate::play::PlayLink) {
-        let mut preferences = self.preferences.clone();
-        if let Some(edit) =
-            link.sync_skills_layout(&mut preferences.skills_layout, self.skills_edit)
-        {
-            self.apply(preferences);
-            self.skills_edit = edit;
-        }
-    }
-
-    pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
-        let mut preferences = self.preferences.clone();
-        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
-        {
-            self.apply(preferences);
-            self.battle_edit = edit;
-        }
-    }
-
-    pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
-        let mut preferences = self.preferences.clone();
-        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
-        {
-            self.apply(preferences);
-            self.battle_edit = edit;
-        }
     }
 
     pub fn restore(
@@ -447,3 +393,6 @@ impl crate::play::PlayLink {
         crate::play::mailbox::lock(&self.mailbox).chat.open
     }
 }
+
+#[path = "panel_sync.rs"]
+mod panel_sync;

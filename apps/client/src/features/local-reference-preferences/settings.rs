@@ -23,12 +23,12 @@ mod frames;
 pub use frames::{FramePacer, FramePreferences};
 #[path = "help.rs"]
 mod help;
+#[path = "profile_contexts.rs"]
+mod profile_contexts;
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "shortcuts.rs"]
 mod shortcuts;
-#[path = "profiles.rs"]
-mod profiles;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
@@ -36,7 +36,7 @@ mod sync;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
-pub use profiles::HotkeyProfiles;
+pub use profile_contexts::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
@@ -139,8 +139,6 @@ pub struct ReferencePreferences {
     pub creature_bars: bool,
     #[serde(default)]
     pub health_circle: bool,
-    #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
-    pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
     pub shortcuts_collapsed: bool,
     #[serde(default = "default_shortcuts")]
@@ -170,7 +168,7 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub secondary_keybindings: std::collections::BTreeMap<String, String>,
     #[serde(default)]
-    pub hotkey_profiles: HotkeyProfiles,
+    pub hotkey_contexts: HotkeyProfiles,
     #[serde(default)]
     pub item_hotkeys: crate::play::feature_0179_hotkey_equip::view::ItemHotkeys,
     #[serde(default)]
@@ -213,13 +211,12 @@ impl Default for ReferencePreferences {
             minimap: Default::default(),
             shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
-            battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout::default(),
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             secondary_keybindings: std::collections::BTreeMap::new(),
-            hotkey_profiles: HotkeyProfiles::default(),
+            hotkey_contexts: HotkeyProfiles::default(),
             item_hotkeys: Default::default(),
             hotkey_profiles: std::collections::BTreeMap::new(),
             english: false,
@@ -254,7 +251,6 @@ impl ReferencePreferences {
             || !self.controls.valid()
             || !self.skills_layout.valid()
             || !matches!(self.rotation_modifier.as_str(), "CTRL" | "ALT" | "SHIFT")
-
             || self.keyboard_delay_ms > 1000
             || self.hud_bounds[2] < 120
             || self.hud_bounds[3] < 24

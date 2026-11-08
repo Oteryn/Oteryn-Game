@@ -369,8 +369,7 @@ fn unregistered_and_sibling_chords_are_reserved() -> Result<(), Box<dyn std::err
     Ok(())
 }
 
+#[path = "options_lane.rs"]
+mod options_lane;
 #[path = "presentation.rs"]
 mod presentation;
-#[path = "options.rs"]
-mod options;
-

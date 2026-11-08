@@ -1,272 +1,284 @@
 use super::*;
-#[test]
-fn help_navigation_opens_existing_report_without_submitting() {
-    use crate::play::{HelpTopic, SettingsState, help_text};
-    for topic in [HelpTopic::Questions, HelpTopic::Manual, HelpTopic::Client] {
-        let text = help_text(topic);
-        assert!(text.len() > 200);
-        assert!(!text.contains("https://"));
-    }
-    let mut settings = SettingsState::new(None);
-    settings.request_help_report();
-    settings.open_help_report(None);
-    assert!(settings.feedback.contains("Join a game session"));
-    let (link, mut commands, _) = crate::play::play_channel();
-    settings.open_help_report(Some(&link));
-    assert!(!link.player_report_panel().open);
-    settings.request_help_report();
-    settings.open_help_report(Some(&link));
-    assert!(link.player_report_panel().open);
-    assert!(!link.player_report_panel().pending);
-    assert!(commands.try_recv().is_err());
-}
 
 #[test]
-fn general_controls_transform_real_inputs_and_preserve_releases()
--> Result<(), Box<dyn std::error::Error>> {
-    use crate::play::{MousePreset, MovementKeys, RotationModifier, SettingsState};
-    use oteryn_input_actions::{
-        ButtonState, KeyCode, Modifier, Modifiers, MouseButton, NormalizedInputEvent,
-    };
-    use std::time::Duration;
-    let mut settings = SettingsState::new(None);
-    let mut prefs = settings.preferences.clone();
-    prefs.controls.mouse = MousePreset::LeftHanded;
-    prefs.controls.movement = MovementKeys::ArrowsAndWasd;
-    prefs.controls.rotation = RotationModifier::Shift;
-    prefs.controls.keyboard_delay_ms = 250;
-    assert_eq!(prefs.controls.drag_button(true), MouseButton::SECONDARY);
-    assert_eq!(prefs.controls.drag_button(false), MouseButton::PRIMARY);
-    settings.apply(prefs.clone());
-    let key = |code,
-               modifiers,
-               state,
-               repeat|
-     -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
-        Ok(NormalizedInputEvent::Key {
-            code: KeyCode::new(code)?,
-            modifiers,
-            state,
-            repeat,
-        })
-    };
-    let none = Modifiers::NONE;
-    let w = key(26, none, ButtonState::Pressed, false)?;
-    let mapped = settings.control_events_at(std::slice::from_ref(&w), false, Duration::ZERO);
-    assert_eq!(
-        crate::input::arrow_step(&mapped),
-        Some(crate::input::StepDir::North)
-    );
-    let repeat = key(26, none, ButtonState::Pressed, true)?;
-    assert!(
-        settings
-            .control_events_at(
-                std::slice::from_ref(&repeat),
-                false,
-                Duration::from_millis(249)
-            )
-            .is_empty()
-    );
-    assert_eq!(
-        settings
-            .control_events_at(&[repeat], false, Duration::from_millis(250))
-            .len(),
-        1
-    );
-    prefs.controls.movement = MovementKeys::Arrows;
-    settings.apply(prefs.clone());
-    let released = key(26, none, ButtonState::Released, false)?;
-    // A chat/context/settings change while held cannot strand the translated key.
-    assert_eq!(
-        settings.control_events_at(&[released], true, Duration::from_millis(251)),
-        vec![key(82, none, ButtonState::Released, false)?]
-    );
-    assert_eq!(
-        settings.control_events_at(std::slice::from_ref(&w), true, Duration::from_millis(260)),
-        vec![w]
-    );
-    settings.control_events_at(
-        &[NormalizedInputEvent::DeviceLost],
-        false,
-        Duration::from_millis(270),
-    );
-    let shift = Modifiers::one(Modifier::Shift);
-    let rotation = settings.control_events_at(
-        &[key(79, shift, ButtonState::Pressed, false)?],
-        false,
-        Duration::from_millis(300),
-    );
-    assert!(
-        matches!(rotation.as_slice(),[NormalizedInputEvent::Key { code,modifiers,.. }] if *code == KeyCode::ARROW_RIGHT && *modifiers == Modifiers::one(Modifier::Control))
-    );
-    let mouse = |state| NormalizedInputEvent::MouseButton {
-        button: MouseButton::PRIMARY,
-        state,
-        modifiers: none,
-    };
-    assert!(
-        matches!(settings.control_events_at(&[mouse(ButtonState::Pressed)],false,Duration::ZERO).as_slice(),[NormalizedInputEvent::MouseButton { button,.. }] if *button == MouseButton::SECONDARY)
-    );
-    prefs.controls.mouse = MousePreset::Standard;
-    settings.apply(prefs.clone());
-    assert!(
-        matches!(settings.control_events_at(&[mouse(ButtonState::Released)],false,Duration::ZERO).as_slice(),[NormalizedInputEvent::MouseButton { button,.. }] if *button == MouseButton::SECONDARY)
-    );
-    let good = settings.preferences.clone();
-    prefs.controls.keyboard_delay_ms = 1001;
-    settings.apply(prefs);
-    assert_eq!(settings.preferences, good);
-    let path = std::env::temp_dir().join(format!("clientgap-controls-{}.json", std::process::id()));
-    crate::play::PreferenceStore::export_to(&good, &path)?;
-    assert_eq!(
-        crate::play::PreferenceStore::read_transfer(&path)?.controls,
-        good.controls
-    );
-    std::fs::remove_file(path)?;
-    Ok(())
-}
-
-#[test]
-fn shortcut_order_persists_and_buttons_open_real_panels() -> Result<(), Box<dyn std::error::Error>>
-{
-    use crate::play::{PreferenceStore, ReferencePreferences, SHORTCUTS};
-    let mut prefs = ReferencePreferences::default();
-    let panels = prefs.visible_panels.clone();
-    let before = prefs.clone();
-    assert!(prefs.add_shortcut("unregistered").is_err());
-    assert!(prefs.add_shortcut("battle").is_err());
-    assert!(prefs.move_shortcut(0, usize::MAX).is_err());
-    assert_eq!(prefs, before);
-    prefs.add_shortcut("quest-log")?;
-    let last = prefs.shortcuts.len() - 1;
-    prefs.move_shortcut(last, 0)?;
-    assert_eq!(prefs.shortcuts[0], "quest-log");
-    prefs.remove_shortcut(1)?;
-    assert!(!prefs.shortcuts.iter().any(|id| id == "battle"));
-    assert_eq!(prefs.visible_panels, panels);
-    let path =
-        std::env::temp_dir().join(format!("clientgap-shortcuts-{}.json", std::process::id()));
-    let mut store = PreferenceStore::load(path.clone())?;
-    store.apply(prefs.clone())?;
-    assert_eq!(
-        PreferenceStore::load(path.clone())?.preferences().shortcuts,
-        prefs.shortcuts
-    );
-    std::fs::remove_file(path)?;
-    let (link, _, _) = crate::play::play_channel();
-    assert!(!link.battle_panel().open);
-    assert!(link.activate_shortcut("battle"));
-    assert!(link.battle_panel().open);
-    assert!(link.activate_shortcut("battle"));
-    assert!(!link.battle_panel().open);
-    assert!(!link.activate_shortcut("unregistered"));
-    for &(id, _) in SHORTCUTS {
-        assert!(
-            link.activate_shortcut(id),
-            "shortcut {id} must reach its registered panel entry point"
-        );
-    }
-    let good = prefs.clone();
-    prefs.shortcuts.push("unknown".into());
-    let mut settings = crate::play::SettingsState::new(None);
-    settings.apply(good.clone());
-    settings.apply(prefs);
-    assert_eq!(settings.preferences, good);
-    Ok(())
-}
-
-#[test]
-fn actor_placement_does_not_select_a_character_preference_file()
--> Result<(), Box<dyn std::error::Error>> {
+fn hud_arc_geometry_uses_configured_distance_and_size() -> Result<(), Box<dyn std::error::Error>> {
     let mut play = view()?;
-    play.set_own_identity([31; 16]);
-    assert_eq!(
-        play.preference_character(),
-        None,
-        "runtime placement is not a durable character id"
-    );
-    play.set_preference_character([7; 16]);
-    play.set_own_identity([32; 16]);
-    assert_eq!(play.preference_character(), Some([7; 16]));
-    play = play.with_entities(vec![])?;
-    assert_eq!(
-        play.preference_character(),
-        Some([7; 16]),
-        "scene rebuilding retains the admitted character"
-    );
-    let root = std::env::temp_dir().join(format!("stable-character-scope-{}", std::process::id()));
-    let path = root.join("preferences.json");
-    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
-    settings.select_character(play.preference_character());
-    let mut prefs = settings.preferences.clone();
-    prefs.ui_scale = 140;
-    settings.apply(prefs);
-    let mut next_admission = view()?;
-    next_admission.set_own_identity([33; 16]);
-    next_admission.set_preference_character([7; 16]);
-    let mut restarted = crate::play::SettingsState::new(Some(path));
-    restarted.select_character(next_admission.preference_character());
-    assert_eq!(restarted.preferences.ui_scale, 140);
-    next_admission.set_preference_character([8; 16]);
-    restarted.select_character(next_admission.preference_character());
-    assert_eq!(restarted.preferences.ui_scale, 100);
-    std::fs::remove_dir_all(root)?;
-    Ok(())
-}
-
-#[test]
-fn hud_arcs_project_server_vitals_and_persist_geometry_controls()
--> Result<(), Box<dyn std::error::Error>> {
-    let (link, _, outbox) = crate::play::play_channel();
-    let mut play = view()?;
-    let mut prefs = play.preferences().clone();
-    prefs.arcs = crate::play::ArcPreferences {
-        health: true,
-        mana: true,
-        distance: 25,
-        size: 60,
-        opacity: 50,
-    };
-    play.set_preferences(prefs.clone())?;
-    assert!(play.hud_arc_layout().is_none());
-    outbox.vitals(Some(oteryn_session::ActorVitals {
+    play.vitals = Some(oteryn_session::ActorVitals {
         health: 50,
         max_health: 100,
-        mana: 25,
-        max_mana: 100,
+        mana: 20,
+        max_mana: 40,
         ..Default::default()
-    }));
-    play.tick(&link).map_err(|_| "tick")?;
-    let layout = play.hud_arc_layout().ok_or("arc layout")?;
-    assert_eq!(layout.alpha, 127);
-    assert_eq!((layout.width, layout.height), (186, 136));
-    assert_eq!(layout.strokes.len(), 2);
-    assert_eq!(layout.strokes[0].filled_segments, 40);
-    assert_eq!(layout.strokes[1].filled_segments, 20);
+    });
+    let mut preferences = play.preferences().clone();
+    preferences.health_circle = true;
+    preferences.arc_distance = 14;
+    preferences.arc_size = 5;
+    play.set_preferences(preferences)?;
+    let quads = play.scene().sprites().instances();
     assert!(
-        layout
-            .strokes
+        quads[quads.len() - 32..]
             .iter()
-            .flat_map(|stroke| &stroke.points)
-            .all(|p| p[0] >= 0 && p[1] >= 0 && p[0] <= layout.width && p[1] <= layout.height)
+            .all(|quad| quad.size == [5.0, 5.0])
     );
-    let path = std::env::temp_dir().join(format!("arc-preferences-{}.json", std::process::id()));
-    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
-    settings.apply(prefs.clone());
+    let mut invalid = play.preferences().clone();
+    invalid.arc_size = 0;
+    assert!(play.set_preferences(invalid).is_err());
+    Ok(())
+}
+
+#[test]
+fn hud_name_controls_separate_owner_players_and_creatures() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_session::{
+        EntityDetail, EntityDisplayName, EntityKind, EntityRef, VisibleAppearance,
+        WorldSpatialEntity,
+    };
+    let mut play = view()?;
+    play.set_own_identity([1; 16]);
+    let entries = [
+        (1, EntityKind::Player),
+        (2, EntityKind::Player),
+        (3, EntityKind::Creature),
+    ]
+    .into_iter()
+    .map(|(id, kind)| {
+        Ok(VisibleAppearance {
+            entity: WorldSpatialEntity {
+                entity: EntityRef {
+                    identity: [id; 16],
+                    generation: 1,
+                },
+                kind,
+                position: ActorPosition {
+                    x: 100 + i32::from(id),
+                    y: 200,
+                    floor: 0,
+                },
+                display_name: Some(EntityDisplayName::new("Actor")?),
+                detail: EntityDetail::Actor {
+                    direction: StepDirection::South,
+                    appearance_ref: 1,
+                    health_percent: 100,
+                },
+            },
+            look: None,
+            light: None,
+            forge_stacks: None,
+        })
+    })
+    .collect::<Result<Vec<_>, oteryn_session::SessionError>>()?;
+    play.set_presentations(entries)?;
+    assert_eq!(play.scene().name_count(), 3);
+    let mut preferences = play.preferences().clone();
+    preferences.hud_names = [false, true, false];
+    play.set_preferences(preferences)?;
+    assert_eq!(play.scene().name_count(), 1);
+    Ok(())
+}
+
+#[test]
+fn interface_scale_changes_hud_geometry_and_rejects_invalid_values()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    let mut preferences = play.preferences().clone();
+    preferences.interface_scale = 150;
+    preferences.cursor_crosshair = true;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.preferences().scaled_hud_bounds(), [12, 12, 1350, 60]);
+    let mut invalid = play.preferences().clone();
+    invalid.interface_scale = 201;
+    assert!(play.set_preferences(invalid).is_err());
+    Ok(())
+}
+
+#[test]
+fn hotkey_profiles_preserve_routes_across_restart() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceStore, ReferencePreferences};
+    let path = std::env::temp_dir().join(format!("cgopt-profiles-{}.json", std::process::id()));
+    let mut preferences = ReferencePreferences::default();
+    preferences.save_hotkey_profile("arrows")?;
+    preferences.general_hotkey_preset(false)?;
+    preferences.save_hotkey_profile("wasd")?;
+    let mut store = PreferenceStore::load(path.clone())?;
+    store.apply(preferences)?;
+    let mut restored = PreferenceStore::load(path.clone())?.preferences().clone();
+    restored.load_hotkey_profile("arrows")?;
+    assert!(
+        !restored
+            .keybindings
+            .contains_key("0013-paced-movement-move-north")
+    );
+    restored.load_hotkey_profile("wasd")?;
     assert_eq!(
-        crate::play::SettingsState::new(Some(path.clone()))
-            .preferences
-            .arcs,
-        prefs.arcs
+        restored
+            .keybindings
+            .get("0013-paced-movement-move-north")
+            .map(String::as_str),
+        Some("W")
     );
-    let mut invalid = prefs.clone();
-    invalid.arcs.opacity = 101;
-    settings.apply(invalid);
-    assert_eq!(settings.preferences, prefs);
-    prefs.arcs.health = false;
-    prefs.arcs.mana = false;
-    play.set_preferences(prefs)?;
-    assert!(play.hud_arc_layout().is_none());
+    let before = restored.clone();
+    assert!(restored.load_hotkey_profile("missing").is_err());
+    assert!(restored.save_hotkey_profile("").is_err());
+    assert_eq!(restored, before);
     std::fs::remove_file(path)?;
     Ok(())
+}
+
+#[test]
+fn action_bar_hotkeys_route_every_supported_slot() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::ReferencePreferences;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut preferences = ReferencePreferences::default();
+    let chords = ["F5", "F6", "F7", "F8"];
+    preferences.set_action_bar_hotkeys(&chords)?;
+    let mut router = crate::spell::SpellHotkeys::new()?;
+    for slot in 0..4 {
+        let event = NormalizedInputEvent::Key {
+            code: KeyCode::new(62 + slot)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        let routed = preferences.route_input(&[event])?;
+        assert_eq!(
+            router.route(&routed).first().map(|slot| slot.get()),
+            Some(u32::from(slot + 1))
+        );
+        let release = NormalizedInputEvent::Key {
+            code: KeyCode::new(62 + slot)?,
+            state: ButtonState::Released,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        router.route(&preferences.route_input(&[release])?);
+    }
+    let before = preferences.clone();
+    assert!(
+        preferences
+            .set_action_bar_hotkeys(&["F5", "F5", "F7", "F8"])
+            .is_err()
+    );
+    assert_eq!(preferences, before);
+    Ok(())
+}
+
+#[test]
+fn general_hotkey_presets_route_movement_and_preserve_other_bindings()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{ReferencePreferences, SettingsState};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut preferences = ReferencePreferences::default();
+    preferences.rebind("0009-highscores-open", "ALT+H")?;
+    preferences.general_hotkey_preset(false)?;
+    let mut state = SettingsState::new(None);
+    state.preferences = preferences;
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(26)?,
+        modifiers: Modifiers::NONE,
+        state: ButtonState::Pressed,
+        repeat: false,
+    };
+    assert!(matches!(
+        state.input(&[event]).0.as_slice(),
+        [NormalizedInputEvent::Key {
+            code: KeyCode::ARROW_UP,
+            ..
+        }]
+    ));
+    state.preferences.general_hotkey_preset(true)?;
+    assert_eq!(
+        state
+            .preferences
+            .keybindings
+            .get("0009-highscores-open")
+            .map(String::as_str),
+        Some("ALT+H")
+    );
+    assert!(
+        !state
+            .preferences
+            .keybindings
+            .contains_key("0013-paced-movement-move-north")
+    );
+    Ok(())
+}
+
+#[test]
+fn configured_rotation_modifier_sends_existing_turn_command()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_move_initialize(true);
+    let mut view = view()?;
+    let mut preferences = view.preferences().clone();
+    preferences.rotation_modifier = "ALT".into();
+    view.set_preferences(preferences)?;
+    assert!(view.target_move_input(
+        &link,
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::ARROW_UP,
+            modifiers: Modifiers::one(Modifier::Alt),
+            state: ButtonState::Pressed,
+            repeat: false,
+        }]
+    ));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("missing turn command".into());
+    };
+    assert_eq!(command.payload, [26, 2, 8, 1]);
+    Ok(())
+}
+
+#[test]
+fn mouse_preset_changes_actual_click_routing() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+    use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
+    let mut settings = SettingsState::new(None);
+    settings.preferences.swap_mouse_buttons = true;
+    let press = NormalizedInputEvent::MouseButton {
+        button: MouseButton::SECONDARY,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE,
+    };
+    let (events, _) = settings.input(&[press]);
+    assert!(matches!(
+        events.as_slice(),
+        [NormalizedInputEvent::MouseButton {
+            button: MouseButton::PRIMARY,
+            ..
+        }]
+    ));
+    settings.preferences.keyboard_delay_ms = 1000;
+    let key = NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(82)?,
+        modifiers: Modifiers::NONE,
+        state: ButtonState::Pressed,
+        repeat: false,
+    };
+    assert_eq!(settings.input(std::slice::from_ref(&key)).0.len(), 1);
+    let mut repeat = key.clone();
+    if let NormalizedInputEvent::Key { repeat, .. } = &mut repeat {
+        *repeat = true;
+    }
+    assert!(settings.input(&[repeat]).0.is_empty());
+    settings.input(&[NormalizedInputEvent::FocusChanged { focused: false }]);
+    assert_eq!(settings.input(&[key]).0.len(), 1);
+    settings.preferences.keyboard_delay_ms = 1001;
+    assert!(view()?.set_preferences(settings.preferences).is_err());
+    Ok(())
+}
+
+#[test]
+fn basic_options_navigate_without_changing_preferences() {
+    use crate::play::{SettingsPage, SettingsState};
+    let mut state = SettingsState::new(None);
+    let before = state.preferences.clone();
+    assert_eq!(state.page, SettingsPage::Gameplay);
+    for page in SettingsPage::ALL {
+        state.page = page;
+        assert!(!page.label().is_empty());
+        assert_eq!(state.preferences, before);
+    }
+    assert_eq!(SettingsPage::ALL.len(), 9);
 }

@@ -167,4 +167,3 @@ impl ControlInput {
         routed
     }
 }
-//! Construction and validation of the settings dialog controls.

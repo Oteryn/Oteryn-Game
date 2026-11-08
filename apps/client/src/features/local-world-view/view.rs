@@ -98,12 +98,11 @@ impl PlayView {
         self.light_scene()?;
         self.weather_scene();
         self.project_minimap_memory();
-        self.scene
-            .set_minimap(
-                self.live_map && self.preferences().panel_visible("minimap"),
-                self.minimap.clone(),
-                self.floor,
-            )?;
+        self.scene.set_minimap(
+            self.live_map && self.preferences().panel_visible("minimap"),
+            self.minimap.clone(),
+            self.floor,
+        )?;
         self.project_presentation(std::time::Instant::now())
     }
 

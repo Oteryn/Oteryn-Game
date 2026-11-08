@@ -3,7 +3,6 @@ use super::*;
 #[path = "controls.rs"]
 mod controls;
 use controls::Controls;
-
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
         let hwnd = CreateWindowExW(
@@ -70,33 +69,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             lock(&shared).open = false;
             return;
         };
-        let navigation: Vec<_> = [
-            "Hotkey profiles...",
-            "Help and reports...",
-            "Mouse and movement...",
-            "Shortcut buttons...",
-            "Minimap...",
-            "Frames...",
-            "General options...",
-        ]
-        .iter()
-        .enumerate()
-        .map(|(i, label)| {
-            control(
-                hwnd,
-                "BUTTON",
-                label,
-                120 + i,
-                [
-                    10 + (i % 3) as i32 * 240,
-                    440 + (i / 3) as i32 * 35,
-                    230,
-                    28,
-                ],
-                0,
-            )
-        })
-        .collect();
+        let navigation = navigation_controls::create(hwnd);
         let mut bindings = preference_bindings().unwrap_or_default();
         let mut binding_page = SettingsPage::Hotkeys;
         let mut held = None;
@@ -394,21 +367,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            let page_help = match state.page {
-                SettingsPage::CustomHotkeys => {
-                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Object, text and passive action assignment is not available yet."
-                }
-                SettingsPage::BarHotkeys => {
-                    "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
-                }
-                SettingsPage::Graphics => {
-                    "Renderer and window options use the supported native renderer. Additional controls are not available yet."
-                }
-                SettingsPage::Sound => {
-                    "Master volume % (0–100). Changes apply to playback immediately."
-                }
-                _ => "",
-            };
+            let page_help = navigation_controls::page_help(state.page);
             SetWindowTextW(
                 feedback,
                 wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),
@@ -422,3 +381,5 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         lock(&shared).open = false;
     }
 }
+#[path = "navigation_controls.rs"]
+mod navigation_controls;

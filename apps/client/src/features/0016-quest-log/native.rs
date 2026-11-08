@@ -1,12 +1,15 @@
 //! Windows system controls provide a readable panel without a new rendering dependency.
 //! Handles and the window-procedure context stay on this thread. The context outlives HWND.
 #![allow(unsafe_code)]
+#[path = "native_controls.rs"]
+mod panel_controls;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::quest_log::{
     QUEST_SORT_LABELS, QuestLogQuery, QuestLogView, QuestPanel, QuestSort, panel_text,
     quest_row_query, quest_rows, request, tracking_query,
 };
+use panel_controls::PanelControls;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
@@ -106,196 +109,22 @@ fn run(
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-        let quests = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            QUESTS,
-            10,
-            94,
-            220,
-            136,
-            LBS_NOTIFY as u32 | WS_VSCROLL | WS_TABSTOP | WS_BORDER,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Find number, status or known mission",
-            112,
-            10,
-            10,
-            220,
-            20,
-            0,
-        );
-        let list_search = control(
-            hwnd,
-            "EDIT",
-            "",
-            113,
-            10,
-            32,
-            220,
-            24,
-            WS_BORDER | WS_TABSTOP,
-        );
-        SendMessageW(
-            list_search,
-            windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT,
-            128,
-            0,
-        );
-        let list_sort = control(
-            hwnd,
-            "COMBOBOX",
-            "",
-            114,
-            10,
-            62,
-            220,
-            200,
-            CBS_DROPDOWNLIST as u32 | WS_VSCROLL | WS_TABSTOP,
-        );
-        for label in QUEST_SORT_LABELS {
-            SendMessageW(list_sort, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
-        }
-        let missions = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            MISSIONS,
-            240,
-            10,
-            490,
-            220,
-            LBS_NOTIFY as u32 | WS_VSCROLL | WS_TABSTOP | WS_BORDER,
-        );
-        let description = control(
-            hwnd,
-            "EDIT",
-            "",
-            105,
-            10,
-            270,
-            720,
-            260,
-            ES_MULTILINE as u32
-                | ES_READONLY as u32
-                | ES_AUTOVSCROLL as u32
-                | WS_VSCROLL
-                | WS_BORDER
-                | WS_TABSTOP,
-        );
-        let refresh = control(
-            hwnd,
-            "BUTTON",
-            "Quest list / Refresh",
-            REFRESH,
-            10,
-            235,
-            220,
-            28,
-            WS_TABSTOP,
-        );
-        let track = control(
-            hwnd,
-            "BUTTON",
-            "Track quest",
-            TRACK,
-            240,
-            235,
-            220,
-            28,
-            WS_TABSTOP,
-        );
-        if [
+        let Some(PanelControls {
             quests,
-            missions,
-            description,
-            refresh,
-            track,
             list_search,
             list_sort,
-        ]
-        .iter()
-        .any(|h| h.is_null())
-        {
-            DestroyWindow(hwnd);
-            close(&weak);
-            return;
-        }
-        let auto_add = control(
-            hwnd,
-            "BUTTON",
-            "Auto-add: off",
-            AUTO_ADD,
-            750,
-            10,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        let auto_remove = control(
-            hwnd,
-            "BUTTON",
-            "Auto-remove: off",
-            AUTO_REMOVE,
-            750,
-            45,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        let filter = control(
-            hwnd,
-            "BUTTON",
-            "Tracker: all quests",
-            FILTER,
-            750,
-            80,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Search tracked missions",
-            109,
-            750,
-            115,
-            290,
-            22,
-            0,
-        );
-        let search = control(
-            hwnd,
-            "EDIT",
-            "",
-            110,
-            750,
-            140,
-            290,
-            28,
-            WS_BORDER | WS_TABSTOP,
-        );
-        SendMessageW(
+            missions,
+            description,
+            track,
+            auto_add,
+            auto_remove,
+            filter,
             search,
-            windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT,
-            128,
-            0,
-        );
-        let tracker = control(
-            hwnd,
-            "EDIT",
-            "",
-            111,
-            750,
-            180,
-            290,
-            350,
-            ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL | WS_BORDER,
-        );
+            tracker,
+        }) = PanelControls::new(hwnd, &weak)
+        else {
+            return;
+        };
         let mut held = None;
         let mut last_search = None;
         let mut shown_quests = Vec::new();
