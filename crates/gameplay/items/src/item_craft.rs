@@ -12,6 +12,7 @@ use oteryn_gameplay_domain::domain::timed_item_host::resolve_timed_definition;
 use std::sync::OnceLock;
 
 pub mod enchanting;
+mod quest_recipes;
 
 #[derive(Debug)]
 pub struct CookingConversion {
@@ -43,6 +44,9 @@ pub fn carried_cooking_conversion_with_sub_type(
     target: &TypedDefinitionRef,
     target_sub_type: Option<u32>,
 ) -> Option<CookingConversion> {
+    if let Some(conversion) = quest_recipes::carried(native, used, target) {
+        return Some(conversion);
+    }
     carried_cooking_conversion_with_quantity(native, used, target, target_sub_type, 1)
         .map(|resolved| resolved.conversion)
 }
