@@ -2025,9 +2025,9 @@ pub mod test_support {
     mod activation_fixture;
     pub use activation_fixture::{
         activated_boss_slot_loot_fixture, activated_loop_monster,
-        activated_loop_monster_missing_child, activated_reward_boss_fixture,
-        activated_with_custom_loot_tables, activated_with_loot_tables, loop_monster_inner_digest,
-        try_activate_input,
+        activated_loop_monster_missing_child, activated_reward_boss_corpse_capacity_fixture,
+        activated_reward_boss_fixture, activated_with_custom_loot_tables,
+        activated_with_loot_tables, loop_monster_inner_digest, try_activate_input,
     };
 }
 
