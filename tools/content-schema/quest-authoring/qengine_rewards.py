@@ -13,6 +13,7 @@ from pathlib import Path
 import sys
 import tarfile
 import xml.etree.ElementTree as ET
+import taming_cosmetics
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -111,9 +112,9 @@ def build():
     scoped={'oteryn:outfit.afflicted','oteryn:outfit.soil_guardian','oteryn:outfit.crystal_warlord'}
     for outfit in outfits:
         if outfit['key'] not in scoped:continue
-        looks=sorted([outfit['female']['id'],outfit['male']['id']])
+        outfit_looks=sorted([outfit['female']['id'],outfit['male']['id']])
         for grant in item_packet['grants']:
-            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=looks:continue
+            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=outfit_looks:continue
             target={'kind':'Outfit','outfit_key':outfit['key']} if grant['kind']=='outfit' else {
                 'kind':'Addon','outfit_key':outfit['key'],'addon':grant['addon']}
             mappings.append({'grant_key':grant['key'],'target':target,'compatible_provenance':[item_packet['provenance']]})
@@ -154,7 +155,7 @@ def build():
     cosmetics.validate(nx5)
     nx5_doc = nx5['document']
     doc['outfits'].extend(nx5_doc['outfits'])
-    doc['mounts'] = nx5_doc['mounts']
+    doc['mounts'] = list(nx5_doc['mounts'])
     grant_keys = {row['grant_key'] for row in mappings}
     for row in nx5_doc['grant_mappings']:
         if row['grant_key'] not in grant_keys:
@@ -163,17 +164,21 @@ def build():
             existing = next(m for m in mappings if m['grant_key'] == row['grant_key'])
             if existing['target'] != row['target']:
                 existing['outfit_aliases'] = [row['target']['outfit_key']]
+    # Taming uses the same production cosmetics owner as quest/item grants.
+    taming_source = taming_cosmetics.append(ROOT, doc, looks)
     nx5_promotions = {row['path']: row for row in nx5['promotions']}
     quest_outfits = len(outfits) - len(nx5_doc['outfits'])
     for path in sorted(cosmetics.promotion_paths(doc)):
         parts = path.split('/')
-        nx5_path = path if parts[1] == 'mounts' else None
+        nx5_path = path if parts[1] == 'mounts' and int(parts[2]) < len(nx5_doc['mounts']) else None
         if parts[1] == 'outfits' and int(parts[2]) >= quest_outfits:
             nx5_path = '/outfits/' + str(int(parts[2]) - quest_outfits) + '/' + parts[3]
         if nx5_path is not None:
             author['promotions'].append({**nx5_promotions[nx5_path], 'path': path})
             continue
         citation=palette_source if path == '/palette' else source
+        if parts[1] == 'mounts':
+            citation = taming_source
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}
