@@ -2,6 +2,7 @@
 
 #[path = "components/bulletin.rs"]
 pub mod bulletin;
+#[path = "components/guide.rs"]
 pub mod guide;
 #[path = "components/login_queue.rs"]
 pub mod login_queue;
