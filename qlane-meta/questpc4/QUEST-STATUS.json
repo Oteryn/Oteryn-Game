@@ -11700,8 +11700,8 @@
         "fmt": "Post-main cargo fmt --all --check PASS",
         "freshness": "Post-main native-only generation and world-pin refresh PASS; all source/equipment/native/variant/completion/world metadata checks PASS; exact donor inputs unchanged from completed check",
         "duplicate_migrations": 0,
-        "broad_units": "Content/dispatch/durability nextest queued after compiler gates; pending under owner PREPUSH-2 cadence exception. No broad unit pass claimed.",
-        "fresh_postmain_pg": "Seven focused cases queued on freshly built post-main test binary; pending. Seven actual pre-merge PG cases already passed44.638\u201361.967s."
+        "broad_units": "Two-worker run:216PASS,2SIGINT cancellations,3784notrun; not a full pass. Complete unfiltered4002-case rerun with4workers is rebuilding; pending, no assertion failure observed. Preserve runtime sources/data until completion.",
+        "fresh_postmain_pg": "PASS: all seven real PostgreSQL18.6 cases45.242\u201346.602s; exact version/completion markers checked."
       },
       "main_integration": {
         "main": "3209d3d61",
@@ -11710,7 +11710,29 @@
         "behind": 0,
         "scope": "Reuse main Soulpit boot/error-classification/NPC-service fixes unchanged; no new quest content from this lane."
       },
-      "next_step": "Complete queued crate units and fresh post-main PG confirmation, then reuse qengine2 native authored-binding admission614d00506/192de4928. Explicit canonical recipe item keys now leave only3295 unadmitted; improper-use weapon engine request already recorded."
+      "next_step": "Complete queued crate units and fresh post-main PG confirmation, then reuse qengine2 native authored-binding admission614d00506/192de4928. Explicit canonical recipe item keys now leave only3295 unadmitted; improper-use weapon engine request already recorded.",
+      "fresh_postmain_pg": {
+        "status": "PASS",
+        "source_head": "0457bc5f70fbdcca555d52c27cb2b6f17b49b7a1",
+        "postgres": "18.6",
+        "durations_seconds": {
+          "8862": 45.832,
+          "21389": 45.791,
+          "5552": 46.112,
+          "9171": 46.114,
+          "21572": 46.599,
+          "21466": 46.602,
+          "5949": 45.242
+        },
+        "passed": 7,
+        "failed": 0
+      },
+      "engine_admission_request": "Prefer qualified qengine2 native authored-binding bundle, without unrelated prototype catalogs. Existing Main RewardCallback already supports minimum_level/outfits/achievement and l6-stories multi-document registration; use existing backend for selected-story data where sufficient, do not treat this request as a blanket blocker.",
+      "postpush_proof_validation": {
+        "workspace_check": "PASS703s including build-lock wait; same runtime/data tree as0457bc5f7",
+        "fmt": "PASS",
+        "broad_units": "Complete4002-case four-worker run active;438PASS observed, no assertion failure at this checkpoint; pending, not a full pass. Earlier two-worker run216PASS/2SIGINT is retained separately."
+      }
     }
   }
 }

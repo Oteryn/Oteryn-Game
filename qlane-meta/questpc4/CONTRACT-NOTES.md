@@ -275,3 +275,8 @@ Decision: source21572 is ground-only. The pinned physical policy says movable=fa
 ## MAINRED47 integration during special-item verification
 
 Main advanced to3209d3d61 (#3040) after the seven PostgreSQL cases passed. Merge it normally; five Soulpit boot/error-classification/NPC-service-test files integrate without conflicts and do not overlap item admission. Stop the pre-merge clippy process rather than count an interrupted or stale run as verification. Repeat native-only generation and world-pin refresh, then workspace/all-targets check, content/dispatch/durability clippy and fmt on the merged tree. The seven earlier PG cases remain real pre-merge evidence; fresh post-merge PG/broad units are explicitly pending under the owner cadence exception, not claimed as passes.
+
+
+## Selected Treasure Hunt behavior versus donor NPC transcription
+
+The committed chosen recipe explicitly selects a Klaus four-map stage (content/quests/definitions/quests-00200-00299.json, Treasure Hunt payload stage s5); it is CHOSEN_OTERYN_APPROXIMATION. The pinned Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/npc/klaus.lua:60-75 instead implements Shattered Isles pillow handling. Exact source blob dbdba8833af4081fba33a8b4685b4604599d5a5d, SHA256452fd98c7f06f0f6c58cf515d1e9f6b224a0b7f74b558e2a55d70e9ec36184ca, is available in committed samples/donor-source/corpus.tar.gz. Decision: retain the existing Shattered Isles source rules unchanged; never label the chosen map exchange a recovered donor Klaus branch. Use canonical chosen-recipe bindings for chosen behavior once the qualified shared admission bundle is available. The native item-key scan only covers explicit canonical identities, not unresolved named stage targets or text payloads.
