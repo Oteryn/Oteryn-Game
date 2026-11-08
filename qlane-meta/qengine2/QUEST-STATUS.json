@@ -3779,6 +3779,16 @@
         "seconds": 42.66
       },
       "production_binding_documents_added": 0
+    },
+    "qualification_publication": {
+      "main_merged": "47baa7bb8",
+      "workspace": "PASS6m39s allworkspace/alltargets",
+      "clippy": "PASS affected main durability -Dwarnings8m29s including wait; native quests/dispatch strict checks previously green",
+      "fmt": "PASS",
+      "generated": "native/freshness/registry/itemaudit and officialWorld pin-refresh PASS",
+      "postgresql": "full7case confirmation PASS386.448s againstc7f9d9ba7; native admission twice67.375607899s/59.105387685s",
+      "pending_ci": "remaining dispatch unit suite per PREPUSH2 cadence exception",
+      "intermittent_drain": "first-run sequential test drain timeout recorded; complete set passed unchanged; no fix claimed"
     }
   }
 }

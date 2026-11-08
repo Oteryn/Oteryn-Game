@@ -1720,3 +1720,14 @@ locally, merge requiredmain, refresh affected generation/compile/fmt, thenpush.
 Admission code itself isunchanged. Do notlosefirst-run drainflakerecord; no fix
 or weaker assertions/timeouts claimed. Nativegen command15158 stopped atmain
 ancestry guard, so it mustbe rerunafter thismerge.
+
+06:13UTC finalqualificationgates green onrequiredmain47baa7bb8: workspacealltargets
+6m39s, affectedmain durabilityclippy8m29s inclwait,fmt,native/freshness/registry/
+itemaudit and officialWorld pin-refresh. Finalfetchmain unchanged. Publishnative
+bindingenginequalification now (full7PG unchanged confirmation386.448s).
+ENGINE-DONE authored_trigger_and_delivery_bindings. APIs Bindings::parse_documents,
+Bindings::attach, Bindings::verify_embedded_recipe_evidence,
+loader::load_embedded_quest_state_with_bindings, compiled authored-bindings dir.
+Next42readyclaim/use: reuseexistingbundlechest resolver, prove59claims/60placements
+and54nativeItems; thenallW15bvariants andqueuedrequests. Readfacts/tmp/qengine2-
+reward-claim-next-facts.md. No productionquestpromotion; ownpacket44/66 unchanged.
