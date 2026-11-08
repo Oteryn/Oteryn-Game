@@ -195,6 +195,9 @@ def convert() -> dict[str, str]:
     for start in range(0, len(ordered), SHARD_SIZE):
         part = ordered[start : start + SHARD_SIZE]
         name = f"placements-{start:05d}-{start + len(part) - 1:05d}.json"
+        if start == 0:
+            # Keep Main's published shard path as admitted placements grow.
+            name = "placements-00000-00055.json"
         shards.append(f"content/world/npc-placements/{name}")
         files[name] = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "records": part})
     held_text = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "held": held, "schema": "OTERYN_NPC_PLACEMENT_HELD/v1"})

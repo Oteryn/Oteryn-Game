@@ -1,6 +1,8 @@
 //! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
 //! Crystal source references and source-order branches are retained in each program.
 
+#[cfg(test)]
+mod achievement_tests;
 mod admission;
 mod bounds;
 mod calendar;
@@ -11,6 +13,7 @@ mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+pub mod teleport;
 mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
@@ -705,6 +708,9 @@ pub fn legacy_defaults<'a>(
                 .map(|entry| &entry.defaults)
         })
 }
+
+#[cfg(test)]
+mod multiple_item_rewards_tests;
 
 #[cfg(test)]
 mod tests;
