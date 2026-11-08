@@ -31,6 +31,7 @@ pub mod classic_talk;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod deepling_boss_access;
+pub mod distinct_targets;
 pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
