@@ -366,11 +366,38 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let npc_additions = npc_proof["records"]
         .as_array()
         .ok_or("NPC source profiles")?;
-    assert_eq!(npc_additions.len(), 1);
+    // QNPCFX identities: generated begin
+    assert_eq!(npc_additions.len(), 7);
+    let npc_keys = npc_additions
+        .iter()
+        .map(|row| {
+            row["production_definition"]["production_key"]
+                .as_str()
+                .ok_or("NPC profile identity")
+        })
+        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
     assert_eq!(
-        npc_additions[0]["production_definition"]["production_key"],
-        "oteryn:item.tibia.i52636"
+        npc_keys,
+        std::collections::BTreeSet::from([
+            "oteryn:item.tibia.i52636",
+            "oteryn:item.tibia.i7528",
+            "oteryn:item.tibia.i7529",
+            "oteryn:item.tibia.i7530",
+            "oteryn:item.tibia.i7531",
+            "oteryn:item.tibia.i7532",
+            "oteryn:item.tibia.i919",
+        ])
     );
+    for key in npc_keys {
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing NPC source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+    // QNPCFX identities: generated end
     let venison = profiles
         .records
         .iter()

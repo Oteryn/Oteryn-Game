@@ -59,6 +59,50 @@ def cohort_receipt(source, packet):
     return result
 
 
+
+def profile_identity_receipt(source, packet):
+    """Generate an exact identity witness for every independently declared NPC item."""
+    # Reuse the explicit-key admission; the native union cannot supply its own expectation.
+    cohort_receipt('    // QNPCFX: witness.\n    ("QNPCFX", 7),', packet)
+    marker = r'    // QNPCFX identities: generated begin\n.*?    // QNPCFX identities: generated end\n'
+    legacy = (r'    assert_eq!\(npc_additions\.len\(\), [0-9_]+\);\n'
+              r'    assert_eq!\(\n        npc_additions\[0\]\["production_definition"\]\["production_key"\],\n'
+              r'        "oteryn:item.tibia.i52636"\n    \);\n')
+    keys = '\n'.join(f'            "{key}",' for key in sorted(KEYS))
+    block = f'''    // QNPCFX identities: generated begin
+    assert_eq!(npc_additions.len(), {len(KEYS)});
+    let npc_keys = npc_additions
+        .iter()
+        .map(|row| {{
+            row["production_definition"]["production_key"]
+                .as_str()
+                .ok_or("NPC profile identity")
+        }})
+        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
+    assert_eq!(
+        npc_keys,
+        std::collections::BTreeSet::from([
+{keys}
+        ])
+    );
+    for key in npc_keys {{
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing NPC source profile {{key}}"))?;
+        assert!(profile.admission.materializable, "{{key}}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{{key}}");
+    }}
+    // QNPCFX identities: generated end
+'''
+    pattern = marker if '// QNPCFX identities: generated begin' in source else legacy
+    result, count = re.subn(pattern, lambda _: block, source, flags=re.S)
+    if count != 1:
+        raise ValueError('QNPCFX_IDENTITY_WITNESS_SHAPE')
+    return result
+
+
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     packet = json.loads((root / PATH).read_bytes())
     records = packet['records']

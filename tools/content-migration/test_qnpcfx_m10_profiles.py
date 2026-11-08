@@ -30,6 +30,21 @@ class M10Profiles(unittest.TestCase):
         self.assertIn('assert_eq!(item.attributes.speed_bonus, Some(0));', result)
         self.assertEqual(npc.cohort_receipt(result, self.packet()), result)
 
+    def test_generated_identity_witness_covers_every_item_and_preserves_venison_checks(self):
+        source = '''    assert_eq!(npc_additions.len(), 1);
+    assert_eq!(
+        npc_additions[0]["production_definition"]["production_key"],
+        "oteryn:item.tibia.i52636"
+    );
+    assert_eq!(venison.attributes.speed_bonus, Some(0));
+'''
+        result = npc.profile_identity_receipt(source, self.packet())
+        self.assertIn('assert_eq!(npc_additions.len(), 7);', result)
+        for key in npc.KEYS:
+            self.assertIn(f'"{key}"', result)
+        self.assertIn('assert_eq!(venison.attributes.speed_bonus, Some(0));', result)
+        self.assertEqual(npc.profile_identity_receipt(result, self.packet()), result)
+
     def test_cohort_receipt_rejects_missing_foreign_or_duplicate_source_records(self):
         original = self.packet()
         source = '    // QNPCFX: source.\n    ("QNPCFX", 7),'

@@ -63,7 +63,22 @@ async fn wire(
     admitted: &mut AdmittedSession,
     c: &RewardCallback,
 ) -> TestResult<NpcIntentDisposition> {
-    let [npc] = super::classic_quests::install(owner, admitted, [c.npc.as_str()]).await?;
+    let npc = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .find_map(|npc| {
+                (runtime.npc_key(npc.actor) == Some(c.npc.as_str())).then_some(
+                    oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                        identity: npc.actor.placement_identity(),
+                        generation: npc.generation,
+                    },
+                )
+            })
+            .ok_or("placed M10 NPC")?
+    };
     let (result, _, _) =
         super::qengine_rewards::wire_reward(owner, admitted, npc, c, false).await?;
     Ok(result)
@@ -123,6 +138,24 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("capabilities")?;
+    if name.ends_with("oldrak") {
+        super::classic_quests::install(owner, admitted, ["oteryn:npc.oldrak"]).await?;
+    } else {
+        super::classic_quests::install_with_offsets(
+            owner,
+            admitted,
+            [
+                "oteryn:npc.henricus",
+                "oteryn:npc.kulag_the_guard",
+                "oteryn:npc.grof_the_guard",
+                "oteryn:npc.tim_the_guard",
+                "oteryn:npc.walter_the_guard",
+                "oteryn:npc.miles_the_guard",
+            ],
+            Some([(-1, -1), (0, -1), (1, -1), (-1, 1), (0, 1), (1, 1)]),
+        )
+        .await?;
+    }
     let all = load().map_err(debug)?;
     let (mut cursor, _) = cues(owner, admitted, 0).await?;
     if name.ends_with("oldrak") {
