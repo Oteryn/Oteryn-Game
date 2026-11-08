@@ -4,8 +4,8 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
-mod conditional_cells;
 mod admission;
+mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
@@ -919,6 +919,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
+        let selected = if selected.len() > 1 {
+            // Release all Channel guards before the current Character read. The
+            // existing native CAS and fenced Quest commit still recheck actor,
+            // object and phase after this preview; stale phases fail closed.
+            if selected.iter().any(|(_, key)| *key != selected[0].1) {
+                return entered;
+            }
+            let Some(catalogue) = self.quest_catalogue.as_ref() else {
+                return entered;
+            };
+            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                return entered;
+            };
+            let Ok(state) = self
+                .root
+                .read_character_quest_state(self.character, fence.character_id)
+                .await
+            else {
+                return entered;
+            };
+            let candidates = selected
+                .iter()
+                .map(|(callback, _)| *callback)
+                .collect::<Vec<_>>();
+            let Ok(Some(chosen)) =
+                world_callbacks::select_storage_phase(&candidates, state.tracks(), catalogue)
+            else {
+                return entered;
+            };
+            selected
+                .iter()
+                .copied()
+                .filter(|(callback, _)| callback.key == chosen.key)
+                .collect::<Vec<_>>()
+        } else {
+            selected
+        };
         // Ambiguous content never chooses one action by incidental registration order.
         let [(callback, key)] = selected.as_slice() else {
             if selected.is_empty() && trigger == Trigger::StepIn {

@@ -312,3 +312,57 @@ fn m02_ground_stack_requires_exact_ordered_bounded_items_and_durable_admission()
     }
     Ok(())
 }
+
+#[test]
+fn m33_disjoint_readonly_phases_share_one_step_selector_without_ambiguity() -> Result<(), String> {
+    // questpc7 retained Feaster route: same entrance, programme 0 versus 5;
+    // Wiki Feaster of Souls oldid421868, s2 and s6 of the chosen recipe.
+    let mut entry = base();
+    entry["key"] = "oteryn:quest-callback/m33/feaster-entry".into();
+    entry["quest"] = "oteryn:quest.feaster_of_souls_quest".into();
+    entry["storage"] = serde_json::json!([
+        {"track":"oteryn:quest-progress/questpc7/feaster/programme","minimum":0,"maximum":0,"set":0,"preserve":true}
+    ]);
+    let mut reentry = entry.clone();
+    reentry["key"] = "oteryn:quest-callback/m33/feaster-reentry".into();
+    reentry["storage"][0]["minimum"] = 5.into();
+    reentry["storage"][0]["maximum"] = 5.into();
+    reentry["storage"][0]["set"] = 5.into();
+    let first = callbacks(entry.clone())?.remove(0);
+    let second = callbacks(reentry.clone())?.remove(0);
+    assert!(
+        validate_registry(&[first.clone(), second]).is_ok(),
+        "disjoint source phases must be admissible"
+    );
+    let phases = callbacks(serde_json::json!({
+        "key":"oteryn:quest-callback/m33/feaster-reentry-selection",
+        "quest":entry["quest"],"trigger":"step_in","selector":entry["selector"],
+        "lever":null,"reversible":false,"passages":[],"teleport":null,
+        "storage":[{"track":"oteryn:quest-progress/questpc7/feaster/programme","minimum":5,"maximum":5,"set":5,"preserve":true}],
+        "offerings":[],"item_on_target":null,"return_on_failure":false,"failure_message":null,"sources":entry["sources"]
+    }))?;
+    let second_phase = phases.first().ok_or("phase")?;
+    let book = extend_callbacks(
+        QuestStateCatalogue::new("phase", vec![], vec![]).map_err(|e| format!("{e:?}"))?,
+        &[first.clone(), second_phase.clone()],
+    )?;
+    let key = "oteryn:quest-progress/questpc7/feaster/programme".to_string();
+    for (value, expected) in [
+        (0, Some(first.key.as_str())),
+        (5, Some(second_phase.key.as_str())),
+        (3, None),
+    ] {
+        let selected = select_storage_phase(
+            &[&first, second_phase],
+            &BTreeMap::from([(key.clone(), value)]),
+            &book,
+        )?;
+        assert_eq!(selected.map(|callback| callback.key.as_str()), expected);
+    }
+    reentry["storage"][0]["minimum"] = 0.into();
+    assert!(
+        validate_registry(&[first, callbacks(reentry)?.remove(0)]).is_err(),
+        "overlapping phases must remain ambiguous"
+    );
+    Ok(())
+}

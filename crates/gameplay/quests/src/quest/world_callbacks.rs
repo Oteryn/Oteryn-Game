@@ -104,7 +104,9 @@ fn is_false(value: &bool) -> bool {
 
 mod native;
 mod nomads_window;
+mod phase;
 use native::valid_native_callback;
+pub use phase::select_storage_phase;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
 /// recipe language: the receipt owner locks the source and consumes, changes or retains it.
@@ -340,7 +342,8 @@ pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
-    let mut selectors = BTreeSet::new();
+    let mut selectors: std::collections::BTreeMap<Vec<u8>, Vec<&Callback>> =
+        std::collections::BTreeMap::new();
     for callback in callbacks {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
@@ -351,9 +354,14 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             super::children_puzzle::binding(&callback.key).map(|(_, solved)| solved),
         ))
         .map_err(|error| error.to_string())?;
-        if !selectors.insert(selector) {
+        let prior = selectors.entry(selector).or_default();
+        if prior
+            .iter()
+            .any(|existing| !phase::disjoint(existing, callback))
+        {
             return Err("duplicate callback selector across registries".into());
         }
+        prior.push(callback);
     }
     Ok(())
 }
