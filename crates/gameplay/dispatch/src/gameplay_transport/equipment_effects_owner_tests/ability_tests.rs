@@ -302,6 +302,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("WORLDCHG", 40),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
+    // BEGIN GENERATED NPCFIX2 M22 PROFILE ADDITIONS
+    // Source-qualified antler talisman 22008; qmech_npcfix2_item_profiles.py
+    ("NPCFIX2-M22", 1),
+    // END GENERATED NPCFIX2 M22 PROFILE ADDITIONS
     // BEGIN GENERATED QREADY PROFILE ADDITIONS
     // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
     // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json

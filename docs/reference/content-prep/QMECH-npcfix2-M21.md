@@ -78,3 +78,8 @@ Four policy regressions ran red then green and also passed inside the World
 crate. Focused World/Dispatch check, clippy and formatting passed. The PG fixture
 additionally checks that the actual map wire snapshot advertises the root handle
 and that command 21 emits an ordinary domain-14 container view.
+
+The expanded PostgreSQL run passed all four cases: source view 63.405104 s,
+fixed source without portable policy 63.451307 s, nested key pickup 53.929822 s,
+and the production Small Ruby pickup/reset scenario 128.635764 s. The latter
+observed a real world-reset epoch transition before a second physical pickup.

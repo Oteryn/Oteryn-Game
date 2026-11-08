@@ -190,6 +190,9 @@
                     "REPLACE_INSTANCE"
                   ]
                 },
+                "capture_target_stack": {
+                  "type": "boolean"
+                },
                 "consume_on": {
                   "enum": [
                     "ALWAYS",
