@@ -350,10 +350,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 267,
+    "QUALIFIED": 272,
     "EXCLUDED": 24,
     "PENDING": 7,
-    "AUTHORED; QUALIFICATION PENDING": 19,
+    "AUTHORED; QUALIFICATION PENDING": 14,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -737,10 +737,58 @@
       "npc": "Muzir",
       "town": "Darashia",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Connect existing native bank service and source dialogue.",
+      "work": "Frozen source identity and anchors; existing bank/postal or exact weekday trade callers qualified with replay and money-conservation proofs.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/231",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_captured_bank_and_postal_services_and_replay; npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-bank-postal-anchor-qualification-47",
+        "anchors": 1,
+        "postgres_red": {
+          "exit": 101,
+          "seconds": 67.645,
+          "marker": true,
+          "historical_source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+          "source_head": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+          "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c"
+        },
+        "postgres_green": [
+          {
+            "name": "physical",
+            "filter": "npcfix_fading_and_retained_placements_postgres",
+            "exit": 0,
+            "seconds": 140.183,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-physical.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "rashid-trade",
+            "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+            "exit": 0,
+            "seconds": 110.181,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-rashid-trade.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "bank-services",
+            "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+            "exit": 0,
+            "seconds": 346.342,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-bank-services.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 4,
+            "expected_tests": 1,
+            "execution_proven": true
+          }
+        ],
+        "binary_sha256": "7a74054219fdfdf3ef96de280af76f151cccc630f2d493f1537d198c137ca668"
+      }
     },
     {
       "npc": "Nah'Bob",
@@ -1775,10 +1823,58 @@
       "npc": "Murim",
       "town": "Farmine",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Connect native bank service alongside postal shop; conditional postage. Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
+      "work": "Frozen source identity and anchors; existing bank/postal or exact weekday trade callers qualified with replay and money-conservation proofs.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/230; content/services/trade/trade-00000-00326.json:1#/records/206",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_captured_bank_and_postal_services_and_replay; npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-bank-postal-anchor-qualification-47",
+        "anchors": 1,
+        "postgres_red": {
+          "exit": 101,
+          "seconds": 67.645,
+          "marker": true,
+          "historical_source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+          "source_head": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+          "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c"
+        },
+        "postgres_green": [
+          {
+            "name": "physical",
+            "filter": "npcfix_fading_and_retained_placements_postgres",
+            "exit": 0,
+            "seconds": 140.183,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-physical.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "rashid-trade",
+            "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+            "exit": 0,
+            "seconds": 110.181,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-rashid-trade.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "bank-services",
+            "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+            "exit": 0,
+            "seconds": 346.342,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-bank-services.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 4,
+            "expected_tests": 1,
+            "execution_proven": true
+          }
+        ],
+        "binary_sha256": "7a74054219fdfdf3ef96de280af76f151cccc630f2d493f1537d198c137ca668"
+      }
     },
     {
       "npc": "Ongulf",
@@ -2148,10 +2244,58 @@
       "npc": "Lokur",
       "town": "Kazordoon",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer. Connect the native postal service (Letter, Parcel and Label).",
+      "work": "Frozen source identity and anchors; existing bank/postal or exact weekday trade callers qualified with replay and money-conservation proofs.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/206; content/services/trade/trade-00000-00326.json:1#/records/184",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_captured_bank_and_postal_services_and_replay; npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-bank-postal-anchor-qualification-47",
+        "anchors": 1,
+        "postgres_red": {
+          "exit": 101,
+          "seconds": 67.645,
+          "marker": true,
+          "historical_source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+          "source_head": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+          "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c"
+        },
+        "postgres_green": [
+          {
+            "name": "physical",
+            "filter": "npcfix_fading_and_retained_placements_postgres",
+            "exit": 0,
+            "seconds": 140.183,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-physical.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "rashid-trade",
+            "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+            "exit": 0,
+            "seconds": 110.181,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-rashid-trade.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "bank-services",
+            "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+            "exit": 0,
+            "seconds": 346.342,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-bank-services.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 4,
+            "expected_tests": 1,
+            "execution_proven": true
+          }
+        ],
+        "binary_sha256": "7a74054219fdfdf3ef96de280af76f151cccc630f2d493f1537d198c137ca668"
+      }
     },
     {
       "npc": "Lukosch",
@@ -2352,10 +2496,58 @@
       "npc": "Wally",
       "town": "Kazordoon",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
+      "work": "Frozen source identity and anchors; existing bank/postal or exact weekday trade callers qualified with replay and money-conservation proofs.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/318; content/services/trade/trade-00000-00326.json:1#/records/308",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_captured_bank_and_postal_services_and_replay; npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-bank-postal-anchor-qualification-47",
+        "anchors": 1,
+        "postgres_red": {
+          "exit": 101,
+          "seconds": 67.645,
+          "marker": true,
+          "historical_source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+          "source_head": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+          "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c"
+        },
+        "postgres_green": [
+          {
+            "name": "physical",
+            "filter": "npcfix_fading_and_retained_placements_postgres",
+            "exit": 0,
+            "seconds": 140.183,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-physical.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "rashid-trade",
+            "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+            "exit": 0,
+            "seconds": 110.181,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-rashid-trade.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "bank-services",
+            "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+            "exit": 0,
+            "seconds": 346.342,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-bank-services.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 4,
+            "expected_tests": 1,
+            "execution_proven": true
+          }
+        ],
+        "binary_sha256": "7a74054219fdfdf3ef96de280af76f151cccc630f2d493f1537d198c137ca668"
+      }
     },
     {
       "npc": "Xelvar",
@@ -3855,10 +4047,58 @@
       "npc": "Rashid",
       "town": "Svargrond",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. 155 retail offers including seven default-state amulet buybacks; mission07 gate and seven weekday placements matching the existing runtime selector.",
+      "work": "Frozen source identity and anchors; existing bank/postal or exact weekday trade callers qualified with replay and money-conservation proofs.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/288; content/services/trade/trade-00000-00326.json:1#/records/240",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_captured_bank_and_postal_services_and_replay; npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-bank-postal-anchor-qualification-47",
+        "anchors": 7,
+        "postgres_red": {
+          "exit": 101,
+          "seconds": 67.645,
+          "marker": true,
+          "historical_source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+          "source_head": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+          "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c"
+        },
+        "postgres_green": [
+          {
+            "name": "physical",
+            "filter": "npcfix_fading_and_retained_placements_postgres",
+            "exit": 0,
+            "seconds": 140.183,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-physical.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "rashid-trade",
+            "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+            "exit": 0,
+            "seconds": 110.181,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-rashid-trade.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 1,
+            "expected_tests": 1,
+            "execution_proven": true
+          },
+          {
+            "name": "bank-services",
+            "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+            "exit": 0,
+            "seconds": 346.342,
+            "log": "/tmp/npcfix-evidence/bank-replay-pg-bank-services.log",
+            "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+            "actual_pg_start_markers": 4,
+            "expected_tests": 1,
+            "execution_proven": true
+          }
+        ],
+        "binary_sha256": "7a74054219fdfdf3ef96de280af76f151cccc630f2d493f1537d198c137ca668"
+      }
     },
     {
       "npc": "Robert",
@@ -8138,6 +8378,661 @@
       },
       "cumulative_npcs": 254,
       "cumulative_actors": 269
+    },
+    {
+      "entries": [
+        "Muzir",
+        "Murim",
+        "Lokur",
+        "Wally",
+        "Rashid"
+      ],
+      "state": "QUALIFIED",
+      "source_base": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+      "anchors": 11,
+      "postgres_red": {
+        "exit": 101,
+        "seconds": 67.645,
+        "marker": true,
+        "historical_source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+        "source_head": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+        "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c"
+      },
+      "source_cases": {
+        "state": "QUALIFIED; exact frozen source cases",
+        "source_sha256": "28239be1a5cd8cb4cad639735547d9897af6f6695234567ea35cb00240a8de1c",
+        "cases": [
+          {
+            "npc": "oteryn:npc.muzir",
+            "name": "Muzir",
+            "expected": {
+              "x": 33221,
+              "y": 32389,
+              "floor": -7
+            },
+            "before": null
+          },
+          {
+            "npc": "oteryn:npc.murim",
+            "name": "Murim",
+            "expected": {
+              "x": 33013,
+              "y": 31494,
+              "floor": -10
+            },
+            "before": null
+          },
+          {
+            "npc": "oteryn:npc.lokur",
+            "name": "Lokur",
+            "expected": {
+              "x": 32648,
+              "y": 31905,
+              "floor": -8
+            },
+            "before": null
+          },
+          {
+            "npc": "oteryn:npc.wally",
+            "name": "Wally",
+            "expected": {
+              "x": 32568,
+              "y": 32019,
+              "floor": -7
+            },
+            "before": null
+          },
+          {
+            "npc": "oteryn:npc.rashid",
+            "name": "Rashid",
+            "expected": {
+              "x": 32207,
+              "y": 31155,
+              "floor": -7
+            },
+            "before": null,
+            "additional": [
+              {
+                "x": 33235,
+                "y": 32483,
+                "floor": -7
+              },
+              {
+                "x": 32577,
+                "y": 32753,
+                "floor": -7
+              },
+              {
+                "x": 32300,
+                "y": 32837,
+                "floor": -7
+              },
+              {
+                "x": 32328,
+                "y": 31782,
+                "floor": -6
+              },
+              {
+                "x": 33166,
+                "y": 31810,
+                "floor": -6
+              },
+              {
+                "x": 33066,
+                "y": 32879,
+                "floor": -6
+              }
+            ]
+          }
+        ],
+        "total_anchors": 11,
+        "original_source_sha256": "3aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd",
+        "normalization": "Only Wally normalized point changed; original captured and audited positions retained; promotion capture unchanged."
+      },
+      "bank_contract": "initial0, deposit10, exact confirmation replay, balance10, withdraw5, exact replay, balance5;2 operations/2 audits; money conserved; exact source greeting",
+      "postal_contract": "Murim/Lokur/Wally reuse unchanged ordinary/discount/stale-price/replay assertions; bank ordinals1..8, postal101..107",
+      "rashid_contract": "all7 frozen weekday destinations; one selected anchor and refusal at stale weekday, existing exact trade/replay caller reused",
+      "unit_retry": "Current Main integration changed Rust crates client-assets/dispatch; fresh two-package unit run and three PG groups follow this checkpoint. Prior interrupted six other crate units remain unclaimed.",
+      "generation": [
+        {
+          "name": "stats",
+          "command": [
+            "python3",
+            "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+          ],
+          "exit": 0,
+          "seconds": 7.9
+        },
+        {
+          "name": "stats-pin",
+          "command": [
+            "python3",
+            "tools/contracts/refresh_item_stats_promotion_pin.py"
+          ],
+          "exit": 0,
+          "seconds": 0.134
+        },
+        {
+          "name": "native",
+          "command": [
+            "python3",
+            "tools/content-migration/regenerate_content.py",
+            "--native-only",
+            "--skip-checks"
+          ],
+          "exit": 0,
+          "seconds": 154.616
+        },
+        {
+          "name": "audit",
+          "command": [
+            "python3",
+            "/tmp/npcfix-evidence/preserve-unchanged-output-times.py",
+            "crates/gameplay/durability/src/durability/item_mint_audit.tags",
+            "crates/gameplay/durability/src/durability/item_mint_audit/tests/write_once_wire.hex",
+            "--",
+            "python3",
+            "tools/contracts/update_item_audit_tags.py"
+          ],
+          "exit": 0,
+          "seconds": 0.108
+        },
+        {
+          "name": "matrix",
+          "command": [
+            "python3",
+            "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+          ],
+          "exit": 0,
+          "seconds": 1.154
+        },
+        {
+          "name": "bindings",
+          "command": [
+            "python3",
+            "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+          ],
+          "exit": 0,
+          "seconds": 34.634
+        },
+        {
+          "name": "raid_catalogue",
+          "command": [
+            "python3",
+            "tools/content-migration/raid_catalogue.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 1.227
+        },
+        {
+          "name": "craft_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/craft-authoring/craft_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.73
+        },
+        {
+          "name": "imbuement_content",
+          "command": [
+            "python3",
+            "tools/content-schema/imbuement-authoring/imbuement_content.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 7.823
+        },
+        {
+          "name": "charm_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/charm-authoring/charm_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.194
+        },
+        {
+          "name": "proficiency_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 6.222
+        },
+        {
+          "name": "reward_claim_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 5.503
+        },
+        {
+          "name": "starter_kit_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.642
+        },
+        {
+          "name": "weapon",
+          "command": [
+            "python3",
+            "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+          ],
+          "exit": 0,
+          "seconds": 0.667
+        },
+        {
+          "name": "crystal",
+          "command": [
+            "python3",
+            "tools/content-census/g4_item_crystal_binding_generator.py"
+          ],
+          "exit": 0,
+          "seconds": 3.304
+        },
+        {
+          "name": "pins",
+          "command": [
+            "cargo",
+            "run",
+            "--locked",
+            "--release",
+            "-p",
+            "oteryn-world-bundle-compiler",
+            "--",
+            "pin-refresh",
+            "."
+          ],
+          "exit": 0,
+          "seconds": 71.884
+        },
+        {
+          "name": "native-check",
+          "command": [
+            "python3",
+            "tools/content-migration/register_spell_families.py",
+            "--check"
+          ],
+          "exit": 0,
+          "seconds": 161.57
+        },
+        {
+          "name": "duplicates",
+          "command": [
+            "bash",
+            ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+          ],
+          "exit": 0,
+          "seconds": 0.604
+        }
+      ],
+      "publication_gates": [
+        {
+          "name": "check",
+          "exit": 0,
+          "seconds": 535.665
+        },
+        {
+          "name": "fmt",
+          "exit": 0,
+          "seconds": 23.855
+        }
+      ],
+      "first_run_postgres": [
+        {
+          "name": "physical",
+          "filter": "npcfix_fading_and_retained_placements_postgres",
+          "exit": 101,
+          "seconds": 73.889,
+          "log": "/tmp/npcfix-evidence/bank-postal-pg-physical.log",
+          "source_head": "aef677a7f5a53a67825b45cad5616804cd6ecf48"
+        },
+        {
+          "name": "bank-services",
+          "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+          "exit": 101,
+          "seconds": 145.844,
+          "log": "/tmp/npcfix-evidence/bank-postal-pg-bank-services.log",
+          "source_head": "aef677a7f5a53a67825b45cad5616804cd6ecf48"
+        },
+        {
+          "name": "rashid-trade",
+          "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+          "exit": 0,
+          "seconds": 133.011,
+          "log": "/tmp/npcfix-evidence/bank-postal-pg-rashid-trade.log",
+          "source_head": "aef677a7f5a53a67825b45cad5616804cd6ecf48"
+        }
+      ],
+      "wally_roaming_resolution": {
+        "captured_spawn_anchor": {
+          "x": 32566,
+          "y": 32019,
+          "z": 7
+        },
+        "npc": "oteryn:npc.wally",
+        "position": {
+          "x": 32568,
+          "y": 32019,
+          "z": 7
+        },
+        "rejected_candidates": 20,
+        "walk_radius": 2
+      },
+      "physical_repair_green": {
+        "exit": 0,
+        "seconds": 109.647,
+        "binary": {
+          "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4457d29e431128b9",
+          "binary_sha256": "f1465b49ab162dc425dd01d037dd31da15bc14c2399adf05a6e6c9b005ef491c",
+          "source_head": "aef677a7f5a53a67825b45cad5616804cd6ecf48",
+          "source_build": {
+            "base": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+            "runtime_diff_sha256": "351285d2b8ed0e82cd5d4062d5520623c9b7e35f503b60ee2029fd087db091b4",
+            "packages": [
+              "oteryn-client-assets",
+              "oteryn-game-server",
+              "oteryn-gameplay-content",
+              "oteryn-gameplay-content-promotion",
+              "oteryn-gameplay-dispatch",
+              "oteryn-gameplay-durability",
+              "oteryn-gameplay-npc",
+              "oteryn-world-bundle-compiler"
+            ],
+            "build_jobs": 1
+          },
+          "postgres_configuration": "present; URL never printed"
+        },
+        "test_body_unchanged_since": "aef677a7f5a53a67825b45cad5616804cd6ecf48",
+        "scope": "Existing physical admission caller against newly regenerated runtime content; bank helper repair not covered",
+        "log": "/tmp/npcfix-evidence/qready-merge-fixed-physical-pg.log"
+      },
+      "physical_repair_log_sha256": "f38ab0abe8881c3d16df61bc688eb5d95b054ebd798dafedeed073b5e54bae1f",
+      "second_postgres_run": [
+        {
+          "name": "physical",
+          "filter": "npcfix_fading_and_retained_placements_postgres",
+          "exit": 0,
+          "seconds": 145.418,
+          "log": "/tmp/npcfix-evidence/qready-bank-pg-physical.log",
+          "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4"
+        },
+        {
+          "name": "rashid-trade",
+          "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+          "exit": 0,
+          "seconds": 110.597,
+          "log": "/tmp/npcfix-evidence/qready-bank-pg-rashid-trade.log",
+          "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4"
+        },
+        {
+          "name": "bank-services",
+          "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+          "exit": 101,
+          "seconds": 326.026,
+          "log": "/tmp/npcfix-evidence/qready-bank-pg-bank-services.log",
+          "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4"
+        }
+      ],
+      "replay_fixture_fix": "Wire serve/command.rs:177 checks resume_npc_bank before fresh NPC_TALK. Mirror that boundary; retain every exact reply, money, operation and audit assertion.",
+      "unit_status": "Client-assets10 passed; dispatch full unit binary de3 continues unchanged after Cargo wrapper detached; do not treat wrapper exit -9 as test outcome.",
+      "unit_progress": {
+        "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4",
+        "completed": 816,
+        "failures": [],
+        "state": "Original full unit process remains active; remaining tests pending; no full-pass claim"
+      },
+      "postgres_green": [
+        {
+          "name": "physical",
+          "filter": "npcfix_fading_and_retained_placements_postgres",
+          "exit": 0,
+          "seconds": 140.183,
+          "log": "/tmp/npcfix-evidence/bank-replay-pg-physical.log",
+          "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+          "actual_pg_start_markers": 1,
+          "expected_tests": 1,
+          "execution_proven": true
+        },
+        {
+          "name": "rashid-trade",
+          "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+          "exit": 0,
+          "seconds": 110.181,
+          "log": "/tmp/npcfix-evidence/bank-replay-pg-rashid-trade.log",
+          "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+          "actual_pg_start_markers": 1,
+          "expected_tests": 1,
+          "execution_proven": true
+        },
+        {
+          "name": "bank-services",
+          "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+          "exit": 0,
+          "seconds": 346.342,
+          "log": "/tmp/npcfix-evidence/bank-replay-pg-bank-services.log",
+          "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+          "actual_pg_start_markers": 4,
+          "expected_tests": 1,
+          "execution_proven": true
+        }
+      ],
+      "binary": {
+        "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-0a76a41192128086",
+        "binary_sha256": "7a74054219fdfdf3ef96de280af76f151cccc630f2d493f1537d198c137ca668",
+        "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+        "source_build": {
+          "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+          "runtime_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-gameplay-dispatch"
+          ],
+          "build_only": true,
+          "jobs": 1,
+          "unit_status": "The complete original de3 dispatch unit process continues independently; no duplicate full unit run"
+        },
+        "postgres_configuration": "present; URL never printed"
+      },
+      "proof_log_sha256": {
+        "physical": "587293dc91559a6a9ca8afe26e2ae473b25b21faf5372356e19324f40ab3c260",
+        "rashid-trade": "614258fea1c0c323608f9c777d46516fccea35bb72b1ecebfb6796e6711c9a12",
+        "bank-services": "2c123d86fcd6695fa51f5d7b4d5f55a955eb71df4393df636aae8a928cb6d3cc"
+      },
+      "cumulative_npcs": 259,
+      "cumulative_actors": 280,
+      "publication_generation": [
+        {
+          "name": "stats",
+          "command": [
+            "python3",
+            "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+          ],
+          "exit": 0,
+          "seconds": 4.385
+        },
+        {
+          "name": "stats-pin",
+          "command": [
+            "python3",
+            "tools/contracts/refresh_item_stats_promotion_pin.py"
+          ],
+          "exit": 0,
+          "seconds": 0.193
+        },
+        {
+          "name": "native",
+          "command": [
+            "python3",
+            "tools/content-migration/regenerate_content.py",
+            "--native-only",
+            "--skip-checks"
+          ],
+          "exit": 0,
+          "seconds": 170.961
+        },
+        {
+          "name": "audit",
+          "command": [
+            "python3",
+            "/tmp/npcfix-evidence/preserve-unchanged-output-times.py",
+            "crates/gameplay/durability/src/durability/item_mint_audit.tags",
+            "crates/gameplay/durability/src/durability/item_mint_audit/tests/write_once_wire.hex",
+            "--",
+            "python3",
+            "tools/contracts/update_item_audit_tags.py"
+          ],
+          "exit": 0,
+          "seconds": 0.085
+        },
+        {
+          "name": "matrix",
+          "command": [
+            "python3",
+            "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+          ],
+          "exit": 0,
+          "seconds": 0.773
+        },
+        {
+          "name": "bindings",
+          "command": [
+            "python3",
+            "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+          ],
+          "exit": 0,
+          "seconds": 26.191
+        },
+        {
+          "name": "raid_catalogue",
+          "command": [
+            "python3",
+            "tools/content-migration/raid_catalogue.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.986
+        },
+        {
+          "name": "craft_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/craft-authoring/craft_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.686
+        },
+        {
+          "name": "imbuement_content",
+          "command": [
+            "python3",
+            "tools/content-schema/imbuement-authoring/imbuement_content.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 6.476
+        },
+        {
+          "name": "charm_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/charm-authoring/charm_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.174
+        },
+        {
+          "name": "proficiency_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 5.32
+        },
+        {
+          "name": "reward_claim_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 4.687
+        },
+        {
+          "name": "starter_kit_authoring",
+          "command": [
+            "python3",
+            "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+            "content"
+          ],
+          "exit": 0,
+          "seconds": 0.686
+        },
+        {
+          "name": "weapon",
+          "command": [
+            "python3",
+            "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+          ],
+          "exit": 0,
+          "seconds": 0.616
+        },
+        {
+          "name": "crystal",
+          "command": [
+            "python3",
+            "tools/content-census/g4_item_crystal_binding_generator.py"
+          ],
+          "exit": 0,
+          "seconds": 3.28
+        },
+        {
+          "name": "pins",
+          "command": [
+            "cargo",
+            "run",
+            "--locked",
+            "--release",
+            "-p",
+            "oteryn-world-bundle-compiler",
+            "--",
+            "pin-refresh",
+            "."
+          ],
+          "exit": 0,
+          "seconds": 60.548
+        },
+        {
+          "name": "duplicates",
+          "command": [
+            "bash",
+            ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+          ],
+          "exit": 0,
+          "seconds": 0.76
+        }
+      ],
+      "publication_main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+      "ready_for_coordinator_pr": true,
+      "clippy": "Source unchanged since strict3-library Clippy198.351s on the 248 code tree; no repeated Clippy for this metadata-only qualification."
     }
   ],
   "shared_engine_lookup": {
@@ -10952,7 +11847,7 @@
       "Wally",
       "Rashid"
     ],
-    "state": "COMPILES; existing wire replay boundary mirrored; fresh own PG cases pending",
+    "state": "QUALIFIED",
     "source_base": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
     "anchors": 11,
     "postgres_red": {
@@ -10964,7 +11859,7 @@
       "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c"
     },
     "source_cases": {
-      "state": "AUTHORED; frozen source packet unchanged, Wally source-bounded roaming resolution",
+      "state": "QUALIFIED; exact frozen source cases",
       "source_sha256": "28239be1a5cd8cb4cad639735547d9897af6f6695234567ea35cb00240a8de1c",
       "cases": [
         {
@@ -11248,17 +12143,12 @@
       {
         "name": "check",
         "exit": 0,
-        "seconds": 457.52
+        "seconds": 535.665
       },
       {
         "name": "fmt",
         "exit": 0,
-        "seconds": 24.68
-      },
-      {
-        "name": "clippy",
-        "exit": 0,
-        "seconds": 198.351
+        "seconds": 23.855
       }
     ],
     "first_run_postgres": [
@@ -11360,11 +12250,249 @@
     "replay_fixture_fix": "Wire serve/command.rs:177 checks resume_npc_bank before fresh NPC_TALK. Mirror that boundary; retain every exact reply, money, operation and audit assertion.",
     "unit_status": "Client-assets10 passed; dispatch full unit binary de3 continues unchanged after Cargo wrapper detached; do not treat wrapper exit -9 as test outcome.",
     "unit_progress": {
-      "completed": 727,
-      "failures": [],
       "source_head": "de3ca700ca19e351aade87b402dc3911004b8ac4",
-      "state": "RUNNING independently; no full-pass claim"
-    }
+      "completed": 816,
+      "failures": [],
+      "state": "Original full unit process remains active; remaining tests pending; no full-pass claim"
+    },
+    "postgres_green": [
+      {
+        "name": "physical",
+        "filter": "npcfix_fading_and_retained_placements_postgres",
+        "exit": 0,
+        "seconds": 140.183,
+        "log": "/tmp/npcfix-evidence/bank-replay-pg-physical.log",
+        "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+        "actual_pg_start_markers": 1,
+        "expected_tests": 1,
+        "execution_proven": true
+      },
+      {
+        "name": "rashid-trade",
+        "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+        "exit": 0,
+        "seconds": 110.181,
+        "log": "/tmp/npcfix-evidence/bank-replay-pg-rashid-trade.log",
+        "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+        "actual_pg_start_markers": 1,
+        "expected_tests": 1,
+        "execution_proven": true
+      },
+      {
+        "name": "bank-services",
+        "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+        "exit": 0,
+        "seconds": 346.342,
+        "log": "/tmp/npcfix-evidence/bank-replay-pg-bank-services.log",
+        "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+        "actual_pg_start_markers": 4,
+        "expected_tests": 1,
+        "execution_proven": true
+      }
+    ],
+    "binary": {
+      "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-0a76a41192128086",
+      "binary_sha256": "7a74054219fdfdf3ef96de280af76f151cccc630f2d493f1537d198c137ca668",
+      "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+      "source_build": {
+        "source_head": "248a024b8d70cdd61d64a0976b04f5d412bf0998",
+        "runtime_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "packages": [
+          "oteryn-client-assets",
+          "oteryn-gameplay-dispatch"
+        ],
+        "build_only": true,
+        "jobs": 1,
+        "unit_status": "The complete original de3 dispatch unit process continues independently; no duplicate full unit run"
+      },
+      "postgres_configuration": "present; URL never printed"
+    },
+    "proof_log_sha256": {
+      "physical": "587293dc91559a6a9ca8afe26e2ae473b25b21faf5372356e19324f40ab3c260",
+      "rashid-trade": "614258fea1c0c323608f9c777d46516fccea35bb72b1ecebfb6796e6711c9a12",
+      "bank-services": "2c123d86fcd6695fa51f5d7b4d5f55a955eb71df4393df636aae8a928cb6d3cc"
+    },
+    "cumulative_npcs": 259,
+    "cumulative_actors": 280,
+    "publication_generation": [
+      {
+        "name": "stats",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+        ],
+        "exit": 0,
+        "seconds": 4.385
+      },
+      {
+        "name": "stats-pin",
+        "command": [
+          "python3",
+          "tools/contracts/refresh_item_stats_promotion_pin.py"
+        ],
+        "exit": 0,
+        "seconds": 0.193
+      },
+      {
+        "name": "native",
+        "command": [
+          "python3",
+          "tools/content-migration/regenerate_content.py",
+          "--native-only",
+          "--skip-checks"
+        ],
+        "exit": 0,
+        "seconds": 170.961
+      },
+      {
+        "name": "audit",
+        "command": [
+          "python3",
+          "/tmp/npcfix-evidence/preserve-unchanged-output-times.py",
+          "crates/gameplay/durability/src/durability/item_mint_audit.tags",
+          "crates/gameplay/durability/src/durability/item_mint_audit/tests/write_once_wire.hex",
+          "--",
+          "python3",
+          "tools/contracts/update_item_audit_tags.py"
+        ],
+        "exit": 0,
+        "seconds": 0.085
+      },
+      {
+        "name": "matrix",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+        ],
+        "exit": 0,
+        "seconds": 0.773
+      },
+      {
+        "name": "bindings",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+        ],
+        "exit": 0,
+        "seconds": 26.191
+      },
+      {
+        "name": "raid_catalogue",
+        "command": [
+          "python3",
+          "tools/content-migration/raid_catalogue.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.986
+      },
+      {
+        "name": "craft_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/craft-authoring/craft_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.686
+      },
+      {
+        "name": "imbuement_content",
+        "command": [
+          "python3",
+          "tools/content-schema/imbuement-authoring/imbuement_content.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 6.476
+      },
+      {
+        "name": "charm_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/charm-authoring/charm_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.174
+      },
+      {
+        "name": "proficiency_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 5.32
+      },
+      {
+        "name": "reward_claim_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 4.687
+      },
+      {
+        "name": "starter_kit_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.686
+      },
+      {
+        "name": "weapon",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+        ],
+        "exit": 0,
+        "seconds": 0.616
+      },
+      {
+        "name": "crystal",
+        "command": [
+          "python3",
+          "tools/content-census/g4_item_crystal_binding_generator.py"
+        ],
+        "exit": 0,
+        "seconds": 3.28
+      },
+      {
+        "name": "pins",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "--release",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "exit": 0,
+        "seconds": 60.548
+      },
+      {
+        "name": "duplicates",
+        "command": [
+          "bash",
+          ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+        ],
+        "exit": 0,
+        "seconds": 0.76
+      }
+    ],
+    "publication_main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+    "ready_for_coordinator_pr": true,
+    "clippy": "Source unchanged since strict3-library Clippy198.351s on the 248 code tree; no repeated Clippy for this metadata-only qualification."
   },
   "qready_main_integration": {
     "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
