@@ -334,6 +334,7 @@ fn scenario_case(
                 generation
                     .native_gameplay()
                     .ok_or("native explore policies")?,
+                name,
             )?
         } else if native_upper {
             super::super::l6_paradox_upper::world(
@@ -871,15 +872,6 @@ fn scenario_case(
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
-        } else if name == "srv7-reliable-ram" {
-            super::super::srv7_reliable_ram::exercise(
-                &mut owner,
-                &mut admitted,
-                &h,
-                &callback,
-                trigger,
-            )
-            .await?;
         } else if name == "srv7-reliable-ram" {
             super::super::srv7_reliable_ram::exercise(
                 &mut owner,

@@ -34,13 +34,15 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod source_container_capacity;
+pub use source_container_capacity::captured_source_capacity;
 mod source_containers;
 pub use source_containers::CapturedMapItem;
 
 mod quest_callbacks;
 mod world_change_phases;
 use quest_callbacks::CallbackStates;
-pub use quest_callbacks::QuestCallbackProjection;
+pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
