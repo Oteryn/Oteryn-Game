@@ -11314,6 +11314,24 @@
       },
       "changed_crate_clippy": "No crates changed by this audit commit.",
       "ledger": "All 23 rows terminal: 2 DONE, 19 WAITING-ENGINE, 2 ownership BLOCKED. .lane remains local/uncommitted."
+    },
+    "main_recheck": {
+      "main": "e9276ad7e",
+      "merge": "8b7e1c7f4",
+      "result": "No newly eligible quest: all four engine heads unchanged; 26 existing gap witness files byte-identical; authored_bindings.rs still absent.",
+      "counts": {
+        "DONE": 2,
+        "WAITING-ENGINE": 19,
+        "BLOCKED": 2
+      },
+      "validation": {
+        "workspace_all_targets": "PASS 7.10s",
+        "quest_units": "307 passed, zero skipped, 30.597s",
+        "fmt": "PASS",
+        "duplicate_migrations": "PASS",
+        "generation": "PASS native content, equipment pins, quest bindings, completion matrix, reward-variant packet, world pin refresh; no product diff."
+      },
+      "change_scope": "Main client settings/login integration only; no new lane quest implementation."
     }
   }
 }
