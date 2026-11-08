@@ -23,3 +23,14 @@ Main already implements ActorConditionRequirement::Drunk. The older request
 for a new drunk eligibility mechanism is withdrawn; future Kissing a Pig work
 will reuse that condition. The diagonal movement request for Unnatural Selection
 remains separate from this finished slice.
+
+The isolated PostgreSQL rerun exposed two integration differences from the older
+lane branch. World callbacks now cite the corpus provider `crystalserver:` with
+the same immutable revision and SHA256. The 31-line committed-copy helper reuses
+be6626b4's generic update so NPC hand-ins observe a committed world stage before
+the next command; recovered receipts cannot overwrite newer snapshots. This
+replaces main's Monk-only immediate update and preserves cadence reconciliation.
+
+The complete focused rerun passed all four cases: White Raven 119.526543435 s,
+Efreet 162.740122134 s, Marid 155.475079588 s, plus the equipment regression.
+All three player journeys emitted PostgreSQL 18.6 markers and completed normally.

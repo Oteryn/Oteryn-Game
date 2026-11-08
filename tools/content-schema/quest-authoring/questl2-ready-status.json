@@ -11,7 +11,7 @@
   "entries": [
     {
       "title": "Djinn War Efreet",
-      "status": "IN_PROGRESS",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "head": "6b9c07783444eef9d3e2ae93feda573615784492",
@@ -22,6 +22,15 @@
           "test": "questl2_djinn_efreet_full_player_journey",
           "passed": true,
           "log": "/tmp/l2b-main47-focused-pg.log"
+        },
+        {
+          "postgresql": "18.6",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-djinn-efreet",
+          "duration_seconds": 162.740122134,
+          "passed": true,
+          "log": "/tmp/l2-ready-copy-pg.log",
+          "code_reuse": "be6626b49508c33b062c097480ed173472a8bdba",
+          "regression_fix": "synchronous committed world-state copy plus canonical donor namespace"
         }
       ],
       "initial_red": {
@@ -37,11 +46,11 @@
         "point": "NothingToUse at the real fountain/lamp because the generic world shadowed the specialized source fixture."
       },
       "journey": "Exclusive faction enlistment; ordered source mission hand-ins and missing-item refusals; physical fountain/lamp callbacks; once-only lamp issue and transformation; wrong-faction refusal; completion achievement; real shop purchase and sale with replay protection.",
-      "ready_branch_validation": "pending PostgreSQL rerun on isolated main-based slice"
+      "ready_branch_validation": "PASS: complete PostgreSQL 18.6 player journey"
     },
     {
       "title": "Djinn War Marid",
-      "status": "IN_PROGRESS",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "head": "6b9c07783444eef9d3e2ae93feda573615784492",
@@ -52,6 +61,15 @@
           "test": "questl2_djinn_marid_full_player_journey",
           "passed": true,
           "log": "/tmp/l2b-main47-focused-pg.log"
+        },
+        {
+          "postgresql": "18.6",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-djinn-marid",
+          "duration_seconds": 155.475079588,
+          "passed": true,
+          "log": "/tmp/l2-ready-copy-pg.log",
+          "code_reuse": "be6626b49508c33b062c097480ed173472a8bdba",
+          "regression_fix": "synchronous committed world-state copy plus canonical donor namespace"
         }
       ],
       "initial_red": {
@@ -67,11 +85,11 @@
         "point": "NothingToUse at the real fountain/lamp because the generic world shadowed the specialized source fixture."
       },
       "journey": "Exclusive faction enlistment; ordered source mission hand-ins and missing-item refusals; physical fountain/lamp callbacks; once-only lamp issue and transformation; wrong-faction refusal; completion achievement; real shop purchase and sale with replay protection.",
-      "ready_branch_validation": "pending PostgreSQL rerun on isolated main-based slice"
+      "ready_branch_validation": "PASS: complete PostgreSQL 18.6 player journey"
     },
     {
       "title": "White Raven Monastery",
-      "status": "IN_PROGRESS",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "postgresql": "18.6",
@@ -90,6 +108,15 @@
           "test_duration_seconds": 96.312,
           "passed": true,
           "log": "/tmp/l2b-main47-focused-pg.log"
+        },
+        {
+          "postgresql": "18.6",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-white-raven",
+          "duration_seconds": 119.526543435,
+          "passed": true,
+          "log": "/tmp/l2-ready-copy-pg.log",
+          "code_reuse": "be6626b49508c33b062c097480ed173472a8bdba",
+          "regression_fix": "synchronous committed world-state copy plus canonical donor namespace"
         }
       ],
       "red": {
@@ -114,23 +141,51 @@
         "state": "Resolved by existing paid-travel owner confirmation routing; full native PG journey green."
       },
       "journey": "Source chest issues Family Brooch once; Dalbrect consumes it atomically with friendship; passage denied before friendship and without fee; real ten-gold paid travel arrives on Isle of Kings; Costello grants catacomb access; diary consumed for Ankh; replays preserve single outputs.",
-      "ready_branch_validation": "pending PostgreSQL rerun on isolated main-based slice"
+      "ready_branch_validation": "PASS: complete PostgreSQL 18.6 player journey"
     }
   ],
   "validation": {
-    "quest_authoring_checks": "PASS: run_checks.py --part checks",
+    "quest_authoring_checks": "PASS: namespace rerun",
     "quest_authoring_unit_modules": 103,
     "quest_authoring_unit_tests": 1118,
     "quest_authoring_existing_skips": 8,
-    "content_tree_seconds": 246.69330677999824,
-    "workspace_check_seconds": 839.217631284002,
+    "content_tree_seconds": 180.0962346610031,
+    "workspace_check_seconds": 290.9339160399977,
     "cargo_fmt_all_check": "PASS",
     "duplicate_migrations": "PASS: no lane migrations",
     "generated_files": "repository regenerator, central packet tools and pin-refresh completed",
     "pending": [
-      "fresh isolated PostgreSQL journeys",
-      "changed-crate Rust unit suites",
-      "clippy -D warnings"
-    ]
+      "crate unit suites: dispatch, durability, npc, quests (running; no failures reported)"
+    ],
+    "postgresql_cases": {
+      "passed": 4,
+      "failed": 0,
+      "native_journeys": 3,
+      "suite_seconds": 292.824,
+      "equipment_regression_seconds": 64.425
+    },
+    "rust_units_completed": {
+      "oteryn-client-assets": {
+        "passed": 10,
+        "seconds": 0.45
+      },
+      "oteryn-gameplay-content": {
+        "passed": 326,
+        "failed": 0,
+        "preexisting_ignored": 1,
+        "seconds": 759.04,
+        "test_process_exit_status": 0
+      }
+    },
+    "clippy_seconds": 220.53570724900783,
+    "clippy_crates": [
+      "oteryn-client-assets",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-dispatch"
+    ],
+    "publication_rule": "PREPUSH-2 cadence exception: publish passed steps 1, 2 and 4 and own PostgreSQL cases while the remaining crate unit run completes"
   }
 }

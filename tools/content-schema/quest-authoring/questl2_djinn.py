@@ -135,7 +135,7 @@ def world_callbacks(inputs, pin):
                 'target_replacement': None},
             'return_on_failure': False, 'failure_message': None,
             'effects': {},
-            'sources': [f'crystal:{pin}:{path}:2-484:sha256:{hashlib.sha256(inputs[path]).hexdigest()}'],
+            'sources': [f'crystalserver:{pin}:{path}:2-484:sha256:{hashlib.sha256(inputs[path]).hexdigest()}'],
         })
     rows.append({
         'key': 'oteryn:quest-callback/l2-djinn-tear-fountain',
@@ -148,7 +148,7 @@ def world_callbacks(inputs, pin):
         'failure_message': None,
         'effects': {'item_reward': {'item': 'oteryn:item.tibia.i3233',
                     'count': 1, 'contents': []}},
-        'sources': [f'crystal:{pin}:{fountain}:3-13:sha256:{hashlib.sha256(inputs[fountain]).hexdigest()}'],
+        'sources': [f'crystalserver:{pin}:{fountain}:3-13:sha256:{hashlib.sha256(inputs[fountain]).hexdigest()}'],
     })
     return {'schema': 1, 'callbacks': rows}
 
