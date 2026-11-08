@@ -2,6 +2,8 @@
 pub mod carried_step;
 pub(super) mod completion;
 pub(crate) mod ground_stack;
+#[cfg(feature = "test-support")]
+pub mod ground_stack_fixture;
 pub mod shared_count;
 pub mod shared_switch;
 use super::{
