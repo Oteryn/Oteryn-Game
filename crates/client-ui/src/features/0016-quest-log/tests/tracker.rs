@@ -120,3 +120,34 @@ fn queued_new_quests_wait_for_the_previous_tracking_delta() {
         })
     );
 }
+
+#[test]
+fn rejected_new_quest_additions_retry_after_refresh_without_a_busy_loop() {
+    let now = Instant::now();
+    let mut p = QuestPanel::default();
+    p.state.selected = true;
+    p.tracker.auto_add = true;
+    p.tracker.observe(&[]);
+    p.tracker.observe(&[entry(1, false)]);
+    let expected = QuestLogQuery::Track {
+        quest_indexes: vec![1],
+    };
+    assert_eq!(tracker_query(&mut p, now), Some(expected.clone()));
+    p.tracker.command_failed();
+    assert_eq!(
+        tracker_query(&mut p, now + Duration::from_secs(1)),
+        Some(QuestLogQuery::ListOnly)
+    );
+    assert_eq!(tracker_query(&mut p, now + Duration::from_secs(2)), None);
+    p.tracker.observe(&[entry(1, false)]);
+    assert_eq!(
+        tracker_query(&mut p, now + Duration::from_secs(3)),
+        Some(expected)
+    );
+    assert!(p.state.log.tracked.is_empty());
+    p.state.log.tracked = vec![line(1, false)];
+    assert_eq!(tracker_query(&mut p, now + Duration::from_secs(4)), None);
+    p.state.log.tracked.clear();
+    p.tracker.observe(&[entry(1, false)]);
+    assert_eq!(tracker_query(&mut p, now + Duration::from_secs(5)), None);
+}

@@ -22,8 +22,35 @@ pub struct QuestTracker {
     attempted: Option<(u64, Vec<u32>)>,
     generation: u64,
     awaiting: Option<Vec<u32>>,
+    needs_fresh_list: bool,
 }
 impl QuestTracker {
+    /// Refresh command membership after resync, retaining the discovery baseline.
+    pub fn reconcile(&mut self) {
+        self.awaiting = None;
+        self.attempted = None;
+        self.next_poll = None;
+        self.needs_fresh_list = true;
+    }
+
+    /// Consume every authoritative observation, even when several arrive between UI frames.
+    pub fn confirm(&mut self, tracked: &[QuestLine]) {
+        let confirmed: Vec<_> = tracked.iter().map(|q| q.quest_index).collect();
+        self.added.retain(|id| !confirmed.contains(id));
+        if self.awaiting.as_ref().is_some_and(|expected| {
+            *expected == confirmed
+                || self.seen.as_ref().is_some_and(|seen| {
+                    expected
+                        .iter()
+                        .filter(|id| seen.contains(id))
+                        .copied()
+                        .collect::<Vec<_>>()
+                        == confirmed
+                })
+        }) {
+            self.awaiting = None;
+        }
+    }
     pub fn command_failed(&mut self) {
         self.awaiting = None;
     }
@@ -42,6 +69,7 @@ impl QuestTracker {
         self.added
             .retain(|id| list.iter().any(|q| q.quest_index == *id && !q.completed));
         self.seen = Some(current);
+        self.needs_fresh_list = false;
         self.generation = self.generation.saturating_add(1);
     }
 }
@@ -54,6 +82,21 @@ pub fn tracker_query(panel: &mut QuestPanel, now: Instant) -> Option<QuestLogQue
     if !t.auto_add {
         t.added.clear();
     }
+    if t.needs_fresh_list {
+        if (t.auto_add || t.auto_remove) && t.next_poll.is_none_or(|at| now >= at) {
+            t.next_poll = Some(now + Duration::from_secs(5));
+            return Some(QuestLogQuery::ListOnly);
+        }
+        return None;
+    }
+    t.confirm(&panel.state.log.tracked);
+    let confirmed: Vec<_> = panel
+        .state
+        .log
+        .tracked
+        .iter()
+        .map(|q| q.quest_index)
+        .collect();
     let mut desired: Vec<_> = panel
         .state
         .log
@@ -70,26 +113,6 @@ pub fn tracker_query(panel: &mut QuestPanel, now: Instant) -> Option<QuestLogQue
             desired.push(*id);
         }
     }
-    let confirmed: Vec<_> = panel
-        .state
-        .log
-        .tracked
-        .iter()
-        .map(|q| q.quest_index)
-        .collect();
-    if t.awaiting.as_ref().is_some_and(|expected| {
-        *expected == confirmed
-            || t.seen.as_ref().is_some_and(|seen| {
-                expected
-                    .iter()
-                    .filter(|id| seen.contains(id))
-                    .copied()
-                    .collect::<Vec<_>>()
-                    == confirmed
-            })
-    }) {
-        t.awaiting = None;
-    }
     let attempt = (t.generation, desired.clone());
     if t.awaiting.is_none()
         && desired != confirmed
@@ -98,7 +121,6 @@ pub fn tracker_query(panel: &mut QuestPanel, now: Instant) -> Option<QuestLogQue
     {
         t.awaiting = Some(desired.clone());
         t.attempted = Some(attempt);
-        t.added.retain(|id| !desired.contains(id));
         t.next_change = Some(now + Duration::from_secs(1));
         return Some(QuestLogQuery::Track {
             quest_indexes: desired,

@@ -42,9 +42,11 @@ impl Outbox {
                         view: Some(oteryn_client_runtime::quest_log::QuestLogView::List(list)),
                         tracked,
                     }) if tracked.is_empty() => {
-                        mailbox.quest.tracker.observe(&list);
-                        mailbox.quest.state.list = list;
-                        mailbox.quest.state.refusal = None;
+                        let panel = &mut mailbox.quest;
+                        panel.tracker.observe(&list);
+                        panel.state.list = list;
+                        panel.tracker.confirm(&panel.state.log.tracked);
+                        panel.state.refusal = None;
                     }
                     _ => {
                         mailbox.quest.state.refusal =
@@ -77,6 +79,10 @@ pub(in crate::play) fn reduce(
     for delta in deltas {
         if let Err(refusal) = panel.state.apply_update(&delta) {
             panel.state.refusal = Some(refusal);
+            continue;
+        }
+        if matches!(&delta, QuestUpdate::Snapshot(_)) {
+            panel.tracker.reconcile();
         }
         if matches!(
             &panel.state.log.view,
@@ -84,6 +90,7 @@ pub(in crate::play) fn reduce(
         ) {
             panel.tracker.observe(&panel.state.list);
         }
+        panel.tracker.confirm(&panel.state.log.tracked);
         let missions = match &panel.state.log.view {
             Some(oteryn_client_runtime::quest_log::QuestLogView::Line(line)) => &line.missions[..],
             _ => &[],
