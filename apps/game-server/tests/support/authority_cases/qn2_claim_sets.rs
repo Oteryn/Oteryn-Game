@@ -29,6 +29,15 @@ fn qn2_behemoth_claims_complete_only_after_the_fourth_chest() -> TestResult {
     )
 }
 
+#[test]
+fn qn2_circle_room_claims_complete_only_after_both_chests() -> TestResult {
+    claim_set_scenario(
+        "qn2_circle_room",
+        "oteryn:quest.circle_room_quest",
+        &["circleroom2", "circleroom1"],
+    )
+}
+
 fn claim_set_scenario(
     tag: &'static str,
     quest: &'static str,

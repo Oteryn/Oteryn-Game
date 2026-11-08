@@ -27,5 +27,15 @@
         "kv/behemothquest4"
       ]
     ]
+  },
+  "oteryn:quest.circle_room_quest": {
+    "groups": [
+      [
+        "kv/circleroom1"
+      ],
+      [
+        "kv/circleroom2"
+      ]
+    ]
   }
 }

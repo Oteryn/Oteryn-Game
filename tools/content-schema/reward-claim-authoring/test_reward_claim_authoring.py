@@ -398,7 +398,8 @@ def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
         "oteryn:reward-claim.kv." + marker: {"oteryn:quest-transition/kv/" + marker + "/chest"}
         for marker in ("adoreduh", "barbarianaxe1", "battleaxe", "bloodherb", "captain_iglues",
                        "bear_chest1", "bear_chest2", "bear_chest3",
-                       "behemothquest1", "behemothquest2", "behemothquest3", "behemothquest4")
+                       "behemothquest1", "behemothquest2", "behemothquest3", "behemothquest4",
+                       "circleroom1", "circleroom2")
     }
     assert bound == expected_claim_sets | {
         "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook":
