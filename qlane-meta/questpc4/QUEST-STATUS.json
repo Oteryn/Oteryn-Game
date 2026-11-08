@@ -10718,5 +10718,12 @@
       "duplicate_migrations": 0,
       "dispatch_units": "2810-case dispatch unit run still running at publication; PREPUSH-2 cadence exception for step3. No PG success claimed from guarded unit cases."
     }
+  },
+  "main3030_merge": {
+    "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+    "scope": "Owner-authorized collector merge on frozen PR branch; compass continuation retained in stash on questpc4b.",
+    "resolution": "Preserve lane carried/shared-switch fences and teleport suppression with main world-change fences/live teleport lookup. Reuse main single typed apply_input helper, keep NPC ground rejection. Add neutral constructor defaults and new Benevola argument; remove duplicate forwarding methods.",
+    "validation": "Full repository regeneration and merged-tree checks in progress; no push yet.",
+    "previous_unit_run": "Interrupted for mandatory branch/content switch:1685 passed;6 running cases cancelled,1119 not run. Not a complete pass. Rerun merged tree."
   }
 }

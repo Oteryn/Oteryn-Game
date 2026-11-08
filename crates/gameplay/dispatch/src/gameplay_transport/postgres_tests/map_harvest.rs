@@ -23,7 +23,53 @@ fn w19_ice_flower_harvest_wire_no_seed_cannot_reroll() -> TestResult {
     run_case(13842, false)
 }
 
+#[derive(Clone, Copy)]
+enum ThawingSource {
+    Daily { active: bool, stale_epoch: bool },
+    Ordinary,
+}
+
+#[test]
+fn worldchg_thawing_daily_added_use_yield_replay_restart() -> TestResult {
+    run_case_with_source(
+        13842,
+        true,
+        Some(ThawingSource::Daily {
+            active: true,
+            stale_epoch: false,
+        }),
+    )
+}
+#[test]
+fn worldchg_thawing_inactive_daily_source_refuses_without_value() -> TestResult {
+    run_case_with_source(
+        13842,
+        true,
+        Some(ThawingSource::Daily {
+            active: false,
+            stale_epoch: false,
+        }),
+    )
+}
+#[test]
+fn worldchg_thawing_stale_epoch_refuses_without_value() -> TestResult {
+    run_case_with_source(
+        13842,
+        true,
+        Some(ThawingSource::Daily {
+            active: true,
+            stale_epoch: true,
+        }),
+    )
+}
+#[test]
+fn worldchg_thawing_ordinary_flower_at_daily_coordinate_is_not_day_gated() -> TestResult {
+    run_case_with_source(13842, true, Some(ThawingSource::Ordinary))
+}
 fn run_case(before: u16, yields: bool) -> TestResult {
+    run_case_with_source(before, yields, None)
+}
+fn run_case_with_source(before: u16, yields: bool, source: Option<ThawingSource>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         eprintln!("W19 POSTGRES_CASE_SKIPPED no_admin_url map_harvest");
         assert!(
@@ -35,7 +81,7 @@ fn run_case(before: u16, yields: bool) -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(before, yields).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(before, yields, source).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "map harvest e2e panic")??;
     eprintln!(
@@ -45,8 +91,9 @@ fn run_case(before: u16, yields: bool) -> TestResult {
     Ok(())
 }
 
-fn scenario(before: u16, yields: bool) -> TestResult {
-    run(async |admin| {
+fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestResult {
+    run(async move |admin| {
+        let started = std::time::Instant::now();
         let harness =
             Harness::create_with_admission_seed(admin, "map_harvest", true, false).await?;
         super::reset();
@@ -86,6 +133,25 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             (water, reference(water).ok_or("water")?.get() - 1),
             if before == 13842 { &[] } else { &states },
         );
+        let (bytes, pins) = if source.is_some() {
+            thawing_fixture(
+                bytes,
+                pins,
+                matches!(source, Some(ThawingSource::Daily { .. })),
+            )?
+        } else {
+            (bytes, pins)
+        };
+        let actor_cell = if source.is_some() {
+            (32254, 31079, 5)
+        } else {
+            (6, 0, 7)
+        };
+        let target_pos = crate::map::overlay::TilePos {
+            x: (actor_cell.0 + 1) as u16,
+            y: actor_cell.1 as u16,
+            floor: -(actor_cell.2 as i8),
+        };
         let (bytes, pins) = if before == 13842 {
             // The reset projection supplies the live flower, not the static fixture.
             let mut bundle = oteryn_world_bundle::bundle::read(&bytes)?;
@@ -131,9 +197,9 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
             start: crate::map::overlay::TilePos {
-                x: 6,
-                y: 0,
-                floor: -7,
+                x: actor_cell.0 as u16,
+                y: actor_cell.1 as u16,
+                floor: -(actor_cell.2 as i8),
             },
         };
         // The production boot policy: an unknown fact blocks and is not pickupable.
@@ -176,7 +242,7 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             pin.identity().client_artifact_digest(),
             pin.frame_binding().digest(),
             pin.qualified_room().map_revision_digest(),
-            (6, 0, 7),
+            actor_cell,
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -198,9 +264,9 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: 6,
-                    y: 0,
-                    floor: 7,
+                    x: actor_cell.0,
+                    y: actor_cell.1,
+                    floor: actor_cell.2,
                 },
             )
             .map_err(debug)?;
@@ -230,24 +296,31 @@ fn scenario(before: u16, yields: bool) -> TestResult {
         let initial_admitted = admitted;
         assert_eq!(initial_admitted.continuity.next_command_id, 1);
         let mut placement = map.base().digest().to_vec();
-        let target_pos = crate::map::overlay::TilePos {
-            x: 7,
-            y: 0,
-            floor: -7,
-        };
-        placement.extend_from_slice(
-            &crate::map::view::placement_key(target_pos, 1)
-                .ok_or("target placement")?
-                .to_be_bytes(),
-        );
+        if matches!(source, Some(ThawingSource::Daily { .. })) {
+            assert!(map.facts().create_world_change_item(target_pos, 13842));
+        }
+        let key = source_key(&map, target_pos, source)?;
+        placement.extend_from_slice(&key.to_be_bytes());
         let target = WorldObjectTarget {
             placement,
             expected_revision: 0,
         };
         // The physical draw belongs to this source placement and reset epoch, not to a
         // player's command id or opaque view handle. Exercise both sourced flower outcomes.
-        let epoch = (0_i64..128)
+        let epoch = (1_i64..2048)
             .find(|epoch| {
+                if let Some(source) = source {
+                    let expected = matches!(source, ThawingSource::Daily { active: true, .. });
+                    if !crate::durability::world_event::changes::roll(
+                        admitted.world_id,
+                        *epoch as u64,
+                        0,
+                    )
+                    .is_ok_and(|day| day.thawing == expected)
+                    {
+                        return false;
+                    }
+                }
                 let roll = oteryn_gameplay_items::event_planting::map_harvest_roll(
                     native.source_digest(),
                     *admitted.world_id.as_bytes(),
@@ -263,6 +336,32 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             })
             .ok_or("bounded source draw fixture")?;
         owner.reset_epoch = u64::try_from(epoch)?;
+        if source.is_some() {
+            let current = if matches!(
+                source,
+                Some(ThawingSource::Daily {
+                    stale_epoch: true,
+                    ..
+                })
+            ) {
+                epoch + 1
+            } else {
+                epoch
+            };
+            for e in [epoch, current] {
+                sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01') ON CONFLICT DO NOTHING")
+                    .bind(admitted.world_id.as_bytes().as_slice()).bind(e).bind(native.source_digest().as_slice()).execute(&harness.pool).await?;
+            }
+            sqlx::query("INSERT INTO game_world_reset_active(world_id,reset_epoch) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=excluded.reset_epoch")
+                .bind(admitted.world_id.as_bytes().as_slice()).bind(current).execute(&harness.pool).await?;
+            assert!(
+                harness
+                    .root
+                    .world_changes(admitted.world_id, current as u64)
+                    .await?
+                    .is_some()
+            );
+        }
         let intent = UseIntent {
             target: UseTarget::WorldObject(target.clone()),
             use_with: None,
@@ -270,7 +369,7 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
-        if yields {
+        if yields && source.is_none() {
             // Fail after the real map CAS, before value rows. The transaction must restore
             // both map and value state, and retrying cannot select a different flower draw.
             sqlx::query("CREATE FUNCTION test_map_harvest_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'harvest rollback probe'; END $$")
@@ -317,9 +416,36 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             owner.reset_epoch = u64::try_from(epoch)?;
             deps.initialize(&owner).await;
         }
-        let (_, result, actual) = exchange(&owner, initial_admitted, 1, &payload, None).await?;
+        let (_, result, actual) = if matches!(source, Some(ThawingSource::Daily { .. })) {
+            exchange_daily_flower(&owner, initial_admitted, 1, &payload).await?
+        } else {
+            exchange(&owner, initial_admitted, 1, &payload, None).await?
+        };
+        if matches!(
+            source,
+            Some(
+                ThawingSource::Daily { active: false, .. }
+                    | ThawingSource::Daily {
+                        stale_epoch: true,
+                        ..
+                    }
+            )
+        ) {
+            assert_eq!(result, UseDisposition::Rejected);
+            let counts:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_terrain_tool_receipts),(SELECT count(*) FROM game_terrain_tool_transforms),(SELECT count(*) FROM game_map_harvest_records)").fetch_one(&harness.pool).await?;
+            assert_eq!(counts, (0, 0, 0));
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i13844'").fetch_one(&harness.pool).await?,0);
+            assert!(started.elapsed().as_secs_f64() > 1.0);
+            eprintln!(
+                "WORLDCHG-Q PG EXECUTED thawing daily refusal active/epoch no mutation; elapsed={:?}",
+                started.elapsed()
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         assert_eq!(result, UseDisposition::Committed);
-        let key = crate::map::view::placement_key(target_pos, 1).ok_or("key")?;
         assert_eq!(map.facts().pinned().object_revision(key), 1);
         let (state, revision, decay_states, decay_delays): (i64, i64, Vec<i64>, Vec<i64>) = sqlx::query_as(
             "SELECT state_item_id,object_revision,decay_states,decay_delays FROM game_terrain_tool_transforms")
@@ -379,6 +505,20 @@ fn scenario(before: u16, yields: bool) -> TestResult {
         // Reboot projection and replay the original bytes after the visible source changed.
         drop(owner);
         let restored_map = boot()?;
+        if matches!(source, Some(ThawingSource::Daily { .. })) {
+            // A preceding unrelated callback must not change this daily object's identity.
+            assert!(
+                restored_map
+                    .facts()
+                    .create_movement_item(target_pos, 13842, 0, || true)
+            );
+            assert!(
+                restored_map
+                    .facts()
+                    .create_world_change_item(target_pos, 13842)
+            );
+            assert_eq!(source_key(&restored_map, target_pos, source)?, key);
+        }
         let restored_cells = restored_map
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -408,14 +548,24 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             expected_revision: 1,
             ..target.clone()
         });
-        let (mut next, refused, _) = exchange(
-            &restored,
-            next,
-            2,
-            &encode_item_use_intent(&fresh).map_err(debug)?,
-            None,
-        )
-        .await?;
+        let (mut next, refused, _) = if matches!(source, Some(ThawingSource::Daily { .. })) {
+            exchange_daily_flower(
+                &restored,
+                next,
+                2,
+                &encode_item_use_intent(&fresh).map_err(debug)?,
+            )
+            .await?
+        } else {
+            exchange(
+                &restored,
+                next,
+                2,
+                &encode_item_use_intent(&fresh).map_err(debug)?,
+                None,
+            )
+            .await?
+        };
         assert_ne!(refused, UseDisposition::Committed); // transformed flower/bush cannot be reharvested
         if plan.decay.is_some() {
             sqlx::query("UPDATE game_terrain_tool_transforms SET decay_at_unix_ms=0")
@@ -519,6 +669,209 @@ fn scenario(before: u16, yields: bool) -> TestResult {
         drop(restored);
         drop(authority);
         drop(seal);
+        if source.is_some() {
+            assert!(started.elapsed().as_secs_f64() > 1.0);
+            eprintln!(
+                "WORLDCHG-Q PG EXECUTED thawing native USE yield/replay/restart/regrowth; elapsed={:?}",
+                started.elapsed()
+            );
+        }
+        eprintln!(
+            "W19 POSTGRES_CASE_COMPLETED W19_MAP_HARVEST_PG_EXECUTED source={before} yields={yields}"
+        );
         harness.cleanup().await
     })
+}
+
+fn source_key(
+    map: &crate::map::boot::BundleWorld,
+    pos: crate::map::overlay::TilePos,
+    source: Option<ThawingSource>,
+) -> Result<u64, Box<dyn std::error::Error>> {
+    if matches!(source, Some(ThawingSource::Daily { .. })) {
+        map.facts()
+            .pinned()
+            .movement_items(pos)
+            .into_iter()
+            .rev()
+            .find_map(|entry| {
+                if let crate::map::view::EntrySource::Added(id) = entry.source {
+                    Some(id.get())
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "daily Added identity".into())
+    } else {
+        crate::map::view::placement_key(pos, 1).ok_or_else(|| "base identity".into())
+    }
+}
+
+/// Explicit open fixture terrain at one authored daily source, not a production map substitute.
+fn thawing_fixture(
+    bytes: Vec<u8>,
+    mut pins: crate::map::BundlePins,
+    added: bool,
+) -> Result<(Vec<u8>, crate::map::BundlePins), Box<dyn std::error::Error>> {
+    let mut sectors = Vec::new();
+    let visited = oteryn_world_bundle::bundle::visit(&bytes, |_, mut sector| {
+        for tile in &mut sector.tiles {
+            tile.x += 32248;
+            tile.y += 31079;
+            if added && tile.x == 32255 {
+                tile.items.retain(|item| item.palette != 4);
+            }
+        }
+        sector.floor = -5;
+        sector.sx = sector.tiles[0].x / 32;
+        sector.sy = sector.tiles[0].y / 32;
+        sectors.push(sector);
+        Ok(())
+    })
+    .map_err(debug)?;
+    let mut manifest = visited.manifest;
+    manifest.world.min_x += 32248;
+    manifest.world.max_x += 32248;
+    manifest.world.min_y += 31079;
+    manifest.world.max_y += 31079;
+    manifest.world.floors = vec![-5];
+    let bytes = oteryn_world_bundle::writer::write(&manifest, &sectors, &Default::default())
+        .map_err(debug)?;
+    pins.digest = oteryn_world_bundle::bundle::read(&bytes)
+        .map_err(debug)?
+        .digest;
+    Ok((bytes, pins))
+}
+
+/// Resolve the real Added-object handle from the ordinary map snapshot, then send literal USE.
+async fn exchange_daily_flower(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+) -> TestResult<(
+    crate::gameplay_transport::connection::AdmittedSession,
+    UseDisposition,
+    Vec<u8>,
+)> {
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use tokio::io::AsyncWriteExt;
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let client_task = async {
+        let mut handle = None;
+        loop {
+            let raw = super::item_look::read_frame(&mut client).await?;
+            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+            if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
+                let (_, domains) =
+                    oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?;
+                for domain in domains {
+                    if domain.domain_id
+                        == oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+                    {
+                        let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
+                            domain.payload,
+                        )
+                        .map_err(debug)?;
+                        handle = map
+                            .tiles
+                            .iter()
+                            .flat_map(|tile| &tile.items)
+                            .rev()
+                            .find_map(|item| {
+                                if matches!(item.appearance_id, 13842 | 13843)
+                                    && let oteryn_protocol_oteryn::world_map::MapOrigin::Handle(
+                                        handle,
+                                    ) = item.origin
+                                {
+                                    return Some(handle);
+                                }
+                                None
+                            })
+                            .or(handle);
+                    }
+                }
+            }
+            if envelope.message_type() == crate::foundation::MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        let mut intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+            admitted.continuity.selected_capabilities.as_slice(),
+            payload,
+        )
+        .map_err(debug)?;
+        intent.target = UseTarget::Item(handle.ok_or("daily source handle in map snapshot")?);
+        let actual = encode_item_use_intent(&intent).map_err(debug)?;
+        let frame = oteryn_protocol_oteryn::encode_client_command(
+            1,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id,
+                command_type: 2,
+                payload: &actual,
+            },
+        )?;
+        client.write_u32(u32::try_from(frame.len())?).await?;
+        client.write_all(&frame).await?;
+        client.shutdown().await?;
+        loop {
+            let raw = super::item_look::read_frame(&mut client).await?;
+            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+            if envelope.message_type() == crate::foundation::MessageType::CommandResult {
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                if result.command_id == command_id {
+                    let disposition =
+                        oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
+                            .map_err(debug)?;
+                    return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
+                }
+            }
+        }
+    };
+    use std::future::Future;
+    use std::task::Poll;
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let mut serving = std::pin::pin!(serving);
+    let mut client_task = std::pin::pin!(client_task);
+    let mut end = None;
+    let mut result = None;
+    let mut maintenance = std::pin::pin!(super::item_craft::maintain_ready(owner));
+    tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        std::future::poll_fn(|context| {
+            if let Poll::Ready(result) = maintenance.as_mut().poll(context) {
+                return Poll::Ready(result);
+            }
+            if end.is_none()
+                && let Poll::Ready(value) = serving.as_mut().poll(context)
+            {
+                end = Some(value);
+            }
+            if result.is_none()
+                && let Poll::Ready(value) = client_task.as_mut().poll(context)
+            {
+                result = Some(value);
+            }
+            if end.is_some() && result.is_some() {
+                Poll::Ready(Ok(()))
+            } else {
+                Poll::Pending
+            }
+        }),
+    )
+    .await??;
+    // Preserve the client-side fixture failure instead of masking it with its later liveness loss.
+    let (result, actual) = result.ok_or("client did not finish")??;
+    let ConnectionEnd::AdmittedThenDisconnected(admitted) = end.ok_or("server did not finish")?
+    else {
+        return Err("daily harvest disconnected unexpectedly".into());
+    };
+    Ok((admitted, result, actual))
 }

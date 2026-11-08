@@ -31,14 +31,20 @@ pub(in crate::durability) async fn verify_purchase_integrity(
           AND NOT EXISTS (SELECT 1 FROM game_character_death_receipts d \
             WHERE d.character_id=r.character_id \
               AND d.committed_character_revision>r.committed_character_revision \
-              AND k.key=ANY(d.blessings_before) AND NOT (k.key=ANY(d.blessings_after))) LIMIT 1",
+              AND k.key=ANY(d.blessings_before) AND NOT (k.key=ANY(d.blessings_after))) \
+        UNION ALL SELECT 1 FROM game_character_phoenix_prerequisites p \
+        LEFT JOIN game_character_npc_stage_receipts s ON s.purchase_occurrence_id=p.grant_occurrence_id \
+        LEFT JOIN game_character_npc_purchase_receipts r ON r.purchase_occurrence_id=p.consumed_by_purchase \
+        WHERE s.character_id IS DISTINCT FROM p.character_id OR s.npc_key<>'oteryn:npc.kawill' \
+          OR (NOT p.active AND (r.character_id IS DISTINCT FROM p.character_id \
+            OR r.npc_key<>'oteryn:npc.pydar' OR r.service_key<>'oteryn:service.blessing.the_spark_of_the_phoenix')) LIMIT 1",
     )
-    .fetch_optional(connection)
+    .fetch_optional(&mut *connection)
     .await?
     .is_some();
     if invalid {
         Err(DurabilityError::InvalidStoredState)
     } else {
-        Ok(())
+        super::super::npc_marriage::verify_integrity(connection).await
     }
 }
