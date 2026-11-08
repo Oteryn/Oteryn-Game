@@ -37,6 +37,7 @@ pub struct Pushed {
     pub scope_changed: bool,
     pub served_channel: Option<Option<oteryn_client_runtime::channel_list::ServedChannel>>,
     pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
+    pub personal_map_marks: Option<oteryn_client_ui::personal_map_marks::PersonalMapMarks>,
     pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
     pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
     pub sounds: Vec<super::SoundCue>,
@@ -65,6 +66,9 @@ pub struct Pushed {
 impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
+        if newer.scope_changed {
+            self.personal_map_marks = None;
+        }
         self.scope_changed |= newer.scope_changed;
         super::feature_0023_presentation::protocol::absorb_visuals(
             &mut self.visuals,
@@ -81,6 +85,7 @@ impl Pushed {
         self.served_channel = newer.served_channel.or(self.served_channel);
         self.world_clock = newer.world_clock.or(self.world_clock);
         self.world_weather = newer.world_weather.or(self.world_weather);
+        self.personal_map_marks = newer.personal_map_marks.or(self.personal_map_marks.take());
         self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());

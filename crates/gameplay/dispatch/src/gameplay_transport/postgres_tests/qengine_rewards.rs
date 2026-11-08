@@ -768,6 +768,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-questpc5-personal-map-query" {
+        return super::questpc5_personal_map_marks::exercise(owner, admitted, h).await;
+    }
     if name == "qengine-rewards-m39-any-topic" {
         return m39_any_topic::exercise(owner, admitted, h).await;
     }

@@ -19,6 +19,10 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    let personal_marks_selected = session.feature_selected(449);
+    if personal_marks_selected {
+        outbox.personal_map_marks_initialize();
+    }
     outbox.discovery_initialize(&session);
     outbox.properties_initialize(&session);
     outbox.analyser_initialize(session.feature_selected(10));
@@ -119,7 +123,26 @@ pub async fn run_session<T: Stepper>(
     outbox.achievements_initialize();
     outbox.player_trade_items(session.player_trade_items());
     let mut held = Vec::new();
+    let mut personal_marks_refresh = std::time::Instant::now();
     loop {
+        if personal_marks_selected && std::time::Instant::now() >= personal_marks_refresh {
+            let command = oteryn_client_ui::personal_map_marks::request();
+            match session.feature(&command).await {
+                Ok(result) => {
+                    if let Err(error) = outbox.personal_map_marks_result(&result) {
+                        outbox.end(public_class(&error));
+                        return;
+                    }
+                    publish(&mut session, &outbox, &mut held);
+                }
+                Err(error) => {
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+            personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
+        }
+
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {

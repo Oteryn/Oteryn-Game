@@ -28,3 +28,30 @@ fn personal_map_mark_admits_only_bounded_native_cross() -> Result<(), String> {
     assert!(parse(&document.to_string()).is_err());
     Ok(())
 }
+
+#[test]
+fn personal_map_mark_target_and_label_bind_the_quest_definition() -> Result<(), String> {
+    let mut callback = load()?
+        .into_iter()
+        .find(|row| row.key.ends_with("sam-backpack"))
+        .ok_or("callback")?;
+    callback.map_mark = Some(super::super::map_marks::QuestMapMark {
+        position: super::super::world_callbacks::Position {
+            x: 31948,
+            y: 31924,
+            floor: -7,
+        },
+        kind: super::super::map_marks::MapMarkKind::Cross,
+        text: "Treasure".into(),
+    });
+    let original = gated_binding(&callback)?.ok_or("map binding")?;
+    let mut moved = callback.clone();
+    moved.map_mark.as_mut().ok_or("mark")?.position.x += 1;
+    assert_ne!(gated_binding(&moved)?, Some(original));
+    let mut renamed = callback.clone();
+    renamed.map_mark.as_mut().ok_or("mark")?.text = "Different".into();
+    assert_ne!(gated_binding(&renamed)?, Some(original));
+    callback.reply = vec!["Different wording".into()];
+    assert_eq!(gated_binding(&callback)?, Some(original));
+    Ok(())
+}

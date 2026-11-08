@@ -613,7 +613,10 @@ fn validate_document(document: Document) -> Result<Document, String> {
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none() && callback.peer_requires.is_none() {
+    if callback.minimum_level.is_none()
+        && callback.peer_requires.is_none()
+        && callback.map_mark.is_none()
+    {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
