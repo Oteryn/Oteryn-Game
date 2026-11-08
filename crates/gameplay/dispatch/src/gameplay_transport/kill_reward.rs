@@ -1518,7 +1518,10 @@ pub fn record_creature_kill(
             if boss.is_none()
                 && (top.present().is_none()
                     || !super::grizzly_kills::tracks_creature(&creature)
-                        && !oteryn_gameplay_quests::quest::native_kills::tracks_creature(&creature))
+                        && !oteryn_gameplay_quests::quest::native_kills::tracks_creature(&creature)
+                        && !oteryn_gameplay_quests::quest::source_deaths::tracks_creature(
+                            &creature,
+                        ))
             {
                 refuse(reason.as_str(), &creature);
                 // Echo's first-species callback precedes ordinary loot admission in the
@@ -1576,6 +1579,10 @@ pub fn record_creature_kill(
                 )
             };
             let mut entry = entry;
+            // Crystal creaturescripts_magma_bubble_death.lua:12-23 and M24 kill
+            // steps use actual damaging players independently of corpse MINT
+            // qualification. Preserve the native lethal ledger on the rowless path.
+            entry.damage_shares = damage_shares;
             // Only the actual lethal producer supplies the retained Instance clock.
             entry.activity_death = activity_death;
             entry.world_change = world_change;
