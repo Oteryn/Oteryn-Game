@@ -51,6 +51,12 @@ class ItemholdQTests(unittest.TestCase):
         self.assertTrue(any(c['reason'] == 'SOURCE_CHARGE_MISMATCH'
                             for c in claim['source_variant']['charge_dispositions']))
         self.assertTrue(claim['native_contents']['placements'])
+        placement, = claim['native_contents']['placements']
+        child = placement['contents'][2]
+        self.assertEqual(child['item']['key'], 'oteryn:item.tibia.i3083')
+        self.assertEqual(child['count'], 1)
+        self.assertNotIn('charges_remaining', child)
+        self.assertNotIn('source_difference', claim['native_contents'])
 
     def test_remaining_sources_apply_precedence_and_reject_corruption(self):
         import itemhold_q_remaining as remaining

@@ -34,11 +34,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -145,11 +146,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -280,11 +282,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -321,11 +324,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -365,11 +369,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -434,11 +439,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -604,11 +610,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -658,11 +665,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -743,11 +751,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -815,11 +824,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -965,11 +975,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1012,11 +1023,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1099,11 +1111,12 @@
       "whole_quest": "ACTIVE"
     },
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1139,11 +1152,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1183,11 +1197,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1264,11 +1279,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1308,11 +1324,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1332,7 +1349,7 @@
       "green_seconds": 81.696754812,
       "scope": [
         "source Zao/Farmine entry; fresh Current Premium refusal",
-        "actual8911→8912 destabilizer USE and bound travel",
+        "actual8911\u21928912 destabilizer USE and bound travel",
         "all6 distinct native bosses in retained arenas with duplicate-death safeguards",
         "typed progress and once-only native Yana report",
         "exact5 carried Gold Tokens, Ender of the End, durable completion; repeat unchanged",
@@ -1351,11 +1368,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1389,11 +1407,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1489,11 +1508,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1689,11 +1709,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1754,11 +1775,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1796,11 +1818,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1843,11 +1866,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   },
   {
@@ -1918,11 +1942,12 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "main": "78294c081a099c96a57948573d5dbf0caf398abf",
       "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3032-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: five changed crates plus content/items data consumers",
-      "postgres_tests": "PENDING: Goblin intro/tools; resumed Hot Cuisine recipes; Father atomic acceptance"
+      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
+      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
+      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "qualification_change": false
     }
   }
 ]

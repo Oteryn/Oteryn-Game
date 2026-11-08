@@ -44,6 +44,16 @@ class SharedPhysicalAdmission(unittest.TestCase):
         self.assertEqual(json.loads(generated['manifest'])['schema'], 'OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5')
         self.assertNotIn('cosmetics', json.loads(generated['manifest']))
 
+    def test_custody_completion_keeps_existing_unknown_speed(self):
+        record = self.record()
+        record['attributes'] = {'speed_bonus': 0}
+        existing = copy.deepcopy(record)
+        existing['attributes'] = {}
+        result = self.run_admission(record, existing)
+        admitted = json.loads(result['profiles'])['records'][0]
+        self.assertEqual(admitted['attributes'], {})
+        self.assertEqual(record['attributes'], {'speed_bonus': 0})
+
     def test_conflicting_known_weight_is_never_replaced(self):
         record = self.record()
         existing = copy.deepcopy(record)

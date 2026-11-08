@@ -948,8 +948,32 @@ fn lane_npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatib
     }
     let active = extend(old.catalogue().clone(), &bindings)?;
     let runtime = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
-    assert_eq!(runtime.programs().len(), 7);
-    assert_eq!(active.npc_legacy.len(), 6);
+    // Main adds independently owned programmes; retain the exact original lane set.
+    let original = [
+        "oteryn:quest.a_father_s_burden_quest",
+        "oteryn:quest.a_pirates_tail",
+        "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.hero_of_rathleton_quest",
+        "oteryn:quest.hot_cuisine_quest",
+        "oteryn:quest.in_service_of_yalahar_quest",
+        "oteryn:quest.the_order_of_the_stag_quest",
+    ];
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .filter(|p| original.contains(&p.document.quest.as_str()))
+            .count(),
+        7
+    );
+    assert_eq!(
+        active
+            .npc_legacy
+            .keys()
+            .filter(|q| original.contains(&q.as_str()))
+            .count(),
+        6
+    );
     let mut defaults = BTreeMap::new();
     for track in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?

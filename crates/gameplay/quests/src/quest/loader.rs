@@ -202,6 +202,10 @@ pub fn load_embedded_quest_state(
     lowered.catalogue =
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::fire_feathered_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::shared_world_progress::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::monk_shrines::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::threatened_dreams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -235,6 +239,19 @@ pub fn load_embedded_quest_state(
         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
     );
+    // These explicitly authored native adaptations carry their own source witnesses;
+    // their progress tracks are absent from the donor-lowered mission catalogue.
+    for callback in super::fire_feathered_native::callbacks()
+        .into_iter()
+        .chain(super::shared_world_progress::callbacks())
+    {
+        for storage in callback.storage {
+            lowered
+                .source_tracks
+                .entry(storage.track)
+                .or_insert_with(|| callback.sources.join(";"));
+        }
+    }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
     // Authored world programmes lower their tracks from the pinned canonical recipe.
@@ -550,7 +567,7 @@ mod tests {
         let track = native.catalogue().track(QUEST_LOG).expect("native track");
         assert_eq!(
             (track.quest.as_str(), track.initial, track.min, track.max),
-            (QUEST, 0, -1, i64::from(i32::MAX))
+            (QUEST, 0, 0, 1)
         );
         for lowered in [&lowered, &native] {
             assert_eq!(

@@ -87,6 +87,22 @@
       },
       "boundary": "No fake source ID or invented official look type. Existing min-level/Premium/parent and state-operation owners can compose the route after constructors land.",
       "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
+    },
+    {
+      "id": "goblin-live-odour-sampling",
+      "quest": "Goblin Merchant Quest",
+      "canonical": "oteryn:quest.goblin_merchant_quest",
+      "feature": "Fenced carried-tool sampling of an exact live creature with item transformation",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use.rs"
+      ],
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "peer_review": {
+        "branch": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "head": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
+        "result": "Authored catalogue bindings and carried exchange proofs exist; no exact live-creature USE target sampling owner found."
+      },
+      "boundary": "Do not infer a corpse or ground-item target for the live Rotworm sample; continue independent signs, trunks, pond and kill tasks."
     }
   ]
 }

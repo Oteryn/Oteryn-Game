@@ -136,6 +136,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
     )
     .expect("facts");
     PendingKillSettlement {
+        world_change: None,
         forge: None,
         // W06 callbacks are absent for this ordinary-kill fixture.
         echo: None,
@@ -1401,4 +1402,28 @@ fn talisman_spoils_scales_each_chance_rounds_up_and_caps() {
     table.entries[0].probability_ppm = Some(999_999);
     apply_talisman_loot_bonus(&mut table, i64::MAX);
     assert_eq!(table.entries[0].probability_ppm, Some(1_000_000));
+}
+
+#[test]
+fn worldchg_native_death_uses_carrier_floor_not_overlay_floor() {
+    use crate::durability::world_event::changes::counters::{CounterKind, Credit};
+    let position = crate::foundation::MovementLocalPosition {
+        x: 33530,
+        y: 31630,
+        floor: 14,
+    };
+    assert_eq!(
+        super::world_change_credits("oteryn:creature.seacrest_serpent", position),
+        vec![(CounterKind::FireFeathered, Credit::Kill(0))]
+    );
+    assert!(
+        super::world_change_credits(
+            "oteryn:creature.seacrest_serpent",
+            crate::foundation::MovementLocalPosition {
+                floor: -14,
+                ..position
+            }
+        )
+        .is_empty()
+    );
 }

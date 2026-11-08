@@ -15,6 +15,7 @@ pub enum TerrainTool {
     Scythe,
     Sickle,
     Crowbar,
+    SlimeGobbler,
 }
 
 impl TerrainTool {
@@ -42,6 +43,7 @@ impl TerrainTool {
             "oteryn:item.tibia.i3308" | "oteryn:item.tibia.i3330" | "oteryn:item.tibia.i9594" => {
                 Self::Machete
             }
+            "oteryn:item.tibia.i12077" => Self::SlimeGobbler,
             _ => return None,
         })
     }
@@ -292,7 +294,81 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             after: Duration::from_secs(600),
         }],
     }));
+    // Crystal their_masters_voice.lua:43,111-127. The encounter's one-hour reset is
+    // shared, so these individual mutations must not invent independent regrowth clocks.
+    bindings.extend((12059..=12063).map(|target| TerrainToolBinding {
+        tool: TerrainTool::SlimeGobbler,
+        target,
+        required_action: None,
+        transformed: 12065,
+        yield_item: None,
+        decay: Vec::new(),
+    }));
     bindings
+}
+
+/// Crystal their_masters_voice.lua:9-41,43-49,59-83 (SHA256
+/// 9024836cf5c3cf570067c58383e9c4bd548b409d8650029d02ed91e36b5d746a).
+/// These are source home positions, in carrier floor coordinates. The existing
+/// World spawn projection supplies deterministic World/encounter/wave draws.
+pub const VOICE_SERVANT_HOMES: [(i32, i32, i16); 25] = [
+    (33313, 31852, 9),
+    (33313, 31881, 9),
+    (33328, 31860, 9),
+    (33328, 31873, 9),
+    (33328, 31885, 9),
+    (33308, 31873, 9),
+    (33320, 31873, 9),
+    (33335, 31873, 9),
+    (33360, 31873, 9),
+    (33336, 31914, 9),
+    (33343, 31914, 9),
+    (33353, 31914, 9),
+    (33361, 31914, 9),
+    (33345, 31900, 9),
+    (33352, 31900, 9),
+    (33355, 31854, 9),
+    (33355, 31885, 9),
+    (33345, 31864, 9),
+    (33345, 31881, 9),
+    (33309, 31867, 9),
+    (33317, 31879, 9),
+    (33311, 31854, 9),
+    (33334, 31889, 9),
+    (33340, 31890, 9),
+    (33347, 31889, 9),
+];
+pub const VOICE_MAGE_HOMES: [(i32, i32, i16); 3] =
+    [(33328, 31859, 9), (33367, 31873, 9), (33349, 31899, 9)];
+
+/// Resolve an owned native home slot, never the creature's roaming death position.
+pub fn voice_servant_ordinal(home: (i32, i32, i16)) -> Option<u8> {
+    VOICE_SERVANT_HOMES
+        .iter()
+        .position(|&p| p == home)
+        .and_then(|ordinal| u8::try_from(ordinal).ok())
+}
+
+pub type VoiceSpawn = (&'static str, (i32, i32, i16));
+
+/// Source one independent 1..100 draw per slot: 10% diamond, 30% golden, 60% iron.
+/// Slot and wave generation remain attached to the resulting native spawn cohort.
+pub fn voice_servants(mut draw: impl FnMut(u8) -> u64) -> [VoiceSpawn; 25] {
+    std::array::from_fn(|ordinal| {
+        let roll = ((u128::from(draw(ordinal as u8)) * 100) >> 64) as u8;
+        let creature = match roll {
+            0..=9 => "oteryn:creature.diamond_servant",
+            10..=39 => "oteryn:creature.golden_servant",
+            _ => "oteryn:creature.iron_servant",
+        };
+        (creature, VOICE_SERVANT_HOMES[ordinal])
+    })
+}
+
+/// This quest's three source choices exclude the independent legacy startup spawn.
+pub fn voice_mage(draw: u64) -> VoiceSpawn {
+    let ordinal = ((u128::from(draw) * 3) >> 64) as usize;
+    ("oteryn:creature.mad_mage", VOICE_MAGE_HOMES[ordinal])
 }
 
 #[cfg(test)]
@@ -440,5 +516,28 @@ mod tests {
             let cane = dispatch(&catalogue, tool, 5464, None, 10_000).expect("scythe cane binding");
             assert_eq!(cane.binding.yield_item, Some(5466));
         }
+    }
+    #[test]
+    fn worldchg_voice_source_homes_choices_and_slot_identity() {
+        for (draw, expected) in [
+            (0, "oteryn:creature.diamond_servant"),
+            (1_u64 << 62, "oteryn:creature.golden_servant"),
+            (u64::MAX, "oteryn:creature.iron_servant"),
+        ] {
+            let sources = voice_servants(|_| draw);
+            for (ordinal, (creature, home)) in sources.into_iter().enumerate() {
+                assert_eq!(creature, expected);
+                assert_eq!(voice_servant_ordinal(home), u8::try_from(ordinal).ok());
+            }
+        }
+        assert_eq!(voice_servant_ordinal((33313, 31852, 8)), None);
+        assert_eq!(
+            voice_mage(0),
+            ("oteryn:creature.mad_mage", VOICE_MAGE_HOMES[0])
+        );
+        assert_eq!(
+            voice_mage(u64::MAX),
+            ("oteryn:creature.mad_mage", VOICE_MAGE_HOMES[2])
+        );
     }
 }

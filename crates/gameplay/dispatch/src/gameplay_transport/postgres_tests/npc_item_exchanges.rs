@@ -51,10 +51,9 @@ pub(super) async fn exercise(
         .await?;
     eprintln!("NPC_EXCHANGE POSTGRES_STARTED version={version}");
     let source = NpcRuleCatalog::runtime().map_err(debug)?;
-    let tracks = source
-        .programs()
-        .iter()
-        .flat_map(|program| &program.document.tracks)
+    let program = source.program("oteryn:quest.hot_cuisine_quest")
+        .ok_or("Hot Cuisine source programme")?;
+    let tracks = program.document.tracks.iter()
         .map(|track| QuestTrack {
             key: track.key.clone(),
             quest: track.quest.clone(),
@@ -104,6 +103,11 @@ pub(super) async fn exercise(
         completes: false,
         experience: None, world_change: None,
     });
+    // Bind this resumed fixture to the real admitted programme, not merely shipped source.
+    let digest = program.digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    let binding = format!("oteryn:quest-npc-pin/{digest}");
+    transitions.push(owner.quest_catalogue.as_ref().ok_or("native catalogue")?
+        .transition(&binding).ok_or("native Hot Cuisine binding")?.clone());
     let catalogue =
         Arc::new(QuestStateCatalogue::new("content-1", tracks, transitions).map_err(debug)?);
     owner.quest_catalogue = Some(catalogue.clone());

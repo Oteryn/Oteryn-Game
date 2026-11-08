@@ -329,7 +329,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
-    assert_eq!((missing, inadmissible, admitted.len()), (52, 329, 1));
+    assert_eq!((missing, inadmissible, admitted.len()), (52, 334, 1));
     assert_eq!(admitted, ["oteryn:creature.the_primal_menace"]);
     shared_body.sort_unstable();
     assert_eq!(

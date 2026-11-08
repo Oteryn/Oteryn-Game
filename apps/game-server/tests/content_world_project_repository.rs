@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         427,
-        "3873d0698b98aa2280046cf75d4900863124cf1d6aae6f7c100b1be195260531",
+        "90f37c4458b928aa7645edb3c572e594e684869b01bbee27193557af6d6a620b",
     ),
     (
         "definitions/declarations.json",
-        27_600_259,
-        "949746ad0a2d1304ca5a1ec75ae4cd707650c1e24d4017a0733af52ca4fa5809",
+        27_782_656,
+        "8ea2549f8cc1c4643e08da9de6e31d077edd17fbd2f49f77e1b3327122b385bb",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1960,
-        "13f7bb45ba2dd0f08c4903f1a6b3d50e5d94cc85b9ac206b57e80aed92fad1d4",
+        "aa0e40669830016efdcab5918568a916788436f9aa27905b75f2592164cac981",
     ),
     (
         "presentations/bindings.json",
@@ -48,7 +48,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         411,
-        "bbedaf68b426c503359199872eaa7cba22bde95b4a5391096567f1ccca05b6c1",
+        "8e406639d8f94c466f1b00bb802ad29ea389a7a8afbb7c7970f3e9113b9db8c7",
     ),
     (
         "provenance/imports.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "ce41135b19867a03e20d3ecf98e2e88d076db66101949876fd6e130cd9fbba20";
+const TREE_SHA256: &str = "c6b0d962cfe5c96875907c38eefca8dacdcd2b85a7cced7712ccdd7388086295";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -157,7 +157,8 @@ const CREATURE_PROFILES: usize = 25_052;
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2564;
 // Includes BANK-3's Henricus blessing Service.
-const NPC_DECLARATIONS: usize = 2507;
+// S10 adds one bank, three promotion and six blessing Service declarations.
+const NPC_DECLARATIONS: usize = 2517;
 const NPC_DIALOGUES: usize = 836;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
@@ -717,8 +718,58 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 ProjectV2Declaration::Service { bank: true, .. }
             ))
             .count(),
-        1
+        2
     );
+
+    let standard_bank = ProjectV2Declaration::Service {
+        identity: ProjectV2Identity {
+            key: "oteryn:service.bank.standard".into(),
+            revision: "definition-r1".into(),
+        },
+        bank: true,
+        fields: vec![],
+        offers: vec![],
+        recipes: vec![],
+        routes: vec![],
+    };
+    let standard_reference = ProjectV2DefinitionRef {
+        family: ProjectV2Family::Service,
+        key: "oteryn:service.bank.standard".into(),
+        revision: "definition-r1".into(),
+    };
+    let s10: serde_json::Value =
+        serde_json::from_slice(include_bytes!("../../../content/npcs/s10-nonquest.json"))
+            .expect("pinned S10 source bindings");
+    let expected_bankers = s10["bankers"]
+        .as_array()
+        .expect("source bankers")
+        .iter()
+        .map(|row| row["key"].as_str().expect("source NPC key"))
+        .collect::<BTreeSet<_>>();
+    assert_eq!(expected_bankers.len(), 25);
+    assert!(!expected_bankers.contains("oteryn:npc.plunderpurse"));
+    let actual_bankers = v2
+        .declarations
+        .iter()
+        .filter_map(|declaration| {
+            let ProjectV2Declaration::Npc {
+                identity, services, ..
+            } = declaration
+            else {
+                return None;
+            };
+            let count = services
+                .iter()
+                .filter(|reference| *reference == &standard_reference)
+                .count();
+            if count == 0 {
+                return None;
+            }
+            assert_eq!(count, 1, "duplicate standard Bank reference");
+            Some(identity.key.as_str())
+        })
+        .collect::<BTreeSet<_>>();
+    assert_eq!(actual_bankers, expected_bankers);
 
     assert!(v2.declarations.iter().all(|declaration| {
         match declaration {
@@ -771,8 +822,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 ..
             } => {
                 if *bank {
-                    // This one authored Bank row pins its exact callback provenance and fields.
-                    serde_json::to_value(declaration).ok().as_ref() == bank_packet.get("service")
+                    // Preserve Paulie's exact closed packet; the new standard row is also exact.
+                    declaration == &standard_bank
+                        || serde_json::to_value(declaration).ok().as_ref()
+                            == bank_packet.get("service")
                 } else {
                     recipes.is_empty()
                         && fields

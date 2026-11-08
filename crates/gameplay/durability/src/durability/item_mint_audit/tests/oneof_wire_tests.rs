@@ -318,20 +318,6 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 occurrence: vec![0x81, 0x07],
             }),
         ),
-        // QENGINE2 adds the source-bound payment envelope at tag 18.
-        (
-            18,
-            "QuestRewardPayment",
-            FeeBurnCauseV1::QuestRewardPayment(OneItemQuestRewardPaymentV1 {
-                purchase: Some(OneItemNpcPurchaseV1 {
-                    atelier_proof: vec![0x81, 0x07],
-                    service_key: "oteryn:quest-reward/test".into(),
-                    occurrence: vec![0x81, 0x07],
-                }),
-                fee_gold_units: 5000,
-                include_bank: true,
-            }),
-        ),
         (
             18,
             "QuestRewardPayment",
@@ -378,7 +364,6 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("WriteOnce", include_str!("write_once_wire.hex").trim()),
         ("ForgeFee", "72040a028107"),
         ("QuestAccessPurchase", "7a2e0a286f746572796e3a736572766963652e71756573742e726f7474656e2d626c6f6f642e61636365737312028107"),
-        ("QuestRewardPayment", "9201290a220a186f746572796e3a71756573742d7265776172642f74657374120281071a0281071088271801"),
         ("GemReveal", "4a0c0a0672657665616c12028107"),
         ("GemSwitchDomain", "520c0a0673776974636812028107"),
         ("GemGradeUp", "5a0b0a05677261646512028107"),
@@ -567,4 +552,23 @@ fn fee_cause_tags_are_unique_sorted_and_match_golden_and_wire_fixtures() {
             .map(|(tag, name, _)| (tag, name))
             .collect(),
     );
+}
+
+#[test]
+fn legacy_quest_reward_payment_capture_keeps_its_original_fields_and_wire() {
+    let original = FeeBurnCauseV1::QuestRewardPayment(OneItemQuestRewardPaymentV1 {
+        purchase: Some(OneItemNpcPurchaseV1 {
+            atelier_proof: vec![0x81, 0x07],
+            service_key: "oteryn:quest-reward/test".into(),
+            occurrence: vec![0x81, 0x07],
+        }),
+        fee_gold_units: 5000,
+        include_bank: true,
+    });
+    let hex = "9201290a220a186f746572796e3a71756573742d7265776172642f74657374120281071a0281071088271801";
+    let expected: Vec<u8> = (0..hex.len()).step_by(2)
+        .map(|i| u8::from_str_radix(&hex[i..i+2], 16).unwrap()).collect();
+    let original = OneItemFeeBurnCauseV1 { cause: Some(original) };
+    assert_eq!(original.encode_to_vec(), expected);
+    assert_eq!(OneItemFeeBurnCauseV1::decode(expected.as_slice()).unwrap(), original);
 }

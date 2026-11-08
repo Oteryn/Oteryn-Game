@@ -756,3 +756,28 @@ a real mechanic RED; its pure source/recipe/price validation already passes.
   materializer as a passing check. Previous failed compile found and fixed all
   observed missing optional transition fields; workspace all-target check then
   passed3m33s. No full test suite or PG run is claimed for this integration.
+
+## Collector3030 integration decisions (2026-11-08)
+
+- Reuse main78294c081 world-change owners and NPC programmes; retain the lane's
+  read-only STEP proof alongside main's stateless observation. Timed-out reads
+  never become writes, and the original atomic Father's Burden11-track owner
+  remains authoritative.
+- A resumed Hot Cuisine fixture must carry the real admitted programme digest
+  transition. Loading all shipped programmes into an unbound custom catalogue
+  is not runtime admission. This fixture remains three resumed recipes, not
+  qualification of all14 recipes or the unresolved level/Premium front door.
+- ITEMHOLD-Q's exact pinned Wiki precedence selects a full-definition Garlic
+  Necklace for kv.ornamentedshield (150 charges), with no timed override. The
+  source raw1 and its conflicting disposition remain immutable witnesses.
+  Preserve the explicit-one-charge checks for the other historical recipes;
+  test this distinct full-definition case separately, including corrupt pins.
+- Physical custody completion preserves the existing pick's unknown equipment
+  speed; source importer zero is not authority to overwrite another mechanic.
+- Newhaven Corruptor's test-only SeamRooms constructor supplies its qualified
+  pinned fixture room explicitly. Production Bundle construction still cannot
+  authorize a qualified room. Viola's existing outbox insert binds the selected
+  Type2 tuple and belongs in the closed audit inventory; do not broaden it to
+  arbitrary detected insertion sites.
+- Additional live Rotworm odour sampling belongs to qengine2, like Guardcatcher
+  live captures. Do not substitute a ground object or corpse for a live actor.

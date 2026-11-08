@@ -193,7 +193,8 @@ fn world_reward_bundle_is_explicit_atomic_and_once_only() -> Result<(), String> 
         .find(|c| c["key"] == "oteryn:quest-callback/questpc7-hidden-valuables")
         .ok_or("valuables")?
         .clone();
-    row["outfit_reward"] = serde_json::json!({"outfit":"oteryn:outfit.rift_warrior","addons":3});
+    row["effects"]["outfit_reward"] =
+        serde_json::json!({"outfit":"oteryn:outfit.rift_warrior","addons":3});
     row["reward_bundle"] = true.into();
     row["achievements"] = serde_json::json!(["oteryn:achievement/hat_hunter"]);
     let encode =
@@ -224,7 +225,7 @@ fn world_reward_bundle_is_explicit_atomic_and_once_only() -> Result<(), String> 
                 )
             }
             6 => bad["item_reward"] = serde_json::Value::Null,
-            7 => bad["outfit_reward"] = serde_json::Value::Null,
+            7 => bad["effects"]["outfit_reward"] = serde_json::Value::Null,
             8 => {
                 for s in bad["storage"].as_array_mut().ok_or("storage")? {
                     s["preserve"] = true.into();

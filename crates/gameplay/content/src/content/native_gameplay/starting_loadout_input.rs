@@ -61,7 +61,32 @@ mod reaudit_starting_progression {
     #[test]
     fn reaudit_starting_progression_pins_both_inputs_and_preserves_legacy_bytes()
     -> Result<(), ContentError> {
-        let base = pin(br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#);
+        // The canonical Newhaven provider already owns these three starter profiles.
+        // The small overlay contains only missing profiles; compose the real base.
+        let provider: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../../content/items/definitions/spell-native-profiles.json"
+        ))
+        .map_err(|_| invalid("starter base fixture"))?;
+        let keys = [
+            "oteryn:item.tibia.i3571",
+            "oteryn:item.tibia.i3572",
+            "oteryn:item.tibia.i7991",
+        ];
+        let records: Vec<_> = provider["records"]
+            .as_array()
+            .ok_or_else(|| invalid("starter base records"))?
+            .iter()
+            .filter(|record| {
+                keys.iter()
+                    .any(|key| record["production_definition"]["production_key"] == *key)
+            })
+            .cloned()
+            .collect();
+        assert_eq!(records.len(), keys.len());
+        let base = pin(&serde_json::to_vec(&serde_json::json!({
+            "schema":"OTERYN_NATIVE_ITEM_PROFILES/v1", "records":records
+        }))
+        .map_err(|_| invalid("starter base encoding"))?);
         let original =
             merge(Some(base.clone()), None)?.ok_or_else(|| invalid("legacy provider"))?;
         assert_eq!(original.bytes, base.bytes);

@@ -284,6 +284,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
     // 201189f871d23597b82caf88fd611454a2ddefb8 items.xml. All three keep speed_bonus=0.
     ("SV16-ECHO-CATALYSTS", 3),
+    // WORLDCHG: 41 source-captured definitions; 12369 is already in ITEMHOLD-Q.
+    ("WORLDCHG", 40),
+    // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
+    ("SRV9-MARRIAGE", 2),
+    // Merged source/custody cohorts, refreshed by questpc7_merge_audit_inventories.py.
+    ("QUESTPC7-REGISTERED-UNION", 95),
 ];
 
 #[test]
@@ -291,9 +297,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 53 independently captured physical quest Items.
-    // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
-    // data. Main d34807f5 has none of these keys; all retain qualified zero speed.
+    // Source-pinned physical quest Items retain existing mechanic owners.
+    // In particular the pre-existing pick keeps its unknown equipment speed;
+    // custody completion must not replace that owner with a fabricated zero.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
@@ -316,9 +322,14 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             .find(|row| row.production_definition.production_key == key)
             .ok_or_else(|| format!("missing QENGINE2 source profile {key}"))?;
         assert!(profile.admission.materializable, "{key}");
-        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+        let expected = if key == "oteryn:item.tibia.i3456" {
+            None
+        } else {
+            Some(0)
+        };
+        assert_eq!(profile.attributes.speed_bonus, expected, "{key}");
     }
-    assert_eq!(added_keys.len(), 53);
+    assert_eq!(added_keys.len(), 95);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -338,11 +349,42 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .ok_or("missing NPC venison profile")?;
     assert!(venison.admission.materializable);
     assert_eq!(venison.attributes.speed_bonus, Some(0));
+    let world_change_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/world-change-item-profiles.json"
+    )))?;
+    let world_change_records = world_change_proof["records"]
+        .as_array()
+        .ok_or("world-change profiles")?;
+    assert_eq!(world_change_records.len(), 41);
+    for source in world_change_records {
+        let key = source["production_definition"]["production_key"]
+            .as_str()
+            .ok_or("world-change key")?;
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing world-change source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+    for id in [9585, 9586] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing marriage source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
             + additions.len()
+            - 1 // the pick already belongs to the base provider
     );
     for id in [2949, 12369, 14156, 33330, 44179, 52732] {
         let key = format!("oteryn:item.tibia.i{id}");

@@ -25,10 +25,13 @@ pub mod classic_talk;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod death_objectives;
+pub mod deepling_boss_access;
 pub mod falcon;
+pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod hero_of_bounac;
+pub mod hive_access;
 #[path = "batch3_a/hot_cuisine.rs"]
 pub mod hot_cuisine;
 pub mod isle_of_evil;
@@ -44,6 +47,7 @@ mod quests_2_focus;
 pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod schrodinger_island;
+pub mod shared_world_progress;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod task_board;
@@ -335,7 +339,9 @@ impl QuestStateCatalogue {
             }
             if transition.effects.is_empty()
                 && !transition.completes
-                && !(transition.key.starts_with("oteryn:quest-reward/")
+                && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
+                    && transition.quest == "oteryn:quest/worldchange/benevola")
+                    || transition.key.starts_with("oteryn:quest-reward/"))
                     && transition.experience.is_none())
             {
                 return Err(E::InvalidEffect(transition.key));
