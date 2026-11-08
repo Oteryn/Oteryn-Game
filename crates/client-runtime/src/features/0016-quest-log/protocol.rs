@@ -6,7 +6,7 @@ impl QuestState {
     pub fn command(&self, query: &QuestLogQuery) -> Result<Vec<u8>, QuestRefusal> {
         self.require_selected()?;
         let known = match query {
-            QuestLogQuery::List | QuestLogQuery::ListOnly => true,
+            QuestLogQuery::List => true,
             QuestLogQuery::Quest { quest_index } => self.known(*quest_index),
             QuestLogQuery::Track { quest_indexes } => quest_indexes.iter().all(|q| self.known(*q)),
         };
@@ -29,13 +29,7 @@ pub async fn send<S: SessionStream>(
             payload,
         )
         .await?;
-    let list_only = matches!(decode_quest_log_query(payload), Ok(QuestLogQuery::ListOnly));
-    let valid = if list_only && result.status == CommandStatus::Accepted {
-        matches!(decode_quest_log(&result.payload), Ok(QuestLog { view: Some(QuestLogView::List(_)), tracked }) if tracked.is_empty())
-    } else {
-        result.payload.is_empty()
-    };
-    if !valid {
+    if !result.payload.is_empty() {
         return Err(SessionError::InconsistentCommandResult {
             command_id: result.command_id,
             status: result.status,

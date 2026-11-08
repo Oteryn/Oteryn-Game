@@ -17,9 +17,6 @@ const QUESTS: usize = 101;
 const MISSIONS: usize = 102;
 const REFRESH: usize = 103;
 const TRACK: usize = 104;
-const AUTO_ADD: usize = 106;
-const AUTO_REMOVE: usize = 107;
-const FILTER: usize = 108;
 
 #[derive(Default)]
 struct Actions(Vec<usize>);
@@ -34,8 +31,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             if !actions.is_null()
                 && (*actions).0.len() < 16
                 && ((matches!(id, QUESTS | MISSIONS) && notification == LBN_SELCHANGE as usize)
-                    || (matches!(id, REFRESH | TRACK | AUTO_ADD | AUTO_REMOVE | FILTER)
-                        && notification == BN_CLICKED as usize))
+                    || (matches!(id, REFRESH | TRACK) && notification == BN_CLICKED as usize))
             {
                 (*actions).0.push(id);
             }
@@ -87,7 +83,7 @@ fn run(
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            1080,
+            760,
             580,
             null_mut(),
             null_mut(),
@@ -173,78 +169,6 @@ fn run(
             close(&weak);
             return;
         }
-        let auto_add = control(
-            hwnd,
-            "BUTTON",
-            "Auto-add: off",
-            AUTO_ADD,
-            750,
-            10,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        let auto_remove = control(
-            hwnd,
-            "BUTTON",
-            "Auto-remove: off",
-            AUTO_REMOVE,
-            750,
-            45,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        let filter = control(
-            hwnd,
-            "BUTTON",
-            "Tracker: all quests",
-            FILTER,
-            750,
-            80,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Search tracked missions",
-            109,
-            750,
-            115,
-            290,
-            22,
-            0,
-        );
-        let search = control(
-            hwnd,
-            "EDIT",
-            "",
-            110,
-            750,
-            140,
-            290,
-            28,
-            WS_BORDER | WS_TABSTOP,
-        );
-        SendMessageW(
-            search,
-            windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT,
-            128,
-            0,
-        );
-        let tracker = control(
-            hwnd,
-            "EDIT",
-            "",
-            111,
-            750,
-            180,
-            290,
-            350,
-            ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL | WS_BORDER,
-        );
         let mut held = None;
         let mut message: MSG = std::mem::zeroed();
         loop {
@@ -266,24 +190,6 @@ fn run(
             }
             for id in std::mem::take(&mut actions.0) {
                 let query = match id {
-                    AUTO_ADD => {
-                        let p = &mut mailbox.quest;
-                        p.tracker.auto_add = !p.tracker.auto_add;
-                        None
-                    }
-                    AUTO_REMOVE => {
-                        mailbox.quest.tracker.auto_remove = !mailbox.quest.tracker.auto_remove;
-                        None
-                    }
-                    FILTER => {
-                        use oteryn_client_ui::quest_log::TrackerFilter as F;
-                        mailbox.quest.tracker.filter = match mailbox.quest.tracker.filter {
-                            F::All => F::Active,
-                            F::Active => F::Completed,
-                            F::Completed => F::All,
-                        };
-                        None
-                    }
                     REFRESH => Some(QuestLogQuery::List),
                     QUESTS => {
                         let row = SendMessageW(quests, LB_GETCURSEL, 0, 0);
@@ -315,65 +221,8 @@ fn run(
                     mailbox.quest_pending = commands.send(PlayCommand::QuestLog(payload)).is_ok();
                 }
             }
-            let mut search_text = [0u16; 129];
-            let len = GetWindowTextW(search, search_text.as_mut_ptr(), 129);
-            mailbox.quest.tracker.search =
-                String::from_utf16_lossy(&search_text[..len.max(0) as usize]);
-            if !mailbox.quest_pending
-                && let Some(query) = oteryn_client_ui::quest_log::tracker_query(
-                    &mut mailbox.quest,
-                    std::time::Instant::now(),
-                )
-                && let Ok(payload) = request(&mut mailbox.quest, &query)
-            {
-                mailbox.quest_pending = commands.send(PlayCommand::QuestLog(payload)).is_ok();
-            }
             let panel = &mailbox.quest;
-            SetWindowTextW(
-                auto_add,
-                wide(if panel.tracker.auto_add {
-                    "Auto-add: on"
-                } else {
-                    "Auto-add: off"
-                })
-                .as_ptr(),
-            );
-            SetWindowTextW(
-                auto_remove,
-                wide(if panel.tracker.auto_remove {
-                    "Auto-remove: on"
-                } else {
-                    "Auto-remove: off"
-                })
-                .as_ptr(),
-            );
-            SetWindowTextW(
-                filter,
-                wide(&format!("Tracker: {:?}", panel.tracker.filter)).as_ptr(),
-            );
             if held.as_ref() != Some(panel) {
-                let text = oteryn_client_ui::quest_log::tracker_lines(panel)
-                    .iter()
-                    .map(|line| {
-                        format!(
-                            "Quest {}{}\r\n{}",
-                            line.quest_index,
-                            if line.completed { " (completed)" } else { "" },
-                            line.missions
-                                .iter()
-                                .map(|m| format!(
-                                    "{}{}: {}",
-                                    m.name,
-                                    if m.done { " (done)" } else { "" },
-                                    m.text
-                                ))
-                                .collect::<Vec<_>>()
-                                .join("\r\n")
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\r\n\r\n");
-                SetWindowTextW(tracker, wide(&text).as_ptr());
                 if held
                     .as_ref()
                     .is_none_or(|old: &QuestPanel| old.state.list != panel.state.list)
