@@ -13,6 +13,8 @@ fn m02_ground_stack_predicate_preserves_order_and_requires_a_durable_player_call
                 && c.native_rule.is_none()
                 && c.state_ops.is_empty()
                 && !c.opening_only
+                && !c.reversible
+                && c.trigger != Trigger::StepOut
                 && c.world_requirements.is_empty()
         })
         .ok_or("personal callback")?;
@@ -39,6 +41,9 @@ fn m02_ground_stack_predicate_preserves_order_and_requires_a_durable_player_call
         bad["world_requirements"][0]["ground_stack"] = stack;
         assert!(parse(&wire(&bad)).is_err());
     }
+    let mut reversible = callback.clone();
+    reversible["reversible"] = true.into();
+    assert!(parse(&wire(&reversible)).is_err());
     callback["actor_kind"] = "monster".into();
     assert!(parse(&wire(&callback)).is_err());
     Ok(())

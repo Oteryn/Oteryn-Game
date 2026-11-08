@@ -481,6 +481,7 @@ fn scenario(case: Case) -> TestResult {
             )
             .ok_or("pot definition")?;
             let request = crate::durability::map_item_mint::MapItemMintRequest {
+                key_number: None,
                 command: crate::foundation::CommandRef::new(
                     admitted.game_session_id,
                     crate::foundation::CommandId::new(901).map_err(debug)?,
@@ -757,8 +758,13 @@ async fn drop_exchange(
         seed,
         count,
         expect_disconnect,
-        WorldTilePosition { x: 7, y: 0, floor: -7 },
-    ).await
+        WorldTilePosition {
+            x: 7,
+            y: 0,
+            floor: -7,
+        },
+    )
+    .await
 }
 
 // Preserve the existing wire probe controls while varying only its target tile.

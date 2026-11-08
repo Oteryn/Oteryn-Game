@@ -863,6 +863,7 @@ mod postgres {
                     &h.node,
                     fence,
                     MapItemMintRequest {
+                        key_number: None,
                         command: CommandRef::new(
                             GameSessionId::decode(&id(harness::SESSION)).map_err(debug)?,
                             CommandId::new(900).map_err(debug)?,
@@ -1252,6 +1253,7 @@ mod postgres {
             let fence = harness::item_fence()?;
             let request = |number, ordinal| -> TestResult<MapItemMintRequest> {
                 Ok(MapItemMintRequest {
+                    key_number: None,
                     command: command(number)?,
                     base_bundle_digest: digest,
                     placement_key: oteryn_world_bundle::bundle::placement_key(-7, 120, 5, ordinal)

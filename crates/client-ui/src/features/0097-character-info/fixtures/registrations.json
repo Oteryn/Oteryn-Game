@@ -29,5 +29,21 @@
     "id": "0097-character-info-panel",
     "status": "supported",
     "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0097-character-info",
+    "kind": "keybindings",
+    "id": "0097-character-info-titles-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+Y",
+    "entry": "input.rs::titles_key"
+  },
+  {
+    "mechanic": "0097-character-info",
+    "kind": "panels",
+    "id": "0097-character-info-titles-panel",
+    "status": "supported",
+    "entry": "view.rs::title_rows"
   }
 ]

@@ -1152,10 +1152,13 @@ its Ground invalidation is retained when a physical Item changes.
 
 ## M02 — first engine slice: exact physical Ground stack predicates
 
-Claim: INDEX M02 (previously OPEN/none), ENCX. No new migration or public number.
+Started INDEX M02 while it was OPEN/none. During pre-push merge ENGNPC2
+published the winning claim; their ownership is preserved. This tested engine
+slice is available to that lane, without a duplicate claim or DONE assertion.
+No new migration or public number.
 The optional `world_requirements[].ground_stack` lists one root per entry,
 bottom to top, with its exact Item key and quantity. It is read-only and requires
-a personal player callback, so it cannot bypass the existing fenced quest writer.
+a one-way personal player USE/STEP-IN callback, so it cannot bypass the existing fenced quest writer.
 The writer reissues current scope/node/recovery authority in the same physical
 transaction, holds the existing Ground-owner lock (advisory namespace33) and locks
 the actual Item/custody rows through COMMIT. No overlay is accepted as custody.
@@ -1182,3 +1185,6 @@ ordinals, swapped roots, wrong quantity/key/cardinality/map/content/frame/addres
 and a competing backend denied the Ground-owner lock. All source guards stay on.
 This is an engine slice; canonical Nomads window binding and full quest passage
 remain the next piece. M02 is not claimed DONE by this checkpoint.
+
+Next queue row: M03 was OPEN/none on the pre-push qmech head; ENCX selects it
+for live blessing/promotion/Premium world admission after this engine hand-off.
