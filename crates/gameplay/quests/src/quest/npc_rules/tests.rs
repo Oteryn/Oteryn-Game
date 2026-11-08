@@ -62,6 +62,7 @@ fn hero_greeting_plans_the_source_access_write() -> Result<(), NpcRuleError> {
         inventory: &inventory,
         now_epoch_seconds: 1_700_000_000,
         calendar_month: 11,
+        premium_current: false,
         level: 100,
         vocation: "oteryn:vocation.knight",
         sex: 0,
@@ -102,6 +103,7 @@ impl Facts {
             inventory: &self.inventory,
             now_epoch_seconds: 1_700_000_000,
             calendar_month: 11,
+            premium_current: false,
             level: 100,
             vocation: "oteryn:vocation.knight",
             sex: 0,
@@ -628,6 +630,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.a_pirates_tail",
         "oteryn:quest.bigfoot_s_burden_quest",
         "oteryn:quest.draconia_quest",
+        "oteryn:quest.elemental_spheres_quest",
         "oteryn:quest.hero_of_rathleton_quest",
         "oteryn:quest.hot_cuisine_quest",
         "oteryn:quest.in_service_of_yalahar_quest",
@@ -713,7 +716,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 193), (0, 52)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 194), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -878,5 +881,73 @@ fn shipped_npc_source_does_not_claim_an_unbound_native_catalogue() -> Result<(),
         bound.programs()[0].document.quest,
         "oteryn:quest.a_father_s_burden_quest"
     );
+    Ok(())
+}
+
+#[test]
+fn live_eligibility_guards_refuse_below_level_wrong_vocation_and_expired_premium()
+-> Result<(), NpcRuleError> {
+    let mut rule = fixture_rule(
+        "live_eligibility",
+        serde_json::json!([
+            {"kind":"set","track":"oteryn:quest-progress/test/value","value":1}
+        ]),
+    );
+    rule["guards"] = serde_json::json!([
+        {"kind":"level","op":"ge","value":80},
+        {"kind":"vocation","value":"oteryn:vocation.knight"},
+        {"kind":"premium","value":true}
+    ]);
+    let catalog = fixture_catalog(&fixture_document(vec![rule]))?;
+    let facts = Facts::empty();
+    for (level, vocation, premium, accepted) in [
+        (79, "oteryn:vocation.knight", true, false),
+        (80, "oteryn:vocation.druid", true, false),
+        (80, "oteryn:vocation.knight", false, false),
+        (80, "oteryn:vocation.knight", true, true),
+    ] {
+        let mut input = facts.input("oteryn:npc.test", "mission", 0);
+        input.level = level;
+        input.vocation = vocation;
+        input.premium_current = premium;
+        assert_eq!(catalog.plan_storage(&input)?.is_some(), accepted);
+    }
+    Ok(())
+}
+
+#[test]
+fn elemental_spheres_live_eligibility_selects_each_source_vocation_reward()
+-> Result<(), NpcRuleError> {
+    let catalog = NpcRuleCatalog::runtime()?;
+    let track = "oteryn:quest-progress/elemental_spheres/quest_line";
+    for (vocation, reward) in [
+        ("sorcerer", 8039),
+        ("druid", 8041),
+        ("paladin", 8025),
+        ("knight", 8055),
+    ] {
+        let mut facts = Facts::empty();
+        facts.tracks.insert(track.into(), 2);
+        facts.inventory.items.insert(
+            NpcItemKey {
+                item: "oteryn:item.tibia.i954".into(),
+                subtype: None,
+            },
+            1,
+        );
+        let key = format!("oteryn:vocation.{vocation}");
+        let mut input = facts.input("oteryn:npc.arkulius", "mission", 0);
+        input.vocation = &key;
+        input.level = 80;
+        input.premium_current = true;
+        let plan = catalog
+            .plan_item_exchange(&input)?
+            .ok_or_else(|| NpcRuleError::Invalid("missing sphere reward".into()))?;
+        assert!(plan.effects.iter().any(|effect| matches!(effect,
+            NpcRuleEffect::GiveItem {item,count:1,..} if item == &format!("oteryn:item.tibia.i{reward}"))));
+        assert!(plan.track_changes.iter().any(|change| change.after == 3));
+        input.premium_current = false;
+        assert!(catalog.plan_item_exchange(&input)?.is_none());
+    }
     Ok(())
 }

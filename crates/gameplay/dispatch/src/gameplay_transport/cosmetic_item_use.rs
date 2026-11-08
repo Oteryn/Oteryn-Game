@@ -415,8 +415,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if bound.is_empty() {
             return Ok(None);
         }
-        if intent.use_with.is_some()
-            || intent.use_with_map_item.is_some()
+        if intent.use_with_map_item.is_some()
             || intent.use_with_position.is_some()
             || !self
                 .states
@@ -454,7 +453,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                 };
             let mut selected = bound.into_iter().filter(|c| {
-                eligible(&c.storage)
+                (c.peer_requires.is_some() == intent.use_with.is_some())
+                    && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops
                         .iter()
@@ -485,6 +485,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if fence.item_fence() != item_fence {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
+        let peer = match self.quest_peer_use(actor, command, intent).await {
+            Ok(peer) => peer,
+            Err(()) => return Ok(Some(outcome(UseDisposition::Rejected))),
+        };
         let native = self
             .active_generation
             .and_then(|g| g.native_gameplay())
@@ -514,6 +518,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fee_payment: None,
                     actor_conditions: None,
                     carried_use: Some(&use_),
+                    peer_use: peer.as_ref(),
                 },
                 &self.premium_coordinator,
             )

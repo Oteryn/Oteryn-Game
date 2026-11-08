@@ -190,6 +190,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     }
                     NpcRuleGuard::CalendarMonth { value } => (1..=12).contains(value),
                     NpcRuleGuard::Vocation { value } => valid_quest_key(value),
+                    NpcRuleGuard::Premium { .. } => true,
                     NpcRuleGuard::Sex { value } => *value <= 1,
                     NpcRuleGuard::Outfit { look_type, addon } => *look_type > 0 && *addon <= 3,
                 };

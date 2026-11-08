@@ -15,7 +15,10 @@ impl NpcRuleCatalog {
                 match guard {
                     NpcRuleGuard::Storage { .. }
                     | NpcRuleGuard::StorageTime { .. }
-                    | NpcRuleGuard::CalendarMonth { .. } => {}
+                    | NpcRuleGuard::CalendarMonth { .. }
+                    | NpcRuleGuard::Level { .. }
+                    | NpcRuleGuard::Vocation { .. }
+                    | NpcRuleGuard::Premium { .. } => {}
                     NpcRuleGuard::Equipped { slot, item } if slot == "head" => {
                         if required
                             .insert(slot.clone(), item.clone())
@@ -109,6 +112,7 @@ mod tests {
                 inventory: &inventory,
                 now_epoch_seconds: 0,
                 calendar_month: 1,
+                premium_current: false,
                 level: 0,
                 vocation: "",
                 sex: 0,

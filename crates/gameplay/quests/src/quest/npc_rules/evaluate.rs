@@ -119,6 +119,7 @@ impl<'a> Staged<'a> {
             NpcRuleGuard::Level { op, value } => op.holds(i64::from(input.level), *value, None),
             NpcRuleGuard::CalendarMonth { value } => input.calendar_month == *value,
             NpcRuleGuard::Vocation { value } => input.vocation == value,
+            NpcRuleGuard::Premium { value } => input.premium_current == *value,
             NpcRuleGuard::Sex { value } => input.sex == *value,
             NpcRuleGuard::Outfit { look_type, addon } => self
                 .outfits
@@ -329,6 +330,9 @@ pub(super) fn plan(
                         NpcRuleGuard::Storage { .. }
                             | NpcRuleGuard::StorageTime { .. }
                             | NpcRuleGuard::CalendarMonth { .. }
+                            | NpcRuleGuard::Level { .. }
+                            | NpcRuleGuard::Vocation { .. }
+                            | NpcRuleGuard::Premium { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));

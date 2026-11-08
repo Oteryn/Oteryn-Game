@@ -147,11 +147,54 @@ pub(super) fn prepare(
         .duration_since(std::time::UNIX_EPOCH)
         .ok()
         .and_then(|d| i64::try_from(d.as_secs()).ok())?;
+    let eligibility = if source
+        .programs()
+        .iter()
+        .flat_map(|program| &program.document.rules)
+        .filter(|rule| rule.npc == request.npc)
+        .flat_map(|rule| &rule.guards)
+        .any(|guard| {
+            matches!(
+                guard,
+                oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Level { .. }
+                    | oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Vocation { .. }
+                    | oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Premium { .. }
+            )
+        }) {
+        let facts = admission
+            .states
+            .spell_states
+            .try_lock()
+            .ok()?
+            .get(runtime, actor, command.game_session_id)?
+            .character_facts();
+        let vocation = match facts.vocation {
+            crate::spell::Vocation::None => "none",
+            crate::spell::Vocation::Knight | crate::spell::Vocation::EliteKnight => "knight",
+            crate::spell::Vocation::Paladin | crate::spell::Vocation::RoyalPaladin => "paladin",
+            crate::spell::Vocation::Sorcerer | crate::spell::Vocation::MasterSorcerer => "sorcerer",
+            crate::spell::Vocation::Druid | crate::spell::Vocation::ElderDruid => "druid",
+            crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk => "monk",
+        };
+        npc_program::NpcEligibility {
+            level: facts.level,
+            vocation: format!("oteryn:vocation.{vocation}"),
+            premium_current: admission
+                .session_account(command.game_session_id)
+                .zip(admission.premium_coordinator)
+                .is_some_and(|(account, owner)| {
+                    owner.view(account).premium_gate().premium_current()
+                }),
+        }
+    } else {
+        npc_program::NpcEligibility::default()
+    };
     let plan = match npc_program::preview_with_player_name(
         &request,
         &tracks,
         catalogue,
         now,
+        &eligibility,
         player_name.as_deref(),
     ) {
         Ok(Some(plan)) => plan,
