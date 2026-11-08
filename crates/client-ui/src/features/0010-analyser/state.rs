@@ -38,13 +38,17 @@ pub struct Panel {
     pub dropped: u64,
 }
 
+/// Dedicated cyclopedia and analytics views over the same confirmed session facts.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Tool {
     #[default]
     Overview,
-    Xp,
+    Hunting,
+    Experience,
     Loot,
-    Supply,
+    Supplies,
+    Damage,
+    Healing,
     Impact,
     Input,
     Session,
@@ -53,11 +57,23 @@ pub enum Tool {
     Kills,
 }
 impl Tool {
-    pub const ALL: [Self; 10] = [
+    pub const CYCLOPEDIA: [Self; 7] = [
         Self::Overview,
-        Self::Xp,
+        Self::Hunting,
+        Self::Experience,
         Self::Loot,
-        Self::Supply,
+        Self::Supplies,
+        Self::Damage,
+        Self::Healing,
+    ];
+    pub const ALL: [Self; 13] = [
+        Self::Overview,
+        Self::Hunting,
+        Self::Experience,
+        Self::Loot,
+        Self::Supplies,
+        Self::Damage,
+        Self::Healing,
         Self::Impact,
         Self::Input,
         Self::Session,
@@ -65,18 +81,48 @@ impl Tool {
         Self::LootTracker,
         Self::Kills,
     ];
+    #[allow(
+        non_upper_case_globals,
+        reason = "Preserve the analytics selector API while sharing the cyclopedia Experience tool"
+    )]
+    pub const Xp: Self = Self::Experience;
+    #[allow(
+        non_upper_case_globals,
+        reason = "Preserve the analytics selector API while sharing the cyclopedia Supplies tool"
+    )]
+    pub const Supply: Self = Self::Supplies;
     pub const fn key(self) -> &'static str {
         match self {
             Self::Overview => "overview",
-            Self::Xp => "xp",
+            Self::Hunting => "hunting",
+            Self::Experience => "xp",
             Self::Loot => "loot",
-            Self::Supply => "supply",
+            Self::Supplies => "supply",
+            Self::Damage => "damage",
+            Self::Healing => "healing",
             Self::Impact => "impact",
             Self::Input => "input",
             Self::Session => "session",
             Self::Party => "party",
             Self::LootTracker => "loot-tracker",
             Self::Kills => "kills",
+        }
+    }
+    pub const fn title(self) -> &'static str {
+        match self {
+            Self::Overview => "Overview",
+            Self::Hunting => "Hunting",
+            Self::Experience => "Experience",
+            Self::Loot => "Loot",
+            Self::Supplies => "Supplies",
+            Self::Damage => "Damage",
+            Self::Healing => "Healing",
+            Self::Impact => "Impact",
+            Self::Input => "Input",
+            Self::Session => "Hunting Session",
+            Self::Party => "Party Hunt",
+            Self::LootTracker => "Loot Tracker",
+            Self::Kills => "Kill Tracker",
         }
     }
 }

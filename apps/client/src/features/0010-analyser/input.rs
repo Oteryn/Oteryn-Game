@@ -2,6 +2,15 @@ use crate::combat_input::PlayCommand;
 use crate::play::PlayLink;
 use crate::play::mailbox::{Mailbox, lock};
 use oteryn_input_actions::NormalizedInputEvent;
+#[cfg(any(windows, test))]
+pub(in crate::play) fn select_tool(panel: &mut oteryn_client_ui::analyser::Panel, index: usize) {
+    if let Some(tool) = oteryn_client_ui::analyser::Tool::CYCLOPEDIA.get(index) {
+        panel.tool = *tool;
+    } else if index == oteryn_client_ui::analyser::Tool::CYCLOPEDIA.len() {
+        oteryn_client_ui::analyser::protocol::reset(panel);
+    }
+}
+
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
     pub fn analyser_xp_goal(&self, value: &str) -> bool {

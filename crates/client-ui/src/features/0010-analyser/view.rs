@@ -5,7 +5,13 @@ pub fn panel_text(panel: &Panel) -> String {
         return "Analysers unavailable in this session".into();
     }
     let mut text = match panel.tool {
-        super::Tool::Overview => overview(panel),
+        super::Tool::Overview => format!("Overview\r\n{}", overview(panel)),
+        super::Tool::Hunting => format!("Hunting analyser\r\nKills: {}", panel.kills),
+        super::Tool::Damage => format!(
+            "Damage analyser\r\nDamage dealt: {} | Damage received: {}",
+            panel.damage, panel.received
+        ),
+        super::Tool::Healing => format!("Healing analyser\r\nHealing: {}", panel.healing),
         super::Tool::Xp => xp_text(panel, panel.clock.seconds()),
         super::Tool::Loot => loot_text(panel, panel.clock.seconds()),
         super::Tool::Supply => supply_text(panel, panel.clock.seconds()),

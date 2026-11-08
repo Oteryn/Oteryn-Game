@@ -44,6 +44,39 @@ fn confirmed_state_is_visible() -> Result<(), &'static str> {
 }
 
 #[test]
+fn selector_keeps_confirmed_totals_and_shows_only_the_selected_tool() {
+    use super::Tool;
+    let mut panel = Panel {
+        selected: true,
+        ..Panel::default()
+    };
+    apply(
+        &mut panel,
+        &[
+            AnalyserFact::Kill { race: None },
+            AnalyserFact::Experience {
+                raw: 25,
+                gained: 30,
+            },
+        ],
+    );
+    panel.tool = Tool::Experience;
+    let text = panel_text(&panel);
+    assert!(text.contains("Experience: 25 raw / 30 gained"));
+    assert!(!text.contains("Kills:"));
+    panel.tool = Tool::Hunting;
+    assert!(panel_text(&panel).contains("Kills: 1"));
+    assert!(!panel_text(&panel).contains("Experience:"));
+    reset(&mut panel);
+    assert_eq!(panel.tool, Tool::Hunting);
+    assert!(panel_text(&panel).contains("Kills: 0"));
+    for tool in Tool::ALL {
+        panel.tool = tool;
+        assert!(panel_text(&panel).contains(tool.title()));
+    }
+}
+
+#[test]
 fn analytics_selector_opens_independent_tools_over_confirmed_totals() {
     let mut panel = Panel {
         selected: true,
