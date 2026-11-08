@@ -279,3 +279,42 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod unplaced_tests {
+    use super::*;
+    use crate::map::boot::tests as fixture;
+
+    #[test]
+    fn qm50_unplaced_elevator_frame_retains_qualified_collision_facts() -> Result<(), String> {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(|e| e.to_string())?;
+        let facts = BundleFacts::palette(&bundle.manifest, |key| {
+            if key == "oteryn:item.tibia.i17939" {
+                Some(ItemDefinition {
+                    reference: NonZeroU32::new(50000)?,
+                    solid: Some(false),
+                    blocks_projectile: false,
+                    pickupable: false,
+                    door: false,
+                })
+            } else {
+                fixture::items(key)
+            }
+        })
+        .map_err(|e| format!("{e:?}"))?;
+        let frame = facts
+            .movement_item_facts(17939)
+            .ok_or("unplaced source frame")?;
+        assert!(!frame.pickupable);
+        assert_eq!(facts.override_blocks(frame), Some(false));
+        assert_eq!(
+            facts.override_blocks(EntryFacts {
+                definition: MapDefinition::Item(NonZeroU32::MIN),
+                ..frame
+            }),
+            None
+        );
+        Ok(())
+    }
+}
