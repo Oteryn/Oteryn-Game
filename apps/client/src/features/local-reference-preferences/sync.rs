@@ -2,7 +2,10 @@
 use super::{PreferenceError, PreferenceInput, PreferenceStore, ReferencePreferences};
 use crate::play::PlayView;
 use oteryn_input_actions::NormalizedInputEvent;
-use std::path::PathBuf;
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 
 pub struct SettingsState {
     store: Option<PreferenceStore>,
@@ -14,6 +17,37 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn export_to(&self, path: &Path) -> io::Result<()> {
+        PreferenceStore::export_to(&self.preferences, path)
+    }
+
+    pub fn import_from(&mut self, path: &Path) -> io::Result<()> {
+        self.replace_saved(PreferenceStore::read_transfer(path)?)
+    }
+
+    pub fn reset_defaults(&mut self) -> io::Result<()> {
+        self.replace_saved(ReferencePreferences::default())
+    }
+
+    pub fn restore_backup(&mut self) -> io::Result<()> {
+        let path = self
+            .store
+            .as_ref()
+            .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?
+            .backup_path();
+        self.import_from(&path)
+    }
+
+    fn replace_saved(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
+        let store = self
+            .store
+            .as_mut()
+            .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?;
+        store.replace_with_backup(preferences.clone())?;
+        self.preferences = preferences;
+        Ok(())
+    }
+
     pub fn new(path: Option<PathBuf>) -> Self {
         let (store, feedback) = match path {
             Some(path) => match PreferenceStore::load(path.clone()) {

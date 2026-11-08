@@ -37,6 +37,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 type RecentIntents = VecDeque<u64>;
 #[path = "benevola.rs"]
 mod benevola;
+mod cake;
 mod catalogue;
 mod classic_quests;
 mod coin_exchange;
@@ -58,6 +59,7 @@ mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
 mod reward_callbacks;
+mod seasonal;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
@@ -90,6 +92,8 @@ struct SessionNpc {
     premium: Option<premium_purchase::PendingPurchase>,
     marriage: Option<marriage::Pending>,
     monk: Option<monk::Pending>,
+    seasonal: Option<seasonal::Pending>,
+    cake: Option<cake::Pending>,
     quest_dialogue: quest_dialogue::State,
     catalogue: Option<catalogue::Pending>,
     delayed_end: Option<catalogue::DelayedEnd>,
@@ -816,6 +820,16 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(step) = cake::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return cake::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(context) = seasonal::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return seasonal::apply(admission, actor, command, intent, context).await;
     }
     if let Some(step) = monk::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

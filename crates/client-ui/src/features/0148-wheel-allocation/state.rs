@@ -14,6 +14,10 @@ pub const SLOT_DOMAINS: [u8; 36] = [
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WheelPanel {
+    pub presets_open: bool,
+    pub preset_fields: [String; 2],
+    pub preset_book: super::presets::PresetBook,
+    pub preset_feedback: String,
     pub selected: bool,
     pub open: bool,
     pub synchronized: bool,
@@ -36,6 +40,10 @@ pub struct WheelPanel {
 impl Default for WheelPanel {
     fn default() -> Self {
         Self {
+            presets_open: false,
+            preset_fields: Default::default(),
+            preset_book: Default::default(),
+            preset_feedback: String::new(),
             selected: false,
             open: false,
             synchronized: false,

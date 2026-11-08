@@ -25,6 +25,9 @@ import "item_view_v1.proto";
 // One open container view. Ordinary views remain at most 646 encoded bytes (view id 2,
 // container 11, parent 11, capacity 2, 20 entry elements of 31). With capability 230 selected,
 // a browse view is at most 965 bytes (30 entries, no parent and up to 20 bytes of metadata).
+// With authenticated HOUSE_CONTAINER_CAPACITY_V2 (446, requires 14 and 49), an actual
+// named-House container may instead have 25 entries and at most 801 encoded bytes.
+// Legacy ordinary views and every carried container retain the 20-entry bound.
 message ContainerViewV1 {
   // 0 to 15 (BAGS0-RL-03), unique within the domain.
   uint32 view_id = 1;
@@ -32,8 +35,9 @@ message ContainerViewV1 {
   uint64 container_handle = 2;
   // The container's parent, for UP; absent (0) when the parent is not visible.
   uint64 parent_handle = 3;
-  // The container's entry count, 1 to 20 (GAMEITEM01-CONTAINER-ENTRIES-MAX), or exactly 30
-  // for a browse field selected through capability 230.
+  // The container's entry count, 1 to 20 (GAMEITEM01-CONTAINER-ENTRIES-MAX).
+  // Only a currently proved House container with 446 selected permits 21..25.
+  // A browse field selected through capability 230 has exactly 30 capacity.
   uint32 capacity = 4;
   // The direct entries in display order, at most `capacity`.
   repeated oteryn.protocol.v1.item_view.ItemEntryV1 entries = 5;
@@ -55,7 +59,10 @@ message BrowseFieldPageV1 {
 
 // StateDomainSnapshot.payload of domain 14, snapshot type 1, and StateDelta.payload of domain 14,
 // delta type 1. A delta carries every open view. Views in strictly ascending view id, at most 16
-// (BAGS0-RL-03), and at most 10,384 bytes without capability 230, or 15,488 bytes with it.
+// (BAGS0-RL-03). The whole payload is at most 10,384 bytes in legacy ordinary mode,
+// at most 12,862 bytes with 446 and no 230, and at most 15,488 bytes with 230 (including
+// mixed House views). The existing domain 14 type 1 registry ceiling 15,488 covers
+// all three negotiated modes; no legacy decoder accepts 25 merely from that ceiling.
 // Within a view the container, the parent and the entries hold distinct handles. Ordinary
 // containers appear in one view only. With capability 230, views may share a browse container
 // handle only when their position and total agree; their page indexes remain independent.

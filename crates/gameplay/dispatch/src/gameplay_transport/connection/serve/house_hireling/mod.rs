@@ -62,6 +62,13 @@ impl State {
             self.stash_rows = None;
             return routing::house_podium::route(authority, admitted, command).await;
         }
+        // W18 rotation has its own capability445 and current named-House owner,
+        // independently of the hireling service. The registered route retains
+        // command selection, exact DTO decoding and the owner generation fence.
+        if command.command_type == oteryn_protocol_oteryn::house_rotation::COMMAND {
+            self.stash_rows = None;
+            return routing::house_rotation::route(authority, admitted, command).await;
+        }
         // Ordinary item USE and container views keep their existing capability gates
         // in a House without requiring the independent hireling mechanic.
         if !self.enabled
@@ -78,7 +85,8 @@ impl State {
         match command.command_type {
             world_object::COMMAND_TYPE_USE_INTENT => {
                 // The same item directory contains carried and actual House map handles.
-                // Creature, rune and map-object targets retain their separate owners.
+                // The House event owner classifies exact bed kits with native bed
+                // map targets; creature/rune and other map targets keep their owners.
                 let plain = decode_use_intent_target(
                     admitted.continuity.selected_capabilities.as_slice(),
                     command.payload,
@@ -88,7 +96,16 @@ impl State {
                         intent.target,
                         UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
                     ) && intent.use_with.is_none()
-                        && intent.use_with_map_item.is_none()
+                        && (intent.use_with_map_item.is_none()
+                            || (matches!(intent.target, UseTarget::Item(_))
+                                && matches!(
+                                    intent.use_with_map_item,
+                                    Some(
+                                        oteryn_protocol_oteryn::world_object::MapUseTarget::Object(
+                                            _
+                                        )
+                                    )
+                                )))
                         && intent.use_with_position.is_none()
                 });
                 if !plain {

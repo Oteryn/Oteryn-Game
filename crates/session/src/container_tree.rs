@@ -24,9 +24,13 @@ pub(super) fn initial(
             snapshot_type: snapshot.snapshot_type,
         });
     }
-    wire::decode_container_views_for(&snapshot.payload, selected.contains(&230))
-        .map(Some)
-        .map_err(SessionError::ItemView)
+    wire::decode_container_views_with_house_capacity(
+        &snapshot.payload,
+        selected.contains(&230),
+        selected.contains(&446),
+    )
+    .map(Some)
+    .map_err(SessionError::ItemView)
 }
 
 pub(super) fn apply<S: SessionStream>(
@@ -44,8 +48,12 @@ pub(super) fn apply<S: SessionStream>(
         .map(|(_, r)| *r)
         .ok_or(SessionError::MissingDomain(14))?;
     check_delta(&delta, 1, revision)?;
-    let value = wire::decode_container_views_for(delta.payload, session.is_selected(230))
-        .map_err(SessionError::ItemView)?;
+    let value = wire::decode_container_views_with_house_capacity(
+        delta.payload,
+        session.is_selected(230),
+        session.is_selected(446),
+    )
+    .map_err(SessionError::ItemView)?;
     session.container_views = Some(value.clone());
     if let Some(snapshot) = session
         .gated_snapshots

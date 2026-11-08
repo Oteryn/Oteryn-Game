@@ -80,6 +80,19 @@ impl Stack {
         admitted_frames: Vec<Vec<u8>>,
         empty: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_variant(refusals, admitted_frames, empty, false)
+    }
+
+    pub(super) fn start_with_challenge() -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_variant(Vec::new(), admitted_frames(), false, true)
+    }
+
+    fn start_variant(
+        refusals: Vec<u32>,
+        admitted_frames: Vec<Vec<u8>>,
+        empty: bool,
+        challenge: bool,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let servers = ClientRuntime::new()?;
         let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
         let root = generated.cert.der().clone();
@@ -135,8 +148,9 @@ impl Stack {
         let requests = Arc::new(Mutex::new(Vec::new()));
         let log = Arc::clone(&requests);
         servers.spawn(async move {
+            let mut verifier = challenge.then(MockChallengeVerifier::default);
             while let Ok((stream, _peer)) = http.accept().await {
-                serve_http(stream, game_port, &log, empty).await;
+                serve_http(stream, game_port, &log, empty, verifier.as_mut()).await;
             }
         })?;
         Ok(Self {
@@ -198,6 +212,11 @@ impl Stack {
 
 /// The browser: signs in at once and follows the redirect with the exact `state`.
 fn complete_browser_sign_in(url: &str) -> bool {
+    let returned = if url.contains("/oauth/challenge?") {
+        "challenge-proof-1"
+    } else {
+        "code-1"
+    };
     let query_value = |name: &str| {
         url.split(['?', '&'])
             .find_map(|pair| pair.strip_prefix(name)?.strip_prefix('='))
@@ -217,7 +236,7 @@ fn complete_browser_sign_in(url: &str) -> bool {
         if let Ok(mut stream) = std::net::TcpStream::connect(&authority) {
             let _ = write!(
                 stream,
-                "GET /callback?code=code-1&state={state} HTTP/1.1\r\nhost: {authority}\r\n\r\n"
+                "GET /callback?code={returned}&state={state} HTTP/1.1\r\nhost: {authority}\r\n\r\n"
             );
             let _ = stream.read_to_end(&mut Vec::new());
         }
@@ -230,6 +249,7 @@ async fn serve_http(
     game_port: u16,
     log: &Mutex<Vec<String>>,
     empty: bool,
+    verifier: Option<&mut MockChallengeVerifier>,
 ) {
     let mut request = Vec::new();
     let mut chunk = [0_u8; 4096];
@@ -258,6 +278,18 @@ async fn serve_http(
     };
     let line = head.lines().next().unwrap_or_default();
     let target = line.split(' ').take(2).collect::<Vec<_>>().join(" ");
+    if target == "POST /oauth/token"
+        && let Some(verifier) = verifier
+    {
+        let (status, response) = verifier.exchange(&body);
+        if let Ok(mut requests) = log.lock() {
+            requests.push(format!("{target} {body}"));
+        }
+        let _ = stream.write_all(format!(
+            "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{response}", response.len()
+        ).as_bytes()).await;
+        return;
+    }
     let response = match target.as_str() {
         "GET /v1/client/directory" => format!(
             r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"Alpha","channels":[{{"id":"{CHANNEL}","name":"First"}}],"characters":[]}}]}}"#
@@ -306,4 +338,48 @@ pub(super) fn count(requests: &[String], target: &str) -> usize {
         .iter()
         .filter(|request| request.starts_with(target))
         .count()
+}
+
+/// Test-only one-use verifier: no production bypass and no real payment/identity keys.
+#[derive(Default)]
+pub(super) struct MockChallengeVerifier {
+    binding: Option<String>,
+    consumed: bool,
+}
+impl MockChallengeVerifier {
+    pub(super) fn exchange(&mut self, form: &str) -> (u16, &'static str) {
+        let fields: Vec<_> = form.split('&').collect();
+        let bound = fields.contains(&"code=code-1")
+            && fields
+                .iter()
+                .any(|field| field.starts_with("code_verifier="));
+        let binding = fields
+            .iter()
+            .filter(|field| !field.starts_with("challenge_"))
+            .copied()
+            .collect::<Vec<_>>()
+            .join("&");
+        if self.binding.is_none()
+            && !fields
+                .iter()
+                .any(|field| field.starts_with("challenge_token="))
+            && bound
+        {
+            self.binding = Some(binding.clone());
+            return (
+                403,
+                r#"{"error":"oteryn_challenge_required","challenge_id":"01890a5d-ac96-774b-bcce-b302099a8057","expires_in":120}"#,
+            );
+        }
+        if self.binding.as_ref() == Some(&binding)
+            && !self.consumed
+            && bound
+            && fields.contains(&"challenge_token=challenge-proof-1")
+            && fields.contains(&"challenge_id=01890a5d-ac96-774b-bcce-b302099a8057")
+        {
+            self.consumed = true;
+            return (200, r#"{"token_type":"Bearer","access_token":"access-1"}"#);
+        }
+        (403, r#"{"error":"invalid_challenge"}"#)
+    }
 }
