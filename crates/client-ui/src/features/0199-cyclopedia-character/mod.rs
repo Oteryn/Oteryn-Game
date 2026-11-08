@@ -1,8 +1,11 @@
 //! Native cyclopedia character panel and admitted command mapping.
+#[path = "protocol/achievements.rs"]
+mod achievements;
 mod input;
 mod protocol;
 mod state;
 mod view;
+pub use achievements::{next_request as achievement_next_request, request as achievement_request};
 pub use input::{open_key, set_target};
 pub use protocol::{Intent, apply_result, request};
 pub use state::{CyclopediaCharacterPanel, HistoryRow};

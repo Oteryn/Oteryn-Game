@@ -59,3 +59,16 @@ fn pc06_cyclopedia_map_view_keeps_confirmed_result_during_refusal() {
     assert!(fresh.summary.is_empty());
     assert!(panel_text(&fresh).contains("Unavailable"));
 }
+
+#[test]
+fn cyclopedia_sections_have_stable_navigation_and_distinct_titles() {
+    assert_eq!(Section::ALL.len(), 8);
+    let mut panel = Panel::default();
+    for section in Section::ALL {
+        panel.navigate(section);
+        assert_eq!(panel.section, section);
+        assert!(!section.title().is_empty());
+    }
+    assert_eq!(panel.section, Section::Analytics);
+    assert!(!panel.pending);
+}

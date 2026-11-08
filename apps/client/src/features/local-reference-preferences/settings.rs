@@ -16,7 +16,7 @@ mod store;
 mod sync;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use store::PreferenceStore;
-pub use sync::SettingsState;
+pub use sync::{SettingsPage, SettingsState};
 
 const PANEL_IDS: &[&str] = &[
     "battle",
@@ -38,6 +38,14 @@ const PANEL_IDS: &[&str] = &[
     "wheel",
 ];
 
+fn enabled() -> bool {
+    true
+}
+
+fn default_hud_bounds() -> [u16; 4] {
+    [8, 8, 900, 40]
+}
+
 fn default_scale() -> u16 {
     100
 }
@@ -53,6 +61,15 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    /// Saved HUD position and size in client pixels; editable through settings transfer.
+    #[serde(default = "default_hud_bounds")]
+    pub hud_bounds: [u16; 4],
+    #[serde(default = "enabled")]
+    pub hud_bars: bool,
+    #[serde(default = "enabled")]
+    pub show_effects: bool,
+    #[serde(default = "enabled")]
+    pub show_lights: bool,
     #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
     pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
@@ -71,6 +88,10 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            hud_bounds: default_hud_bounds(),
+            hud_bars: true,
+            show_effects: true,
+            show_lights: true,
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
@@ -85,6 +106,9 @@ impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+            || self.hud_bounds[2] < 120
+            || self.hud_bounds[3] < 24
+            || self.hud_bounds.iter().any(|value| *value > 4096)
             || self.audio.master_volume > 100
             || !(80..=180).contains(&self.ui_scale)
             || self.visible_panels.len() > PANEL_IDS.len()
