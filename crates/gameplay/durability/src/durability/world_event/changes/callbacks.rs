@@ -68,8 +68,6 @@ impl DurabilityRoot {
             &callback,
         );
         let mut lane = permit;
-        let ground = oteryn_gameplay_quests::quest::world_callbacks::stateless_ground_requirements(&callback);
-        let mut lane = permit;
         self.try_issue_semantic_pass()?
             .run_with_context(&mut lane, move |holder, deadline, lane| {
                 Box::pin(async move {

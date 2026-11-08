@@ -106,7 +106,6 @@ fn is_false(value: &bool) -> bool {
 mod mammoth_tests;
 mod native;
 mod nomads_window;
-mod nomads_window;
 mod phase;
 use native::valid_native_callback;
 pub use phase::select_storage_phase;
@@ -269,11 +268,6 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
     }
 }
 
-/// Closed read-only source gates. They create no synthetic personal quest state.
-pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>> {
-    (key == nomads_window::KEY).then(nomads_window::requirements)
-}
-
 impl Callback {
     /// Canary action_horn.lua:38-50: mammoth progress requires a currently active
     /// Drunk condition, never the historical mead counters or a cached quest flag.
@@ -374,9 +368,10 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         ))
         .map_err(|error| error.to_string())?;
         let prior = selectors.entry(selector).or_default();
-        if prior
-            .iter()
-            .any(|existing| !phase::disjoint(existing, callback))
+        if prior.len() >= MAX_EFFECTS
+            || prior
+                .iter()
+                .any(|existing| !phase::disjoint(existing, callback))
         {
             return Err("duplicate callback selector across registries".into());
         }

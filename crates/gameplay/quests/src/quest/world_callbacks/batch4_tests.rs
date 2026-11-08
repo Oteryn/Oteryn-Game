@@ -314,47 +314,6 @@ fn m02_ground_stack_requires_exact_ordered_bounded_items_and_durable_admission()
 }
 
 #[test]
-fn m02_ground_stack_requires_exact_ordered_bounded_items_and_durable_admission()
--> Result<(), String> {
-    let mut value = base();
-    value["requires_world_admission"] = true.into();
-    value["storage"] = serde_json::json!([
-        {"track":dance::QUESTLINE_TRACK,"minimum":-1,"maximum":15,"set":1}
-    ]);
-    value["world_requirements"] = serde_json::json!([{
-        "position":{"x":32991,"y":31496,"floor":-1}, "appearance":0,
-        "ground_stack":[{"item":"oteryn:item.tibia.i2471","count":1},
-                        {"item":"oteryn:item.tibia.i2904","count":1}]
-    }]);
-    assert!(
-        callbacks(value.clone()).is_ok(),
-        "portable stacks need a durable read-set"
-    );
-    for case in 0..6 {
-        let mut bad = value.clone();
-        match case {
-            0 => bad["storage"] = serde_json::json!([]),
-            1 => bad["world_requirements"][0]["ground_stack"][0]["count"] = 0.into(),
-            2 => bad["world_requirements"][0]["ground_stack"][0]["item"] = "*".into(),
-            3 => bad["world_requirements"][0]["ground_stack"][0]["count"] = 101.into(),
-            4 => bad["world_requirements"][0]["ground_stack"] = serde_json::json!([]),
-            _ => {
-                bad["world_requirements"][0]["ground_stack"] = serde_json::json!(vec![
-                        value["world_requirements"][0]["ground_stack"][0]
-                            .clone();
-                        MAX_EFFECTS + 1
-                    ])
-            }
-        }
-        assert!(
-            callbacks(bad).is_err(),
-            "accepted unsafe Ground prerequisite {case}"
-        );
-    }
-    Ok(())
-}
-
-#[test]
 fn m33_disjoint_readonly_phases_share_one_step_selector_without_ambiguity() -> Result<(), String> {
     // questpc7 retained Feaster route: same entrance, programme 0 versus 5;
     // Wiki Feaster of Souls oldid421868, s2 and s6 of the chosen recipe.

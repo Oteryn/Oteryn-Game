@@ -6,8 +6,6 @@ use super::{
 };
 mod admission;
 mod conditional_cells;
-mod admission;
-use admission::{character_fence_required, stateless_observation_required};
 use admission::{character_fence_required, stateless_observation_required};
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
