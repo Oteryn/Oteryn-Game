@@ -236,7 +236,7 @@ fn scenario(final_recipe: bool) -> TestResult {
             .ok_or("craft route")?;
         assert_eq!(result.disposition, UseDisposition::Committed);
         let replay = owner
-            .use_craft(deps.actor, command, intent, None, None)
+            .use_craft(deps.actor, command, intent.clone(), None, None)
             .await
             .ok_or("replay route")?;
         assert_eq!(replay.disposition, UseDisposition::Committed);
@@ -261,6 +261,24 @@ fn scenario(final_recipe: bool) -> TestResult {
                 .await?,
                 1
             );
+            // A distinct paid occurrence can craft again after questline already reached two.
+            let second_command = crate::gameplay_transport::connection::UseCommand {
+                command_id: 2,
+                ..command
+            };
+            let second = owner.use_craft(
+                deps.actor, second_command, intent.clone(),
+                Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(71))),
+                Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(72))),
+            ).await.ok_or("repeat recipe route")?;
+            assert_eq!(second.disposition, UseDisposition::Committed);
+            let second_replay = owner.use_craft(deps.actor, second_command, intent, None, None)
+                .await.ok_or("repeat recipe replay")?;
+            assert_eq!(second_replay.disposition, UseDisposition::Committed);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_quest_reward_sources WHERE plan ? 'recipe_source'").fetch_one(&harness.pool).await?, 2);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT sum(quantity)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i21506'").fetch_one(&harness.pool).await?, 2);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?, 1);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline'").bind(id(41).as_slice()).fetch_one(&harness.pool).await?, 2);
         } else {
             let rows:Vec<(String,i64)>=sqlx::query_as("SELECT definition_production_key,quantity FROM game_item_instances WHERE lifecycle=1 AND definition_production_key IN ('oteryn:item.tibia.i11466','oteryn:item.tibia.i21504','oteryn:item.tibia.i21505') ORDER BY definition_production_key").fetch_all(&harness.pool).await?;
             assert_eq!(rows, vec![("oteryn:item.tibia.i21505".into(), 1)]);
