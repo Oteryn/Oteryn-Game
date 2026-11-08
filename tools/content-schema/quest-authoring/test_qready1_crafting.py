@@ -5,6 +5,7 @@ import sys
 import unittest
 from pathlib import Path
 
+import qready1_carried_crafts as carried
 import qready1_craft_callbacks as crafts
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -13,6 +14,29 @@ import world_region_codec as codec
 
 
 class Qready1CraftBindings(unittest.TestCase):
+    def test_first_mixture_spends_both_operands_without_a_progress_gate(self):
+        document = carried.build()
+        self.assertEqual(document, json.loads(carried.OUTPUT.read_bytes()))
+        recipes = document["callbacks"]
+        self.assertEqual(2, len(recipes))
+        pairs = set()
+        for recipe in recipes:
+            pairs.add((recipe["carried_item"], recipe["carried_target"]))
+            self.assertEqual([], recipe["storage"])
+            self.assertEqual(
+                [(recipe["carried_item"], 1), (recipe["carried_target"], 1)],
+                [(item["item"], item["count"]) for item in recipe["take"]],
+            )
+            self.assertEqual("oteryn:item.tibia.i21505", recipe["give"]["item"])
+            self.assertEqual(1, recipe["give"]["count"])
+        self.assertEqual(
+            {
+                ("oteryn:item.tibia.i11466", "oteryn:item.tibia.i21504"),
+                ("oteryn:item.tibia.i21504", "oteryn:item.tibia.i11466"),
+            },
+            pairs,
+        )
+
     def test_registered_recipe_matches_generator_and_chosen_s2(self):
         self.assertEqual(crafts.build(), json.loads(crafts.OUTPUT.read_bytes()))
         rows = json.loads(

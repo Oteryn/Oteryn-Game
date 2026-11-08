@@ -52,6 +52,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        if target.is_some() {
+            match self
+                .use_carried_quest_item_targeted(actor, command, &intent, source, target)
+                .await
+            {
+                Ok(Some(outcome)) => return Some(outcome),
+                Ok(None) => {}
+                Err(()) => return None,
+            }
+        }
         if let Some(outcome) = self
             .use_shared_callback_handle(actor, command, source, target)
             .await

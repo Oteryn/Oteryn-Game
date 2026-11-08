@@ -168,5 +168,6 @@ pub(super) async fn exercise(
         2,
         "station remains at its native identity"
     );
+    super::qready1_carried_recipes::exercise(owner, admitted, h).await?;
     Ok(())
 }
