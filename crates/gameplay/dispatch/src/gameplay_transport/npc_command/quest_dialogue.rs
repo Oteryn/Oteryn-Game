@@ -408,6 +408,7 @@ pub(super) async fn apply(
                 fee_payment: fee_payment.as_ref(),
                 actor_conditions: actor_conditions.as_ref(),
                 carried_use: None,
+                creature_use: None,
                 peer_use: None,
             },
             &admission.premium_coordinator,
