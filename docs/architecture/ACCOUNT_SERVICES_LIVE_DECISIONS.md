@@ -102,3 +102,11 @@ retention. These blockers concern Oteryn's Platform and policies, not CipSoft.
 
 For the independently implementable Game login challenge client and the exact
 remaining Platform work, see [the challenge contract](../contracts/OTERYN_NATIVE_LOGIN_CHALLENGE_V1.md).
+
+## Native Premium overview (T165)
+
+The [Premium panel v1 projection](../contracts/OTERYN_PREMIUM_PANEL_V1.md)
+defines the read-only native status, expiry and feature list. Platform must expose
+that authenticated projection over its existing entitlement read model before
+live use. Game's existing mutual-TLS snapshot and durable Premium fence remain
+unchanged; the panel grants no eligibility and includes no payment control.

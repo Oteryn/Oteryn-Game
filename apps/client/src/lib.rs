@@ -13,6 +13,8 @@ pub mod map;
 #[path = "features/local-native-login/mod.rs"]
 pub mod native_login;
 pub mod play;
+#[path = "features/local-premium/mod.rs"]
+pub mod premium;
 pub mod reentry;
 pub mod scene;
 pub mod spell;
