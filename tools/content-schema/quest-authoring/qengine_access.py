@@ -71,6 +71,8 @@ def document():
         if encounter:
             for player in encounter['players']:
                 player['from'] = player.pop('from_')
+    import qm03_world_admission
+    rows.extend(qm03_world_admission.callbacks())
     import questpc_explore_bindings
     rows.extend(questpc_explore_bindings.callbacks(ROOT))
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
