@@ -111,6 +111,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     let weights = PremiumWeights(Weights(native));
     let admission = QuestRewardAdmission {
+        creature_use: None,
         native,
         weights: &weights,
         fee_payment: None,
