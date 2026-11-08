@@ -3,7 +3,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{
     Position,
     ground::{GroundStackObserved, GroundStackRequirement, MAX_GROUND_STACKS},
 };
-use sqlx::Row;
+use sqlx::{Acquire, Row};
 
 pub(super) struct Context<'a> {
     pub world: &'a [u8; 16],
@@ -37,7 +37,11 @@ pub(super) async fn matches(
     // Do not pre-filter definitions, quantities, or lifecycle: an extra or
     // invalid current Ground instance must not disappear from exact-stack evidence.
     // Ground has no runtime UPDATE grant; retain its owner lock and lock Item rows.
-    let rows = sqlx::query(
+    // Ground mutations can already hold an Item row before asking for key 33.
+    // Do not wait in the opposite order. A savepoint makes a busy-row refusal
+    // leave the caller's quest transaction usable and retains its Ground lock.
+    let mut probe = tx.begin().await?;
+    let read = sqlx::query(
         "SELECT i.item_instance_id, i.lifecycle, i.definition_family, \
                 i.definition_production_key, i.definition_revision_ref, i.quantity, g.stack_ordinal \
          FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id,world_id) \
@@ -46,12 +50,26 @@ pub(super) async fn matches(
            AND g.runtime_scope_ownership_generation=$3::text::numeric \
            AND g.spatial_position=$4 AND g.map_revision=$5 AND g.content_revision=$6 \
            AND g.native_room_placement_context=$7 \
-         ORDER BY g.stack_ordinal NULLS FIRST, i.item_instance_id LIMIT $8 FOR SHARE OF i",
+         ORDER BY g.stack_ordinal NULLS FIRST, i.item_instance_id LIMIT $8 FOR SHARE OF i NOWAIT",
     )
     .bind(context.world.as_slice()).bind(context.channel.as_slice())
     .bind(context.generation.to_string()).bind(spatial).bind(context.map)
     .bind(context.content).bind(context.placement).bind((MAX_GROUND_STACKS + 1) as i64)
-    .fetch_all(&mut **tx).await?;
+    .fetch_all(&mut *probe).await;
+    let rows = match read {
+        Ok(rows) => {
+            probe.commit().await?;
+            rows
+        }
+        Err(error) => {
+            let busy = error
+                .as_database_error()
+                .and_then(|e| e.code())
+                .is_some_and(|code| code == "55P03");
+            probe.rollback().await?;
+            return if busy { Ok(false) } else { Err(error) };
+        }
+    };
     if rows.len() != required.stacks.len() {
         return Ok(false);
     }
