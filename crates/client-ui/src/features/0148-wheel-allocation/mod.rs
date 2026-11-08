@@ -3,6 +3,8 @@ pub use oteryn_client_runtime::wheel_allocation::{
     CommandStatus, WheelCommand, WheelResponse, atelier, wheel,
 };
 mod input;
+#[path = "settings.rs"]
+pub mod presets;
 mod protocol;
 mod state;
 mod view;

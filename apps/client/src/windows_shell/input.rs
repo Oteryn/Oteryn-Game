@@ -89,6 +89,7 @@ impl Application {
                 || play.link.container_sort_input(events)
                 || play.link.guild_war_input(events)
                 || play.link.guildhall_input(events)
+                || play.link.house_input(events)
                 || play.link.house_move_out_input(events)
                 || play.link.house_transfer_input(events)
                 || play.link.player_report_input(events)

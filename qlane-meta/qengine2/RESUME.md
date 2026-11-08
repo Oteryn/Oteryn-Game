@@ -1860,3 +1860,36 @@ fetch main107625470/lane790996f8e unchanged. Use owner PREPUSH-2 cadence excepti
 rather than hold this compiling fix past30min: strict-clippy rerun is still
 running; durability/dispatch units and fresh clock PG cases remain pending.
 Historical witness data is explicitly anchored to790996f8e; no fresh pin minted.
+
+
+## n3 shared-engine continuation — 2026-11-08
+
+Resume branch: `claude/happy-davinci-ijz3wy-qengine2-n3`. Retain the published
+925d8480e shared APIs, merged with seasonal main and subsequent client-only main
+updates. Source conflicts preserve main's seasonal/durable consume behavior and
+the engine's eight-extra-input bound. Seasonal single-item reward construction
+explicitly initializes the engine's additional-items collection. All 5,777 native
+Item profiles from both parents are retained. Generated files use repository
+authoring/materialization and pin tools; no migration numbers collide.
+
+The owner replaced the whole-quest loop with 17 reusable engine requests from
+questpc2/questpc5/questpc7. No new row is qualified by this merge. Start with live
+blessing/promotion predicates, then the existing transaction-clock slice and the
+remaining requests in their published order. Requesting lanes own quest content.
+
+Validation: quest-authoring checks PASS; all 103 unit modules / 1,122 tests PASS;
+content-tree Item/Mount equivalence PASS; workspace all-targets PASS in 12m04s
+before the final client-only main follow-up. Final compile/clippy/pin checks are
+tracked in local logs. Fresh dispatch PostgreSQL proofs and broader crate units
+remain pending under PREPUSH-2's cadence exception; no historical PG witness is
+relabelled current. Physical node-boot fixture execution failed at postgres_ready,
+and cleanup reported `sudo: command not found`; full_manifest is unqualified.
+The Royal Costume experiment remains in a local stash, outside this engine batch.
+
+Main convergence gates passed: workspace all-targets including a16f19676 PASS
+11m10s; strict all-feature library clippy for all seven changed engine crates
+PASS; fmt, architecture, pin-check and duplicate-migration checks PASS. The owner
+requested publication to the legacy qengine2 ref for collection, then no more
+writes to that ref. No whole-quest DONE status is asserted by this integration.
+Fresh engine PG cases and physical full_manifest qualification remain pending;
+PREPUSH-2's cadence exception is used rather than describing them as passed.

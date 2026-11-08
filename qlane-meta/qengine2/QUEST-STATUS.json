@@ -3812,5 +3812,33 @@
     ],
     "publication": "PREPUSH-2 cadence exception; counts unchanged",
     "quests_units": "327PASS46.308s,0skipped"
+  },
+  "n3_engine_resume": {
+    "branch": "claude/happy-davinci-ijz3wy-qengine2-n3",
+    "main_merge_target": "a16f196762d66ef27f76a02545960ec8b4283295",
+    "reused_engine_head": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+    "queue_scope": "QENGINE2 engine requests from questpc2, questpc5 and questpc7; requesting lanes retain quest content ownership",
+    "engine_rows": {
+      "done": 0,
+      "open": 17,
+      "blocked": 0
+    },
+    "validation": {
+      "quest_authoring_checks": "PASS",
+      "quest_authoring_unit_modules": 103,
+      "quest_authoring_unit_tests": 1122,
+      "content_tree_equivalence": "PASS",
+      "workspace_all_targets_before_client_only_followup": "PASS 12m04s",
+      "fresh_dispatch_pg": "PENDING, no new engine qualification claimed",
+      "node_boot": "fixture failed postgres_ready; cleanup reports sudo: command not found; full_manifest remains unqualified",
+      "workspace_all_targets": "PASS 11m10s including a16f19676 client update",
+      "strict_clippy": "PASS all seven changed engine crates, all features, library targets",
+      "fmt": "PASS",
+      "architecture": "PASS",
+      "pin_check": "PASS",
+      "duplicate_migrations": "PASS"
+    },
+    "next": "Finish main convergence and publish; then live blessing/promotion predicates, preserving the 17-row queue order.",
+    "end_to_end_done_quests": []
   }
 }
