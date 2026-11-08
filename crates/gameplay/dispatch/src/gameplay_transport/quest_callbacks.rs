@@ -13,6 +13,7 @@ mod effects;
 mod encounter;
 mod execute;
 mod ground_stack;
+mod mead;
 pub(super) mod monsters;
 mod rewards;
 mod shared_gate;

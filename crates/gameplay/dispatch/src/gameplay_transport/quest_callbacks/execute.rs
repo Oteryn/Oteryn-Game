@@ -660,6 +660,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if self.states.quest_callbacks.interrupt_after_commit.swap(false, std::sync::atomic::Ordering::AcqRel) {
                         return UseDisposition::Rejected;
                     }
+                    if fresh
+                        && callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
+                        && let QuestCause::Use(command) = cause {
+                        self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
+                    }
                     self.states.loop_ground.invalidate();
                     // Shrine bonuses must see the committed flag before the next swing;
                     // the cadence still reloads the durable copy for recovery and XP.

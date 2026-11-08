@@ -429,5 +429,90 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(count, 3);
+    drop(slot);
+    // The condition owner receives the deterministic failed outcome from the real rule.
+    let failed_values = mead::TRACKS
+        .into_iter()
+        .zip([2, 2, -1, 0])
+        .map(|(key, value)| (key.to_owned(), value))
+        .collect();
+    let failed = catalogue
+        .evaluate_with_roll(
+            catalogue.transition(mead::KEY).ok_or("transition")?,
+            &failed_values,
+            0,
+            Some(1),
+        )
+        .map_err(debug)?;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let map = owner.bundle_map().ok_or("map")?;
+    let wrong_session =
+        crate::foundation::GameSessionId::decode(&super::fixture::id(99)).map_err(debug)?;
+    let wrong = CommandRef::new(wrong_session, CommandId::new(7300).map_err(debug)?);
+    let before = states
+        .get(&runtime, actor, admitted.game_session_id)
+        .ok_or("player")?
+        .owned_conditions()
+        .clone();
+    assert!(!owner.project_mead_blackout(&runtime, &mut states, actor, wrong, &failed, map));
+    assert_eq!(
+        states
+            .get(&runtime, actor, admitted.game_session_id)
+            .ok_or("player")?
+            .owned_conditions(),
+        &before
+    );
+    let command = CommandRef::new(
+        admitted.game_session_id,
+        CommandId::new(7300).map_err(debug)?,
+    );
+
+    assert!(
+        owner.project_mead_blackout(
+            &runtime,
+            &mut states,
+            actor,
+            command,
+            &failed,
+            owner.bundle_map().ok_or("map")?
+        ),
+        "qualified failure must project its blackout"
+    );
+    let conditions = states
+        .get(&runtime, actor, admitted.game_session_id)
+        .ok_or("player")?
+        .owned_conditions();
+    let blackout = conditions
+        .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Outfit)
+        .ok_or("blackout condition")?;
+    assert_eq!(
+        blackout.remaining_duration_ms(blackout.started_at()),
+        Some(1000)
+    );
+    let item = blackout
+        .definition()
+        .source_item_appearance()
+        .ok_or("Item look")?;
+    assert_eq!(item.definition_key(), "oteryn:item.tibia.i111");
+    assert_eq!(
+        item.artifact_digest(),
+        runtime.content_pin().server_artifact_digest()
+    );
+    let expiry = blackout
+        .started_at()
+        .checked_add(1_000_000)
+        .ok_or("expiry")?;
+    assert!(
+        conditions
+            .displayed_temporary_appearance_at(expiry - 1)
+            .is_some()
+    );
+    assert!(
+        conditions
+            .displayed_temporary_appearance_at(expiry)
+            .is_none()
+    );
     Ok(())
 }
