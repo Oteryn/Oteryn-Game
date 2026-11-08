@@ -133,7 +133,7 @@ pub fn tracker_query(panel: &mut QuestPanel, now: Instant) -> Option<QuestLogQue
     None
 }
 pub fn tracker_lines(panel: &QuestPanel) -> Vec<&QuestLine> {
-    let search = panel.tracker.search.to_lowercase();
+    let search = panel.tracker.search.trim().to_lowercase();
     panel
         .state
         .log
@@ -154,4 +154,18 @@ pub fn tracker_lines(panel: &QuestPanel) -> Vec<&QuestLine> {
                 })
         })
         .collect()
+}
+
+/// Synchronize two tracker windows without treating another window's update as typing.
+pub fn sync_tracker_search(
+    panel: &mut QuestPanel,
+    previous: &mut Option<String>,
+    typed: String,
+) -> Option<String> {
+    if previous.as_deref().is_some_and(|last| last != typed) {
+        panel.tracker.search.clone_from(&typed);
+    }
+    let repaint = (typed != panel.tracker.search).then(|| panel.tracker.search.clone());
+    *previous = Some(panel.tracker.search.clone());
+    repaint
 }
