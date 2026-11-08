@@ -180,3 +180,63 @@ impl ServerDialog {
         text
     }
 }
+
+#[cfg(test)]
+mod notice_tests {
+    use super::*;
+    #[test]
+    fn balancing_notice_requires_acknowledgement_before_suppression() {
+        let mut preferences = DismissedNotices::default();
+        let mut notice = NoticeDialog::new("balance:v2", "Damage rules changed", true);
+        assert!(notice.visible(&preferences));
+        assert!(!notice.acknowledge(false, true, &mut preferences));
+        assert!(notice.visible(&preferences));
+        assert!(notice.acknowledge(true, true, &mut preferences));
+        assert!(!notice.visible(&preferences));
+        assert!(
+            !NoticeDialog::new("balance:v2", "Damage rules changed", true).visible(&preferences)
+        );
+        assert!(NoticeDialog::new("balance:v3", "New rules", true).visible(&preferences));
+        let mut mandatory = NoticeDialog::new("shutdown:v1", "Save now", false);
+        assert!(mandatory.acknowledge(true, true, &mut preferences));
+        assert!(!preferences.contains("shutdown:v1"));
+    }
+}
+
+/// Interactive notice state shared by balancing and reminder presentations.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NoticeDialog {
+    pub key: String,
+    pub message: String,
+    pub suppressible: bool,
+    acknowledged: bool,
+}
+impl NoticeDialog {
+    pub fn new(key: &str, message: &str, suppressible: bool) -> Self {
+        Self {
+            key: key.into(),
+            message: message.into(),
+            suppressible,
+            acknowledged: false,
+        }
+    }
+    pub fn visible(&self, dismissed: &DismissedNotices) -> bool {
+        !self.acknowledged && !(self.suppressible && dismissed.contains(&self.key))
+    }
+    /// Closing or cancelling cannot silently acknowledge a warning.
+    pub fn acknowledge(
+        &mut self,
+        confirmed: bool,
+        dont_show_again: bool,
+        dismissed: &mut DismissedNotices,
+    ) -> bool {
+        if !confirmed || self.acknowledged {
+            return false;
+        }
+        if self.suppressible && dont_show_again && !dismissed.dismiss(&self.key) {
+            return false;
+        }
+        self.acknowledged = true;
+        true
+    }
+}
