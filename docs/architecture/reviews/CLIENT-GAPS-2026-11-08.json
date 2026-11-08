@@ -1151,10 +1151,10 @@
   "src": "TIBAUD-1",
   "area": "Modal dialogs",
   "feature": "Amount/text/edit/confirm/dont-show-again",
-  "status": "PARTIAL",
-  "gap": "Są count confirmation/formularze; brak pełnego wspólnego zestawu text editor i trwałego dont-show-again.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/components/modal_dialogs.rs:4 + editor_preserves_multiline_text_and_checks_byte_limit; PARTIAL: native editor and dismissal wiring remain"
+  "evidence": "apps/client/src/features/0115-mail/view/dialogs.rs:192 + native_confirmation_cancel_never_persists_and_confirm_survives_reload + cp01_mail_scenario; shared multiline native editor, UTF-8 byte validation, explicit confirm/cancel and saved dont-show-again; existing mail server wire exercised"
  },
  {
   "id": "T159",
