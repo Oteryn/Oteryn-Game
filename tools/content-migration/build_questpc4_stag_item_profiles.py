@@ -125,6 +125,7 @@ def admit(
     items=ITEMS,
     schema=SCHEMA,
     neutral=scoped.NEUTRAL_EQUIPMENT,
+    equipment=(),
     producer="tools/content-migration/build_questpc4_stag_item_profiles.py",
 ):
     keys = {i: f"oteryn:item.tibia.i{i}" for i in items}
@@ -156,8 +157,17 @@ def admit(
                 != source_owner.source.K(0)
             )
             or (
-                key in {keys[i] for i in items if i not in neutral}
+                key
+                in {keys[i] for i in items if i not in neutral and i not in equipment}
                 and record["semantics"]["equipment"] != source_owner.source.NA
+            )
+            or (
+                key in {keys[i] for i in equipment}
+                and (
+                    record["semantics"]["equipment"]["state"] != "KNOWN"
+                    or record["semantics"]["protection"]
+                    != definition(root, equipment)[key]["semantics"]["protection"]
+                )
             )
             or record["admission"]["legal_destinations"]
             != ["CharacterInventory", "Ground"]

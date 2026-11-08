@@ -8,6 +8,11 @@ const TILE: oteryn_gameplay_quests::quest::world_callbacks::Position =
     };
 
 #[test]
+fn l6_beregar_item_3398_native_custody_and_replay() -> TestResult {
+    run("l6-beregar-item-3398")
+}
+
+#[test]
 fn l6_beregar_item_8774_native_custody_and_replay() -> TestResult {
     run("l6-beregar-item-8774")
 }
@@ -39,6 +44,7 @@ fn run(name: &'static str) -> TestResult {
 
 pub(super) fn source_id(name: &str) -> Option<u32> {
     match name {
+        "l6-beregar-item-3398" => Some(3398),
         "l6-beregar-item-8774" => Some(8774),
         "l6-beregar-item-8777" => Some(8777),
         _ => None,

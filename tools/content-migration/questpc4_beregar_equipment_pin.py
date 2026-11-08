@@ -1,4 +1,4 @@
-"""Declare the two captured Beregar plain inventory items."""
+"""Declare the finite captured Beregar inventory-item cohort."""
 
 import questpc4_yalahar_equipment_pin as shared
 from build_questpc4_beregar_item_profiles import IDS, PRODUCER, SCHEMA

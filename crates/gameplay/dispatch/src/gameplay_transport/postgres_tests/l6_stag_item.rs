@@ -133,6 +133,15 @@ pub(super) async fn exercise_plain(
     exercise_custody(owner, admitted, harness, fence, source_id, false, 1).await
 }
 
+pub(super) async fn exercise_legs(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+) -> TestResult {
+    exercise_custody(owner, admitted, harness, fence, 3398, false, 1).await
+}
+
 async fn exercise_custody(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -164,6 +173,16 @@ async fn exercise_custody(
             semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"],
             "EXTRA"
         );
+    } else if source_id == 3398 {
+        assert_eq!(semantics["protection"], serde_json::json!({
+            "state":"KNOWN", "value": {
+                "armor":{"state":"KNOWN","value":7},
+                "resistances":{"state":"KNOWN","value":[{
+                    "kind":"PHYSICAL", "percent":{"state":"KNOWN","value":{"denominator":1,"numerator":3}}
+                }]}
+            }
+        }));
+        assert_eq!(semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"], "LEGS");
     } else {
         assert_eq!(semantics["protection"]["state"], "UNKNOWN");
         assert_eq!(semantics["equipment"]["state"], "NOT_APPLICABLE");

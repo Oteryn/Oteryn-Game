@@ -1,20 +1,26 @@
-"""Pinned physical custody for plain Beregar NPC items; no use effects."""
+"""Pinned Beregar custody with exact plain-item and equipment source contracts."""
 
 import argparse
 from pathlib import Path
 
 import build_questpc4_stag_item_profiles as capture_owner
 import grizzly_shop_profiles as owner
+import questpc4_beregar_legs_profile as legs
 import questpc4_plain_item_profiles as plain
 
-IDS = (8774, 8777)
-SCHEMA = "OTERYN_QUESTPC4_BEREGAR_ITEM_PROFILES/v1"
+PLAIN_IDS = (8774, 8777)
+IDS = (3398,) + PLAIN_IDS
+SCHEMA = "OTERYN_QUESTPC4_BEREGAR_ITEM_PROFILES/v2"
 PROOF = "tools/content-schema/native-gameplay/questpc4-beregar-item-profiles.json"
 PRODUCER = "tools/content-migration/build_questpc4_beregar_item_profiles.py"
 
 
 def qualify(item_id, node, appearance, physical, bindings, definition):
-    return plain.qualify(IDS, item_id, node, appearance, physical, bindings, definition)
+    if item_id == 3398:
+        return legs.qualify(item_id, node, appearance, physical, bindings, definition)
+    return plain.qualify(
+        PLAIN_IDS, item_id, node, appearance, physical, bindings, definition
+    )
 
 
 def capture(source_root, root=capture_owner.ROOT):
@@ -25,7 +31,7 @@ def capture(source_root, root=capture_owner.ROOT):
         qualify=qualify,
         schema=SCHEMA,
         producer=PRODUCER,
-        scope="Physical custody of two plain Beregar NPC items; no equipment, fluid or custom use activation.",
+        scope="Physical custody of two plain Beregar NPC items and source-qualified dwarven legs; no fluid or custom use activation.",
     )
 
 
@@ -41,6 +47,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical_bytes):
         items=IDS,
         schema=SCHEMA,
         neutral=(),
+        equipment=(3398,),
         producer=PRODUCER,
     )
 

@@ -25,7 +25,8 @@
         "canonical_json_pointer": "/records/25/definition",
         "native_evidence": [
           "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS.",
-          "Additional plain NPC item custody8774/8777(Beregar),8820/8822/8827(Yalahar): five actualPGRED missing-policy controls, then all19 custody/drop/replay regressions GREEN. Raw3738->3743, all prior records identical; equipment3781. Only8822admitted fromrange8822-8825. WholequestIN_PROGRESS. /tmp/questpc4b-npc5-pg-green.log"
+          "Additional plain NPC item custody8774/8777(Beregar),8820/8822/8827(Yalahar): five actualPGRED missing-policy controls, then all19 custody/drop/replay regressions GREEN. Raw3738->3743, all prior records identical; equipment3781. Only8822admitted fromrange8822-8825. WholequestIN_PROGRESS. /tmp/questpc4b-npc5-pg-green.log",
+          "Seven-item native custody batch:3398equipment preservesarmor7/physical3/legs;14682/5467/21504/21507/12674/3454plain. All7actualPGRED missing-policy controls, then9PG18.6GREENincl2Stagregressions; allprior3743rowsidentical,raw3750/equipment3788. Wholequest remainsIN_PROGRESS; no custom use/NPC/finale mechanism inferred. /tmp/questpc4b-seven-green-results.json"
         ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Hidden City of Beregar Quest_Spoiler.wiki:14; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/25/definition).",
@@ -902,7 +903,9 @@
         "source": ".questpc4/evidence/wiki/The Rookie Guard Quest_Spoiler.wiki:17",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/38/definition",
-        "native_evidence": [],
+        "native_evidence": [
+          "Seven-item native custody batch:3398equipment preservesarmor7/physical3/legs;14682/5467/21504/21507/12674/3454plain. All7actualPGRED missing-policy controls, then9PG18.6GREENincl2Stagregressions; allprior3743rowsidentical,raw3750/equipment3788. Wholequest remainsIN_PROGRESS; no custom use/NPC/finale mechanism inferred. /tmp/questpc4b-seven-green-results.json"
+        ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Rookie Guard Quest_Spoiler.wiki:17; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/38/definition).",
           "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
@@ -966,7 +969,9 @@
         "source": ".questpc4/evidence/wiki/The Scatterbrained Sorcerer Quest_Spoiler.wiki:7",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/39/definition",
-        "native_evidence": [],
+        "native_evidence": [
+          "Seven-item native custody batch:3398equipment preservesarmor7/physical3/legs;14682/5467/21504/21507/12674/3454plain. All7actualPGRED missing-policy controls, then9PG18.6GREENincl2Stagregressions; allprior3743rowsidentical,raw3750/equipment3788. Wholequest remainsIN_PROGRESS; no custom use/NPC/finale mechanism inferred. /tmp/questpc4b-seven-green-results.json"
+        ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Scatterbrained Sorcerer Quest_Spoiler.wiki:7; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/39/definition).",
           "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
@@ -1094,7 +1099,9 @@
         "source": ".questpc4/evidence/wiki/Treasure Hunt Quest_Spoiler.wiki:41",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/56/definition",
-        "native_evidence": [],
+        "native_evidence": [
+          "Seven-item native custody batch:3398equipment preservesarmor7/physical3/legs;14682/5467/21504/21507/12674/3454plain. All7actualPGRED missing-policy controls, then9PG18.6GREENincl2Stagregressions; allprior3743rowsidentical,raw3750/equipment3788. Wholequest remainsIN_PROGRESS; no custom use/NPC/finale mechanism inferred. /tmp/questpc4b-seven-green-results.json"
+        ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/Treasure Hunt Quest_Spoiler.wiki:41; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/56/definition).",
           "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
@@ -1507,7 +1514,10 @@
           "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
         ],
         "kind": null,
-        "dependency": null
+        "dependency": null,
+        "native_evidence": [
+          "Seven-item native custody batch:3398equipment preservesarmor7/physical3/legs;14682/5467/21504/21507/12674/3454plain. All7actualPGRED missing-policy controls, then9PG18.6GREENincl2Stagregressions; allprior3743rowsidentical,raw3750/equipment3788. Wholequest remainsIN_PROGRESS; no custom use/NPC/finale mechanism inferred. /tmp/questpc4b-seven-green-results.json"
+        ]
       },
       "sources": [
         {
@@ -1850,7 +1860,10 @@
         ],
         "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
         "kind": null,
-        "dependency": null
+        "dependency": null,
+        "native_evidence": [
+          "Seven-item native custody batch:3398equipment preservesarmor7/physical3/legs;14682/5467/21504/21507/12674/3454plain. All7actualPGRED missing-policy controls, then9PG18.6GREENincl2Stagregressions; allprior3743rowsidentical,raw3750/equipment3788. Wholequest remainsIN_PROGRESS; no custom use/NPC/finale mechanism inferred. /tmp/questpc4b-seven-green-results.json"
+        ]
       },
       "sources": [
         {

@@ -120,6 +120,13 @@ fn scenario_case(
             | "l6-yalahar-item-8820"
             | "l6-yalahar-item-8822"
             | "l6-yalahar-item-8827"
+            | "l6-recipe-item-14682"
+            | "l6-recipe-item-5467"
+            | "l6-recipe-item-21504"
+            | "l6-recipe-item-21507"
+            | "l6-recipe-item-12674"
+            | "l6-recipe-item-3454"
+            | "l6-beregar-item-3398"
             | "l6-beregar-item-8774"
             | "l6-beregar-item-8777"
     );
@@ -742,6 +749,10 @@ fn scenario_case(
                 source_id,
             )
             .await?;
+        } else if let Some(source_id) = super::super::l6_recipe_items::source_id(name) {
+            super::super::l6_stag_item::exercise_plain(&mut owner, &mut admitted, &h, fence, source_id).await?;
+        } else if name == "l6-beregar-item-3398" {
+            super::super::l6_stag_item::exercise_legs(&mut owner, &mut admitted, &h, fence).await?;
         } else if let Some(source_id) = super::super::l6_beregar_items::source_id(name) {
             super::super::l6_stag_item::exercise_plain(
                 &mut owner,

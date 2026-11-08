@@ -11060,6 +11060,186 @@
         "unit_crates": "Fresh content+dispatch+durability nextestallfeatures rebuild running; pending under PREPUSH-2 step3 cadence allowance",
         "main": "6f61ac15d ancestor; fetched before publication"
       }
+    },
+    "beregar_equipment_slice": {
+      "status": "QUALIFIED_COMPONENT_PENDING_PUBLICATION",
+      "item": 3398,
+      "scope": "Source-qualified dwarven legs native custody and exact replay, preserving armor7/physical resistance3/legs slot; whole quest stays IN_PROGRESS.",
+      "source": "Crystal201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:10132",
+      "source_controls": "27 finite source qualifier/pin tests PASS33.556s; explicit conflicting canonical armor/slot and client instance flags rejected.",
+      "postgres": "PG18.6 RED43.30s, GREEN63.879s; preserved armor7/physical3/legs slot and fenced custody/drop/exact-replay.",
+      "engine_reuse": "qengine2 2ddd4f9cd fetched; no competing item profile; existing equipment/import/custody owners reused.",
+      "engine_request": "Subtype-aware NPC exchanges needed for Yalahar rum flask5552; request sent, no generic runtime feature authored."
+    },
+    "seven_item_slice": {
+      "status": "QUALIFIED_COMPONENTS_PENDING_PUBLICATION_GATES",
+      "items": [
+        3398,
+        14682,
+        5467,
+        21504,
+        21507,
+        12674,
+        3454
+      ],
+      "scope": "Seven physical custody profiles across active packet quests, preserving source equipment for3398 and plain semantics for the other six. Whole quest states unchanged.",
+      "source_controls": "32 qualifier/pin controls PASS42.769s; separate3equipment-pin controls PASS; Ruff PASS.",
+      "postgres_red": {
+        "version": "PostgreSQL18.6",
+        "gear_seconds": 43.3,
+        "plain_results": [
+          {
+            "item": 14682,
+            "duration_seconds": 44.489,
+            "exit": 101,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-red-14682.log"
+          },
+          {
+            "item": 5467,
+            "duration_seconds": 44.878,
+            "exit": 101,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-red-5467.log"
+          },
+          {
+            "item": 21504,
+            "duration_seconds": 44.932,
+            "exit": 101,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-red-21504.log"
+          },
+          {
+            "item": 21507,
+            "duration_seconds": 43.636,
+            "exit": 101,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-red-21507.log"
+          },
+          {
+            "item": 12674,
+            "duration_seconds": 43.569,
+            "exit": 101,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-red-12674.log"
+          },
+          {
+            "item": 3454,
+            "duration_seconds": 42.953,
+            "exit": 101,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-red-3454.log"
+          }
+        ]
+      },
+      "engine_reuse": "Fetched qengine2 2ddd4f9cd; none of seven keys exists in its native profiles. Reuse current source importer, capture/admission tooling and fenced custody/drop/replay fixture.",
+      "units": "579PASS;2SIGINT interruptions;19 repo skips;3334notrun. Paused before generated dataset mutation; no executed assertion failure; full changed-crate units pending under PREPUSH-2 cadence allowance.",
+      "whole_counts": {
+        "QUALIFIED": 4,
+        "IN_PROGRESS": 17,
+        "external_exclusions": 2
+      },
+      "postgres_green": {
+        "version": "PostgreSQL18.6",
+        "results": [
+          {
+            "item": 3398,
+            "duration_seconds": 63.879,
+            "exit": 0,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-green-3398.log"
+          },
+          {
+            "item": 14682,
+            "duration_seconds": 63.88,
+            "exit": 0,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-green-14682.log"
+          },
+          {
+            "item": 5467,
+            "duration_seconds": 58.192,
+            "exit": 0,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-green-5467.log"
+          },
+          {
+            "item": 21504,
+            "duration_seconds": 57.207,
+            "exit": 0,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-green-21504.log"
+          },
+          {
+            "item": 21507,
+            "duration_seconds": 60.445,
+            "exit": 0,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-green-21507.log"
+          },
+          {
+            "item": 12674,
+            "duration_seconds": 59.402,
+            "exit": 0,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-green-12674.log"
+          },
+          {
+            "item": 3454,
+            "duration_seconds": 66.658,
+            "exit": 0,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-green-3454.log"
+          },
+          {
+            "item": 52759,
+            "duration_seconds": 65.65,
+            "exit": 0,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-green-52759.log"
+          },
+          {
+            "item": 52824,
+            "duration_seconds": 44.137,
+            "exit": 0,
+            "postgres_executed": true,
+            "expected_result": true,
+            "log": "/tmp/questpc4b-seven-green-52824.log"
+          }
+        ],
+        "scope": "Seven new custody cases plus retained compass and sword regressions. All execute real PostgreSQL with version and completion markers, durations>1s."
+      },
+      "native_preservation": {
+        "before": 3743,
+        "after": 3750,
+        "added_exactly": [
+          3398,
+          14682,
+          5467,
+          21504,
+          21507,
+          12674,
+          3454
+        ],
+        "all_prior_rows_identical": true,
+        "equipment_profiles": 3788
+      },
+      "workspace_check": "PASS --workspace --all-targets 5m19s; clippy/fmt final gates running.",
+      "freshness": "Source/native/equipment checks pass; binding write/check and world metadata exit0; completion write/check exit0. Full donor command and variant check still pending, do not infer completion from child output."
     }
   }
 }

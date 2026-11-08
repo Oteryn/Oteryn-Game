@@ -1,13 +1,18 @@
 {
-  "schema": "OTERYN_QUESTPC4_BEREGAR_ITEM_PROFILES/v1",
+  "schema": "OTERYN_QUESTPC4_BEREGAR_ITEM_PROFILES/v2",
   "producer": "tools/content-migration/build_questpc4_beregar_item_profiles.py",
-  "scope": "Physical custody of two plain Beregar NPC items; no equipment, fluid or custom use activation.",
+  "scope": "Physical custody of two plain Beregar NPC items and source-qualified dwarven legs; no fluid or custom use activation.",
   "sources": [
     {
       "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
       "path": "data/items/items.xml",
       "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
       "items": [
+        {
+          "id": 3398,
+          "line": 10132,
+          "item_record_sha256": "ea723fc83c2c01741eb9f23429628631a919f992cb78ef50aa0cf2e52f0dd46f"
+        },
         {
           "id": 8774,
           "line": 23442,
@@ -26,18 +31,230 @@
     }
   ],
   "definition_sha256": {
+    "oteryn:item.tibia.i3398": "104f540cd1b38b9d56c160c5120cba5e290183f656c0552dcfcb88879746049f",
     "oteryn:item.tibia.i8774": "b1e70c8686b52ad21955d1c5567772ca338bf75df428b3c40ed9759c030b8b87",
     "oteryn:item.tibia.i8777": "3c2ef0379839677e8b251c24899900f0bbbc3d48530ae5b3df0fff61324e7339"
   },
   "binding_sha256": {
+    "3398": "0e2e88d2bfa4014bb74ff1e3dad582c670d4ee2301fea0233b046ffcd2a28c76",
     "8774": "efcaa8fa71536a4dbee5bd3bb306b3f14c4b6cd1ac3947c92cf7f8237de398cf",
     "8777": "33ba91f3fa14960164ef06d636e5b42045b1be4be758f2e45a8f345293eb3131"
   },
   "record_sha256": {
+    "oteryn:item.tibia.i3398": "667420b9c241902dd0057811bc9c29124dead8088e80447ed8757dc93192a4a7",
     "oteryn:item.tibia.i8774": "c96d2eb206c2f3bd1e11232be9d61d7f2b7926d27fd0a066c517e4890c4a31f5",
     "oteryn:item.tibia.i8777": "c4563527ba156bb05b7cba2f757f501e5fa7bcbe811782b81d8a418d3fcaf7ae"
   },
   "records": [
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/3398",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "dwarven legs"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 4900
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "LEGS"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "compatibility_rule": {
+                    "state": "NOT_APPLICABLE"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "KNOWN",
+          "value": {
+            "armor": {
+              "state": "KNOWN",
+              "value": 7
+            },
+            "resistances": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "kind": "PHYSICAL",
+                  "percent": {
+                    "state": "KNOWN",
+                    "value": {
+                      "denominator": 1,
+                      "numerator": 3
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "3398",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3398",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3398",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
     {
       "authoring": {
         "item": {
