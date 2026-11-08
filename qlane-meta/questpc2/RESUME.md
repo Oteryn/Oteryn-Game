@@ -1,48 +1,52 @@
-# questpc2b main integration checkpoint
+# Continue questpc2b after main integration and fresh PostgreSQL proof
 
-Active branch claude/happy-davinci-ijz3wy-questpc2b; last pushed3df0d0c43.
-Parent questpc2 remains frozen at0a6d6e208. Current merge target6f61ac15d
-includes QUESTPC4 and physical NPC hand-in lane key33. All44 conflicts resolved,
-retaining both lanes. Own migrations1240-1244; incomingmain1250-1258 and0999-1008.
-No1200-1205duplicate. No force/rebase/mainpush/PR.
+Branch claude/happy-davinci-ijz3wy-questpc2b; pushed merge checkpoint
+ac543a383ed8b055f53588ee01af5179a8e1d6a6 contains main6f61ac15d with44
+conflicts resolved, preserving both lanes. Parent questpc2 remains frozen
+at0a6d6e208. No force/rebase/mainpush/PR. Current receipt adds proof only.
 
-Integration fixes: union selector/storage/callback fields and party context;
-retain main server timer persistence; preserve own party transfer and completion;
-compose both ladder USE implementations; NPC consumption now uses main's actual
-SpellLanePermit while still rejecting Ground. Exact1948 profile composition keeps
-LADDER and main nonmaterializable; exact1791 overlap keeps main nonmaterializable.
-All other record differences reject. Remove duplicate Python charged-claim
-functions which silently shadowed main's five-claim map with Desert-only map.
-Retain exact source-charge matching. Equipment source cohort62 remains asserted;
-five keys also counted by main are excluded only from the sum. Repo tooling
-confirms3820 distinct unionprofiles. Main has3725base profiles; lane adds57basekeys.
+Fresh validation on ac543:10/10 cases PASS, eight real PostgreSQL180006,
+total286.300574s, none skipped. PostgreSQL SHOW server_version_num queried
+before execution; Hero/Oldrak also print180006 inside the cases.
+Hero68.458s, Father11-track67.579s, physical XP hand-in68.108s,
+Rotten native death60.424s, Annihilator party74.312s, Oldrak67.789s,
+Elvenbane basement/poison/ladder74.318s, main floor assembly35.547s.
+Cap371 and full equipment raw-attribute assertions also pass (0.019s/40.427s).
+Source/runtime content stayed unchanged while cases ran. Full crate suites
+remain CI pending; do not claim them passed.
 
-First current workspace alltargets pass4m22s. Native45outputs regenerated.
-Two exact composition cases PASS2.061s, source-gate5PASS11.354s. Other focused producer checks passed: callback16, key2, exact charge4,
-source rewards7 and variants13. All applicable tree/central/pin generators
-finished. Postpin workspace check PASSED3m29s; fresh PG cases are pending. Do not claim prior
-Oldrak PG78.620s applies to merged Rust. Full runtime suite is CI pending.
+Receipt: BATCH-main-6f-postgres-green-2026-11-08.json. Prior checkpoint receipt
+retains316 quest units PASS51.22s, clippy quests/durability/dispatch alltargets
+allfeatures PASS7m18s, formatting and dupmigrations PASS, postpin workspace
+PASS3m29s. Current-head workspace alltargets refreshed PASS2m56s.
+Final tree/central/pin generators ran before checkpoint publication. Repeat
+applicable central/pin tools for this proof-only push; no gameplay source changed.
 
-Tools/logs /tmp/questpc2b-main-6f-*. Fullregeneration uses repo --resolve
---skip-checks; targeted checks run separately. Mainmerge fingerprint tool updates
-outside-six digest only with exact activeMERGE_HEAD; no manual pins. Freshness,
-dupmigrations, fmt, latestworkspace and scopedunit/PG evidence required for final
-merge publication; owner cadence exception permits explicit pendingtests after
-steps1/2/4. Record exact remaining checks in receipt, never silently skip.
+Own migrations1240-1244 unchanged. Main retains0999-1008 and1250-1258;
+no1200-1205copies. Exact stationary1948 composition preserves LADDER and
+main's false materializable admission;1791 overlap also stays nonmaterializable.
+Every other differing field refuses. Elvenbane real PG proves traversal.
+Main's NPC hand-in uses SpellLanePermit/key33; local carried wrapper still
+rejects Ground. Father11-track atomicity and physical XP hand-in both prove it.
 
 Packet unchanged:35entries,29owned,6excluded;3wholequestsQUALIFIED,
-4IN_PROGRESS(Soul War,Rotten Blood,Hero of Rathleton,Demon Oak),22notstarted.
-Oldrak NPC slice already pushed; full Demon Oak needs engine waves/counters.
-Big generic requests belongQENGINE2; move to supported owned work. No agents.
+4active incomplete(Soul War,Rotten Blood,Hero of Rathleton,Demon Oak),
+22notstarted. Do not relabel slices as whole-quest qualification.
+Main's timed encounter still rejects nonempty players and is a single delayed
+spawn/reset; participant-bound multi-wave request sent for Hero/Barbarian Arena/
+Demon Oak. Big generic features belongQENGINE2, never implement them here.
 
-Environment source /workspace/oteryn-env/env.sh opaquely. CARGO_INCREMENTAL=0,
-CARGO_BUILD_JOBS=2; retire only inactive this-lane caches if diskfills.
-Fetch main and explicitlane ref beforeeverypush; merge movement, neverforce.
+Latest QENGINE2 checked aa85b2500. Authored native kill feature is qualified
+at e0255349a with receipt e6bacdda6, but its latest branch also carries WIP
+World gift/port changes. Preserve current main; reuse its tested implementation
+when compatible integration lands, never rewrite it. Queue/source docs exist
+on that branch. No named ownership transfers received; obey QSPLIT and packet.
+
+Environment: source /workspace/oteryn-env/env.sh opaquely. CARGO_INCREMENTAL=0,
+CARGO_BUILD_JOBS=2. Current binary f89a081bc5464778 is compiled from ac543;
+/tmp/questpc2b-run-main-6f-focused.py drives exact cases. Logs/results under
+/tmp/questpc2b-main-6f-*. Retired inactive old binaries and stale /tmp lane caches;
+no test code removed. Never mutate runtime content while PG cases execute.
+Fetch main and explicitlane ref before everypush; merge movement, neverforce.
 Author/committer blakinio <75369544+blakinio@users.noreply.github.com>;
-trailers Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-and Claude-Session: https://claude.ai/code/session_01D1SN2sEo2yY1k19f6kjEHf.
-
-Publication checkpoint: all generation/pins PASS, postpin workspace3m29sPASS,
-clippy7m18sPASS and fmtPASS. Cadence exception used only for explicitly
-pending changed-crate/dispatch PG tests. Run /tmp/questpc2b-run-main-6f-focused.py
-after rebuilding current dispatch test binary, without mutating runtime content.
+required Claude coauthor/session trailers in every commit. No agents.

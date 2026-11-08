@@ -1758,7 +1758,7 @@
       "zero_test_results_accepted": false
     }
   },
-  "current_batch": "main-6f61ac15d-integration",
+  "current_batch": "main-6f-postgres-green",
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
@@ -1790,7 +1790,8 @@
     "BATCH-main-b386-compile-checkpoint-2026-11-08.json",
     "BATCH-book-speed-and-main-pg-green-2026-11-08.json",
     "BATCH-oldrak-npc-green-2026-11-08.json",
-    "BATCH-main-6f-integration-checkpoint-2026-11-08.json"
+    "BATCH-main-6f-integration-checkpoint-2026-11-08.json",
+    "BATCH-main-6f-postgres-green-2026-11-08.json"
   ],
   "next_batch": "Finish merge tooling/checks and push integration; then run remaining focused PG and continue owned supported quests.",
   "remote_publications_reused": {
@@ -1840,7 +1841,13 @@
       "whole_quest_qualifications": 0
     }
   },
-  "engine_reuse_note": "qengine2@5a6de28c is already merged locally. effects.encounter and execute_quest_encounter/commit_quest_encounter_entry implement the exact four-player/six-demon atomic entry; do not create a second group_encounter engine. Existing PG entry evidence remains scoped entry evidence, not whole quest.",
+  "engine_reuse_note": {
+    "checked_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+    "head": "aa85b2500",
+    "authored_kill_green_source": "e0255349a with qualification receipt e6bacdda6",
+    "reuse_boundary": "Generic authored kill work exists and will be reused when its compatible main integration is ready. Latest engine head also carries WIP World gifts/ports; do not blindly merge its generated corpus.",
+    "remaining_timing_gap": "Merged timed_encounter rejects nonempty participants; it does not implement participant-bound multi-wave encounters. Request sent for Hero/Barbarian Arena/Demon Oak."
+  },
   "ownership_review": {
     "worldchg_sha": "318ab59d200ad2030ca7c829566b88175cb7e2dc",
     "wvar_sha": "da822d3e2cbf9fb12ccd7d7ad0b01e636d99de2f",
@@ -2192,7 +2199,7 @@
   },
   "current_main_merge_full_test": {
     "main": "6f61ac15d",
-    "state": "merge composed and compiling; published checkpoint under cadence exception; fresh PG pending",
+    "state": "merge own mechanic PG GREEN (8/8), focused units GREEN (2/2); full crate suites CI pending",
     "conflicts_resolved": 44,
     "workspace_all_targets_first_pass": "4m22s",
     "native_generation": "45 outputs PASS",
@@ -2204,8 +2211,16 @@
     "quest_units": "316PASS51.22s",
     "clippy": "quests/durability/dispatch alltargets allfeatures PASS7m18s",
     "generated": "PASS all applicable tools, equipment3820 and ledger283, pins refreshed",
-    "workspace": "PASS cargo check --workspace --all-targets postpin3m29s; prepin5m58s",
-    "fresh_pg": "pending; PostgreSQL18 server180006 confirmed, no merged-case pass claimed"
+    "workspace": "PASS current-head workspace alltargets2m56s; prior postpin3m29s",
+    "fresh_pg": {
+      "passed": 8,
+      "failed": 0,
+      "server_version": 180006,
+      "total_focused_cases": 10,
+      "all_passed": true,
+      "total_seconds": 286.300574,
+      "receipt": "BATCH-main-6f-postgres-green-2026-11-08.json"
+    }
   },
   "engine_requests": [
     {
@@ -2339,11 +2354,9 @@
       "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "303b2b6e21920f7d220bf817303faf23f26728b8",
+  "last_pushed_sha": "ac543a383ed8b055f53588ee01af5179a8e1d6a6",
   "prepush_pending_tests": [
-    "Fresh merged dispatch PG: Oldrak, Hero four pipes, Father11track atomic acceptance, XP physical hand-in, Rotten Blood native death, Annihilator party route, Elvenbane ladder route, main floor assembly.",
-    "Dispatch raw-equipment/cap371 focused unit assertions on merged generated content.",
-    "Remaining changed-crate unit suites remain pending; no full-suite pass claimed."
+    "Full crate suites remain CI pending; own eight PG regressions and two focused unit assertions all PASS."
   ],
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",
