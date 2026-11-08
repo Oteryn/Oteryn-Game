@@ -22,7 +22,8 @@
       "fmt": "cargo fmt --all --check"
     },
     "migration": "none",
-    "scope": "One admitted occurrence reconciles committed availability, with replay and generation-safe cleanup. Content/event bindings and other M38 rows remain unfinished."
+    "scope": "One admitted occurrence reconciles committed availability, with replay and generation-safe cleanup. Content/event bindings and other M38 rows remain unfinished.",
+    "code_commit": "8cc2aaf7e"
   },
   "legacy_handoff": {
     "local_branch": "claude/happy-davinci-ijz3wy-npcfix",
