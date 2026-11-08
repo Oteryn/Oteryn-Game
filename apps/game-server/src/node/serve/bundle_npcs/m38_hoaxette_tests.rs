@@ -68,8 +68,7 @@ fn m38_hoaxette_refuses_absent_calendar_unadmitted_catalogue_and_bad_anchor() {
     }
 }
 
-pub(crate) fn m38_hoaxette_postgres_case()
--> crate::bestiary_postgres_harness::TestResult {
+pub(crate) fn m38_hoaxette_postgres_case() -> crate::bestiary_postgres_harness::TestResult {
     use crate::bestiary_postgres_harness::{Harness, configured_admin, runtime};
     let Some(admin) = configured_admin() else {
         return Ok(());
@@ -113,8 +112,10 @@ pub(crate) fn m38_hoaxette_postgres_case()
                         if (npc.position.x, npc.position.y, npc.position.floor) != (32380,32215,7) {
                             return Err("Hoaxette did not use her captured source anchor".into());
                         }
-                        if let Some(previous) = april_actor {
-                            if previous != npc.actor { return Err("April epoch replay replaced the live NPC".into()); }
+                        if let Some(previous) = april_actor
+                            && previous != npc.actor
+                        {
+                            return Err("April epoch replay replaced the live NPC".into());
                         }
                         april_actor = Some(npc.actor);
                     }

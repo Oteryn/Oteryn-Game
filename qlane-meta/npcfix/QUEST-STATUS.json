@@ -49,7 +49,7 @@
       "duplicate_migrations": "PASS",
       "world_pin_refresh_seconds": 124.967
     },
-    "broader_authoring_checks": "running; no full-pass claim",
+    "broader_authoring_checks": "PASS on merged batch: checks,111 unit modules,content-tree validation",
     "new_migrations": []
   },
   "hoaxette_slice": {
@@ -65,9 +65,32 @@
     "red_pg_seconds": 11.705896845,
     "green_pg_seconds": 16.201671309,
     "focused_tests": 3,
-    "clippy": "PASS game-server lib after qmech merge",
+    "clippy": "PASS game-server and quests all-targets, -D warnings",
     "pin_check": "PASS after qmech merge",
     "migrations": [],
-    "boot": "all18 variants queued; no pass claimed"
+    "boot": "initial image-download attempt interrupted for stable publication; full18 variants pending",
+    "green_post_merge_pg_seconds": 12.841554544,
+    "authoring": {
+      "checks_seconds": 716.94,
+      "unit_modules": 111,
+      "unit_seconds": 1321.755,
+      "content_tree_seconds": 411.744,
+      "exit": 0
+    },
+    "auto_mounted_pg": "new registration compiles; execution rerun pending",
+    "workspace_check": {
+      "exit": 0,
+      "seconds": 703.271,
+      "command": "cargo check --locked --workspace --all-targets"
+    },
+    "source_evidence": {
+      "file": "content/npcs/definitions/npcs-00500-00999.json:1#records/107",
+      "coordinate_source_sha256": "1033268693d2b2353d40f007576190e41c18b6467fddcda13797b4ab6ebed2da",
+      "description_source_sha256": "034492a01371fb96f64bcfbb494f7a9c696cfcd602728a4427c8dcae863dc61c",
+      "retail_placement_equivalence_claim": false
+    },
+    "fmt": "PASS",
+    "merged_qmech": "a8c2bf20c",
+    "clippy_seconds": 523.514
   }
 }
