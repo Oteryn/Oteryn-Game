@@ -7,9 +7,13 @@ use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
 use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposition as D};
+use crate::map::facts::ArenaPillarProjection as PillarProjection;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
+
+#[path = "arena_match/pillar.rs"]
+mod pillar;
 
 macro_rules! authority_methods {
     () => {
@@ -131,6 +135,7 @@ pub(in crate::gameplay_transport) fn tick(
         if let Some(opponent) = live.opponent {
             let _ = runtime.remove_arena_opponent(opponent);
         }
+        let _ = pillar::project(owner, &live.state, PillarProjection::Release);
         if present
             && inside
             && expired
@@ -503,13 +508,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?
             .get(&session)
             .cloned();
-        if existing.as_ref().is_some_and(|live| {
+        let reusable = existing.as_ref().is_some_and(|live| {
             live.actor == actor
                 && live.state == *state
                 && state.projection_remaining_ms(now_ms).is_some()
-        }) {
-            return Some(());
-        }
+        });
         let mut runtime = self.runtime.lock().await;
         if runtime.owner_fence().is_err()
             || self
@@ -520,12 +523,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
+        if reusable {
+            let projection = if state.phase == 2 {
+                PillarProjection::Victory
+            } else {
+                PillarProjection::Fighting
+            };
+            let _ = pillar::project(self, state, projection);
+            return Some(());
+        }
         if let Some(remaining_ms) = state.projection_remaining_ms(now_ms) {
+            if let Some(old) = &existing
+                && (old.state.pit != state.pit || old.state.run != state.run)
+            {
+                let _ = pillar::project(self, &old.state, PillarProjection::Release);
+            }
             let destination = center(state.pit)?;
             if !walkable(self, &runtime, destination) {
                 return None;
             }
             if state.phase == 2 {
+                let _ = pillar::project(self, state, PillarProjection::Victory);
                 // Crystal svargrond_arena.lua:285-313: waiting at the victory
                 // portal still owns the original kick timer, including recovery.
                 if let Some(opponent) = existing.and_then(|old| old.opponent) {
@@ -542,6 +560,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 return Some(());
             }
+            let _ = pillar::project(self, state, PillarProjection::Fighting);
             let current = runtime.read_actor_position(actor).ok()?.position();
             if !at_entrance(current) && !(1..=10).any(|pit| in_pit(current, pit)) {
                 return None;
@@ -581,10 +600,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && current.x.abs_diff(reward_room.x) <= 20
                     && current.y.abs_diff(reward_room.y) <= 30)
             {
-                if let Some(old) = self.states.arena_matches.live.lock().ok()?.remove(&session)
-                    && let Some(opponent) = old.opponent
-                {
-                    let _ = runtime.remove_arena_opponent(opponent);
+                if let Some(old) = self.states.arena_matches.live.lock().ok()?.remove(&session) {
+                    let _ = pillar::project(self, &old.state, PillarProjection::Release);
+                    if let Some(opponent) = old.opponent {
+                        let _ = runtime.remove_arena_opponent(opponent);
+                    }
                 }
                 let before = runtime.read_actor_position(actor).ok()?;
                 runtime

@@ -2138,3 +2138,22 @@ RED: missing occupied_by_other predicate, E0599 (12.538s). GREEN: four arena
 source tests, 2.829s; quests/dispatch clippy -D warnings, 26.975s. No SQL/content
 changes or new numbers. M51 remains PARTIAL pending pillar/portal/reset wiring.
 Engine-only pin-check passed in 154.617s; the committed bundle digest is unchanged.
+
+## M51: native pillar/portal projection and exact-run reset
+
+The committed fight/victory projection now updates the pinned pillar occurrence
+between source Item1841 and Item5022, with its collision and client map facts in
+one callback-owner mutation. The portal is bound/non-pickupable. Recovery is
+idempotent; entry/advance, leaving, death/logout pruning and the existing timed
+kick close the matching run's portal. A late old-run release cannot reset a
+newer run. Missing/hidden pillars and ambiguous/foreign occurrences are refused.
+Sources: Crystal201189f data-global/scripts/quests/svargrond_arena/
+creaturescripts_arena_kill.lua:22-35; data-global/lib/quests/svargrond_arena.lua:
+207-246,259-313. This uses the existing Channel map callback owner and SV15
+committed match state; no protocol id, capability, mechanic ordinal or migration.
+RED: missing projection method E0599, 126.907s. GREEN native map/collision test
+m51_pillar_portal_view_and_collision_reset_together:21.475s including build.
+World/dispatch clippy -D warnings:49.571s. Pin-check:157.579s, unchanged bundle.
+M51 remains PARTIAL: native portal STEP admission, automatic death publication
+and the full source pit reset (including movable items) are still unfinished.
+Own M51 durability cases rerun:4 PASS, real PG4.81s (108.400s including rebuild).
