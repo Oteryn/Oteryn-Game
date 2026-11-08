@@ -82,7 +82,7 @@ pub(super) fn catalogue(
         .map(|s| original.track(&s.track).cloned().ok_or("Mead track"))
         .collect::<Result<Vec<_>, _>>()?;
     let seed = quest::QuestTransition {
-world_change: None,
+        world_change: None,
         key: SEED.into(),
         quest: callback.quest.clone(),
         effects: callback
@@ -123,10 +123,19 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("POSTGRES_DATABASE_READY {NAME} version={version}");
-    let checksum: Vec<u8> = sqlx::query_scalar("SELECT checksum FROM _sqlx_migrations WHERE version=2060 AND success")
-        .fetch_one(&h.pool).await?;
+    let checksum: Vec<u8> =
+        sqlx::query_scalar("SELECT checksum FROM _sqlx_migrations WHERE version=2060 AND success")
+            .fetch_one(&h.pool)
+            .await?;
     use sha2::{Digest, Sha384};
-    assert_eq!(checksum, Sha384::digest(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server/migrations/2060_quest_world_child_completion.sql"))).as_slice());
+    assert_eq!(
+        checksum,
+        Sha384::digest(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server/migrations/2060_quest_world_child_completion.sql"
+        )))
+        .as_slice()
+    );
 
     let map_digest = owner
         .bundle_map()
@@ -325,30 +334,76 @@ pub(super) async fn exercise(
         .await,
         Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
     ));
-    let child = quest::world_callbacks::completion_transition(callback).ok_or("child transition")?;
-    assert!(matches!(slot.commit_quest_transition(
-        owner.root, owner.character, owner.holder, fence,
-        QuestTransitionRequest { transition_key: child.key.clone(), cause: QuestCause::Command(CommandRef::new(session, CommandId::new(954).map_err(debug)?)) },
-        catalogue.clone(),
-    ).await, Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)), "child completion cannot be invoked without its native reward");
+    let child =
+        quest::world_callbacks::completion_transition(callback).ok_or("child transition")?;
+    assert!(
+        matches!(
+            slot.commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: child.key.clone(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        session,
+                        CommandId::new(954).map_err(debug)?
+                    ))
+                },
+                catalogue.clone(),
+            )
+            .await,
+            Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
+        ),
+        "child completion cannot be invoked without its native reward"
+    );
     let mut alias = child;
     alias.key = "oteryn:quest-transition/fixture-mead-child-alias".into();
     let alias_key = alias.key.clone();
     let forged = quest::QuestStateCatalogue::new(
         catalogue.content_revision(),
-        callback.storage.iter().map(|s| catalogue.track(&s.track).cloned().ok_or("parent track")).collect::<Result<Vec<_>,_>>()?,
-        vec![catalogue.transition(&callback.key).ok_or("primary")?.clone(), catalogue.transition(SEED).ok_or("seed")?.clone(), alias],
-    ).map_err(debug)?;
-    assert!(matches!(slot.commit_quest_transition(
-        owner.root, owner.character, owner.holder, fence,
-        QuestTransitionRequest { transition_key: alias_key, cause: QuestCause::Command(CommandRef::new(session, CommandId::new(956).map_err(debug)?)) },
-        std::sync::Arc::new(forged),
-    ).await, Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)), "renaming a child completion cannot evade its native owner");
+        callback
+            .storage
+            .iter()
+            .map(|s| catalogue.track(&s.track).cloned().ok_or("parent track"))
+            .collect::<Result<Vec<_>, _>>()?,
+        vec![
+            catalogue
+                .transition(&callback.key)
+                .ok_or("primary")?
+                .clone(),
+            catalogue.transition(SEED).ok_or("seed")?.clone(),
+            alias,
+        ],
+    )
+    .map_err(debug)?;
+    assert!(
+        matches!(
+            slot.commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: alias_key,
+                    cause: QuestCause::Command(CommandRef::new(
+                        session,
+                        CommandId::new(956).map_err(debug)?
+                    ))
+                },
+                std::sync::Arc::new(forged),
+            )
+            .await,
+            Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
+        ),
+        "renaming a child completion cannot evade its native owner"
+    );
     let weights = NativeItemWeights(native).with_wheel(owner.premium_coordinator);
     let admission = crate::durability::reward_claim_mint::QuestRewardAdmission {
         actor_conditions: None,
         carried_use: None,
-                peer_use: None,
+        creature_use: None,
+        peer_use: None,
 
         native,
         weights: &weights,
@@ -367,7 +422,8 @@ pub(super) async fn exercise(
             &permit,
             context.clone(),
             Some(native),
-            Some(admission)
+            Some(admission),
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await,
         Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)
@@ -387,12 +443,14 @@ pub(super) async fn exercise(
             Some(crate::durability::reward_claim_mint::QuestRewardAdmission {
                 actor_conditions: None,
                 carried_use: None,
+                creature_use: None,
                 peer_use: None,
 
                 native,
                 weights: &NativeItemWeights(native),
                 fee_payment: None,
-            })
+            }),
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(debug)?,
@@ -400,13 +458,41 @@ pub(super) async fn exercise(
     ));
     let without_child = quest::QuestStateCatalogue::new(
         catalogue.content_revision(),
-        callback.storage.iter().map(|s| catalogue.track(&s.track).cloned().ok_or("parent track")).collect::<Result<Vec<_>,_>>()?,
-        vec![catalogue.transition(&callback.key).ok_or("primary")?.clone(), catalogue.transition(SEED).ok_or("seed")?.clone()],
-    ).map_err(debug)?;
-    assert!(matches!(slot.commit_world_callback_with_items(
-        owner.root, owner.character, owner.holder, fence, request(955)?,
-        std::sync::Arc::new(without_child), &permit, context.clone(), Some(native), Some(admission),
-    ).await.map_err(debug)?, QuestTransitionOutcome::Refused(_)), "missing child admission must roll back the already prepared reward");
+        callback
+            .storage
+            .iter()
+            .map(|s| catalogue.track(&s.track).cloned().ok_or("parent track"))
+            .collect::<Result<Vec<_>, _>>()?,
+        vec![
+            catalogue
+                .transition(&callback.key)
+                .ok_or("primary")?
+                .clone(),
+            catalogue.transition(SEED).ok_or("seed")?.clone(),
+        ],
+    )
+    .map_err(debug)?;
+    assert!(
+        matches!(
+            slot.commit_world_callback_with_items(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                request(955)?,
+                std::sync::Arc::new(without_child),
+                &permit,
+                context.clone(),
+                Some(native),
+                Some(admission),
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
+            )
+            .await
+            .map_err(debug)?,
+            QuestTransitionOutcome::Refused(_)
+        ),
+        "missing child admission must roll back the already prepared reward"
+    );
     assert_eq!(counts(h).await?, before);
     drop(slot);
     drop(permit);
@@ -422,10 +508,16 @@ pub(super) async fn exercise(
     );
     let completed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.waterskin_of_mead_quest' AND completed_character_revision IS NOT NULL)")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-    assert!(completed, "native mead reward must complete its standalone quest atomically");
+    assert!(
+        completed,
+        "native mead reward must complete its standalone quest atomically"
+    );
     let parent_completed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND completed_character_revision IS NOT NULL)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest).fetch_one(&h.pool).await?;
-    assert!(!parent_completed, "the side reward must not complete Ice Islands");
+    assert!(
+        !parent_completed,
+        "the side reward must not complete Ice Islands"
+    );
     let bags:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i7343'").fetch_one(&h.pool).await?;
     assert_eq!(
         bags, 1,
@@ -482,7 +574,10 @@ pub(super) async fn exercise(
     );
     let same_transaction: bool = sqlx::query_scalar("SELECT count(DISTINCT xid)=1 AND count(*)=3 FROM (SELECT xmin::text AS xid FROM game_quest_world_completions WHERE quest_key='oteryn:quest.authored.waterskin_of_mead_quest' UNION ALL SELECT xmin::text FROM game_character_quest_states WHERE quest_key='oteryn:quest.authored.waterskin_of_mead_quest' UNION ALL SELECT xmin::text FROM game_character_quest_receipts WHERE transition_key=$1 AND cause_ordinal=4) evidence")
         .bind(&callback.key).fetch_one(&h.pool).await?;
-    assert!(same_transaction, "child state/proof and native parent receipt share one transaction");
+    assert!(
+        same_transaction,
+        "child state/proof and native parent receipt share one transaction"
+    );
     let vessel:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(i.item_instance_id) FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) JOIN game_item_instances p ON p.item_instance_id=e.parent_item_instance_id WHERE p.definition_production_key='oteryn:item.tibia.i7343' AND i.definition_production_key='oteryn:item.tibia.i2901'").fetch_one(&h.pool).await?;
     let vessel: [u8; 16] = vessel.try_into().map_err(|_| "filled vessel identity")?;
     let transaction: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(game_character_uuid_v7())")
@@ -573,6 +668,7 @@ pub(super) async fn exercise(
             context,
             Some(native),
             Some(admission),
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(debug)?;

@@ -27,14 +27,18 @@ pub enum Trigger {
     StepOut,
 }
 
+#[cfg(test)]
+mod admission_tests;
 mod clock;
 mod counterparts;
 mod effects;
+mod ground_stack;
 mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
 };
+pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -98,7 +102,10 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+#[cfg(test)]
+mod mammoth_tests;
 mod native;
+mod nomads_window;
 use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
@@ -147,17 +154,37 @@ impl ActorKind {
     }
 }
 
-/// A read-only exact appearance predicate on a native, immovable map entry.
+/// A static native anchor or a closed mutable Ground-only prerequisite.
+pub use ground_stack::GroundStackEntry as GroundStackItem;
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
     pub position: Position,
+    /// Zero only for a mutable Ground stack; otherwise the legacy map appearance.
     pub appearance: u16,
+    /// Exact durable Ground roots, bottom first, in addition to the static anchor.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ground_stack: Option<Vec<GroundStackEntry>>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Admission {
+    #[serde(default)]
+    pub regular_blessings: bool,
+    #[serde(default)]
+    pub promotion: bool,
+    #[serde(default)]
+    pub premium: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
+    /// Live Character predicates, evaluated by the fenced receipt owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission: Option<Admission>,
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
@@ -184,7 +211,7 @@ pub struct Callback {
     /// Evaluated with SET_NOW against the fenced writer transaction clock.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<super::reward_callbacks::StateOperation>,
-    /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.
+    /// Immutable map predicates use the Channel turn; portable stacks use the fenced SQL receipt.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub world_requirements: Vec<WorldRequirement>,
     /// Checked against the progression owner in the same fenced quest transaction.
@@ -239,9 +266,33 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
     }
 }
 
+/// Closed read-only source gates. They create no synthetic personal quest state.
+pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>> {
+    (key == nomads_window::KEY).then(nomads_window::requirements)
+}
+
+impl Callback {
+    /// Canary action_horn.lua:38-50: mammoth progress requires a currently active
+    /// Drunk condition, never the historical mead counters or a cached quest flag.
+    pub fn requires_live_drunk(&self) -> bool {
+        self.key == "oteryn:quest-callback/qm48/mammoth"
+    }
+}
+
 /// Read the same closed content shape at boot and at the durable mutation boundary.
+/// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    match catalogue.authored_world_callbacks() {
+        Some(callbacks) => Ok(callbacks.to_vec()),
+        None => load(),
+    }
+}
+
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(
+        &serde_json::json!({"schema":1,"callbacks":[nomads_window::callback()?]}).to_string(),
+    )?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
     ))?);
@@ -263,7 +314,14 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
+    ))?);
     callbacks.extend(super::carried_step::callbacks());
+    callbacks.extend(super::children_puzzle::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
         return Err("callback bounds including native source callbacks".into());
@@ -289,6 +347,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     Ok(callbacks)
 }
 
+pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
+}
+
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeSet::new();
@@ -296,8 +358,12 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
         }
-        let selector = serde_json::to_vec(&(callback.trigger, &callback.selector))
-            .map_err(|error| error.to_string())?;
+        let selector = serde_json::to_vec(&(
+            callback.trigger,
+            &callback.selector,
+            super::children_puzzle::binding(&callback.key).map(|(_, solved)| solved),
+        ))
+        .map_err(|error| error.to_string())?;
         if !selectors.insert(selector) {
             return Err("duplicate callback selector across registries".into());
         }
@@ -318,7 +384,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
-        if operation_tracks.len() != callback.state_ops.len()
+        if (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
+            || operation_tracks.len() != callback.state_ops.len()
             || !operation_tracks.is_disjoint(&unique_storage)
             || callback.storage.len() + callback.state_ops.len() > MAX_EFFECTS
             || callback.state_ops.iter().any(|op| !op.valid())
@@ -383,10 +450,17 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
             || callback.world_requirements.len() > MAX_EFFECTS
-            || callback
-                .world_requirements
-                .iter()
-                .any(|r| !valid_pos(r.position) || r.appearance == 0)
+            || callback.world_requirements.iter().any(|r| {
+                !valid_pos(r.position)
+                    || (r.appearance == 0
+                        && !(r.ground_stack.is_some()
+                            && ((callback.has_personal_state()
+                                && callback.requires_world_admission)
+                                || nomads_window::exact(callback))))
+                    || r.ground_stack.as_ref().is_some_and(|stack| {
+                        callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
+                    })
+            })
             || (!callback.world_requirements.is_empty()
                 && ((callback.has_personal_state() && !callback.requires_world_admission)
                     || !callback.offerings.is_empty()
@@ -433,6 +507,13 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .minimum_level
                 .is_some_and(|level| level == 0 || !callback.has_personal_state())
+            || callback.admission.as_ref().is_some_and(|a| {
+                (!a.regular_blessings && !a.promotion && !a.premium)
+                    || callback.actor_kind != ActorKind::Player
+                    || !callback.has_personal_state()
+                    || callback.reversible
+                    || callback.opening_only
+            })
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -680,6 +761,9 @@ mod clock_tests;
 mod literal_text_tests;
 
 #[cfg(test)]
+mod ground_stack_tests;
+
+#[cfg(test)]
 mod cycle_tests;
 
 #[cfg(test)]
@@ -864,6 +948,7 @@ mod tests {
                 floor: -7,
             },
             appearance: 2773,
+            ground_stack: None,
         }];
         parse(&wire(&callback))?;
         callback.experience = Some(1);
@@ -1621,6 +1706,31 @@ mod qn1_lifecycle_tests {
                     )
                     .is_err()
             );
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod qn1_cells_tests {
+    #[test]
+    fn children_levers_bind_both_completion_branches() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let levers: Vec<_> = callbacks
+            .iter()
+            .filter(|c| c.key.contains("qn1-children-lever-"))
+            .collect();
+        assert_eq!(levers.len(), 10);
+        for callback in levers {
+            assert!(
+                callback.selector.native.is_none(),
+                "Children lever inherited another quest's alias"
+            );
+            super::parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string())?;
+            assert_eq!(callback.lever, Some([9125, 9126]));
+            assert_eq!(callback.effects.reset_after_ms, Some(5000));
+            assert_eq!(callback.storage[0].minimum, 14);
+            assert_eq!(callback.storage[0].maximum, 14);
         }
         Ok(())
     }

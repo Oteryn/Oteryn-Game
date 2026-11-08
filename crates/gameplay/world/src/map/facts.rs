@@ -34,13 +34,15 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod source_container_capacity;
+pub use source_container_capacity::captured_source_capacity;
 mod source_containers;
 pub use source_containers::CapturedMapItem;
 
 mod quest_callbacks;
 mod world_change_phases;
 use quest_callbacks::CallbackStates;
-pub use quest_callbacks::QuestCallbackProjection;
+pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -304,8 +306,9 @@ impl BundleFacts {
         }
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
         let movement_definitions = [
-            1025, 1949, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074,
-            14076, 14077, 14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
+            1025, 1949, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187,
+            12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
+            14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)

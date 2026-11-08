@@ -3,6 +3,9 @@
 use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition};
 use std::collections::BTreeMap;
 
+mod registry;
+pub use registry::{CounterRef, active_for, counter_for, tracks_creature_for};
+
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
@@ -40,6 +43,10 @@ impl Counter {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "native_kills/ownership_tests.rs"]
+mod ownership_tests;
 
 #[path = "native_kills/qworld.rs"]
 mod qworld;
@@ -108,6 +115,11 @@ fn counters() -> impl Iterator<Item = &'static Counter> {
     COUNTERS
         .iter()
         .chain(qworld::counters().unwrap_or_default())
+}
+
+/// Fail closed when a file-authored counter registry cannot be loaded.
+pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Counter>, String> {
+    Ok(COUNTERS.iter().chain(qworld::counters()?))
 }
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {

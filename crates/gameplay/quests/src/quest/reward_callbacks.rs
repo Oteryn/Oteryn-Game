@@ -9,6 +9,8 @@ use std::collections::{BTreeMap, BTreeSet};
 mod colours_peer;
 #[cfg(test)]
 mod peer_tests;
+#[cfg(test)]
+mod recipe_tests;
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
@@ -133,6 +135,8 @@ pub enum ActorConditionRequirement {
     Drunk,
 }
 
+pub use super::map_marks::{MapMarkKind as QuestMapMarkIcon, QuestMapMark};
+
 /// One paid source occurrence advances the existing Character achievement owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -153,9 +157,15 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    /// Exact second carried operand; its selected instance must accompany the ingress.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_target: Option<String>,
     /// Read-only condition on the selected other live player, checked atomically.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub peer_requires: Option<TrackRequirement>,
+    /// Exact native live creature selected by a carried quest tool.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creature_target: Option<String>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -220,6 +230,30 @@ impl OutfitReward {
     }
 }
 impl RewardCallback {
+    fn valid_carried_inputs(&self) -> bool {
+        let selected = |key: &str| {
+            self.take
+                .iter()
+                .any(|input| input.item == key && input.count == 1 && input.fluid_subtype.is_none())
+        };
+        match (&self.carried_item, &self.carried_target) {
+            (Some(source), Some(target)) => {
+                source != target
+                    && selected(source)
+                    && selected(target)
+                    && self.give.is_some()
+                    && self.peer_requires.is_none()
+                    && self.creature_target.is_none()
+            }
+            (None, Some(_)) => false,
+            (Some(source), None) => {
+                matches!(self.take.as_slice(), [input]
+                if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
+                    && (self.give.is_none() || self.creature_target.is_some())
+            }
+            (None, None) => true,
+        }
+    }
     pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
         self.outfit.iter().chain(&self.outfits)
     }
@@ -275,6 +309,11 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
+    // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
+    include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -453,6 +492,14 @@ fn validate_document(document: Document) -> Result<Document, String> {
             .as_ref()
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
             || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || c.creature_target.as_ref().is_some_and(|key| {
+                c.carried_item.is_none()
+                    || c.peer_requires.is_some()
+                    || c.give.as_ref().is_some_and(|give| {
+                        give.count != 1 || !give.contents.is_empty() || !give.additional.is_empty()
+                    })
+                    || !slug(key, "oteryn:creature.", b"_", 160)
+            })
             || c.peer_requires.as_ref().is_some_and(|requirement| {
                 c.carried_item.is_none()
                     || c.storage.iter().all(|state| state.preserve)
@@ -462,17 +509,9 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
-            || c.carried_item.as_ref().is_some_and(|item| {
-                c.take
-                    != [ItemAmount {
-                        item: item.clone(),
-                        count: 1,
-                        fluid_subtype: None,
-                    }]
-                    || c.give.is_some()
-                    || c.fee.is_some()
-                    || !c.requires_actor_conditions.is_empty()
-            })
+            || !c.valid_carried_inputs()
+            || c.carried_item.is_some()
+                && (c.fee.is_some() || !c.requires_actor_conditions.is_empty())
             || c.forbids_outfits.len() > 8
             || c.forbids_outfits.iter().collect::<BTreeSet<_>>().len() != c.forbids_outfits.len()
             || c.forbids_outfits
@@ -613,7 +652,12 @@ fn validate_document(document: Document) -> Result<Document, String> {
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none() && callback.peer_requires.is_none() {
+    if callback.minimum_level.is_none()
+        && callback.peer_requires.is_none()
+        && callback.creature_target.is_none()
+        && callback.map_mark.is_none()
+        && callback.carried_target.is_none()
+    {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
@@ -767,13 +811,22 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                 from: QuestComparison::Between(state.minimum, state.maximum),
                 effect: if state.preserve {
                     QuestEffectKind::Add(0)
-                } else if let Some(binding) = binding.filter(|_| Some(index) == bound_effect) {
-                    QuestEffectKind::SetWithBinding {
-                        value: state.set,
-                        binding,
-                    }
                 } else {
-                    QuestEffectKind::Set(state.set)
+                    match (
+                        state.at_least,
+                        binding.filter(|_| Some(index) == bound_effect),
+                    ) {
+                        (true, Some(binding)) => QuestEffectKind::RaiseToWithBinding {
+                            value: state.set,
+                            binding,
+                        },
+                        (false, Some(binding)) => QuestEffectKind::SetWithBinding {
+                            value: state.set,
+                            binding,
+                        },
+                        (true, None) => QuestEffectKind::RaiseTo(state.set),
+                        (false, None) => QuestEffectKind::Set(state.set),
+                    }
                 },
             })
             .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
@@ -787,7 +840,12 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 mod tests {
     #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
-        let mut callback = super::load()?.into_iter().next().ok_or("callback")?;
+        let mut callback = super::parse(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))?
+        .into_iter()
+        .next()
+        .ok_or("callback")?;
         callback.storage = (0..16)
             .map(|i| super::Storage {
                 track: format!("oteryn:quest-progress/atomic/{i}"),

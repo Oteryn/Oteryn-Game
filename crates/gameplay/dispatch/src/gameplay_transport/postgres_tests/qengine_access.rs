@@ -811,7 +811,9 @@ async fn wardrobe(
     let seed = RewardCallback {
         map_mark: None,
         carried_item: None,
+        carried_target: None,
         peer_requires: None,
+        creature_target: None,
         minimum_level: None,
         requires_addons: vec![],
         forbids_outfits: vec![],

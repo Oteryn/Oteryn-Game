@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/qm48/mammoth",
+      "quest": "oteryn:quest.barbarian_test",
+      "trigger": "use",
+      "requires_world_admission": true,
+      "selector": {
+        "position": {
+          "x": 32154,
+          "y": 31028,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 7176
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/storage/41174",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/storage/41177",
+          "minimum": -1,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "effects": {
+        "transform": 7177,
+        "reset_after_ms": 5000,
+        "magic": {
+          "position": {
+            "x": 32154,
+            "y": 31028,
+            "floor": -5
+          },
+          "effect": 22
+        }
+      },
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You hustle the mammoth. What a fun. *hicks*.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/barbarian_test/action_horn.lua:37-51",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/lib/core/storages.lua:811-818",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:18742-18750"
+      ]
+    }
+  ]
+}
