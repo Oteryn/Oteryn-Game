@@ -11247,7 +11247,8 @@
         "donor": "MAIN_DONOR=0",
         "duplicate_migrations": "PASS0; upstream1140-1141 retained, own1250-1258 unchanged.",
         "postgres": "Nine actual PostgreSQL18.6 cases GREEN before main merge,44.137-66.658s; all7new policies RED before admission. Fresh post-merge9PG+3central regression units queued/running; explicitly pending under PREPUSH-2 cadence allowance.",
-        "full_units": "Previous fresh run579PASS,2SIGINT,19repo skips,3334notrun; incomplete, no full unit-pass claim."
+        "full_units": "Previous fresh run579PASS,2SIGINT,19repo skips,3334notrun; incomplete, no full unit-pass claim.",
+        "postmerge_revalidation": "COMPLETE: nine prior/current realPGcustody casesGREEN plusfourcentralunits(equipmentpin,mintaudit,bothsortedmodulechecks)GREEN oncurrentmain47; seven separately addednext-batchREDprobes are theonlyfailures. Full broadcrateunitsstillpending."
       }
     },
     "main47_integration": {
@@ -11260,6 +11261,229 @@
       "resolution": "Main deployment configuration adopted as regeneration input; native-only repo tooling and freshly rebuilt current world compiler regenerate both pins. Main world package/placements retained. Full merge-driver materializer was stopped to keep the merge bounded; it had only written a temporary world output.",
       "preservation": "All3750 feature-checkpoint native records identical; branch diff againstmain41files6515insertions131deletions, not empty. Canonical quest-input hashes unchanged, validating parallel donor check inputs.",
       "validation": "Merged normally, all3750records retained. Workspace/alltargets and fmt PASS; changed content/dispatch/durability alltargets/allfeatures clippy -Dwarnings PASS; donor/native/equipment/variant/worldmetadata/completion checks exit0. Fresh post-merge PG/unit execution pending, premerge own9PG green."
+    },
+    "recipe7_next_slice": {
+      "status": "QUALIFIED_COMPONENTS",
+      "items": [
+        21466,
+        21554,
+        9106,
+        36543,
+        36544,
+        9185,
+        9205
+      ],
+      "scope": "Seven finite plain physical custody profiles from four active packet quests; no fluid/text/custom-use/whole-quest inference.",
+      "source": "Pinned Crystal201189f XML lines42832/42926/24445/67347/67351/24730/24816, same XML/client digests as existing captured cohort.",
+      "source_controls": "32 qualifier/pin controls PASS49.076s; final four recipe controls PASS20.273s including duplicate/foreign-key mutation in newly added last cohort slot; RuffPASS.",
+      "postgres": "Allnine actualPG18.6 custody/drop/exact-replay cases GREEN44.093-66.068s withdatabase/version/completionmarkers:7new+2existingregressions. Beforeadmissionexact7missing-policyRED43.109-44.054s;13previous/currentregressionsGREEN,0unexpectedfailures.",
+      "publication": "Ready for fast-forward push to questpc4b; wholequestcounts4QUALIFIED/17IN_PROGRESS/2externalexclusions unchanged.",
+      "red_results": {
+        "expected_red_items": [
+          21466,
+          21554,
+          9106,
+          36543,
+          36544,
+          9185,
+          9205
+        ],
+        "rows": [
+          {
+            "status": "PASS",
+            "seconds": 0.014,
+            "test": "gameplay_transport::module_registration_block_is_sorted_and_complete"
+          },
+          {
+            "status": "PASS",
+            "seconds": 45.061,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_beregar_items::l6_beregar_item_3398_native_custody_and_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 52.756,
+            "test": "gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes"
+          },
+          {
+            "status": "PASS",
+            "seconds": 46.532,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_12674_native_custody_and_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 46.842,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_14682_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 44.054,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_21466_native_custody_and_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 45.666,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_21504_native_custody_and_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 45.812,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_21507_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 43.175,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_21554_native_custody_and_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 45.757,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_3454_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 43.504,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_36543_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 43.118,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_36544_native_custody_and_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 46.32,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_5467_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 43.434,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_9106_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 43.849,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_9185_native_custody_and_replay"
+          },
+          {
+            "status": "FAIL",
+            "seconds": 43.109,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_recipe_items::l6_recipe_item_9205_native_custody_and_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 47.568,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_stag_item::l6_stag_source_compass_has_native_custody_and_exact_replay"
+          },
+          {
+            "status": "PASS",
+            "seconds": 0.207,
+            "test": "durability::item_mint_audit::tests::every_type2_insert_takes_its_tuple_from_a_type2_transaction"
+          },
+          {
+            "status": "PASS",
+            "seconds": 0.009,
+            "test": "durability::module_registration_block_is_sorted_and_complete"
+          },
+          {
+            "status": "PASS",
+            "seconds": 43.827,
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_stag_item::l6_stag_source_sword_has_native_custody_and_exact_replay"
+          }
+        ],
+        "unexpected_failures": [],
+        "missing_expected_red": [],
+        "postgres_version": "PostgreSQL18.6"
+      },
+      "native_preservation": {
+        "before": 3750,
+        "after": 3757,
+        "added_exactly": [
+          21466,
+          21554,
+          9106,
+          36543,
+          36544,
+          9185,
+          9205
+        ],
+        "all_prior_rows_identical": true,
+        "equipment_profiles": 3795,
+        "world_pin": "Unchangedbb826aa1a693ce025d39b55c11bd71fb683ff3c1868c51cd60850c0e6d8f9dbd"
+      },
+      "freshness": "Capture/native/equipment/variant/worldmetadata/completion checks EXIT0. Completed donorcheck from7c reused with exact canonical quest-input digests and unchanged donor tooling/captures/NPCs/bindings verified; no changed donor inputs.",
+      "green_results": [
+        {
+          "item": 21466,
+          "seconds": 60.145,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-recipe7-green-21466.log"
+        },
+        {
+          "item": 21554,
+          "seconds": 60.164,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-recipe7-green-21554.log"
+        },
+        {
+          "item": 9106,
+          "seconds": 66.068,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-recipe7-green-9106.log"
+        },
+        {
+          "item": 36543,
+          "seconds": 61.745,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-recipe7-green-36543.log"
+        },
+        {
+          "item": 36544,
+          "seconds": 52.147,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-recipe7-green-36544.log"
+        },
+        {
+          "item": 9185,
+          "seconds": 50.835,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-recipe7-green-9185.log"
+        },
+        {
+          "item": 9205,
+          "seconds": 49.799,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-recipe7-green-9205.log"
+        },
+        {
+          "item": 3398,
+          "seconds": 47.923,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-recipe7-green-3398.log"
+        },
+        {
+          "item": 5467,
+          "seconds": 44.093,
+          "exit": 0,
+          "postgres_proved": true,
+          "log": "/tmp/questpc4b-recipe7-green-5467.log"
+        }
+      ],
+      "publication_gates": {
+        "workspace": "RECIPE7_CHECK=0 duration=284s",
+        "clippy": "RECIPE7_CLIPPY=0 duration=234s",
+        "fmt": "RECIPE7_FMT=0",
+        "freshness": "CAPTURE=0 EQUIPMENT=0 NATIVE=0 VARIANT=0 WORLD_METADATA=0 COMPLETION=0 DONOR_INPUTS_UNCHANGED=0",
+        "duplicate_migrations": "PASS0; no new migration",
+        "unit_coverage": "32sourcecontrolsPASS49.076s,final4recipecontrolsPASS20.273s; prior/current13specific regressionsGREENincludingninePG/fourcentralunits. FreshbroadcrateunitsremainpendingunderPREPUSH-2cadenceallowance; previous579PASS/2SIGINTisnotafullpass."
+      }
     }
   }
 }

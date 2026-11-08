@@ -7,8 +7,22 @@ import build_questpc4_stag_item_profiles as capture_owner
 import grizzly_shop_profiles as owner
 import questpc4_plain_item_profiles as plain
 
-IDS = (14682, 5467, 21504, 21507, 12674, 3454)
-SCHEMA = "OTERYN_QUESTPC4_RECIPE_ITEM_PROFILES/v1"
+IDS = (
+    14682,
+    5467,
+    21504,
+    21507,
+    12674,
+    3454,
+    21466,
+    21554,
+    9106,
+    36543,
+    36544,
+    9185,
+    9205,
+)
+SCHEMA = "OTERYN_QUESTPC4_RECIPE_ITEM_PROFILES/v2"
 PROOF = "tools/content-schema/native-gameplay/questpc4-recipe-item-profiles.json"
 PRODUCER = "tools/content-migration/build_questpc4_recipe_item_profiles.py"
 
@@ -25,7 +39,7 @@ def capture(source_root, root=capture_owner.ROOT):
         qualify=qualify,
         schema=SCHEMA,
         producer=PRODUCER,
-        scope="Physical custody of six plain items referenced by owned quest recipes; no equipment, fluid or custom use activation.",
+        scope="Physical custody of thirteen plain items referenced by owned quest recipes; no equipment, fluid or custom use activation.",
     )
 
 

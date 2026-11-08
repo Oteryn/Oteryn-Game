@@ -10,7 +10,12 @@ from test_questpc4_stag_item_profiles import ROOT, definitions
 
 class RecipeCustodyTests(unittest.TestCase):
     def fixture(self, item_id=14682):
-        weight = dict(zip(profile.IDS, (100, 3050, 180, 60, 200, 1100)))[item_id]
+        weight = dict(
+            zip(
+                profile.IDS,
+                (100, 3050, 180, 60, 200, 1100, 1750, 280, 50, 850, 850, 200, 830),
+            )
+        )[item_id]
         node = ET.fromstring(
             f'<item id="{item_id}" name="fixture"><attribute key="weight" value="{weight}"/></item>'
         )
@@ -33,7 +38,7 @@ class RecipeCustodyTests(unittest.TestCase):
             definitions()[f"oteryn:item.tibia.i{item_id}"],
         ]
 
-    def test_six_exact_source_items_remain_plain_and_portable(self):
+    def test_thirteen_exact_source_items_remain_plain_and_portable(self):
         for item_id in profile.IDS:
             row = profile.qualify(*self.fixture(item_id))
             self.assertEqual(
@@ -69,19 +74,15 @@ class RecipeCustodyTests(unittest.TestCase):
     def test_pin_uses_captured_cohort_and_is_idempotent(self):
         source = '    ("QUESTPC4-BEREGAR-ITEMS", 3),'
         result = refresh(source, self.packet())
-        self.assertEqual(result, source + '\n    ("QUESTPC4-RECIPE-ITEMS", 6),')
+        self.assertEqual(result, source + '\n    ("QUESTPC4-RECIPE-ITEMS", 13),')
         self.assertEqual(refresh(result, self.packet()), result)
 
     def test_pin_rejects_duplicate_or_wrong_key_and_missing_anchor(self):
-        for keys in (
-            (14682, 5467, 21504, 21507, 12674, 12674),
-            (14682, 5467, 21504, 21507, 12674, 1),
-        ):
+        for replacement in (profile.IDS[-2], 1):
             packet = copy.deepcopy(self.packet())
-            for row, key in zip(packet["records"], keys):
-                row["production_definition"]["production_key"] = (
-                    f"oteryn:item.tibia.i{key}"
-                )
+            packet["records"][-1]["production_definition"]["production_key"] = (
+                f"oteryn:item.tibia.i{replacement}"
+            )
             with self.assertRaisesRegex(ValueError, "SOURCE_COHORT"):
                 refresh('("QUESTPC4-BEREGAR-ITEMS", 3),', packet)
         with self.assertRaisesRegex(ValueError, "PIN_ANCHOR"):

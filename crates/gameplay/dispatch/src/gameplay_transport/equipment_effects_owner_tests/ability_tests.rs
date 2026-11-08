@@ -158,7 +158,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QUESTPC4-STAG-ITEMS", 6),
     ("QUESTPC4-YALAHAR-ITEMS", 11),
     ("QUESTPC4-BEREGAR-ITEMS", 3),
-    ("QUESTPC4-RECIPE-ITEMS", 6),
+    ("QUESTPC4-RECIPE-ITEMS", 13),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
