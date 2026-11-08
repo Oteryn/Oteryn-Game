@@ -11,6 +11,7 @@ pub struct Panel {
     pub section: Section,
     pub map: Option<oteryn_client_runtime::cyclopedia_map::MapResult>,
     pub floor: i8,
+    pub hide_pois: bool,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -80,5 +81,33 @@ impl Section {
 impl Panel {
     pub fn navigate(&mut self, section: Section) {
         self.section = section;
+    }
+}
+
+impl Panel {
+    /// Only floors present in the confirmed exploration result can be selected.
+    pub fn select_floor(&mut self, previous: bool) {
+        let floors: Vec<_> = self
+            .map
+            .iter()
+            .flat_map(|map| &map.visible)
+            .map(|point| point.2)
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        if floors.is_empty() {
+            return;
+        }
+        let index = floors
+            .iter()
+            .position(|floor| *floor == self.floor)
+            .map_or(0, |index| {
+                if previous {
+                    (index + floors.len() - 1) % floors.len()
+                } else {
+                    (index + 1) % floors.len()
+                }
+            });
+        self.floor = floors[index];
     }
 }

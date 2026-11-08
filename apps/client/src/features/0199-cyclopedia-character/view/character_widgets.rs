@@ -1,57 +1,22 @@
-//! Thread-owned Cyclopedia control construction.
-#![allow(unsafe_code, reason = "Win32 handles remain on their creating thread")]
-use super::super::controls::{control, wide};
-use super::{Actions, WeakMailbox, close, proc};
-use std::ptr::{null, null_mut};
-use windows_sys::Win32::{
-    Foundation::HWND,
-    UI::{
-        Controls::{ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx},
-        WindowsAndMessaging::*,
-    },
-};
-pub(super) struct Controls {
-    pub(super) hwnd: HWND,
+//! Native character window controls, created on the window thread.
+use super::*;
+
+pub(super) struct Widgets {
     pub(super) edits: [HWND; 3],
     pub(super) output: HWND,
-    pub(super) achievement_browser: HWND,
     pub(super) heading: HWND,
     pub(super) history: HWND,
     pub(super) detail: HWND,
+    pub(super) achievement_browser: HWND,
+    pub(super) status_label: HWND,
     pub(super) cards: Vec<HWND>,
     pub(super) stamina_bar: HWND,
     pub(super) training_bar: HWND,
-    pub(super) status_label: HWND,
     pub(super) badge_id: HWND,
-    pub(super) actions: Box<Actions>,
 }
-pub(super) unsafe fn create(weak: &WeakMailbox) -> Option<Controls> {
+
+pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
     unsafe {
-        let hwnd = CreateWindowExW(
-            0,
-            wide("STATIC").as_ptr(),
-            wide("Character cyclopedia").as_ptr(),
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            740,
-            740,
-            null_mut(),
-            null_mut(),
-            null_mut(),
-            null(),
-        );
-        if hwnd.is_null() {
-            close(weak);
-            return None;
-        }
-        let mut actions = Box::<Actions>::default();
-        SetWindowLongPtrW(
-            hwnd,
-            GWLP_USERDATA,
-            (&mut *actions as *mut Actions) as isize,
-        );
-        SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
         let fields = [
             ("Page offset", "0"),
             ("Page size (1-50)", "20"),
@@ -200,20 +165,18 @@ pub(super) unsafe fn create(weak: &WeakMailbox) -> Option<Controls> {
             [210, 655, 200, 25],
             WS_TABSTOP,
         );
-        Some(Controls {
-            hwnd,
+        Widgets {
             edits,
             output,
-            achievement_browser,
             heading,
             history,
             detail,
+            achievement_browser,
+            status_label,
             cards,
             stamina_bar,
             training_bar,
-            status_label,
             badge_id,
-            actions,
-        })
+        }
     }
 }

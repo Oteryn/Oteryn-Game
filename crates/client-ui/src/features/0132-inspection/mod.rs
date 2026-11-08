@@ -53,4 +53,31 @@ mod catalogue_tests {
         assert!(!catalogue_text(&panel).contains("Silver sword"));
         Ok(())
     }
+    #[test]
+    fn item_categories_are_selected_from_confirmed_attributes() {
+        let mut panel = Panel {
+            selected: true,
+            ..Default::default()
+        };
+        panel.catalogue.insert(
+            7,
+            InspectedItem {
+                slot: 0,
+                definition_ref: 7,
+                count: 1,
+                tier: 0,
+                name: "Silver sword".into(),
+                attributes: vec![("Weapon Type".into(), "sword, two-handed".into())],
+            },
+        );
+        panel.select_category(false);
+        assert_eq!(panel.category, "sword");
+        assert!(catalogue_text(&panel).contains("Silver sword"));
+        panel.search = "missing".into();
+        assert!(catalogue_text(&panel).contains("No items match"));
+        panel.select_category(false);
+        assert!(panel.category.is_empty());
+        panel.select_category(true);
+        assert_eq!(panel.category, "sword");
+    }
 }

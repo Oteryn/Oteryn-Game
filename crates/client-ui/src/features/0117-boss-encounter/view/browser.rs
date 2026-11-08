@@ -30,7 +30,13 @@ pub fn boss_records(panel: &BossEncounterPanel) -> Vec<&str> {
     if panel.browser_category != BossCategory::Progress {
         keys.extend(snapshot.cooldowns.iter().map(|(key, _)| key.as_str()));
     }
-    let search = panel.browser_search.trim().to_lowercase();
+    let search = if panel.browser_search.is_empty() {
+        &panel.boss_search
+    } else {
+        &panel.browser_search
+    }
+    .trim()
+    .to_lowercase();
     keys.into_iter()
         .filter(|key| key.to_lowercase().contains(&search))
         .collect()

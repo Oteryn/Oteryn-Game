@@ -1,16 +1,18 @@
 // HWND operations stay on the creating thread, following the daily reward panel.
 #![allow(unsafe_code)]
-use super::controls::{read_text, wide};
+use super::controls::{control, read_text, wide};
 use super::*;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
-use std::ptr::null_mut;
+use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedSender;
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::{
-    Controls::{PBM_SETPOS, PBM_SETRANGE32},
+    Controls::{
+        ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx, PBM_SETPOS, PBM_SETRANGE32,
+    },
     Input::KeyboardAndMouse::EnableWindow,
     WindowsAndMessaging::*,
 };
@@ -25,7 +27,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 32
-                && matches!(id, 101..=117 | 140)
+                && matches!(id, 101..=117 | 140 | 145..=148 | 150)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -55,28 +57,46 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         close(&rollback);
     }
 }
-#[path = "character_layout.rs"]
-mod layout;
 fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
     unsafe {
-        let Some(layout::Controls {
+        let hwnd = CreateWindowExW(
+            0,
+            wide("STATIC").as_ptr(),
+            wide("Character cyclopedia").as_ptr(),
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            740,
+            740,
+            null_mut(),
+            null_mut(),
+            null_mut(),
+            null(),
+        );
+        if hwnd.is_null() {
+            close(&weak);
+            return;
+        }
+        let mut actions = Box::<Actions>::default();
+        SetWindowLongPtrW(
             hwnd,
+            GWLP_USERDATA,
+            (&mut *actions as *mut Actions) as isize,
+        );
+        SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
+        let character_widgets::Widgets {
             edits,
             output,
-            achievement_browser,
             heading,
             history,
             detail,
+            achievement_browser,
+            status_label,
             cards,
             stamina_bar,
             training_bar,
-            status_label,
             badge_id,
-            mut actions,
-        }) = layout::create(&weak)
-        else {
-            return;
-        };
+        } = character_widgets::create(hwnd);
         let mut held_history = Vec::new();
         let mut held_combat = Vec::new();
         let mut held_store = String::new();
@@ -357,3 +377,6 @@ fn close(weak: &WeakMailbox) {
         lock(&shared).cyclopedia_character.open = false;
     }
 }
+
+#[path = "character_widgets.rs"]
+mod character_widgets;
