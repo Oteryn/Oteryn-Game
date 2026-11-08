@@ -62,14 +62,13 @@ impl PreferenceStore {
     }
 
     pub fn load(path: PathBuf) -> io::Result<Self> {
-        let preferences = match std::fs::read(&path) {
-            Ok(bytes) => serde_json::from_slice(&bytes).map_err(io::Error::other)?,
+        let preferences = match Self::read_transfer(&path) {
+            Ok(preferences) => preferences,
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
                 ReferencePreferences::default()
             }
             Err(error) => return Err(error),
         };
-        preferences.validate().map_err(io::Error::other)?;
         Ok(Self { path, preferences })
     }
 

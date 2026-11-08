@@ -126,3 +126,63 @@ fn premium_panel_rejects_malformed_and_regressing_snapshots_without_confirming_c
         Ok(())
     })
 }
+
+#[test]
+fn premium_panel_reports_missing_service_and_never_confirms_cached_benefits() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let mut view = View::default();
+        mock.runtime.block_on(refresh(
+            &mut view,
+            &client,
+            &token,
+            CancellationToken::new(),
+        ));
+        assert!(view.fresh());
+        let last = view.status.clone();
+        for status in [404, 501] {
+            mock.authority
+                .lock()
+                .map_err(|_| "lock")?
+                .premium_http_status = Some(status);
+            mock.runtime.block_on(refresh(
+                &mut view,
+                &client,
+                &token,
+                CancellationToken::new(),
+            ));
+            assert!(!view.fresh());
+            assert_eq!(view.status, last);
+            assert!(view.feedback.contains("not available on this service yet"));
+            assert!(!view.status_text().contains("[available]"));
+            assert!(!view.feedback.contains("native-account"));
+        }
+        mock.authority
+            .lock()
+            .map_err(|_| "lock")?
+            .premium_http_status = Some(503);
+        mock.runtime.block_on(refresh(
+            &mut view,
+            &client,
+            &token,
+            CancellationToken::new(),
+        ));
+        assert!(view.feedback.contains("Premium service unavailable"));
+        assert!(!view.fresh());
+        mock.authority
+            .lock()
+            .map_err(|_| "lock")?
+            .premium_http_status = None;
+        mock.runtime.block_on(refresh(
+            &mut view,
+            &client,
+            &token,
+            CancellationToken::new(),
+        ));
+        assert!(view.fresh());
+        assert!(view.status_text().contains("[available]"));
+        Ok(())
+    })
+}

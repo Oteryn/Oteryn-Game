@@ -81,3 +81,71 @@ impl Panel {
         self.fields[1] = cards[index].race.to_string();
     }
 }
+
+impl Panel {
+    pub fn select_charm(&mut self, previous: bool) {
+        if self.pending {
+            return;
+        }
+        let Some(reply) = &self.reply else {
+            return;
+        };
+        let cards = &reply.charms.charms;
+        if cards.is_empty() {
+            self.fields[0].clear();
+            self.fields[1].clear();
+            return;
+        }
+        let current = self.fields[0].parse::<u32>().ok();
+        let selected = cards.iter().position(|c| Some(c.charm.get()) == current);
+        let index = selected.map_or(0, |i| {
+            if previous {
+                (i + cards.len() - 1) % cards.len()
+            } else {
+                (i + 1) % cards.len()
+            }
+        });
+        self.fields[0] = cards[index].charm.to_string();
+        self.fields[1].clear();
+    }
+    pub fn select_assignment_race(&mut self, previous: bool) {
+        use oteryn_client_runtime::charm_progression::charm::CharmKind;
+        if self.pending {
+            return;
+        }
+        let Some(reply) = &self.reply else {
+            return;
+        };
+        let Some(charm) = reply
+            .charms
+            .charms
+            .iter()
+            .find(|c| self.fields[0] == c.charm.to_string())
+        else {
+            return;
+        };
+        let stage = match charm.kind {
+            CharmKind::Major => crate::bestiary_charms::MAJOR_CHARM_RACE_STAGE,
+            CharmKind::Minor => crate::bestiary_charms::MINOR_CHARM_RACE_STAGE,
+        };
+        let cards: Vec<_> = reply
+            .bestiary
+            .iter()
+            .filter(|r| r.unlocked_stage() >= stage)
+            .collect();
+        if cards.is_empty() {
+            self.fields[1].clear();
+            return;
+        }
+        let current = self.fields[1].parse::<u32>().ok();
+        let selected = cards.iter().position(|r| Some(r.race.get()) == current);
+        let index = selected.map_or(0, |i| {
+            if previous {
+                (i + cards.len() - 1) % cards.len()
+            } else {
+                (i + 1) % cards.len()
+            }
+        });
+        self.fields[1] = cards[index].race.to_string();
+    }
+}
