@@ -16,7 +16,7 @@ mod store;
 mod sync;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use store::PreferenceStore;
-pub use sync::SettingsState;
+pub use sync::{SettingsPage, SettingsState};
 
 const PANEL_IDS: &[&str] = &[
     "battle",
