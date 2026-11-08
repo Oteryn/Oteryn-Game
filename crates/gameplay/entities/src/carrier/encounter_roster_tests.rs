@@ -310,3 +310,28 @@ fn engenc_defender_completion_is_exact_participant_fenced_and_idempotent() -> Te
     assert!(EncounterDefenders::new(&[step.actor], &[foreign]).is_err());
     Ok(())
 }
+
+#[test]
+fn engenc_typed_roster_is_prepared_inside_atomic_entry() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let step = player(&mut runtime)?;
+    let before = runtime.encounter_fixture_snapshot();
+    let monsters = [("creature:rat", 20, position(111))];
+    assert!(
+        runtime
+            .commit_quest_encounter_entry_with_defenders(vec![step], &monsters, || false)
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let (positions, roster) = checked(runtime.commit_quest_encounter_entry_with_defenders(
+        vec![step],
+        &monsters,
+        || true,
+    ))?;
+    assert_eq!(positions.len(), 1);
+    assert_eq!(roster.participants(), &[step.actor]);
+    assert_eq!(roster.defenders().len(), 1);
+    assert!(runtime.contains_live_creature(roster.defenders()[0]));
+    assert!(!roster.complete_for(step.actor));
+    Ok(())
+}

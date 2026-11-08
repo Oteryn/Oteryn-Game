@@ -3,6 +3,7 @@
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
 use std::sync::Arc;
+mod encounters;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
 
@@ -34,6 +35,7 @@ struct NativeCounterCapture {
     transition: String,
     creature: String,
     definition_hash: Option<[u8; 32]>,
+    encounter_source: Option<String>,
 }
 
 fn capture_native(
@@ -54,6 +56,7 @@ fn capture_native(
                 transition: key.clone(),
                 creature: counter.creature.into(),
                 definition_hash,
+                encounter_source: counter.encounter_source.map(str::to_owned),
             })
         })
         .collect()
@@ -84,6 +87,7 @@ pub(super) struct FrozenGrizzlyDeath {
 pub(super) struct GrizzlyCaptureCache {
     sessions: Vec<TaskSnapshot>,
     deaths: Vec<(ExactActorRef, [u8; 16], Arc<FrozenGrizzlyDeath>)>,
+    encounters: Vec<encounters::EncounterRun>,
 }
 
 impl GrizzlyCaptureCache {
@@ -260,6 +264,9 @@ pub(super) fn capture(
     });
     if !runtime.retains_corpse_projection(entry.target) {
         return;
+    }
+    for run in &mut cache.encounters {
+        let _ = run.roster.record_death(entry.facts.death);
     }
     let principal = entry.facts.principal;
     // Gone and untracked contributors make the ordinary queue use a lethal-hit fallback.

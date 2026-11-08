@@ -21,6 +21,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         observed_world: Option<&ObservedWorldCallback>,
         optional_pvp: Option<bool>,
     ) -> UseDisposition {
+        if callback.effects.encounter.is_none()
+            && let Some(catalogue) = self.quest_catalogue.as_deref()
+            && let Some(bindings) = catalogue.authored_bindings()
+        {
+            let sources: Vec<_> = bindings
+                .quests
+                .iter()
+                .filter(|quest| quest.quest == callback.quest)
+                .flat_map(|quest| &quest.stages)
+                .filter_map(|stage| match &stage.trigger {
+                    oteryn_gameplay_quests::quest::authored_bindings::Trigger::Kill { counter }
+                        if callback.storage.iter().any(|gate| {
+                            gate.track == counter.track && gate.minimum >= counter.maximum
+                        }) =>
+                    {
+                        counter.encounter_source.as_deref()
+                    }
+                    _ => None,
+                })
+                .collect();
+            if !sources.is_empty() {
+                let Some(hash) = catalogue.definition_hash(&callback.quest) else {
+                    return UseDisposition::Rejected;
+                };
+                let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+                    return UseDisposition::Rejected;
+                };
+                let Ok(attack) = self.states.attack.try_lock() else {
+                    return UseDisposition::Rejected;
+                };
+                let Ok(capture) = attack.kills().1.lock() else {
+                    return UseDisposition::Rejected;
+                };
+                if sources.iter().any(|source| {
+                    !capture.encounter_door_allowed(
+                        source,
+                        hash,
+                        actor,
+                        session,
+                        lease.generation(),
+                    )
+                }) {
+                    return UseDisposition::Rejected;
+                }
+            }
+        }
         if !runtime
             .player_control_facts(actor, session)
             .is_ok_and(|f| f.control_loss.is_none())

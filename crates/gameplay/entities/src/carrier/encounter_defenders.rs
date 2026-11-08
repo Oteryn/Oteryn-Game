@@ -12,6 +12,16 @@ impl EncounterDefenders {
         participants: &[ExactActorRef],
         defenders: &[ExactActorRef],
     ) -> Result<Self, CarrierError> {
+        if !(1..=8).contains(&participants.len()) || !(1..=8).contains(&defenders.len()) {
+            return Err(CarrierError::PlanConflict);
+        }
+        Self::from_admission(participants.to_vec(), defenders.to_vec())
+    }
+    /// Transfer preallocated admission vectors without allocating after publication.
+    pub fn from_admission(
+        participants: Vec<ExactActorRef>,
+        defenders: Vec<ExactActorRef>,
+    ) -> Result<Self, CarrierError> {
         if participants.is_empty()
             || participants.len() > 8
             || defenders.is_empty()
@@ -20,19 +30,22 @@ impl EncounterDefenders {
             return Err(CarrierError::PlanConflict);
         }
         let first = participants[0];
-        let all: Vec<_> = participants.iter().chain(defenders).copied().collect();
-        if all.iter().enumerate().any(|(index, actor)| {
+        let all = participants.iter().chain(&defenders);
+        if all.clone().enumerate().any(|(index, actor)| {
             actor.runtime_scope() != first.runtime_scope()
                 || actor.scope_generation() != first.scope_generation()
-                || all[..index].contains(actor)
+                || all.clone().take(index).any(|other| other == actor)
         }) {
             return Err(CarrierError::PlanConflict);
         }
         Ok(Self {
-            participants: participants.to_vec(),
-            defenders: defenders.to_vec(),
+            participants,
+            defenders,
             defeated: 0,
         })
+    }
+    pub fn defenders(&self) -> &[ExactActorRef] {
+        &self.defenders
     }
     pub fn participants(&self) -> &[ExactActorRef] {
         &self.participants

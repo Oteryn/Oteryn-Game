@@ -122,11 +122,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
-        let Ok(snapshots) = runtime.commit_quest_encounter_entry(proofs, &monsters, || {
-            map.facts
-                .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
-        }) else {
-            return UseDisposition::Rejected;
+        let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
+            let bindings = catalogue.authored_bindings()?;
+            bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|
+                matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::MapUse { callback: source }
+                    if source.as_ref() == callback))
+                && quest.stages.iter().any(|stage|
+                    matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::Kill { counter }
+                        if counter.encounter_source.as_deref() == Some(callback.key.as_str()))))
+                .and_then(|quest| catalogue.definition_hash(&quest.quest))
+        });
+        let snapshots = if let Some(hash) = scoped_hash {
+            let Ok(attack) = self.states.attack.try_lock() else {
+                return UseDisposition::Rejected;
+            };
+            let Ok(mut capture) = attack.kills().1.lock() else {
+                return UseDisposition::Rejected;
+            };
+            let selected: Vec<_> = players
+                .iter()
+                .map(|(who, session, _)| (*who, *session))
+                .collect();
+            let Ok(prepared) = capture.prepare_encounter(runtime, &callback.key, hash, &selected)
+            else {
+                return UseDisposition::Rejected;
+            };
+            let Ok((snapshots, roster)) =
+                runtime.commit_quest_encounter_entry_with_defenders(proofs, &monsters, || {
+                    map.facts.apply_quest_callback(
+                        key,
+                        expected_revision,
+                        after,
+                        &[],
+                        &[],
+                        false,
+                        None,
+                    )
+                })
+            else {
+                return UseDisposition::Rejected;
+            };
+            capture.publish_encounter(prepared, roster);
+            snapshots
+        } else {
+            let Ok(snapshots) = runtime.commit_quest_encounter_entry(proofs, &monsters, || {
+                map.facts
+                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+            }) else {
+                return UseDisposition::Rejected;
+            };
+            snapshots
         };
         for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
