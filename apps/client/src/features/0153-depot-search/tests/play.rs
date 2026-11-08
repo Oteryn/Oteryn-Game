@@ -86,3 +86,113 @@ fn native_controls_submit_and_restore() {
     assert!(native::enabled(&panel));
     assert!(native::presentation(&panel).contains("refused"));
 }
+
+#[test]
+fn depot_result_controls_retrieve_all_and_keep_server_outcomes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::depot_search::{
+        self as wire, Outcome, Reply, Request, SearchResult, TierCount,
+    };
+    use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+    let (link, mut receiver, outbox) = play_channel();
+    outbox.depot_search_initialize(true);
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.depot_search.reply = Some(Reply {
+            outcome: Outcome::Listed,
+            retrieved: 0,
+            results: vec![SearchResult {
+                client_id: 321,
+                depot: 7,
+                stash: 0,
+                inbox: 0,
+                tiers: vec![TierCount { tier: 0, count: 7 }],
+            }],
+        });
+    }
+    let inputs = native::Inputs::default();
+    native::activate(&link, &inputs, 8);
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+        return Err("missing retrieve-all command".into());
+    };
+    assert_eq!(
+        wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?,
+        Request::Retrieve {
+            client_id: 321,
+            all: true
+        }
+    );
+    native::activate(&link, &inputs, 8);
+    assert!(receiver.try_recv().is_err());
+    let mut panel = link.depot_search_panel();
+    oteryn_client_ui::depot_search::apply_result(
+        &mut panel,
+        &ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_reply(&Reply {
+                outcome: Outcome::Retrieved,
+                retrieved: 7,
+                results: vec![],
+            })
+            .map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    assert!(native::presentation(&panel).contains("Retrieved: 7"));
+    crate::play::mailbox::lock(&link.mailbox).depot_search = panel;
+    native::activate(&link, &inputs, 8);
+    assert!(receiver.try_recv().is_err());
+    native::activate(&link, &inputs, 5);
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+        return Err("missing list command".into());
+    };
+    assert_eq!(
+        wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?,
+        Request::Open { after: 0 }
+    );
+    Ok(())
+}
+
+#[test]
+fn depot_native_callback_does_not_drop_the_session_owner() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_client_runtime::cui3::depot_search::{self as wire, Request};
+    let (link, mut receiver, _outbox) = play_channel();
+    let observed = std::sync::Arc::clone(&link.mailbox);
+    {
+        let mut mailbox = crate::play::mailbox::lock(&observed);
+        mailbox.depot_search.selected = true;
+        mailbox.properties.appearance.selected = true;
+        mailbox.properties.appearance.open = true;
+        mailbox.wheel.selected = true;
+        assert!(!mailbox.quest_shutdown && !mailbox.wheel_shutdown);
+    }
+    // These are exactly the references held by the native window's callback.
+    // Their scope must end without dropping another owning PlayLink.
+    {
+        let shared = std::sync::Arc::clone(&observed);
+        let commands = link.commands.clone();
+        native::activate_shared(&shared, &commands, &native::Inputs::default(), 5);
+    }
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+        return Err("missing native list command".into());
+    };
+    assert_eq!(
+        wire::decode_request(&command.payload).map_err(|error| format!("{error:?}"))?,
+        Request::Open { after: 0 }
+    );
+    {
+        let mailbox = crate::play::mailbox::lock(&observed);
+        assert!(mailbox.depot_search.pending);
+        assert!(mailbox.properties.appearance.selected && mailbox.properties.appearance.open);
+        assert!(mailbox.wheel.selected);
+        assert!(!mailbox.quest_shutdown && !mailbox.wheel_shutdown);
+    }
+    // The original owning link still performs its established cleanup.
+    drop(link);
+    let mailbox = crate::play::mailbox::lock(&observed);
+    assert!(!mailbox.properties.appearance.selected && !mailbox.properties.appearance.open);
+    assert!(mailbox.quest_shutdown && mailbox.wheel_shutdown);
+    Ok(())
+}

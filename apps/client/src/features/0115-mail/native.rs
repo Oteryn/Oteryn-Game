@@ -102,7 +102,7 @@ unsafe fn text(hwnd: HWND) -> String {
         String::from_utf16_lossy(&buffer[..length])
     }
 }
-fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, form: Form) {
+pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, form: Form) {
     unsafe {
         let hwnd = CreateWindowExW(
             0,
@@ -133,6 +133,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, form: Form) {
                 y += 22;
                 let multiline = (form.title == "Writing and mail" && index == 2)
                     || (form.title == "Player reports" && index == 4)
+                    || (form.title == "Bug report" && index == 1)
                     || (form.title == "Staff authorized actions" && index > 0);
                 let height = if multiline { 125 } else { 26 };
                 let edit = control(
