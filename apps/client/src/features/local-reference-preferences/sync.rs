@@ -13,6 +13,7 @@ pub enum SettingsPage {
     Gameplay,
     Hotkeys,
     BarHotkeys,
+    CustomHotkeys,
     Interface,
     Graphics,
     Sound,
@@ -20,10 +21,11 @@ pub enum SettingsPage {
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 8] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
+        Self::CustomHotkeys,
         Self::Interface,
         Self::Graphics,
         Self::Sound,
@@ -35,6 +37,7 @@ impl SettingsPage {
             Self::Gameplay => "Gameplay",
             Self::Hotkeys => "Controls / General Hotkeys",
             Self::BarHotkeys => "Controls / Action Bar Hotkeys",
+            Self::CustomHotkeys => "Controls / Custom Hotkey Profiles",
             Self::Interface => "Interface",
             Self::Graphics => "Graphics",
             Self::Sound => "Sound",
@@ -159,21 +162,40 @@ impl SettingsState {
         let now = std::time::Instant::now();
         routed.retain_mut(|event| {
             match event {
-                NormalizedInputEvent::MouseButton { button, .. } if self.preferences.swap_mouse_buttons => {
+                NormalizedInputEvent::MouseButton { button, .. }
+                    if self.preferences.swap_mouse_buttons =>
+                {
                     *button = match *button {
                         MouseButton::PRIMARY => MouseButton::SECONDARY,
                         MouseButton::SECONDARY => MouseButton::PRIMARY,
                         other => other,
                     };
                 }
-                NormalizedInputEvent::Key { code, state: ButtonState::Pressed, repeat, .. } => {
-                    if *repeat && self.last_key.get(code).is_some_and(|last| now.duration_since(*last).as_millis() < u128::from(self.preferences.keyboard_delay_ms)) {
+                NormalizedInputEvent::Key {
+                    code,
+                    state: ButtonState::Pressed,
+                    repeat,
+                    ..
+                } => {
+                    if *repeat
+                        && self.last_key.get(code).is_some_and(|last| {
+                            now.duration_since(*last).as_millis()
+                                < u128::from(self.preferences.keyboard_delay_ms)
+                        })
+                    {
                         return false;
                     }
                     self.last_key.insert(*code, now);
                 }
-                NormalizedInputEvent::Key { code, state: ButtonState::Released, .. } => { self.last_key.remove(code); }
-                NormalizedInputEvent::FocusChanged { focused: false } | NormalizedInputEvent::DeviceLost => self.last_key.clear(),
+                NormalizedInputEvent::Key {
+                    code,
+                    state: ButtonState::Released,
+                    ..
+                } => {
+                    self.last_key.remove(code);
+                }
+                NormalizedInputEvent::FocusChanged { focused: false }
+                | NormalizedInputEvent::DeviceLost => self.last_key.clear(),
                 _ => {}
             }
             true

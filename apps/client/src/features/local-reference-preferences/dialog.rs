@@ -32,6 +32,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            profile_name,
+            profile_save,
+            profile_load,
+            profile_delete,
             pages,
             help,
             list,
@@ -106,7 +110,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             for handle in [help, list, chord, rebind] {
                 ShowWindow(
                     handle,
-                    if matches!(state.page, SettingsPage::Hotkeys | SettingsPage::BarHotkeys) {
+                    if matches!(
+                        state.page,
+                        SettingsPage::Hotkeys
+                            | SettingsPage::BarHotkeys
+                            | SettingsPage::CustomHotkeys
+                    ) {
                         SW_SHOW
                     } else {
                         SW_HIDE
@@ -114,6 +123,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 );
             }
             for (handles, page) in [
+                (
+                    &[profile_name, profile_save, profile_load, profile_delete][..],
+                    SettingsPage::CustomHotkeys,
+                ),
                 (&[chat_on, chat_off][..], SettingsPage::Hotkeys),
                 (
                     &[
@@ -203,7 +216,21 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if matches!(action, 225 | 226) {
+                if (231..=233).contains(&action) {
+                    let name = text(profile_name);
+                    let result = match action {
+                        231 => preferences.save_hotkey_profile(&name),
+                        232 => preferences.load_hotkey_profile(&name),
+                        _ => {
+                            preferences.hotkey_profiles.remove(&name);
+                            Ok(())
+                        }
+                    };
+                    match result {
+                        Ok(()) => state.apply(preferences),
+                        Err(error) => state.feedback = error.to_string(),
+                    }
+                } else if matches!(action, 225 | 226) {
                     match preferences.general_hotkey_preset(action == 225) {
                         Ok(()) => state.apply(preferences),
                         Err(error) => {
@@ -315,6 +342,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 held = Some(state.preferences.clone());
             }
             let page_help = match state.page {
+                SettingsPage::CustomHotkeys => {
+                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Object, text and passive action assignment is not available yet."
+                }
                 SettingsPage::BarHotkeys => {
                     "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
                 }

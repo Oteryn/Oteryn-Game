@@ -258,7 +258,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226)
+                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);

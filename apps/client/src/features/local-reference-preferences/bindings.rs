@@ -78,7 +78,10 @@ impl ReferencePreferences {
         let mut candidate = self.clone();
         for (slot, chord) in chords.iter().enumerate() {
             parse(chord)?;
-            candidate.keybindings.insert(format!("local-spell-action-bar-spell-{}", slot + 1), chord.trim().to_ascii_uppercase());
+            candidate.keybindings.insert(
+                format!("local-spell-action-bar-spell-{}", slot + 1),
+                chord.trim().to_ascii_uppercase(),
+            );
         }
         candidate.validate_bindings()?;
         *self = candidate;

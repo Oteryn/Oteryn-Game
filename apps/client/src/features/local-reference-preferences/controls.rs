@@ -2,6 +2,10 @@
 use super::*;
 
 pub(super) struct Controls {
+    pub(super) profile_name: HWND,
+    pub(super) profile_save: HWND,
+    pub(super) profile_load: HWND,
+    pub(super) profile_delete: HWND,
     pub(super) pages: HWND,
     pub(super) help: HWND,
     pub(super) list: HWND,
@@ -33,6 +37,24 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let profile_name = control(
+                hwnd,
+                "EDIT",
+                "default",
+                230,
+                [10, 185, 300, 26],
+                WS_BORDER | ES_AUTOHSCROLL as u32,
+            );
+            let profile_save = control(hwnd, "BUTTON", "Save profile", 231, [330, 185, 120, 26], 0);
+            let profile_load = control(hwnd, "BUTTON", "Load profile", 232, [460, 185, 120, 26], 0);
+            let profile_delete = control(
+                hwnd,
+                "BUTTON",
+                "Delete profile",
+                233,
+                [590, 185, 120, 26],
+                0,
+            );
             let pages = control(
                 hwnd,
                 "COMBOBOX",
@@ -238,6 +260,10 @@ impl Controls {
             .collect::<Vec<_>>();
             let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
             if [
+                profile_name,
+                profile_save,
+                profile_load,
+                profile_delete,
                 chat_on,
                 chat_off,
                 rotation_label,
@@ -271,6 +297,10 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                profile_name,
+                profile_save,
+                profile_load,
+                profile_delete,
                 pages,
                 help,
                 list,

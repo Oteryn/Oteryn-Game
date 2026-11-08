@@ -10,6 +10,8 @@ use std::sync::Arc;
 
 #[path = "bindings.rs"]
 mod bindings;
+#[path = "profiles.rs"]
+mod profiles;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
@@ -104,6 +106,9 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub keybindings: std::collections::BTreeMap<String, String>,
     #[serde(default)]
+    pub hotkey_profiles:
+        std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>,
+    #[serde(default)]
     pub english: bool,
     /// Requested world zoom percentage, fitted to the current viewport when projected.
     #[serde(default = "default_scale")]
@@ -130,6 +135,7 @@ impl Default for ReferencePreferences {
             shortcut_order: default_shortcuts(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
+            hotkey_profiles: std::collections::BTreeMap::new(),
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),
@@ -140,6 +146,7 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        self.validate_profiles()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {
                 !WINDOW_ACTIONS.iter().any(|(key, _)| key == id)

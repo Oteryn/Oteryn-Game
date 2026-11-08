@@ -1,6 +1,39 @@
 use super::*;
 
 #[test]
+fn hotkey_profiles_preserve_routes_across_restart() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceStore, ReferencePreferences};
+    let path = std::env::temp_dir().join(format!("cgopt-profiles-{}.json", std::process::id()));
+    let mut preferences = ReferencePreferences::default();
+    preferences.save_hotkey_profile("arrows")?;
+    preferences.general_hotkey_preset(false)?;
+    preferences.save_hotkey_profile("wasd")?;
+    let mut store = PreferenceStore::load(path.clone())?;
+    store.apply(preferences)?;
+    let mut restored = PreferenceStore::load(path.clone())?.preferences().clone();
+    restored.load_hotkey_profile("arrows")?;
+    assert!(
+        !restored
+            .keybindings
+            .contains_key("0013-paced-movement-move-north")
+    );
+    restored.load_hotkey_profile("wasd")?;
+    assert_eq!(
+        restored
+            .keybindings
+            .get("0013-paced-movement-move-north")
+            .map(String::as_str),
+        Some("W")
+    );
+    let before = restored.clone();
+    assert!(restored.load_hotkey_profile("missing").is_err());
+    assert!(restored.save_hotkey_profile("").is_err());
+    assert_eq!(restored, before);
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
 fn action_bar_hotkeys_route_every_supported_slot() -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::ReferencePreferences;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
@@ -155,5 +188,5 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 7);
+    assert_eq!(SettingsPage::ALL.len(), 8);
 }
