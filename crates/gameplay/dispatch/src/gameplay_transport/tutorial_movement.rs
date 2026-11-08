@@ -59,6 +59,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => (1, 0),
             StepDirection::South => (0, 1),
             StepDirection::West => (-1, 0),
+            StepDirection::NorthEast => (1, -1),
+            StepDirection::SouthEast => (1, 1),
+            StepDirection::SouthWest => (-1, 1),
+            StepDirection::NorthWest => (-1, -1),
         };
         if (here.x + dx, here.y + dy, here.floor) == ISLET_HOLE
             && super::tutorial_session::tutorial_cell(here)
