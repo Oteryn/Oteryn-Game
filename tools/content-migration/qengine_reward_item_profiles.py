@@ -4,6 +4,7 @@ Uses the existing native source importer and exact canonical identity bindings.
 Known canonical facts win. No use effect, subtype, timer or custom script is
 inferred, and the canonical Item admission records remain unchanged.
 """
+import copy
 import hashlib
 import json
 import sys
@@ -13,11 +14,17 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
+sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
+import questl2_ready
 
 IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
 # Retain questpc4's qualified native offerings and source tool through this owner.
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
+IDS |= questl2_ready.ITEMS
+# Already present in main f5b584ef1's native provider; the existing cohort
+# cardinality includes these six shells, even when a source fact is refined.
+PREVIOUSLY_COUNTED_IDS = {3029, 3035, 3205, 3212, 3234, 3607}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -42,6 +49,8 @@ def capture(root=ROOT):
         if r['definition']['identity']['key'] in keys}
     if definitions.keys()!=keys:
         raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_SET')
+    admitted={r['production_definition']['production_key']:r for r in
+        json.loads((root/PROFILE).read_bytes())['records']}
     records=[]
     for item_id in sorted(IDS):
         node=xml[item_id]
@@ -60,6 +69,12 @@ def capture(root=ROOT):
         if record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
             raise ValueError('QENGINE_REWARD_ITEM_NOT_PORTABLE')
         record['semantics']=accepted.accepted_first(definition['semantics'],record['semantics'])
+        prior=admitted.get(f'oteryn:item.tibia.i{item_id}')
+        if prior is not None:
+            refined=accepted.accepted_first(prior['semantics'],record['semantics'])
+            record['semantics']=accepted.accepted_first(definition['semantics'],refined)
+            record['attributes']=accepted.accepted_first(prior['attributes'],record['attributes'])
+            record['authoring']=copy.deepcopy(prior['authoring'])
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,IDS)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
@@ -110,7 +125,18 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
     for record in records:
         key=record['production_definition']['production_key']
         if key in present:
-            merged = reconcile(present[key], record)
+            prior = present[key]
+            inert = prior['admission'] == {
+                'materializable': False,
+                'stack_class': record['admission']['stack_class'],
+                'legal_destinations': ['Ground']}
+            if (inert
+                    and prior['production_definition'] == record['production_definition']
+                    and accepted.accepted_first(prior['semantics'], record['semantics'])
+                        == record['semantics']):
+                document['records'][document['records'].index(prior)] = record
+                continue
+            merged = reconcile(prior, record)
             present[key].clear()
             present[key].update(merged)
         else:

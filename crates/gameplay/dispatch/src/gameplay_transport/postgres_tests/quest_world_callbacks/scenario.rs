@@ -466,6 +466,11 @@ fn scenario_case(
         } else {
             world
         };
+        let world = if name.starts_with("qengine-rewards-l2-djinn-") {
+            super::super::questl2_djinn_world::world()?
+        } else if name == "qengine-rewards-l2-white-raven" {
+            super::super::questl2_white_raven_world::world(generation.native_gameplay().ok_or("White Raven policies")?)?
+        } else { world };
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -522,6 +527,8 @@ fn scenario_case(
                 || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
             {
                 6
+            } else if name.starts_with("qengine-rewards-l2-djinn-") {
+                13
             } else if name == "authored-magic-sword" {
                 9
             } else if name == "authored-trader" {
