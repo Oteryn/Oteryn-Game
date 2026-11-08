@@ -12,20 +12,46 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         Form {
             title: "Bestiary and Charms",
             labels: &["Charm index", "Bestiary race index"],
-            buttons: &["Query", "Unlock", "Assign", "Remove", "ResetAll"],
+            buttons: &[
+                "Query",
+                "Unlock",
+                "Assign",
+                "Remove",
+                "ResetAll",
+                "All races",
+                "In progress",
+                "Complete",
+                "Previous race",
+                "Next race",
+            ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.charm_progression;
                 (
                     panel.open,
                     panel.pending,
                     panel.fields.to_vec(),
-                    oteryn_client_ui::charm_progression::panel_text(panel),
+                    format!(
+                        "{}\r\n{}",
+                        oteryn_client_ui::charm_progression::bestiary_text(panel),
+                        oteryn_client_ui::charm_progression::panel_text(panel)
+                    ),
                 )
             },
             set_open: |mailbox, value| mailbox.properties.charm_progression.open = value,
             submit: |mailbox, commands, action, values| {
                 let panel = &mut mailbox.properties.charm_progression;
                 if panel.pending {
+                    return;
+                }
+                if action >= 5 {
+                    use oteryn_client_ui::charm_progression::RaceFilter;
+                    match action {
+                        5 => panel.race_filter = RaceFilter::All,
+                        6 => panel.race_filter = RaceFilter::InProgress,
+                        7 => panel.race_filter = RaceFilter::Complete,
+                        8 | 9 => panel.select_race(action == 8),
+                        _ => {}
+                    }
                     return;
                 }
                 for (index, value) in values.into_iter().enumerate() {

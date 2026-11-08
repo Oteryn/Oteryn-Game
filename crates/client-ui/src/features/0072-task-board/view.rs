@@ -83,20 +83,18 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
             list.unwanted
         );
     }
+    text.push_str("\nTask shop\n");
     for offer in &reply.shop {
+        let _ = writeln!(text, "{}", shop_offer_text(offer, reply.points));
+    }
+    text.push_str("\nBounty Talisman upgrade paths\n");
+    for (path, value) in reply.talisman.iter().enumerate() {
         let _ = writeln!(
             text,
-            "Shop {}. kind {}, price {}, reward {} / {}, addon {}, bought {}",
-            offer.index + 1,
-            offer.kind,
-            offer.price,
-            offer.primary,
-            offer.secondary,
-            offer.addon,
-            offer.bought
+            "  Level {} → {}",
+            value.level,
+            value.level.saturating_add(1).min(355)
         );
-    }
-    for (path, value) in reply.talisman.iter().enumerate() {
         let _ = writeln!(
             text,
             "Talisman {} ({}): level {}, bonus {}, next cost {}",
@@ -111,4 +109,55 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
         text.push_str(feedback);
     }
     text
+}
+
+pub fn shop_offer_text(offer: &task_board::full::ShopOffer, points: u64) -> String {
+    let kind = match offer.kind {
+        0 => "Item",
+        1 => "Mount",
+        2 => "Outfit",
+        3 => "Item pair",
+        4 => "Promotion",
+        _ => "Reward",
+    };
+    let status = if offer.bought {
+        "Already owned".into()
+    } else if points >= u64::from(offer.price) {
+        "Available — server confirms purchase".into()
+    } else {
+        format!(
+            "{} points short",
+            u64::from(offer.price).saturating_sub(points)
+        )
+    };
+    format!(
+        "Shop {} — {kind} {} / {} (addon {})\n  {} points — {status}",
+        offer.index + 1,
+        offer.primary,
+        offer.secondary,
+        offer.addon,
+        offer.price
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn shop_cards_name_rewards_and_show_affordability_and_ownership() {
+        let mut offer = task_board::full::ShopOffer {
+            index: 7,
+            kind: 1,
+            price: 500,
+            primary: 42,
+            secondary: 0,
+            addon: 0,
+            bought: false,
+        };
+        assert!(shop_offer_text(&offer, 499).contains("1 points short"));
+        assert!(shop_offer_text(&offer, 500).contains("Mount"));
+        assert!(shop_offer_text(&offer, 500).contains("Available"));
+        offer.bought = true;
+        assert!(shop_offer_text(&offer, 500).contains("Already owned"));
+    }
 }

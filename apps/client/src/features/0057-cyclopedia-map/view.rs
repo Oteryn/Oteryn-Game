@@ -11,7 +11,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         link,
         Form {
             title: "Cyclopedia",
-            labels: &["Donation gold (1-10000000)"],
+            labels: &[
+                "Donation gold (1-10000000)",
+                "Item name search",
+                "Item category (empty = all)",
+            ],
             buttons: &[
                 "Character",
                 "Items",
@@ -32,7 +36,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 (
                     panel.open,
                     false,
-                    panel.fields.to_vec(),
+                    vec![
+                        panel.fields[0].clone(),
+                        mailbox.discovery.inspection.search.clone(),
+                        mailbox.discovery.inspection.category.clone(),
+                    ],
                     section_text(mailbox),
                 )
             },
@@ -40,6 +48,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             submit: |mailbox, commands, action, values| {
                 if let Some(section) = oteryn_client_ui::cyclopedia_map::Section::ALL.get(action) {
                     mailbox.properties.cyclopedia_map.navigate(*section);
+                    if *section == oteryn_client_ui::cyclopedia_map::Section::Items {
+                        mailbox.discovery.inspection.search =
+                            values.get(1).cloned().unwrap_or_default();
+                        mailbox.discovery.inspection.category =
+                            values.get(2).cloned().unwrap_or_default();
+                    }
                     return;
                 }
                 let panel = &mut mailbox.properties.cyclopedia_map;
@@ -73,12 +87,17 @@ fn section_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
             oteryn_client_ui::cyclopedia_character::panel_text(&mailbox.cyclopedia_character)
         }
         Section::Map => oteryn_client_ui::cyclopedia_map::panel_text(panel),
-        Section::Bestiary | Section::Charms => {
+        Section::Bestiary => oteryn_client_ui::charm_progression::bestiary_text(
+            &mailbox.properties.charm_progression,
+        ),
+        Section::Charms => {
             oteryn_client_ui::charm_progression::panel_text(&mailbox.properties.charm_progression)
         }
         Section::Bosses => oteryn_client_ui::boss_encounter::panel_text(&mailbox.boss_encounter),
         Section::Analytics => oteryn_client_ui::analyser::panel_text(&mailbox.analyser),
-        Section::Items => "Use item inspection to load confirmed item details".into(),
+        Section::Items => {
+            oteryn_client_ui::inspection::catalogue_text(&mailbox.discovery.inspection)
+        }
         Section::Houses => "House catalogue is not loaded".into(),
     };
     format!("Cyclopedia > {}\r\n{body}", panel.section.title())

@@ -3,6 +3,7 @@ use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent, request};
 
 pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
+    let badges = oteryn_client_ui::cyclopedia_character::badge_text(p);
     format!(
         "{}\r\n{}\r\n{}",
         if p.pending {
@@ -13,7 +14,11 @@ pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
             "Ready"
         },
         p.feedback.unwrap_or(""),
-        p.result.as_deref().unwrap_or("")
+        if p.command_kind == 387 && p.badges.is_some() {
+            badges.as_str()
+        } else {
+            p.result.as_deref().unwrap_or("")
+        }
     )
 }
 
@@ -31,6 +36,16 @@ pub(in crate::play) fn submit(
             115 => Some(KillStatus::Unjustified),
             116 => Some(KillStatus::GuildWar),
             _ => None,
+        };
+        return None;
+    }
+    if matches!(id, 145..=148) {
+        use oteryn_client_ui::cyclopedia_character::BadgeFilter;
+        p.badge_filter = match id {
+            146 => BadgeFilter::Earned,
+            147 => BadgeFilter::Locked,
+            148 => BadgeFilter::Hidden,
+            _ => BadgeFilter::All,
         };
         return None;
     }
@@ -164,7 +179,7 @@ mod window {
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
                 740,
-                650,
+                740,
                 null_mut(),
                 null_mut(),
                 null_mut(),
@@ -304,6 +319,31 @@ mod window {
                 .collect();
             let stamina_bar = control(hwnd, "msctls_progress32", "", 470, [10, 575, 335, 18], 0);
             let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
+            for (id, label, x) in [
+                (145, "All badges", 10),
+                (146, "Earned badges", 185),
+                (147, "Locked badges", 360),
+                (148, "Hidden locally", 535),
+            ] {
+                control(hwnd, "BUTTON", label, id, [x, 615, 165, 28], WS_TABSTOP);
+            }
+            control(hwnd, "STATIC", "Badge ID", 151, [10, 655, 90, 25], 0);
+            let badge_id = control(
+                hwnd,
+                "EDIT",
+                "",
+                149,
+                [105, 655, 90, 25],
+                WS_BORDER | WS_TABSTOP,
+            );
+            control(
+                hwnd,
+                "BUTTON",
+                "Hide / show locally",
+                150,
+                [210, 655, 200, 25],
+                WS_TABSTOP,
+            );
             let mut held_history = Vec::new();
             let mut held_combat = Vec::new();
             let mut held_store = String::new();
@@ -325,6 +365,20 @@ mod window {
                 let mut analytics = false;
                 let mut browse_achievements = false;
                 for action in std::mem::take(&mut actions.0) {
+                    if action == 150 {
+                        if let Ok(id) = read_text(badge_id).parse::<u8>()
+                            && mailbox
+                                .cyclopedia_character
+                                .badges
+                                .as_ref()
+                                .is_some_and(|ids| ids.contains(&id))
+                        {
+                            if !mailbox.cyclopedia_character.hidden_badges.remove(&id) {
+                                mailbox.cyclopedia_character.hidden_badges.insert(id);
+                            }
+                        }
+                        continue;
+                    }
                     if action == 117 {
                         analytics = true;
                         continue;
@@ -382,21 +436,24 @@ mod window {
                     panel.feedback.unwrap_or("")
                 };
                 SetWindowTextW(status_label, wide(status).as_ptr());
-                let table = panel.history_tab == Some(panel.tab);
+                let badges = panel.command_kind == 387;
+                let table = !badges && panel.history_tab == Some(panel.tab);
                 let pvp = panel.tab
                     == oteryn_client_runtime::cyclopedia_character::CharacterTab::RecentPvpKills;
                 for id in 114..=116 {
                     ShowWindow(GetDlgItem(hwnd, id), if pvp { SW_SHOW } else { SW_HIDE });
                 }
-                let overview = panel.general.is_some()
+                let overview = !badges
+                    && panel.general.is_some()
                     && panel.tab
                         == oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats;
-                let combat = panel.combat.as_ref().is_some_and(|s| s.tab() == panel.tab);
-                let store = panel.store.is_some()
+                let combat = !badges && panel.combat.as_ref().is_some_and(|s| s.tab() == panel.tab);
+                let store = !badges
+                    && panel.store.is_some()
                     && panel.tab
                         == oteryn_client_runtime::cyclopedia_character::CharacterTab::StoreSummary;
-                let misc =
-                    panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc;
+                let misc = !badges
+                    && panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc;
                 super::misc_layout::layout(
                     &cards,
                     [stamina_bar, training_bar],

@@ -62,6 +62,20 @@ impl Settings {
             let menu = CreateMenu();
             if !menu.is_null() {
                 AppendMenuW(menu, MF_STRING, 25001, wide("Settings...").as_ptr());
+                let windows = CreatePopupMenu();
+                if !windows.is_null() {
+                    for (index, (_, label)) in
+                        oteryn_client::play::WINDOW_ACTIONS.iter().enumerate()
+                    {
+                        AppendMenuW(windows, MF_STRING, 25100 + index, wide(label).as_ptr());
+                    }
+                    AppendMenuW(
+                        menu,
+                        MF_POPUP,
+                        windows as usize,
+                        wide("Game windows").as_ptr(),
+                    );
+                }
                 if SetMenu(self.parent, menu) == 0 {
                     DestroyMenu(menu);
                 }
@@ -74,6 +88,9 @@ impl Settings {
                 (&*self.shared as *const Arc<Mutex<Shared>>) as usize,
             );
         }
+    }
+    pub(super) fn take_window_events(&self) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        lock(&self.shared).take_window_events()
     }
     pub(super) fn input(
         &mut self,
@@ -135,6 +152,14 @@ unsafe extern "system" fn menu_proc(
             open(Arc::clone(shared));
             return 0;
         }
+        if msg == WM_COMMAND {
+            let index = (w & 0xffff).wrapping_sub(25100);
+            if let Some((id, _)) = oteryn_client::play::WINDOW_ACTIONS.get(index) {
+                let shared = &*(data as *const Arc<Mutex<Shared>>);
+                lock(shared).queue_window(id);
+                return 0;
+            }
+        }
         DefSubclassProc(hwnd, msg, w, l)
     }
 }
@@ -164,7 +189,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113)
+                && matches!(id, 103 | 106 | 110..=113 | 223)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -237,7 +262,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             hwnd,
             "COMBOBOX",
             "",
-            120,
+            220,
             [10, 10, 720, 240],
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
@@ -248,7 +273,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
         let help = control(
             hwnd,
             "STATIC",
-            "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse1 is fixed. Conflicts include all registered actions.",
+            "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse buttons follow the selected preset. Conflicts include all registered actions.",
             0,
             [10, 50, 720, 45],
             0,
@@ -270,6 +295,54 @@ fn run(shared: Arc<Mutex<Shared>>) {
             WS_BORDER | ES_AUTOHSCROLL as u32,
         );
         let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
+        let mouse_preset = control(
+            hwnd,
+            "BUTTON",
+            "Swap primary / secondary mouse buttons",
+            221,
+            [10, 150, 360, 26],
+            BS_AUTOCHECKBOX as u32,
+        );
+        let delay_label = control(
+            hwnd,
+            "STATIC",
+            "Keyboard repeat delay ms (0–1000)",
+            0,
+            [10, 185, 360, 26],
+            0,
+        );
+        let delay = control(
+            hwnd,
+            "EDIT",
+            "",
+            222,
+            [380, 185, 100, 26],
+            WS_BORDER | ES_NUMBER as u32,
+        );
+        let controls_apply = control(
+            hwnd,
+            "BUTTON",
+            "Apply controls",
+            223,
+            [500, 185, 180, 26],
+            0,
+        );
+        let rotation_label = control(
+            hwnd,
+            "STATIC",
+            "Turn modifier (CTRL / ALT / SHIFT)",
+            0,
+            [10, 225, 360, 26],
+            0,
+        );
+        let rotation = control(
+            hwnd,
+            "EDIT",
+            "",
+            224,
+            [380, 225, 100, 26],
+            WS_BORDER | ES_AUTOHSCROLL as u32,
+        );
         let label = control(
             hwnd,
             "STATIC",
@@ -345,8 +418,41 @@ fn run(shared: Arc<Mutex<Shared>>) {
             [535, 265, 185, 30],
             0,
         );
-        let feedback = control(hwnd, "STATIC", "", 0, [10, 320, 710, 150], 0);
+        let hud_checks = [
+            "HP / MP bars",
+            "Harmony",
+            "Serene",
+            "Light effects",
+            "Combat effects",
+            "Creature health / icons",
+            "HP / MP circle",
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(index, label)| {
+            control(
+                hwnd,
+                "BUTTON",
+                label,
+                120 + index,
+                [
+                    10 + (index % 4) as i32 * 175,
+                    310 + (index / 4) as i32 * 30,
+                    170,
+                    26,
+                ],
+                BS_AUTOCHECKBOX as u32,
+            )
+        })
+        .collect::<Vec<_>>();
+        let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
         if [
+            rotation_label,
+            rotation,
+            mouse_preset,
+            delay_label,
+            delay,
+            controls_apply,
             pages,
             help,
             list,
@@ -366,6 +472,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             defaults,
         ]
         .iter()
+        .chain(hud_checks.iter())
         .any(|h| h.is_null())
         {
             DestroyWindow(hwnd);
@@ -398,7 +505,21 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 state.page = *page;
             }
             for (handles, page) in [
-                (&[help, list, chord, rebind][..], SettingsPage::Gameplay),
+                (
+                    &[
+                        help,
+                        list,
+                        chord,
+                        rebind,
+                        mouse_preset,
+                        delay_label,
+                        delay,
+                        controls_apply,
+                        rotation_label,
+                        rotation,
+                    ][..],
+                    SettingsPage::Gameplay,
+                ),
                 (&[label, scale][..], SettingsPage::Interface),
                 (&[volume, mute][..], SettingsPage::Sound),
                 (
@@ -417,9 +538,20 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
                 }
             }
+            for (index, handle) in hud_checks.iter().enumerate() {
+                let page = if index < 3 {
+                    SettingsPage::Interface
+                } else {
+                    SettingsPage::Graphics
+                };
+                ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
+            }
             ShowWindow(
                 apply,
-                if matches!(state.page, SettingsPage::Interface | SettingsPage::Sound) {
+                if matches!(
+                    state.page,
+                    SettingsPage::Interface | SettingsPage::Sound | SettingsPage::Graphics
+                ) {
                     SW_SHOW
                 } else {
                     SW_HIDE
@@ -465,7 +597,21 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if action == 103 {
+                if action == 223 {
+                    match text(delay).parse::<u16>() {
+                        Ok(value) => {
+                            preferences.rotation_modifier =
+                                text(rotation).trim().to_ascii_uppercase();
+                            preferences.keyboard_delay_ms = value;
+                            preferences.swap_mouse_buttons =
+                                SendMessageW(mouse_preset, BM_GETCHECK, 0, 0) == 1;
+                            state.apply(preferences);
+                        }
+                        Err(_) => {
+                            state.feedback = "Enter a keyboard delay from 0 to 1000 ms".into()
+                        }
+                    }
+                } else if action == 103 {
                     if let Some(binding) = bindings.get(selected.max(0) as usize) {
                         match preferences.rebind(binding.id, &text(chord)) {
                             Ok(()) => state.apply(preferences),
@@ -480,6 +626,20 @@ fn run(shared: Arc<Mutex<Shared>>) {
                             preferences.ui_scale = scale;
                             preferences.audio.master_volume = volume;
                             preferences.audio.muted = SendMessageW(mute, BM_GETCHECK, 0, 0) == 1;
+                            preferences.hud_bars =
+                                SendMessageW(hud_checks[0], BM_GETCHECK, 0, 0) == 1;
+                            preferences.show_harmony =
+                                SendMessageW(hud_checks[1], BM_GETCHECK, 0, 0) == 1;
+                            preferences.show_serene =
+                                SendMessageW(hud_checks[2], BM_GETCHECK, 0, 0) == 1;
+                            preferences.show_lights =
+                                SendMessageW(hud_checks[3], BM_GETCHECK, 0, 0) == 1;
+                            preferences.show_effects =
+                                SendMessageW(hud_checks[4], BM_GETCHECK, 0, 0) == 1;
+                            preferences.creature_bars =
+                                SendMessageW(hud_checks[5], BM_GETCHECK, 0, 0) == 1;
+                            preferences.health_circle =
+                                SendMessageW(hud_checks[6], BM_GETCHECK, 0, 0) == 1;
                             state.apply(preferences);
                         }
                         _ => state.feedback = "Enter valid zoom and volume percentages".into(),
@@ -511,6 +671,31 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     BM_SETCHECK,
                     usize::from(state.preferences.audio.muted),
                     0,
+                );
+                for (control, checked) in hud_checks.iter().zip([
+                    state.preferences.hud_bars,
+                    state.preferences.show_harmony,
+                    state.preferences.show_serene,
+                    state.preferences.show_lights,
+                    state.preferences.show_effects,
+                    state.preferences.creature_bars,
+                    state.preferences.health_circle,
+                ]) {
+                    SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
+                }
+                SendMessageW(
+                    mouse_preset,
+                    BM_SETCHECK,
+                    usize::from(state.preferences.swap_mouse_buttons),
+                    0,
+                );
+                SetWindowTextW(
+                    delay,
+                    wide(&state.preferences.keyboard_delay_ms.to_string()).as_ptr(),
+                );
+                SetWindowTextW(
+                    rotation,
+                    wide(&state.preferences.rotation_modifier).as_ptr(),
                 );
                 selected = -1;
                 held = Some(state.preferences.clone());

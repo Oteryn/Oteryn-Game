@@ -1,19 +1,15 @@
 //! Local speech and named private messages over the session chat owner.
-#[path = "state/communication.rs"]
-mod communication;
-#[path = "state/console.rs"]
-mod console;
 mod input;
 mod protocol;
 mod state;
 mod view;
 pub use crate::chat_public_channels::apply_result;
-pub use communication::CommunicationRules;
-pub use console::{ComposerMode, Console, ConsoleFilter, ConsoleTab};
 pub use input::open_key;
 pub use protocol::request;
-pub use state::{ChatPanel, Mode};
-pub use view::panel_text;
+pub use state::{
+    ChatPanel, CommunicationList, CommunicationLists, ComposerMode, Console, ConsoleTab, Mode,
+};
+pub use view::{panel_text, write_log};
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;

@@ -1,11 +1,7 @@
 use super::{ChatPanel, Mode};
 use oteryn_client_runtime::chat::{ChatIntent, ChatSpeechMode};
 pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<ChatIntent> {
-    if panel.console.mode == super::ComposerMode::Off {
-        panel.feedback = Some("Chat input is off".into());
-        return None;
-    }
-    if !panel.selected || panel.pending {
+    if !panel.selected || panel.pending || !panel.console.can_send() {
         panel.feedback = Some("Chat unavailable or waiting for the server".into());
         return None;
     }
@@ -13,36 +9,8 @@ pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<Cha
         panel.feedback = Some("Enter a message of at most 1,020 bytes".into());
         return None;
     }
-    let mode = match panel.console.tab {
-        super::ConsoleTab::Private => Mode::Private,
-        super::ConsoleTab::Guild => Mode::Guild,
-        _ => mode,
-    };
-    let routed = match panel.console.tab {
-        super::ConsoleTab::Public(room) => Some(ChatIntent::Room {
-            room,
-            text: panel.text.clone(),
-        }),
-        super::ConsoleTab::Party => Some(ChatIntent::Party {
-            text: panel.text.clone(),
-        }),
-        super::ConsoleTab::Channel(channel_id) => Some(ChatIntent::PrivateChannel(
-            oteryn_client_runtime::chat_private_channel::PrivateChannelIntent::Say {
-                channel_id,
-                text: panel.text.clone(),
-            },
-        )),
-        _ => None,
-    };
-    let intent = if let Some(intent) = routed {
-        intent
-    } else if mode == Mode::Guild {
-        let intent = crate::chat_guild_room::request(panel)?;
-        if panel.console.mode == super::ComposerMode::Temporary {
-            panel.console.mode = super::ComposerMode::Off;
-        }
-        panel.console.pending = Some(intent.clone());
-        return Some(intent);
+    let intent = if mode == Mode::Guild {
+        return crate::chat_guild_room::request(panel);
     } else if mode == Mode::Private {
         let name = recipient.trim();
         if name.is_empty() || name.len() > 120 || name.contains('\0') {
@@ -64,10 +32,6 @@ pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<Cha
             text: panel.text.clone(),
         }
     };
-    if panel.console.mode == super::ComposerMode::Temporary {
-        panel.console.mode = super::ComposerMode::Off;
-    }
-    panel.console.pending = Some(intent.clone());
     panel.pending = true;
     panel.feedback = None;
     Some(intent)

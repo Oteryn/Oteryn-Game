@@ -120,3 +120,32 @@ fn wares_returns_from_item_book_and_keeps_refresh_and_paging_on_wares() -> Resul
     );
     Ok(())
 }
+
+#[test]
+fn market_page_statistics_keep_items_and_sides_separate() {
+    let mut p = MarketPanel {
+        selected: true,
+        definition: 42,
+        ..Default::default()
+    };
+    for (definition, side, amount, price) in [
+        (42, 1, 2, 10),
+        (42, 1, 3, 20),
+        (42, 2, 4, 30),
+        (7, 1, 8, 999),
+    ] {
+        p.rows.push(market::MarketRow {
+            offer: [1; 16],
+            definition,
+            side,
+            amount,
+            price,
+            state: 1,
+            anonymous: false,
+        });
+    }
+    let text = panel_text(&p);
+    assert!(text.contains("Loaded page buy: 2 offers, 5 units, price 10–20, weighted average 16"));
+    assert!(text.contains("Loaded page sell: 1 offers, 4 units, price 30–30, weighted average 30"));
+    assert!(text.contains("Statistics cover the loaded item page"));
+}

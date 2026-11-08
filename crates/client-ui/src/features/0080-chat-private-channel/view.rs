@@ -23,7 +23,7 @@ pub fn panel_text(panel: &ChatPanel) -> String {
         let _ = writeln!(text, "Selected channel: {id}");
         let start = panel.history_start.get(&id).copied().unwrap_or(0);
         for line in panel.lines.iter().skip(start) {
-            if !panel.communication.accepts(line) {
+            if !panel.communication.visible(line) {
                 continue;
             }
             match line {

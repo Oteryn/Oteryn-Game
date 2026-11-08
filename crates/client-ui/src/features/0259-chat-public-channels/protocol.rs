@@ -37,7 +37,6 @@ pub fn request(panel: &mut ChatPanel, intent: Intent) -> Option<ChatIntent> {
 }
 
 pub fn apply_result(panel: &mut ChatPanel, outcome: &ChatOutcome) {
-    panel.console.pending = None;
     panel.pending = false;
     panel.feedback = match outcome.disposition {
         ChatDisposition::Ok => None,

@@ -165,82 +165,38 @@ fn guild_lines_require_current_matching_membership_and_preserve_order() {
 }
 
 #[test]
-fn console_tabs_keep_independent_filters_and_gate_composition() {
-    use oteryn_client_runtime::chat_public_channels::ChatRoom;
-    let mut panel = ChatPanel {
-        selected: true,
-        text: "hello".into(),
-        ..Default::default()
-    };
-    panel.lines = vec![
-        ChatLine::Private {
-            speaker_name: "Alice".into(),
-            text: "private hello".into(),
-        },
-        ChatLine::Room {
-            room: ChatRoom::World,
-            speaker_name: "Bob".into(),
-            text: "world hello".into(),
-        },
-    ];
-    panel.console.tab = ConsoleTab::Private;
-    panel.console.filter_mut().contains = "Alice".into();
-    assert!(panel_text(&panel).contains("private hello"));
-    assert!(!panel_text(&panel).contains("world hello"));
-    panel.console.tab = ConsoleTab::Public(ChatRoom::World);
-    assert!(panel.console.filter_mut().contains.is_empty());
-    assert!(panel_text(&panel).contains("world hello"));
-    panel.console.tab = ConsoleTab::Private;
-    assert_eq!(panel.console.filter_mut().contains, "Alice");
+fn console_tabs_have_independent_filters_and_temporary_chat_restores_off() {
+    let mut panel = ChatPanel::default();
+    panel.console.select(ConsoleTab::Private);
+    panel.console.show_messages = false;
+    panel.console.select(ConsoleTab::Local);
+    assert!(panel.console.show_messages);
+    panel.console.select(ConsoleTab::Private);
+    assert!(!panel.console.show_messages);
     panel.console.mode = ComposerMode::Off;
+    panel.console.temporary_on();
+    assert!(panel.console.can_send());
+    panel.console.sent();
+    assert!(!panel.console.can_send());
+    panel.selected = true;
+    panel.text = "hello".into();
     assert!(request(&mut panel, Mode::Say, "").is_none());
-    panel.console.mode = ComposerMode::Temporary;
-    assert!(request(&mut panel, Mode::Say, "Alice").is_some());
-    assert_eq!(panel.console.mode, ComposerMode::Off);
 }
 
 #[test]
-fn console_tab_sends_to_the_selected_server_room() {
-    use oteryn_client_runtime::chat_public_channels::ChatRoom;
-    let mut panel = ChatPanel {
-        selected: true,
-        text: "hello".into(),
-        ..Default::default()
-    };
-    panel.console.tab = ConsoleTab::Public(ChatRoom::Help);
-    assert_eq!(
-        request(&mut panel, Mode::Say, ""),
-        Some(ChatIntent::Room {
-            room: ChatRoom::Help,
-            text: "hello".into()
-        })
-    );
-    panel.pending = false;
-    panel.console.tab = ConsoleTab::Party;
-    assert_eq!(
-        request(&mut panel, Mode::Say, ""),
-        Some(ChatIntent::Party {
-            text: "hello".into()
-        })
-    );
-}
-
-#[test]
-fn communication_lists_filter_without_destroying_confirmed_history() -> Result<(), &'static str> {
+fn console_filter_changes_projection_without_removing_history() {
     let mut panel = ChatPanel {
         lines: vec![ChatLine::Private {
             speaker_name: "Alice".into(),
-            text: "keep history".into(),
+            text: "secret".into(),
         }],
         ..Default::default()
     };
-    panel.console.communication = CommunicationRules::parse(" alice ", "", "", true, false)?;
-    assert!(!panel_text(&panel).contains("keep history"));
+    panel.console.select(ConsoleTab::Local);
+    assert!(!panel_text(&panel).contains("secret"));
+    panel.console.select(ConsoleTab::Private);
+    assert!(panel_text(&panel).contains("secret"));
+    panel.console.show_messages = false;
+    assert!(!panel_text(&panel).contains("secret"));
     assert_eq!(panel.lines.len(), 1);
-    panel.console.communication = CommunicationRules::parse("ALICE", "Alice", "alice", true, true)?;
-    assert!(panel_text(&panel).contains("keep history"));
-    panel.console.communication = CommunicationRules::parse("", "", "ALICE", false, false)?;
-    assert!(!panel_text(&panel).contains("keep history"));
-    assert!(CommunicationRules::parse(&"x".repeat(121), "", "", false, false).is_err());
-    Ok(())
 }
