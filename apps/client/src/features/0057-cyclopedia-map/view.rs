@@ -15,6 +15,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Donation gold (1-10000000)",
                 "Item name search",
                 "Item category (empty = all)",
+                "House town key",
             ],
             buttons: &[
                 "Character",
@@ -30,6 +31,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Shuffle",
                 "Find",
                 "Donate",
+                "Query Houses",
+                "Next Houses",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -40,6 +43,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         panel.fields[0].clone(),
                         mailbox.discovery.inspection.search.clone(),
                         mailbox.discovery.inspection.category.clone(),
+                        mailbox.properties.house.fields[1].clone(),
                     ],
                     section_text(mailbox),
                 )
@@ -53,6 +57,22 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             values.get(1).cloned().unwrap_or_default();
                         mailbox.discovery.inspection.category =
                             values.get(2).cloned().unwrap_or_default();
+                    }
+                    return;
+                }
+                if action == 13 || action == 14 {
+                    mailbox
+                        .properties
+                        .cyclopedia_map
+                        .navigate(oteryn_client_ui::cyclopedia_map::Section::Houses);
+                    if mailbox.properties.house.model.pending.is_none() {
+                        mailbox.properties.house.fields[1] =
+                            values.get(3).cloned().unwrap_or_default();
+                        crate::play::feature_0049_house::input::submit(
+                            mailbox,
+                            commands,
+                            usize::from(action == 14),
+                        );
                     }
                     return;
                 }
@@ -98,7 +118,7 @@ fn section_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
         Section::Items => {
             oteryn_client_ui::inspection::catalogue_text(&mailbox.discovery.inspection)
         }
-        Section::Houses => "House catalogue is not loaded".into(),
+        Section::Houses => oteryn_client_ui::house::panel_text(&mailbox.properties.house.model),
     };
     format!("Cyclopedia > {}\r\n{body}", panel.section.title())
 }
@@ -119,5 +139,29 @@ mod navigation_tests {
             .cyclopedia_map
             .navigate(oteryn_client_ui::cyclopedia_map::Section::Map);
         assert!(super::section_text(&mailbox).contains("retained map"));
+    }
+    #[test]
+    fn houses_section_projects_the_live_catalogue() {
+        let mut mailbox = crate::play::mailbox::Mailbox::default();
+        mailbox
+            .properties
+            .cyclopedia_map
+            .navigate(oteryn_client_ui::cyclopedia_map::Section::Houses);
+        mailbox
+            .properties
+            .house
+            .model
+            .page
+            .rows
+            .push(oteryn_client_runtime::house::Row {
+                house: "oteryn:house.harbour".into(),
+                rent: 500,
+                ends: Some(900),
+                ..Default::default()
+            });
+        let text = super::section_text(&mailbox);
+        assert!(text.contains("oteryn:house.harbour"));
+        assert!(text.contains("rent 500"));
+        assert!(text.contains("900"));
     }
 }
