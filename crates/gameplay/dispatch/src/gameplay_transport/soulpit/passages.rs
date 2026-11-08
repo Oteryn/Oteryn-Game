@@ -64,7 +64,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let blocked = super::super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
-        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             &runtime,
             self.movement_cells(),
             actor,
@@ -73,6 +73,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             destination,
             blocked,
             &closed,
+            None,
         ) else {
             return entered;
         };

@@ -261,6 +261,29 @@ impl BundleFacts {
             .is_none_or(|entry| entry.facts.terrain_kind == Some(TerrainKind::Wall) || entry.solid)
     }
 
+    /// Collision of a transformed entry whose exact definition and appearance
+    /// already have qualified palette facts. Unknown/ambiguous targets cannot
+    /// clear a blocker from the immutable base map.
+    fn override_blocks(&self, after: EntryFacts) -> Option<bool> {
+        let reference = match after.definition {
+            MapDefinition::Item(reference) | MapDefinition::Terrain(reference) => reference,
+        };
+        if let Some(index) = self.unique_index(reference.get() - 1)
+            && self.palette.get(index as usize).is_some_and(|entry| {
+                entry.facts.definition == after.definition
+                    && entry.facts.appearance_id == after.appearance_id
+            })
+        {
+            return Some(self.blocks(index));
+        }
+        let mut entries = self.palette.iter().enumerate().filter(|(_, entry)| {
+            entry.facts.definition == after.definition
+                && entry.facts.appearance_id == after.appearance_id
+        });
+        let (index, _) = entries.next()?;
+        entries.next().is_none().then(|| self.blocks(index as u32))
+    }
+
     /// Records the placements, house tiles and doors of one sector of `manifest`, and adds to
     /// `blocked` the tiles one of whose top-level entries is a `wall` Terrain or a solid Item. A
     /// door entry does not block here: [`DoorBook`] answers it by its current state.
@@ -435,6 +458,11 @@ impl BundleFacts {
     /// Source house identities in the checked active map, for public catalogue qualification.
     pub fn house_ids(&self) -> impl Iterator<Item = u32> + '_ {
         self.houses.iter().map(|(_, id)| *id)
+    }
+
+    /// Complete immutable House-marker presence after the boot scan finished.
+    pub(crate) fn has_house_tiles(&self) -> bool {
+        !self.houses.is_empty()
     }
 
     /// Exact source membership of an authored House tile. A boolean House marker
@@ -1120,6 +1148,8 @@ impl MapFacts for PinnedFacts<'_> {
 mod house_base_tests;
 #[cfg(test)]
 mod pickup_tests;
+#[cfg(test)]
+mod terrain_collision_tests;
 
 #[cfg(test)]
 mod tests {

@@ -1,0 +1,69 @@
+{
+  "entries": [
+    {
+      "line": 873,
+      "setting": {
+        "itemId": 2473,
+        "itemPos": {
+          "x": 33143,
+          "y": 31719,
+          "z": 10
+        },
+        "questName": "trollcave1",
+        "reward": [
+          [
+            3083,
+            150
+          ]
+        ],
+        "useKV": true
+      },
+      "unique_id": 6039
+    },
+    {
+      "line": 903,
+      "setting": {
+        "itemId": 2469,
+        "itemPos": {
+          "x": 33158,
+          "y": 31621,
+          "z": 15
+        },
+        "questName": "weddingring1",
+        "reward": [
+          [
+            3085,
+            200
+          ]
+        ],
+        "useKV": true
+      },
+      "unique_id": 6043
+    },
+    {
+      "line": 962,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 33040,
+          "y": 32171,
+          "z": 9
+        },
+        "questName": "timering3",
+        "reward": [
+          [
+            3082,
+            50
+          ]
+        ],
+        "useKV": true
+      },
+      "unique_id": 6051
+    }
+  ],
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "schema": "OTERYN_QUESTPC4_FULL_CHARGE_SOURCE/v1",
+  "source_blob_sha1": "7b9f823542f9b8d5f99fb6960abe070324c89b8e",
+  "source_path": "data-global/startup/tables/chest.lua",
+  "source_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+}

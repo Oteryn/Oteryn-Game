@@ -1,0 +1,245 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "quest": "oteryn:quest.the_spirit_will_get_you_quest",
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "topic": 0,
+      "next_topic": 0,
+      "requires_premium": true,
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "content/quests/authoring/spirit-wills.md"
+      ],
+      "key": "oteryn:quest-reward/l6-spirit-accept",
+      "keywords": [
+        "spirit"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Three faded wills are hidden among the boxes and chest. Find each one and bring all three to me. Keep them with you."
+      ]
+    },
+    {
+      "quest": "oteryn:quest.the_spirit_will_get_you_quest",
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "topic": 0,
+      "next_topic": 0,
+      "requires_premium": true,
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "content/quests/authoring/spirit-wills.md"
+      ],
+      "key": "oteryn:quest-reward/l6-spirit-confession",
+      "keywords": [
+        "wills"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/l6/spirit/will-1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/spirit/will-2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/spirit/will-3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i11544",
+          "count": 3
+        }
+      ],
+      "completes": true,
+      "reply": [
+        "You found all three wills. Their words have faded, but the memories remain. I hid these papers because I could not face the people I had failed. Keep the wills; you have heard my confession."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-paradox-oldrak",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.oldrak",
+      "keywords": [
+        "hugo"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "minimum_level": 30,
+      "requires_premium": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "To learn about Hugo, ask Zoltan, then Padreia and Lubo. Seek the prisoner who studies mathemagics before you climb the tower."
+      ],
+      "sources": [
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-paradox-zoltan",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.zoltan",
+      "keywords": [
+        "crunor's caress"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "minimum_level": 30,
+      "requires_premium": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The old order's story continues with Padreia."
+      ],
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zoltan.lua:65",
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-paradox-padreia",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.padreia",
+      "keywords": [
+        "footnote"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "minimum_level": 30,
+      "requires_premium": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ask Lubo about the old cottage's stable."
+      ],
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/padreia.lua:116",
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-paradox-lubo",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "stable"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "minimum_level": 30,
+      "requires_premium": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The old stable was small. Seek the prisoner to learn mathemagics."
+      ],
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:136",
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-paradox-prisoner-lesson",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "minimum_level": 30,
+      "requires_premium": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/mathemagician",
+      "reply": [
+        "You have learned mathemagics: one plus one is one."
+      ],
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_prisoner.lua:125",
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    }
+  ]
+}

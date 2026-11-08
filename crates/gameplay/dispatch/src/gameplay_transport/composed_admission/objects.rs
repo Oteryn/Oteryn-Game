@@ -375,6 +375,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(outcome) = self.use_quest_callback(actor, command, map, &target).await {
                 return outcome;
             }
+            if let Some(outcome) = self.use_bundle_ladder(actor, command, map, &target).await {
+                return outcome;
+            }
             if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {
                 return outcome;
             }
