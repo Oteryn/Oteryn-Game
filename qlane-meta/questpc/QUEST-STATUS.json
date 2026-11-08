@@ -1,0 +1,52 @@
+{
+  "task_id": "questpc-n2",
+  "branch": "claude/happy-davinci-ijz3wy-questpc-pc2-n2",
+  "base_main": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+  "packaged_branch": "claude/happy-davinci-ijz3wy-questpc-pc2",
+  "packaged_head": "b22d52b5b18267a2a454f94372d476e214573c1e",
+  "packaged_branch_frozen": true,
+  "qualification_boundary": "This continuation records source investigation only. No new quest or gameplay slice is qualified by this checkpoint. The previous 63 scoped qualifications remain in the packaged branch, not in this branch ledger.",
+  "quests": [
+    {
+      "title": "An Interest In Botany Quest",
+      "canonical": "oteryn:quest.an_interest_in_botany_quest",
+      "status": "IN_PROGRESS",
+      "scope": "source-faithful Rabaz final hand-in and its prerequisite sample collection",
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/rabaz.lua#L174",
+        "sha256": "b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643",
+        "classification": "OTS_HYPOTHESIS_ONLY",
+        "fresh_hash_verified": true
+      },
+      "decision": "Preserve separate physical item11700x1 and item3035x10 grants with3000XP and Questline4 in one receipt after consuming11699x1. Do not replace coins with wallet credit or place them in a synthetic container.",
+      "engine_dependency": {
+        "owner": "qengine2",
+        "feature": "Multiple fresh root item types in one NPC receipt, atomic capacity/refusal/replay",
+        "checked_main": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+        "checked_qengine2": "64b3597c1ae76c936bb80dd3b5b85a01e0761fb6",
+        "result": "Both RewardCallback schemas expose one optional ItemReward. Existing ItemReward.contents represents container contents, not independent root outputs. Existing request retained; no generic engine code added."
+      },
+      "required_pg_cases": [
+        "Successful exact hand-in grants both physical item types,3000XP,Questline4 and one receipt atomically",
+        "Insufficient capacity for either root refuses without consumption,XP,state or receipt",
+        "Missing book or wrong stage refuses without value or state changes",
+        "Replayed command cannot consume or grant again; fresh command after completion refuses"
+      ]
+    }
+  ],
+  "next_action": "Continue another owned unfinished quest that can use existing engine support; after the coordinator reports collector merge, merge main before authoring. Reuse the packaged implementation rather than copying its shared files.",
+  "validation": {
+    "scope": "Task records only; no changed crate, test, content, quest data, NPC data or boot input. No gameplay qualification claimed.",
+    "workspace_all_targets": {
+      "result": "PASS",
+      "duration": "4m14s",
+      "log_sha256": "ad2e3bc77d84dcafb15744cf8a130eb786200885c5db69e9f7ff13069d289fea"
+    },
+    "cargo_fmt_all_check": "PASS",
+    "duplicate_migrations": "PASS; no added migrations",
+    "official_pin_refresh": "PASS; no changed pins",
+    "unit_tests": "Not applicable: no crate or test changed",
+    "postgres_cases": "Not run: no runtime or pinned PG proof changed",
+    "authoring_and_content_tree": "Not applicable: no authoring/content input changed"
+  }
+}
