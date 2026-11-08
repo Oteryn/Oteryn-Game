@@ -1072,7 +1072,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $download = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.3.exe'
           $directory = Join-Path $env:RUNNER_TEMP 'innosetup'
-          Invoke-WebRequest -Uri $env:INNO_SETUP_URL -OutFile $download
+          Invoke-WebRequest -Uri $env:INNO_SETUP_URL -OutFile $download -MaximumRetryCount 40 -RetryIntervalSec 15
           $actual = (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -ne $env:INNO_SETUP_SHA256) {
             throw "Inno Setup download SHA-256 mismatch: $actual"
