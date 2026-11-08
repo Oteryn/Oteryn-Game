@@ -25,7 +25,8 @@
       "Alawar's Vault Quest",
       "Elvenbane Quest",
       "Edron Goblin Quest",
-      "Lion's Rock Quest"
+      "Lion's Rock Quest",
+      "Koshei the Deathless Quest"
     ],
     "wired_native_visit_anchors": 11
   },
@@ -60,9 +61,11 @@
     "entrance_batch_pg_commands": "cargo test dispatch --lib m01b_elvenbane_;same compiled libtest binary then selected m01b_edron_goblin_ and m01b_lions_rock_ together:2passed122.32s",
     "clippy_current": "PASS quests+dispatch all-targets strict4m17s on seven-entry snapshot;Koshei PG source added afterwards",
     "koshei_activation": "RED0of4active callbacks13.214s -> GREEN16Python tests17.186s;Rust profile5passed0.04s with all11callbacks",
-    "koshei_postgres": "PENDING:four-native-visit/level39refusal/level40fresh-credit/replay/revisit case building"
+    "koshei_postgres": "PASS m01b_koshei_four_native_visits_require_level_and_cannot_be_farmed67.641461065s:durable39refuses,40fresh succeeds,old replay no credit,4distinct source visits,replay/revisit no farming,whole completion0",
+    "koshei_fixture": "QENGINE server relocation arrangement between4disconnected source floors;every credit uses productionSTEP. Administrator level setup transaction ends before commands;no quest progress seeded.",
+    "koshei_lint": "Unused test import removed after run;behavior unchanged;strict Clippy next with next slice"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish Koshei native PG proof;38routes/48stages still unwired.8wired,7PG-proven;M01b PARTIAL."
+  "continuation": "8wired/8PG-proven stages,11nativevisitanchors. Continue38routes/48stages;FireAxe next. M01b PARTIAL."
 }

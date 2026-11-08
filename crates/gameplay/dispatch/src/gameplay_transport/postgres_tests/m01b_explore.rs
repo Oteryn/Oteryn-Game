@@ -3,6 +3,9 @@ use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
+#[path = "m01b_explore/koshei.rs"]
+mod koshei;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -246,6 +249,9 @@ pub(super) fn world(
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if name.starts_with("m01b/koshei-the-deathless/") {
+        return koshei::world(native);
+    }
     if name == "m01b/edron-goblin/s1/entry" {
         return native_crop(
             native,
@@ -393,6 +399,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.quest == "oteryn:quest.koshei_the_deathless_quest" {
+        return koshei::exercise(owner, admitted, h).await;
+    }
     if callback.admission.as_ref().is_some_and(|a| a.premium) {
         return exercise_premium(owner, admitted, h, callback).await;
     }
