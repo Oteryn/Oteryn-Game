@@ -790,6 +790,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .collect::<String>()
         );
         Some(RewardClaimMintRequest {
+            additional_items: Vec::new(),
             command,
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),

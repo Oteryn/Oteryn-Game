@@ -257,6 +257,7 @@ pub(super) async fn apply(
                 .collect::<String>()
         );
         Some(RewardClaimMintRequest {
+            additional_items: Vec::new(),
             command: reference,
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
