@@ -85,3 +85,24 @@ feature-policy revision updates, upstream lease expiry and unavailable authority
 Reuse existing durable entitlement state rather than introducing another grant
 store. Game's mock tests cover the wire contract, stale/refusal handling and the
 real selector → scoped login → services → Premium → refresh → return path.
+
+## Existing-data qualification (2026-11-08)
+
+T165 is **PARTIAL for live integration**, rather than DONE against an existing
+native server/protocol projection. The UI, typed consumer and tests are present;
+mock success is not proof that the live producer exists.
+
+Read-only inspection of Platform main
+[`bc6f88346e6aaf1347f0a5a798b33a5ede00bc04`](https://github.com/Oteryn/Oteryn-Platform/blob/bc6f88346e6aaf1347f0a5a798b33a5ede00bc04/portal-rs/crates/payments/src/account.rs#L185)
+confirms the existing Premium account route is `/{lang}/panel/premium`, enabled
+by `PANEL_PREMIUM_PAYMENTS`, authenticated with `BrowserSession`, and rendered as
+HTML from `oteryn_store::account::premium`. It is not this native scoped JSON
+projection. Do not scrape that page, forward browser cookies, embed service mTLS
+credentials in the client, or infer account expiry from `premium_only` channel
+flags, `requires_premium` offers or Premium-required refusal codes.
+
+The remaining producer work is to expose the existing Premium read model through
+the authenticated projection above, supply actual feature policy, and qualify
+it against the existing entitlement lease/revocation rules. Until then, HTTP
+404/501 displays an explicit unavailable-service state, marks retained data stale,
+and confirms no cached benefits. Transient errors remain retryable through Refresh.

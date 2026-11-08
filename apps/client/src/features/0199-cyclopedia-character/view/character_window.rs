@@ -1,3 +1,62 @@
+// HWND operations stay on the creating thread, following the daily reward panel.
+#![allow(unsafe_code)]
+use super::controls::{control, read_text, wide};
+use super::*;
+use crate::combat_input::PlayCommand;
+use crate::play::{PlayLink, mailbox::lock};
+use std::ptr::{null, null_mut};
+use std::sync::{Arc, Weak};
+use std::time::Duration;
+use tokio::sync::mpsc::UnboundedSender;
+use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+use windows_sys::Win32::UI::{
+    Controls::{
+        ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx, PBM_SETPOS, PBM_SETRANGE32,
+    },
+    Input::KeyboardAndMouse::EnableWindow,
+    WindowsAndMessaging::*,
+};
+type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
+#[derive(Default)]
+struct Actions(Vec<usize>);
+unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
+    unsafe {
+        if msg == WM_COMMAND {
+            let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
+            let id = w & 0xffff;
+            let note = (w >> 16) & 0xffff;
+            if !actions.is_null()
+                && (*actions).0.len() < 32
+                && matches!(id, 101..=117 | 140)
+                && note == BN_CLICKED as usize
+            {
+                (*actions).0.push(id);
+            }
+            return 0;
+        }
+        DefWindowProcW(hwnd, msg, w, l)
+    }
+}
+pub(in crate::play) fn open_window(link: &PlayLink) {
+    {
+        let mut m = lock(&link.mailbox);
+        if m.cyclopedia_character.open {
+            return;
+        }
+        m.cyclopedia_character.open = true;
+    }
+    link.cyclopedia_character_request(Intent::Tab);
+    let weak = Arc::downgrade(&link.mailbox);
+    let rollback = weak.clone();
+    let commands = link.commands.clone();
+    if std::thread::Builder::new()
+        .name("0199-cyclopedia-character-panel".into())
+        .spawn(move || run(weak, commands))
+        .is_err()
+    {
+        close(&rollback);
+    }
+}
 fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
     unsafe {
         let hwnd = CreateWindowExW(
@@ -25,19 +84,18 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
-        let CharacterControls {
+        let character_widgets::Widgets {
             edits,
             output,
-            achievement_browser,
             heading,
             history,
             detail,
+            achievement_browser,
             status_label,
             cards,
             stamina_bar,
             training_bar,
-            badge_id,
-        } = create_charactercontrols(hwnd);
+        } = character_widgets::create(hwnd);
         let mut held_history = Vec::new();
         let mut held_combat = Vec::new();
         let mut held_store = String::new();
@@ -313,3 +371,11 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         drop(actions);
     }
 }
+fn close(weak: &WeakMailbox) {
+    if let Some(shared) = weak.upgrade() {
+        lock(&shared).cyclopedia_character.open = false;
+    }
+}
+
+#[path = "character_widgets.rs"]
+mod character_widgets;
