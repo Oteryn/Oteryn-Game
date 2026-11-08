@@ -249,9 +249,15 @@ async fn load_arrival(
     character: CharacterId,
 ) -> Result<Option<PendingArrival>, TravelStoreError> {
     let row = sqlx::query(
-        "SELECT occurrence_id::text, world_id::text, tile_x, tile_y, tile_floor FROM game_character_pending_arrivals WHERE character_id = encode($1,'hex')::uuid FOR UPDATE"
+        "SELECT a.occurrence_id::text,a.world_id::text,a.tile_x,a.tile_y,a.tile_floor,a.source_npc_teleport,r.runtime_coordinates FROM game_character_pending_arrivals a LEFT JOIN game_quest_npc_teleport_receipts r ON a.source_npc_teleport AND r.character_id=a.character_id AND r.occurrence_id=a.occurrence_id WHERE a.character_id=encode($1,'hex')::uuid FOR UPDATE OF a"
     ).bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     row.map(|row| {
+        let mut floor: i16 = row.try_get("tile_floor")?;
+        if row.try_get::<bool,_>("source_npc_teleport")? {
+            let runtime: bool = row.try_get::<Option<bool>,_>("runtime_coordinates")?.ok_or(TravelStoreError::Integrity)?;
+            if !runtime { floor = floor.checked_neg().ok_or(TravelStoreError::Integrity)?; }
+            if !(0..=15).contains(&floor) { return Err(TravelStoreError::Integrity); }
+        }
         Ok(PendingArrival {
             occurrence: TravelOccurrence::from_bytes(uuid_text(row.try_get("occurrence_id")?)?)
                 .map_err(|_| TravelStoreError::Integrity)?,
@@ -260,7 +266,7 @@ async fn load_arrival(
             destination: LastPositionCell {
                 x: row.try_get("tile_x")?,
                 y: row.try_get("tile_y")?,
-                floor: row.try_get("tile_floor")?,
+                floor,
             },
         })
     })
