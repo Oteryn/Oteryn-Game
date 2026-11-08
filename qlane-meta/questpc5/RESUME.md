@@ -18,3 +18,5 @@ Final continuation validation after main6ef6b0cad merge: workspace all-targets P
 
 Continuation: merged main e9276ad7e (login challenge/client settings); checked ENGNPC e22dff551 (paid travel confirmation ownership). These changes supply none of the ten waiting contracts. Historical thirteen qualifications remain historical.
 Validation on main e9276ad7e: workspace all-targets PASS (3m48s), fmt PASS, generation no changes, world pin-refresh/pin-check PASS, duplicate migrations PASS. No new gameplay/PG qualification.
+
+SHIP scope: n3 is current with main a16f19676 (0 behind); its diff is ten lane records and zero gameplay files. No finished quest implementation is shipped by this continuation. The thirteen earlier DONE qualifications belong to the frozen original branch; do not claim fresh PG story durations here. Workspace check PASS4m02s, fmt PASS, regeneration/pins PASS unchanged, duplicate migration check PASS, architecture workspace PASS. No authored Rust crate requires clippy. Original checkout has its own unpublished merge; it was not mutated.

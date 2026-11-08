@@ -432,5 +432,19 @@
       "unit_and_pg": "No authored crate, content or PG changes; no new gameplay qualification"
     },
     "latest_main": "e9276ad7e"
+  },
+  "ship_scope": {
+    "branch": "claude/happy-davinci-ijz3wy-questpc5-n2-n3",
+    "main": "a16f19676",
+    "gameplay_diff_files": 0,
+    "done_quests_shipped_here": 0,
+    "historical_done_on_frozen_branch": 13,
+    "waiting_engine": 10,
+    "architecture": "PASS workspace-boundaries",
+    "workspace_check": "PASS 4m02s",
+    "fmt": "PASS",
+    "generation_and_pins": "PASS no changes",
+    "pg_stories": "None run: original thirteen historical stories are absent from this branch",
+    "clippy": "No authored changed Rust crates"
   }
 }
