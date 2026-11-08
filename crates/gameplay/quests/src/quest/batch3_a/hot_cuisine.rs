@@ -119,6 +119,15 @@ impl HotCuisineProgram {
         hasher.finalize().into()
     }
 
+    /// M17: decode both current and saved dates from the owner's UTC epoch.
+    /// M42's production cooking dispatch uses this instead of a caller-made year.
+    pub fn calendar_snapshot_utc(&self, input: &NpcRuleInput<'_>) -> Result<HotCuisineCalendar, NpcRuleError> {
+        self.calendar_snapshot(input, |seconds| {
+            crate::quest::npc_rules::NpcUtcCalendar::from_epoch(seconds).ok()
+                .map(|date| YearMonth { year: date.year, month: date.month })
+        })
+    }
+
     pub fn calendar_snapshot(
         &self,
         input: &NpcRuleInput<'_>,
@@ -161,9 +170,15 @@ impl HotCuisineProgram {
         else {
             return Ok(None);
         };
+        // Crystal 201189f data-global/npc/jean_pierre.lua:154-157,687:
+        // the annual bonus belongs to the transaction's UTC year, not a
+        // caller-supplied calendar projection with an otherwise matching month.
+        let current = input.utc_calendar()?;
         if generic.document.quest != QUEST
             || !calendar.current.is_valid()
             || calendar.current.month != input.calendar_month
+            || calendar.current.year != current.year
+            || calendar.current.month != current.month
         {
             return Err(NpcRuleError::Invalid("Hot Cuisine snapshot".into()));
         }
