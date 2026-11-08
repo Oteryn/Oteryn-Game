@@ -288,7 +288,7 @@ fn scenario_case(
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" {
+        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" || name.starts_with("m09-treasure-") {
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
@@ -892,6 +892,10 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if name.starts_with("m09-treasure-") {
+            super::super::m09_treasure_rewards::exercise(
+                &mut owner, &mut admitted, &h, &callback, trigger,
+            ).await?;
         } else if qengine_reward {
             super::super::qengine_rewards::exercise(
                 &mut owner,
