@@ -28,6 +28,7 @@ pub(crate) struct MockPlatform {
 pub(crate) struct Authority {
     pub coins: Option<coins::CoinAuthority>,
     pub premium_reply: Option<serde_json::Value>,
+    pub premium_http_status: Option<u16>,
     pub commands: BTreeMap<String, (BazaarRequest, OperationReceipt)>,
     pub requests: Vec<String>,
     pub effects: u32,
@@ -137,7 +138,7 @@ impl Authority {
                     oteryn_platform_client::native_login::premium::PremiumState::Active
                 ))
             });
-            return (200, reply.to_string());
+            return (self.premium_http_status.unwrap_or(200), reply.to_string());
         }
         if let Some(reply) = self
             .coins
