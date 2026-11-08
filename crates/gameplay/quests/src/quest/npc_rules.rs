@@ -619,6 +619,7 @@ pub(super) fn extend(
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
     let mut legacy = catalogue.npc_legacy.clone();
+    let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {
         let quest = &program.document.quest;
         if quest != "oteryn:quest.the_order_of_the_stag_quest"
@@ -710,6 +711,8 @@ pub(super) fn extend(
     )
     .map_err(|e| format!("{e:?}"))?;
     active.npc_legacy = legacy;
+    active.predecessors = predecessors;
+    completion_predecessors::register(&mut active, source)?;
     Ok(active)
 }
 
@@ -765,3 +768,5 @@ mod draconia_source_tests {
 
 #[cfg(test)]
 mod engnpc_finales;
+
+mod completion_predecessors;
