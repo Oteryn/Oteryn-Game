@@ -37,11 +37,11 @@ pub(super) async fn apply<C: ItemLoopContent>(
     plan: &NpcRulePlan,
     content: &C,
     node: &NodeIncarnationProof,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
 ) -> StoredResult<bool> {
-    let permit = NpcItemPermit(());
     if !crate::durability::quest_world_callback::consume_npc_inputs(
         tx,
-        &permit,
+        permit,
         fence,
         &request.quest_request(),
         plan,
