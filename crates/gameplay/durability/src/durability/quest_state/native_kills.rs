@@ -2,11 +2,17 @@
 use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NativeDeathSource {
+    Party(Arc<crate::foundation::PartySnapshot>),
+    Source(super::source_deaths::SourceDeathContext),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeQuestDeath {
     pub transition: String,
     pub creature: String,
     pub observed_revision: u64,
-    pub source: Arc<crate::foundation::PartySnapshot>,
+    pub source: NativeDeathSource,
 }
 
 impl NativeQuestDeath {
@@ -14,12 +20,30 @@ impl NativeQuestDeath {
         self.transition == request.transition_key
             && self.observed_revision > 0
             && matches!(request.cause, QuestCause::CreatureDeath(_))
-            && oteryn_gameplay_quests::quest::native_kills::counter(&self.transition)
-                .is_some_and(|counter| counter.creature == self.creature)
+            && match &self.source {
+                NativeDeathSource::Party(_) => {
+                    oteryn_gameplay_quests::quest::native_kills::counter(&self.transition)
+                        .is_some_and(|counter| counter.creature == self.creature)
+                }
+                NativeDeathSource::Source(_) => {
+                    oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
+                        .is_some_and(|rule| rule.creature == self.creature)
+                }
+            }
+    }
+
+    pub(super) fn party(&self) -> Option<&crate::foundation::PartySnapshot> {
+        match &self.source {
+            NativeDeathSource::Party(source) => Some(source.as_ref()),
+            NativeDeathSource::Source(_) => None,
+        }
     }
 
     pub(super) fn bind(&self, binding: &mut [u8; 33]) -> Result<()> {
-        super::grizzly::bind_party(binding, &self.source)?;
+        match &self.source {
+            NativeDeathSource::Party(source) => super::grizzly::bind_party(binding, source)?,
+            NativeDeathSource::Source(source) => source.bind(binding),
+        }
         let digest = Sha256::new()
             .chain_update(*binding)
             .chain_update(b"native-quest-death-v1")
@@ -33,8 +57,12 @@ impl NativeQuestDeath {
     pub(super) async fn admit(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        character: CharacterId,
+        fence: CurrentCharacterGameplayFence,
     ) -> StoredResult<bool> {
+        if let NativeDeathSource::Source(source) = &self.source {
+            return source.admit(tx, fence, self).await;
+        }
+        let character = fence.character_id;
         let counter = oteryn_gameplay_quests::quest::native_kills::counter(&self.transition)
             .ok_or(DurabilityError::InvalidStoredState)?;
         // Character root and the track rows are already locked. A queued death

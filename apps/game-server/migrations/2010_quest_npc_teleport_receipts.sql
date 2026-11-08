@@ -17,7 +17,7 @@ CREATE TABLE game_quest_npc_teleport_receipts (
     end_delay_ms integer NOT NULL CHECK(end_delay_ms BETWEEN 0 AND 60000),
     quest_changed boolean NOT NULL,
     created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
-    PRIMARY KEY(character_id,game_session_id,command_id,transition_key),
+    PRIMARY KEY(character_id,game_session_id,command_id),
     UNIQUE(character_id,occurrence_id)
 );
 REVOKE ALL ON game_quest_npc_teleport_receipts FROM PUBLIC;

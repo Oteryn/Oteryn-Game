@@ -1,45 +1,12 @@
-# ENGITEM active engine queue
-
-Latest assigned queue: questpc2-n2-n3, questpc5-n2-n3 and questpc7-n3
-`qlane-meta/*/ENGINE-REQUESTS.*`. No additional ENGITEM-tagged rows were found.
-The five untagged questpc5 rows below are explicitly assigned to ENGITEM.
-Earlier broad audit is preserved in `legacy-engine-requests.md`; its dependency
-statuses are historical, not the active work queue.
-
-ROWS: done 1 / open 1 / blocked 3
-
-Owner dependencies count under blocked; their exact disposition is OWNED ELSEWHERE.
-
-| Capability | Needed by | Status |
-|---|---|---|
-| Literal readable reward text | Nomads Land | DONE: optional bounded ItemReward.text for NPC/World; existing root_text MINT and exact source proof (migration1641). RED PG unknown text field (3.42s); GREEN PG marker43.93607223s, atomic text/source/MINT/progress, refusal and replay. Three Rust cases and authoring tests pass. |
-| Exact nested native source leaf selection | Ornamented Shield | OWNED ELSEWHERE: Content/questpc5 source-binding authoring over L2's full bag/charge qualification. UID6062's canonical source contains eight ordered children; shield3424 is child4 (one-based). Existing BoundPlacement.contents and reward_claim_mint/contents.rs retain the entire ordered bag and same once-only claim. Selecting its reference is content qualification, not another engine grant. Main lacks L2's explicit root/child charge-plan fields (1219/charges.rs); do not strip siblings or substitute a new shield MINT. |
-| Quest-guarded object taming | Targuna | OWNED ELSEWHERE: World/native targeted carried-tool admission first. Main dispatch/mount_taming.rs:180 resolves object targets ONLY from ItemKey::Instance in the carried backpack/nested tree; MapBase targets are discarded. The Ram53439 at31926/31896/z7 is a map object, not a carried Item or Creature. Existing MountTamingRequest's target_identity/generation does not supply an admitted map-object proof. Reuse the World USE_WITH_MAP_ITEM owner before composing quest progress; a carried-object fixture would not qualify this boundary. No fake Item instance or creature substitution. |
-| Recipe-scoped nondecay specimen | Explorer Society | OWNED ELSEWHERE: QENGINE2/Content native first-party Item constructors (questpc7 request illuminated-first-party-constructors) and L2 duration qualification. L2 quest_decay::resolve explicitly rejects omitting decay for an existing timed native Item. A recipe-scoped permanent form needs a qualified distinct first-party identity/policy; current native reward resolution only admits oteryn:item.tibia.i*. Preserve4837's existing temporal policy and do not invent a donor ID or silently remove its timer. |
-| Cycle-scoped repeatable World item MINT | Oramond | OPEN |
-
-## Dedup correction
-
-Merged ENGNPC `3423ac56e` via merge commit `20d510b2f`. Removed duplicate
-migration1640 and engitem_atomic_tracks.rs. QUESTSTATE0_RL_02 and capacity
-writer paths come from ENGNPC. No changes to migrations1600–1639. Retained
-ENGITEM quest clock and its separate PG case. ENGNPC atomic tests cover every
-former ENGITEM atomic-track assertion.
-
-Real PG rerun: quest_clock 3.544770921s; sixteen_tracks 4.565656988s;
-reward_sources 38.303271647s. All passed with execution markers. Clock unit,
-unique embedded migration test, duplicate-migration check, fmt, durability / quests /
-game-server all-target clippy and architecture-check passed.
-
-Readable-text checks: cargo check and all-target clippy for durability, quests
-and game-server; migration uniqueness/duplicate check; architecture-check; both
-quest-authoring CI runners (103 unit modules), donor/binding/matrix and complete
-content regeneration passed. Final publication also merges the fetched main
-client-only update and regenerates its final outputs before push.
-
-Post-main publication checks on ad493a1ee: three literal-text Rust tests and
-real PG marker38.077736345s passed; focused check/clippy, fmt and architecture
-passed. Final full/donor/binding/matrix regeneration left no generated diff;
-pin-check and content-tree validation passed. The 2026-11-08 rule update now
-forbids autonomous main merges; engine-only pushes use pin/lock verification,
-with one Cargo job at a time. Every subsequent push records ls-remote evidence.
+# questpc8 QMECH loop (local, do not commit)
+- M43: pushed 27abf11591bbc7fa3e8a2011cbfcc10275e7bac2; peer predicate PG real pass 3.838504071 s. Already imported into qmech.
+- M37 planner: pushed f577770abf3e256a9682364818c159d89cb8deda.
+- M37 durable receipt/arrival slice: local 4fae8d070; PG green 3.788819192 s, prior workspace all-targets 6m12s, clippy lib 51.59s, fmt green. Now merging qmech 4bed43770 per renewed owner order; single npc_program.rs conflict resolved preserving locked eligibility + teleport. Deduplicated additive-driver copies in own M43 files and M37 tests by taking qmech versions. Full regeneration running /tmp/questpc8-m37-merge-regen.log (session 19805). Then focused revalidation, merge commit and push own branch; do not merge main.
+- Push target claude/happy-davinci-ijz3wy-qm-questpc8; no CLAIMS.md edits. Before every push fetch+merge qmech, regenerate derived files; after push paste exact ls-remote line. Merge already fetched 4bed43770 for this push.
+- M37 next delivery slice prepared ONLY in /tmp/questpc8-m37-wire.py, /tmp/questpc8-m37-dispatch-teleport.rs, /tmp/questpc8-m37-sequencer.rs. Apply only AFTER pushing current tested receipt slice. Wire script may need adapting to current merged eligibility signature. Also /tmp/questpc8-m37-capture-paradox.py is prepared pinned raw-snapshot reader; add to batch3_a + QUESTS mapping and runtime when delivery ready. Raw reference /tmp/questpc8-m37-riddler.lua, SHA198907507cb4bf3c40b7c00abdf75a5ebb0e260e6e1b18683a39b652b711dc8a. Source URL in committed M37 doc.
+- Current PG file apps/game-server/tests/support/authority_cases/questpc8_npc_teleport.rs. New migration2010 (own range2010-2019). Root teleport preview/evaluate now accepts NpcEligibility, fresh locked eligibility preserved during merge. Test uses default preview eligibility.
+- Need finish M37 runtime hold/dispatch, pinned Riddler programme + journey tests, progress-changing PG. Then take next OPEN, unowned row in qlane-meta/qmech/INDEX.md as latest owner directs. No docs-only pushes.
+- Updated checkpoint: full World regeneration stopped (owned process only) under engine-only rule1b; native regeneration PASSED with5791 equipment profiles and pin-check PASSED (/tmp/questpc8-m37-merged-pin-check.log). No generated content changes from our engine delta. Authoring checks394.0998s/unit-tests382.5809s/content-tree238.3326s allPASS after qmechmerge.
+- Command binding audit added real RED: /tmp/questpc8-m37-merged-pg.log, 3.92s, cross-branch reconciliation returned missing. Fixed unpublished2010 PK to(character,session,command), query history by command then full binding. Moved canonical case to crates/gameplay/durability/src/durability/quest_state/npc_program/teleport/tests.rs; old apps/.../authority_cases/questpc8_npc_teleport.rs is a thin include, so original CI discovery remains. Root unitPG GREEN4.023462942s /tmp/questpc8-m37-command-binding-green.log. New fn m37_npc_teleport_postgres_receipt_requires_atomic_arrival. No test assertions dropped.
+- Final validation pipeline running session61071: fmt passed, Root lib+unit clippy2m18s pass, App authority-target clippy2m28s pass, workspace all-targets now running; then M37 planner2cases and focused RootPG rerun. Logs /tmp/questpc8-m37-final-*.log. After passes: stage tracked changes + canonical Root tests + App shim, complete merge commit with owner identity/trailers, run repo dup-migrations on HEAD, fetch OWN remote branch and fast-forward push (qmech4bed already fetched/merged for this push), paste ls-remote, immediately apply next M37 runtime slice.
+- Checked content/world/npc-placements/placements-00000-00055.json: no Riddler or Peter record. Need inspect actual active placement routing when wiring data, not assume physical NPC availability. Yalahar programme contains15 free teleport branches,8 paid (money guards). Existing source reference /tmp/questpc8-m37-riddler.lua verified pinned SHA above.

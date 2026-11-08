@@ -59,6 +59,7 @@ pub fn preview_teleport(
     tracks: &BTreeMap<String, i64>,
     catalogue: &QuestStateCatalogue,
     now: i64,
+    eligibility: &NpcEligibility,
 ) -> std::result::Result<
     Option<NpcTeleportPlan>,
     oteryn_gameplay_quests::quest::npc_rules::NpcRuleError,
@@ -66,7 +67,7 @@ pub fn preview_teleport(
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    evaluate(&source, request, tracks, now)
+    evaluate(&source, request, tracks, now, eligibility)
 }
 
 pub(super) fn evaluate(
@@ -74,6 +75,7 @@ pub(super) fn evaluate(
     request: &NpcProgramRequest,
     tracks: &BTreeMap<String, i64>,
     now: i64,
+    eligibility: &NpcEligibility,
 ) -> std::result::Result<
     Option<NpcTeleportPlan>,
     oteryn_gameplay_quests::quest::npc_rules::NpcRuleError,
@@ -87,8 +89,9 @@ pub(super) fn evaluate(
         inventory: &NpcInventorySnapshot::default(),
         now_epoch_seconds: now,
         calendar_month: utc_calendar_month(now)?,
-        level: 0,
-        vocation: "",
+        level: eligibility.level,
+        premium_current: eligibility.premium_current,
+        vocation: &eligibility.vocation,
         sex: 0,
         outfits: &BTreeMap::new(),
     })
@@ -133,9 +136,9 @@ pub(super) async fn replay_matches(
     request: &NpcProgramRequest,
     admission: NpcTeleportAdmission,
 ) -> StoredResult<bool> {
-    let row = sqlx::query("SELECT occurrence_id::text,world_id::text,tile_x,tile_y,tile_floor FROM game_quest_npc_teleport_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND transition_key=$4")
+    let row = sqlx::query("SELECT occurrence_id::text,world_id::text,tile_x,tile_y,tile_floor FROM game_quest_npc_teleport_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric")
         .bind(character.as_bytes().as_slice()).bind(request.command.game_session_id().as_bytes().as_slice())
-        .bind(request.command.command_id().get().to_string()).bind(&request.transition_key).fetch_optional(&mut **tx).await?;
+        .bind(request.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
     let Some(row) = row else {
         return Ok(true);
     };
@@ -154,9 +157,9 @@ pub(super) async fn load_read_only(
     character: CharacterId,
     request: &NpcProgramRequest,
 ) -> StoredResult<Result<Option<NpcProgramCommit>>> {
-    let row = sqlx::query("SELECT request_binding,reply,next_topic,end_conversation,end_delay_ms,quest_changed FROM game_quest_npc_teleport_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND transition_key=$4")
+    let row = sqlx::query("SELECT request_binding,reply,next_topic,end_conversation,end_delay_ms,quest_changed FROM game_quest_npc_teleport_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric")
         .bind(character.as_bytes().as_slice()).bind(request.command.game_session_id().as_bytes().as_slice())
-        .bind(request.command.command_id().get().to_string()).bind(&request.transition_key).fetch_optional(&mut **tx).await?;
+        .bind(request.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
     let Some(row) = row else {
         return Ok(Ok(None));
     };
@@ -177,3 +180,6 @@ pub(super) async fn load_read_only(
             .map_err(|_| DurabilityError::InvalidStoredState)?,
     })))
 }
+
+#[cfg(test)]
+mod tests;

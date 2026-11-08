@@ -624,6 +624,58 @@ mod item_appearance_tests {
     }
 
     #[test]
+    fn quest_disguise_permanent_item_outfit_replaces_finite_and_permanent_outfits() {
+        let root = GameplayDecisionRoot::from_bytes([1; 32]);
+        let facts = ApplicationFacts {
+            now: 1000,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes([2; 16]),
+        };
+        let finite = ConditionDefinition::new(
+            "test.finite.outfit",
+            1,
+            ConditionValues::Outfit {
+                duration_ms: 600000,
+                look_type: 128,
+            },
+        )
+        .unwrap();
+        let crate_look = ConditionDefinition::new_permanent_item_outfit("quest.wrath.crate", 1)
+            .unwrap()
+            .with_item_appearance("oteryn:item.tibia.i11328", "definition-r1", [4; 32])
+            .unwrap();
+        let bath = ConditionDefinition::new_permanent_item_outfit("environment.bath", 1)
+            .unwrap()
+            .with_item_appearance("oteryn:item.tibia.i26087", "definition-r1", [4; 32])
+            .unwrap();
+        let mut store = ConditionStore::<String>::new();
+        store
+            .apply(&finite, None, ConditionSourceKind::SelfUse, &[], &facts)
+            .unwrap();
+        store
+            .apply(&crate_look, None, ConditionSourceKind::SelfUse, &[], &facts)
+            .unwrap();
+        assert!(
+            matches!(store.displayed_temporary_appearance_at(u64::MAX-1),Some(TemporaryDisplayedAppearance::Item(item)) if item.definition_key()=="oteryn:item.tibia.i11328")
+        );
+        store
+            .apply(&bath, None, ConditionSourceKind::Field, &[], &facts)
+            .unwrap();
+        assert!(
+            matches!(store.displayed_temporary_appearance_at(u64::MAX-1),Some(TemporaryDisplayedAppearance::Item(item)) if item.definition_key()=="oteryn:item.tibia.i26087")
+        );
+        assert_eq!(
+            store.apply(&finite, None, ConditionSourceKind::SelfUse, &[], &facts),
+            Err(ConditionRefusal::KeptCurrent)
+        );
+    }
+
+    #[test]
     fn temporary_item_selection_never_becomes_an_outfit_unlock_and_expires_exactly() {
         let root = GameplayDecisionRoot::from_bytes([1; 32]);
         let facts = ApplicationFacts {

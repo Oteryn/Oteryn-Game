@@ -32,6 +32,7 @@ fn plan(
         now_epoch_seconds: 1_700_000_000,
         calendar_month: 11,
         level: 100,
+        premium_current: false,
         vocation: "oteryn:vocation.knight",
         sex: 0,
         outfits: &outfits,
@@ -71,12 +72,12 @@ fn m37_source_teleport_plans_one_destination_and_keeps_legacy_storage_closed()
 }
 
 #[test]
-fn m37_source_teleport_refuses_multiple_destinations_and_unowned_guards() {
+fn m37_source_teleport_refuses_multiple_destinations_and_unowned_guards() -> Result<(), String> {
     let mut multiple = document();
     let destination = multiple["rules"][0]["effects"][0].clone();
     multiple["rules"][0]["effects"]
         .as_array_mut()
-        .expect("effects")
+        .ok_or("effects")?
         .push(destination);
     assert!(plan(multiple, false).is_err());
     let mut money = document();
@@ -86,4 +87,5 @@ fn m37_source_teleport_refuses_multiple_destinations_and_unowned_guards() {
         plan(money, false).is_err(),
         "a preview balance is not a value-owner proof"
     );
+    Ok(())
 }
