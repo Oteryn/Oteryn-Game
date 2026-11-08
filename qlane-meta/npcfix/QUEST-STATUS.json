@@ -350,10 +350,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 261,
+    "QUALIFIED": 267,
     "EXCLUDED": 24,
     "PENDING": 7,
-    "AUTHORED; QUALIFICATION PENDING": 25,
+    "AUTHORED; QUALIFICATION PENDING": 19,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -2624,10 +2624,33 @@
       "npc": "G Ezkho",
       "town": "Marapur",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Exact frozen source displayed identity and all captured retail anchors qualified.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/127",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-source-placement-qualification-46",
+        "display_name": "G'Ezkho",
+        "anchors": 1,
+        "postgres_red_seconds": 109.308,
+        "postgres_green_seconds": 133.659,
+        "source_build": {
+          "base": "f5a3b764e6fcae2d43e78cdbee516b622f3b311a",
+          "runtime_diff_sha256": "fab260d9d0a151b7db51ba11ad106db3a895b35b141f939b688846ce4294ff29",
+          "repair_packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-game-server",
+            "oteryn-gameplay-content",
+            "oteryn-gameplay-content-promotion",
+            "oteryn-gameplay-dispatch",
+            "oteryn-gameplay-durability",
+            "oteryn-gameplay-npc",
+            "oteryn-world-bundle-compiler"
+          ]
+        },
+        "log_sha256": "37b0c503e040bea9c8ae6308f665ff6e4b1998f909d35d811f886f04e3374c80"
+      }
     },
     {
       "npc": "Giri",
@@ -3376,10 +3399,33 @@
       "npc": "Captain Marie-Denise Banner",
       "town": "Roshamuul",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Exact frozen source displayed identity and all captured retail anchors qualified.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/53",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-source-placement-qualification-46",
+        "display_name": "Captain Marie-Denise Banner",
+        "anchors": 1,
+        "postgres_red_seconds": 109.308,
+        "postgres_green_seconds": 133.659,
+        "source_build": {
+          "base": "f5a3b764e6fcae2d43e78cdbee516b622f3b311a",
+          "runtime_diff_sha256": "fab260d9d0a151b7db51ba11ad106db3a895b35b141f939b688846ce4294ff29",
+          "repair_packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-game-server",
+            "oteryn-gameplay-content",
+            "oteryn-gameplay-content-promotion",
+            "oteryn-gameplay-dispatch",
+            "oteryn-gameplay-durability",
+            "oteryn-gameplay-npc",
+            "oteryn-world-bundle-compiler"
+          ]
+        },
+        "log_sha256": "37b0c503e040bea9c8ae6308f665ff6e4b1998f909d35d811f886f04e3374c80"
+      }
     },
     {
       "npc": "Dream Butterfly",
@@ -3399,10 +3445,33 @@
       "npc": "Eldoran the Ambitious",
       "town": "Roshamuul",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Exact frozen source displayed identity and all captured retail anchors qualified.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/93",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-source-placement-qualification-46",
+        "display_name": "Eldoran the Ambitious",
+        "anchors": 1,
+        "postgres_red_seconds": 109.308,
+        "postgres_green_seconds": 133.659,
+        "source_build": {
+          "base": "f5a3b764e6fcae2d43e78cdbee516b622f3b311a",
+          "runtime_diff_sha256": "fab260d9d0a151b7db51ba11ad106db3a895b35b141f939b688846ce4294ff29",
+          "repair_packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-game-server",
+            "oteryn-gameplay-content",
+            "oteryn-gameplay-content-promotion",
+            "oteryn-gameplay-dispatch",
+            "oteryn-gameplay-durability",
+            "oteryn-gameplay-npc",
+            "oteryn-world-bundle-compiler"
+          ]
+        },
+        "log_sha256": "37b0c503e040bea9c8ae6308f665ff6e4b1998f909d35d811f886f04e3374c80"
+      }
     },
     {
       "npc": "Glimpse of Allusion",
@@ -4188,10 +4257,33 @@
       "npc": "Grof, The Guard",
       "town": "Thais",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Exact frozen source displayed identity and all captured retail anchors qualified.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/150",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-source-placement-qualification-46",
+        "display_name": "Grof, The Guard",
+        "anchors": 1,
+        "postgres_red_seconds": 109.308,
+        "postgres_green_seconds": 133.659,
+        "source_build": {
+          "base": "f5a3b764e6fcae2d43e78cdbee516b622f3b311a",
+          "runtime_diff_sha256": "fab260d9d0a151b7db51ba11ad106db3a895b35b141f939b688846ce4294ff29",
+          "repair_packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-game-server",
+            "oteryn-gameplay-content",
+            "oteryn-gameplay-content-promotion",
+            "oteryn-gameplay-dispatch",
+            "oteryn-gameplay-durability",
+            "oteryn-gameplay-npc",
+            "oteryn-world-bundle-compiler"
+          ]
+        },
+        "log_sha256": "37b0c503e040bea9c8ae6308f665ff6e4b1998f909d35d811f886f04e3374c80"
+      }
     },
     {
       "npc": "Guide Luke",
@@ -4732,10 +4824,33 @@
       "npc": "Gnome Trooper",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Exact frozen source displayed identity and all captured retail anchors qualified.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/140",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-source-placement-qualification-46",
+        "display_name": "Gnome Trooper",
+        "anchors": 6,
+        "postgres_red_seconds": 109.308,
+        "postgres_green_seconds": 133.659,
+        "source_build": {
+          "base": "f5a3b764e6fcae2d43e78cdbee516b622f3b311a",
+          "runtime_diff_sha256": "fab260d9d0a151b7db51ba11ad106db3a895b35b141f939b688846ce4294ff29",
+          "repair_packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-game-server",
+            "oteryn-gameplay-content",
+            "oteryn-gameplay-content-promotion",
+            "oteryn-gameplay-dispatch",
+            "oteryn-gameplay-durability",
+            "oteryn-gameplay-npc",
+            "oteryn-world-bundle-compiler"
+          ]
+        },
+        "log_sha256": "37b0c503e040bea9c8ae6308f665ff6e4b1998f909d35d811f886f04e3374c80"
+      }
     },
     {
       "npc": "Gnommander",
@@ -4772,10 +4887,33 @@
       "npc": "H.L.",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Exact frozen source displayed identity and all captured retail anchors qualified.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/158",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-source-placement-qualification-46",
+        "display_name": "H.L.",
+        "anchors": 1,
+        "postgres_red_seconds": 109.308,
+        "postgres_green_seconds": 133.659,
+        "source_build": {
+          "base": "f5a3b764e6fcae2d43e78cdbee516b622f3b311a",
+          "runtime_diff_sha256": "fab260d9d0a151b7db51ba11ad106db3a895b35b141f939b688846ce4294ff29",
+          "repair_packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-game-server",
+            "oteryn-gameplay-content",
+            "oteryn-gameplay-content-promotion",
+            "oteryn-gameplay-dispatch",
+            "oteryn-gameplay-durability",
+            "oteryn-gameplay-npc",
+            "oteryn-world-bundle-compiler"
+          ]
+        },
+        "log_sha256": "37b0c503e040bea9c8ae6308f665ff6e4b1998f909d35d811f886f04e3374c80"
+      }
     },
     {
       "npc": "Hagor",
@@ -7770,6 +7908,236 @@
         "execution_proven": true
       },
       "guards": "Exact prices, wrong-price refusal, no extra charge, quantities, durable receipts, replay and nested Toffee custody unchanged."
+    },
+    {
+      "name": "npcfix-source-placement-qualification-46",
+      "state": "QUALIFIED",
+      "entries": [
+        "G Ezkho",
+        "Gnome Trooper",
+        "Grof, The Guard",
+        "H.L.",
+        "Captain Marie-Denise Banner",
+        "Eldoran the Ambitious"
+      ],
+      "source_base": "03973dc93ecb361d394a261043cc8e001705f4c5",
+      "new_native_repairs": 5,
+      "prior_repairs_preserved": 60,
+      "new_anchors": 11,
+      "postgres_red": {
+        "exit": 101,
+        "seconds": 109.308,
+        "marker_present": true,
+        "binary_source": "c54db1b311eabe271ceeb6d8de8ddf9cb688b033",
+        "binary_sha256": "144d9920eac5dcf94d8ef0e1c3e4ec441bd6681f6ba94d389425b280f3478434",
+        "incoming_main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+        "new_cases": 6,
+        "new_anchors": 11,
+        "case_packet_restored": true,
+        "log_sha256": "dd6a464a29ee0efb8a2987d42b66aa9b5bba953ffed88700d35d19e7dc56b7df",
+        "exact_red": "Captain Marie Denise Banner != Captain Marie-Denise Banner",
+        "state": "ACTUAL_PG_RED; five exact source display fields still not applied"
+      },
+      "unit_plan": "Replace superseded c54 partial run with fresh current changed-package units after generation. Earlier client-assets10, game-server578 (+3 inherited ignores), ops7 passed; no full-unit green claim.",
+      "source_delta": {
+        "base": "03973dc93ecb361d394a261043cc8e001705f4c5",
+        "preserved_npcs": 1285,
+        "changed_npcs": [
+          "oteryn:npc.captain_marie_denise_banner",
+          "oteryn:npc.eldoran_the_ambitious",
+          "oteryn:npc.g_ezkho",
+          "oteryn:npc.grof_the_guard",
+          "oteryn:npc.h_l"
+        ],
+        "only_change": "one exact source display-name Text field per NPC; all prior fields, identity, dialogue and services unchanged",
+        "original_repairs_preserved": 60,
+        "repair_count": 65,
+        "packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950"
+      },
+      "generation": {
+        "full_world": "PASS documented --no-stage --skip-checks generation; materializer, catalogue, placements and authoring stages completed",
+        "final_stages": [
+          {
+            "name": "delta",
+            "command": [
+              "python3",
+              "/tmp/npcfix-evidence/verify-next-six-native-delta.py"
+            ],
+            "exit": 0,
+            "seconds": 0.25
+          },
+          {
+            "name": "audit",
+            "command": [
+              "python3",
+              "tools/contracts/update_item_audit_tags.py"
+            ],
+            "exit": 0,
+            "seconds": 0.027
+          },
+          {
+            "name": "matrix",
+            "command": [
+              "python3",
+              "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+            ],
+            "exit": 0,
+            "seconds": 1.055
+          },
+          {
+            "name": "bindings",
+            "command": [
+              "python3",
+              "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+            ],
+            "exit": 0,
+            "seconds": 23.61
+          },
+          {
+            "name": "weapon",
+            "command": [
+              "python3",
+              "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+            ],
+            "exit": 0,
+            "seconds": 0.524
+          },
+          {
+            "name": "crystal",
+            "command": [
+              "python3",
+              "tools/content-census/g4_item_crystal_binding_generator.py"
+            ],
+            "exit": 0,
+            "seconds": 2.452
+          },
+          {
+            "name": "pins",
+            "command": [
+              "cargo",
+              "run",
+              "--locked",
+              "--release",
+              "-p",
+              "oteryn-world-bundle-compiler",
+              "--",
+              "pin-refresh",
+              "."
+            ],
+            "exit": 0,
+            "seconds": 46.799
+          },
+          {
+            "name": "native-check",
+            "command": [
+              "python3",
+              "tools/content-migration/register_spell_families.py",
+              "--check"
+            ],
+            "exit": 0,
+            "seconds": 125.011
+          },
+          {
+            "name": "duplicates",
+            "command": [
+              "bash",
+              ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+            ],
+            "exit": 0,
+            "seconds": 0.715
+          }
+        ],
+        "map_binary_changes": 0,
+        "prey_docs": "Only input SHA changed; numeric results unchanged",
+        "equipment_profiles": 3818
+      },
+      "publication_gates": [
+        {
+          "name": "check",
+          "exit": 0,
+          "seconds": 344.05
+        },
+        {
+          "name": "fmt",
+          "exit": 0,
+          "seconds": 19.086
+        },
+        {
+          "name": "clippy",
+          "exit": 0,
+          "seconds": 150.323
+        }
+      ],
+      "publication": "PREPUSH-2 compiling checkpoint; no new qualifications. Fresh six-package units plus physical/atomic/state PostgreSQL pending.",
+      "postgres_green": [
+        {
+          "name": "physical",
+          "filter": "npcfix_fading_and_retained_placements_postgres",
+          "exit": 0,
+          "seconds": 133.659,
+          "log": "/tmp/npcfix-evidence/soulpit-merged-pg-physical.log",
+          "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+          "actual_pg_start_markers": 1,
+          "expected_tests": 1,
+          "execution_proven": true
+        },
+        {
+          "name": "atomic-eleven",
+          "filter": "npcfix_eleven_track_postgres_atomic_receipt_replay_and_rollback",
+          "exit": 0,
+          "seconds": 78.388,
+          "log": "/tmp/npcfix-evidence/soulpit-merged-pg-atomic-eleven.log",
+          "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+          "actual_pg_start_markers": 3,
+          "expected_tests": 1,
+          "execution_proven": true
+        },
+        {
+          "name": "state-three",
+          "filter": "npcfix_state_postgres_",
+          "exit": 0,
+          "seconds": 275.331,
+          "log": "/tmp/npcfix-evidence/soulpit-merged-pg-state-three.log",
+          "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+          "actual_pg_start_markers": 3,
+          "expected_tests": 3,
+          "execution_proven": true
+        },
+        {
+          "name": "paid-travel",
+          "filter": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+          "exit": 0,
+          "seconds": 136.279,
+          "log": "/tmp/npcfix-evidence/soulpit-merged-pg-paid-travel.log",
+          "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+          "actual_pg_start_markers": 1,
+          "expected_tests": 1,
+          "execution_proven": true
+        }
+      ],
+      "binary": {
+        "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4457d29e431128b9",
+        "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c",
+        "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+        "source_build": {
+          "base": "f5a3b764e6fcae2d43e78cdbee516b622f3b311a",
+          "runtime_diff_sha256": "fab260d9d0a151b7db51ba11ad106db3a895b35b141f939b688846ce4294ff29",
+          "repair_packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-game-server",
+            "oteryn-gameplay-content",
+            "oteryn-gameplay-content-promotion",
+            "oteryn-gameplay-dispatch",
+            "oteryn-gameplay-durability",
+            "oteryn-gameplay-npc",
+            "oteryn-world-bundle-compiler"
+          ]
+        },
+        "postgres_configuration": "present; URL never printed"
+      },
+      "cumulative_npcs": 254,
+      "cumulative_actors": 269
     }
   ],
   "shared_engine_lookup": {
@@ -8935,7 +9303,7 @@
   },
   "active_name_work": {
     "name": "npcfix-source-placement-qualification-46",
-    "state": "COMPILES; current-unit and focused PostgreSQL reruns pending",
+    "state": "QUALIFIED",
     "entries": [
       "G Ezkho",
       "Gnome Trooper",
@@ -9092,7 +9460,76 @@
         "seconds": 150.323
       }
     ],
-    "publication": "PREPUSH-2 compiling checkpoint; no new qualifications. Fresh six-package units plus physical/atomic/state PostgreSQL pending."
+    "publication": "PREPUSH-2 compiling checkpoint; no new qualifications. Fresh six-package units plus physical/atomic/state PostgreSQL pending.",
+    "postgres_green": [
+      {
+        "name": "physical",
+        "filter": "npcfix_fading_and_retained_placements_postgres",
+        "exit": 0,
+        "seconds": 133.659,
+        "log": "/tmp/npcfix-evidence/soulpit-merged-pg-physical.log",
+        "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+        "actual_pg_start_markers": 1,
+        "expected_tests": 1,
+        "execution_proven": true
+      },
+      {
+        "name": "atomic-eleven",
+        "filter": "npcfix_eleven_track_postgres_atomic_receipt_replay_and_rollback",
+        "exit": 0,
+        "seconds": 78.388,
+        "log": "/tmp/npcfix-evidence/soulpit-merged-pg-atomic-eleven.log",
+        "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+        "actual_pg_start_markers": 3,
+        "expected_tests": 1,
+        "execution_proven": true
+      },
+      {
+        "name": "state-three",
+        "filter": "npcfix_state_postgres_",
+        "exit": 0,
+        "seconds": 275.331,
+        "log": "/tmp/npcfix-evidence/soulpit-merged-pg-state-three.log",
+        "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+        "actual_pg_start_markers": 3,
+        "expected_tests": 3,
+        "execution_proven": true
+      },
+      {
+        "name": "paid-travel",
+        "filter": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+        "exit": 0,
+        "seconds": 136.279,
+        "log": "/tmp/npcfix-evidence/soulpit-merged-pg-paid-travel.log",
+        "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+        "actual_pg_start_markers": 1,
+        "expected_tests": 1,
+        "execution_proven": true
+      }
+    ],
+    "binary": {
+      "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4457d29e431128b9",
+      "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c",
+      "source_head": "d4dea67d8060a9823123dfab3e722ff839dbcbcf",
+      "source_build": {
+        "base": "f5a3b764e6fcae2d43e78cdbee516b622f3b311a",
+        "runtime_diff_sha256": "fab260d9d0a151b7db51ba11ad106db3a895b35b141f939b688846ce4294ff29",
+        "repair_packet_sha256": "d8c171db1b3a078109412ac2d711d5b364e5c8c8dd7a18afc67a882feaaf9950",
+        "packages": [
+          "oteryn-client-assets",
+          "oteryn-game-server",
+          "oteryn-gameplay-content",
+          "oteryn-gameplay-content-promotion",
+          "oteryn-gameplay-dispatch",
+          "oteryn-gameplay-durability",
+          "oteryn-gameplay-npc",
+          "oteryn-world-bundle-compiler"
+        ]
+      },
+      "postgres_configuration": "present; URL never printed"
+    },
+    "cumulative_npcs": 254,
+    "cumulative_actors": 269
   },
   "active_shop_work": {
     "state": "FIVE_PORTABLE_PROFILES_AND_OPTIONAL_FLUID_FIX_RESTORED_AFTER_MAIN; FULL_DEPENDENT_PG_PENDING; NO_PROMOTION",
@@ -10287,5 +10724,224 @@
       }
     ],
     "publication": "Compiling Main integration under PREPUSH-2 cadence exception. Fresh8-package units and four focused PG groups pending;261 qualified/32 open unchanged."
+  },
+  "mainred3038_integration": {
+    "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+    "merge": "clean four-file merge; no content, NPC or migration source changes",
+    "provisioning_tests": "2PASS0.134s",
+    "qualification_source": "d4dea67d8060a9823123dfab3e722ff839dbcbcf; all4 focused PG groups GREEN with verified markers/durations",
+    "units": "Duplicate8-package rebuild SIGKILL with jobs2; retry jobs1 after publication checks. Not a hard blocker and no unit success claimed.",
+    "current_counts": {
+      "QUALIFIED": 267,
+      "EXCLUDED": 24,
+      "PENDING": 7,
+      "AUTHORED; QUALIFICATION PENDING": 19,
+      "SUPERSEDED": 2,
+      "QUALIFIED_OTHER_LANE": 1
+    },
+    "generation": [
+      {
+        "name": "stats",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+        ],
+        "exit": 0,
+        "seconds": 4.029
+      },
+      {
+        "name": "stats-pin",
+        "command": [
+          "python3",
+          "tools/contracts/refresh_item_stats_promotion_pin.py"
+        ],
+        "exit": 0,
+        "seconds": 0.153
+      },
+      {
+        "name": "native",
+        "command": [
+          "python3",
+          "tools/content-migration/regenerate_content.py",
+          "--native-only",
+          "--skip-checks"
+        ],
+        "exit": 0,
+        "seconds": 102.758
+      },
+      {
+        "name": "audit",
+        "command": [
+          "python3",
+          "/tmp/npcfix-evidence/preserve-unchanged-output-times.py",
+          "crates/gameplay/durability/src/durability/item_mint_audit.tags",
+          "crates/gameplay/durability/src/durability/item_mint_audit/tests/write_once_wire.hex",
+          "--",
+          "python3",
+          "tools/contracts/update_item_audit_tags.py"
+        ],
+        "exit": 0,
+        "seconds": 0.075
+      },
+      {
+        "name": "matrix",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+        ],
+        "exit": 0,
+        "seconds": 0.757
+      },
+      {
+        "name": "bindings",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+        ],
+        "exit": 0,
+        "seconds": 22.488
+      },
+      {
+        "name": "raid_catalogue",
+        "command": [
+          "python3",
+          "tools/content-migration/raid_catalogue.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.841
+      },
+      {
+        "name": "craft_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/craft-authoring/craft_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.738
+      },
+      {
+        "name": "imbuement_content",
+        "command": [
+          "python3",
+          "tools/content-schema/imbuement-authoring/imbuement_content.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 5.272
+      },
+      {
+        "name": "charm_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/charm-authoring/charm_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.156
+      },
+      {
+        "name": "proficiency_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 4.368
+      },
+      {
+        "name": "reward_claim_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 3.841
+      },
+      {
+        "name": "starter_kit_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.624
+      },
+      {
+        "name": "weapon",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+        ],
+        "exit": 0,
+        "seconds": 1.365
+      },
+      {
+        "name": "crystal",
+        "command": [
+          "python3",
+          "tools/content-census/g4_item_crystal_binding_generator.py"
+        ],
+        "exit": 0,
+        "seconds": 3.694
+      },
+      {
+        "name": "pins",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "--release",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "exit": 0,
+        "seconds": 103.545
+      },
+      {
+        "name": "native-check",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 164.005
+      },
+      {
+        "name": "duplicates",
+        "command": [
+          "bash",
+          ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+        ],
+        "exit": 0,
+        "seconds": 0.598
+      }
+    ],
+    "publication_gates": [
+      {
+        "name": "check",
+        "exit": 0,
+        "seconds": 429.069
+      },
+      {
+        "name": "fmt",
+        "exit": 0,
+        "seconds": 24.631
+      },
+      {
+        "name": "clippy",
+        "exit": 0,
+        "seconds": 157.837
+      }
+    ],
+    "publication": "Publish six qualifications from pushed all-green d4 snapshot plus clean Main merge. Unit retry1 pending under PREPUSH-2; no full-unit green claim."
   }
 }

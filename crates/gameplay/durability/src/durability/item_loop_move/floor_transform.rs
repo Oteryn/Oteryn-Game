@@ -9,6 +9,7 @@ use oteryn_gameplay_items::floor_assembly::FloorTransformRecipe;
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn apply(
     tx: &mut Type2Transaction<'_>,
+    permit: &SpellLanePermit,
     fence: &CurrentCharacterItemFence,
     command: CommandRef,
     native: &NativeGameplayState,
@@ -17,6 +18,7 @@ pub(super) async fn apply(
     ground: &LoopGround,
     recipe: &FloorTransformRecipe,
 ) -> LoopResult<bool> {
+    permit.check_scope(fence.runtime_scope)?;
     let (world, channel) =
         scope_of(fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
     let before: Option<serde_json::Value> = sqlx::query_scalar("SELECT jsonb_build_object('item',to_jsonb(i),'ground',to_jsonb(g)) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND g.runtime_scope_ownership_generation=$7::text::numeric AND game_item_loop_drop_ref(g.corpse_ref) AND g.stack_ordinal IS NOT NULL AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_revision_ref='definition-r1' AND i.definition_production_key=$8 AND i.quantity=1 ORDER BY g.stack_ordinal,i.item_instance_id LIMIT 1 FOR UPDATE OF i NOWAIT")
