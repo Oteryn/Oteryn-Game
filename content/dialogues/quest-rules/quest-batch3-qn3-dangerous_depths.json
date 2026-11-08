@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.dangerous_depths_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/points",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/measurements-report",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_count",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+          "value": 72000
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i27654",
+          "count": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/points",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Excellent, you returned with more data! Let me see... hmm. ...",
+        "Well, we need more data on this but first I will have to show this to our grand horticulturist. Thank you for getting this for us!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/measurements-cooldown",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I don't need your help for now. Come back later."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-68"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/gnomus.lua",
+      "sha256": "04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}
