@@ -17,7 +17,7 @@
 | Fugue native combat profile source missing from checked native catalogue | ENGENC2 | none | The Order of the Lion | OWNER: need an authoritative creature profile; do not invent combat data |
 | Literal readable text on NPC/World quest Item rewards through the existing MINT owner | questpc5 | none planned; own range 1270–1279 retained | Nomads Land Quest (book reward step only; window puzzle remains) | CLAIMED |
 | Literal readable text on quest-reward root Items through the existing fenced mint owner (NPC/world bridge) | qready1 | none | Nomads Land Quest | RELEASED: questpc5 claimed first during push race; no code written |
-| NPC carried/bank payment composed atomically with amulet-piece hand-in and quest progress (reuse existing fee-burn owner) | QNPCFX | none planned; reserved 1310-1319 only | Koshei the Deathless Quest (paid amulet assembly step) | CLAIMED |
+| M10: NPC carried/bank payment + item hand-in + magic effect (reuse existing value owners) | qnpcfx | none planned; reserved 2120-2129 only | Koshei the Deathless Quest; The Demon Oak Quest; The Inquisition Quest | CLAIMED |
 | Source NPC quest teleport composed with fenced dialogue progress, admitted destination and command replay | PGSPEED | 2220 reserved; own QMECH range 2220–2229 | The Paradox Tower Quest (Riddler); In Service of Yalahar Quest (NPC teleport steps only; other blockers remain) | CLAIMED |
 # QMECH claims
 
