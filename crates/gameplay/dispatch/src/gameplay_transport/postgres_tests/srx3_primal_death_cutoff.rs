@@ -321,6 +321,10 @@ fn srx3_primal_actual_source_deferred_tasks_precede_physical_death_cutoff_postgr
                     .primal_callbacks
                     .deferred_original_deadlines_for_test()
                     .map_err(|_| "retained source callback observation")?;
+                assert!(
+                    after.iter().all(|work| before.contains(work)),
+                    "the due-only source-death bridge cannot create fresh Think callbacks: before={before:?},after={after:?}"
+                );
                 for expected in &future {
                     assert!(
                         after.contains(expected),

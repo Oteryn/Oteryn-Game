@@ -607,7 +607,7 @@ fn private_marker_reinjured_native_hp_blocks_then_exact_source_expiry_reopens() 
     );
     // The stored Lua condition remains visible until the canonical postattack
     // housekeeping phase, even at its exact expiry deadline.
-    let at = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(s.cooldown_us);
+    let at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(s.cooldown_us);
     let expiry = r
         .prepare_actor_condition_expiry(
             a,

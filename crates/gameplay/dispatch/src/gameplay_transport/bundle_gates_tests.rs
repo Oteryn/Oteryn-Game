@@ -56,7 +56,7 @@ const INVENTORY: &[Entry] = &[
         key: "",
         state: Gate::AllocatedOpen { task: "SRX-3" },
         calls: &[
-            ("gameplay_transport/wire_position.rs", 1)
+            ("gameplay_transport/wire_position.rs", 1),
             // SRX-3 source/current-owner reads; gate semantics remain unchanged.
             ("gameplay_transport/native_cue_offer.rs", 1),
             ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
