@@ -6,6 +6,7 @@ pub struct Panel {
     pub catalog: CatalogState,
     pub filter: String,
     pub page: usize,
+    pub selection: usize,
     pub max_level: Option<u32>,
     pub group: Option<u32>,
     pub learned_only: bool,
@@ -13,6 +14,20 @@ pub struct Panel {
 }
 
 impl Panel {
+    #[must_use]
+    pub fn selected_spell(
+        &self,
+    ) -> Option<&oteryn_client_runtime::spell_catalog::SpellCatalogEntry> {
+        if !self.selected || self.filter_error {
+            return None;
+        }
+        self.catalog
+            .entries()
+            .iter()
+            .filter(|entry| self.matches(entry))
+            .nth(self.selection)
+    }
+
     pub(super) fn matches(
         &self,
         entry: &oteryn_client_runtime::spell_catalog::SpellCatalogEntry,

@@ -17,7 +17,17 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Cooldown group (blank: all)",
                 "Learned only (0 / 1)",
             ],
-            buttons: &["Search", "Previous", "Next"],
+            buttons: &[
+                "Search",
+                "Previous page",
+                "Next page",
+                "Select previous",
+                "Select next",
+                "Assign slot 1",
+                "Assign slot 2",
+                "Assign slot 3",
+                "Assign slot 4",
+            ],
             snapshot: |mailbox| {
                 let panel = &mailbox.spell_catalog;
                 (
@@ -57,6 +67,20 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         filter,
                         action,
                     );
+                    match action {
+                        3 => oteryn_client_ui::spell_catalog::protocol::select_relative(
+                            &mut mailbox.spell_catalog,
+                            false,
+                        ),
+                        4 => oteryn_client_ui::spell_catalog::protocol::select_relative(
+                            &mut mailbox.spell_catalog,
+                            true,
+                        ),
+                        5..=8 => {
+                            super::input::assign(mailbox, action - 5);
+                        }
+                        _ => {}
+                    }
                 }
             },
         },

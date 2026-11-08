@@ -22,6 +22,12 @@ pub fn panel_text(panel: &Panel) -> String {
         page + 1,
         pages
     );
+    if let Some(selected) = panel.selected_spell() {
+        text.push_str(&format!(
+            "Selected: {} (cast {}) — Assign to a slot with the buttons below.\r\n",
+            selected.name, selected.cast_index
+        ));
+    }
     for entry in entries.iter().skip(page * PAGE_SIZE).take(PAGE_SIZE) {
         use std::fmt::Write;
         let _ = write!(
