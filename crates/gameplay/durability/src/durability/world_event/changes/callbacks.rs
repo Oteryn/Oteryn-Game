@@ -64,6 +64,10 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let ground = oteryn_gameplay_quests::quest::world_callbacks::stateless_ground_requirements(
+            &callback,
+        );
+        let mut lane = permit;
         let ground = oteryn_gameplay_quests::quest::world_callbacks::stateless_ground_requirements(&callback);
         let mut lane = permit;
         self.try_issue_semantic_pass()?

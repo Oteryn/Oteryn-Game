@@ -102,7 +102,10 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+#[cfg(test)]
+mod mammoth_tests;
 mod native;
+mod nomads_window;
 mod nomads_window;
 mod phase;
 use native::valid_native_callback;
@@ -271,6 +274,19 @@ pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>>
     (key == nomads_window::KEY).then(nomads_window::requirements)
 }
 
+impl Callback {
+    /// Canary action_horn.lua:38-50: mammoth progress requires a currently active
+    /// Drunk condition, never the historical mead counters or a cached quest flag.
+    pub fn requires_live_drunk(&self) -> bool {
+        self.key == "oteryn:quest-callback/qm48/mammoth"
+    }
+}
+
+/// Closed read-only source gates. They create no synthetic personal quest state.
+pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>> {
+    (key == nomads_window::KEY).then(nomads_window::requirements)
+}
+
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 /// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
 pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
@@ -308,6 +324,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
@@ -1717,6 +1736,10 @@ mod qn1_cells_tests {
             .collect();
         assert_eq!(levers.len(), 10);
         for callback in levers {
+            assert!(
+                callback.selector.native.is_none(),
+                "Children lever inherited another quest's alias"
+            );
             super::parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string())?;
             assert_eq!(callback.lever, Some([9125, 9126]));
             assert_eq!(callback.effects.reset_after_ms, Some(5000));
