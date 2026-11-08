@@ -2,6 +2,7 @@ use oteryn_client_runtime::chat_public_channels::{ChatLine, ChatRoom, ChatRoomSe
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChatPanel {
+    pub console: crate::chat::Console,
     pub guild_selected: bool,
     pub guild_open: bool,
     pub guild: oteryn_client_runtime::chat_guild_room::GuildRoomState,
@@ -19,6 +20,7 @@ pub struct ChatPanel {
 impl Default for ChatPanel {
     fn default() -> Self {
         Self {
+            console: Default::default(),
             guild_selected: false,
             guild_open: false,
             guild: Default::default(),

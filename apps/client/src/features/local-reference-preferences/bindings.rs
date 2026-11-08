@@ -311,3 +311,33 @@ impl PreferenceInput {
         Ok(output)
     }
 }
+
+/// Generate one complete key gesture for a menu selection, honoring local rebinding.
+pub(super) fn window_events(
+    preferences: &ReferencePreferences,
+    id: &str,
+) -> Vec<NormalizedInputEvent> {
+    let Some(binding) = REGISTERED_BINDINGS.iter().find(|(key, _)| *key == id) else {
+        return Vec::new();
+    };
+    let Ok(Chord(code, modifiers)) = parse(
+        preferences
+            .keybindings
+            .get(id)
+            .map_or(binding.1, String::as_str),
+    ) else {
+        return Vec::new();
+    };
+    [
+        oteryn_input_actions::ButtonState::Pressed,
+        oteryn_input_actions::ButtonState::Released,
+    ]
+    .into_iter()
+    .map(|state| NormalizedInputEvent::Key {
+        code,
+        modifiers,
+        state,
+        repeat: false,
+    })
+    .collect()
+}

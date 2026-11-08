@@ -37,7 +37,7 @@ pub use help::{HelpTopic, help_text};
 pub use profiles::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
-pub use sync::{SettingsPage, SettingsState};
+pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
 
 const PANEL_IDS: &[&str] = &[
     "battle",
@@ -91,6 +91,10 @@ pub struct ReferencePreferences {
     pub show_effects: bool,
     #[serde(default = "enabled")]
     pub show_lights: bool,
+    #[serde(default = "enabled")]
+    pub show_harmony: bool,
+    #[serde(default = "enabled")]
+    pub show_serene: bool,
     #[serde(default)]
     pub arcs: ArcPreferences,
     #[serde(default)]
@@ -133,6 +137,8 @@ impl Default for ReferencePreferences {
             hud_bars: true,
             show_effects: true,
             show_lights: true,
+            show_harmony: true,
+            show_serene: true,
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
             frames: Default::default(),

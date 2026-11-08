@@ -9,6 +9,8 @@ pub enum Intent {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub section: Section,
+    pub map: Option<oteryn_client_runtime::cyclopedia_map::MapResult>,
+    pub floor: i8,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,

@@ -127,7 +127,7 @@ pub use feature_local_reference_preferences::settings::{
     ArcLayout, ArcPreferences, BASIC_GROUPS, BasicOptions, ControlPreferences, FramePacer,
     FramePreferences, HelpTopic, MousePreset, MovementKeys, PreferenceBinding, PreferenceInput,
     PreferenceStore, ReferencePreferences, RotationModifier, SHORTCUTS, SettingsPage,
-    SettingsState, help_text, preference_bindings,
+    SettingsState, WINDOW_ACTIONS, help_text, preference_bindings,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;

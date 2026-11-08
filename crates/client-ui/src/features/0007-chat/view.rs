@@ -6,6 +6,23 @@ pub fn panel_text(panel: &ChatPanel) -> String {
     let mut text = String::from("Local Chat — Say / Whisper / Yell / Private\n");
     text.push_str(&crate::chat_guild_room::panel_text(panel));
     for line in &panel.lines {
+        if !panel.console.communication.visible(line) {
+            continue;
+        }
+        if !panel.console.show_messages {
+            continue;
+        }
+        use crate::chat::ConsoleTab;
+        if !matches!(
+            (panel.console.tab, line),
+            (ConsoleTab::All, _)
+                | (ConsoleTab::Local, ChatLine::Local { .. })
+                | (ConsoleTab::Private, ChatLine::Private { .. })
+                | (ConsoleTab::Guild, ChatLine::Guild(_))
+                | (_, ChatLine::Dropped)
+        ) {
+            continue;
+        }
         match line {
             ChatLine::Local {
                 speaker_name,
@@ -38,4 +55,10 @@ pub fn panel_text(panel: &ChatPanel) -> String {
         let _ = writeln!(text, "{feedback}");
     }
     text
+}
+
+/// Export exactly the selected console projection. The caller owns file mode and path.
+pub fn write_log(panel: &ChatPanel, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    writer.write_all(panel_text(panel).as_bytes())?;
+    writer.flush()
 }
