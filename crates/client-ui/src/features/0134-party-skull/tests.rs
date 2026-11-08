@@ -59,3 +59,61 @@ fn pc06_party_skull_view_keeps_confirmed_result_during_refusal() {
     assert!(fresh.summary.is_empty());
     assert!(panel_text(&fresh).contains("Unavailable"));
 }
+
+#[test]
+fn skull_timer_projects_observed_remaining_time_without_inventing_an_expiry() {
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.skull_timer = Some(SkullTimer {
+        skull: 4,
+        remaining_ms: Some(1501),
+    });
+    assert!(panel_text(&panel).contains("Red skull: 2s at observation"));
+    let timer = SkullTimer {
+        skull: 4,
+        remaining_ms: Some(1501),
+    };
+    assert_eq!(timer.remaining_seconds(1500), Some(1));
+    assert_eq!(timer.remaining_seconds(9999), Some(0));
+    panel.skull_timer = Some(SkullTimer {
+        skull: 4,
+        remaining_ms: None,
+    });
+    assert!(panel_text(&panel).contains("expiry unavailable"));
+}
+
+#[test]
+fn unjustified_widget_keeps_fractional_points_and_server_limits() {
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.unjustified = Some(UnjustifiedSnapshot {
+        windows: [
+            FragWindow {
+                points_milli: 1500,
+                limit_milli: 3000,
+            },
+            FragWindow {
+                points_milli: 3500,
+                limit_milli: 5000,
+            },
+            FragWindow {
+                points_milli: 10500,
+                limit_milli: 10000,
+            },
+        ],
+        open_situations: Some(vec!["Aggression: rival".into()]),
+    });
+    let text = panel_text(&panel);
+    assert!(text.contains("Daily: 1.500 / 3.000"));
+    assert!(text.contains("Weekly: 3.500 / 5.000"));
+    assert!(text.contains("Monthly: 10.500 / 10.000"));
+    assert!(text.contains("Aggression: rival"));
+    if let Some(state) = &mut panel.unjustified {
+        state.open_situations = None;
+    }
+    assert!(panel_text(&panel).contains("Open PvP situations unavailable"));
+}
