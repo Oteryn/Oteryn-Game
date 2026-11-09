@@ -1347,7 +1347,7 @@
   "status": "DONE",
   "gap": "Jest żywy producent pliku operatora, odczytywany ponownie po uwierzytelnionym admission, z ograniczonym wire ServerAccepted 21; news i przyszłe wydarzenia z opisami trafiają do istniejącego kalendarza miesiąc/rok. Podgląd podczas gry jest tylko do odczytu, błędna publikacja nie blokuje admission.",
   "lane": "cg_ui",
-  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/bulletin/tests.rs:4 + operator_file_reload_publishes_future_events_and_rejects_invalid_replacements; apps/client/src/native_entry/tests/live_bulletin.rs:7 + live_operator_bulletin_crosses_gateway_tls_session_and_calendar_caller"
+  "evidence": "apps/client/src/windows_shell/input.rs:18; apps/client/src/features/local-native-login/shell.rs:37; apps/client/src/features/local-native-login/native.rs:172; apps/client/src/features/local-native-login/native.rs:210; apps/client/src/bulletin.rs:40; crates/gameplay/dispatch/src/gameplay_transport/bulletin.rs:18; crates/gameplay/dispatch/src/gameplay_transport/connection/authority/composed.rs:8; apps/client/src/native_entry/tests/live_bulletin.rs:7"
  },
  {
   "id": "O005",

@@ -71,7 +71,7 @@
     "otclient_path": [
       "modules/client_bottommenu/bottommenu.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0053-world-event/native.rs",
@@ -128,7 +128,7 @@
       "W05d",
       "W13"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Kalendarz wydarzeń i ekran nowości. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O002",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -136,7 +136,7 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje przeglądanego miesiącami kalendarza zaplanowanych wydarzeń i ekranu nowości; dostępny jest tylko bieżący komunikat wydarzenia.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Ponownie prześledzono publikację operatora → admission → take_bulletin → login.bulletin → natywny Browser.replace/news/month i przyciski previous_month/next_month; istniejący test integracyjny apps/client/src/native_entry/tests/live_bulletin.rs:7.",
     "otclient_evidence": [
       {
         "path": "modules/client_bottommenu/bottommenu.lua",
