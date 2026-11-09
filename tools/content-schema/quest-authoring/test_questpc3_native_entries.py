@@ -43,6 +43,14 @@ class NativeEntries(unittest.TestCase):
         self.assertFalse(stage['completes'])
         self.assertEqual(stage['trigger']['collection']['items'], [{'item':'oteryn:item.tibia.i22082','count':5}])
 
+    def test_grimvale_species_share_one_bounded_active_mission_counter(self):
+        quest = source.build_grimvale()['quests'][0]
+        counters = [stage['trigger']['counter'] for stage in quest['stages'] if stage['trigger']['kind'] == 'kill']
+        self.assertEqual({c['creature'] for c in counters}, {'oteryn:creature.werewolf','oteryn:creature.werebear','oteryn:creature.wereboar'})
+        self.assertEqual(len({c['track'] for c in counters}), 1)
+        for counter in counters:
+            self.assertEqual((counter['gate_value'],counter['minimum'],counter['maximum'],counter['advance_gate_to']), (1,0,10,2))
+
     def test_actor_admission_changes_fail_closed(self):
         path, recipe = source.chosen()
         changed = copy.deepcopy(recipe)

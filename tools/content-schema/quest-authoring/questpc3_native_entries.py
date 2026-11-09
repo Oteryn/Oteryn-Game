@@ -119,7 +119,7 @@ def build_grimvale(root=ROOT):
     track = 'oteryn:quest-progress/m01c-grimvale-route'
     evidence = ['content/items/definitions/items-11000-11499.json:oteryn:item.tibia.i22082',
                 'imports/canary/items-xml/items.xml:43886']
-    return {'schema':1,'quests':[{'quest':quest,'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+    document = {'schema':1,'quests':[{'quest':quest,'recipe_sha256':hashlib.sha256(raw).hexdigest(),
         'admission':{'minimum_level':0,'premium':True},
         'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':len(recipe['stages'])}],
         'stages':[{'key':'s1-blossoms','completes':False,'trigger':{'kind':'collect','collection':{
@@ -127,6 +127,30 @@ def build_grimvale(root=ROOT):
             'items':[{'item':'oteryn:item.tibia.i22082','count':5}],
             'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}], 'sources':evidence}}}],
         'sources':[path+':s1',*evidence]}]}
+
+    hunt = recipe['stages'][1]
+    if (hunt['key'],hunt['kind'],hunt['count'],hunt['targets']) != ('s2','kill',10,['Werewolf','Werebear','Wereboar']):
+        raise ValueError('M01C_GRIMVALE_HUNT_STAGE')
+    wanted = {'Werewolf':'oteryn:creature.werewolf','Werebear':'oteryn:creature.werebear','Wereboar':'oteryn:creature.wereboar'}
+    found = {}
+    for source in sorted((root/'content/creatures/definitions').glob('creatures-*.json')):
+        for record in json.loads(source.read_bytes())['records']:
+            name = record.get('authoring',{}).get('profile',{}).get('details',{}).get('display_name')
+            if name in wanted:
+                if name in found or record['definition']['identity']['key'] != wanted[name]:
+                    raise ValueError('M01C_GRIMVALE_CREATURE_IDENTITY')
+                found[name] = record['definition']['identity']['key']
+    if found != wanted:
+        raise ValueError('M01C_GRIMVALE_CREATURE_SET')
+    native = document['quests'][0]
+    kills = 'oteryn:quest-progress/m01c-grimvale-kills'
+    native['tracks'].append({'key':kills,'initial':0,'minimum':0,'maximum':10})
+    for name, creature in sorted(found.items()):
+        native['stages'].append({'key':'s2-'+name.lower(),'completes':False,'trigger':{'kind':'kill','counter':{
+            'key':'oteryn:quest-transition/native-kills/m01c-grimvale-'+name.lower(),
+            'creature':creature,'track':kills,'gate':track,'gate_value':1,'minimum':0,'maximum':10,'advance_gate_to':2}}})
+    native['sources'].append('content/creatures/definitions/creatures-01500-01863.json:Werewolf/Werebear/Wereboar')
+    return document
 
 
 def content(check=False):
