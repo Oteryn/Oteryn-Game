@@ -4,6 +4,8 @@ use super::*;
 mod effects;
 #[path = "daily_reward/picker.rs"]
 mod picker;
+#[path = "daily_reward/returner.rs"]
+mod returner;
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::capabilities::{
@@ -165,12 +167,18 @@ fn scenario(premium: bool) -> TestResult {
 }
 
 fn scenario_feature(premium: bool, picked: bool) -> TestResult {
+    scenario_mode(premium, if picked { 1 } else { 0 })
+}
+fn scenario_mode(premium: bool, mode: u8) -> TestResult {
     run(async |admin| {
         // Let real progression admission initialize the XP row from the active content;
         // the harness's synthetic level-50 row has unrelated policy revisions.
         let mut harness =
             Harness::create_with_admission_seed(admin, "daily_dispatch", false, false).await?;
         prepare_current_session(&harness).await?;
+        if mode == 2 {
+            returner::seed_history(&harness).await?;
+        }
         let database: String = sqlx::query_scalar("SELECT current_database()")
             .fetch_one(&harness.pool)
             .await?;
@@ -286,7 +294,15 @@ fn scenario_feature(premium: bool, picked: bool) -> TestResult {
             },
         )
         .map_err(debug)?;
-        if picked {
+        if mode == 2 {
+            returner::case(&harness, &owner, &mut admitted).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
+        if mode == 1 {
             picker::case(&harness, &owner, &mut admitted, &shrine).await?;
             drop(owner);
             drop(authority);

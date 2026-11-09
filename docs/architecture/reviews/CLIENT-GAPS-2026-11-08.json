@@ -1133,10 +1133,10 @@
   "src": "TIBAUD-1",
   "area": "Rewards",
   "feature": "Returner reward",
-  "status": "PARTIAL",
-  "gap": "Brak dedykowanego przepływu i notyfikacji nagrody powrotnej.",
+  "status": "DONE",
+  "gap": "",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0182-daily-reward/state/returner.rs:9 + returner_reward_notification_never_infers_entitlement_from_daily_streak; PARTIAL: server entitlement/claim wire and native notification remain"
+  "evidence": "crates/gameplay/durability/src/durability/daily_reward_delivery/returner.rs:17 + returner_real_dispatch_qualifies_native_history_and_claims_once; apps/client/src/features/0182-daily-reward/tests/returner.rs:82 + play_entry_queries_returner_entitlement_without_opening_daily_wall"
  },
  {
   "id": "T147",

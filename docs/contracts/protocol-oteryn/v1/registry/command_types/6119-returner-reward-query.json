@@ -1,0 +1,10 @@
+{
+  "id": 6119,
+  "name": "RETURNER_REWARD_QUERY",
+  "owner_decision": "Owner decision B 2026-11-09 T145",
+  "capability": 182,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/returner-reward-v1.md#wire",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/returner-reward-v1.md#wire",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 21
+}

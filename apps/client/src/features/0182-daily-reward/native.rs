@@ -13,6 +13,7 @@ const REFRESH: usize = 101;
 const CLAIM: usize = 102;
 const DETAILS: usize = 104;
 const PICKER: usize = 105;
+const RETURNER: usize = 106;
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 #[derive(Default)]
 struct Actions(Vec<usize>);
@@ -23,7 +24,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let id = w & 0xffff;
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
-                && matches!(id, REFRESH | CLAIM | DETAILS | PICKER)
+                && matches!(id, REFRESH | CLAIM | DETAILS | PICKER | RETURNER)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -68,7 +69,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             430,
-            690,
+            740,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -125,6 +126,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [10, 590, 390, 30],
             WS_TABSTOP,
         );
+        control(
+            hwnd,
+            "BUTTON",
+            tr!("Welcome-back reward"),
+            RETURNER,
+            [10, 630, 390, 30],
+            WS_TABSTOP,
+        );
         let mut held = None;
         let mut message: MSG = std::mem::zeroed();
         loop {
@@ -141,7 +150,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             let mut picker = false;
+            let mut returner = false;
             for action in std::mem::take(&mut actions.0) {
+                if action == RETURNER {
+                    returner = true;
+                    continue;
+                }
                 if action == PICKER {
                     picker = true;
                     continue;
@@ -164,15 +178,20 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             }
             if held.as_ref() != Some(&mailbox.daily_reward) {
                 SetWindowTextW(text, wide(&panel_text(&mailbox.daily_reward)).as_ptr());
-                held = Some(mailbox.daily_reward);
+                held = Some(mailbox.daily_reward.clone());
             }
             drop(mailbox);
-            if picker {
-                PlayLink {
+            if picker || returner {
+                let link = PlayLink {
                     mailbox: shared,
                     commands: commands.clone(),
+                };
+                if picker {
+                    link.open_daily_reward_picker();
                 }
-                .open_daily_reward_picker();
+                if returner {
+                    link.open_returner_reward();
+                }
             }
             std::thread::sleep(Duration::from_millis(25));
         }

@@ -28,6 +28,17 @@ pub(super) async fn dispatch(
     command_type: u32,
     payload: &[u8],
 ) -> Option<Vec<u8>> {
+    if matches!(command_type, wire::returner::QUERY | wire::returner::CLAIM) {
+        if command_type == wire::returner::QUERY && !payload.is_empty() {
+            return None;
+        }
+        if command_type == wire::returner::CLAIM && wire::returner::decode_claim(payload).is_err() {
+            return refusal(3);
+        }
+        return authority
+            .daily_reward_returner(actor, command, command_type, payload)
+            .await;
+    }
     if matches!(command_type, wire::picker::QUERY | wire::picker::CLAIM) {
         if command_type == wire::picker::QUERY && !payload.is_empty() {
             return None;
@@ -87,7 +98,7 @@ pub(super) fn result(
         Some(bytes) => (
             if matches!(
                 command_type,
-                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM | wire::picker::CLAIM
+                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM | wire::picker::CLAIM | wire::returner::CLAIM
             ) && !matches!(bytes.get(1), Some(1 | 2))
             {
                 CommandStatus::Rejected
@@ -372,6 +383,15 @@ fn plan(content: &DailyRewardContent, day: u8) -> Option<DailyRewardDeliveryPlan
 mod details;
 macro_rules! authority_methods {
     () => {
+        fn daily_reward_returner(
+            &self,
+            _actor: crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+            _kind: u32,
+            _payload: &[u8],
+        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
+            async { None }
+        }
         fn daily_reward_picker(
             &self,
             _actor: crate::foundation::ExactActorRef,
@@ -404,6 +424,15 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn daily_reward_returner(
+            &self,
+            actor: ExactActorRef,
+            command: connection::UseCommand,
+            kind: u32,
+            payload: &[u8],
+        ) -> Option<Vec<u8>> {
+            self.daily_returner(actor, command, kind, payload).await
+        }
         async fn daily_reward_picker(
             &self,
             actor: ExactActorRef,
@@ -437,3 +466,6 @@ pub(super) use composed_methods;
 
 #[path = "daily_reward/picker.rs"]
 mod picker;
+
+#[path = "daily_reward/returner.rs"]
+mod returner;

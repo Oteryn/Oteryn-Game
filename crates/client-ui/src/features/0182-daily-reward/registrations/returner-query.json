@@ -1,0 +1,16 @@
+{
+  "mechanic": "0182-daily-reward",
+  "kind": "handlers",
+  "id": "0182-daily-reward-returner-query",
+  "status": "supported",
+  "commands": [
+    6119
+  ],
+  "direction": "client_to_server",
+  "capability": 182,
+  "entry": "protocol.rs::request_returner",
+  "not_applicable": {
+    "settings": "Returner eligibility and gift are server-owned.",
+    "input": "Queried at play entry; native notification and claim form."
+  }
+}

@@ -265,3 +265,7 @@ async fn apply<G: DailyRewardPremiumGate>(
 
 #[path = "daily_reward_delivery/picker.rs"]
 mod picker;
+
+#[path = "daily_reward_delivery/returner.rs"]
+mod returner;
+pub use returner::ReturnerOutcome;

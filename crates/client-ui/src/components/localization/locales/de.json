@@ -266,5 +266,14 @@
  "Level": "Ebene", "Health (last saved)": "Gesundheit ( letztes gerettet)", "Mana (last saved)": "Manna ( letztes Rettungsort)", "Permanent prey slots": "Ständige Prey Slots", "Prey wildcards": "Prey Wildkarten", "Hirelings": "Hirelings", "Blessings": "Segen", "; hidden locally": "• lokalerweise versteckt", "Quest Log": "Quests Log", "No guild": "Keine Guild", "Your offer": "Ihr Angebot", "Their offer": "Ihr Angebot",
  " · locked": " • Schloss", " · in vessel": " · im Schiff", " · migration required": " · Migration erforderlich", "Counts cover the visible carried inventory.": "Die Zahlen decken den sichtbaren aufgeführten Inventor.", "invitation sent": "Einladung geschickt", "Citizen": "Bürger", "Hireling identity and outfits": "Hireling Identität und Outfits", "Market offers": "Marktangebote", "Market history": "Marktgeschichte", "Unassigned": "Unbesetzt", "Hall payment": "Halle Zahlung", " — Complete": " - vollständig",
  "Hall reserve": "Hall Reservierung", "Disband payout": "Auszahlung Disband", "Withdrawal": "Rückzug", "not confirmed available": "nicht bestätigt verfügbar", "Hall refund": "Hall Rückgabe", "Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.": "Melden Sie sich über Ihren Browser ein. Verwenden Sie den Kalender, um die von dem Betreiber veröffentlichten Veranstaltungen zu navigieren. Dieser Kalender hat keine veröffentlichten Veranstaltungen.", " — Selected": " - ausgewählt", "Item: ": "Gegenstand : ", "Backpack: ": "Rückpackung : ", "Minimum ambient brightness %": "Minimale Umgebungshelligkeit %", "Lower-floor dimming %": "Abdunklung tieferer Ebenen %", "Indoor dimming %": "Abdunklung in Innenräumen %",
- "Cloud dimming %": "Abdunklung durch Wolken %", "Apply lighting": "Beleuchtung anwenden", "Enter lighting percentages from 0 to 100": "Beleuchtungswerte von 0 bis 100 eingeben"
+ "Cloud dimming %": "Abdunklung durch Wolken %", "Apply lighting": "Beleuchtung anwenden", "Enter lighting percentages from 0 to 100": "Beleuchtungswerte von 0 bis 100 eingeben",
+ "Claim one health potion for your Inbox.": "Hole dir einen Heiltrank für deinen Posteingang.",
+ "No unclaimed returner reward is available.": "Es ist keine offene Rückkehrbelohnung verfügbar.",
+ "The returner reward is unavailable. Refresh to try again.": "Die Rückkehrbelohnung ist nicht verfügbar. Aktualisiere, um es erneut zu versuchen.",
+ "The server refused the returner reward claim.": "Der Server hat die Rückkehrbelohnung abgelehnt.",
+ "Welcome-back reward": "Rückkehrbelohnung",
+ "Welcome back!": "Willkommen zurück!",
+ "Refresh reward": "Belohnung aktualisieren",
+ "Claim gift": "Geschenk abholen",
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Ein Rückkehrgeschenk ist verfügbar. Öffne die tägliche Belohnung (Strg+D) und dann die Rückkehrbelohnung, um es abzuholen."
 }

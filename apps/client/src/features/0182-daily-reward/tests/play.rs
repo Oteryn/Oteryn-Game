@@ -14,10 +14,31 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 struct Peer {
     commands: Arc<Mutex<Vec<DailyRewardCommand>>>,
     claimed: bool,
+    returner_offer: Option<[u8; 16]>,
 }
 impl Stepper for Peer {
     fn daily_reward_selected(&self) -> bool {
         true
+    }
+    async fn feature(
+        &mut self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        assert_eq!(
+            (command.capability, command.kind),
+            (182, daily_reward::returner::QUERY)
+        );
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 1,
+            status: CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: daily_reward::returner::Reply {
+                state: if self.returner_offer.is_some() { 1 } else { 0 },
+                id: self.returner_offer,
+            }
+            .encode()
+            .map_err(|_| SessionError::SessionUnusable)?,
+        })
     }
     async fn daily_reward(
         &mut self,
@@ -91,6 +112,7 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                     Peer {
                         commands,
                         claimed: false,
+                        returner_offer: None,
                     },
                 );
                 let (link, incoming, outbox) = play_channel();
@@ -153,3 +175,6 @@ mod details;
 
 #[path = "picker.rs"]
 mod picker;
+
+#[path = "returner.rs"]
+mod returner;

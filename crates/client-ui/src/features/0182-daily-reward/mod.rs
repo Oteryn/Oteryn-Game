@@ -30,3 +30,8 @@ pub use protocol::request_picker;
 
 #[path = "state/picker_names.rs"]
 mod picker_names;
+
+#[path = "state/returner_wire.rs"]
+mod returner_wire;
+pub use protocol::request_returner;
+pub use returner_wire::apply_returner;

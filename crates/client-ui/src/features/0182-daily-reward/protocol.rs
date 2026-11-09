@@ -82,3 +82,10 @@ pub fn request_picker(
 ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
     super::picker::request_picker(panel, selection)
 }
+
+pub fn request_returner(
+    panel: &mut DailyRewardPanel,
+    claim: bool,
+) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    super::returner_wire::request_returner(panel, claim)
+}

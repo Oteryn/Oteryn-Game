@@ -25,3 +25,33 @@ impl Outbox {
         oteryn_client_ui::daily_reward::apply_picker(&mut lock(&self.0).daily_reward, kind, result);
     }
 }
+
+impl Outbox {
+    pub(in crate::play) fn returner_initial_request(
+        &self,
+    ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+        oteryn_client_ui::daily_reward::request_returner(&mut lock(&self.0).daily_reward, false)
+    }
+    pub(in crate::play) fn daily_reward_returner_result(
+        &self,
+        kind: u32,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        let notice = oteryn_client_ui::daily_reward::apply_returner(
+            &mut lock(&self.0).daily_reward,
+            kind,
+            result,
+        );
+        #[cfg(windows)]
+        if notice.is_some() && !super::view::notify_returner() {
+            lock(&self.0).daily_reward.returner_notified = None;
+        }
+        #[cfg(not(windows))]
+        let _ = notice;
+    }
+    pub(in crate::play) fn returner_unavailable(&self) {
+        let mut m = lock(&self.0);
+        m.daily_reward.returner.pending = false;
+        m.daily_reward.returner_pending = None;
+    }
+}

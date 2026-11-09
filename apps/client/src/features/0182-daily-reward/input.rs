@@ -83,3 +83,26 @@ pub(in crate::play) fn enqueue_picker(
         mailbox.daily_reward.feedback = Some("The session has ended");
     }
 }
+
+impl PlayLink {
+    pub fn returner_reward_request(&self, claim: bool) {
+        enqueue_returner(&mut lock(&self.mailbox), &self.commands, claim);
+    }
+}
+pub(in crate::play) fn enqueue_returner(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    claim: bool,
+) {
+    if mailbox.world_input_blocked() {
+        return;
+    }
+    if let Some(command) =
+        oteryn_client_ui::daily_reward::request_returner(&mut mailbox.daily_reward, claim)
+        && commands.send(PlayCommand::Feature(command)).is_err()
+    {
+        mailbox.daily_reward.returner.pending = false;
+        mailbox.daily_reward.returner_pending = None;
+        mailbox.daily_reward.returner.feedback = Some(tr!("The session has ended"));
+    }
+}
