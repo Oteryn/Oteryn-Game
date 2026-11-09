@@ -758,56 +758,6 @@ fn world_cells(
     if let Some(pair) = &callback.effects.portals {
         effect_appearances.push(pair.appearance);
     }
-    if let Some(cycle) = &callback.effects.item_cycle {
-        effect_appearances.extend([cycle.remove, cycle.create]);
-    }
-    for appearance in effect_appearances {
-        let key = format!("oteryn:terrain.tibia.i{appearance}");
-        if data.manifest.palette.iter().any(|entry| entry.key == key) {
-            continue;
-        }
-        let id = u32::try_from(data.manifest.palette.len())?;
-        data.manifest.palette.push(bundle::PaletteEntry {
-            key,
-            family: bundle::Family::Terrain,
-            id,
-            terrain: Some(bundle::Terrain {
-                blocks_projectile: None,
-                kind: if [1270, 1025].contains(&appearance) {
-                    bundle::TerrainKind::Wall
-                } else {
-                    bundle::TerrainKind::Common
-                },
-                walkable: None,
-                ground_speed: None,
-            }),
-        });
-    }
-    if let Some(cycle) = &callback.effects.item_cycle {
-        let index = data
-            .manifest
-            .palette
-            .iter()
-            .position(|p| p.key == format!("oteryn:terrain.tibia.i{}", cycle.remove))
-            .ok_or("cycle palette")?;
-        let p = cycle.position;
-        cells
-            .entry((p.floor, p.x, p.y))
-            .or_default()
-            .push(sector::Item {
-                palette: u32::try_from(index)?,
-                depth: 0,
-                attrs: Default::default(),
-            });
-    }
-    let mut effect_appearances = Vec::new();
-    effect_appearances.extend(callback.effects.transform);
-    if callback.effects.transform.is_some() {
-        effect_appearances.extend([430, 431]);
-    }
-    if let Some(pair) = &callback.effects.portals {
-        effect_appearances.push(pair.appearance);
-    }
     if let Some(presence) = &callback.effects.item_presence {
         effect_appearances.push(presence.appearance);
     }

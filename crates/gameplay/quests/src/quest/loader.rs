@@ -549,10 +549,7 @@ mod tests {
             let source: serde_json::Value =
                 serde_json::from_str(text).map_err(|e| e.to_string())?;
             for callback in source["callbacks"].as_array().ok_or("source callbacks")? {
-                if callback["quest"] != "oteryn:quest.dawnport_quest"
-                    && callback["key"]
-                        != "oteryn:quest-callback/questpc7-feaster-purification-entry"
-                {
+                if callback["quest"] != "oteryn:quest.dawnport_quest" {
                     expected.insert(callback["key"].as_str().ok_or("callback key")?.to_owned());
                 }
             }

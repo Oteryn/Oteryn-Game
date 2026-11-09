@@ -396,6 +396,15 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        // Personal objectives and NPC programmes have their own fenced writers.
+        // A generic command or a caller-supplied death id is not native proof.
+        if oteryn_gameplay_quests::quest::kill_objectives::binding(&request.transition_key)
+            .is_some()
+            || request.transition_key.starts_with("oteryn:quest-transition/native-kill/")
+            || request.transition_key.starts_with("oteryn:quest-npc/")
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         if reward_callbacks.iter().any(|c| {
             c.participants.iter().enumerate().any(|(i, _)| {
                 oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&c.key, i)

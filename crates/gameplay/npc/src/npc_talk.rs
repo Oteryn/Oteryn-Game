@@ -368,13 +368,24 @@ impl NpcTalkBook {
                 &reference.key,
                 &npc.services,
             );
+            // The paid-travel owner checks these quest gates against locked
+            // durable progress at quote and commit, independently of NPC scripts.
             let travel_routes = crate::content::npc_catalogue::travel::resolve(
                 model,
                 &reference.key,
                 &npc.services,
             )
             .into_iter()
-            .filter(|route| native_quest || route.quest_gate.is_none())
+            .filter(|route| {
+                // These quest-specific conversations still need their native
+                // executor. Ordinary ferries retain the paid owner's gate checks.
+                native_quest
+                    || !matches!(
+                        reference.key.as_str(),
+                        "oteryn:npc.dalbrect" | "oteryn:npc.rapanaio_boat"
+                    )
+                    || route.quest_gate.is_none()
+            })
             .collect::<Vec<_>>();
             let bank = npc
                 .services
@@ -464,6 +475,32 @@ impl NpcTalkBook {
                     "May your path lead to enlightenment.".into(),
                     Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
                     Vec::new(),
+                )
+            } else if matches!(
+                reference.key.as_str(),
+                "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
+            ) && npc.services.is_empty()
+            {
+                // SUMMER: the model's historical `bank_dialogue` carrier holds the
+                // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
+                // literal, single-line lore is qualified here. Quest callbacks and
+                // multipart/stateful branches remain outside the talk consumer.
+                let Some(dialogue) = &npc.bank_dialogue else {
+                    continue;
+                };
+                if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
+                    continue;
+                }
+                (
+                    dialogue.greet[0].clone(),
+                    dialogue.farewell[0].clone(),
+                    None,
+                    dialogue
+                        .keywords
+                        .iter()
+                        .filter(|keyword| literal_keyword(keyword))
+                        .cloned()
+                        .collect(),
                 )
             } else if let Some(greeting) = crate::quest_greetings::get(&reference.key)
                 .filter(|_| reference.key != "oteryn:npc.spectulus")
@@ -588,32 +625,6 @@ impl NpcTalkBook {
                     dialogue.farewell[0].clone(),
                     None,
                     dialogue.keywords.clone(),
-                )
-            } else if matches!(
-                reference.key.as_str(),
-                "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
-            ) && npc.services.is_empty()
-            {
-                // SUMMER: the model's historical `bank_dialogue` carrier holds the
-                // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
-                // literal, single-line lore is qualified here. Quest callbacks and
-                // multipart/stateful branches remain outside the talk consumer.
-                let Some(dialogue) = &npc.bank_dialogue else {
-                    continue;
-                };
-                if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
-                    continue;
-                }
-                (
-                    dialogue.greet[0].clone(),
-                    dialogue.farewell[0].clone(),
-                    None,
-                    dialogue
-                        .keywords
-                        .iter()
-                        .filter(|keyword| literal_keyword(keyword))
-                        .cloned()
-                        .collect(),
                 )
             } else if crate::content::npc_catalogue::healing::profile(&reference.key).is_some() {
                 (
@@ -1426,6 +1437,10 @@ mod summer_dialogue_tests {
             assert!(npc.admitted_dialogue);
             assert!(npc.offers.is_empty());
             assert!(npc.dialogue_keywords.iter().all(literal_keyword));
+            assert!(
+                !npc.dialogue_keywords.is_empty(),
+                "literal lore must survive greeting admission"
+            );
             let source = model
                 .npcs()
                 .iter()
@@ -1713,6 +1728,19 @@ mod s10_tests {
                 (x, y, floor)
             );
         }
+        let calassa = book
+            .get("oteryn:npc.captain_max")
+            .and_then(|entry| {
+                entry
+                    .travel_routes
+                    .iter()
+                    .find(|route| route.keyword == "calassa")
+            })
+            .ok_or("Calassa route must reach the paid travel owner")?;
+        assert!(
+            calassa.quest_gate.is_some(),
+            "the paid owner must retain the access predicate"
+        );
         for key in ["oteryn:npc.rapanaio_boat", "oteryn:npc.dalbrect"] {
             assert!(
                 book.get(key)

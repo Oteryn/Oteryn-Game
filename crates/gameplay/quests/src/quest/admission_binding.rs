@@ -162,6 +162,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn embedded_reward_operations_match_their_registered_owners() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("owner-consistency")
+            .map_err(|error| format!("{error:?}"))?;
+        for callback in reward_callbacks::load()? {
+            let transition = lowered
+                .catalogue()
+                .transition(&callback.key)
+                .ok_or_else(|| format!("missing reward {}", callback.key))?;
+            assert_eq!(
+                *transition,
+                reward_callbacks::primary_transition(&callback)?,
+                "{}",
+                callback.key
+            );
+            validate(transition, false)?;
+        }
+        Ok(())
+    }
+
+    #[test]
     fn specialized_altar_owner_preserves_the_registered_increment() -> Result<(), String> {
         let mut transition =
             world_callbacks::primary_transition(&super::super::rotten_blood::altar_callback())?;

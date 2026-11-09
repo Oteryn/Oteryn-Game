@@ -1049,38 +1049,7 @@ fn extend_callbacks(
                 });
             }
         }
-        transitions.push(QuestTransition {
-            world_change: None,
-            key: callback.key.clone(),
-            quest: callback.quest.clone(),
-            effects: callback
-                .storage
-                .iter()
-                .map(|s| QuestEffect {
-                    track: s.track.clone(),
-                    from: QuestComparison::Between(s.minimum, s.maximum),
-                    effect: if callback
-                        .counter
-                        .as_ref()
-                        .is_some_and(|counter| counter.track == s.track)
-                    {
-                        QuestEffectKind::Add(1)
-                    } else if s.preserve {
-                        QuestEffectKind::Add(0)
-                    } else {
-                        QuestEffectKind::Set(s.set)
-                    },
-                })
-                .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
-                .chain(callback.counter.iter().map(|counter| QuestEffect {
-                    track: counter.track.clone(),
-                    from: QuestComparison::Between(0, counter.maximum - 1),
-                    effect: QuestEffectKind::Add(1),
-                }))
-                .collect(),
-            completes: callback.completes,
-            experience: None,
-        });
+        transitions.push(primary_transition(callback)?);
     }
     if let Some(required) = requires
         .iter()

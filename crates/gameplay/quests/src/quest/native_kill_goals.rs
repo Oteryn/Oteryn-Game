@@ -234,7 +234,10 @@ pub fn validate_closed(catalogue: &QuestStateCatalogue) -> Result<(), String> {
         if !activation.effects.iter().any(|e| {
             e.track == goal.phase
                 && e.from == QuestComparison::Between(-1, -1)
-                && e.effect == QuestEffectKind::Set(0)
+                && matches!(
+                    e.effect,
+                    QuestEffectKind::Set(0) | QuestEffectKind::SetWithBinding { value: 0, .. }
+                )
         }) {
             return Err("native goal activation must be once-only".into());
         }
@@ -246,9 +249,11 @@ pub fn validate_closed(catalogue: &QuestStateCatalogue) -> Result<(), String> {
                 }
                 if e.track == goal.phase {
                     let valid = match (e.from, e.effect) {
-                        (QuestComparison::Between(-1, -1), QuestEffectKind::Set(0)) => {
-                            t.key == goal.activation
-                        }
+                        (
+                            QuestComparison::Between(-1, -1),
+                            QuestEffectKind::Set(0)
+                            | QuestEffectKind::SetWithBinding { value: 0, .. },
+                        ) => t.key == goal.activation,
                         (
                             QuestComparison::Eq(0)
                             | QuestComparison::Eq(1)
@@ -259,7 +264,8 @@ pub fn validate_closed(catalogue: &QuestStateCatalogue) -> Result<(), String> {
                         ) => true,
                         (
                             QuestComparison::Eq(0) | QuestComparison::Between(0, 0),
-                            QuestEffectKind::Set(1),
+                            QuestEffectKind::Set(1)
+                            | QuestEffectKind::SetWithBinding { value: 1, .. },
                         ) => true,
                         _ => false,
                     };
@@ -370,6 +376,14 @@ mod tests {
         }
         for (track, from, effect) in [
             (&goal.phase, QuestComparison::Eq(1), QuestEffectKind::Set(0)),
+            (
+                &goal.phase,
+                QuestComparison::Eq(1),
+                QuestEffectKind::SetWithBinding {
+                    value: 0,
+                    binding: [1; 32],
+                },
+            ),
             (
                 &goal.counter,
                 QuestComparison::Any,

@@ -483,13 +483,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
-    callbacks.extend(
-        parse(include_str!(
-            "../../../../../content/quests/questpc7-world-callbacks.json"
-        ))?
-        .into_iter()
-        .filter(questpc7_compat::registered),
-    );
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/questpc7-world-callbacks.json"
+    ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
     callbacks.extend(parse_with_provenance(
@@ -1103,7 +1099,7 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
         key: callback.key.clone(),
         quest: callback.quest.clone(),
         effects,
-        completes: callback.completes,
+        completes: callback.completes || callback.effects.quest_completion.is_some(),
         experience: callback.experience,
     })
 }
@@ -1155,6 +1151,7 @@ mod tests {
             .clone();
         let input = serde_json::json!({"schema":1,"callbacks":[callback]});
         let parsed = super::parse(&input.to_string())?;
+        assert!(super::primary_transition(&parsed[0])?.completes);
         assert_eq!(
             parsed[0]
                 .effects

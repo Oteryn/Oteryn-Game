@@ -170,6 +170,7 @@ pub(super) async fn exercise(
                     .and_then(|g| g.native_gameplay())
                     .ok_or("native")?
             ),
+            &owner.premium_coordinator,
         )
         .await,
         Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)
@@ -1047,8 +1048,10 @@ pub(super) async fn exercise_scoped(
         .read_character_quest_state(authority, fence.character_id)
         .await
         .map_err(debug)?;
-    // Xelvar's source sets a track and grants four crystal items. The storage
-    // owner must refuse the complete branch until its item owner is composed.
+    // Xelvar's source sets a track and grants four crystal items. The shared
+    // item owner now supports that branch; withhold its admitted generation
+    // here to retain the negative storage-only composition case.
+    let generation = owner.active_generation.take();
     let refused = owner
         .npc_talk(
             admitted.runtime_actor.ok_or("actor")?,
@@ -1063,6 +1066,7 @@ pub(super) async fn exercise_scoped(
             },
         )
         .await;
+    owner.active_generation = generation;
     assert_eq!(refused.disposition, NpcIntentDisposition::Rejected);
     assert!(!refused.unknown);
     assert_eq!(

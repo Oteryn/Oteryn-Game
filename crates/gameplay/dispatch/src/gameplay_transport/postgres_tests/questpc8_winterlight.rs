@@ -83,10 +83,11 @@ pub(super) async fn exercise(
             .and_then(|entry| entry.copy.as_ref())
             .ok_or("admitted Quest copy")?;
         assert_eq!(
-            copy.tracks()
+            copy.read_tracks(owner.quest_catalogue.as_ref().ok_or("Quest catalogue")?)
+                .ok_or("Quest read projection")?
                 .get("oteryn:quest-progress/chosen/winterlight/stage"),
             Some(&0),
-            "the real admission reader supplies the declared initial stage"
+            "the real admission read projection supplies the declared initial stage"
         );
     }
     super::questpc8_mystery_geometry::arrive(

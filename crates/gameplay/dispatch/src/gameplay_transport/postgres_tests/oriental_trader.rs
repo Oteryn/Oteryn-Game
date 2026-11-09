@@ -132,6 +132,15 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        // The trade owner requires today's committed ship selection and its
+        // actual source placement, even when the conversation was already open.
+        let epoch = (1..1000)
+            .find(|epoch| crate::durability::world_event::changes::roll(world, *epoch, 0)
+                .is_ok_and(|day| day.oriental_trader.is_some()))
+            .ok_or("active Oriental Trader epoch")?;
+        super::worldchg_trader::day(&h, world, epoch).await?;
+        let (yasir_x, yasir_y, yasir_z) = crate::durability::world_event::changes::roll(world, epoch, 0)?
+            .oriental_trader.ok_or("selected Yasir town")?.yasir_position();
         let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active content")?;
@@ -200,7 +209,11 @@ fn scenario() -> TestResult {
         let npc = {
             let mut runtime = owner.runtime.lock().await;
             runtime
-                .initialize_first_entry_position(deps.actor)
+                .initialize_pinned_test_position(deps.actor, crate::foundation::MovementLocalPosition {
+                    x: i32::from(yasir_x) - 1,
+                    y: i32::from(yasir_y),
+                    floor: i16::from(yasir_z),
+                })
                 .map_err(debug)?;
             let spot = runtime
                 .read_actor_position(deps.actor)

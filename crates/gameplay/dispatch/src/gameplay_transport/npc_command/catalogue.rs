@@ -415,6 +415,7 @@ pub(super) async fn apply(
                 },
             )
             .with_wheel(admission.premium_coordinator),
+            &admission.premium_coordinator,
         )
         .await;
     drop(slot);

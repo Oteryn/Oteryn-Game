@@ -486,7 +486,20 @@ pub(super) async fn exercise(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(1))
         .ok_or("pace native USE")?;
-    let reply = super::quest_world_callbacks::wire(owner, admitted, 5, 2, east.clone()).await?;
+    // This per-character gift does not transform the source barrel. Its shared
+    // revision stays zero; revision one is stale, while the original target
+    // reaches the already-claimed quest refusal below.
+    let mut stale_target =
+        oteryn_protocol_oteryn::world_object::decode_use_intent(&east).map_err(debug)?;
+    stale_target.expected_revision = 1;
+    let reply = super::quest_world_callbacks::wire(
+        owner,
+        admitted,
+        5,
+        2,
+        oteryn_protocol_oteryn::world_object::encode_use_intent(&stale_target).map_err(debug)?,
+    )
+    .await?;
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
         UseDisposition::StaleState
@@ -496,21 +509,11 @@ pub(super) async fn exercise(
         committed,
         "stale physical target writes nothing"
     );
-    let mut current =
-        oteryn_protocol_oteryn::world_object::decode_use_intent(&east).map_err(debug)?;
-    current.expected_revision = 1;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(1))
         .ok_or("pace repeat USE")?;
-    let reply = super::quest_world_callbacks::wire(
-        owner,
-        admitted,
-        6,
-        2,
-        oteryn_protocol_oteryn::world_object::encode_use_intent(&current).map_err(debug)?,
-    )
-    .await?;
+    let reply = super::quest_world_callbacks::wire(owner, admitted, 6, 2, east).await?;
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
         UseDisposition::Rejected

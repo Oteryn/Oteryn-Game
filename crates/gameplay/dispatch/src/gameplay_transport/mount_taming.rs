@@ -87,6 +87,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // has no applicable taming rule before taking the spell permit or reading any durable fence.
         if let UseTarget::ItemByDefinition(wanted) = intent.target {
             let (key, _) = index.definition_at(wanted).ok_or(reject)?;
+            if intent.use_with.is_some()
+                && rules().iter().any(|rule| {
+                    rule.item_key == key
+                        && rule.target_item_key.is_some()
+                        && !rule.single_item_use()
+                })
+            {
+                // Multi-piece construction retains the recipe owner for self-USE;
+                // a creature cannot be its item target or enter one-piece taming.
+                return Err(Some(UseDisposition::NothingToUse));
+            }
             let self_use = intent.use_with.is_none()
                 && intent.use_with_map_item.is_none()
                 && intent.use_with_position.is_none();

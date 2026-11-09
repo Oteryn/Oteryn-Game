@@ -212,6 +212,9 @@ impl Bindings {
                     Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
                         callback.completes = stage.completes;
                     }
+                    Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
+                        callback.completes = stage.completes;
+                    }
                     _ => {}
                 }
             }

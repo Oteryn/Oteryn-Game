@@ -183,6 +183,8 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if draconia_escape {
         super::super::draconia_escape::authored_callback()?
+    } else if elvenbane {
+        callback("elvenbane-basement-entry")?
     } else if native_signs || diprath_room {
         callback("ancient-tombs-diprath-sign-1")?
     } else if native_flames {
@@ -1196,11 +1198,6 @@ fn scenario_case(
             crate::gameplay_transport::gameplay_drain::GameplayDrain::at_reset_epoch(1);
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
-        if draconia_escape {
-            owner.quest_catalogue =
-                Some(super::super::draconia_escape::catalogue(&callback, name)?);
-        }
-
         if mead {
             owner.premium_coordinator = Some(&mead_premium);
         }
@@ -1226,6 +1223,10 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if draconia_escape {
+            owner.quest_catalogue =
+                Some(super::super::draconia_escape::catalogue(&callback, name)?);
+        }
         if mead {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::l6_mead::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("Mead catalogue")?,

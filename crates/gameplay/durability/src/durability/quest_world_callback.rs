@@ -796,7 +796,15 @@ pub(super) async fn consume_npc_inputs(
     if remaining.is_empty() {
         return Ok(true);
     }
-    if remaining.len() > 8 {
+    // The existing Hot Cuisine planner owns fifteen closed recipes; its sixth
+    // dish has nine distinct plain ingredients. Other plain NPC plans retain
+    // their eight-input admission bound.
+    let input_limit = if plan.quest == oteryn_gameplay_quests::quest::hot_cuisine::QUEST {
+        9
+    } else {
+        8
+    };
+    if remaining.len() > input_limit {
         return Ok(false);
     }
     let keys: Vec<_> = remaining.keys().cloned().collect();

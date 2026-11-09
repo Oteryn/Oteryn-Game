@@ -183,6 +183,7 @@ pub(super) async fn exercise(
                 request.clone(),
                 catalogue.clone(),
                 &weights,
+                &owner.premium_coordinator,
             )
             .await
             .map_err(debug)?;
@@ -234,6 +235,7 @@ pub(super) async fn exercise(
                 request.clone(),
                 catalogue.clone(),
                 &weights,
+                &owner.premium_coordinator,
             )
             .await
             .map_err(debug)?;
@@ -410,6 +412,7 @@ pub(super) async fn exercise(
             request.clone(),
             catalogue.clone(),
             &weights,
+            &owner.premium_coordinator,
         )
         .await
         .map_err(debug)?;
@@ -469,7 +472,8 @@ pub(super) async fn exercise(
                 stale,
                 stale_request,
                 catalogue,
-                &weights
+                &weights,
+                &owner.premium_coordinator,
             )
             .await,
         Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)

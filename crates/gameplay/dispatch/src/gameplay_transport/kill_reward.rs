@@ -1672,13 +1672,32 @@ pub fn record_creature_kill(
             // Keep source-qualified quest XP independent of ordinary corpse/loot
             // admission. The same native death, bounded frozen census and atomic
             // party XP writer own its eventual progression; no synthetic reward row.
-            if top.present().is_some() && tracks_native_progression(&creature) {
-                let Some(amount) = source
-                    .and_then(|facts| facts.experience)
-                    .and_then(|amount| i64::try_from(amount).ok())
-                else {
-                    refuse("encounter_experience_unavailable", &creature);
-                    return;
+            let personal_objective =
+                oteryn_gameplay_quests::quest::native_kill_goals::load().is_ok_and(|goals| {
+                    goals.iter().any(|goal| {
+                        goal.origins
+                            .iter()
+                            .any(|origin| origin.creature == creature)
+                    })
+                }) || oteryn_gameplay_quests::quest::kill_objectives::OBJECTIVES
+                    .iter()
+                    .any(|objective| objective.creature == creature);
+            if top.present().is_some()
+                && (tracks_native_progression(&creature) || personal_objective)
+            {
+                let amount = if tracks_native_progression(&creature) {
+                    let Some(amount) = source
+                        .and_then(|facts| facts.experience)
+                        .and_then(|amount| i64::try_from(amount).ok())
+                    else {
+                        refuse("encounter_experience_unavailable", &creature);
+                        return;
+                    };
+                    amount
+                } else {
+                    // Personal objectives still need the exact native death audit
+                    // when the corpse is unqualified. This grants no ordinary XP.
+                    0
                 };
                 let amount = if daily_boost
                     .as_ref()

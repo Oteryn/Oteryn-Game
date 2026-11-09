@@ -665,6 +665,9 @@ fn loop_monster_input(summons: bool) -> NativeGameplayInput {
             .clone();
         attack.interval_ms = 1000;
         attack.chance_ppm = 1_000_000;
+        // The donor body may be uncapped (0); this synthetic schedule qualifies
+        // the explicit seven-tile creature override, independent of record order.
+        attack.range_tiles = Some(7);
         let rat = creatures
             .records
             .iter_mut()

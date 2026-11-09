@@ -330,14 +330,6 @@ pub(super) fn plan(
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
                 }
-                if storage_only
-                    && !matches!(
-                        guard,
-                        NpcRuleGuard::Storage { .. } | NpcRuleGuard::StorageTime { .. }
-                    )
-                {
-                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
-                }
                 if !state.guard(guard, input)? {
                     eligible = false;
                     break;
@@ -356,17 +348,6 @@ pub(super) fn plan(
                             | NpcRuleEffect::SetTopic { .. }
                             | NpcRuleEffect::EndConversation { .. }
                             | NpcRuleEffect::Experience { .. }
-                    )
-                {
-                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
-                }
-                if storage_only
-                    && !matches!(
-                        effect,
-                        NpcRuleEffect::Set { .. }
-                            | NpcRuleEffect::Add { .. }
-                            | NpcRuleEffect::SetNowPlus { .. }
-                            | NpcRuleEffect::SetTopic { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));

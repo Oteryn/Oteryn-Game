@@ -90,21 +90,7 @@ pub(super) fn catalogue(callback: &Callback, name: &str) -> TestResult<Arc<Quest
                 max: i64::MAX,
             }],
             vec![
-                QuestTransition {
-                    world_change: None,
-                    key: KEY.into(),
-                    quest: callback.quest.clone(),
-                    completes: false,
-                    experience: None,
-                    effects: vec![QuestEffect {
-                        track: TRACK.into(),
-                        from: QuestComparison::Any,
-                        effect: QuestEffectKind::SetIf {
-                            equals: 1,
-                            value: 0,
-                        },
-                    }],
-                },
+                oteryn_gameplay_quests::quest::world_callbacks::primary_transition(callback)?,
                 QuestTransition {
                     world_change: None,
                     key: SEED.into(),

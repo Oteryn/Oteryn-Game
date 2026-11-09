@@ -137,6 +137,21 @@ pub(super) fn prepare(
                     reply: offer.reply.clone(),
                 });
             }
+            // Earlier stages may share the terminal reward's keyword. Only an
+            // explicitly admitted native programme may handle those stages;
+            // its locked writer still proves every source predicate.
+            if oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
+                .ok()
+                .and_then(|source| {
+                    source
+                        .admitted_for_npc(&context.2, catalogue)
+                        .ok()
+                        .flatten()
+                })
+                .is_some()
+            {
+                return None;
+            }
             // A unique exchange owns its exact keyword even before eligibility.
             // Let the locked writer return the stage refusal, rather than falling
             // through to an unrelated legacy dialogue with the same text.
