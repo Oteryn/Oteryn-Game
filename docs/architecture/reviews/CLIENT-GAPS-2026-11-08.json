@@ -1406,9 +1406,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Okręgi HP/MP i status mnicha",
-  "status": "PARTIAL",
-  "gap": "Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Okręgi HP/MP wokół postaci i wskaźniki harmony/serene korzystają z potwierdzonych zasobów; widoczność, geometria i przezroczystość mają trwałe ustawienia.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/resources.rs:99 + monk indicators and player-centred HP/MP rings; apps/client/src/features/local-reference-preferences/arc_controls.rs:91 + native circle settings; apps/client/src/features/local-reference-preferences/tests/presentation.rs:171 + o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals; apps/client/src/features/local-reference-preferences/tests/hud_options.rs:104 + hud_arc_opacity_reaches_renderer_upload_without_dimming_other_quads; apps/client/src/features/local-reference-preferences/tests/options_lane.rs:218 + hud_arcs_project_server_vitals_and_persist_geometry_controls"
  },
  {
   "id": "O028",
