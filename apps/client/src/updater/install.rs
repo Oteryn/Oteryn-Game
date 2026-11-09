@@ -10,7 +10,7 @@ fn archive(path: &Path) -> Result<zip::ZipArchive<fs::File>, UpdateError> {
         .map_err(|_| UpdateError::Verification)
 }
 fn entry_path(entry: &zip::read::ZipFile<'_, fs::File>) -> Result<PathBuf, UpdateError> {
-    let name = entry.name();
+    let name = entry.name().map_err(|_| UpdateError::Verification)?;
     if name.contains(['\\', ':'])
         || name.split('/').any(|s| matches!(s, ".." | "."))
         || entry
