@@ -22,6 +22,29 @@ async fn value(h: &Harness, stage: &str) -> TestResult<i64> {
     .fetch_one(&h.pool)
     .await?)
 }
+
+async fn death(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    creature: &str,
+    command: u64,
+) -> TestResult {
+    let target =
+        super::qengine_kill_stories::death_actor(owner, admitted, creature, command).await?;
+    let mut runtime = owner.runtime.lock().await;
+    assert_eq!(
+        runtime
+            .companion_snapshot_including_dead(target)
+            .map_err(debug)?
+            .health,
+        0
+    );
+    // The fixture drives lethal settlement without the AI lifecycle loop.
+    // Retire its exact dead generation after both durable drains; corpse and
+    // reward occurrences intentionally outlive the actor slot.
+    runtime.remove_arena_opponent(target).map_err(debug)?;
+    Ok(())
+}
 async fn predecessor(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -107,6 +130,28 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
+    // The shared quest scenario replaces the admitted runtime. Rebind only
+    // its current durable Character lease before exercising native combat.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "current M25 combat fence")?
+        .ok_or("current M25 combat fence")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            admitted.runtime_actor.ok_or("M25 combat actor")?,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
     owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
@@ -122,7 +167,7 @@ pub(super) async fn exercise(
     {
         let command = 60000 + u64::try_from(index)? * 10;
         assert_eq!(value(h, gate).await?, 0);
-        super::qengine_kill_stories::death(owner, admitted, creature, command).await?;
+        death(owner, admitted, creature, command).await?;
         super::m25_corpse_chain::assert_native_corpse_chain(&h.pool, creature).await?;
         assert_eq!(
             value(h, stage).await?,
@@ -134,13 +179,13 @@ pub(super) async fn exercise(
         eprintln!(
             "M25_REAL_NATIVE_DEATH_REACHED creature={creature} predecessor={gate} target={stage}"
         );
-        super::qengine_kill_stories::death(owner, admitted, creature, command + 2).await?;
+        death(owner, admitted, creature, command + 2).await?;
         assert_eq!(
             value(h, stage).await?,
             1,
             "real native death progresses its selected authored stage once"
         );
-        super::qengine_kill_stories::death(owner, admitted, creature, command + 3).await?;
+        death(owner, admitted, creature, command + 3).await?;
         assert_eq!(
             value(h, stage).await?,
             1,
