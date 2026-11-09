@@ -126,3 +126,48 @@ pub(super) async fn read(
         })
         .await?
 }
+
+/// Lifecycle reads retain the caller's Character revision as well as current
+/// activity membership. No equipment authority escapes this transaction.
+pub(super) async fn read_lifecycle(
+    root: &DurabilityRoot,
+    recovery: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    gameplay: &super::super::character_progression::CurrentCharacterGameplayFence,
+    content_digest: [u8; 32],
+) -> Result<RawLifecycleDurableFacts> {
+    let record = recovery
+        .record_for(root)
+        .map_err(|_| rejected("activity lifecycle recovery root"))?;
+    let node = node.clone();
+    let gameplay = *gameplay;
+    let fence = gameplay.item_fence();
+    root.try_issue_semantic_pass()?
+        .run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
+                let authority = match assert_current_activity_equipment_in_transaction(
+                    &mut tx,
+                    &record,
+                    &node,
+                    &fence,
+                    content_digest,
+                )
+                .await
+                {
+                    Ok(authority) => authority,
+                    Err(error) => return Ok(Err(error)),
+                };
+                if authority.character_revision != gameplay.expected_character_revision.get() {
+                    return Ok(Err(rejected("activity lifecycle Character revision")));
+                }
+                let facts = match read_lifecycle_facts_in_transaction(&mut tx, &authority).await {
+                    Ok(facts) => facts,
+                    Err(error) => return Ok(Err(error)),
+                };
+                super::super::db::commit_semantic_transaction(tx, deadline).await?;
+                Ok(Ok(facts))
+            })
+        })
+        .await?
+}

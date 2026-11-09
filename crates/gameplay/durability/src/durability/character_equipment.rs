@@ -1187,6 +1187,13 @@ impl DurabilityRoot {
         fence: &super::character_progression::CurrentCharacterGameplayFence,
         content_digest: [u8; 32],
     ) -> Result<RawLifecycleDurableFacts> {
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return activity_read::read_lifecycle(self, recovery, node, fence, content_digest)
+                .await;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| rejected("equipment recovery root"))?;

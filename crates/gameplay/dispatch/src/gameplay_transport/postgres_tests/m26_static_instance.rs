@@ -210,6 +210,51 @@ async fn scenario(admin: String) -> TestResult {
             .is_some(),
         "production progression admission"
     );
+    // Give the existing classless fixture its actual fenced native class choice.
+    // Keep the qualified level-250 progression and source room unchanged.
+    {
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "class choice fence")?
+            .ok_or("class choice fence")?;
+        let before = owner
+            .root
+            .read_character_build_state(owner.character, fence.character_id)
+            .await
+            .map_err(debug)?;
+        let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+            include_bytes!(
+                "../../../../../../tools/content-schema/native-gameplay/build-training.json"
+            ),
+            "content-1",
+        )
+        .map_err(debug)?;
+        let after =
+            crate::durability::character_build::convert_vocation(&formula, &before, "knight")
+                .map_err(debug)?;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        slot.commit_build(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            crate::durability::character_build::BuildChangeRequest {
+                occurrence: crate::durability::character_build::BuildOccurrence::from_bytes(id(
+                    182,
+                ))
+                .map_err(debug)?,
+                cause: crate::durability::character_build::BuildCause::VocationChoice,
+                before,
+                after,
+                pruned_stance: None,
+            },
+            &formula,
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    }
     super::item_look::seed_main_backpack(&h, &[]).await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
         .bind(id(41).as_slice()).execute(&h.pool).await?;
@@ -304,6 +349,50 @@ async fn scenario(admin: String) -> TestResult {
         destination.ensure_source_map_initialized().await,
         "the real static Instance is immediately ready for the Movement owner"
     );
+    let gameplay = crate::gameplay_transport::character_gameplay_fence::current(
+        &destination,
+        admitted.game_session_id,
+        false,
+    )
+    .await
+    .ok_or("activity lifecycle fence")?;
+    let facts = read_activity_lifecycle(&destination, &gameplay, native.source_digest()).await?;
+    assert!(
+        facts.is_ok(),
+        "qualified activity retains its actual lifecycle facts: {facts:?}"
+    );
+    let facts = facts.map_err(debug)?;
+    assert_eq!(facts.level, 250);
+    assert_eq!(facts.fence, gameplay.item_fence());
+    assert_eq!(facts.equipment.content_digest, native.source_digest());
+    let mut stale = gameplay;
+    stale.expected_character_revision =
+        crate::domain::CharacterRevision::new(gameplay.expected_character_revision.get() + 1)
+            .map_err(debug)?;
+    let refused = read_activity_lifecycle(&destination, &stale, native.source_digest()).await?;
+    assert!(
+        matches!(
+            refused,
+            Err(
+                crate::durability::character_equipment::EquipmentError::Rejected(
+                    "activity lifecycle Character revision"
+                )
+            )
+        ),
+        "stale lifecycle revision is refused concretely: {refused:?}"
+    );
+    let refused = read_activity_lifecycle(&destination, &gameplay, [0xb6; 32]).await?;
+    assert!(
+        matches!(
+            refused,
+            Err(
+                crate::durability::character_equipment::EquipmentError::Rejected(
+                    "activity equipment destination Content pin"
+                )
+            )
+        ),
+        "wrong lifecycle content is refused concretely: {refused:?}"
+    );
     assert!(started.elapsed().as_secs_f64() > 0.01);
     eprintln!(
         "M26_STATIC_INSTANCE POSTGRES_CASE_COMPLETED duration={:?} success=true",
@@ -315,4 +404,36 @@ async fn scenario(admin: String) -> TestResult {
     drop(seal);
     h.cleanup().await?;
     Ok(())
+}
+
+// A busy holder is retryable; negative cases still require their concrete fence refusal.
+async fn read_activity_lifecycle(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    fence: &crate::durability::character_progression::CurrentCharacterGameplayFence,
+    digest: [u8; 32],
+) -> TestResult<
+    Result<
+        crate::durability::character_equipment::RawLifecycleDurableFacts,
+        crate::durability::character_equipment::EquipmentError,
+    >,
+> {
+    use crate::durability::{DurabilityError, character_equipment::EquipmentError};
+    use crate::gameplay_transport::connection::AdmissionRefusal;
+    crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root)
+        .retry_unavailable(async || {
+            match owner
+                .root
+                .read_lifecycle_durable_facts(owner.character, owner.holder, fence, digest)
+                .await
+            {
+                Err(EquipmentError::Durability(
+                    DurabilityError::Unavailable
+                    | DurabilityError::RootUnavailable
+                    | DurabilityError::RootPassDeadlineExceeded,
+                )) => Err(AdmissionRefusal::Unavailable),
+                result => Ok(result),
+            }
+        })
+        .await
+        .map_err(debug)
 }
