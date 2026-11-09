@@ -56,3 +56,19 @@ surrogate USE: it removes trees 3636 at (32857,32231..32233,z11). UID9234 restor
 missing trees and teleports to (32819,32347,z9). The carrot entry retains its live
 Premium and carried-item requirements; the Fire Bug entrance retains its shared
 1949/3134 lifecycle. The generic full-route registration remains M01's boundary.
+
+The broader content checks also pass: `integration_rest content_` has 123 passing
+cases, and `content_world_project_repository` has five. World `pin-check` passes
+with the unchanged `oteryn` bundle digest
+`4b6cb9bf12cf8b14b66da82168c23b53f89c45dfeb5c5d666829d5c562a4d7cb`.
+Clippy passes for all dispatch targets/features. Local node boot is skipped under
+the task owner's instruction; no CI or full-mechanic completion is claimed.
+
+Current-map observations for the next Dreamer slice, decoded with
+`world_region_codec.decode_region` and the placements palette: region
+`region-z09-x128-y125.b3` contains 3134 at (32849,32233,z9), ordinal 1.
+`region-z11-x128-y125.b3` contains 1949 at (32857,32230,z11), ordinal 3,
+and 3636 at (32857,32231..32233,z11), ordinal 1 at each tile. These imported
+objects carry no UID attributes. These are native footprint observations,
+not recovered UID2243/9234 bindings or permission to infer the UID2244 drop tile.
+The actual offering and reset callers still need explicit qualification.
