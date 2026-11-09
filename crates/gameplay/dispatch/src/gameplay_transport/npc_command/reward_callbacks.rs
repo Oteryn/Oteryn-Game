@@ -100,7 +100,7 @@ pub(super) fn prepare(
                         .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
                 })
             };
-            let mut selected = callbacks.iter().filter(|c| {
+            let matching_stage = callbacks.iter().filter(|c| {
                 c.carried_item.is_none()
                     && c.npc == context.2
                     && c.topic == topic.number
@@ -116,9 +116,11 @@ pub(super) fn prepare(
                                 .all(|op| op.advisory_holds(catalogue, tracks))
                     })
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
-                    && c.inventory
-                        .iter()
-                        .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+            });
+            let mut selected = matching_stage.clone().filter(|c| {
+                c.inventory
+                    .iter()
+                    .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
             });
             if let Some(callback) = selected.next() {
                 if selected.next().is_some() {
@@ -133,6 +135,15 @@ pub(super) fn prepare(
                     next_topic: Some(Topic::from(callback.next_topic)),
                     reply: callback.reply.clone(),
                 });
+            }
+            // A later stage with the same keyword cannot hide this stage's
+            // explicit inventory refusal. Successful branches retain priority.
+            let mut blocked = matching_stage;
+            if let Some(callback) = blocked.next()
+                && blocked.next().is_none()
+                && let Some(choice) = refusal(&callback.failure_reply)
+            {
+                return Some(choice);
             }
             if let Some(offer) = offers.offers.iter().find(|c| {
                 c.npc == context.2
