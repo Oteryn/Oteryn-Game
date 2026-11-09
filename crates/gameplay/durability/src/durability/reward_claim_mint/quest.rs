@@ -97,7 +97,10 @@ pub struct QuestRewardAdmission<'a> {
 pub(crate) async fn apply(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     tuple: SelectedType2Tuple,
-    owner: (&super::super::DurabilityRoot, &crate::character_recovery_fence::CharacterRecoveryFenceV1),
+    owner: (
+        &super::super::DurabilityRoot,
+        &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    ),
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     request: &QuestTransitionRequest,
@@ -117,23 +120,65 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
-    match (&callback.creature_target, admission.creature_use, admission.carried_use) {
+    match (
+        &callback.creature_target,
+        admission.creature_use,
+        admission.carried_use,
+    ) {
         (None, None, _) => {}
         (Some(_), Some(proof), Some(carried)) if callback.fresh_corpse => {
-            if !proof.permits_corpse(tx,owner,node,fence,request,callback,carried,admission.native).await? {
+            if !proof
+                .permits_corpse(
+                    tx,
+                    owner,
+                    node,
+                    fence,
+                    request,
+                    callback,
+                    carried,
+                    admission.native,
+                )
+                .await?
+            {
                 return Ok(false);
             }
         }
-        (Some(key), Some(proof), Some(carried)) if !callback.fresh_corpse && proof.permits(fence, request, key, carried) => {}
+        (Some(key), Some(proof), Some(carried))
+            if !callback.fresh_corpse && proof.permits(fence, request, key, carried) => {}
         _ => return Ok(false),
+    }
+    if callback.capture_creature {
+        let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
+            return Ok(false);
+        };
+        if !proof
+            .claim_capture(tx, fence, request, callback, carried)
+            .await?
+        {
+            return Ok(false);
+        }
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
-    match (&callback.peer_requires, admission.peer_use, admission.carried_use) {
+    match (
+        &callback.peer_requires,
+        admission.peer_use,
+        admission.carried_use,
+    ) {
         (None, None, _) => {}
         (Some(requirement), Some(peer), Some(carried)) => {
-            if !super::quest_peer::holds_in_transaction(tx, node, fence, peer, requirement, catalogue, carried).await? {
+            if !super::quest_peer::holds_in_transaction(
+                tx,
+                node,
+                fence,
+                peer,
+                requirement,
+                catalogue,
+                carried,
+            )
+            .await?
+            {
                 return Ok(false);
             }
         }
@@ -354,7 +399,11 @@ pub(crate) async fn apply(
             fence,
             command,
             &callback.key,
-            if callback.is_paid_exchange() { QuestMintClaim::PaidExchange } else { QuestMintClaim::Once },
+            if callback.is_paid_exchange() {
+                QuestMintClaim::PaidExchange
+            } else {
+                QuestMintClaim::Once
+            },
             reward,
             admission,
         )

@@ -164,6 +164,9 @@ pub struct RewardCallback {
     /// Sample the exact original fresh Ground corpse instead of a live creature.
     #[serde(default, skip_serializing_if = "is_false")]
     pub fresh_corpse: bool,
+    /// Retire one exact live creature; its occurrence is globally single-use.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub capture_creature: bool,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -212,6 +215,8 @@ pub struct RewardCallback {
     pub sources: Vec<String>,
 }
 
+#[cfg(test)]
+mod capture_tests;
 #[cfg(test)]
 mod fresh_corpse_tests;
 #[cfg(test)]
@@ -473,6 +478,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
             || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || (c.fresh_corpse && c.creature_target.is_none())
+            || (c.capture_creature && (c.fresh_corpse || c.creature_target.is_none()))
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()

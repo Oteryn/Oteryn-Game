@@ -4,6 +4,7 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::UseIntent;
 
+mod capture;
 mod corpse;
 pub use corpse::QuestCorpseOperand;
 
