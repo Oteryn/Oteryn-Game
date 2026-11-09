@@ -89,6 +89,25 @@ pub(super) fn objects() -> TestResult<Vec<(Position, u16)>> {
 async fn carried(h: &Harness, item: u32) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_production_key=$3").bind(super::fixture::id(41).as_slice()).bind(super::fixture::id(42).as_slice()).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
 }
+async fn pack(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    a: &AdmittedSession,
+    h: &Harness,
+    item: u32,
+    bag: sqlx::types::Uuid,
+    command: u64,
+) -> TestResult {
+    let instance: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT i.item_instance_id FROM game_item_container_entries e \
+         JOIN game_item_instances i USING(item_instance_id) \
+         WHERE i.definition_production_key=$1 AND i.lifecycle=1 \
+         ORDER BY i.item_instance_id LIMIT 1",
+    )
+    .bind(format!("oteryn:item.tibia.i{item}"))
+    .fetch_one(&h.pool)
+    .await?;
+    super::qengine_rewards::into_bag(owner, a, *instance.as_bytes(), *bag.as_bytes(), command).await
+}
 async fn at(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     a: &AdmittedSession,
@@ -406,22 +425,7 @@ pub(super) async fn exercise(
                 "sampling replay adds no occurrence"
             );
         }
-        let probe: sqlx::types::Uuid = sqlx::query_scalar(
-            "SELECT i.item_instance_id FROM game_item_container_entries e \
-             JOIN game_item_instances i USING(item_instance_id) \
-             WHERE i.definition_production_key='oteryn:item.tibia.i32197' AND i.lifecycle=1 \
-             ORDER BY i.item_instance_id LIMIT 1",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        super::qengine_rewards::into_bag(
-            owner,
-            a,
-            *probe.as_bytes(),
-            *probe_bag.as_bytes(),
-            400_000 + u64::try_from(i)?,
-        )
-        .await?;
+        pack(owner, a, h, 32197, probe_bag, 400_000 + u64::try_from(i)?).await?;
         assert_eq!(value(owner, a, &track("samples")).await?, i + 1);
         assert_eq!(carried(h, 32197).await?, i + 1);
     }
@@ -467,6 +471,9 @@ pub(super) async fn exercise(
     let gather = callback(&rows, "gather-soul")?;
     for i in 0..20 {
         assert_eq!(click(owner, a, gather).await?, UseDisposition::Committed);
+        // Each occurrence mints a fresh instance. Reuse the emptied probe bag
+        // instead of exhausting the main backpack beside the expedition tools.
+        pack(owner, a, h, 32227, probe_bag, 500_000 + u64::try_from(i)?).await?;
         assert_eq!(carried(h, 32227).await?, i + 1);
     }
     let before = receipts(h).await?;
@@ -486,6 +493,7 @@ pub(super) async fn exercise(
     .await?;
     for i in 0..20 {
         assert_eq!(click(owner, a, purify).await?, UseDisposition::Committed);
+        pack(owner, a, h, 32228, probe_bag, 600_000 + u64::try_from(i)?).await?;
         assert_eq!(carried(h, 32227).await?, 19 - i);
         assert_eq!(carried(h, 32228).await?, i + 1);
         assert_eq!(value(owner, a, &track("purified")).await?, i + 1);

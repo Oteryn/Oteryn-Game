@@ -110,6 +110,55 @@ pub(super) async fn talk(
     if recipe.is_none() && npc.key != "oteryn:npc.yasir" {
         return None;
     }
+    // An NPC may also own unrelated quest dialogue. Select our exact recipe
+    // before touching ordinary conversation state; unmatched text falls through.
+    let mut confirmed = false;
+    let step = if let Some(recipe) = recipe {
+        Some(quest_dialogue::prepare(
+            admission,
+            actor,
+            command,
+            intent,
+            &runtime,
+            |context, topic, fresh, _| {
+                if context.2 != recipe.npc {
+                    return None;
+                }
+                let words = oteryn_gameplay_npc::greeting::words(&intent.text);
+                let (line, next) = if oteryn_gameplay_npc::greeting::contains_words(
+                    &words,
+                    &oteryn_gameplay_npc::greeting::words(recipe.keyword),
+                ) {
+                    (Some(recipe.prompt), 1)
+                } else if !fresh
+                    && topic.number == 1
+                    && topic.value.as_deref() == Some(recipe.output)
+                    && yes
+                {
+                    confirmed = true;
+                    (Some(recipe.success), 0)
+                } else if !fresh
+                    && topic.number == 1
+                    && topic.value.as_deref() == Some(recipe.output)
+                    && words.iter().any(|w| w == "no")
+                {
+                    (recipe.cancel, 0)
+                } else {
+                    return None;
+                };
+                Some(quest_dialogue::Choice {
+                    transition: None,
+                    next_topic: Some(quest_dialogue::Topic {
+                        number: next,
+                        value: (next == 1).then(|| recipe.output.to_owned()),
+                    }),
+                    reply: line.into_iter().map(str::to_owned).collect(),
+                })
+            },
+        )?)
+    } else {
+        None
+    };
     let ordinary = admission.states.npc_conversations.talk_in(
         &admission.states.chat,
         &runtime,
@@ -127,38 +176,6 @@ pub(super) async fn talk(
             admission, actor, command, intent, &runtime, ordinary,
         ));
     };
-    let mut confirmed = false;
-    let step = quest_dialogue::prepare(
-        admission,
-        actor,
-        command,
-        intent,
-        &runtime,
-        |context, topic, fresh, _| {
-            if context.2 != recipe.npc {
-                return None;
-            }
-            let words = oteryn_gameplay_npc::greeting::words(&intent.text);
-            let (line, next) = if oteryn_gameplay_npc::greeting::contains_words(
-                &words,
-                &oteryn_gameplay_npc::greeting::words(recipe.keyword),
-            ) {
-                (Some(recipe.prompt), 1)
-            } else if !fresh && topic.number == 1 && yes {
-                confirmed = true;
-                (Some(recipe.success), 0)
-            } else if words.iter().any(|w| w == "no") {
-                (recipe.cancel, 0)
-            } else {
-                return None;
-            };
-            Some(quest_dialogue::Choice {
-                transition: None,
-                next_topic: Some(next.into()),
-                reply: line.into_iter().map(str::to_owned).collect(),
-            })
-        },
-    );
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
         &runtime,
@@ -168,9 +185,7 @@ pub(super) async fn talk(
     );
     let coins = bank_coin_definitions(admission, &runtime);
     drop(runtime);
-    let Some(step) = step else {
-        return Some(ordinary);
-    };
+    let step = step?;
     if !confirmed {
         return Some(quest_dialogue::apply(admission, actor, command, intent.clone(), step).await);
     }

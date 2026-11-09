@@ -67,7 +67,7 @@ impl State {
         }
     }
 
-    fn topic(&self, context: &Context) -> Topic {
+    pub(super) fn topic(&self, context: &Context) -> Topic {
         if self.context.as_ref() == Some(context) {
             self.topic.clone()
         } else {

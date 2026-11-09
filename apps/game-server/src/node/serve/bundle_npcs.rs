@@ -1158,7 +1158,7 @@ mod tests {
             );
             if let Some(old) = previous {
                 assert!(
-                    runtime.read_actor_position(old).is_err(),
+                    runtime.borrow_movement_position().read(old).is_err(),
                     "the prior day's identity cannot survive rotation"
                 );
             }
@@ -1196,6 +1196,73 @@ mod tests {
         // A catalogue key alone cannot manufacture a placement not admitted by the bundle.
         assert!(TimedNpcSpawns::from_boot(Some(&timed_boot(&[RASHID_NPC_KEY]))).is_empty());
     }
+    #[test]
+    fn questpc8_weekday_npc_wandering_keeps_identity_until_destination_changes() {
+        use oteryn_gameplay_entities::rashid_schedule::{RASHID_NPC_KEY, destination_at};
+        const MONDAY: i64 = 4 * 86_400_000;
+        let mut boot = timed_boot(&[RASHID_NPC_KEY]);
+        if let NpcBoot::Place { table, .. } = &mut boot {
+            table.npcs.push(NpcPlacements {
+                key: RASHID_NPC_KEY.into(),
+                placements: (0..7)
+                    .map(|day| destination_at(MONDAY + day * 86_400_000).placement)
+                    .collect(),
+            });
+        }
+        let mut scheduled = TimedNpcSpawns::from_boot(Some(&boot));
+        let mut runtime = channel_runtime_with(8);
+        scheduled
+            .tick(&mut runtime, MONDAY as u64)
+            .expect("clock")
+            .expect("Monday");
+        let actor = runtime.visible_entities().npcs[0].actor;
+        let before = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("Rashid");
+        let mut wandered = before.position();
+        wandered.x += 1;
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, wandered)
+            .expect("native wander");
+        scheduled
+            .tick(&mut runtime, (MONDAY + 2500) as u64)
+            .expect("clock")
+            .expect("same day");
+        assert_eq!(runtime.visible_entities().npcs.len(), 1);
+        assert_eq!(
+            runtime.visible_entities().npcs[0].actor,
+            actor,
+            "wandering must preserve conversation and shop references"
+        );
+        assert_eq!(
+            runtime
+                .borrow_movement_position()
+                .read(actor)
+                .expect("same actor")
+                .position(),
+            wandered
+        );
+        scheduled
+            .tick(&mut runtime, (MONDAY + 86_400_000) as u64)
+            .expect("clock")
+            .expect("Tuesday");
+        assert_eq!(runtime.visible_entities().npcs.len(), 1);
+        assert_ne!(runtime.visible_entities().npcs[0].actor, actor);
+        assert!(runtime.borrow_movement_position().read(actor).is_err());
+        let expected = destination_at(MONDAY + 86_400_000).placement;
+        let position = runtime.visible_entities().npcs[0].position;
+        assert_eq!(
+            (position.x, position.y, position.floor),
+            (
+                i32::from(expected.x),
+                i32::from(expected.y),
+                -i16::from(expected.floor)
+            )
+        );
+    }
+
     #[test]
     fn questpc8_weekday_npc_missing_bundle_cell_or_admission_cannot_spawn() {
         use oteryn_gameplay_entities::rashid_schedule::{RASHID_NPC_KEY, destination_at};

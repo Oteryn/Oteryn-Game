@@ -10,7 +10,7 @@ use crate::gameplay_transport::{
 };
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
-use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 #[path = "questpc8_trader/world.rs"]
@@ -210,54 +210,36 @@ async fn command(
 }
 async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
+    admitted: &mut AdmittedSession,
     npc: EntityRef,
-    number: u64,
-    text: &str,
+    next: &mut u64,
+    texts: &[&str],
     expected: NpcIntentDisposition,
 ) -> TestResult {
-    // Literal world callbacks schedule a source read; run the ordinary cadence
-    // before the next NPC selector so it observes the committed delivery graph.
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(std::time::Duration::from_secs(2))
-        .ok_or("clock")?;
-    let outcome = owner
-        .npc_talk(
-            admitted.runtime_actor.ok_or("actor")?,
-            command(owner, admitted, number).await?,
-            NpcTalkIntent {
-                npc_actor: npc,
-                text: text.into(),
-            },
-        )
-        .await;
-    assert!(
-        !outcome.unknown,
-        "{number}:{text} must have a retained outcome"
-    );
-    assert_eq!(
-        outcome.disposition, expected,
-        "{number}:{text}; {:?}",
-        outcome.conversation
-    );
+    // A resumed connection must have real ingress history, and snapshot admission
+    // clears NPC engagement. Keep each greeting, topic and confirmation together.
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    assert_eq!(*next, admitted.continuity.next_command_id);
+    let greeting = (texts.first() != Some(&"hi")).then_some("hi");
+    let commands: Vec<_> = greeting.into_iter().chain(texts.iter().copied())
+        .enumerate().map(|(offset, text)| Ok((*next + u64::try_from(offset)?, text)))
+        .collect::<TestResult<_>>()?;
+    match expected {
+        NpcIntentDisposition::Ok => super::grizzly_npc::wire::talk(owner, admitted, npc, &commands).await?,
+        NpcIntentDisposition::Rejected => super::grizzly_npc::wire::talk_refused(owner, admitted, npc, &commands).await?,
+        _ => return Err("unexpected conversation expectation".into()),
+    }
+    *next = admitted.continuity.next_command_id;
     Ok(())
 }
 async fn say(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
+    admitted: &mut AdmittedSession,
     npc: EntityRef,
     next: &mut u64,
     texts: &[&str],
 ) -> TestResult {
-    for text in texts {
-        talk(owner, admitted, npc, *next, text, NpcIntentDisposition::Ok).await?;
-        *next += 1;
-    }
-    Ok(())
+    talk(owner, admitted, npc, next, texts, NpcIntentDisposition::Ok).await
 }
 async fn teleport(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -487,21 +469,19 @@ pub(super) async fn exercise(
         );
         assert_eq!(bound.generation(), fence.character_lease_generation);
     }
-    let mut next = 1;
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(), &[3],
+        ).ok_or("NPC capability")?;
+    let mut next = admitted.continuity.next_command_id;
+    // Direct custody setup and SELL owner proofs have their own command IDs;
+    // only real wire commands advance the ingress continuation.
+    let mut side_next = 3_000_000;
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
     let premium = owner.premium_coordinator;
     owner.premium_coordinator = None;
-    say(owner, admitted, rashid, &mut next, &["hi", "mission"]).await?;
-    talk(
-        owner,
-        admitted,
-        rashid,
-        next,
-        "yes",
-        NpcIntentDisposition::Rejected,
-    )
-    .await?;
-    next += 1;
+    talk(owner, admitted, rashid, &mut next,
+        &["hi", "mission", "yes"], NpcIntentDisposition::Rejected).await?;
     assert_eq!(stage(h).await?, -1);
     owner.premium_coordinator = premium;
     assert!(
@@ -514,22 +494,13 @@ pub(super) async fn exercise(
     prepare_item(owner, admitted, 3364, 1, 208).await?;
     say(owner, admitted, rashid, &mut next, &["hi", "trade"]).await?;
     let early_sell = sell_intent(owner, rashid).await?;
-    sell(owner, admitted, early_sell, next, false).await?;
-    next += 1;
+    sell(owner, admitted, early_sell, side_next, false).await?;
+    side_next += 1;
     assert_eq!(quantity(h, 3364).await?, 2);
     assert_eq!(gold(h).await?, 0);
 
-    say(owner, admitted, rashid, &mut next, &["hi", "mission"]).await?;
-    talk(
-        owner,
-        admitted,
-        rashid,
-        next,
-        "yes",
-        NpcIntentDisposition::Rejected,
-    )
-    .await?;
-    next += 1;
+    talk(owner, admitted, rashid, &mut next,
+        &["hi", "mission", "yes"], NpcIntentDisposition::Rejected).await?;
     assert_eq!(stage(h).await?, -1, "missing trophy cannot advance");
     prepare_item(owner, admitted, 7397, 1, 210).await?;
     prepare_item(owner, admitted, 5880, 3, 211).await?;
@@ -596,43 +567,23 @@ pub(super) async fn exercise(
         },
         1,
     )?;
-    let result = owner
-        .use_object(
-            admitted.runtime_actor.ok_or("actor")?,
-            command(owner, admitted, next).await?,
-            target.clone(),
-        )
-        .await;
-    next += 1;
-    assert_eq!(result.disposition, UseDisposition::Committed);
+    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
+    let result = super::quest_world_callbacks::wire(owner, admitted, next, 2, payload.clone()).await?;
+    next = admitted.continuity.next_command_id;
+    assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
     assert_eq!(quantity(h, 145).await?, 1);
     assert_eq!(stage(h).await?, 4);
-    let result = owner
-        .use_object(
-            admitted.runtime_actor.ok_or("actor")?,
-            command(owner, admitted, next).await?,
-            target,
-        )
-        .await;
-    next += 1;
-    assert_ne!(result.disposition, UseDisposition::Committed);
+    let result = super::quest_world_callbacks::wire(owner, admitted, next, 2, payload).await?;
+    next = admitted.continuity.next_command_id;
+    assert_ne!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
     assert_eq!(quantity(h, 145).await?, 1);
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
     say(owner, admitted, rashid, &mut next, &["hi", "package"]).await?;
     assert_eq!(stage(h).await?, 5);
     assert_eq!(quantity(h, 145).await?, 0);
     let miraia = visit(owner, admitted, "oteryn:npc.miraia").await?;
-    say(owner, admitted, miraia, &mut next, &["hi", "scarab cheese"]).await?;
-    talk(
-        owner,
-        admitted,
-        miraia,
-        next,
-        "yes",
-        NpcIntentDisposition::Rejected,
-    )
-    .await?;
-    next += 1;
+    talk(owner, admitted, miraia, &mut next,
+        &["hi", "scarab cheese", "yes"], NpcIntentDisposition::Rejected).await?;
     assert_eq!(stage(h).await?, 5);
     assert_eq!(fee_count(h).await?, 0);
     prepare_item(owner, admitted, 3035, 20, 213).await?;
@@ -640,30 +591,14 @@ pub(super) async fn exercise(
     for ordinal in 0..20 - slots {
         prepare_item(owner, admitted, 5929, 1, 220 + u64::try_from(ordinal)?).await?;
     }
-    say(owner, admitted, miraia, &mut next, &["hi", "scarab cheese"]).await?;
-    talk(
-        owner,
-        admitted,
-        miraia,
-        next,
-        "yes",
-        NpcIntentDisposition::Rejected,
-    )
-    .await?;
-    next += 1;
+    talk(owner, admitted, miraia, &mut next,
+        &["hi", "scarab cheese", "yes"], NpcIntentDisposition::Rejected).await?;
     assert_eq!(gold(h).await?, 2000, "full output rolls back fee");
     assert_eq!(fee_count(h).await?, 0);
     assert_eq!(stage(h).await?, 5);
-    drop_goldfish(owner, admitted, h, &mut next).await?;
+    drop_goldfish(owner, admitted, h, &mut side_next).await?;
     // Command replay belongs to ingress, before NPC topic selection. Exercise
     // the paid purchase and its duplicate on that production wire path.
-    admitted.continuity.selected_capabilities =
-        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
-            owner.offered_capabilities(),
-            &[3],
-        )
-        .ok_or("NPC capability")?;
-    admitted.continuity.next_command_id = next;
     super::grizzly_npc::wire::talk(
         owner,
         admitted,
@@ -682,8 +617,8 @@ pub(super) async fn exercise(
     assert_eq!(fee_count(h).await?, 1);
     // Canonical recipe adaptation explicitly omits cheese decay. No deadline or paid refresh is part of this programme.
     // Leave room for source subsidy and later fee change; use the ordinary item-loop owner.
-    drop_goldfish(owner, admitted, h, &mut next).await?;
-    drop_goldfish(owner, admitted, h, &mut next).await?;
+    drop_goldfish(owner, admitted, h, &mut side_next).await?;
+    drop_goldfish(owner, admitted, h, &mut side_next).await?;
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
     say(owner, admitted, rashid, &mut next, &["hi", "cheese"]).await?;
     assert_eq!(stage(h).await?, 7);
@@ -727,6 +662,12 @@ pub(super) async fn exercise(
     assert_eq!(stage(h).await?, 12);
     assert_eq!(quantity(h, 5929).await?, fish - 1);
     say(owner, admitted, rashid, &mut next, &["mission"]).await?;
+    let recognition_command = next - 1;
+    owner.states.quest_sessions.lock().map_err(debug)?.remove(&admitted.game_session_id);
+    owner.admit_quest_session(admitted).await;
+    // Replay while the protocol still retains the outcome; later shop commands
+    // may expire it. The cold QuestState must not cause a second recognition.
+    super::grizzly_npc::wire::talk(owner, admitted, rashid, &[(recognition_command, "mission")]).await?;
     assert_eq!(stage(h).await?, 13);
     let done:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
     assert!(done);
@@ -741,8 +682,8 @@ pub(super) async fn exercise(
     assert_eq!(exact, [100, 250, 1000]);
     say(owner, admitted, rashid, &mut next, &["hi", "trade"]).await?;
     let sale = sell_intent(owner, rashid).await?;
-    let sale_command = next;
-    next += 1;
+    let sale_command = side_next;
+    side_next += 1;
     sell(owner, admitted, sale, sale_command, true).await?;
     assert_eq!(quantity(h, 3364).await?, 1);
     assert_eq!(gold(h).await?, 31650);
@@ -763,7 +704,8 @@ pub(super) async fn exercise(
         .map_err(debug)?
         .remove(&admitted.game_session_id);
     owner.admit_quest_session(admitted).await;
-    say(owner, admitted, rashid, &mut next, &["hi", "mission"]).await?;
+    // Reload again after the first sale: trading eligibility is durable rather
+    // than a remembered dialogue or shop window.
     assert_eq!(stage(h).await?, 13);
     assert_eq!(gold(h).await?, 31650);
     assert_eq!(fee_count(h).await?, 3);
@@ -772,7 +714,7 @@ pub(super) async fn exercise(
         owner,
         admitted,
         sell_intent(owner, rashid).await?,
-        next,
+        side_next,
         true,
     )
     .await?;

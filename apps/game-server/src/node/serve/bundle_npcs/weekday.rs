@@ -46,17 +46,18 @@ impl WeekdayNpcSpawns {
             5 => 5,
             _ => 6,
         };
-        reconcile(runtime, self.key, self.placements[day])
+        reconcile(runtime, self.key, self.placements[day], unix_ms)
     }
 }
 
-/// A stable desired cell retains the exact actor. A changed or absent desired
+/// Today's admitted wander area retains the exact actor. A changed or absent desired
 /// placement retires old identities before trying the new cell. Native occupancy
 /// refusal leaves the NPC absent until the next tick; it never creates a duplicate.
 fn reconcile(
     runtime: &mut ChannelRuntimeV1,
     key: &str,
     wanted: Option<NpcPlacement>,
+    unix_ms: i64,
 ) -> Result<(), NpcPlacementError> {
     let present: Vec<_> = runtime
         .visible_entities()
@@ -64,13 +65,8 @@ fn reconcile(
         .into_iter()
         .filter(|npc| runtime.npc_key(npc.actor) == Some(key))
         .collect();
-    if let (Some(wanted), [npc]) = (wanted, present.as_slice())
-        && (npc.position.x, npc.position.y, npc.position.floor)
-            == (
-                i32::from(wanted.x),
-                i32::from(wanted.y),
-                -i16::from(wanted.floor),
-            )
+    if let (Some(_), [npc]) = (wanted, present.as_slice())
+        && oteryn_gameplay_entities::rashid_schedule::trade_available(key, npc.position, unix_ms)
     {
         return Ok(());
     }

@@ -768,6 +768,8 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // neither function inserts, updates or deletes Inbox rows.
                 "game_daily_reward_bound_custody",
                 "game_daily_reward_line_guard",
+                // 1711: verifies the bound pick's final Inbox custody, read-only.
+                "game_daily_reward_pick_guard",
                 // DEPOT-SEARCH E08: read-only custody owner, and the one narrow removal
                 // seam of a retrieved Inbox root; its BEFORE DELETE proof requires the
                 // current depot-search line.
@@ -783,7 +785,8 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // registered coin-only destination; never creates an Inbox row.
                 "game_house_container_coin_pouch_destination",
                 "game_house_disposition_delivery_proven",
-                "game_house_disposition_native_removal_proven",
+                // 2602 retains the original custody proof under this exact name.
+                "game_house_disposition_native_removal_proven_before_t135",
                 // W18: verify final Inbox custody before removing only private
                 // House reclaim metadata; no Inbox row or delivery changes.
                 "game_house_nested_reclaim_reconcile",
@@ -809,15 +812,21 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_market_complete",
                 // TRADE-PLAYER-1: read-only final-custody proof, no Inbox mutation.
                 "game_player_trade_complete",
+                // 1712: verifies the returner reward's atomic Inbox mint, read-only.
+                "game_returner_claim_guard",
                 "game_reward_claim_inbox_mint_is_complete",
             ]
         );
-        // Register the two exact read-only custody users independently of the
-        // closed inventory above. A direct/dynamic Inbox DML path in either
+        // Register the exact read-only custody users independently of the
+        // closed inventory above. A direct/dynamic Inbox DML path in any
         // helper fails even if its name remains in the registered reader set.
         for reader in [
+            "game_daily_reward_pick_guard",
             "game_house_container_coin_pouch_destination",
+            "game_house_disposition_native_removal_proven",
+            "game_house_disposition_native_removal_proven_before_t135",
             "game_house_nested_reclaim_reconcile",
+            "game_returner_claim_guard",
         ] {
             let no_inbox_dml: bool = sqlx::query_scalar(
                 r#"SELECT prosrc !~* '\m(insert[[:space:]]+into|update|delete[[:space:]]+from|truncate([[:space:]]+table)?)[[:space:]]+(only[[:space:]]+)?(("[^"]+"|[a-z_][a-z_0-9$]*)[.])?"?game_(item_character_inbox_locations|character_inbox_(deliveries|counters|cause_kinds))"?\M'

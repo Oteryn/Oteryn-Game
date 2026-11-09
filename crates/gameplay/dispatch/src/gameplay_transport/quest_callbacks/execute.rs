@@ -232,6 +232,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     UseDisposition::Exhausted
                 };
             }
+            // Crystal giant_smithhammer/lever.lua:7-14 handles every USE but
+            // changes neither object in the two discordant source states.
+            if callback.key == "oteryn:quest-callback/giant-smithhammer"
+                && map.facts.base_hidden(*passage) != close
+            {
+                return UseDisposition::Committed;
+            }
             // Source asymmetric levers refuse to toggle if a remote passage is
             // already in the requested state. Check before any map/quest write.
             if passage_definition.require_state && map.facts.base_hidden(*passage) != close {

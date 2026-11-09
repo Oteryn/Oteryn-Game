@@ -71,9 +71,27 @@ fn scenario_with_state(project_state: bool) -> TestResult {
         let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
             .map_err(debug)?;
         let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
-        let frame_digest = pin.frame_binding().digest();
+        let room = room
+            .bundle_view(
+                cells.clone(),
+                map.frame_binding_digest(world),
+                map.map_revision_digest(),
+                crate::content::NativeEntryStart { x: 5, y: 1, floor: 8 },
+            )
+            .ok_or("proficiency bundle room")?;
+        let frame_digest = room.frame_binding().digest();
+        // Zone facts must be qualified against the same bundle as the runtime.
+        let channel_pin = crate::foundation::ChannelContentPin::from_activation(
+            world,
+            pin.activation_sequence(),
+            pin.identity().server_artifact_digest(),
+            pin.identity().client_artifact_digest(),
+            frame_digest,
+            room.map_revision_digest(),
+            (5, 1, 8),
+        );
         let deps = Dependencies::with_content(
-            pin.into_channel_pin(),
+            channel_pin,
             room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;

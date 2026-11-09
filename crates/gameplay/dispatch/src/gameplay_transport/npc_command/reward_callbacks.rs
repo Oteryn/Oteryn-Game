@@ -200,9 +200,19 @@ pub(super) fn unhandled_confirmation(
     if admission.has_pending_paid_confirmation(command, intent, &context) {
         return false;
     }
+    let Ok(sessions) = admission.states.npc_conversations.sessions.lock() else {
+        return true;
+    };
+    let Some(state) = sessions.get(&command.game_session_id) else {
+        return false;
+    };
+    let topic = state.quest_dialogue.topic(&context).number;
+    drop(sessions);
     reward_callbacks::load().is_ok_and(|callbacks| {
-        callbacks
-            .iter()
-            .any(|callback| callback.npc == context.2 && callback.keywords.contains(&text))
+        callbacks.iter().any(|callback| {
+            callback.npc == context.2
+                && callback.topic == topic
+                && callback.keywords.contains(&text)
+        })
     })
 }
