@@ -378,7 +378,7 @@ fn scenario(
             let journal_command = match program {
                 "grimvale" => 11,
                 "hive_outpost" => 7,
-                "insectoid_invasion" => 9,
+                "insectoid_invasion" => 10,
                 _ => 3,
             };
             prove_journal_wire(
@@ -458,7 +458,8 @@ async fn exercise_incursion(
         assert_eq!(moved.len(), 1);
     }
     step(owner, admitted, 2, StepDirection::East).await?;
-    for wave in 0..5_u64 {
+    let mut credited = 0_i64;
+    for wave in 0..6_u64 {
         step(owner, admitted, wave + 3, StepDirection::West).await?;
         let cohort = live_creatures(owner, SCOUT).await?;
         assert_eq!(
@@ -467,6 +468,23 @@ async fn exercise_incursion(
             "the native step must supply the source scout pair"
         );
         for (ordinal, target) in cohort.into_iter().enumerate() {
+            let outside_source = wave == 0 && ordinal == 1;
+            if outside_source {
+                let mut runtime = owner.runtime.lock().await;
+                let from = runtime
+                    .read_actor_position(target)
+                    .map_err(debug)?
+                    .position();
+                let outside = super::quest_world_callbacks::local(Position {
+                    x: 32221,
+                    y: 32059,
+                    floor: -7,
+                });
+                let moved = runtime
+                    .commit_quest_platform_displacement(from, outside, |_, _, _| true, || true)
+                    .map_err(debug)?;
+                assert_eq!(moved.len(), 1);
+            }
             kill_actor(
                 owner,
                 admitted,
@@ -474,18 +492,30 @@ async fn exercise_incursion(
                 24000 + wave * 2 + u64::try_from(ordinal)?,
             )
             .await?;
-            let count = i64::try_from(wave * 2 + u64::try_from(ordinal)? + 1)?;
-            assert_eq!(value(h, KILLS).await?, count);
+            credited += i64::from(!outside_source);
+            assert_eq!(
+                value(h, KILLS).await?,
+                credited,
+                "out-of-area native deaths cannot advance the goal"
+            );
             let completions: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes")
                 .bind(QUEST).fetch_one(&h.pool).await?;
             assert_eq!(
                 completions,
-                i64::from(count == 10),
+                i64::from(credited == 10),
                 "only the tenth real death completes"
             );
+            if credited == 10 {
+                assert!(
+                    live_creatures(owner, SCOUT).await?.is_empty(),
+                    "completion must retire the surviving exact cohort actor"
+                );
+                break;
+            }
         }
     }
-    step(owner, admitted, 8, StepDirection::West).await?;
+    assert_eq!(credited, 10);
+    step(owner, admitted, 9, StepDirection::West).await?;
     assert!(
         live_creatures(owner, SCOUT).await?.is_empty(),
         "the completed encounter cannot restart"
@@ -579,8 +609,14 @@ fn scene(entry: &Callback, marker: &Callback) -> TestResult<crate::map::boot::Bu
         });
     }
     let mut sectors: BTreeMap<_, Vec<_>> = BTreeMap::new();
+    let max_x = at.x
+        + if entry.key.contains("/insectoid_invasion/") {
+            14
+        } else {
+            3
+        };
     for y in at.y - 2..=at.y + 2 {
-        for x in at.x - 2..=at.x + 3 {
+        for x in at.x - 2..=max_x {
             let mut items = vec![sector::Item {
                 palette: 0,
                 depth: 0,
@@ -616,7 +652,7 @@ fn scene(entry: &Callback, marker: &Callback) -> TestResult<crate::map::boot::Bu
     data.manifest.world = bundle::Extent {
         min_x: at.x - 2,
         min_y: at.y - 2,
-        max_x: at.x + 4,
+        max_x: max_x + 1,
         max_y: at.y + 3,
         floors: vec![at.floor],
     };

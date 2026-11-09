@@ -11,14 +11,24 @@ pub(super) struct Origin {
     character: [u8; 16],
     cause: QuestCause,
     definition: [u8; 32],
+    quest: String,
+    revision: u64,
 }
 
 impl Origin {
-    pub(super) fn new(character: [u8; 16], cause: QuestCause, definition: [u8; 32]) -> Self {
+    pub(super) fn new(
+        character: [u8; 16],
+        cause: QuestCause,
+        definition: [u8; 32],
+        quest: &str,
+        revision: u64,
+    ) -> Self {
         Self {
             character,
             cause,
             definition,
+            quest: quest.into(),
+            revision,
         }
     }
 }
@@ -42,6 +52,54 @@ fn scope(runtime: &ChannelRuntimeV1) -> Scope {
 }
 
 impl Cohorts {
+    /// Completion retires only the original character/session's eligible projections.
+    pub(super) fn complete(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        character: &[u8; 16],
+        session: GameSessionId,
+        quest: &str,
+        observed_revision: u64,
+    ) -> Result<usize, UseDisposition> {
+        if runtime.owner_fence().is_err() {
+            return Err(UseDisposition::Rejected);
+        }
+        let current_scope = scope(runtime);
+        let matches = |cohort: &Cohort| {
+            cohort.scope == current_scope
+                && &cohort.origin.character == character
+                && cohort.origin.quest == quest
+                && cohort.origin.revision <= observed_revision
+                && matches!(cohort.origin.cause, QuestCause::Use(command) | QuestCause::Step(command)
+                    if command.game_session_id() == session)
+        };
+        let mut cohorts = self.0.lock().map_err(|_| UseDisposition::Rejected)?;
+        if cohorts
+            .iter()
+            .any(|cohort| matches(cohort) && cohort.preparing)
+        {
+            return Err(UseDisposition::Occupied);
+        }
+        let mut removed = 0;
+        let mut index = 0;
+        while index < cohorts.len() {
+            if !matches(&cohorts[index]) {
+                index += 1;
+                continue;
+            }
+            for actor in cohorts[index].actors.iter().copied() {
+                if runtime.contains_live_creature(actor) {
+                    runtime
+                        .remove_encounter_actor(actor)
+                        .map_err(|_| UseDisposition::Rejected)?;
+                    removed += 1;
+                }
+            }
+            cohorts.swap_remove(index);
+        }
+        Ok(removed)
+    }
+
     /// Reserve before the durable write. This is projection bookkeeping, never mutation authority.
     pub(super) fn reserve<'a>(
         &'a self,
@@ -179,8 +237,123 @@ mod tests {
                 checked(CommandId::new(1))?,
             )),
             [1; 32],
+            "oteryn:quest.fixture",
+            10,
         ))
     }
+    #[test]
+    fn worldchg_completion_preserves_foreign_and_newer_cohorts() -> TestResult {
+        let mut runtime = runtime(1)?;
+        let pool = Cohorts::default();
+        let owner = origin()?;
+        let mut origins = vec![
+            owner.clone(),
+            owner.clone(),
+            owner.clone(),
+            owner.clone(),
+            owner.clone(),
+        ];
+        origins[1].character = id(42);
+        origins[2].quest = "oteryn:quest.other".into();
+        origins[3].revision = 20;
+        origins[4].cause = QuestCause::Step(CommandRef::new(
+            checked(GameSessionId::decode(&id(6)))?,
+            checked(CommandId::new(1))?,
+        ));
+        let mut actors = Vec::new();
+        for (index, origin) in origins.into_iter().enumerate() {
+            let callback = format!("fixture:encounter/{index}");
+            let mut reservation = checked(pool.reserve(&runtime, &callback, origin))?;
+            let actor = checked(runtime.admit_encounter_actor(
+                "creature:rat",
+                20,
+                MovementLocalPosition {
+                    x: 1000 + i32::try_from(index)?,
+                    y: 1000,
+                    floor: 7,
+                },
+            ))?;
+            checked(reservation.publish(&runtime, vec![actor]))?;
+            actors.push(actor);
+        }
+        let session = checked(GameSessionId::decode(&id(5)))?;
+        assert_eq!(
+            checked(pool.complete(&mut runtime, &owner.character, session, &owner.quest, 15))?,
+            1
+        );
+        assert!(!runtime.contains_live_creature(actors[0]));
+        assert!(
+            actors[1..]
+                .iter()
+                .all(|actor| runtime.contains_live_creature(*actor))
+        );
+        assert_eq!(
+            checked(pool.complete(&mut runtime, &owner.character, session, &owner.quest, 15))?,
+            0,
+            "a retained completion cannot clear a newer activation"
+        );
+        assert!(
+            actors[1..]
+                .iter()
+                .all(|actor| runtime.contains_live_creature(*actor))
+        );
+        let mut replacement = self::runtime(2)?;
+        let replacement_actor = checked(replacement.admit_encounter_actor(
+            "creature:rat",
+            20,
+            MovementLocalPosition {
+                x: 1000,
+                y: 1000,
+                floor: 7,
+            },
+        ))?;
+        assert_eq!(
+            checked(pool.complete(
+                &mut replacement,
+                &owner.character,
+                session,
+                &owner.quest,
+                100
+            ))?,
+            0
+        );
+        assert!(replacement.contains_live_creature(replacement_actor));
+        Ok(())
+    }
+
+    #[test]
+    fn worldchg_completion_refuses_an_unfinished_projection_before_removing_any_actor() -> TestResult
+    {
+        let mut runtime = runtime(1)?;
+        let pool = Cohorts::default();
+        let owner = origin()?;
+        let mut published = checked(pool.reserve(&runtime, "fixture:published", owner.clone()))?;
+        let actor = checked(runtime.admit_encounter_actor(
+            "creature:rat",
+            20,
+            MovementLocalPosition {
+                x: 1000,
+                y: 1000,
+                floor: 7,
+            },
+        ))?;
+        checked(published.publish(&runtime, vec![actor]))?;
+        drop(published);
+        let preparing = checked(pool.reserve(&runtime, "fixture:preparing", owner.clone()))?;
+        let session = checked(GameSessionId::decode(&id(5)))?;
+        assert_eq!(
+            pool.complete(&mut runtime, &owner.character, session, &owner.quest, 15),
+            Err(UseDisposition::Occupied)
+        );
+        assert!(runtime.contains_live_creature(actor));
+        drop(preparing);
+        assert_eq!(
+            checked(pool.complete(&mut runtime, &owner.character, session, &owner.quest, 15))?,
+            1
+        );
+        Ok(())
+    }
+
     #[test]
     fn worldchg_encounter_roster_outside_room_still_blocks_until_scope_replacement() -> TestResult {
         let mut runtime = runtime(1)?;

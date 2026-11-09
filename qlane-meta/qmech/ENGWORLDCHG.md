@@ -75,6 +75,14 @@ The same built engine passes Grimvale in 114.745 seconds, Hive Outpost in
 tests and both encounter lifecycle unit tests pass. The full 115-module
 authoring runner and authoring checks pass; content-tree validation is 97/97.
 
+Native counter completion now retires surviving actors from its exact personal
+cohort after the durable receipt commits. Scope, character, quest, session and
+activation revision prevent a retained receipt from clearing a newer or foreign
+cohort. An unfinished projection is refused before any actor is removed.
+Four lifecycle unit tests pass. The strengthened Insectoid PG case passed in
+124.882 seconds: a source-area escape gives no credit, and finishing mid-wave
+removes the surviving actor while preserving ten kills and one completion.
+
 Pending M31 includes the remaining native NPC and achievement composition,
 Jungle Camp's staged hunting, personal Hive favour/access, and Horse Station's taming receipt.
 Independent package review and protected integration belong to the coordinator.

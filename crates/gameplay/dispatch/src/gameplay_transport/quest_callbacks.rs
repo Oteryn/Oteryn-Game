@@ -82,6 +82,34 @@ pub(super) struct PendingCallbacks {
 }
 
 impl PendingCallbacks {
+    pub(super) fn complete_native_quest(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        receipt: &crate::durability::quest_state::CommittedQuestTransition,
+        session: GameSessionId,
+        observed_revision: u64,
+    ) -> Result<(), UseDisposition> {
+        if !receipt.completes {
+            return Ok(());
+        }
+        if !matches!(receipt.cause, QuestCause::CreatureDeath(_))
+            || observed_revision > receipt.original_character_revision.get()
+        {
+            return Err(UseDisposition::Rejected);
+        }
+        self.personal
+            .complete(
+                runtime,
+                receipt.character_id.as_bytes(),
+                session,
+                &receipt.quest_key,
+                observed_revision,
+            )
+            .map(|_| ())
+    }
+}
+
+impl PendingCallbacks {
     pub(super) fn next_encounter_due_us(&self) -> Option<u64> {
         self.timed
             .lock()
