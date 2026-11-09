@@ -89,6 +89,10 @@ pub fn visible_rows(panel: &MarketPanel) -> Vec<usize> {
         .collect()
 }
 
+pub fn coin_panel_text(p: &super::MarketPanel) -> String {
+    super::coin_text(&p.coins)
+}
+
 /// A native table click refers to the identity that was displayed before asynchronous replies.
 pub fn table_selection<'a>(
     rows: &'a [market::MarketRow],

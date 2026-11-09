@@ -222,6 +222,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
+pub use coin_market::reconcile_coin_market;
 pub use connection::{GameplayIdlePolicy, IDLE_LIVENESS, quest_log};
 pub use last_position::LastPositionFlush;
 pub use npc_talk::NpcTalkBook;

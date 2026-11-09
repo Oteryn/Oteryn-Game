@@ -19,7 +19,10 @@ pub(super) unsafe fn handle(
     let [category, search, sort, offers, name, sex, identity] = fields;
     unsafe {
         for (id, note) in actions {
-            if id == 15 && note == 0 { super::super::open_classic_window(link); continue; }
+            if id == 15 && note == 0 {
+                super::super::open_classic_window(link);
+                continue;
+            }
             if id == 9 && note == 0 {
                 if let Some(launcher) = lock(&link.mailbox).coin_shop.clone() {
                     launcher.start();
@@ -46,21 +49,22 @@ pub(super) unsafe fn handle(
                 if snapshot.pending {
                     continue;
                 }
-                let Some(expected) = displayed_quote else { continue; };
-                if snapshot.catalogue.as_ref() != Some(expected) { continue; }
+                let Some(expected) = displayed_quote else {
+                    continue;
+                };
+                if snapshot.catalogue.as_ref() != Some(expected) {
+                    continue;
+                }
                 let quote = Some(expected.clone());
-                let body = quote
-                    .as_ref()
-                    .and_then(|p| p.offers.first())
-                    .map(|o| {
-                        format!(
-                            "Buy {} for {} {}?\r\nCatalogue: {}",
-                            o.title,
-                            o.price,
-                            o.currency,
-                            quote.as_ref().map_or("", |q| q.catalog_revision.as_str())
-                        )
-                    });
+                let body = quote.as_ref().and_then(|p| p.offers.first()).map(|o| {
+                    format!(
+                        "Buy {} for {} {}?\r\nCatalogue: {}",
+                        o.title,
+                        o.price,
+                        o.currency,
+                        quote.as_ref().map_or("", |q| q.catalog_revision.as_str())
+                    )
+                });
                 if let Some(body) = body
                     && MessageBoxW(
                         hwnd,

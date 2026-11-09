@@ -38,6 +38,7 @@ impl PlayLink {
         )
     }
     pub fn market_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::market::coin_open_key(events) {self.open_coin_market();return true;}
         if !oteryn_client_ui::market::open_key(events) {
             return false;
         }
@@ -90,3 +91,6 @@ pub(in crate::play) fn open_from_depot(
         lock(mailbox).market.open = true;
     }
 }
+
+#[path="input/coins.rs"]
+mod coins;

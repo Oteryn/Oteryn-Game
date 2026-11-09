@@ -156,7 +156,14 @@ pub(super) unsafe fn create(hwnd: HWND) -> Layout {
             control(hwnd, "BUTTON", label, id, [x, 705, 194, 28], WS_TABSTOP);
         }
 
-        control(hwnd, "BUTTON", "Classic Store", 15, [844, 705, 170, 28], WS_TABSTOP);
+        control(
+            hwnd,
+            "BUTTON",
+            "Classic Store",
+            15,
+            [844, 705, 170, 28],
+            WS_TABSTOP,
+        );
         Layout {
             category,
             search,

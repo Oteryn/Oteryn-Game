@@ -110,9 +110,26 @@ mod tests {
         )?)?;
         for offer in catalogue["offers"].as_array().ok_or("offers")? {
             if let Some(key) = offer["item"]["key"].as_str() {
-                let look = key.strip_prefix("oteryn:item.tibia.i").ok_or("item identity")?.parse()?;
-                let image = assets.render(Artwork { kind: 1, looks: [look; 2] }, 0, 0)?;
-                assert!(image.as_chunks::<4>().0.iter().any(|p| *p != [32, 32, 32, 255]), "{key}");
+                let look = key
+                    .strip_prefix("oteryn:item.tibia.i")
+                    .ok_or("item identity")?
+                    .parse()?;
+                let image = assets.render(
+                    Artwork {
+                        kind: 1,
+                        looks: [look; 2],
+                    },
+                    0,
+                    0,
+                )?;
+                assert!(
+                    image
+                        .as_chunks::<4>()
+                        .0
+                        .iter()
+                        .any(|p| *p != [32, 32, 32, 255]),
+                    "{key}"
+                );
             }
         }
         assert!(assets.render(Artwork::default(), 0, 0).is_err());

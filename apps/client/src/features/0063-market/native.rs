@@ -82,7 +82,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             720,
-            740,
+            780,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -205,6 +205,8 @@ fn run(
             [10, 455, 680, 220],
             WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
+        control(hwnd,"STATIC","Coin market and coin transactions: Ctrl+Alt+F8",26,[10,690,680,20],0);
+
         let mut held = None;
         loop {
             let mut message: MSG = std::mem::zeroed();
