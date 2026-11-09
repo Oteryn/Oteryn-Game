@@ -525,6 +525,66 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     assert_eq!(claimed.intent, pending[0]);
     assert_eq!(claimed.cycle, 0);
     assert_eq!(claimed.owner_generation.get(), 1);
+    let owner = crate::durability::item_decay_retire::CorpseDecayFence {
+        runtime_scope: f::scope()?,
+        scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1)
+            .map_err(f::debug)?,
+    };
+    let background = crate::durability::item_loop_move::ElementalSummonProjection {
+        scope: projection,
+        content: [1; 32],
+        frame: [3; 32],
+    };
+    assert_eq!(
+        h.root
+            .recover_elemental_summons(&permit, &authority, &h.node, owner, background)
+            .await
+            .map_err(f::debug)?,
+        vec![claimed.clone()]
+    );
+    for invalid in [
+        crate::durability::item_loop_move::ElementalSummonProjection {
+            content: [2; 32],
+            ..background
+        },
+        crate::durability::item_loop_move::ElementalSummonProjection {
+            frame: [4; 32],
+            ..background
+        },
+        crate::durability::item_loop_move::ElementalSummonProjection {
+            scope: crate::durability::item_loop_move::ElementalSummonScope {
+                map: [8; 32],
+                ..projection
+            },
+            ..background
+        },
+        crate::durability::item_loop_move::ElementalSummonProjection {
+            scope: crate::durability::item_loop_move::ElementalSummonScope {
+                reset_epoch: 1,
+                ..projection
+            },
+            ..background
+        },
+    ] {
+        assert!(
+            h.root
+                .recover_elemental_summons(&permit, &authority, &h.node, owner, invalid)
+                .await
+                .is_err(),
+            "invalid owner projection must not look like an empty live set"
+        );
+    }
+    let stale_owner = crate::durability::item_decay_retire::CorpseDecayFence {
+        scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(2)
+            .map_err(f::debug)?,
+        ..owner
+    };
+    assert!(
+        h.root
+            .recover_elemental_summons(&permit, &authority, &h.node, stale_owner, background)
+            .await
+            .is_err()
+    );
     let spawn: String = sqlx::query_scalar("SELECT 'qn1.elemental:'||encode($1,'hex')")
         .bind(pending[0].transaction_id.as_slice())
         .fetch_one(&h.pool)
@@ -651,6 +711,13 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(terminal, (3, "1".into()));
+    assert!(
+        h.root
+            .recover_elemental_summons(&permit, &authority, &h.node, owner, background)
+            .await
+            .map_err(f::debug)?
+            .is_empty()
+    );
     assert!(
         h.root
             .claim_elemental_summon(&permit, &authority, &h.node, f::fence()?, &Content, claim,)

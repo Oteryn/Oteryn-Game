@@ -20,6 +20,8 @@
 
 mod elemental_arrival;
 pub use elemental_arrival::{ElementalArrivalProbe, ElementalArrivalTarget};
+mod elemental_recovery;
+pub use elemental_recovery::ElementalSummonProjection;
 mod elemental_summons;
 pub use elemental_summons::{ElementalSummonClaim, ElementalSummonClock, ElementalSummonIntent, ElementalSummonScope};
 
