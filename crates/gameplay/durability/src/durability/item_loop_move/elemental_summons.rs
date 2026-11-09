@@ -46,10 +46,17 @@ impl DurabilityRoot {
         content: &C,
         request: ElementalSummonClaim,
     ) -> Result<Option<ElementalSummonClock>, DurabilityError> {
-        let Some(intent) = self.read_elemental_summons(permit, recovery, node, fence, content, request.scope)
-            .await?.into_iter().find(|intent| intent.transaction_id == request.transaction_id)
-        else { return Ok(None); };
-        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let Some(intent) = self
+            .read_elemental_summons(permit, recovery, node, fence, content, request.scope)
+            .await?
+            .into_iter()
+            .find(|intent| intent.transaction_id == request.transaction_id)
+        else {
+            return Ok(None);
+        };
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         let mut context = content;
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, content| {

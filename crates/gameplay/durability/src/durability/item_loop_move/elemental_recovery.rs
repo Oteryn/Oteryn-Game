@@ -33,12 +33,24 @@ impl DurabilityRoot {
     ) -> Result<Vec<ElementalSummonClock>, DurabilityError> {
         permit.check_scope(owner.runtime_scope)?;
         let world = owner.runtime_scope.world_id();
-        let channel = owner.runtime_scope.channel_id().ok_or(DurabilityError::InvalidStoredState)?;
-        let reset: i64 = projection.scope.reset_epoch.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
-        if projection.content == [0; 32] || projection.frame == [0; 32] || projection.scope.map == [0; 32] {
+        let channel = owner
+            .runtime_scope
+            .channel_id()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let reset: i64 = projection
+            .scope
+            .reset_epoch
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if projection.content == [0; 32]
+            || projection.frame == [0; 32]
+            || projection.scope.map == [0; 32]
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = crate::durability::db::begin_type2_transaction(holder, deadline).await?;
