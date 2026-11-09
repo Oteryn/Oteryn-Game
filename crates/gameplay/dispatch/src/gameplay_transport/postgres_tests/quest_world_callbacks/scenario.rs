@@ -343,6 +343,7 @@ fn scenario_case(
         let world = if elemental_pin {
             super::super::qn1_elemental_world_pin::world(
                 generation.native_gameplay().ok_or("elemental policies")?,
+                name == "qn1-elemental-energy-soil",
             )?
         } else if qm48 {
             super::super::qm48_mammoth::world(
