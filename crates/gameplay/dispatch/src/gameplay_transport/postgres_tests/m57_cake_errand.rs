@@ -74,11 +74,30 @@ fn m57_cake_mass_is_extracted_by_actual_city_steps() -> TestResult {
                 sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer) VALUES(encode($1,'hex')::uuid,2026,3,4)")
                     .bind(id(42).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
+                sqlx::query("UPDATE game_cake_phases SET stage=2,layer=1 WHERE world_id=encode($1,'hex')::uuid AND event_year=2026")
+                    .bind(id(42).as_slice()).execute(&h.pool).await?;
+                let (early, _) = owner.ordinary_paced_step(deps.actor, deps.admitted.game_session_id, StepDirection::South, None, None).await;
+                assert!(early.moved_to.is_some());
+                let early_keys: Vec<String> = sqlx::query_scalar("SELECT a.achievement_key FROM game_account_achievements a JOIN game_character_roots c USING(account_id) WHERE c.character_id=encode($1,'hex')::uuid ORDER BY a.achievement_key")
+                    .bind(id(41).as_slice()).fetch_all(&h.pool).await?;
+                assert_eq!(early_keys,["oteryn:achievement/cake_conqueror"],"the source Cake base grants Conqueror before stage three");
+                let early_progress: i64=sqlx::query_scalar("SELECT count(*) FROM game_cake_errands WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(early_progress,0,"stage two cannot arm the personal errand");
+                owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("early movement clock")?;
+                let (back, _) = owner.ordinary_paced_step(deps.actor, deps.admitted.game_session_id, StepDirection::North, None, None).await;
+                assert!(back.moved_to.is_some());
+                sqlx::query("UPDATE game_cake_phases SET stage=3,layer=4 WHERE world_id=encode($1,'hex')::uuid AND event_year=2026")
+                    .bind(id(42).as_slice()).execute(&h.pool).await?;
+                owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("completed movement clock")?;
                 let (outcome, wait) = owner.ordinary_paced_step(deps.actor, deps.admitted.game_session_id, StepDirection::South, None, None).await;
                 assert_eq!(outcome.moved_to.ok_or("step onto source cake mass")?.actor_position.y, 31821);
                 let armed: Option<bool> = sqlx::query_scalar("SELECT armed FROM game_cake_errands WHERE world_id=encode($1,'hex')::uuid AND event_year=2026 AND character_id=encode($2,'hex')::uuid")
                     .bind(id(42).as_slice()).bind(id(41).as_slice()).fetch_optional(&h.pool).await?;
                 assert_eq!(armed, Some(true), "a real committed Cake step must arm the personal errand");
+                let completed_keys: Vec<String> = sqlx::query_scalar("SELECT a.achievement_key FROM game_account_achievements a JOIN game_character_roots c USING(account_id) WHERE c.character_id=encode($1,'hex')::uuid ORDER BY a.achievement_key")
+                    .bind(id(41).as_slice()).fetch_all(&h.pool).await?;
+                assert_eq!(completed_keys,["oteryn:achievement/cake_conqueror","oteryn:achievement/i_did_my_part"],"stage three adds I Did My Part without re-granting Conqueror");
                 if let Some(wait) = wait { tokio::time::sleep(wait).await; }
                 let (outcome, _) = owner.ordinary_paced_step(deps.actor, deps.admitted.game_session_id, StepDirection::South, None, None).await;
                 assert_eq!(outcome.moved_to.ok_or("step into source Carlin extractor")?.actor_position.y, 31822);
@@ -120,6 +139,9 @@ fn m57_cake_mass_is_extracted_by_actual_city_steps() -> TestResult {
                 let after: (bool,i16) = sqlx::query_as("SELECT armed,cities FROM game_cake_errands WHERE world_id=encode($1,'hex')::uuid AND event_year=2026 AND character_id=encode($2,'hex')::uuid")
                     .bind(id(42).as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
                 assert_eq!(after,state,"refused authority variants leave the personal state unchanged");
+                let grants:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievement_grant_requests WHERE source_kind='oteryn:cake-isle-step' AND character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(grants,2,"held achievements and refused step replays never append extra grants");
             }
             h.cleanup().await?;
             assert!(started.elapsed() > std::time::Duration::from_millis(10));

@@ -143,6 +143,12 @@ fn m57_a_piece_of_cake_full_journey_completes_with_both_annual_rewards() -> Test
                 let audited:i64=sqlx::query_scalar("SELECT count(*) FROM game_cake_reward_claims c JOIN game_reward_claim_mint_receipts r USING(transaction_id) JOIN game_item_audit_outbox a USING(transaction_id) WHERE c.character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
                 assert_eq!(audited,2,"replay and alternate choices never duplicate a normal audited MINT");
+                let achievements:Vec<String>=sqlx::query_scalar("SELECT a.achievement_key FROM game_account_achievements a JOIN game_character_roots c USING(account_id) WHERE c.character_id=encode($1,'hex')::uuid ORDER BY a.achievement_key")
+                    .bind(id(41).as_slice()).fetch_all(&h.pool).await?;
+                assert_eq!(achievements,["oteryn:achievement/cake_conqueror","oteryn:achievement/i_did_my_part"]);
+                let grants:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievement_grant_requests WHERE source_kind='oteryn:cake-isle-step' AND character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(grants,2,"five island entries grant each account achievement only once");
             }
             h.cleanup().await?;
             assert!(started.elapsed()>std::time::Duration::from_millis(10));

@@ -2,6 +2,7 @@
 //! The movement owner selects the immutable canonical map source; this owner
 //! re-proves the current Character/Channel/Content/epoch before personal writes.
 use super::*;
+use sha2::{Digest, Sha256};
 
 #[derive(Clone, Debug)]
 pub struct CakeErrandStep {
@@ -38,7 +39,25 @@ impl DurabilityRoot {
                 .bind(world.as_bytes().as_slice()).bind(request.scope.reset_epoch.to_string())
                 .bind(request.bundle.as_slice()).bind(&request.scope.map_revision).fetch_one(&mut **tx).await?;
             if !current { return Err(DurabilityError::Unavailable); }
-            let Some(year) = latest_year(&mut tx, world).await? else {
+            let year = latest_year(&mut tx, world).await?;
+            if matches!(request.source_item, 12090..=12095) {
+                let completed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid AND event_year=$2 AND stage=3)")
+                    .bind(world.as_bytes().as_slice()).bind(year).fetch_one(&mut **tx).await?;
+                let keys: &[&str] = if completed {
+                    &["oteryn:achievement/cake_conqueror", "oteryn:achievement/i_did_my_part"]
+                } else { &["oteryn:achievement/cake_conqueror"] };
+                let mut event = Sha256::new();
+                event.update(world.as_bytes());
+                event.update(request.actor);
+                event.update(request.movement_revision.to_be_bytes());
+                event.update(request.scope.reset_epoch.to_be_bytes());
+                event.update(request.bundle);
+                event.update(request.position);
+                event.update(request.source_item.to_be_bytes());
+                super::super::account_achievement::grant_missing(&mut tx, fence.character_id, keys,
+                    "oteryn:cake-isle-step", &event.finalize()).await?;
+            }
+            let Some(year) = year else {
                 tx.commit(deadline).await?;
                 return Ok("inactive".into());
             };
