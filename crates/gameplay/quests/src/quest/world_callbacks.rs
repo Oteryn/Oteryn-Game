@@ -350,6 +350,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.push(super::source_world_objects::uneasy_crystal());
     callbacks.extend(super::source_world_objects::lions_pagodas());
     callbacks.extend(super::source_world_objects::lions_amphora());
+    callbacks.extend(super::source_world_objects::lions_flowers());
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());

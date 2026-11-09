@@ -22,10 +22,11 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m44_flower = name.starts_with("m44-lions-flower-0/");
     let m44_amphora = name == "m44-lions-amphora-1";
     let m44_lions = name.starts_with("m44-lions-strength/");
     let m44_children = name == "qn1-children-lever-1/ordinary";
-    let m44 = name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora;
+    let m44 = name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -62,7 +63,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if m44_amphora {
+    let start = if m44_flower {
+        Position { x: trigger.x + 1, ..trigger }
+    } else if m44_amphora {
         Position {
             y: trigger.y - 1,
             ..trigger
@@ -171,7 +174,9 @@ fn scenario_case(
     } else if native_room {
         super::super::l6_native_rooms::callback(name)?
     } else {
-        callback(if m44_lions && name.ends_with("-uncertain") {
+        callback(if m44_flower {
+            "m44-lions-flower-0"
+        } else if m44_lions && name.ends_with("-uncertain") {
             "m44-lions-strength/first"
         } else if name == "triangle-tower-wall" {
             "triangle-tower-lever"
@@ -365,7 +370,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m44_amphora {
+        let world = if m44_flower {
+            super::super::m44_flower_lifecycle::world(generation.native_gameplay().ok_or("flower policies")?)?
+        } else if m44_amphora {
             super::super::m44_amphora_lifecycle::world(
                 generation.native_gameplay().ok_or("amphora policies")?,
             )?
@@ -616,7 +623,10 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
-        if m44_amphora {
+        if m44_flower {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::m44_flower_lifecycle::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("flower catalogue")?, &callback, name.ends_with("/later"))?));
+        } else if m44_amphora {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_source_lifecycle::catalogue(
                     owner.quest_catalogue.as_ref().ok_or("amphora catalogue")?,
@@ -826,6 +836,8 @@ fn scenario_case(
                 source_id,
             )
             .await?;
+        } else if m44_flower {
+            super::super::m44_flower_lifecycle::exercise(&owner, &mut admitted, &h, name.ends_with("/later"), name.ends_with("/uncertain")).await?;
         } else if m44_amphora {
             super::super::m44_amphora_lifecycle::exercise(&owner, &mut admitted, &h).await?;
         } else if m44_lions {

@@ -123,7 +123,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }) => Some(*key),
             _ => None,
         };
-        if let Some(target) = projection_target
+        if let Some(target) =
+            projection_target.or_else(|| callback.has_fenced_regrowth_reward().then_some(key))
             && !self
                 .states
                 .quest_callbacks

@@ -308,10 +308,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         };
         (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
             || !callback.has_personal_state()
-            || callback
-                .storage
-                .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || (!callback.has_fenced_regrowth_reward()
+                && callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || !item(&reward.item, reward.count)
             || !reward.valid_literal_text()
             || reward.additional.len() > 19

@@ -1096,7 +1096,9 @@ impl DurabilityRoot {
                         // occurrence. Historical receipts returned before this check.
                         let revision = format!("sha256:{}", admission.native.source_digest().iter()
                             .map(|byte| format!("{byte:02x}")).collect::<String>());
-                        let claim = if let Some(track) = world.effects.item_reward_cycle.as_deref() {
+                        let claim = if world.has_fenced_regrowth_reward() {
+                            super::super::reward_claim_mint::quest::QuestMintClaim::SourceUse
+                        } else if let Some(track) = world.effects.item_reward_cycle.as_deref() {
                             let initial = catalogue.track(track).ok_or(DurabilityError::InvalidStoredState)?.initial;
                             super::super::reward_claim_mint::quest::QuestMintClaim::Cycle {
                                 track, value: stored.get(track).copied().unwrap_or(initial),

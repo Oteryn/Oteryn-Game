@@ -63,7 +63,11 @@ pub(crate) fn uneasy_crystal() -> Callback {
 
 /// Source readiness is re-proven by the Channel owner immediately before projection.
 pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
-    callback.key != UNEASY_CRYSTAL || appearance == 10186
+    if callback.has_fenced_regrowth_reward() {
+        appearance == 21388
+    } else {
+        callback.key != UNEASY_CRYSTAL || appearance == 10186
+    }
 }
 
 /// Crystal 201189f actions_lions_rock.lua:14-84, OTS_HYPOTHESIS_ONLY.
@@ -197,9 +201,90 @@ pub(crate) fn lions_amphora() -> Vec<Callback> {
         }).collect()
 }
 
+/// Crystal 201189f actions_lions_rock.lua:86-104, OTS_HYPOTHESIS_ONLY.
+pub(crate) fn lions_flowers() -> Vec<Callback> {
+    use super::reward_callbacks::ItemReward;
+    [
+        (33138, 32352, -5, 1), (33140, 32352, -5, 1),
+        (33137, 32355, -5, 1), (33139, 32363, -5, 2),
+        (33154, 32359, -5, 1), (33153, 32361, -5, 3),
+        (33133, 32359, -6, 2), (33157, 32364, -6, 2),
+    ].into_iter().enumerate().map(|(index, (x,y,floor,ordinal))| {
+        let mut callback = uneasy_crystal();
+        callback.key = format!("oteryn:quest-callback/m44-lions-flower-{index}");
+        callback.quest = "oteryn:quest.tibia_tales".into();
+        callback.requires_world_admission = true;
+        callback.selector = Selector {
+            native: Some(NativeSelector { position: Position { x,y,floor }, ordinal, appearance: 21388 }),
+            position: None, unique: None, action: None, appearance: Some(21388),
+        };
+        callback.effects = CallbackEffectSet::default();
+        callback.effects.transform = Some(21935);
+        callback.effects.reset_after_ms = Some(60_000);
+        callback.effects.item_reward = Some(ItemReward { premium: false,
+            item: "oteryn:item.tibia.i21389".into(), count: 1, contents: Vec::new(),
+            text: None, additional: Vec::new(),
+        });
+        callback.storage = [
+            ("oteryn:quest-progress/quest/u10_70/lions_rock/questline", i64::from(i32::MAX)),
+            ("oteryn:quest-progress/quest/u8_1/tibia_tales/default_start", 1),
+        ].into_iter().map(|(track,maximum)| Storage {
+            track: track.into(), minimum: 0, maximum, set: 1,
+            preserve: false, increment: false, at_least: true,
+        }).collect();
+        callback.success_message = Some("You picked a beautiful lion's mane flower.".into());
+        callback.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:86-104".into()];
+        callback
+    }).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn lions_flower_regrowth_preserves_progress_and_requires_a_fenced_source() -> Result<(), String>
+    {
+        let callbacks = super::super::world_callbacks::load()?;
+        let flowers: Vec<_> = callbacks
+            .iter()
+            .filter(|c| c.key.contains("m44-lions-flower-"))
+            .collect();
+        assert_eq!(flowers.len(), 8);
+        for callback in flowers {
+            assert!(source_is_ready(callback, 21388));
+            assert!(!source_is_ready(callback, 21935));
+            assert_eq!(callback.effects.transform, Some(21935));
+            assert_eq!(callback.effects.reset_after_ms, Some(60_000));
+            assert_eq!(
+                callback
+                    .effects
+                    .item_reward
+                    .as_ref()
+                    .ok_or("flower reward")?
+                    .item,
+                "oteryn:item.tibia.i21389"
+            );
+            assert!(
+                callback
+                    .storage
+                    .iter()
+                    .all(|state| state.at_least && state.set == 1)
+            );
+            let document =
+                |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+            super::super::world_callbacks::parse(&document(callback))?;
+            for mutation in 0..3 {
+                let mut invalid = callback.clone();
+                match mutation {
+                    0 => invalid.key = "oteryn:quest-callback/unfenced-flower".into(),
+                    1 => invalid.effects.reset_after_ms = None,
+                    _ => invalid.selector.native = None,
+                }
+                assert!(super::super::world_callbacks::parse(&document(&invalid)).is_err());
+            }
+        }
+        Ok(())
+    }
     #[test]
     fn lions_amphora_step_ring_has_eight_bound_sources_and_one_scroll_reward() -> Result<(), String>
     {
