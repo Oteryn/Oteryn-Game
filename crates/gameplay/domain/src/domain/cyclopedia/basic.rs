@@ -110,11 +110,10 @@ impl BasicArea {
         action: MapAction,
         pool: &[Point],
         at: Point,
-        premium: bool,
+        _premium: bool,
         occurrence: &[u8; 16],
     ) -> Result<bool, MapRefusal> {
-        if (state.discovered && state.exploration.is_some())
-            || pool.iter().enumerate().any(|(i, p)| pool[..i].contains(p))
+        if pool.iter().enumerate().any(|(i, p)| pool[..i].contains(p))
             || pool.len() > self.pool_limit
             || state.exploration.as_ref().is_some_and(|e| {
                 !matches!(e.points.len(), 7 | 8)
@@ -127,22 +126,29 @@ impl BasicArea {
         {
             return Err(MapRefusal::Invalid);
         }
+        // All subareas are active. Materialize their private POIs on first observation,
+        // so entering another subarea never requires a Start command or entitlement.
+        let initialized = if !state.discovered
+            && state.exploration.is_none()
+            && matches!(action, MapAction::Query | MapAction::Find)
+        {
+            self.apply(state, MapAction::Start, pool, at, false, occurrence)?
+        } else {
+            false
+        };
         match action {
-            MapAction::Query | MapAction::Donate(_) => Ok(false),
+            MapAction::Query => Ok(initialized),
+            MapAction::Donate(_) => Ok(false),
             MapAction::Start | MapAction::Shuffle => {
-                if !premium {
-                    return Err(MapRefusal::PremiumRequired);
-                }
-                if state.discovered {
+                if state.discovered && action == MapAction::Start {
                     return Err(MapRefusal::AlreadyDiscovered);
                 }
-                if action == MapAction::Shuffle && state.exploration.is_none() {
-                    return Err(MapRefusal::NoExploration);
+                if action == MapAction::Start && state.exploration.is_some() {
+                    return Ok(false);
                 }
                 let mut candidates: Vec<_> = pool
                     .iter()
                     .copied()
-                    .filter(|p| !p.in_window(at))
                     .map(|p| {
                         let mut hash = Sha256::new();
                         hash.update(b"cyclopedia_poi:oteryn-basic-v2");
@@ -150,7 +156,7 @@ impl BasicArea {
                         hash.update(p.x.to_be_bytes());
                         hash.update(p.y.to_be_bytes());
                         hash.update(p.floor.to_be_bytes());
-                        (<[u8; 32]>::from(hash.finalize()), p)
+                        (p.in_window(at), <[u8; 32]>::from(hash.finalize()), p)
                     })
                     .collect();
                 candidates.sort_unstable();
@@ -158,7 +164,7 @@ impl BasicArea {
                     return Err(MapRefusal::InsufficientPool);
                 }
                 let mut points = Vec::with_capacity(self.generated_count);
-                for (_, point) in &candidates {
+                for (_, _, point) in &candidates {
                     if points.len() < self.generated_count
                         && points.iter().all(|selected: &Point| {
                             selected.floor != point.floor
@@ -171,7 +177,7 @@ impl BasicArea {
                 }
                 // Crystal `discovery_system.lua` generatePois relaxes the spacing rule
                 // once a box is hard to fill; the remaining draws keep the same order.
-                for (_, point) in &candidates {
+                for (_, _, point) in &candidates {
                     if points.len() < self.generated_count && !points.contains(point) {
                         points.push(*point);
                     }
@@ -181,7 +187,7 @@ impl BasicArea {
             }
             MapAction::Find => {
                 let Some(exploration) = state.exploration.as_mut() else {
-                    return Err(MapRefusal::NoExploration);
+                    return Ok(false);
                 };
                 let before = exploration.found;
                 for (index, point) in exploration.points.iter().enumerate() {
@@ -192,11 +198,13 @@ impl BasicArea {
                         exploration.found |= 1 << index;
                     }
                 }
-                if exploration.found.count_ones() >= 7 {
+                let completed = exploration.found.count_ones() >= 7;
+                if completed {
                     state.discovered = true;
                     state.exploration = None;
                 }
-                Ok(state.discovered
+                Ok(initialized
+                    || completed
                     || state
                         .exploration
                         .as_ref()
@@ -210,6 +218,69 @@ impl BasicArea {
 mod tests {
     #![allow(clippy::panic)]
     use super::*;
+    #[test]
+    fn discovery_activates_without_premium_and_completed_pois_reset_without_losing_credit() {
+        let Some(area) = BasicArea::embedded() else {
+            panic!("authored area")
+        };
+        let pool: Vec<_> = (20..60)
+            .map(|x| Point {
+                x,
+                y: 10,
+                floor: -7,
+            })
+            .collect();
+        let at = Point {
+            x: 0,
+            y: 10,
+            floor: -7,
+        };
+        let mut progress = MapProgress::default();
+        assert_eq!(
+            area.apply(&mut progress, MapAction::Query, &pool, at, false, &[1; 16]),
+            Ok(true)
+        );
+        let Some(exploration) = progress.exploration.as_ref() else {
+            panic!("automatic exploration")
+        };
+        let points = exploration.points.clone();
+        for point in points {
+            assert_eq!(
+                area.apply(
+                    &mut progress,
+                    MapAction::Find,
+                    &pool,
+                    point,
+                    false,
+                    &[2; 16]
+                ),
+                Ok(true)
+            );
+        }
+        assert!(progress.discovered);
+        assert_eq!(
+            area.apply(
+                &mut progress,
+                MapAction::Shuffle,
+                &pool,
+                at,
+                false,
+                &[3; 16]
+            ),
+            Ok(true)
+        );
+        assert!(progress.discovered);
+        let Some(exploration) = progress.exploration.as_ref() else {
+            panic!("reset POIs")
+        };
+        assert_eq!(exploration.found, 0);
+        assert_eq!(exploration.points.len(), 7);
+        assert_eq!(
+            area.apply(&mut progress, MapAction::Query, &pool, at, false, &[4; 16]),
+            Ok(false)
+        );
+    }
+
     #[test]
     fn poi_view_edges_are_symmetric_and_floor_changes_hide_points() {
         let player = Point {
@@ -280,17 +351,24 @@ mod tests {
         };
         let mut state = MapProgress::default();
         assert_eq!(
-            area.apply(&mut state, MapAction::Start, &pool, start, false, &[1; 16]),
-            Err(MapRefusal::PremiumRequired)
-        );
-        assert_eq!(state, MapProgress::default());
-        assert_eq!(
-            area.apply(&mut state, MapAction::Shuffle, &pool, start, true, &[1; 16]),
-            Err(MapRefusal::NoExploration)
-        );
-        assert_eq!(
-            area.apply(&mut state, MapAction::Start, &pool, start, true, &[1; 16]),
+            area.apply(&mut state, MapAction::Query, &pool, start, false, &[1; 16]),
             Ok(true)
+        );
+        assert!(state.exploration.is_some());
+        assert_eq!(
+            area.apply(
+                &mut state,
+                MapAction::Shuffle,
+                &pool,
+                start,
+                false,
+                &[1; 16]
+            ),
+            Ok(true)
+        );
+        assert_eq!(
+            area.apply(&mut state, MapAction::Start, &pool, start, false, &[1; 16]),
+            Ok(false)
         );
         let mut replay = MapProgress::default();
         assert_eq!(

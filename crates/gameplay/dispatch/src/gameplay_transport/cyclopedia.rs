@@ -15,12 +15,14 @@ use sha2::{Digest, Sha256};
 
 #[path = "cyclopedia/atlas.rs"]
 mod atlas;
-#[path = "cyclopedia/overview.rs"]
-mod overview;
 #[path = "cyclopedia/content.rs"]
 mod content;
+#[path = "cyclopedia/overview.rs"]
+mod overview;
 #[path = "cyclopedia/respawn.rs"]
 mod respawn;
+#[path = "cyclopedia/step.rs"]
+mod step;
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     let mut offers: Vec<_> = base
@@ -128,23 +130,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        // Settle delivery before borrowing the Character transaction. The in-transaction
-        // gate still rechecks the real root Account's current entitlement; no nested DB read.
-        let account = admitted.controller.map(|c| c.account_id).or_else(|| {
-            self.states
-                .premium_sessions
-                .lock()
-                .ok()
-                .and_then(|s| s.account_of(admitted.game_session_id))
-        });
-        let premium_ready = if matches!(intent.operation, 1 | 2) {
-            match (self.premium_coordinator, account) {
-                (Some(gate), Some(account)) => gate.premium_gate(account).await.premium_current(),
-                _ => false,
-            }
-        } else {
-            false
-        };
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let mut runtime = self.runtime.lock().await;
         let binding = runtime.binding();
@@ -297,7 +282,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 current,
                 request,
-                &Premium(self.premium_coordinator.filter(|_| premium_ready)),
+                &Premium(self.premium_coordinator),
             )
             .await
         {
