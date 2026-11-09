@@ -2,8 +2,8 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
-use crate::map::overlay::TilePos;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use crate::map::overlay::TilePos;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 #[test]
@@ -115,11 +115,27 @@ fn m57_cake_bridge_creation_cleanup_and_real_traversal() -> TestResult {
                     .bind(id(42).as_slice()).execute(&h.pool).await?;
                 owner.refresh_terrain_tools().await;
                 assert!(world.enterable(water), "completion leaves the bridge until event cleanup");
+                let brutus = |runtime: &ChannelRuntimeV1| runtime.visible_entities().npcs.into_iter()
+                    .filter(|npc| runtime.npc_key(npc.actor) == Some("oteryn:npc.brutus_the_baker"))
+                    .collect::<Vec<_>>();
+                assert!(brutus(&*deps.runtime.lock().await).is_empty(), "completion alone does not spawn Brutus before the next save");
+                // The saved annual phase is historical input; actual NPC creation,
+                // idempotency and cleanup use the current Channel projection.
+                sqlx::query("UPDATE game_cake_phases SET brutus_present=true WHERE world_id=encode($1,'hex')::uuid AND event_year=2026")
+                    .bind(id(42).as_slice()).execute(&h.pool).await?;
+                owner.refresh_terrain_tools().await;
+                let placed = brutus(&*deps.runtime.lock().await);
+                assert_eq!(placed.len(),1,"the normal Channel refresh must create Brutus once his saved phase is active");
+                assert_eq!(placed[0].position,MovementLocalPosition{x:33303,y:32064,floor:7});
+                owner.refresh_terrain_tools().await;
+                assert_eq!(brutus(&*deps.runtime.lock().await),placed,"projection replay keeps the same exact NPC actor");
                 sqlx::query("UPDATE game_cake_phases SET event_end_cleaned_up=true WHERE world_id=encode($1,'hex')::uuid AND event_year=2026")
                     .bind(id(42).as_slice()).execute(&h.pool).await?;
                 owner.refresh_terrain_tools().await;
                 assert!(!world.enterable(water), "cleanup restores the original impassable water");
                 assert!(world.facts().movement_item_entries().is_empty());
+                assert!(brutus(&*deps.runtime.lock().await).is_empty(),"event cleanup removes Brutus as well as the bridge");
+                assert_eq!(deps.runtime.lock().await.npc_key(placed[0].actor),None,"cleanup retires the exact created NPC generation");
                 assert_eq!(world.facts().cake_bridge_ground_speed(water), None);
                 assert_eq!(world.facts().cake_bridge_ground_speed(rail), None);
                 assert!(world.enterable(TilePos { x: 33303, y: 32052, floor: -7 }),
@@ -142,36 +158,115 @@ fn bridge_bundle(
     start: MovementLocalPosition,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::sector::{Item, Tile};
-    use oteryn_world_bundle::writer::{self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain, TerrainKind};
+    use oteryn_world_bundle::writer::{
+        self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
+        Terrain, TerrainKind,
+    };
     // The source's 4519 shore is walkable (150); 4597 water is not (speed 0).
     // This combat-only scene never grants full Source map qualification.
-    let palette = [(4519, true, 150), (4597, false, 0)].into_iter().enumerate().map(|(index, (id, walkable, speed))| PaletteEntry {
-        key: format!("oteryn:terrain.tibia.i{id}"), family: Family::Terrain, id: index as u32,
-        terrain: Some(Terrain { kind: TerrainKind::Ground, walkable: Some(walkable), ground_speed: Some(speed), blocks_projectile: Some(false) }),
-    }).collect();
+    let palette = [(4519, true, 150), (4597, false, 0)]
+        .into_iter()
+        .enumerate()
+        .map(|(index, (id, walkable, speed))| PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{id}"),
+            family: Family::Terrain,
+            id: index as u32,
+            terrain: Some(Terrain {
+                kind: TerrainKind::Ground,
+                walkable: Some(walkable),
+                ground_speed: Some(speed),
+                blocks_projectile: Some(false),
+            }),
+        })
+        .collect();
     let mut tiles = Vec::new();
-    for y in 32052..=32060 {
+    for y in 32052..=32064 {
         for x in 33300..=33306 {
-            tiles.push(Tile { x, y, flags: 0, house: 0, zones: vec![], items: vec![Item {
-                palette: if (x == 33303 && y == 32052) || y == 32060 { 0 } else { 1 },
-                depth: 0, attrs: Default::default(),
-            }] });
+            tiles.push(Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: vec![],
+                items: vec![Item {
+                    palette: if (x == 33303 && y == 32052) || y >= 32060 {
+                        0
+                    } else {
+                        1
+                    },
+                    depth: 0,
+                    attrs: Default::default(),
+                }],
+            });
         }
     }
     let manifest = Manifest {
-        subareas: Default::default(), format: bundle::FORMAT.into(), min_reader_version: bundle::VERSION,
-        projection_class: "server".into(), compiler_version: "m57-source-bridge-scene".into(), build_class: BuildClass::Production,
-        identity: Identity { project_format_version: "OTERYN_WORLD_PROJECT/v2".into(), world_schema_version: "world-schema-1".into(), content_revision: "rev-1".into(), ..Default::default() },
-        world: Extent { min_x: 33300, min_y: 32052, max_x: 33307, max_y: 32061, floors: vec![-7] },
-        palette, draft_areas: vec![], skipped_provisional_keys: vec![], dropped_teleports: vec![], spawns: Default::default(), npcs: Default::default(),
+        subareas: Default::default(),
+        format: bundle::FORMAT.into(),
+        min_reader_version: bundle::VERSION,
+        projection_class: "server".into(),
+        compiler_version: "m57-source-bridge-scene".into(),
+        build_class: BuildClass::Production,
+        identity: Identity {
+            project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+            world_schema_version: "world-schema-1".into(),
+            content_revision: "rev-1".into(),
+            ..Default::default()
+        },
+        world: Extent {
+            min_x: 33300,
+            min_y: 32052,
+            max_x: 33307,
+            max_y: 32065,
+            floors: vec![-7],
+        },
+        palette,
+        draft_areas: vec![],
+        skipped_provisional_keys: vec![],
+        dropped_teleports: vec![],
+        spawns: Default::default(),
+        npcs: Default::default(),
     };
-    let sectors = [Sector { floor: -7, sx: 33300 / 32, sy: 32052 / 32, tiles }];
+    let mut grouped = std::collections::BTreeMap::new();
+    for tile in tiles {
+        grouped
+            .entry((tile.x / 32, tile.y / 32))
+            .or_insert_with(Vec::new)
+            .push(tile);
+    }
+    let sectors = grouped
+        .into_iter()
+        .map(|((sx, sy), tiles)| Sector {
+            floor: -7,
+            sx,
+            sy,
+            tiles,
+        })
+        .collect::<Vec<_>>();
     let bytes = bundle::write(&manifest, &sectors, &Default::default()).map_err(debug)?;
     let digest = bundle::read(&bytes).map_err(debug)?.digest;
-    let pins = crate::map::BundlePins { digest, project_format_version: "OTERYN_WORLD_PROJECT/v2".into(), world_schema_version: "world-schema-1".into(), content_revision: "rev-1".into(), production: false };
+    let pins = crate::map::BundlePins {
+        digest,
+        project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+        world_schema_version: "world-schema-1".into(),
+        content_revision: "rev-1".into(),
+        production: false,
+    };
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
-    crate::map::boot::boot(&bytes, &crate::map::boot::BootPins {
-        map_revision: crate::map::overlay::map_revision(&base), bundle: pins,
-        start: TilePos { x: u16::try_from(start.x)?, y: u16::try_from(start.y)?, floor: i8::try_from(-start.floor)? },
-    }, world, channel, |_| None).map_err(debug)
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: TilePos {
+                x: u16::try_from(start.x)?,
+                y: u16::try_from(start.y)?,
+                floor: i8::try_from(-start.floor)?,
+            },
+        },
+        world,
+        channel,
+        |_| None,
+    )
+    .map_err(debug)
 }

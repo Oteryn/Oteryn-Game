@@ -1,6 +1,7 @@
 //! Crystal201189f a_piece_of_cake_config.lua:249-350,473-483,575-586.
 //! The real Channel cadence and movement owner consume the durable World phase.
 use super::*;
+use crate::map::view::MapFacts;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn refresh_cake_bridge_near_actor(
@@ -84,12 +85,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let Ok(present) = self
             .root
-            .cake_bridge_present(self.holder, fence, map.overlay.base().digest(), scope)
+            .cake_map_presence(self.holder, fence, map.overlay.base().digest(), scope)
             .await
         else {
             return false;
         };
-        let runtime = self.runtime.lock().await;
+        let mut runtime = self.runtime.lock().await;
         if !runtime
             .owner_fence()
             .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
@@ -98,7 +99,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return false;
         }
-        map.facts
-            .project_cake_bridge(map.overlay.base(), present, floor, rail)
+        let brutus_at = TilePos {
+            x: 33303,
+            y: 32064,
+            floor: -7,
+        };
+        if present.brutus
+            && (map
+                .overlay
+                .base()
+                .tile(brutus_at.x, brutus_at.y, brutus_at.floor)
+                .is_none()
+                || map.facts.house_tile(brutus_at))
+        {
+            return false;
+        }
+        if !map
+            .facts
+            .project_cake_bridge(map.overlay.base(), present.bridge, floor, rail)
+        {
+            return false;
+        }
+        let existing = runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .filter(|npc| runtime.npc_key(npc.actor) == Some("oteryn:npc.brutus_the_baker"))
+            .map(|npc| npc.actor)
+            .collect::<Vec<_>>();
+        if present.brutus {
+            if existing.is_empty() && runtime.place_cake_brutus_npc().is_err() {
+                return false;
+            }
+        } else {
+            for actor in existing {
+                if runtime.remove_dynamic_npc_actor(actor).is_err() {
+                    return false;
+                }
+            }
+        }
+        true
     }
 }
