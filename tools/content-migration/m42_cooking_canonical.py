@@ -28,10 +28,13 @@ def capture(root):
     shards = {}
     for d in json.loads(raw)['canonical_inputs']:
         previous = subprocess.check_output(['git', 'show', f"{BASE}:{d['path']}"], cwd=root)
-        if digest(previous) != d['sha256']:
-            raise ValueError('M42_CAPTURE_PREDECESSOR_PIN')
+        # The descriptor pins current canonical input bytes. The immutable
+        # predecessor separately pins the selected cookbook records below.
+        current = (root / d['path']).read_bytes()
+        if digest(current) != d['sha256']:
+            raise ValueError('M42_CAPTURE_CURRENT_INPUT_PIN')
         accepted = selected(previous, keys)
-        if selected((root / d['path']).read_bytes(), keys) != accepted:
+        if selected(current, keys) != accepted:
             raise ValueError('M42_CAPTURE_SELECTED_CANONICAL_DRIFT')
         if accepted:
             shards[d['path']] = accepted

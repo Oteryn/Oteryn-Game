@@ -11513,5 +11513,11 @@
     "red": "elevator overlap regression failed: stationary scenery admitted materializable",
     "green": "2 profile-overlap tests PASS; QM50 capture regenerated with repo tool; py_compile PASS",
     "scope": "Fixed-source elevator scenery only; no claim that repair PG or full postmerge gates are green"
+  },
+  "m42_witness_refresh_integration": {
+    "status": "QUALIFIED_SLICE",
+    "red": "Refresh rejected unrelated canonical shard changes and accepted a stale current-input pin",
+    "green": "Regression tests pass: unchanged selected cookbook records accepted; selected changes and stale current pins rejected; capture --refresh and verify PASS",
+    "scope": "No cookbook records changed; immutable predecessor selected-record hashes retained"
   }
 }
