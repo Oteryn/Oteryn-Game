@@ -7,6 +7,23 @@ pub(super) struct SelectedRecipe<'a> {
     pub original_source_gaps: bool,
 }
 
+impl SelectedRecipe<'_> {
+    /// A selected, explicit Oteryn level replaces an unknown donor level. The
+    /// original gap remains on the record; no other missing fact is resolved.
+    pub(super) fn resolves_original_level(&self, gap: &Value) -> bool {
+        self.original_source_gaps
+            && self.complete
+            && gap["code"] == "requirement_unknown"
+            && gap["field"] == "min_level"
+            && self.recipe.is_some_and(|recipe| {
+                recipe["requirements"]["basis"] == "CHOSEN_OTERYN_APPROXIMATION"
+                    && recipe["requirements"]["min_level"]
+                        .as_u64()
+                        .is_some_and(|level| u32::try_from(level).is_ok())
+            })
+    }
+}
+
 pub(super) fn select(definition: &Value) -> Result<Option<SelectedRecipe<'_>>, String> {
     if definition["definition_profile"] == "oteryn_authored_v1" {
         return Ok(Some(SelectedRecipe {

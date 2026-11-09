@@ -4,6 +4,18 @@ import questpc3_native_entries as source
 
 
 class NativeEntries(unittest.TestCase):
+    def test_task_board_entries_preserve_requirements_and_never_complete(self):
+        for slug, quest, level in [('falconer', 'oteryn:quest.falconer_outfits_quest', 100), ('feral-trappers', 'oteryn:quest.feral_trappers_quest', 0)]:
+            bound = source.build_task_board(slug)['quests'][0]
+            self.assertEqual(bound['quest'], quest)
+            self.assertEqual(bound['admission'], {'minimum_level':level})
+            self.assertEqual(len(bound['stages']), 1)
+            stage = bound['stages'][0]
+            self.assertFalse(stage['completes'])
+            self.assertEqual(stage['trigger']['kind'], 'task_board_use')
+            self.assertEqual(stage['trigger']['usage']['programme'], 'weekly')
+            self.assertEqual(stage['trigger']['usage']['storage'][0]['set'], 1)
+
     def test_dead_archer_entry_is_exact_and_cannot_complete_or_grant(self):
         document = source.build()
         quest = document['quests'][0]

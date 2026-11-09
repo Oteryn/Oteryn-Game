@@ -10,6 +10,7 @@ mod imported_recipe;
 pub mod kills;
 mod progress_storage;
 mod state_operations;
+pub mod task_board_use;
 pub mod terrain_use;
 pub use kills::KillCounter;
 
@@ -58,6 +59,9 @@ pub enum Trigger {
     },
     TerrainUse {
         usage: Box<terrain_use::TerrainUse>,
+    },
+    TaskBoardUse {
+        usage: Box<task_board_use::TaskBoardUse>,
     },
     DoorUse {
         usage: Box<door_use::DoorUse>,
@@ -206,6 +210,13 @@ impl Bindings {
                     }
                     continue;
                 }
+                if let Trigger::TaskBoardUse { usage } = &stage.trigger {
+                    usage.validate(quest)?;
+                    if stage.completes || !transitions.insert(&usage.key) {
+                        return Err("authored Task Board entry collision/completion".into());
+                    }
+                    continue;
+                }
                 if let Trigger::DoorUse { usage } = &stage.trigger {
                     usage.validate(quest)?;
                     if !transitions.insert(&usage.key) {
@@ -238,7 +249,8 @@ impl Bindings {
                     Trigger::Kill { .. }
                     | Trigger::Collect { .. }
                     | Trigger::TerrainUse { .. }
-                    | Trigger::DoorUse { .. } => {
+                    | Trigger::DoorUse { .. }
+                    | Trigger::TaskBoardUse { .. } => {
                         continue;
                     }
                     Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
@@ -425,6 +437,7 @@ impl Stage {
             Trigger::Collect { collection } => collection.transition(quest, self.completes)?,
             Trigger::TerrainUse { usage } => usage.transition(quest, self.completes)?,
             Trigger::DoorUse { usage } => usage.transition(quest, self.completes)?,
+            Trigger::TaskBoardUse { usage } => usage.transition(quest, self.completes)?,
         };
         transition.completes = self.completes;
         Ok(transition)
@@ -470,3 +483,6 @@ mod door_use_tests;
 
 #[cfg(test)]
 mod collector_delivery_tests;
+
+#[cfg(test)]
+mod task_board_use_tests;

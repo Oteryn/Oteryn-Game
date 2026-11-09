@@ -271,3 +271,43 @@ fn typed_prerequisite_admission_must_match_the_chosen_requirement_names() -> Res
     assert!(evidence(&index, &shard)?.verify(&wrong).is_err());
     Ok(())
 }
+
+#[test]
+fn chosen_level_resolves_only_the_original_unknown_level() -> Result<(), String> {
+    let mut doc: Value = serde_json::from_slice(include_bytes!("fixtures/task_board_use.json"))
+        .map_err(|e| e.to_string())?;
+    doc["quests"][0]["admission"] = serde_json::json!({"minimum_level":100});
+    let mut bindings = Bindings::parse(doc.to_string().as_bytes())?;
+    let recipe = serde_json::json!({"requirements":{"basis":"CHOSEN_OTERYN_APPROXIMATION","min_level":100,"premium":false,"prerequisites":[]},"stages":[{"key":"s1","kind":"use","count":1}]});
+    bindings.quests[0].recipe_sha256 =
+        Sha256::digest(serde_json::to_vec(&recipe).map_err(|e| e.to_string())?)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+    let index = serde_json::json!({"schema":"OTERYN_FAMILY_INDEX/v1","family":"Quest","shards":["fixture-shard"],"record_count":1});
+    let shard = serde_json::json!({"schema":"OTERYN_QUEST_TREE_SHARD/v1","family":"Quest","records":[{"definition":{
+        "identity":{"key":bindings.quests[0].quest},
+        "missing_data":[{"code":"requirement_unknown","field":"min_level"},{"code":"quest_native_lowering_missing"}],
+        "oteryn_recipe":{"profile":"chosen_source_completion_v1","chosen_data_complete":true,
+            "payload":{"identity":{"key":bindings.quests[0].quest},"recipe":recipe}}
+    }}]});
+    evidence(&index, &shard)?.verify(&bindings)?;
+    for field in ["premium", "vocation", "unresolved_items"] {
+        let mut held = shard.clone();
+        held["records"][0]["definition"]["missing_data"][0]["field"] = field.into();
+        assert!(
+            evidence(&index, &held)?.verify(&bindings).is_err(),
+            "unresolved {field} remains blocked"
+        );
+    }
+    let mut held = shard;
+    let definition = &mut held["records"][0]["definition"];
+    definition["definition_profile"] = "oteryn_authored_v1".into();
+    definition["data_complete"] = true.into();
+    definition["recipe"] = recipe;
+    assert!(
+        evidence(&index, &held)?.verify(&bindings).is_err(),
+        "native authored gaps are never donor gaps"
+    );
+    Ok(())
+}

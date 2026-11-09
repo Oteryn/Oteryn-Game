@@ -213,8 +213,28 @@ def build_illuminator(root=ROOT):
             'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}], 'sources':evidence}}}],
         'sources':evidence}]}
 
+def build_task_board(slug, root=ROOT):
+    quest, level = {
+        'falconer': ('oteryn:quest.falconer_outfits_quest', 100),
+        'feral-trappers': ('oteryn:quest.feral_trappers_quest', 0),
+    }[slug]
+    path, recipe = chosen(root, quest, ('s1', 'use', 1, ['Task Board']), level)
+    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    track = f'oteryn:quest-progress/m01c-{slug}-route'
+    evidence = [path+':s1', 'crates/gameplay/quests/src/quest/task_board_full.rs:StartWeekly',
+        'crates/gameplay/durability/src/durability/task_board/state.rs:native receipt']
+    return {'schema':1, 'quests':[{'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+        'admission':{'minimum_level':level},
+        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':len(recipe['stages'])}],
+        'stages':[{'key':'s1-programme','completes':False,'trigger':{'kind':'task_board_use','usage':{
+            'key':f'oteryn:quest-task-board-use/m01c-{slug}', 'programme':'weekly',
+            'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}], 'sources':evidence}}}],
+        'sources':evidence}]}
+
+
 def content(check=False):
     documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale()), (Path('content/quests/authored-bindings/qmech-m01c-decaying-defender.json'), build_decaying_defender()), (Path('content/quests/authored-bindings/qmech-m01c-illuminator.json'), build_illuminator())]
+    documents.extend((Path(f'content/quests/authored-bindings/qmech-m01c-{slug}.json'), build_task_board(slug)) for slug in ('falconer', 'feral-trappers'))
     for output, value in documents:
         path = ROOT / output
         if check:

@@ -564,6 +564,7 @@ pub mod rotten_blood_access;
 pub mod soul_war;
 pub mod source_deaths;
 mod storage;
+mod task_board_use;
 mod terrain_use;
 pub use terrain_use::TerrainUseObservation;
 #[cfg(test)]
