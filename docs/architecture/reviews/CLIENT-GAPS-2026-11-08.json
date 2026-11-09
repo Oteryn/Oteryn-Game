@@ -1357,7 +1357,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/localization.rs:5 + crates/client-ui/src/components/localization/build.rs:8 + language_selection_persists_and_localizes_real_chat_view_without_changing_messages (apps/client/src/features/local-reference-preferences/tests/localization.rs:5)"
+  "evidence": "apps/client/src/features/local-reference-preferences/localization_controls.rs:39; apps/client/src/features/local-reference-preferences/localization_controls.rs:72; apps/client/src/features/local-reference-preferences/settings_native_state.rs:252; apps/client/src/features/local-reference-preferences/localization.rs:15; crates/client-ui/src/components/localization/mod.rs:20; crates/client-ui/src/components/localization/build.rs:20; apps/client/src/features/local-reference-preferences/tests/localization.rs:5"
  },
  {
   "id": "O006",

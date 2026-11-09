@@ -230,7 +230,7 @@
     "otclient_path": [
       "modules/client_locales/locales.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/local-reference-preferences/native.rs",
@@ -256,12 +256,47 @@
         "path": "apps/client/src/features/local-reference-preferences/tests/localization.rs",
         "line": 5,
         "detail": "Odczyt statyczny: fn language_selection_persists_and_localizes_real_chat_view_without_changing_messages()"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/localization_controls.rs",
+        "line": 39,
+        "detail": "Ścieżka wyboru, utrwalenia, renderowania lub istniejący test lokalizacji."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/localization_controls.rs",
+        "line": 72,
+        "detail": "Ścieżka wyboru, utrwalenia, renderowania lub istniejący test lokalizacji."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings_native_state.rs",
+        "line": 252,
+        "detail": "Ścieżka wyboru, utrwalenia, renderowania lub istniejący test lokalizacji."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/localization.rs",
+        "line": 15,
+        "detail": "Ścieżka wyboru, utrwalenia, renderowania lub istniejący test lokalizacji."
+      },
+      {
+        "path": "crates/client-ui/src/components/localization/mod.rs",
+        "line": 20,
+        "detail": "Ścieżka wyboru, utrwalenia, renderowania lub istniejący test lokalizacji."
+      },
+      {
+        "path": "crates/client-ui/src/components/localization/build.rs",
+        "line": 20,
+        "detail": "Ścieżka wyboru, utrwalenia, renderowania lub istniejący test lokalizacji."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/tests/localization.rs",
+        "line": 5,
+        "detail": "Ścieżka wyboru, utrwalenia, renderowania lub istniejący test lokalizacji."
       }
     ],
     "mechanics_row": [
       "UI-PREFERENCES"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Lokalizacja interfejsu. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O005",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -269,7 +304,7 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Sześć języków EN/DE/ES/PL/PT/SV odpowiada data/locales OTClient. Natywny wybór ustawia zapisaną preferencję i domyślny język renderowania; generator wymaga wspólnego kompletnego katalogu. Funkcja lokalna; tekst gracza i wiadomości protokołu pozostają niezmienione.",
     "otclient_evidence": [
       {
         "path": "modules/client_locales/locales.lua",
