@@ -48,6 +48,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(result) = self.use_falcon_chest(actor, command, map, target).await {
             return Some(result);
         }
+        // A supplied item fence must remain current even when an unbound
+        // source falls through without reserving or minting a reward.
+        if let Some(expected) = command.item_fence
+            && !matches!(
+                tokio::time::timeout(
+                    std::time::Duration::from_secs(10),
+                    self.current_quest_fence(command.game_session_id),
+                )
+                .await,
+                Ok(Ok(Some(current))) if current.item_fence() == expected
+            )
+        {
+            return Some(outcome(UseDisposition::Rejected));
+        }
         let native = self.active_generation?.native_gameplay()?;
         // This is a bounded, immutable Content pass over the embedded claim catalogue.
         // Unsupported shapes and unadmitted rewards remain closed in the existing binder.

@@ -131,7 +131,7 @@ pub struct RewardContainerItem {
     pub charges_remaining: Option<u32>,
 }
 
-/// A claim whose placements are all bound.
+/// A claim whose native placements are all bound.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ServedClaim {
     pub key: ProductionKey,
@@ -1093,15 +1093,20 @@ fn bind_candidate(
             }),
         }
     }
-    if unbound.is_empty() {
+    // Foreign-only selectors stay unbound without suppressing the claim's
+    // native sources. Every native selector must still bind successfully.
+    if !bound.is_empty()
+        && unbound
+            .iter()
+            .all(|placement| placement.reason == UnboundReason::NoCrystalUniqueId)
+    {
         report.served.push(ServedClaim {
             key: ProductionKey::new(key)?,
             revision: DefinitionRevisionRef::new(&candidate.revision)?,
             placements: bound,
         });
-    } else {
-        report.unbound.extend(unbound);
     }
+    report.unbound.extend(unbound);
     Ok(())
 }
 
