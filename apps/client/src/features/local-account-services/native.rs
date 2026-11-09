@@ -6,45 +6,45 @@ pub(super) fn present(view: &View, cancel: CancellationToken) -> Action {
 }
 fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
     let window = Window::new(
-        "Oteryn — Character Bazaar and world transfer",
+        tr!("Oteryn — Character Bazaar and world transfer"),
         900,
         790,
         cancel,
     )?;
-    window.button("Browse auctions", 1, [15, 15, 160, 30])?;
-    window.button("Premium overview", 14, [645, 15, 220, 30])?;
-    window.button("My auctions", 2, [185, 15, 150, 30])?;
-    window.button("Auction history", 3, [345, 15, 150, 30])?;
-    let next = window.button("Next page", 4, [505, 15, 120, 30])?;
+    window.button(tr!("Browse auctions"), 1, [15, 15, 160, 30])?;
+    window.button(tr!("Premium overview"), 14, [645, 15, 220, 30])?;
+    window.button(tr!("My auctions"), 2, [185, 15, 150, 30])?;
+    window.button(tr!("Auction history"), 3, [345, 15, 150, 30])?;
+    let next = window.button(tr!("Next page"), 4, [505, 15, 120, 30])?;
     let list = window.list(100, [15, 60, 850, 190])?;
-    window.label("Bid (Oteryn coins)", [15, 265, 160, 25])?;
+    window.label(tr!("Bid (Oteryn coins)"), [15, 265, 160, 25])?;
     let amount = window.edit("", 101, [180, 260, 200, 28])?;
-    let bid = window.button("Place bid…", 5, [400, 260, 160, 30])?;
-    window.label("Your character", [15, 310, 250, 20])?;
-    window.label("Minimum bid", [300, 310, 150, 20])?;
-    window.label("Duration (hours)", [490, 310, 160, 20])?;
+    let bid = window.button(tr!("Place bid…"), 5, [400, 260, 160, 30])?;
+    window.label(tr!("Your character"), [15, 310, 250, 20])?;
+    window.label(tr!("Minimum bid"), [300, 310, 150, 20])?;
+    window.label(tr!("Duration (hours)"), [490, 310, 160, 20])?;
     let characters = window.combo(102, [15, 335, 260, 250])?;
     let minimum = window.edit("1", 103, [300, 335, 150, 28])?;
     let duration = window.edit("24", 104, [490, 335, 140, 28])?;
-    let sell = window.button("List for auction…", 6, [655, 335, 210, 30])?;
-    window.label("Destination world", [15, 380, 250, 20])?;
+    let sell = window.button(tr!("List for auction…"), 6, [655, 335, 210, 30])?;
+    window.label(tr!("Destination world"), [15, 380, 250, 20])?;
     let worlds = window.combo(105, [15, 405, 260, 250])?;
-    let quote = window.button("Check transfer", 7, [300, 405, 180, 30])?;
-    let transfer = window.button("Confirm transfer…", 8, [500, 405, 200, 30])?;
+    let quote = window.button(tr!("Check transfer"), 7, [300, 405, 180, 30])?;
+    let transfer = window.button(tr!("Confirm transfer…"), 8, [500, 405, 200, 30])?;
     window.label(
-        "Your operation receipts (select to recover status)",
+        tr!("Your operation receipts (select to recover status)"),
         [15, 455, 650, 20],
     )?;
     let receipts = window.combo(106, [15, 480, 640, 240])?;
-    window.button("Check receipt", 9, [675, 480, 190, 30])?;
-    let retry = window.button("Retry same request", 10, [15, 535, 210, 30])?;
-    let status = window.button("Check pending status", 11, [240, 535, 230, 30])?;
-    window.button("Get coins", 13, [485, 535, 135, 30])?;
-    window.button("Return to characters", 99, [630, 535, 235, 30])?;
+    window.button(tr!("Check receipt"), 9, [675, 480, 190, 30])?;
+    let retry = window.button(tr!("Retry same request"), 10, [15, 535, 210, 30])?;
+    let status = window.button(tr!("Check pending status"), 11, [240, 535, 230, 30])?;
+    window.button(tr!("Get coins"), 13, [485, 535, 135, 30])?;
+    window.button(tr!("Return to characters"), 99, [630, 535, 235, 30])?;
     window.output(&view.status_text(), [15, 585, 850, 145])?;
     if let Some(page) = &view.page {
         for a in &page.auctions {
-            list.add(&format!(
+            list.add(&lfmt!(
                 "{} — level {} — {} — next {} coins — high {} — {:?} — ends {} UTC seconds",
                 a.character_name,
                 a.level,
@@ -131,9 +131,9 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
                         .and_then(|p| list.selected().and_then(|i| p.auctions.get(i))),
                     amount.text().parse::<u64>(),
                 ) {
-                    return Some(Action::Bid {auction_id:a.id.clone(),coins,confirmed:window.confirm(&format!("Bid {coins} Oteryn coins for {}? The service reserves funds; settlement requires the Game ownership receipt.",a.character_name))});
+                    return Some(Action::Bid {auction_id:a.id.clone(),coins,confirmed:window.confirm(&lfmt!("Bid {coins} Oteryn coins for {}? The service reserves funds; settlement requires the Game ownership receipt.",a.character_name,coins=coins))});
                 }
-                window.explain("Choose an auction and enter a valid coin amount.");
+                window.explain(tr!("Choose an auction and enter a valid coin amount."));
             }
             6 => {
                 if let (Some(c), Ok(minimum_bid), Ok(duration_hours)) = (
@@ -141,9 +141,11 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
                     minimum.text().parse::<u64>(),
                     duration.text().parse::<u32>(),
                 ) {
-                    return Some(Action::Sell {character_id:c.id.clone(),minimum_bid,duration_hours,confirmed:window.confirm(&format!("List {} for {duration_hours} hours, minimum {minimum_bid} coins? The character must be offline and will stay locked. Items and gold remain with it.",c.name))});
+                    return Some(Action::Sell {character_id:c.id.clone(),minimum_bid,duration_hours,confirmed:window.confirm(&lfmt!("List {} for {duration_hours} hours, minimum {minimum_bid} coins? The character must be offline and will stay locked. Items and gold remain with it.",c.name,duration_hours=duration_hours,minimum_bid=minimum_bid))});
                 }
-                window.explain("Choose your character, a positive minimum bid, and 1–168 hours.");
+                window.explain(tr!(
+                    "Choose your character, a positive minimum bid, and 1–168 hours."
+                ));
             }
             7 => {
                 if let (Some(c), Some(w)) = (
@@ -157,11 +159,11 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
                         world_id: w.id.clone(),
                     });
                 }
-                window.explain("Choose a character and destination world.");
+                window.explain(tr!("Choose a character and destination world."));
             }
             8 => {
                 if view.can_transfer() && quote_matches {
-                    return Some(Action::Transfer {confirmed:window.confirm(&format!("{}\nGame rechecks offline, guild, house and market restrictions before committing.", view.transfer_description(view.quote.as_ref()?)))});
+                    return Some(Action::Transfer {confirmed:window.confirm(&lfmt!("{}\nGame rechecks offline, guild, house and market restrictions before committing.", view.transfer_description(view.quote.as_ref()?)))});
                 }
             }
             9 => {

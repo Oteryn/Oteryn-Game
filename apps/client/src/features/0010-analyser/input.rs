@@ -67,7 +67,7 @@ pub(in crate::play) fn resolve_items(
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
         mailbox.analyser.catalogue_pending.clear();
-        mailbox.analyser.feedback = Some("Session ended");
+        mailbox.analyser.feedback = Some(tr!("Session ended"));
     }
 }
 
@@ -103,8 +103,8 @@ pub(in crate::play) fn submit(
         mailbox.analyser.export_path = path.clone();
         mailbox.analyser.feedback = Some(
             match save_session(&mailbox.analyser, std::path::Path::new(path)) {
-                Ok(()) => "Session report exported",
-                Err(_) => "Session export failed; choose a writable file path",
+                Ok(()) => tr!("Session report exported"),
+                Err(_) => tr!("Session export failed; choose a writable file path"),
             },
         );
     } else if action == tools + 5 {
@@ -158,7 +158,7 @@ pub(in crate::play) fn save_session(
     path: &std::path::Path,
 ) -> std::io::Result<()> {
     if !panel.selected {
-        return Err(std::io::Error::other("No active analyser session"));
+        return Err(std::io::Error::other(tr!("No active analyser session")));
     }
     std::fs::write(path, oteryn_client_ui::analyser::session_text(panel))
 }
@@ -169,7 +169,8 @@ pub(in crate::play) fn refresh_party(
 ) {
     mailbox.analyser.party_import = None;
     if !mailbox.party.selected {
-        mailbox.analyser.party_feedback = Some("Party membership is unavailable in this session");
+        mailbox.analyser.party_feedback =
+            Some(tr!("Party membership is unavailable in this session"));
         return;
     }
     if let Some(command) =
@@ -177,7 +178,7 @@ pub(in crate::play) fn refresh_party(
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
         mailbox.analyser.party_pending = false;
-        mailbox.analyser.party_feedback = Some("Session ended");
+        mailbox.analyser.party_feedback = Some(tr!("Session ended"));
     }
 }
 
@@ -198,14 +199,15 @@ pub(in crate::play) fn refresh_tasks(
         &mut mailbox.task_board,
         oteryn_client_ui::task_board::FullIntent::Refresh,
     ) else {
-        mailbox.analyser.task_feedback =
-            Some("Hunting tasks unavailable or a request is already pending");
+        mailbox.analyser.task_feedback = Some(tr!(
+            "Hunting tasks unavailable or a request is already pending"
+        ));
         return;
     };
-    mailbox.analyser.task_feedback = Some("Reading confirmed hunting tasks");
+    mailbox.analyser.task_feedback = Some(tr!("Reading confirmed hunting tasks"));
     if commands.send(PlayCommand::Feature(command)).is_err() {
         mailbox.task_board.pending = false;
-        mailbox.analyser.task_feedback = Some("Session ended");
+        mailbox.analyser.task_feedback = Some(tr!("Session ended"));
     }
 }
 impl PlayLink {

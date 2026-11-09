@@ -64,7 +64,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     m.cast_control.access_revision = access_revision;
                     super::input::submit(m, commands, action);
                 } else {
-                    m.cast_control.feedback = "Enter valid saved cast settings".into();
+                    m.cast_control.feedback = tr!("Enter valid saved cast settings").into();
                 }
             },
         },

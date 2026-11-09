@@ -17,7 +17,7 @@ impl PanelControls {
             control(
                 hwnd,
                 "STATIC",
-                "VIP entries                 Groups                      Consent invitations",
+                tr!("VIP entries                 Groups                      Consent invitations"),
                 200,
                 [10, 5, 620, 20],
                 0,
@@ -35,7 +35,7 @@ impl PanelControls {
             control(
                 hwnd,
                 "STATIC",
-                "Character / group name or description",
+                tr!("Character / group name or description"),
                 201,
                 [10, 195, 300, 20],
                 0,
@@ -51,7 +51,7 @@ impl PanelControls {
             control(
                 hwnd,
                 "STATIC",
-                "Icon (0–19); select groups above to assign",
+                tr!("Icon (0–19); select groups above to assign"),
                 202,
                 [320, 195, 300, 20],
                 0,
@@ -67,26 +67,26 @@ impl PanelControls {
             let notify = control(
                 hwnd,
                 "BUTTON",
-                "Notify",
+                tr!("Notify"),
                 107,
                 [545, 220, 80, 25],
                 BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
             );
             for (index, label) in [
-                "Add",
-                "Remove",
-                "Save edit",
-                "Add group",
-                "Rename group",
-                "Delete group",
-                "Accept",
-                "Reject",
-                "Revoke",
-                "Withdraw",
-                "Show status",
-                "Hide status",
-                "Refresh",
-                "Next page",
+                tr!("Add"),
+                tr!("Remove"),
+                tr!("Save edit"),
+                tr!("Add group"),
+                tr!("Rename group"),
+                tr!("Delete group"),
+                tr!("Accept"),
+                tr!("Reject"),
+                tr!("Revoke"),
+                tr!("Withdraw"),
+                tr!("Show status"),
+                tr!("Hide status"),
+                tr!("Refresh"),
+                tr!("Next page"),
             ]
             .iter()
             .enumerate()
@@ -107,9 +107,9 @@ impl PanelControls {
             }
             let status = control(hwnd, "STATIC", "", 203, [10, 370, 615, 75], 0);
             for (id, title, x) in [
-                (124, "All contacts", 10),
-                (125, "Friends", 220),
-                (126, "Invitations", 430),
+                (124, tr!("All contacts"), 10),
+                (125, tr!("Friends"), 220),
+                (126, tr!("Invitations"), 430),
             ] {
                 control(hwnd, "BUTTON", title, id, [x, 455, 195, 28], WS_TABSTOP);
             }

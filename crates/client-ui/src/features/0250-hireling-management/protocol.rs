@@ -8,17 +8,17 @@ use oteryn_client_runtime::{
 /// The accepted character-wide entitlement projection is already encoded by command470.
 pub fn outfits(entry: &wire::Entry) -> Vec<(&'static str, u16)> {
     let female = entry.sex == 2;
-    let mut result = vec![("Citizen", if female { 1107 } else { 1108 })];
+    let mut result = vec![(tr!("Citizen"), if female { 1107 } else { 1108 })];
     for (i, (name, f, m)) in [
-        ("Banker", 1109, 1110),
-        ("Cook", 1113, 1114),
-        ("Steward", 1115, 1116),
-        ("Trader", 1111, 1112),
-        ("Servant", 1117, 1118),
-        ("Hydra", 1129, 1130),
-        ("Ferumbras", 1131, 1132),
-        ("Bonelord", 1123, 1124),
-        ("Dragon", 1125, 1126),
+        (tr!("Banker"), 1109, 1110),
+        (tr!("Cook"), 1113, 1114),
+        (tr!("Steward"), 1115, 1116),
+        (tr!("Trader"), 1111, 1112),
+        (tr!("Servant"), 1117, 1118),
+        (tr!("Hydra"), 1129, 1130),
+        (tr!("Ferumbras"), 1131, 1132),
+        (tr!("Bonelord"), 1123, 1124),
+        (tr!("Dragon"), 1125, 1126),
     ]
     .into_iter()
     .enumerate()
@@ -32,18 +32,18 @@ pub fn outfits(entry: &wire::Entry) -> Vec<(&'static str, u16)> {
 
 pub fn request(p: &mut Panel, intent: Intent) -> Option<FeatureCommand> {
     if !p.selected {
-        p.feedback = Some("Hireling management unavailable in this session");
+        p.feedback = Some(tr!("Hireling management unavailable in this session"));
         return None;
     }
     if p.pending.is_some() {
-        p.feedback = Some("Waiting for the server");
+        p.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     let action = match intent {
         Intent::List => wire::Request::List,
         Intent::Return | Intent::Outfit { .. } => {
             let Some(entry) = p.entries.iter().find(|e| Some(e.hireling) == p.identity) else {
-                p.feedback = Some("Select an owned hireling");
+                p.feedback = Some(tr!("Select an owned hireling"));
                 return None;
             };
             match intent {
@@ -52,7 +52,7 @@ pub fn request(p: &mut Panel, intent: Intent) -> Option<FeatureCommand> {
                 },
                 Intent::Outfit { look_type, colors } => {
                     if !outfits(entry).iter().any(|(_, look)| *look == look_type) {
-                        p.feedback = Some("This outfit is not owned");
+                        p.feedback = Some(tr!("This outfit is not owned"));
                         return None;
                     }
                     wire::Request::Outfit {
@@ -82,7 +82,7 @@ pub fn apply_result(p: &mut Panel, r: &GatedCommandResult) -> bool {
         r.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        p.feedback = Some("The server refused hireling management");
+        p.feedback = Some(tr!("The server refused hireling management"));
         return false;
     }
     match (action, wire::Reply::decode(&r.payload)) {
@@ -106,31 +106,33 @@ pub fn apply_result(p: &mut Panel, r: &GatedCommandResult) -> bool {
                 entry.look_type = look_type;
                 entry.colors = colors;
             }
-            p.feedback = Some("Outfit saved; refresh to read current server state");
+            p.feedback = Some(tr!("Outfit saved; refresh to read current server state"));
             true
         }
         (wire::Request::ReturnToLamp { hireling }, Some(wire::Reply::Committed)) => {
             if let Some(entry) = p.entries.iter_mut().find(|e| e.hireling == hireling) {
                 entry.position = None;
             }
-            p.feedback = Some("Returned to lamp; refresh to read current server state");
+            p.feedback = Some(tr!(
+                "Returned to lamp; refresh to read current server state"
+            ));
             true
         }
         (_, Some(wire::Reply::Refused(reason))) => {
             p.feedback = Some(match reason {
-                wire::Refusal::Stale => "Session authority is stale",
-                wire::Refusal::NotOwner => "You do not own this hireling",
-                wire::Refusal::NotActive => "Hireling is not placed",
-                wire::Refusal::OutfitNotOwned => "This outfit is not owned",
-                wire::Refusal::InventoryFull => "Inbox is full",
-                wire::Refusal::Capacity => "Hireling capacity reached",
-                wire::Refusal::NotInHouse => "Enter the hireling's house",
-                wire::Refusal::Conflict => "The command conflicts with a prior request",
+                wire::Refusal::Stale => tr!("Session authority is stale"),
+                wire::Refusal::NotOwner => tr!("You do not own this hireling"),
+                wire::Refusal::NotActive => tr!("Hireling is not placed"),
+                wire::Refusal::OutfitNotOwned => tr!("This outfit is not owned"),
+                wire::Refusal::InventoryFull => tr!("Inbox is full"),
+                wire::Refusal::Capacity => tr!("Hireling capacity reached"),
+                wire::Refusal::NotInHouse => tr!("Enter the hireling's house"),
+                wire::Refusal::Conflict => tr!("The command conflicts with a prior request"),
             });
             false
         }
         _ => {
-            p.feedback = Some("The server returned invalid hireling management data");
+            p.feedback = Some(tr!("The server returned invalid hireling management data"));
             false
         }
     }

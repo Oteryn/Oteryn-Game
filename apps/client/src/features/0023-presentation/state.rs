@@ -75,7 +75,7 @@ pub fn decode_mapping(bytes: &[u8]) -> Result<(String, BTreeMap<u32, Vec<String>
                     })
             })
     {
-        return Err("invalid official sound mapping".into());
+        return Err(tr!("invalid official sound mapping").into());
     }
     Ok((manifest.sound_data, manifest.sound_cues))
 }
@@ -97,11 +97,11 @@ impl SoundCatalog {
             .read_to_end(&mut bytes)
             .map_err(|e| e.to_string())?;
         if bytes.len() as u64 > oteryn_client_assets::MAX_MANIFEST_BYTES {
-            return Err("sound manifest too large".into());
+            return Err(tr!("sound manifest too large").into());
         }
         // Re-prove the bytes parsed here, so a replaced manifest cannot bypass open_pinned.
         if oteryn_client_assets::text_sha256(&bytes) != sha256.to_ascii_lowercase() {
-            return Err("sound manifest changed".into());
+            return Err(tr!("sound manifest changed").into());
         }
         let (metadata, cues) = decode_mapping(&bytes)?;
         store

@@ -9,7 +9,7 @@ pub(super) fn command(panel: &Panel, receipt: bool) -> Result<FeatureCommand, &'
         || signature.len() > wire::MAX_SIGNATURE_BYTES * 2
         || !signature.len().is_multiple_of(2)
     {
-        return Err("Invalid authorization signature");
+        return Err(tr!("Invalid authorization signature"));
     }
     let signature = signature
         .as_chunks::<2>()
@@ -20,7 +20,7 @@ pub(super) fn command(panel: &Panel, receipt: bool) -> Result<FeatureCommand, &'
             Some(digit(pair[0])? * 16 + digit(pair[1])?)
         })
         .collect::<Option<Vec<_>>>()
-        .ok_or("Invalid authorization signature")?;
+        .ok_or(tr!("Invalid authorization signature"))?;
     let envelope = wire::SignedEnvelope {
         principal: panel.fields[0].clone(),
         // Preserve the signed bytes exactly, including whitespace. Never reserialize.
@@ -29,9 +29,10 @@ pub(super) fn command(panel: &Panel, receipt: bool) -> Result<FeatureCommand, &'
     };
     if panel.tools {
         return oteryn_client_ui::staff_tools::request(&envelope, receipt)
-            .map_err(|_| "Invalid authorized action");
+            .map_err(|_| tr!("Invalid authorized action"));
     }
-    oteryn_client_ui::staff::request(&envelope, receipt).map_err(|_| "Invalid authorized action")
+    oteryn_client_ui::staff::request(&envelope, receipt)
+        .map_err(|_| tr!("Invalid authorized action"))
 }
 
 pub(in crate::play) fn apply(
@@ -48,7 +49,7 @@ pub(in crate::play) fn apply(
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
         panel.feedback =
-            "Action not confirmed; check the administrator ledger before retrying".into();
+            tr!("Action not confirmed; check the administrator ledger before retrying").into();
         return;
     }
     let decoded = if panel.tools {
@@ -59,30 +60,31 @@ pub(in crate::play) fn apply(
     };
     let Ok((reply, info)) = decoded else {
         panel.feedback =
-            "Invalid staff reply; check the administrator ledger before retrying".into();
+            tr!("Invalid staff reply; check the administrator ledger before retrying").into();
         return;
     };
     let code = match reply.code {
         wire::StaffCode::Ok => {
             if reply.disposition == 3 {
-                "Signed receipt stored"
+                tr!("Signed receipt stored")
             } else {
-                "Audited action confirmed"
+                tr!("Audited action confirmed")
             }
         }
-        wire::StaffCode::RoleRevoked => "Staff authorization revoked",
-        wire::StaffCode::TierInsufficient => "Insufficient staff permission",
-        wire::StaffCode::TargetNotFound => "Character not found",
-        wire::StaffCode::TargetNotInChannel => "Character is not in this channel",
-        wire::StaffCode::Stale => "Authorization is stale",
-        wire::StaffCode::AlreadyReleased => "Character already released",
-        wire::StaffCode::RateLimited => "Staff action rate limit reached",
-        wire::StaffCode::AlreadyBanned => "This account is already banned",
+        wire::StaffCode::RoleRevoked => tr!("Staff authorization revoked"),
+        wire::StaffCode::TierInsufficient => tr!("Insufficient staff permission"),
+        wire::StaffCode::TargetNotFound => tr!("Character not found"),
+        wire::StaffCode::TargetNotInChannel => tr!("Character is not in this channel"),
+        wire::StaffCode::Stale => tr!("Authorization is stale"),
+        wire::StaffCode::AlreadyReleased => tr!("Character already released"),
+        wire::StaffCode::RateLimited => tr!("Staff action rate limit reached"),
+        wire::StaffCode::AlreadyBanned => tr!("This account is already banned"),
     };
     panel.feedback = if info.is_empty() { code.into() } else { info };
-    panel.summary = format!(
+    panel.summary = lfmt!(
         "Control sequence {}; mute until {} ms",
-        reply.control_seq, reply.mute_until_ms
+        reply.control_seq,
+        reply.mute_until_ms
     );
     // Authorization material is not retained after a confirmed result.
     panel.fields = Default::default();

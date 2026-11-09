@@ -68,16 +68,17 @@ impl InterfaceControls {
             if game_window.iter().any(|handle| handle.is_null()) {
                 return None;
             }
-            let names = ["Own name", "Other player names", "Creature names"].map(|label| {
-                control(
-                    hwnd,
-                    "BUTTON",
-                    label,
-                    0,
-                    [0, 0, 220, 26],
-                    BS_AUTOCHECKBOX as u32,
-                )
-            });
+            let names =
+                [tr!("Own name"), tr!("Other player names"), "Creature names"].map(|label| {
+                    control(
+                        hwnd,
+                        "BUTTON",
+                        label,
+                        0,
+                        [0, 0, 220, 26],
+                        BS_AUTOCHECKBOX as u32,
+                    )
+                });
             for (index, handle) in names.iter().enumerate() {
                 MoveWindow(*handle, 10 + index as i32 * 230, 265, 220, 26, 1);
             }
@@ -103,7 +104,7 @@ impl InterfaceControls {
             let cursor = control(
                 hwnd,
                 "BUTTON",
-                "Crosshair cursor",
+                tr!("Crosshair cursor"),
                 236,
                 [10, 225, 300, 26],
                 BS_AUTOCHECKBOX as u32,

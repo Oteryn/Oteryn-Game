@@ -32,21 +32,21 @@ pub(super) fn refresh_section(mailbox: &mut Mailbox, commands: &UnboundedSender<
             ) && commands.send(PlayCommand::Feature(command)).is_err()
             {
                 panel.pending = false;
-                panel.feedback = Some("The session has ended");
+                panel.feedback = Some(tr!("The session has ended"));
             }
         }
         Section::Items => {
             use oteryn_client_ui::inspection::{Request, request};
             let panel = &mut mailbox.discovery.inspection;
             let Some(previous @ Request::Catalogue(_)) = panel.last_request else {
-                panel.feedback = "Inspect a catalogue definition to load it here".into();
+                panel.feedback = tr!("Inspect a catalogue definition to load it here").into();
                 return;
             };
             if let Some(command) = request(panel, previous)
                 && commands.send(PlayCommand::ServerMechanic(command)).is_err()
             {
                 panel.pending = false;
-                panel.feedback = "The session has ended".into();
+                panel.feedback = tr!("The session has ended").into();
             }
         }
         Section::Analytics => {}
@@ -61,7 +61,7 @@ pub(super) fn load_item_definition(mailbox: &mut Mailbox, commands: &UnboundedSe
         return;
     }
     if !panel.selected {
-        panel.feedback = "Item catalogue unavailable in this session".into();
+        panel.feedback = tr!("Item catalogue unavailable in this session").into();
         return;
     }
     let Some(command) = panel
@@ -71,12 +71,12 @@ pub(super) fn load_item_definition(mailbox: &mut Mailbox, commands: &UnboundedSe
         .ok()
         .and_then(|id| request(panel, Request::Catalogue(id)))
     else {
-        panel.feedback = "Enter a valid item definition reference".into();
+        panel.feedback = tr!("Enter a valid item definition reference").into();
         return;
     };
     if commands.send(PlayCommand::ServerMechanic(command)).is_err() {
         panel.pending = false;
-        panel.feedback = "The session has ended".into();
+        panel.feedback = tr!("The session has ended").into();
     }
 }
 

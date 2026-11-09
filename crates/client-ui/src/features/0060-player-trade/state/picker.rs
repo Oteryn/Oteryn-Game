@@ -9,31 +9,31 @@ pub fn rows(items: &TradeItems) -> Vec<(&'static str, ItemEntry)> {
         items
             .inventory
             .main_backpack
-            .map(|item| ("Backpack slot", item)),
+            .map(|item| (tr!("Backpack slot"), item)),
     );
     rows.extend(
         items
             .inventory
             .entries
             .iter()
-            .map(|item| ("Backpack", *item)),
+            .map(|item| (tr!("Backpack"), *item)),
     );
     rows.extend(
         items
             .inventory
             .equipment
             .iter()
-            .map(|item| ("Equipment", item.item)),
+            .map(|item| (tr!("Equipment"), item.item)),
     );
     rows.extend(
         items
             .corpse
             .entries
             .iter()
-            .map(|item| ("Open container", *item)),
+            .map(|item| (tr!("Open container"), *item)),
     );
     for view in &items.containers.views {
-        rows.extend(view.entries.iter().map(|item| ("Container", *item)));
+        rows.extend(view.entries.iter().map(|item| (tr!("Container"), *item)));
     }
     let mut seen = std::collections::BTreeSet::new();
     rows.retain(|(_, item)| seen.insert(item.handle));
@@ -46,13 +46,13 @@ pub fn select_partner(panel: &mut PlayerTradePanel, partner: EntityRef) -> bool 
     }
     panel.partner = Some(partner);
     panel.offer = None;
-    panel.feedback = Some("Choose an inventory item, then Offer selected");
+    panel.feedback = Some(tr!("Choose an inventory item, then Offer selected"));
     true
 }
 
 pub fn select_item(panel: &mut PlayerTradePanel, row: usize) -> bool {
     let Some(partner) = panel.partner.or_else(|| panel.state.as_ref()?.partner) else {
-        panel.feedback = Some("Choose Trade with from a player's world context menu");
+        panel.feedback = Some(tr!("Choose Trade with from a player's world context menu"));
         return false;
     };
     let Some((_, item)) = rows(&panel.items).get(row).copied() else {
@@ -69,7 +69,7 @@ pub fn offer_selected(panel: &mut PlayerTradePanel) -> Option<super::PlayerTrade
         .any(|(_, entry)| entry.handle.get() == item)
     {
         panel.offer = None;
-        panel.feedback = Some("That item is no longer available; choose again");
+        panel.feedback = Some(tr!("That item is no longer available; choose again"));
         return None;
     }
     super::request(panel, Intent::Offer { partner, item })
@@ -79,9 +79,12 @@ pub fn picker_text(panel: &PlayerTradePanel) -> Vec<String> {
     rows(&panel.items)
         .iter()
         .map(|(source, item)| {
-            format!(
+            lfmt!(
                 "{source}: item {} x{} (subtype {})",
-                item.item_definition_ref, item.count, item.sub_type
+                item.item_definition_ref,
+                item.count,
+                item.sub_type,
+                source = source
             )
         })
         .collect()

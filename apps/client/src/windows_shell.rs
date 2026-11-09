@@ -48,18 +48,18 @@ pub enum ShellError {
 impl Display for ShellError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
-            Self::EventLoopCreation => "client event loop creation failed",
-            Self::EventLoopRun => "client event loop failed",
-            Self::WindowCreation => "client window creation failed",
-            Self::LoginInitialization => "native login window creation failed",
-            Self::InputInitialization => "client input initialization failed",
-            Self::RendererInitialization => "client renderer initialization failed",
-            Self::RendererResume => "client renderer resume failed",
-            Self::RendererSuspend => "client renderer suspend failed",
-            Self::RendererResize => "client renderer resize failed",
-            Self::RendererRender => "client renderer render failed",
+            Self::EventLoopCreation => tr!("client event loop creation failed"),
+            Self::EventLoopRun => tr!("client event loop failed"),
+            Self::WindowCreation => tr!("client window creation failed"),
+            Self::LoginInitialization => tr!("native login window creation failed"),
+            Self::InputInitialization => tr!("client input initialization failed"),
+            Self::RendererInitialization => tr!("client renderer initialization failed"),
+            Self::RendererResume => tr!("client renderer resume failed"),
+            Self::RendererSuspend => tr!("client renderer suspend failed"),
+            Self::RendererResize => tr!("client renderer resize failed"),
+            Self::RendererRender => tr!("client renderer render failed"),
             Self::RendererConfiguration => "client renderer configuration failed",
-            Self::RendererClose => "client renderer close failed",
+            Self::RendererClose => tr!("client renderer close failed"),
         })
     }
 }
@@ -160,7 +160,7 @@ impl Application {
 
     /// Reauthenticate after the consumed ticket, then show account character selection.
     fn return_to_character_selection(&mut self) {
-        self.leave_play("Choose a character after browser sign-in.");
+        self.leave_play(tr!("Choose a character after browser sign-in."));
         if let Some(login) = &self.login {
             login.finish(Ok(()));
         }
@@ -182,9 +182,12 @@ impl Application {
         if let Some(login) = &self.login {
             login.show(message.to_owned());
         }
-        println!("Oteryn: {message}");
+        lprintln!("Oteryn: {message}", message = message);
         if let Some(window) = &self.window {
-            window.set_title(&format!("Oteryn — {message} — Enter: log in again"));
+            window.set_title(&lfmt!(
+                "Oteryn — {message} — Enter: log in again",
+                message = message
+            ));
         }
         if self.rebuild_offline().is_err() {
             self.scene = None;
@@ -193,7 +196,7 @@ impl Application {
 
     fn request_entry(&mut self) {
         if let Some(login) = &self.login {
-            login.show("Review connection settings, then choose Save and sign in.".into());
+            login.show(tr!("Review connection settings, then choose Save and sign in.").into());
         }
     }
 
@@ -217,6 +220,11 @@ const fn redraw_eligible(phase: Option<SurfacePhase>) -> bool {
 mod application_handler;
 
 pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
+    if let Some(path) = oteryn_client::play::PreferenceStore::path()
+        && let Ok(store) = oteryn_client::play::PreferenceStore::load(path)
+    {
+        oteryn_client_ui::localization::set_default(store.preferences().language());
+    }
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
     let smoke = std::env::args().any(|argument| argument == "--smoke");
     let mut application = Application::new(smoke, client)?;
@@ -234,4 +242,5 @@ pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
 }
 
 #[cfg(test)]
+#[path = "windows_shell/tests.rs"]
 mod tests;

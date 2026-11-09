@@ -239,6 +239,7 @@ impl Outbox {
         }
     }
 }
+
 pub(in crate::play) fn accepted(result: &GatedCommandResult) -> bool {
     matches!(
         result.status,
@@ -250,17 +251,17 @@ pub(in crate::play) fn handle(text: &str) -> Result<oteryn_session::ItemHandle, 
         .parse::<u64>()
         .ok()
         .and_then(oteryn_session::ItemHandle::new)
-        .ok_or_else(|| "Select a valid item handle".into())
+        .ok_or_else(|| tr!("Select a valid item handle").into())
 }
 pub(in crate::play) fn uuid(text: &str) -> Result<[u8; 16], String> {
     let text: String = text.chars().filter(|c| *c != '-').collect();
     if text.len() != 32 || !text.is_ascii() {
-        return Err("Enter a valid item or guild UUID".into());
+        return Err(tr!("Enter a valid item or guild UUID").into());
     }
     let mut value = [0; 16];
     for (i, byte) in value.iter_mut().enumerate() {
-        *byte =
-            u8::from_str_radix(&text[i * 2..i * 2 + 2], 16).map_err(|_| "Enter a valid UUID")?;
+        *byte = u8::from_str_radix(&text[i * 2..i * 2 + 2], 16)
+            .map_err(|_| tr!("Enter a valid UUID"))?;
     }
     Ok(value)
 }
@@ -277,7 +278,7 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
         },
     };
     let payload =
-        mail::encode_intent(&intent).map_err(|_| "Letter text exceeds 7,996 UTF-8 bytes")?;
+        mail::encode_intent(&intent).map_err(|_| tr!("Letter text exceeds 7,996 UTF-8 bytes"))?;
     Ok(FeatureCommand {
         capability: 115,
         kind: 124,
@@ -290,22 +291,22 @@ fn apply(panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResul
     }
     panel.pending = false;
     panel.feedback = if !accepted(result) {
-        "The server refused the mail request"
+        tr!("The server refused the mail request")
     } else {
         match result.payload.as_slice() {
-            [1] if command.payload.first() == Some(&1) => "Mail posted",
-            [2] if command.payload.first() == Some(&2) => "Item text saved",
-            [3] => "Add a recipient address to the letter or parcel label",
-            [4] => "Unknown recipient",
-            [5] => "The recipient cannot receive parcels",
-            [6] => "This item cannot be mailed",
-            [7] => "The recipient inbox is full",
-            [8] if command.payload.first() == Some(&2) => "Wait before writing again",
-            [8] => "Wait before posting again",
-            [9] => "This item cannot be written on",
-            [10] => "The letter text is too long",
-            [11] => "The server refused the mail request",
-            _ => "The server returned an invalid mail reply",
+            [1] if command.payload.first() == Some(&1) => tr!("Mail posted"),
+            [2] if command.payload.first() == Some(&2) => tr!("Item text saved"),
+            [3] => tr!("Add a recipient address to the letter or parcel label"),
+            [4] => tr!("Unknown recipient"),
+            [5] => tr!("The recipient cannot receive parcels"),
+            [6] => tr!("This item cannot be mailed"),
+            [7] => tr!("The recipient inbox is full"),
+            [8] if command.payload.first() == Some(&2) => tr!("Wait before writing again"),
+            [8] => tr!("Wait before posting again"),
+            [9] => tr!("This item cannot be written on"),
+            [10] => tr!("The letter text is too long"),
+            [11] => tr!("The server refused the mail request"),
+            _ => tr!("The server returned an invalid mail reply"),
         }
     }
     .into();

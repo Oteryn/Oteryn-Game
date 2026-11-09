@@ -134,7 +134,7 @@ fn run(weak: WeakMailbox) {
                                 "{}\r\nMount: {}",
                                 panel.fields[0],
                                 if panel.fields[2].is_empty() {
-                                    "None"
+                                    tr!("None")
                                 } else {
                                     &panel.fields[2]
                                 }

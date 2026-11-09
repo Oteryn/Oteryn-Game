@@ -172,6 +172,9 @@ impl Application {
                 }
                 if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
                     if click.secondary {
+                        if play.view.gameplay_secondary_click(&play.link) {
+                            continue;
+                        }
                         play.view.properties_context_menu(&play.link, tile);
                         self.actions.context_closed();
                     } else {

@@ -5,25 +5,10 @@ mod controls;
 #[path = "resource_checks.rs"]
 mod resource_checks;
 use controls::Controls;
-#[path = "transfer.rs"]
-mod transfer;
 
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
-        let hwnd = CreateWindowExW(
-            0,
-            wide("STATIC").as_ptr(),
-            wide("Oteryn Settings").as_ptr(),
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            760,
-            650,
-            null_mut(),
-            null_mut(),
-            null_mut(),
-            null(),
-        );
+        let hwnd = localization_window::create();
         if hwnd.is_null() {
             lock(&shared).open = false;
             return;
@@ -38,6 +23,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         let Some(Controls {
             graphics,
             mut shortcuts,
+            language,
+            presentation,
+            minimap,
+            mut guide,
+            screenshots,
+            gameplay,
             actor_hud,
             manual,
             console,
@@ -105,7 +96,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 state.select_page(index);
             }
             if binding_page != state.page {
-                layout.place_apply(apply, state.page == SettingsPage::Status);
+                layout.place_apply(apply, state.page);
                 binding_page = state.page;
                 bindings = preference_bindings()
                     .unwrap_or_default()
@@ -142,6 +133,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             console.show(state.page == SettingsPage::Console);
             layout.show(state.page == SettingsPage::Status);
             arcs.show(state.page == SettingsPage::Arcs);
+            gameplay.show(state.page == SettingsPage::Gameplay);
+            screenshots.show(state.page == SettingsPage::Screenshots);
+            guide.update(&state);
+            minimap.show(state.page == SettingsPage::MinimapTransfer);
+            presentation.show(state.page);
+            language.show(state.page == SettingsPage::Language);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
@@ -216,6 +213,21 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 if shortcuts.handle(action, &mut state) {
                     continue;
                 }
+                if language.action(action, &mut state) {
+                    continue;
+                }
+                if presentation.action(action, &mut state) {
+                    continue;
+                }
+                if minimap.action(action, &mut state) {
+                    continue;
+                }
+                if guide.action(action, &mut state) {
+                    continue;
+                }
+                if screenshots.action(action, &mut state) {
+                    continue;
+                }
                 if (160..=167).contains(&action) {
                     drop(state);
                     subpages::open(action, Arc::clone(&shared), hwnd);
@@ -250,6 +262,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 } else if action == 227 {
                     state.manual_hotkeys();
                 } else if action == 223 {
+                    gameplay.read(&mut preferences);
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
                             preferences.rotation_modifier =
@@ -267,7 +280,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             state.apply(preferences);
                         }
                         Err(_) => {
-                            state.feedback = "Enter a keyboard delay from 0 to 1000 ms".into()
+                            state.feedback = tr!("Enter a keyboard delay from 0 to 1000 ms").into()
                         }
                     }
                 } else if (241..=244).contains(&action) {
@@ -281,7 +294,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         match preferences.rebind(binding.id, &text(chord)) {
                             Ok(()) => state.apply(preferences),
                             Err(error) => {
-                                state.feedback = format!("{error}. Choose a different chord.")
+                                state.feedback =
+                                    lfmt!("{error}. Choose a different chord.", error = error)
                             }
                         }
                     }
@@ -313,29 +327,23 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             }
                             state.apply(preferences);
                         }
-                        _ => state.feedback = "Enter valid zoom and volume percentages".into(),
+                        _ => state.feedback = tr!("Enter valid zoom and volume percentages").into(),
                     }
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
                 shortcuts.refresh(&state);
                 graphics.refresh(&state.preferences);
+                presentation.refresh(&state.preferences);
+                language.refresh(&state.preferences);
+                gameplay.refresh(&state.preferences);
+                screenshots.refresh(&state.preferences);
                 actor_hud.refresh(&state.preferences);
                 console.refresh(&state.preferences);
                 layout.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
-                let selection = selected.max(0) as usize;
-                SendMessageW(list, CB_RESETCONTENT, 0, 0);
-                for binding in &bindings {
-                    let label = format!(
-                        "{}: {}",
-                        binding.id,
-                        state.preferences.binding_chord(binding)
-                    );
-                    SendMessageW(list, CB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
-                }
-                SendMessageW(list, CB_SETCURSEL, selection, 0);
+                navigation_controls::refresh_bindings(list, &bindings, selected, &state);
                 SetWindowTextW(
                     scale,
                     wide(&state.preferences.ui_scale.to_string()).as_ptr(),
@@ -378,11 +386,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            let page_help = navigation_controls::page_help(state.page);
-            SetWindowTextW(
-                feedback,
-                wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),
-            );
+            controls::update_feedback(feedback, &state);
             drop(state);
             std::thread::sleep(Duration::from_millis(20));
         }
@@ -392,5 +396,3 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         lock(&shared).open = false;
     }
 }
-#[path = "navigation_controls.rs"]
-mod navigation_controls;

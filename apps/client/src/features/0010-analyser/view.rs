@@ -39,7 +39,7 @@ pub(in crate::play) fn open_shared(
         let rollback = weak.clone();
         let commands = commands.clone();
         if std::thread::Builder::new()
-            .name("Analysers-panel".into())
+            .name(tr!("Analysers-panel").into())
             .spawn(move || {
                 crate::play::feature_0115_mail::view::native::run(weak, commands, form());
             })
@@ -48,7 +48,7 @@ pub(in crate::play) fn open_shared(
         {
             let mut mailbox = lock(&shared);
             mailbox.analyser.open = false;
-            mailbox.analyser.feedback = Some("Could not open the analyser window");
+            mailbox.analyser.feedback = Some(tr!("Could not open the analyser window"));
             return false;
         }
     }

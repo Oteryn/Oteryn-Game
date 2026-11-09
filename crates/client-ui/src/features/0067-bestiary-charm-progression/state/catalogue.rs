@@ -18,7 +18,7 @@ pub fn text(panel: &super::Panel) -> String {
         .map_or("All categories", String::as_str);
     let mut out = format!("Creature catalogue — {category}\r\n{}\r\n", panel.feedback);
     if panel.pending {
-        out.push_str("Waiting for the server\r\n");
+        out.push_str(tr!("Waiting for the server\r\n"));
     }
     if let Some(card) = catalogue
         .page

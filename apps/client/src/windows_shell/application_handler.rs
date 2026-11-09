@@ -16,7 +16,7 @@ impl ApplicationHandler for Application {
             return;
         }
         let attributes = WindowAttributes::default()
-            .with_title("Oteryn — Enter: connection and sign-in")
+            .with_title(tr!("Oteryn — Enter: connection and sign-in"))
             .with_active(self.smoke)
             .with_inner_size(LogicalSize::new(960.0, 540.0));
         let Ok(window) = event_loop.create_window(attributes) else {
@@ -48,7 +48,10 @@ impl ApplicationHandler for Application {
         } else {
             let (world, reason) = World::from_env(center);
             if let Some(reason) = reason {
-                println!("Oteryn: drawing without map sprites: {reason}");
+                lprintln!(
+                    "Oteryn: drawing without map sprites: {reason}",
+                    reason = reason
+                );
             }
             let Ok(world) = world.map(Arc::new) else {
                 self.fail(event_loop, ShellError::RendererInitialization);

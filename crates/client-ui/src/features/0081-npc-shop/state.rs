@@ -87,7 +87,7 @@ impl LiveShop {
         })
     }
     pub fn quote_text(&self, quote: Quote) -> String {
-        format!(
+        lfmt!(
             "{:?} item #{} × {} — {} gold / offer — carried {}",
             quote.side,
             quote.item,
@@ -99,7 +99,7 @@ impl LiveShop {
         )
     }
     pub fn total(&self, quote: Quote, amount: u32) -> String {
-        format!(
+        lfmt!(
             "{} items; {} gold",
             u64::from(quote.count) * u64::from(amount),
             u64::from(quote.price) * u64::from(amount)
@@ -140,7 +140,7 @@ impl LiveShop {
             return None;
         }
         if !self.valid_amount(quote, amount) {
-            self.feedback = "Amount must be 1–100 and within the server's gold limit".into();
+            self.feedback = tr!("Amount must be 1–100 and within the server's gold limit").into();
             return None;
         }
         if !self.can_trade(quote, amount) {
@@ -158,40 +158,40 @@ impl LiveShop {
         };
         npc_service::encode_npc_trade_intent(&intent).ok()?;
         self.pending = true;
-        self.feedback = "Trade pending".into();
+        self.feedback = tr!("Trade pending").into();
         Some(intent)
     }
     pub fn result(&mut self, result: NpcIntentDisposition) {
         self.pending = false;
         self.feedback = if result == NpcIntentDisposition::Ok {
-            "Trade completed; inventory updated by server".into()
+            tr!("Trade completed; inventory updated by server").into()
         } else {
-            format!("Trade refused: {result:?}")
+            lfmt!("Trade refused: {result:?}", result = result)
         };
     }
     pub fn text(&self) -> String {
         let state = if !self.selected {
-            "NPC trade unavailable in this session"
+            tr!("NPC trade unavailable in this session")
         } else if self.window.open.is_none() {
-            "No open shop. Talk to an NPC and ask for trade."
+            tr!("No open shop. Talk to an NPC and ask for trade.")
         } else {
-            "Live NPC buy/sell quotes"
+            tr!("Live NPC buy/sell quotes")
         };
         let gold = if !self.resources_selected {
-            "Gold balance: unavailable (capability not selected)".into()
+            tr!("Gold balance: unavailable (capability not selected)").into()
         } else if let Some(balances) = self.balances {
-            format!(
+            lfmt!(
                 "Carried gold: {}; Bank gold: {}; Total: {}",
                 balances.carried_gold,
                 balances.bank_gold,
                 balances.carried_gold.saturating_add(balances.bank_gold)
             )
         } else {
-            "Gold balance: query pending or refused".into()
+            tr!("Gold balance: query pending or refused").into()
         };
         let slots = self.free_slots().map_or_else(
-            || "Free slots: unknown".into(),
-            |free| format!("Free main-backpack slots: {free}"),
+            || tr!("Free slots: unknown").into(),
+            |free| lfmt!("Free main-backpack slots: {free}", free = free),
         );
         format!(
             "{state}\n{}\n{gold}\n{slots}\n{}",

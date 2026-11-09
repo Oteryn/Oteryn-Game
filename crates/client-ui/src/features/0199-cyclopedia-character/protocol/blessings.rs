@@ -44,7 +44,7 @@ impl BlessingsPanel {
             text.push_str("No server blessing state loaded\r\n");
         }
         if self.pending {
-            text.push_str("Waiting for the server\r\n");
+            text.push_str(tr!("Waiting for the server\r\n"));
         }
         if let Some(feedback) = self.feedback {
             text.push_str(feedback);
@@ -58,7 +58,7 @@ pub fn request_blessings(p: &mut CyclopediaCharacterPanel) -> Option<FeatureComm
         return None;
     }
     if p.pending || p.blessings.pending {
-        p.blessings.feedback = Some("Waiting for the server");
+        p.blessings.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     p.blessings.pending = true;

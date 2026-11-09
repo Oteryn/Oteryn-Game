@@ -37,13 +37,13 @@ pub(super) async fn execute(
             .await
         {
             Ok(page) => view.install_page(page),
-            Err(_) => view
-                .feedback
-                .push_str(" Balance refresh unavailable; the receipt is retained."),
+            Err(_) => view.feedback.push_str(tr!(
+                " Balance refresh unavailable; the receipt is retained."
+            )),
         }
     }
     if let Err(error) = result {
-        view.feedback = format!(
+        view.feedback = lfmt!(
             "Account service unavailable ({:?}). Refresh, or retry the same pending request. You can return to character selection.",
             error.public_class()
         );
@@ -61,7 +61,7 @@ async fn apply(
             let page = client.bazaar_page(token, kind, None, cancel).await?;
             view.install_page(page);
             view.selected_view = kind;
-            view.feedback = "Server account data refreshed.".into();
+            view.feedback = tr!("Server account data refreshed.").into();
             return Ok(());
         }
         Action::Next => {
@@ -80,7 +80,7 @@ async fn apply(
             confirmed,
         } => {
             if !confirmed {
-                view.feedback = "Bid cancelled.".into();
+                view.feedback = tr!("Bid cancelled.").into();
                 return Ok(());
             }
             let auction = view
@@ -90,7 +90,7 @@ async fn apply(
             let Some(auction) =
                 auction.filter(|a| a.state == AuctionState::Open && coins >= a.minimum_next_bid)
             else {
-                view.feedback = "Choose an open auction and meet its minimum next bid.".into();
+                view.feedback = tr!("Choose an open auction and meet its minimum next bid.").into();
                 return Ok(());
             };
             BazaarCommand::Bid {
@@ -106,7 +106,7 @@ async fn apply(
             confirmed,
         } => {
             if !confirmed {
-                view.feedback = "Listing cancelled.".into();
+                view.feedback = tr!("Listing cancelled.").into();
                 return Ok(());
             }
             if !view
@@ -114,7 +114,7 @@ async fn apply(
                 .as_ref()
                 .is_some_and(|p| p.owned_characters.iter().any(|c| c.id == character_id))
             {
-                view.feedback = "Choose a character from your server portfolio.".into();
+                view.feedback = tr!("Choose a character from your server portfolio.").into();
                 return Ok(());
             }
             BazaarCommand::Sell {
@@ -136,18 +136,19 @@ async fn apply(
             view.quote_until =
                 Some(requested_at + Duration::from_secs(u64::from(quote.valid_for_seconds)));
             view.quote = Some(quote);
-            view.feedback =
+            view.feedback = tr!(
                 "Review the server's transfer price, cooldown and eligibility before confirming."
-                    .into();
+            )
+            .into();
             return Ok(());
         }
         Action::Transfer { confirmed } => {
             if !confirmed {
-                view.feedback = "Transfer cancelled.".into();
+                view.feedback = tr!("Transfer cancelled.").into();
                 return Ok(());
             }
             if !view.can_transfer() {
-                view.feedback = "Request a fresh eligible world-transfer quote first.".into();
+                view.feedback = tr!("Request a fresh eligible world-transfer quote first.").into();
                 return Ok(());
             }
             let Some(quote) = &view.quote else {
@@ -179,11 +180,11 @@ async fn apply(
         Action::Back | Action::CoinShop | Action::Premium => return Ok(()),
     };
     if view.pending() {
-        view.feedback = "Resolve the pending operation before starting another.".into();
+        view.feedback = tr!("Resolve the pending operation before starting another.").into();
         return Ok(());
     }
     if !command.valid() {
-        view.feedback = "Enter a positive coin amount and duration of 1–168 hours.".into();
+        view.feedback = tr!("Enter a positive coin amount and duration of 1–168 hours.").into();
         return Ok(());
     }
     let request = BazaarRequest {
@@ -206,7 +207,8 @@ fn accept(view: &mut View, receipt: OperationReceipt) {
             && old != &receipt
     }) {
         view.feedback =
-            "Conflicting terminal receipt; keep the original receipt and contact support.".into();
+            tr!("Conflicting terminal receipt; keep the original receipt and contact support.")
+                .into();
         return;
     }
     if receipt.state != OperationState::Pending
@@ -224,10 +226,10 @@ fn accept(view: &mut View, receipt: OperationReceipt) {
     }
     view.feedback = match receipt.state {
         OperationState::Pending => {
-            "Awaiting the authoritative receipt. Check status or retry with the same identity."
+            tr!("Awaiting the authoritative receipt. Check status or retry with the same identity.")
         }
-        OperationState::Committed => "Operation committed by the service authority.",
-        OperationState::Rejected => "Operation refused; review the receipt code.",
+        OperationState::Committed => tr!("Operation committed by the service authority."),
+        OperationState::Rejected => tr!("Operation refused; review the receipt code."),
     }
     .into();
     view.receipt = Some(receipt);

@@ -30,7 +30,7 @@ pub(super) fn open_window(link: &PlayLink) {
             let hwnd = CreateWindowExW(
                 0,
                 wide("STATIC").as_ptr(),
-                wide("Banker Hireling").as_ptr(),
+                wide(tr!("Banker Hireling")).as_ptr(),
                 WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -58,9 +58,9 @@ pub(super) fn open_window(link: &PlayLink) {
                 null_mut(),
                 null(),
             );
-            let summon = button(hwnd, "Summon banker", 101, 10);
-            let dismiss = button(hwnd, "Dismiss", 102, 145);
-            let refresh = button(hwnd, "Refresh", 103, 280);
+            let summon = button(hwnd, tr!("Summon banker"), 101, 10);
+            let dismiss = button(hwnd, tr!("Dismiss"), 102, 145);
+            let refresh = button(hwnd, tr!("Refresh"), 103, 280);
             let mut message: MSG = std::mem::zeroed();
             loop {
                 while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -82,7 +82,7 @@ pub(super) fn open_window(link: &PlayLink) {
                                     .is_err()
                             {
                                 mailbox.hireling.pending = None;
-                                mailbox.hireling.feedback = Some("The session has ended");
+                                mailbox.hireling.feedback = Some(tr!("The session has ended"));
                             }
                         }
                     }

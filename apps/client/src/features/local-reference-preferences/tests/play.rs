@@ -1,13 +1,13 @@
 use super::*;
 
-#[path = "options.rs"]
-mod options;
 #[path = "contexts.rs"]
 mod contexts;
 #[path = "hud_options.rs"]
 mod hud_options;
 #[path = "interface.rs"]
 mod interface;
+#[path = "options.rs"]
+mod options;
 #[path = "status_order.rs"]
 mod status_order;
 
@@ -143,6 +143,24 @@ fn admitted_character_preferences_are_isolated_and_reloaded()
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[path = "presentation_options.rs"]
+mod presentation_options;
+
+#[path = "gameplay.rs"]
+mod gameplay;
+
+#[path = "help.rs"]
+mod help;
+
+#[path = "localization.rs"]
+mod localization;
+
+#[path = "graphics.rs"]
+mod graphics;
+
+#[path = "screenshots.rs"]
+mod screenshots;
 
 #[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
@@ -358,35 +376,18 @@ fn rebound_spell_releases_after_modifier_and_preference_changes()
     Ok(())
 }
 
-#[test]
-fn unregistered_and_sibling_chords_are_reserved() -> Result<(), Box<dyn std::error::Error>> {
-    for chord in [
-        "CTRL+G",
-        "ENTER",
-        "KEYPADENTER",
-        "CTRL+SHIFT+G",
-        "CTRL+SHIFT+L",
-        "CTRL+P",
-    ] {
-        let mut preferences = crate::play::ReferencePreferences::default();
-        assert!(
-            preferences.rebind("0009-highscores-open", chord).is_err(),
-            "{chord}"
-        );
-    }
-    Ok(())
-}
-
 #[path = "options_lane.rs"]
 mod options_lane;
 #[path = "presentation.rs"]
 mod presentation;
 #[path = "shortcuts.rs"]
 mod shortcuts;
-#[path = "graphics.rs"]
-mod graphics;
+
 
 #[path = "compatibility_1.rs"]
 mod compatibility_1;
 #[path = "compatibility_2.rs"]
 mod compatibility_2;
+
+#[path = "reserved.rs"]
+mod reserved;

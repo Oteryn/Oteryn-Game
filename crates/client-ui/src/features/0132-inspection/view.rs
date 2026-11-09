@@ -1,23 +1,23 @@
 use super::*;
 pub fn panel_text(panel: &Panel) -> String {
     if !panel.selected {
-        return "Inspection is unavailable in this session".into();
+        return tr!("Inspection is unavailable in this session").into();
     }
-    let mut text = format!("Inspection\r\n{}", panel.feedback);
+    let mut text = lfmt!("Inspection\r\n{}", panel.feedback);
     if let Some(reply) = &panel.reply {
         for item in &reply.items {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "\r\nSlot {}: {} ×{} (tier {})",
-                item.slot, item.name, item.count, item.tier
+                item.slot,
+                item.name,
+                item.count,
+                item.tier
             ));
             for (key, value) in &item.attributes {
                 text.push_str(&format!("\r\n  {key}: {value}"));
             }
         }
-        text.push_str(&format!(
-            "\r\nPermission requests: {}",
-            reply.requests.len()
-        ));
+        text.push_str(&lfmt!("\r\nPermission requests: {}", reply.requests.len()));
     }
     text
 }
@@ -29,9 +29,9 @@ pub fn catalogue_text(panel: &Panel) -> String {
         "Items — confirmed catalogue templates\r\nBrowse and search: Ctrl+Alt+Shift+I\r\n",
     );
     if !panel.selected {
-        return "Item catalogue unavailable in this session".into();
+        return tr!("Item catalogue unavailable in this session").into();
     }
-    let _ = write!(
+    let _ = lwrite!(
         text,
         "Categories: All, {}\r\n{}\r\n",
         panel.categories().join(", "),
@@ -46,10 +46,12 @@ pub fn catalogue_text(panel: &Panel) -> String {
                     .any(|category| category.eq_ignore_ascii_case(&panel.category)))
     }) {
         matched += 1;
-        let _ = write!(
+        let _ = lwrite!(
             text,
             "{}: {} (tier {})\r\n",
-            item.definition_ref, item.name, item.tier
+            item.definition_ref,
+            item.name,
+            item.tier
         );
         if panel.catalogue_definition == item.definition_ref.to_string() {
             text.push_str("Selected item details:\r\n");
@@ -59,7 +61,7 @@ pub fn catalogue_text(panel: &Panel) -> String {
         }
     }
     if matched == 0 && !panel.catalogue.is_empty() {
-        text.push_str("No items match the selected name and category.\r\n");
+        text.push_str(tr!("No items match the selected name and category.\r\n"));
     }
     if panel.catalogue_next.is_some() {
         text.push_str("Next catalogue page available\r\n");
@@ -68,7 +70,7 @@ pub fn catalogue_text(panel: &Panel) -> String {
         text.push_str("More drop sources available\r\n");
     }
     if panel.catalogue.is_empty() && panel.catalogue_loaded {
-        text.push_str("No items match the selected name and category.\r\n");
+        text.push_str(tr!("No items match the selected name and category.\r\n"));
     }
     if panel.catalogue.is_empty() && !panel.catalogue_loaded {
         text.push_str(

@@ -16,12 +16,12 @@ pub struct AudioOutput {
 
 impl AudioOutput {
     pub fn from_environment() -> Result<Self, String> {
-        let manifest =
-            std::env::var("OTERYN_SOUND_MANIFEST").map_err(|_| "sound manifest not configured")?;
+        let manifest = std::env::var("OTERYN_SOUND_MANIFEST")
+            .map_err(|_| tr!("sound manifest not configured"))?;
         let pin = std::env::var("OTERYN_SOUND_MANIFEST_SHA256")
-            .map_err(|_| "sound manifest SHA-256 not configured")?;
+            .map_err(|_| tr!("sound manifest SHA-256 not configured"))?;
         let dir =
-            std::env::var("OTERYN_SOUND_DIR").map_err(|_| "sound directory not configured")?;
+            std::env::var("OTERYN_SOUND_DIR").map_err(|_| tr!("sound directory not configured"))?;
         let catalog = SoundCatalog::open(Path::new(&dir), Path::new(&manifest), &pin)?;
         let stream = OutputStreamBuilder::open_default_stream().map_err(|e| e.to_string())?;
         Ok(Self {
@@ -143,12 +143,13 @@ impl NativeAudio {
             }
             Err(error) => (error.as_str(), false),
         };
-        format!(
+        lfmt!(
             "{} | Audio {}%{} ({status}, {}); F10 mute, F11/F12 volume",
             view.combat_status(),
             self.settings.master_volume,
             if self.settings.muted { " muted" } else { "" },
-            oteryn_client_ui::ambient_sound::status(ambient)
+            oteryn_client_ui::ambient_sound::status(ambient),
+            status = status
         )
     }
 }

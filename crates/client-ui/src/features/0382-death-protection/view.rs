@@ -17,10 +17,10 @@ pub fn notice(value: &DeathProtection) -> String {
                 .join(" ")
         })
         .collect();
-    format!(
+    lfmt!(
         "Death — consumed: {}",
         if names.is_empty() {
-            "No blessings or Twist of Fate".into()
+            tr!("No blessings or Twist of Fate").into()
         } else {
             names.join(", ")
         }

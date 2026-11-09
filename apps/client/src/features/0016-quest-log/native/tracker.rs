@@ -62,7 +62,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let h = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Quest tracker — Ctrl+Alt+Shift+Q").as_ptr(),
+            wide(tr!("Quest tracker — Ctrl+Alt+Shift+Q")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -83,7 +83,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         ctl(
             h,
             "STATIC",
-            "Search tracked missions",
+            tr!("Search tracked missions"),
             0,
             [10, 8, 680, 20],
             0,
@@ -178,24 +178,24 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             SetWindowTextW(
                 add,
                 wide(if p.tracker.auto_add {
-                    "Auto-add: on"
+                    tr!("Auto-add: on")
                 } else {
-                    "Auto-add: off"
+                    tr!("Auto-add: off")
                 })
                 .as_ptr(),
             );
             SetWindowTextW(
                 remove,
                 wide(if p.tracker.auto_remove {
-                    "Auto-remove: on"
+                    tr!("Auto-remove: on")
                 } else {
-                    "Auto-remove: off"
+                    tr!("Auto-remove: off")
                 })
                 .as_ptr(),
             );
             SetWindowTextW(
                 filter,
-                wide(&format!("Filter: {:?}", p.tracker.filter)).as_ptr(),
+                wide(&lfmt!("Filter: {:?}", p.tracker.filter)).as_ptr(),
             );
             SetWindowTextW(
                 hide,

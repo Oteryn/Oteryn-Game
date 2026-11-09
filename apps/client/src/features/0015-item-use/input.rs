@@ -24,14 +24,15 @@ impl PlayLink {
             return false;
         }
         if !mailbox.world_context.use_with {
-            mailbox
-                .world_context
-                .set_feedback("Use with unavailable".into(), std::time::Instant::now());
+            mailbox.world_context.set_feedback(
+                tr!("Use with unavailable").into(),
+                std::time::Instant::now(),
+            );
             return false;
         }
         let Some(source) = mailbox.inventory.selected_item().map(|item| item.handle) else {
             mailbox.world_context.set_feedback(
-                "Use with: select an inventory item".into(),
+                tr!("Use with: select an inventory item").into(),
                 std::time::Instant::now(),
             );
             return false;
@@ -39,7 +40,7 @@ impl PlayLink {
         if let Some(origin) = mailbox.world_context.targeting {
             if origin == source || rune || mailbox.world_context.rune_targeting {
                 mailbox.world_context.set_feedback(
-                    "Use with: choose another target".into(),
+                    tr!("Use with: choose another target").into(),
                     std::time::Instant::now(),
                 );
                 return false;
@@ -56,12 +57,12 @@ impl PlayLink {
             {
                 mailbox
                     .world_context
-                    .set_feedback("Session unavailable".into(), std::time::Instant::now());
+                    .set_feedback(tr!("Session unavailable").into(), std::time::Instant::now());
                 return false;
             }
             mailbox.world_context.pending = true;
             mailbox.world_context.set_feedback(
-                "Use with: waiting for server".into(),
+                tr!("Use with: waiting for server").into(),
                 std::time::Instant::now(),
             );
             return true;
@@ -100,7 +101,7 @@ impl PlayView {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.world_context.pending {
             mailbox.world_context.set_feedback(
-                "Use with: waiting for server".into(),
+                tr!("Use with: waiting for server").into(),
                 std::time::Instant::now(),
             );
             return true;
@@ -120,7 +121,7 @@ impl PlayView {
         );
         if target == Target::Item(source) {
             mailbox.world_context.set_feedback(
-                "Use with: choose another target".into(),
+                tr!("Use with: choose another target").into(),
                 std::time::Instant::now(),
             );
             return true;
@@ -146,13 +147,13 @@ impl PlayView {
         {
             mailbox.world_context.pending = true;
             mailbox.world_context.set_feedback(
-                "Use with: waiting for server".into(),
+                tr!("Use with: waiting for server").into(),
                 std::time::Instant::now(),
             );
         } else {
             mailbox
                 .world_context
-                .set_feedback("Session unavailable".into(), std::time::Instant::now());
+                .set_feedback(tr!("Session unavailable").into(), std::time::Instant::now());
         }
         true
     }

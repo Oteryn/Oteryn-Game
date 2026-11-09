@@ -23,11 +23,11 @@ pub struct Panel {
 impl Panel {
     pub fn begin(&mut self, kind: u32) -> bool {
         if !self.selected {
-            self.feedback = "Unavailable in this session".into();
+            self.feedback = tr!("Unavailable in this session").into();
             return false;
         }
         if self.pending {
-            self.feedback = "Waiting for the server".into();
+            self.feedback = tr!("Waiting for the server").into();
             return false;
         }
         self.pending = true;

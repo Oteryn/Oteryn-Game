@@ -25,7 +25,7 @@ impl CrashReport {
         }
     }
     pub fn preview(&self) -> String {
-        format!(
+        lfmt!(
             "Oteryn crash report\nBuild: {}\nOS: {}\nArchitecture: {}\nSource: {}:{}\nNo panic text, account data, memory or environment values collected.\n",
             crate::CLIENT_BUILD,
             std::env::consts::OS,
@@ -113,14 +113,14 @@ pub fn review_pending() {
         .as_nanos();
     let destination = path.with_file_name(format!("crash-report-{stamp}.txt"));
     match review_pending_at(&path, &destination, |preview| {
-        consent_dialog(&format!(
-            "{preview}\nSave a local report to share manually? Nothing is uploaded."
+        consent_dialog(&lfmt!(
+            "{preview}\nSave a local report to share manually? Nothing is uploaded.",
+            preview = preview
         ))
     }) {
-        Ok(true) => crate::win_mutex::show_error(&format!(
-            "Crash report saved to {}",
-            destination.display()
-        )),
+        Ok(true) => {
+            crate::win_mutex::show_error(&lfmt!("Crash report saved to {}", destination.display()))
+        }
         Ok(false) => {}
         Err(_) => crate::win_mutex::show_error(
             "Cannot review or save the crash report. The pending report was retained.",
@@ -144,7 +144,7 @@ pub(crate) fn consent_dialog(message: &str) -> bool {
         MessageBoxW(
             std::ptr::null_mut(),
             wide(message).as_ptr(),
-            wide("Oteryn — local report consent").as_ptr(),
+            wide(tr!("Oteryn — local report consent")).as_ptr(),
             MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
         ) == IDYES
     }

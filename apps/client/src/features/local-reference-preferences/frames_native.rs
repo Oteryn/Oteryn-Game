@@ -102,7 +102,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             [315, 115, 300, 28],
             BS_AUTOCHECKBOX as u32,
         );
-        let apply = control(hwnd, "BUTTON", "Apply", 651, [450, 160, 150, 30], 0);
+        let apply = control(hwnd, "BUTTON", tr!("Apply"), 651, [450, 160, 150, 30], 0);
         let info = control(
             hwnd,
             "STATIC",

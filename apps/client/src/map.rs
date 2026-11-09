@@ -60,7 +60,7 @@ impl World {
     /// Loads from `OTERYN_ASSET_DIR`; any failure falls back to [`World::builtin`] with the reason.
     pub fn from_env(center: (i32, i32, i16)) -> (Result<Self, BatchError>, Option<String>) {
         let loaded = std::env::var_os(ASSET_DIR_ENV)
-            .ok_or_else(|| format!("{ASSET_DIR_ENV} is not set"))
+            .ok_or_else(|| lfmt!("{ASSET_DIR_ENV} is not set", ASSET_DIR_ENV = ASSET_DIR_ENV))
             .and_then(|root| Self::load_around(Path::new(&root), center));
         match loaded {
             Ok(world) => (Ok(world), None),

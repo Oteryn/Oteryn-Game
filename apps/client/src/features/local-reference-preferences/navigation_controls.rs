@@ -44,7 +44,30 @@ pub(super) fn page_help(page: SettingsPage) -> &'static str {
         SettingsPage::Graphics => {
             "Fullscreen, VSync and integral world scaling apply immediately. Engine and antialiasing show the supported modes."
         }
-        SettingsPage::Sound => "Master volume % (0–100). Changes apply to playback immediately.",
+        SettingsPage::Sound => {
+            tr!("Master volume % (0–100). Changes apply to playback immediately.")
+        }
         _ => "",
+    }
+}
+
+pub(super) unsafe fn refresh_bindings(
+    list: HWND,
+    bindings: &[oteryn_client::play::PreferenceBinding],
+    selected: isize,
+    state: &SettingsState,
+) {
+    unsafe {
+        let selection = selected.max(0) as usize;
+        SendMessageW(list, CB_RESETCONTENT, 0, 0);
+        for binding in bindings {
+            let label = format!(
+                "{}: {}",
+                binding.id,
+                state.preferences.binding_chord(binding)
+            );
+            SendMessageW(list, CB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+        }
+        SendMessageW(list, CB_SETCURSEL, selection, 0);
     }
 }

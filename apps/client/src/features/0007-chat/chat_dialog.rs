@@ -7,7 +7,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Local Chat (Ctrl+Shift+C)").as_ptr(),
+            wide(tr!("Local Chat (Ctrl+Shift+C)")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -37,7 +37,13 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [10, 10, 230, 180],
             LBS_NOTIFY as u32 | WS_BORDER,
         );
-        for mode in ["Say", "Whisper", "Yell", "Private", "Guild"] {
+        for mode in [
+            tr!("Say"),
+            tr!("Whisper"),
+            tr!("Yell"),
+            tr!("Private"),
+            tr!("Guild"),
+        ] {
             SendMessageW(rooms, LB_ADDSTRING, 0, wide(mode).as_ptr() as isize);
         }
         SendMessageW(rooms, LB_SETCURSEL, 0, 0);
@@ -60,12 +66,19 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(
             hwnd,
             "STATIC",
-            "Private recipient",
+            tr!("Private recipient"),
             RECIPIENT_LABEL,
             [10, 200, 230, 28],
             0,
         );
-        control(hwnd, "BUTTON", "Send", SEND, [540, 48, 100, 28], WS_TABSTOP);
+        control(
+            hwnd,
+            "BUTTON",
+            tr!("Send"),
+            SEND,
+            [540, 48, 100, 28],
+            WS_TABSTOP,
+        );
         let transcript = control(
             hwnd,
             "EDIT",
@@ -82,14 +95,14 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [10, 245, 230, 75],
             LBS_NOTIFY as u32 | WS_BORDER,
         );
-        for tab in ["All", "Local", "Private", "Guild"] {
+        for tab in [tr!("All"), tr!("Local"), tr!("Private"), tr!("Guild")] {
             SendMessageW(tabs, LB_ADDSTRING, 0, wide(tab).as_ptr() as isize);
         }
         SendMessageW(tabs, LB_SETCURSEL, 0, 0);
         control(
             hwnd,
             "BUTTON",
-            "Toggle messages",
+            tr!("Toggle messages"),
             FILTER,
             [10, 325, 230, 28],
             WS_TABSTOP,
@@ -97,16 +110,16 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(
             hwnd,
             "BUTTON",
-            "Chat on/off/temporary",
+            tr!("Chat on/off/temporary"),
             CHAT_MODE,
             [10, 360, 230, 28],
             WS_TABSTOP,
         );
         for (id, title, y) in [
-            (IGNORE, "Ignore recipient", 400),
-            (ALLOW, "Whitelist recipient", 435),
-            (BLOCK, "Blacklist recipient", 470),
-            (CLEAR_LISTS, "Remove recipient from lists", 505),
+            (IGNORE, tr!("Ignore recipient"), 400),
+            (ALLOW, tr!("Whitelist recipient"), 435),
+            (BLOCK, tr!("Blacklist recipient"), 470),
+            (CLEAR_LISTS, tr!("Remove recipient from lists"), 505),
         ] {
             control(hwnd, "BUTTON", title, id, [10, y, 230, 28], WS_TABSTOP);
         }
@@ -121,7 +134,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(
             hwnd,
             "BUTTON",
-            "Save log",
+            tr!("Save log"),
             SAVE,
             [250, 515, 140, 28],
             WS_TABSTOP,
@@ -129,7 +142,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(
             hwnd,
             "BUTTON",
-            "Append log",
+            tr!("Append log"),
             APPEND,
             [400, 515, 140, 28],
             WS_TABSTOP,
@@ -195,7 +208,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                             mailbox.chat.console.communication.clone();
                         mailbox.chat_party_room.communication =
                             mailbox.chat.console.communication.clone();
-                        mailbox.chat.feedback = Some(format!(
+                        mailbox.chat.feedback = Some(lfmt!(
                             "Ignore: {:?}; whitelist: {:?}; blacklist: {:?}",
                             mailbox.chat.console.communication.ignored,
                             mailbox.chat.console.communication.whitelist,
@@ -218,8 +231,10 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                             });
                         mailbox = lock(&shared);
                         mailbox.chat.feedback = Some(match result {
-                            Ok(()) => "Channel log written".into(),
-                            Err(error) => format!("Could not write channel log: {error}"),
+                            Ok(()) => tr!("Channel log written").into(),
+                            Err(error) => {
+                                lfmt!("Could not write channel log: {error}", error = error)
+                            }
                         });
                         continue;
                     }
@@ -260,7 +275,12 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     _ => Mode::Say,
                 };
                 mailbox.chat.text = read_text(message);
-                crate::play::feature_0007_chat::input::enqueue(&mut mailbox, &commands, mode, &read_text(recipient));
+                crate::play::feature_0007_chat::input::enqueue(
+                    &mut mailbox,
+                    &commands,
+                    mode,
+                    &read_text(recipient),
+                );
                 if mailbox.chat.pending {
                     SetWindowTextW(message, wide("").as_ptr());
                 }

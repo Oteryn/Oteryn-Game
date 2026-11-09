@@ -27,7 +27,7 @@ impl OrderControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    if index % 2 == 0 { "Up" } else { "Down" },
+                    if index % 2 == 0 { tr!("Up") } else { "Down" },
                     241 + index,
                     [
                         280 + (index / 2) as i32 * 370,

@@ -66,7 +66,7 @@ pub(in crate::play) fn begin(
         .send(PlayCommand::MoveContainerContents(requests))
         .is_err()
     {
-        mailbox.item_movement.feedback = Some("Session ended");
+        mailbox.item_movement.feedback = Some(tr!("Session ended"));
         return false;
     }
     mailbox.item_movement.pending = true;

@@ -40,7 +40,7 @@ impl PlayView {
             self.world_clock_text().unwrap_or_default(),
             oteryn_client_ui::spell_action_bar::vitals_text(self.actor_vitals()),
             self.battle_instinct
-                .map_or_else(String::new, |status| format!(
+                .map_or_else(String::new, |status| lfmt!(
                     "Battle Instinct: {} (+{} melee, +{} shielding)",
                     if !status.active {
                         "inactive"
@@ -68,10 +68,14 @@ impl PlayView {
             .or(self.combat_line)
             .unwrap_or("");
         let mut status = match self.cursor_spell {
-            Some(spell) => format!("Spell {spell}: Click a tile; Escape cancels"),
-            None => format!("spells 1-{SPELL_SLOTS} {line}")
-                .trim_end()
-                .to_owned(),
+            Some(spell) => lfmt!("Spell {spell}: Click a tile; Escape cancels", spell = spell),
+            None => lfmt!(
+                "spells 1-{SPELL_SLOTS} {line}",
+                SPELL_SLOTS = SPELL_SLOTS,
+                line = line
+            )
+            .trim_end()
+            .to_owned(),
         };
         if let Some(notice) = self.death_notice() {
             status = format!("{notice} — {status}");

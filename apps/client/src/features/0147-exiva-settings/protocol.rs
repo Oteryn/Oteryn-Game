@@ -29,7 +29,7 @@ impl Outbox {
         ) {
             mailbox.exiva.apply(&result.payload);
         } else {
-            mailbox.exiva.error = Some("Exiva request refused; refresh the list");
+            mailbox.exiva.error = Some(tr!("Exiva request refused; refresh the list"));
         }
     }
 }

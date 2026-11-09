@@ -170,7 +170,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         let mute = control(
             hwnd,
             "BUTTON",
-            "Mute",
+            tr!("Mute"),
             908,
             [540, 366, 130, 28],
             BS_AUTOCHECKBOX as u32,

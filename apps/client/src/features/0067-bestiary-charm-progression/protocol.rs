@@ -23,7 +23,7 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
                 .reply
                 .as_ref()
                 .and_then(|r| r.charms.charms.iter().find(|c| c.charm == charm))
-                .ok_or("Query the charm before unlocking")?
+                .ok_or(tr!("Query the charm before unlocking"))?
                 .unlocked_stage;
             A::Unlock {
                 charm,
@@ -42,7 +42,7 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
         capability: wire::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
         kind: wire::COMMAND_TYPE_CHARM_PROGRESSION,
         payload: wire::encode_charm_progression_request(&action)
-            .map_err(|_| "Invalid charm request")?,
+            .map_err(|_| tr!("Invalid charm request"))?,
     })
 }
 pub(in crate::play) fn apply(
@@ -61,11 +61,11 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     if !accepted(result) {
-        panel.feedback = "The server refused the charm request".into();
+        panel.feedback = tr!("The server refused the charm request").into();
         return;
     }
     let Ok(reply) = wire::decode_charm_progression_reply(&result.payload) else {
-        panel.feedback = "Invalid charm reply".into();
+        panel.feedback = tr!("Invalid charm reply").into();
         return;
     };
     use wire::{CharmProgressionOutcome as O, CharmRemoveDisposition as R};
@@ -77,24 +77,24 @@ pub(in crate::play) fn apply(
             | O::Remove(R::Removed)
             | O::ResetAll(R::Removed)
     );
-    panel.feedback = format!(
+    panel.feedback = lfmt!(
         "{}: {:?}; fee: {} gold",
         if success {
-            "Completed"
+            tr!("Completed")
         } else {
-            "Server refused"
+            tr!("Server refused")
         },
         reply.outcome,
         reply.fee_gold
     );
-    panel.summary = format!(
+    panel.summary = lfmt!(
         "Charm points: {}; minor echoes: {}; assignment slots: {:?}\r\n",
         reply.charms.charm_points_available,
         reply.charms.minor_charm_echoes_available,
         reply.charms.assignment_slot_limit
     );
     for race in &reply.bestiary {
-        panel.summary.push_str(&format!(
+        panel.summary.push_str(&lfmt!(
             "Race {}: {} kills, stage {}, thresholds {:?}, next {:?}\r\n",
             race.race,
             race.kill_count,
@@ -104,7 +104,7 @@ pub(in crate::play) fn apply(
         ));
     }
     for charm in &reply.charms.charms {
-        panel.summary.push_str(&format!(
+        panel.summary.push_str(&lfmt!(
             "Charm {}: {:?}, stage {}, next cost {}, race {:?}, active {}\r\n",
             charm.charm,
             charm.kind,

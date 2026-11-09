@@ -4,10 +4,12 @@ pub fn panel_text(p: &CyclopediaCharacterPanel) -> String {
     let state = p
         .result
         .as_deref()
-        .unwrap_or("No server character view yet");
-    let heading = format!(
+        .unwrap_or(tr!("No server character view yet"));
+    let heading = lfmt!(
         "Cyclopedia character — {:?}, offset {}, limit {}",
-        p.tab, p.offset, p.limit
+        p.tab,
+        p.offset,
+        p.limit
     );
     match p.feedback {
         Some(f) => format!("{heading}\r\n{state}\r\n{f}"),
@@ -40,30 +42,30 @@ fn general_cards(
     stats: oteryn_client_runtime::cyclopedia_character::GeneralStats,
 ) -> Vec<(&'static str, String)> {
     let mut cards = vec![
-        ("Level", stats.level.to_string()),
-        ("Experience", stats.experience.to_string()),
-        ("Magic level", stats.magic_level.to_string()),
+        (tr!("Level"), stats.level.to_string()),
+        (tr!("Experience"), stats.experience.to_string()),
+        (tr!("Magic level"), stats.magic_level.to_string()),
         (
-            "Health (last saved)",
+            tr!("Health (last saved)"),
             stats
                 .last_vitals
-                .map_or_else(|| "Unavailable".into(), |(v, _)| v.to_string()),
+                .map_or_else(|| tr!("Unavailable").into(), |(v, _)| v.to_string()),
         ),
         (
-            "Mana (last saved)",
+            tr!("Mana (last saved)"),
             stats
                 .last_vitals
-                .map_or_else(|| "Unavailable".into(), |(_, v)| v.to_string()),
+                .map_or_else(|| tr!("Unavailable").into(), |(_, v)| v.to_string()),
         ),
     ];
     for (label, level) in [
-        "Fist",
-        "Club",
-        "Sword",
-        "Axe",
-        "Distance",
-        "Shielding",
-        "Fishing",
+        tr!("Fist"),
+        tr!("Club"),
+        tr!("Sword"),
+        tr!("Axe"),
+        tr!("Distance"),
+        tr!("Shielding"),
+        tr!("Fishing"),
     ]
     .into_iter()
     .zip(stats.skills)
@@ -71,7 +73,7 @@ fn general_cards(
         cards.push((label, level.to_string()));
     }
     cards.push((
-        "Stamina",
+        tr!("Stamina"),
         format!(
             "{}:{:02}",
             stats.stamina_minutes / 60,
@@ -79,7 +81,7 @@ fn general_cards(
         ),
     ));
     cards.push((
-        "Offline training",
+        tr!("Offline training"),
         format!(
             "{}:{:02}",
             stats.offline_training_minutes / 60,
@@ -120,7 +122,7 @@ fn stat_value(
 ) -> String {
     use oteryn_client_runtime::cyclopedia_character::combat::CombatStatUnit;
     let Some(v) = value else {
-        return "Unavailable".into();
+        return tr!("Unavailable").into();
     };
     match key.unit() {
         CombatStatUnit::PartsPerMillion => format!(
@@ -143,28 +145,28 @@ pub fn combat_rows(p: &CyclopediaCharacterPanel) -> Vec<CombatRow> {
         .map(|&key| {
             let name = format!("{key:?}");
             let source = if name.contains("Equipment") {
-                "Equipment"
+                tr!("Equipment")
             } else if name.contains("Imbuement") {
-                "Imbuement"
+                tr!("Imbuement")
             } else if name.contains("Wheel") {
-                "Wheel"
+                tr!("Wheel")
             } else if name.contains("Concoction") {
-                "Consumable"
+                tr!("Consumable")
             } else if name.contains("FightMode") {
                 "Combat stance"
             } else if name == "FlatDamageHealing" {
-                "Level"
+                tr!("Level")
             } else if name.starts_with("PerfectShot") || name == "Cleave" || name == "AttackElement"
             {
-                "Equipment"
+                tr!("Equipment")
             } else if name.starts_with("Converted") {
                 "Conversion"
             } else if name.contains("Skill") {
-                "Skill"
+                tr!("Skill")
             } else if name.contains("Base") {
-                "Base"
+                tr!("Base")
             } else {
-                "Combined"
+                tr!("Combined")
             };
             CombatRow {
                 key,
@@ -180,17 +182,17 @@ pub fn combat_detail(
     key: oteryn_client_runtime::cyclopedia_character::combat::CombatStat,
 ) -> String {
     let Some(stats) = p.combat.as_ref().filter(|s| s.tab() == p.tab) else {
-        return "No confirmed statistics".into();
+        return tr!("No confirmed statistics").into();
     };
     let name = format!("{key:?}");
     let contribution_family = [
-        "Equipment",
-        "Imbuement",
-        "Wheel",
-        "Concoction",
-        "Base",
-        "Amplification",
-        "Skill",
+        tr!("Equipment"),
+        tr!("Imbuement"),
+        tr!("Wheel"),
+        tr!("Concoction"),
+        tr!("Base"),
+        tr!("Amplification"),
+        tr!("Skill"),
     ]
     .iter()
     .find_map(|suffix| name.strip_suffix(suffix))
@@ -211,9 +213,9 @@ pub fn combat_detail(
         stats.observed_at_unix_ms, stats.character_revision, stats.equipment_revision
     );
     if name.starts_with("Absorb") {
-        out.push_str(
-            "Positive resistance reduces incoming damage; negative resistance increases it.\r\n",
-        );
+        out.push_str(tr!(
+            "Positive resistance reduces incoming damage; negative resistance increases it.\r\n"
+        ));
     }
     for row in combat_rows(p)
         .into_iter()
@@ -235,12 +237,12 @@ pub fn store_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String)> 
     };
     vec![
         (
-            "Permanent prey slots",
+            tr!("Permanent prey slots"),
             store.permanent_prey_slots.to_string(),
         ),
-        ("Prey wildcards", store.prey_wildcards.to_string()),
-        ("Hirelings", store.hirelings.to_string()),
-        ("Blessings", store.blessings.len().to_string()),
+        (tr!("Prey wildcards"), store.prey_wildcards.to_string()),
+        (tr!("Hirelings"), store.hirelings.to_string()),
+        (tr!("Blessings"), store.blessings.len().to_string()),
     ]
 }
 pub fn store_blessings(p: &CyclopediaCharacterPanel) -> String {
@@ -295,14 +297,18 @@ pub fn badge_rows(p: &CyclopediaCharacterPanel) -> Vec<super::BadgeRow> {
         .collect()
 }
 pub fn badge_text(p: &CyclopediaCharacterPanel) -> String {
-    let mut text = String::from("Badges — local display preferences\r\n");
+    let mut text = String::from(tr!("Badges — local display preferences\r\n"));
     for row in badge_rows(p) {
         text.push_str(&format!(
             "#{} {} — {}{}\r\n",
             row.id,
             row.name,
             if row.earned { "earned" } else { "locked" },
-            if row.hidden { "; hidden locally" } else { "" }
+            if row.hidden {
+                tr!("; hidden locally")
+            } else {
+                ""
+            }
         ));
     }
     text

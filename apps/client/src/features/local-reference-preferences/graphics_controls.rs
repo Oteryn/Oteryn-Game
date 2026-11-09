@@ -36,7 +36,7 @@ impl GraphicsControls {
                     "STATIC",
                     "VSync uses the driver's supported presentation modes. Integral scaling keeps whole sprite pixels; small windows may crop the map.",
                     0,
-                    [10, 230, 710, 60],
+                    [10, 230, 300, 60],
                     0,
                 ),
             ];

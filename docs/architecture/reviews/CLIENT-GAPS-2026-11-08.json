@@ -402,9 +402,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics / Effects: ambient/separator/indoor/cloud attenuation",
-  "status": "PARTIAL",
-  "gap": "Światło jest; brak grupy ambient/separator/attenuation.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0019-world-light/view.rs:7 + apps/client/src/features/local-reference-preferences/lighting_controls.rs:6 + graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation (apps/client/src/features/local-reference-preferences/tests/graphics.rs:44)"
  },
  {
   "id": "T063",
@@ -465,9 +466,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Gameplay: inspect/chase cancel/nearby loot scheme",
-  "status": "PARTIAL",
-  "gap": "Inspect/loot/walk są osobno; brak pełnej strony i chase cancel/mouse loot controls.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/gameplay.rs:24 + gameplay_options_cancel_chase_before_manual_step; gameplay_mouse_loot_uses_negotiated_caller_and_saved_choices"
  },
  {
   "id": "T070",
@@ -1323,18 +1325,20 @@
   "src": "OTCAUD1108",
   "area": "Options",
   "feature": "Lokalizacja interfejsu",
-  "status": "PARTIAL",
-  "gap": "Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/localization.rs:5 + crates/client-ui/src/components/localization/build.rs:8 + language_selection_persists_and_localizes_real_chat_view_without_changing_messages (apps/client/src/features/local-reference-preferences/tests/localization.rs:5)"
  },
  {
   "id": "O006",
   "src": "OTCAUD1108",
   "area": "Options",
   "feature": "Opcje i ustawienia",
-  "status": "PARTIAL",
-  "gap": "Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/presentation.rs:72 + console_and_action_bar_settings_reach_received_chat_and_cast_caller; existing graphics projection covered by t012_visual_preferences_control_live_effect_projection"
  },
  {
   "id": "O010",

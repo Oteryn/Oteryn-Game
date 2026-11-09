@@ -23,7 +23,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     panel.open,
                     panel.pending,
                     panel.fields.to_vec(),
-                    format!(
+                    lfmt!(
                         "First authorize self-inspection to activate your staff role.\nInspect, ban/unban, teleport/to player, bring, notify/broadcast, ghost/invisible, mute/unmute, kick.\n{}",
                         oteryn_client_ui::staff::panel_text(&panel.summary, &panel.feedback)
                     ),

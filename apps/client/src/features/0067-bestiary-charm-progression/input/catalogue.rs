@@ -104,7 +104,7 @@ pub(in crate::play) fn submit(
         .is_err()
     {
         panel.catalogue.pending = None;
-        panel.failed("The session has ended");
+        panel.failed(tr!("The session has ended"));
     }
 }
 pub(in crate::play) fn apply(

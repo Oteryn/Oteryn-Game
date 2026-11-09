@@ -17,8 +17,8 @@ impl HudControls {
                 0,
             );
             let checks = [
-                "Own name",
-                "Other player names",
+                tr!("Own name"),
+                tr!("Other player names"),
                 "Creature names",
                 "Own HP bar",
                 "Own mana bar",

@@ -12,6 +12,9 @@ use std::{
 pub struct ScreenshotPreferences {
     /// Empty uses the client's normal screenshots directory.
     pub directory: String,
+    pub folder: String,
+    pub backlog_frames: u8,
+    pub on_skill: bool,
     pub game_only: bool,
     pub backlog_seconds: u8,
     pub on_level: bool,
@@ -19,10 +22,18 @@ pub struct ScreenshotPreferences {
     pub on_achievement: bool,
 }
 impl ScreenshotPreferences {
+    pub(super) fn harmonize(&mut self, previous: &Self) {
+        if self.directory != previous.directory { self.folder.clone_from(&self.directory); }
+        else if self.folder != previous.folder { self.directory.clone_from(&self.folder); }
+        if self.backlog_seconds != previous.backlog_seconds { self.backlog_frames = self.backlog_seconds; }
+        else if self.backlog_frames != previous.backlog_frames { self.backlog_seconds = self.backlog_frames; }
+    }
     pub fn valid(&self) -> bool {
-        self.backlog_seconds <= 10
+        self.backlog_seconds <= 10 && self.backlog_frames <= 10
             && self.directory.len() <= 1024
             && !self.directory.chars().any(char::is_control)
+            && self.folder.len() <= 1024
+            && !self.folder.chars().any(char::is_control)
             && (self.directory.is_empty() || Path::new(&self.directory).is_absolute())
     }
     pub fn apply_policy(&self, capture: &mut CaptureController) {

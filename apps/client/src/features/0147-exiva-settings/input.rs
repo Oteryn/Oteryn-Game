@@ -9,7 +9,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Exiva(payload)).is_err()
         {
             mailbox.exiva.pending = false;
-            mailbox.exiva.error = Some("Session ended");
+            mailbox.exiva.error = Some(tr!("Session ended"));
         }
     }
     pub fn exiva_input(&self, events: &[NormalizedInputEvent]) -> bool {

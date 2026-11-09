@@ -58,7 +58,7 @@ impl SkillsLayout {
         let complete = progress.complete.as_ref();
         let classic = loyalty.snapshot.as_ref();
         let mut header = complete.map_or_else(
-            || if progress.selected || loyalty.selected { "Trained skills".into() } else { "Skills unavailable in this session".into() },
+            || if progress.selected || loyalty.selected { "Trained skills".into() } else { tr!("Skills unavailable in this session").into() },
             |full| format!("Level {} — Experience {} — Level progress {}.{:02}%\r\nLoyalty skill bonus: {}%", full.level, full.experience, full.level_percent / 100, full.level_percent % 100, full.loyalty_bonus_percent),
         );
         if let Some(snapshot) = classic {
@@ -119,10 +119,10 @@ impl SkillsRow {
     pub fn text(&self, layout: &SkillsLayout) -> String {
         let loyalty = self
             .loyalty
-            .map_or_else(|| "unavailable".into(), |n| n.to_string());
+            .map_or_else(|| tr!("unavailable").into(), |n| n.to_string());
         let current = self
             .current
-            .map_or_else(|| "unavailable".into(), |n| n.to_string());
+            .map_or_else(|| tr!("unavailable").into(), |n| n.to_string());
         let values = match layout.numbers {
             SkillsNumbers::All => format!(
                 "trained {} / loyalty {loyalty} / current {current}",
@@ -135,7 +135,7 @@ impl SkillsRow {
         let label = FAMILIES
             .get(usize::from(self.family))
             .copied()
-            .unwrap_or("Skill");
+            .unwrap_or(tr!("Skill"));
         let mut text = format!("{label}: {values}");
         if layout.progress {
             if let Some(percent) = self.progress {

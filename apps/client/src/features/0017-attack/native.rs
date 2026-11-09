@@ -26,7 +26,12 @@ use windows_sys::Win32::{
 
 #[derive(Default)]
 struct Actions(Vec<usize>);
-unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
+pub(super) unsafe extern "system" fn window_proc(
+    hwnd: HWND,
+    msg: u32,
+    w: WPARAM,
+    l: LPARAM,
+) -> LRESULT {
     // SAFETY: userdata points to Actions on this thread until HWND destruction.
     unsafe {
         if msg == WM_SYSKEYDOWN && w == 0x42 && (l & (1 << 29)) != 0 {
@@ -51,6 +56,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
+
 fn wide(text: &str) -> Vec<u16> {
     text.replace('\0', "\u{fffd}")
         .encode_utf16()
@@ -88,7 +94,7 @@ fn close(weak: &Weak<Mutex<Mailbox>>) {
         mailbox.battle.native_running = false;
     }
 }
-unsafe fn control(
+pub(super) unsafe fn control(
     parent: HWND,
     class: &str,
     text: &str,

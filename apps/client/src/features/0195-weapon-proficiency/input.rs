@@ -10,7 +10,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.weapon_proficiency.pending = false;
-            mailbox.weapon_proficiency.feedback = Some("The session has ended");
+            mailbox.weapon_proficiency.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn weapon_proficiency_request(&self, intent: Intent) {
@@ -19,7 +19,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.weapon_proficiency.pending = false;
-            mailbox.weapon_proficiency.feedback = Some("The session has ended");
+            mailbox.weapon_proficiency.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn weapon_proficiency_input(&self, events: &[NormalizedInputEvent]) -> bool {

@@ -246,8 +246,10 @@ pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 impl Mailbox {
     pub(super) fn combat_report(&mut self, report: CombatReport) {
         if let CombatReport::Cast(disposition) = &report {
-            self.spell_bar.feedback =
-                oteryn_client_runtime::spell::feedback_text(*disposition).into();
+            self.spell_bar.feedback = oteryn_client_ui::localization::tr(
+                oteryn_client_runtime::spell::feedback_text(*disposition),
+            )
+            .into();
         }
         if self.combat.len() == MAX_COMBAT_REPORTS {
             self.combat.pop_front();

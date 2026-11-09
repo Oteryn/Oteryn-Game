@@ -62,7 +62,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Daily Reward").as_ptr(),
+            wide(tr!("Daily Reward")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -95,7 +95,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(
             hwnd,
             "BUTTON",
-            "Refresh",
+            tr!("Refresh"),
             REFRESH,
             [10, 505, 180, 30],
             WS_TABSTOP,
@@ -103,7 +103,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(
             hwnd,
             "BUTTON",
-            "Claim reward",
+            tr!("Claim reward"),
             CLAIM,
             [220, 505, 180, 30],
             WS_TABSTOP,
@@ -145,7 +145,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     && commands.send(PlayCommand::DailyReward(command)).is_err()
                 {
                     mailbox.daily_reward.pending = false;
-                    mailbox.daily_reward.feedback = Some("The session has ended");
+                    mailbox.daily_reward.feedback = Some(tr!("The session has ended"));
                 }
             }
             if held.as_ref() != Some(&mailbox.daily_reward) {

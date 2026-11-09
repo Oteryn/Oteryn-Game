@@ -60,7 +60,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Browse field").as_ptr(),
+            wide(tr!("Browse field")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -83,13 +83,13 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
         let fields = [
-            ("Tile X", "0"),
-            ("Tile Y", "0"),
-            ("Floor", "0"),
-            ("View id", "0"),
-            ("Page index", "0"),
-            ("Field item row", "0"),
-            ("Backpack item row", "0"),
+            (tr!("Tile X"), "0"),
+            (tr!("Tile Y"), "0"),
+            (tr!("Floor"), "0"),
+            (tr!("View id"), "0"),
+            (tr!("Page index"), "0"),
+            (tr!("Field item row"), "0"),
+            (tr!("Backpack item row"), "0"),
         ];
         let edits = std::array::from_fn::<_, 7, _>(|i| {
             let x = 10 + i as i32 * 118;
@@ -104,14 +104,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             )
         });
         let buttons = [
-            ("Open tile", OPEN),
-            ("Seek page", SEEK),
-            ("Take to backpack", 105),
-            ("Drop here", 106),
-            ("Open container", 107),
-            ("Up", 108),
-            ("Use selected", 109),
-            ("Use backpack item", 110),
+            (tr!("Open tile"), OPEN),
+            (tr!("Seek page"), SEEK),
+            (tr!("Take to backpack"), 105),
+            (tr!("Drop here"), 106),
+            (tr!("Open container"), 107),
+            (tr!("Up"), 108),
+            (tr!("Use selected"), 109),
+            (tr!("Use backpack item"), 110),
         ]
         .map(|(label, id)| {
             control(
@@ -179,7 +179,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     && commands.send(command).is_err()
                 {
                     mailbox.browse_field.pending = false;
-                    mailbox.browse_field.feedback = Some("The session has ended".into());
+                    mailbox.browse_field.feedback = Some(tr!("The session has ended").into());
                 }
             }
             if held.as_ref() != Some(&mailbox.browse_field) {

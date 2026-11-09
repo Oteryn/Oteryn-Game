@@ -1,7 +1,7 @@
 use super::{DepotAction, DepotIntent, DepotOutcome, DepotPanel, DepotReply, Intent, ItemEntry};
 pub fn request(p: &mut DepotPanel, intent: Intent) -> Option<DepotIntent> {
     if !p.selected {
-        p.feedback = "Depot is unavailable on this server";
+        p.feedback = tr!("Depot is unavailable on this server");
         return None;
     }
     if p.pending {
@@ -32,7 +32,7 @@ pub fn request(p: &mut DepotPanel, intent: Intent) -> Option<DepotIntent> {
         }
     };
     p.pending = true;
-    p.feedback = "Waiting for server";
+    p.feedback = tr!("Waiting for server");
     Some(DepotIntent {
         town,
         box_number,
@@ -64,19 +64,19 @@ pub fn apply_result(p: &mut DepotPanel, reply: Option<DepotReply>) {
     p.pending = false;
     let Some(reply) = reply else {
         p.reply = None;
-        p.feedback = "The server refused the depot request";
+        p.feedback = tr!("The server refused the depot request");
         return;
     };
     p.feedback = match reply.outcome {
-        DepotOutcome::Opened => "Depot box loaded",
-        DepotOutcome::Moved => "Item moved",
-        DepotOutcome::NoLocker => "No depot locker nearby",
-        DepotOutcome::Stale => "The depot or item changed; refresh and try again",
-        DepotOutcome::Full => "The destination is full",
-        DepotOutcome::NoBackpack => "Equip a main backpack first",
-        DepotOutcome::Overweight => "You cannot carry this weight",
-        DepotOutcome::Unsupported => "This item cannot be moved through the depot",
-        DepotOutcome::Rejected => "The server refused the depot move",
+        DepotOutcome::Opened => tr!("Depot box loaded"),
+        DepotOutcome::Moved => tr!("Item moved"),
+        DepotOutcome::NoLocker => tr!("No depot locker nearby"),
+        DepotOutcome::Stale => tr!("The depot or item changed; refresh and try again"),
+        DepotOutcome::Full => tr!("The destination is full"),
+        DepotOutcome::NoBackpack => tr!("Equip a main backpack first"),
+        DepotOutcome::Overweight => tr!("You cannot carry this weight"),
+        DepotOutcome::Unsupported => tr!("This item cannot be moved through the depot"),
+        DepotOutcome::Rejected => tr!("The server refused the depot move"),
     };
     p.reply = Some(reply);
 }
@@ -90,26 +90,26 @@ pub fn request_container(
         return None;
     }
     if !p.items.containers_selected {
-        p.feedback = "Container browsing is unavailable on this server";
+        p.feedback = tr!("Container browsing is unavailable on this server");
         return None;
     }
     if !deposit_items(p).iter().any(|e| e.handle == handle) {
         return None;
     }
     p.pending = true;
-    p.feedback = "Waiting for server";
+    p.feedback = tr!("Waiting for server");
     Some(handle)
 }
 pub fn apply_container(p: &mut DepotPanel, outcome: Option<super::ContainerViewOutcome>) {
     use super::ContainerViewOutcome::*;
     p.pending = false;
     p.feedback = match outcome {
-        Some(Opened) => "Container loaded",
-        Some(Closed) => "Container closed",
-        Some(Stale) => "The container changed; refresh and try again",
-        Some(TooFar) => "The container is too far away",
-        Some(NotAContainer) => "This item is not a container",
-        Some(TooManyViews) => "Too many containers are open",
-        None => "The server refused the container request",
+        Some(Opened) => tr!("Container loaded"),
+        Some(Closed) => tr!("Container closed"),
+        Some(Stale) => tr!("The container changed; refresh and try again"),
+        Some(TooFar) => tr!("The container is too far away"),
+        Some(NotAContainer) => tr!("This item is not a container"),
+        Some(TooManyViews) => tr!("Too many containers are open"),
+        None => tr!("The server refused the container request"),
     };
 }

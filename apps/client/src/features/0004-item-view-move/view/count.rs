@@ -37,7 +37,7 @@ pub(super) fn open(link: &PlayLink, maximum: u32) {
                 let hwnd = CreateWindowExW(
                     0,
                     wide("STATIC").as_ptr(),
-                    wide(&format!("Move stack: count 1–{maximum}")).as_ptr(),
+                    wide(&lfmt!("Move stack: count 1–{maximum}", maximum = maximum)).as_ptr(),
                     WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
@@ -67,7 +67,8 @@ pub(super) fn open(link: &PlayLink, maximum: u32) {
                         null(),
                     );
                     SendMessageW(edit, EM_SETLIMITTEXT, 3, 0);
-                    for (id, label, x) in [(101_usize, "Move", 10), (102, "Cancel", 165)] {
+                    for (id, label, x) in [(101_usize, tr!("Move"), 10), (102, tr!("Cancel"), 165)]
+                    {
                         CreateWindowExW(
                             0,
                             wide("BUTTON").as_ptr(),
@@ -119,7 +120,7 @@ pub(super) fn open(link: &PlayLink, maximum: u32) {
                                 }
                                 SetWindowTextW(
                                     hwnd,
-                                    wide("Invalid count: enter 1 to the stack size").as_ptr(),
+                                    wide(tr!("Invalid count: enter 1 to the stack size")).as_ptr(),
                                 );
                             }
                             102 => {

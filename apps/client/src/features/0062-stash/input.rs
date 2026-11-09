@@ -26,7 +26,7 @@ impl PlayLink {
             && commands.send(PlayCommand::Stash(command)).is_err()
         {
             mailbox.stash.pending = false;
-            mailbox.stash.feedback = Some("The session has ended".into());
+            mailbox.stash.feedback = Some(tr!("The session has ended").into());
         }
     }
 
@@ -37,14 +37,19 @@ impl PlayLink {
     pub(in crate::play) fn stash_enqueue_filter(
         mailbox: &mut Mailbox,
         commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
-        search: String, category: String, trader: String,
+        search: String,
+        category: String,
+        trader: String,
     ) {
-        if mailbox.stash.pending { return; }
+        if mailbox.stash.pending {
+            return;
+        }
         mailbox.stash.query = search;
         mailbox.stash.category = category;
         mailbox.stash.trader = trader;
         if let Some(command) = request(&mut mailbox.stash, Intent::Filter)
-            && commands.send(PlayCommand::Stash(command)).is_err() {
+            && commands.send(PlayCommand::Stash(command)).is_err()
+        {
             mailbox.stash.pending = false;
             mailbox.stash.feedback = Some("The session has ended".into());
         }
@@ -55,7 +60,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Stash(command)).is_err()
         {
             mailbox.stash.pending = false;
-            mailbox.stash.feedback = Some("The session has ended".into());
+            mailbox.stash.feedback = Some(tr!("The session has ended").into());
         }
     }
     pub fn stash_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -81,7 +86,7 @@ impl PlayLink {
                 && commands.send(PlayCommand::Stash(command)).is_err()
             {
                 mailbox.stash.pending = false;
-                mailbox.stash.feedback = Some("The session has ended".into());
+                mailbox.stash.feedback = Some(tr!("The session has ended").into());
             }
         }
         #[cfg(windows)]

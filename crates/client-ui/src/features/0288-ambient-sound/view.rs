@@ -1,7 +1,7 @@
 pub fn status(playing: bool) -> &'static str {
     if playing {
-        "ambience on"
+        tr!("ambience on")
     } else {
-        "ambience off"
+        tr!("ambience off")
     }
 }

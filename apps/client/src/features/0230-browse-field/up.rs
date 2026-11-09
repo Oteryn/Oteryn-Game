@@ -32,6 +32,6 @@ pub(in crate::play) fn enqueue_up(
         && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {
         m.browse_field.pending = false;
-        m.browse_field.feedback = Some("The session has ended".into());
+        m.browse_field.feedback = Some(tr!("The session has ended").into());
     }
 }

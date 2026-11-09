@@ -104,6 +104,8 @@ impl Application {
             return;
         }
         self.frame_timing.presented();
+        self.settings
+            .screenshots(renderer, scene, self.play.as_ref().map(|play| &play.link));
         if let Some(frame) = renderer.take_capture() {
             let result = (|| -> Result<(), Box<dyn std::error::Error>> {
                 let frame = frame?;

@@ -4,7 +4,7 @@ use crate::play::PlayView;
 impl PlayView {
     /// Shows the server's answer to a combat command.
     pub fn apply_combat(&mut self, report: CombatReport) {
-        self.combat_line = report.text();
+        self.combat_line = report.text().map(oteryn_client_ui::localization::tr);
         self.action_line = None;
         self.logout_line = None;
     }
@@ -69,7 +69,7 @@ impl crate::play::mailbox::Mailbox {
             self.battle.pending = false;
             self.battle.pending_command = None;
         }
-        self.battle.feedback = report.text();
+        self.battle.feedback = report.text().map(oteryn_client_ui::localization::tr);
     }
 
     pub(in crate::play) fn battle_end(&mut self) {

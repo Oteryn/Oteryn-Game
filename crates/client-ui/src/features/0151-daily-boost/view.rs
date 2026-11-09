@@ -1,18 +1,18 @@
 use super::DailyBoostPanel;
 pub fn panel_text(p: &DailyBoostPanel) -> String {
     if !p.selected {
-        return "Unavailable".into();
+        return tr!("Unavailable").into();
     }
     if let Some(f) = p.feedback {
         return f.into();
     }
     if p.pending {
-        return "Loading daily boost...".into();
+        return tr!("Loading daily boost...").into();
     }
     p.boost.as_ref().map_or_else(
-        || "Ready".into(),
+        || tr!("Ready").into(),
         |v| {
-            let mut text = format!("Daily spotlight\nReset epoch: {}\n", v.reset_epoch);
+            let mut text = lfmt!("Daily spotlight\nReset epoch: {}\n", v.reset_epoch);
             for card in spotlight_cards(p) {
                 text.push_str(&format!("{}: {}\n{}\n", card.kind, card.name, card.key));
             }
@@ -90,8 +90,8 @@ pub fn spotlight_cards(panel: &DailyBoostPanel) -> Vec<SpotlightCard> {
         return Vec::new();
     };
     [
-        ("Boosted creature", &boost.creature_key),
-        ("Boosted boss", &boost.boss_key),
+        (tr!("Boosted creature"), &boost.creature_key),
+        (tr!("Boosted boss"), &boost.boss_key),
     ]
     .into_iter()
     .map(|(kind, key)| {
