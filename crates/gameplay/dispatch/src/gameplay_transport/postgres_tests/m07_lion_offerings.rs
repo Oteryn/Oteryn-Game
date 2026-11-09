@@ -1,4 +1,4 @@
-//! Native Lion Strength and Tears: an exact carried offering, source state and15s world lifecycle.
+//! Native Lion offerings and renewable source pickers: an exact carried offering, source state and15s world lifecycle.
 use super::{AdmittedSession,ComposedFreshAdmission,TestResult,fixture::{Harness,debug}};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
@@ -20,6 +20,18 @@ fn m07_lion_tears_postgres_exact_consumption_counter_and_pagoda_reset()->TestRes
 fn m07_lion_well_postgres_repeatable_exact_reward_and_command_replay()->TestResult {
     run("m07/lion-well",Position{x:33137,y:32351,floor:-6})
 }
+#[test]
+fn m07_lion_beauty_postgres_exact_consumption_counter_and_pagoda_reset()->TestResult {
+    run("m07/lion-beauty",Position{x:33138,y:32369,floor:-8})
+}
+#[test]
+fn m07_lion_flower_west_postgres_bloom_reset_and_repeatable_pickup()->TestResult {
+    run("m07/lion-flower-west",Position{x:33133,y:32359,floor:-6})
+}
+#[test]
+fn m07_lion_flower_east_postgres_bloom_reset_and_repeatable_pickup()->TestResult {
+    run("m07/lion-flower-east",Position{x:33157,y:32364,floor:-6})
+}
 fn run(name:&'static str,source:Position)->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
     let started=std::time::Instant::now();eprintln!("POSTGRES_CASE_STARTED {name}");
@@ -30,13 +42,44 @@ fn run(name:&'static str,source:Position)->TestResult {
     eprintln!("POSTGRES_CASE_COMPLETED {name} duration={:?} success={}",started.elapsed(),result.is_ok());result
 }
 pub(super) fn start(name:&str)->Position {
-    if name=="m07/lion-well" {Position{x:33136,y:32351,floor:-6}}
+    if name=="m07/lion-beauty" {Position{x:33138,y:32370,floor:-8}}
+    else if name=="m07/lion-flower-west" {Position{x:33133,y:32360,floor:-6}}
+    else if name=="m07/lion-flower-east" {Position{x:33158,y:32364,floor:-6}}
+    else if name=="m07/lion-well" {Position{x:33136,y:32351,floor:-6}}
     else if name=="m07/lion-tears" {Position{x:33155,y:32278,floor:-8}}
     else {Position{x:33136,y:32291,floor:-8}}
 }
 
 pub(super) fn world(native:&NativeGameplayState,name:&str)->TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{NativeCrop,ExpectedTile,native_scene_with_appearances};
+    if name=="m07/lion-beauty" {
+        return native_scene_with_appearances(native,vec![NativeCrop{
+            bytes:include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../content/world/placements/region-z08-x129-y126.b3")),
+            region:(8,129,126),bounds:(33135,32368,33139,32371),start:(33138,32370),
+            expected:vec![
+                ExpectedTile{position:(33138,32369),ids:vec![19272,6477,6374,2110],counted_entry:None},
+                ExpectedTile{position:(33136,32369),ids:vec![499,2074],counted_entry:None},
+                ExpectedTile{position:(33138,32370),ids:vec![499,6373],counted_entry:None},
+            ],
+        }],&[],&[2075]);
+    }
+    if name.starts_with("m07/lion-flower-") {
+        let (bounds,start,expected)=if name.ends_with("-west") {
+            ((33132,32358,33135,32361),(33133,32360),vec![
+                ExpectedTile{position:(33133,32359),ids:vec![4409,6373,21388],counted_entry:None},
+                ExpectedTile{position:(33133,32360),ids:vec![4394,6373],counted_entry:None},
+            ])
+        } else {
+            ((33156,32363,33159,32365),(33158,32364),vec![
+                ExpectedTile{position:(33157,32364),ids:vec![4403,6373,21388],counted_entry:None},
+                ExpectedTile{position:(33158,32364),ids:vec![4402,6375],counted_entry:None},
+            ])
+        };
+        return native_scene_with_appearances(native,vec![NativeCrop{
+            bytes:include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../content/world/placements/region-z06-x129-y126.b3")),
+            region:(6,129,126),bounds,start,expected,
+        }],&[],&[21935]);
+    }
     if name=="m07/lion-well" {
         return native_scene_with_appearances(native,vec![NativeCrop{
             bytes:include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../content/world/placements/region-z06-x129-y126.b3")),
@@ -72,6 +115,9 @@ pub(super) fn world(native:&NativeGameplayState,name:&str)->TestResult<crate::ma
 pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,
     harness:&Harness,fence:CurrentCharacterGameplayFence,callback:&Callback)->TestResult {
     if callback.effects.item_reward_per_use {
+        if callback.effects.reset_after_ms.is_some() {
+            return Box::pin(flower_exercise(owner,admitted,harness,fence,callback)).await;
+        }
         return Box::pin(well_exercise(owner,admitted,harness,fence,callback)).await;
     }
     let version:String=sqlx::query_scalar("SELECT current_setting('server_version')").fetch_one(&harness.pool).await?;
@@ -173,5 +219,49 @@ async fn well_exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&m
     }
     let state=owner.root.read_character_quest_state(owner.character,fence.character_id).await.map_err(debug)?;
     assert_eq!(state.tracks().get(&callback.state_ops[0].track).copied(),Some(1),"well starts but never advances the offering counter");
+    Ok(())
+}
+
+async fn flower_exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,
+    harness:&Harness,fence:CurrentCharacterGameplayFence,callback:&Callback)->TestResult {
+    let version:String=sqlx::query_scalar("SELECT current_setting('server_version')").fetch_one(&harness.pool).await?;
+    eprintln!("POSTGRES_DATABASE_READY {} version={version}",callback.key);
+    let native=callback.selector.native.as_ref().ok_or("native flower")?;
+    let map=owner.bundle_map().ok_or("map")?;
+    let source=placement_key(crate::map::overlay::TilePos{x:native.position.x,y:native.position.y,floor:native.position.floor},native.ordinal).ok_or("flower key")?;
+    let mut placement=map.overlay.base().digest().to_vec();placement.extend_from_slice(&source.to_be_bytes());
+    let payload=|expected_revision|oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget{placement:placement.clone(),expected_revision}).map_err(debug);
+    let item="oteryn:item.tibia.i21389";
+    assert_eq!(carried(harness,item).await?,0);
+    let mut previous_due=None;
+    let mut committed=None;
+    for (index,(id,revision,quantity,disposition,cursor)) in [
+        (1,0,1,UseDisposition::Committed,1),
+        (2,1,1,UseDisposition::Rejected,1),
+        (3,2,2,UseDisposition::Committed,3),
+        (3,2,2,UseDisposition::Committed,3),
+    ].into_iter().enumerate() {
+        if index==2 {
+            let map=owner.bundle_map().ok_or("map")?;
+            let due=map.facts.next_movement_decay_time().ok_or("bloom reset")?;
+            previous_due=Some(due);
+            assert_eq!(map.facts.expire_movement_items(due-1),0);
+            assert_eq!(map.facts.expire_movement_items(due),1);
+            assert_eq!(map.facts.object_revision(source),2);
+            owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(61)).ok_or("advance bloom clock")?;
+        }
+        pace(owner)?;
+        let reply=Box::pin(super::quest_world_callbacks::wire(owner,admitted,id,2,payload(revision)?)).await?;
+        assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,disposition,"flower command {index}");
+        assert_eq!(carried(harness,item).await?,quantity,"no second flower from an unripe source or replay");
+        assert_eq!(counts(harness).await?,(quantity,0));
+        assert_eq!(owner.bundle_map().ok_or("map")?.facts.object_revision(source),cursor);
+        if index==2 {
+            assert!(owner.bundle_map().ok_or("map")?.facts.next_movement_decay_time().ok_or("renewed bloom deadline")?>previous_due.ok_or("old deadline")?);
+            committed=Some(reply);
+        } else if index==3 {assert_eq!(&reply,committed.as_ref().ok_or("fresh result")?);}
+    }
+    let state=owner.root.read_character_quest_state(owner.character,fence.character_id).await.map_err(debug)?;
+    assert_eq!(state.tracks().get(&callback.state_ops[0].track).copied(),Some(1));
     Ok(())
 }

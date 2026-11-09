@@ -156,3 +156,26 @@ fn native_per_use_rewards_require_exact_physical_admission() -> Result<(), Strin
     }
     Ok(())
 }
+
+#[test]
+fn native_per_use_producer_accepts_a_current_world_guard_without_widening_legacy_rewards()
+-> Result<(), String> {
+    let mut callback = load()?
+        .into_iter()
+        .find(|c| c.key == "oteryn:quest-callback/m07/lion-flower-west")
+        .ok_or("native flower producer")?;
+    let document = |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+    assert!(!callback.world_requirements.is_empty());
+    parse(&document(&callback))?;
+    callback.effects.item_reward_per_use = false;
+    let flag = callback.storage.first_mut().ok_or("source start flag")?;
+    flag.maximum = 0;
+    flag.at_least = false;
+    assert!(
+        parse(&document(&callback)).is_err(),
+        "legacy reward cannot borrow a physical guard"
+    );
+    callback.world_requirements.clear();
+    parse(&document(&callback))?;
+    Ok(())
+}

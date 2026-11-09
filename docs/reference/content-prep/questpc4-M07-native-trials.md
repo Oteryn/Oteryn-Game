@@ -72,3 +72,19 @@ rejects changed duration/weight and any new instance mechanism. Every other time
 item retains the shared importer's owner-required guard. Native runtime validation
 and item-profile tests must pass before publication; no whole-source timer fidelity
 or complete Beauty trial is claimed by the profile alone.
+
+### Beauty offering and both source flower pickers
+
+Crystal201189 `actions_lions_rock.lua:22-79` consumes21389 at33138,32369,z8
+and lights pagoda33136,32369 for15 seconds. Current B3z08-x129-y126 has
+[19272,6477,6374,2110] at the brazier, so the exact native target is ordinal3,
+appearance2110; the pagoda is ordinal1/2074. No UID/AID is invented.
+
+The source picker at Lua80-94 grants21389, raisesQL>=1 and DefaultStart,
+transforms21388 to21935, then restores it after60 seconds. B3z06-x129-y126
+has two actual plants:33133,32359 [4409,6373,21388] and33157,32364
+[4403,6373,21388], both ordinal2. Their callbacks explicitly require the
+current blooming appearance21388, use the admitted native per-use reward
+mode, and reuse the existing timed source transform owner. Legacy item
+rewards retain the world-requirement restriction; only the explicit admitted
+native per-use mode can combine a fresh-value grant with this physical guard.

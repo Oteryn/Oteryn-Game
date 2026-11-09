@@ -262,6 +262,273 @@
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:96-111"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/lion-beauty",
+      "quest": "oteryn:quest.tibia_tales",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33138,
+          "y": 32369,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2110,
+        "native": {
+          "position": {
+            "x": 33138,
+            "y": 32369,
+            "floor": -8
+          },
+          "ordinal": 3,
+          "appearance": 2110
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33136,
+            "y": 32369,
+            "floor": -8
+          },
+          "appearance": 2074,
+          "replacement": 2075
+        }
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 33136,
+            "y": 32369,
+            "floor": -8
+          },
+          "appearance": 2074
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u10_70/lions_rock/outer_sanctum/lions_beauty",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 2
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21389",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "requires_world_admission": true,
+      "admission": {
+        "premium": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You burnt a lion's mane flower. The light in the small pyramid nearby begins to shine.",
+      "effects": {
+        "passages_reset_after_ms": 15000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:22-79"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/lion-flower-west",
+      "quest": "oteryn:quest.tibia_tales",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33133,
+          "y": 32359,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21388,
+        "native": {
+          "position": {
+            "x": 33133,
+            "y": 32359,
+            "floor": -6
+          },
+          "ordinal": 2,
+          "appearance": 21388
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 33133,
+            "y": 32359,
+            "floor": -6
+          },
+          "appearance": 21388
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_1/tibia_tales/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 0,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "requires_world_admission": true,
+      "admission": {
+        "premium": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You picked a beautiful lion's mane flower.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21389",
+          "count": 1,
+          "contents": [],
+          "premium": true
+        },
+        "item_reward_per_use": true,
+        "transform": 21935,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:80-94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/lion-flower-east",
+      "quest": "oteryn:quest.tibia_tales",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33157,
+          "y": 32364,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21388,
+        "native": {
+          "position": {
+            "x": 33157,
+            "y": 32364,
+            "floor": -6
+          },
+          "ordinal": 2,
+          "appearance": 21388
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 33157,
+            "y": 32364,
+            "floor": -6
+          },
+          "appearance": 21388
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_1/tibia_tales/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 0,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "requires_world_admission": true,
+      "admission": {
+        "premium": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You picked a beautiful lion's mane flower.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21389",
+          "count": 1,
+          "contents": [],
+          "premium": true
+        },
+        "item_reward_per_use": true,
+        "transform": 21935,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:80-94"
+      ]
     }
   ]
 }

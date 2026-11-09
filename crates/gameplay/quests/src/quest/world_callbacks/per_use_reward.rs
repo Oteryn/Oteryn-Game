@@ -3,7 +3,8 @@ use super::{ActorKind, Callback, Trigger};
 
 pub(super) fn admitted(callback: &Callback) -> bool {
     let effects = &callback.effects;
-    callback.requires_world_admission
+    effects.item_reward_per_use
+        && callback.requires_world_admission
         && callback.selector.native.is_some()
         && callback.actor_kind == ActorKind::Player
         && callback.trigger == Trigger::Use

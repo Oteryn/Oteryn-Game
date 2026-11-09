@@ -11195,5 +11195,29 @@
     },
     "decision": "chosen recipe excludes original schedules; pinned donor duration alone does not enable decay",
     "remaining": "Profile slice qualified; Beauty offering/picker and rest of M07 not finished"
+  },
+  "m07_lion_beauty_bindings": {
+    "status": "PARTIAL",
+    "bindings": [
+      "oteryn:quest-callback/m07/lion-beauty",
+      "oteryn:quest-callback/m07/lion-flower-west",
+      "oteryn:quest-callback/m07/lion-flower-east"
+    ],
+    "engine": "current world requirements allowed only for explicit admitted native per-use producers; legacy item rewards remain restricted",
+    "red": "missing Beauty and two producer bindings; native model rejected guarded item reward",
+    "green": {
+      "authoring_contract_tests": "3/3 0.001s",
+      "model_tests": "3/3 3.366s",
+      "workspace_seconds": 215.635,
+      "clippy_quests_dispatch_seconds": 297.015,
+      "pin_check_seconds": 38.732,
+      "authoring_checks_seconds": 343.374,
+      "content_tree_seconds": 188.68,
+      "fmt": "PASS",
+      "authoring_unit_seconds": 514.722,
+      "duplicate_migrations": "PASS"
+    },
+    "pending": "Native Beauty/west/east PG cases compiling in /tmp/questpc4-beauty-pg.log",
+    "remaining": "Compiling wiring slice published under cadence exception; finish native PG proof; rest of M07 not DONE"
   }
 }
