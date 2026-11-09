@@ -57,6 +57,41 @@ pub(super) fn prepare(
     runtime: &ChannelRuntimeV1,
     ordinary: &NpcTalkOutcome,
 ) -> Option<Step> {
+    prepare_inner(admission, actor, command, intent, runtime, ordinary, true)
+}
+
+/// Probe the same planner without advancing a source topic. A held commit still
+/// owns its conversation; an unsupported source branch does not claim a keyword.
+pub(super) fn has_eligible_program(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> bool {
+    matches!(
+        prepare_inner(
+            admission,
+            actor,
+            command,
+            intent,
+            runtime,
+            &NpcTalkOutcome::only(NpcIntentDisposition::Ok),
+            false,
+        ),
+        Some(Step::Reply { .. } | Step::Commit(_) | Step::Held)
+    )
+}
+
+fn prepare_inner(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+    ordinary: &NpcTalkOutcome,
+    advance_topic: bool,
+) -> Option<Step> {
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
         runtime,
@@ -103,7 +138,7 @@ pub(super) fn prepare(
         }
         _ => None,
     };
-    if previous.is_none() {
+    if previous.is_none() && advance_topic {
         state.catalogue = None;
     }
     let greeting = intent
@@ -141,7 +176,7 @@ pub(super) fn prepare(
     let plan = match npc_program::preview(&request, &tracks, catalogue, now) {
         Ok(Some(plan)) => plan,
         Ok(None) => {
-            if greeting {
+            if greeting && advance_topic {
                 state.catalogue = None;
             }
             return None;
@@ -178,7 +213,9 @@ pub(super) fn prepare(
             .min()
             .unwrap_or(0);
         let npc_actor = next.npc_actor;
-        state.catalogue = (!end).then_some(Pending::Topic(next));
+        if advance_topic {
+            state.catalogue = (!end).then_some(Pending::Topic(next));
+        }
         return if plan.reply.is_empty() && !end {
             None
         } else {

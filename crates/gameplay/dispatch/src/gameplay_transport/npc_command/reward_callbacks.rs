@@ -184,7 +184,8 @@ fn prepare_with_sources(
         return None;
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
-    quest_dialogue::prepare(
+    let mut fallback = false;
+    let step = quest_dialogue::prepare(
         admission,
         actor,
         command,
@@ -267,11 +268,22 @@ fn prepare_with_sources(
             if matching.next().is_some() {
                 return None;
             }
+            fallback = true;
             Some(Choice {
                 transition: Some(callback.key.clone()),
                 next_topic: Some(Topic::from(callback.next_topic)),
                 reply: callback.reply.clone(),
             })
         },
-    )
+    );
+    // The common selector's quest-copy lock has been released before the
+    // programme planner reads that copy. Eligible callbacks and offers retain
+    // precedence; only the ineligible keyword fallback may defer.
+    if fallback
+        && super::catalogue::has_eligible_program(admission, actor, command, intent, runtime)
+    {
+        None
+    } else {
+        step
+    }
 }

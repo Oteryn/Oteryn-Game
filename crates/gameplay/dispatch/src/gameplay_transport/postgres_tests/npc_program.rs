@@ -46,6 +46,25 @@ pub(super) async fn exercise(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
+    exercise_inner(owner, admitted, h, authority, false).await
+}
+
+pub(super) async fn exercise_priority(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    exercise_inner(owner, admitted, h, authority, true).await
+}
+
+async fn exercise_inner(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    check_priority: bool,
+) -> TestResult {
     let source = NpcRuleCatalog::load_embedded().map_err(debug)?;
     assert_eq!(source.programs().len(), 15);
     assert_eq!(
@@ -98,6 +117,9 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    if check_priority {
+        super::engnpc_program_priority::exercise(owner, admitted, kesar, h).await?;
+    }
     // Both the foreign Lion >=5 and Stag <1 predicates are rechecked by the durable owner.
     let accepted = super::classic_quests::talk(owner, admitted, kesar, 2402, "help").await?;
     assert!(!accepted.is_empty());
