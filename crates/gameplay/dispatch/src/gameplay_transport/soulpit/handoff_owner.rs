@@ -244,7 +244,10 @@ async fn return_shared_soulpit<'a, 'f, 's>(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    fn soulpit_result(&self, result: NativeActivityOutcome) -> Result<Option<UseOutcome>, ()> {
+    pub(in crate::gameplay_transport) fn soulpit_result(
+        &self,
+        result: NativeActivityOutcome,
+    ) -> Result<Option<UseOutcome>, ()> {
         match result {
             NativeActivityOutcome::Committed(commit) => {
                 self.publish_activity_commit(&commit)?;
@@ -254,7 +257,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    async fn enter_shared_soulpit(
+    pub(in crate::gameplay_transport) async fn enter_shared_soulpit(
         &self,
         request: SoulpitEntryIntent,
     ) -> Result<Option<UseOutcome>, ()> {
@@ -287,10 +290,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(crate::content::ActiveGeneration::native_gameplay)
             .ok_or(())?;
-        let Some(species) =
-            crate::durability::item_craft::soulpit::entry_species(native, &selected.definition)
-        else {
-            return Ok(Some(outcome(UseDisposition::Rejected)));
+        let solo = matches!(
+            &selected,
+            super::handoff::SoulpitSelection::Soulseals { .. }
+        );
+        let funding = match selected {
+            super::handoff::SoulpitSelection::Core(core) => {
+                crate::durability::soulpit::SoulpitFunding::Core {
+                    source: core.item_instance_id,
+                    definition: core.definition,
+                }
+            }
+            super::handoff::SoulpitSelection::Soulseals { species } => {
+                crate::durability::soulpit::SoulpitFunding::Soulseals { species }
+            }
+        };
+        let species = match &funding {
+            crate::durability::soulpit::SoulpitFunding::Core { definition, .. } => {
+                let Some(species) =
+                    crate::durability::item_craft::soulpit::entry_species(native, definition)
+                else {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                };
+                species
+            }
+            crate::durability::soulpit::SoulpitFunding::Soulseals { species } => species.as_str(),
         };
         let Some(record) = native
             .creature_profiles()
@@ -373,7 +397,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let census = runtime.positioned_actor_census().map_err(|_| ())?;
             // Crystal 201189f data-global/scripts/quests/soulpit/soulpit_fight.lua:37-77:
             // every occupied staging tile participates; reject before burning a core.
-            for slot in 0..soulpit::MAX_PARTICIPANTS {
+            for slot in 0..if solo { 1 } else { soulpit::MAX_PARTICIPANTS } {
                 let y = 31158 + i32::try_from(slot).map_err(|_| ())?;
                 let mut occupants = census.iter().filter(|(_, at, session)| {
                     let p = at.position();
@@ -452,8 +476,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 request.command.game_session_id,
                 CommandId::new(request.command.command_id).map_err(|_| ())?,
             ),
-            source: selected.item_instance_id,
-            source_definition: selected.definition,
+            funding,
             intent: request.encoded_intent,
             started_at_micros: self.owner_now().get(),
             participants: facts,

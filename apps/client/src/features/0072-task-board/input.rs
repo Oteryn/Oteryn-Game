@@ -1,3 +1,5 @@
+#[path = "input/soulseals.rs"]
+pub(in crate::play) mod soulseals;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::task_board::{Intent, request};

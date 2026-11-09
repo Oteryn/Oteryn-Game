@@ -15,11 +15,15 @@ pub(crate) async fn burn_entry_core(
     request: &SoulpitEntryRequest,
     native: &NativeGameplayState,
 ) -> Result<EntryDebit, SoulpitWriteError> {
+    let crate::durability::soulpit::SoulpitFunding::Core { source: source_item, definition } = &request.funding else {
+        return Err(SoulpitWriteError::AuthorityRejected);
+    };
+    let source_item=*source_item;
     let (world, channel) = scope_of(&fence).map_err(|_| SoulpitWriteError::AuthorityRejected)?;
     let craft = SoulCoreCraftRequest {
         command: request.command,
-        source: request.source,
-        target: request.source,
+        source: source_item,
+        target: source_item,
         intent: request.intent.clone(),
         ground: None,
     };
@@ -28,7 +32,7 @@ pub(crate) async fn burn_entry_core(
     // Keep the native AI preflight bound to the exact carried core definition.
     // Another craft may have transformed this instance before the shared lane
     // was acquired; never burn an unchecked replacement species.
-    if source.definition != request.source_definition {
+    if source.definition != *definition {
         return Err(SoulpitWriteError::StaleState);
     }
     let source_id = native_source_id(native, &source.definition)
@@ -65,7 +69,7 @@ pub(crate) async fn burn_entry_core(
         "channel":hex(channel.as_bytes()),"scope_generation":fence.scope_ownership_generation.get().to_string()});
     let audit_request = ItemCraftRequest {
         command: request.command,
-        source: request.source,
+        source: source_item,
         tool: None,
         ingredient: None,
         station: None,
@@ -89,11 +93,11 @@ pub(crate) async fn burn_entry_core(
     sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,soul_core_proof) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,'oteryn:soulpit.entry',encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric,$11,'[]'::jsonb,$12,sha256($13),true,$14)")
         .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice())
         .bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice())
-        .bind(world.as_bytes().as_slice()).bind(&request.intent).bind(request.source.as_slice())
+        .bind(world.as_bytes().as_slice()).bind(&request.intent).bind(source_item.as_slice())
         .bind(source.parent.as_slice()).bind(&source.ordinal).bind(&source.before).bind(occurred)
         .bind(&envelope).bind(proof).execute(&mut ***tx).await?;
     sqlx::query("UPDATE game_item_instances SET quantity=quantity-1,lifecycle=CASE WHEN quantity=1 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(request.source.as_slice()).bind(&transaction).execute(&mut ***tx).await?;
+        .bind(source_item.as_slice()).bind(&transaction).execute(&mut ***tx).await?;
     if source.quantity == 1 {
         let statement = if source.nested {
             "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid"
@@ -101,13 +105,13 @@ pub(crate) async fn burn_entry_core(
             "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid"
         };
         sqlx::query(statement)
-            .bind(request.source.as_slice())
+            .bind(source_item.as_slice())
             .execute(&mut ***tx)
             .await?;
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id())
-        .bind(request.source.as_slice()).bind(occurred).bind(crate::durability::item_mint_audit::AUDIT_RETENTION_P90D_MS)
+        .bind(source_item.as_slice()).bind(occurred).bind(crate::durability::item_mint_audit::AUDIT_RETENTION_P90D_MS)
         .bind(&envelope).execute(&mut ***tx).await?;
     Ok(EntryDebit {
         transaction_id: uuid_text(&transaction)?,

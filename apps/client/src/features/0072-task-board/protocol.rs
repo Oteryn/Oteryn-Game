@@ -1,7 +1,9 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
     pub(in crate::play) fn task_board_initialize(&self, selected: bool) {
-        lock(&self.0).task_board.selected = selected;
+        let mut m = lock(&self.0);
+        m.task_board.selected = selected;
+        m.task_board.fights = Default::default();
     }
     pub(in crate::play) fn task_board_result(
         &self,
@@ -31,5 +33,15 @@ impl crate::play::Outbox {
                 | oteryn_session::CommandStatus::DuplicateReplay
         ) && mailbox.task_board.feedback.is_none();
         crate::play::feature_0010_analyser::protocol::task_progress(&mut mailbox, confirmed);
+    }
+}
+
+impl crate::play::Outbox {
+    pub(in crate::play) fn soulseal_result(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        oteryn_client_ui::task_board::fights::apply(&mut lock(&self.0).task_board, command, result);
     }
 }

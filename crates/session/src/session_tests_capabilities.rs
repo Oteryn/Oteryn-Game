@@ -134,7 +134,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (67, &[84], &[]),
         (87, &[103], &[52]),
         (68, &[85], &[]),
-        (72, &[89], &[]),
+        (72, &[89, 6117], &[]),
         (75, &[], &[40]),
         (81, &[97], &[]),
         (82, &[98], &[]),
@@ -234,4 +234,95 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();
     assert_eq!(derived, expected);
     Ok(())
+}
+
+#[test]
+fn t114_soulseal_command_crosses_selected_session_gate_and_refuses_unselected()
+-> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                use oteryn_protocol_oteryn::task_board::soulpit as wire;
+                for selected in [false, true] {
+                    let (client, mut server) = tokio::io::duplex(128 * 1024);
+                    let peer = tokio::spawn(async move {
+                        join_peer_with(
+                            &mut server,
+                            CLIENT_SUPPORTED_CAPABILITIES,
+                            if selected { &[72] } else { &[] },
+                            &[],
+                            (1, spatial(0)),
+                            &[],
+                        )
+                        .await?;
+                        if selected {
+                            let frame = read_frame(&mut server).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            let command = envelope.client_command(1)?;
+                            assert_eq!(
+                                (command.command_type, command.command_id),
+                                (wire::COMMAND_TYPE, 7)
+                            );
+                            assert_eq!(
+                                wire::Request::decode(command.payload).map_err(|_| "request")?,
+                                wire::Request::Catalogue { after: 0 }
+                            );
+                            let reply = wire::Reply {
+                                status: wire::Status::Refused,
+                                balance: None,
+                                authorization: None,
+                                next: None,
+                                total: 0,
+                                entries: vec![],
+                                rules: wire::EntryRules {
+                                    required_level: 8,
+                                    time_limit_seconds: 600,
+                                    authorization_ms: 10000,
+                                },
+                                reason: "Stand at the Soulpit entrance".into(),
+                            };
+                            write_frame(
+                                &mut server,
+                                &encode_command_result(
+                                    1,
+                                    41,
+                                    7,
+                                    CommandStatus::Accepted,
+                                    &reply.encode().map_err(|_| "reply")?,
+                                )?,
+                            )
+                            .await?;
+                        }
+                        Ok::<(), BoxError>(())
+                    });
+                    let mut admission = admission()?;
+                    admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+                    let mut session = Session::admit(client, admission).await?;
+                    let payload = wire::Request::Catalogue { after: 0 }
+                        .encode()
+                        .map_err(|_| "payload")?;
+                    let result = session
+                        .gated_command(72, wire::COMMAND_TYPE, &payload)
+                        .await;
+                    if selected {
+                        assert_eq!(
+                            wire::Reply::decode(&result?.payload)
+                                .map_err(|_| "reply")?
+                                .status,
+                            wire::Status::Refused
+                        );
+                    } else {
+                        assert!(matches!(
+                            result,
+                            Err(SessionError::CapabilityNotSelected { capability: 72 })
+                        ));
+                    }
+                    peer.await??;
+                }
+                Ok::<(), BoxError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "Soulseal session test thread failed")?
 }

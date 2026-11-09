@@ -863,9 +863,10 @@
   "src": "TIBAUD-1",
   "area": "Hunting tasks",
   "feature": "Soul Seals fight dialog",
-  "status": "PARTIAL",
-  "gap": "Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "Authoritative catalogue, reference seal costs, one-use authorization, atomic solo Instance entry and native fight selection; replay and rollback verified.",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0072-task-board/soulseals_window.rs:59 + t114_fight_dialog_uses_server_catalogue_costs_authorization_and_confirmed_spend; crates/gameplay/dispatch/src/gameplay_transport/task_board/soulseals.rs:76 + t114_soulseal_real_dispatch_spends_once_and_admits_solo; crates/gameplay/durability/src/durability/task_board/soulseal_debit.rs:11 + t114_soulseal_failed_successor_rolls_back_payment; docs/contracts/gameplay/soul-seals-fights-v1.md:9"
  },
  {
   "id": "T115",
