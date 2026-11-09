@@ -308,6 +308,19 @@ pub(super) async fn check(
     eprintln!(
         "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true orphan_cleanup=true bloodjaw_cleanup=true source_bloodjaw_target=true"
     );
+    super::m26_rotten_pillar_production::check(
+        owner,
+        &mut runtime,
+        &mut states,
+        &mut attack,
+        room,
+        native,
+        &permit,
+        &revisions,
+        position,
+        tick_now + 1_000_000,
+    )
+    .await?;
     Ok(())
 }
 

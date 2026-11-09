@@ -13,6 +13,7 @@ use oteryn_gameplay_encounters::bosses::rotten_blood::{
     native_bloodjaw::remove_orphan as remove_orphan_bloodjaw,
     native_mushroom::remove_orphan,
     native_wave_spawn::{NativeWaveSpawnMap, NativeWaveSpawnOwner},
+    pillar_of_dark_energy_think::PILLAR_KEY,
     summon_wave::{
         SummonNeighbour, SummonPlacement, SummonWaveEffect, SummonWaveFacts, SummonWaveOwner,
     },
@@ -21,10 +22,13 @@ use oteryn_simulation_determinism::{DecisionOccurrenceId, deterministic_decision
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+mod pillars;
+
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct RoomWaveStates {
     owners: BTreeMap<[u8; 16], RoomWave>,
     source_attempt: Option<SourceRoomBinding>,
+    pillars: pillars::PillarStates,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -48,6 +52,7 @@ impl RoomWaveStates {
         };
         if self.source_attempt != Some(current) {
             self.source_attempt = None;
+            self.pillars = Default::default();
         }
         if !matches!(current.scope, RuntimeScopeRefV1::Instance { .. }) {
             return false;
@@ -56,7 +61,8 @@ impl RoomWaveStates {
             rows.iter().any(|(actor, _, _)| {
                 runtime.companion_snapshot(*actor).is_ok_and(|row| {
                     let key = row.state.policy.definition_key.as_str();
-                    is_rotten_blood_boss(key) || matches!(key, ELDER_BLOODJAW_KEY | MUSHROOM_KEY)
+                    is_rotten_blood_boss(key)
+                        || matches!(key, ELDER_BLOODJAW_KEY | MUSHROOM_KEY | PILLAR_KEY)
                 })
             })
         }) {
@@ -255,6 +261,15 @@ impl RoomWaveStates {
         }
         // An attack-schedule refusal does not cancel a committed source onThink.
         // The map and spawn owners independently prove this callback's current work.
+        if key == PILLAR_KEY && !report.over_budget {
+            return self.pillars.consume(
+                runtime,
+                table,
+                actor,
+                native.source_digest(),
+                report.sequence,
+            );
+        }
         if matches!(key, MUSHROOM_KEY | ELDER_BLOODJAW_KEY) && !report.over_budget {
             let removed = if key == MUSHROOM_KEY {
                 remove_orphan(runtime, actor, native.source_digest())

@@ -174,7 +174,7 @@ pub(super) async fn check(
     clippy::too_many_arguments,
     reason = "same production driver and owned current facts as the source case"
 )]
-async fn drive(
+pub(super) async fn drive(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
