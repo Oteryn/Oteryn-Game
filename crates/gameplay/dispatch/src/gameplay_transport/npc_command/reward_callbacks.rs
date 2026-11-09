@@ -25,6 +25,57 @@ struct Offer {
     #[serde(default)]
     requires: Vec<reward_callbacks::TrackRequirement>,
     reply: Vec<String>,
+    #[serde(default)]
+    minimum_level: Option<u32>,
+    #[serde(default)]
+    failure_reply: Vec<String>,
+}
+
+struct OfferFacts<'a> {
+    offers: &'a Offers,
+    level: Option<u32>,
+}
+
+pub(super) fn needs_level(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> bool {
+    let Some(context) = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    ) else {
+        return false;
+    };
+    let text = intent.text.trim().to_ascii_lowercase();
+    load_offers().is_some_and(|rows| {
+        rows.offers.iter().any(|offer| {
+            offer.npc == context.2
+                && offer.keywords.contains(&text)
+                && offer.minimum_level.is_some()
+        })
+    })
+}
+
+/// Read through Character's existing recovery-fenced progression owner, outside
+/// the runtime lock. This is advisory dialogue eligibility, never reward authority.
+pub(super) async fn read_level(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+) -> Option<u32> {
+    Some(
+        admission
+            .root
+            .read_character_progression(admission.character, command.item_fence?.character_id)
+            .await
+            .ok()??
+            .level,
+    )
 }
 
 pub(super) fn prepare(
@@ -33,11 +84,25 @@ pub(super) fn prepare(
     command: UseCommand,
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
+    level: Option<u32>,
 ) -> Option<Step> {
     let callbacks = reward_callbacks::load().ok()?;
-    prepare_with_callbacks(admission, actor, command, intent, runtime, &callbacks)
+    let offers = load_offers()?;
+    prepare_with_sources(
+        admission,
+        actor,
+        command,
+        intent,
+        runtime,
+        &callbacks,
+        OfferFacts {
+            offers: &offers,
+            level,
+        },
+    )
 }
 
+#[cfg(test)]
 pub(super) fn prepare_with_callbacks(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -46,6 +111,22 @@ pub(super) fn prepare_with_callbacks(
     runtime: &ChannelRuntimeV1,
     callbacks: &[reward_callbacks::RewardCallback],
 ) -> Option<Step> {
+    let offers = load_offers()?;
+    prepare_with_sources(
+        admission,
+        actor,
+        command,
+        intent,
+        runtime,
+        callbacks,
+        OfferFacts {
+            offers: &offers,
+            level: None,
+        },
+    )
+}
+
+fn load_offers() -> Option<Offers> {
     let mut offers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
@@ -58,9 +139,7 @@ pub(super) fn prepare_with_callbacks(
         return None;
     }
     offers.offers.extend(authored.offers);
-    prepare_with_sources(
-        admission, actor, command, intent, runtime, callbacks, &offers,
-    )
+    Some(offers)
 }
 
 #[cfg(test)]
@@ -71,9 +150,21 @@ pub(super) fn prepare_offer_fixture(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
     source: &str,
+    level: Option<u32>,
 ) -> Option<Step> {
     let offers = serde_json::from_str(source).ok()?;
-    prepare_with_sources(admission, actor, command, intent, runtime, &[], &offers)
+    prepare_with_sources(
+        admission,
+        actor,
+        command,
+        intent,
+        runtime,
+        &[],
+        OfferFacts {
+            offers: &offers,
+            level,
+        },
+    )
 }
 
 fn prepare_with_sources(
@@ -83,8 +174,9 @@ fn prepare_with_sources(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
     callbacks: &[reward_callbacks::RewardCallback],
-    offers: &Offers,
+    facts: OfferFacts<'_>,
 ) -> Option<Step> {
+    let OfferFacts { offers, level } = facts;
     if offers.schema != 1
         || offers.offers.len() > 512
         || offers.offers.iter().any(|o| o.requires.len() > 8)
@@ -146,6 +238,16 @@ fn prepare_with_sources(
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             }) {
+                if !offer
+                    .minimum_level
+                    .is_none_or(|minimum| level.is_some_and(|level| level >= minimum))
+                {
+                    return (!offer.failure_reply.is_empty()).then(|| Choice {
+                        transition: None,
+                        next_topic: Some(Topic::from(0)),
+                        reply: offer.failure_reply.clone(),
+                    });
+                }
                 return Some(Choice {
                     transition: None,
                     next_topic: Some(Topic::from(offer.next_topic)),

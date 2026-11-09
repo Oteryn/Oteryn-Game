@@ -83,11 +83,16 @@ pub(super) fn offer_scenario() -> TestResult {
     scenario(Scenario::Offers)
 }
 
+pub(super) fn offer_level_scenario() -> TestResult {
+    scenario(Scenario::OfferLevels)
+}
+
 #[derive(Clone, Copy)]
 enum Scenario {
     Travel,
     Confirmation,
     Offers,
+    OfferLevels,
 }
 
 fn scenario(mode: Scenario) -> TestResult {
@@ -279,6 +284,9 @@ fn scenario(mode: Scenario) -> TestResult {
         talk(&owner, &dependencies, npc, 1, "hi").await?;
         if matches!(mode, Scenario::Offers) {
             super::engnpc_offer_topics::exercise(&owner, &dependencies, npc, &h).await?;
+        }
+        if matches!(mode, Scenario::OfferLevels) {
+            super::engnpc_offer_levels::exercise(&owner, &dependencies, npc, &h).await?;
         }
         if matches!(mode, Scenario::Confirmation) {
             assert!(

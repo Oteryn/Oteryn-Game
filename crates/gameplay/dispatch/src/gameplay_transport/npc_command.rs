@@ -88,10 +88,11 @@ pub(in crate::gameplay_transport) async fn fixture_apply_reward_offer(
     intent: NpcTalkIntent,
     source: &str,
 ) -> Option<NpcTalkOutcome> {
+    let level = reward_callbacks::read_level(admission, command).await;
     let step = {
         let runtime = admission.runtime.lock().await;
         reward_callbacks::prepare_offer_fixture(
-            admission, actor, command, &intent, &runtime, source,
+            admission, actor, command, &intent, &runtime, source, level,
         )
     }?;
     Some(quest_dialogue::apply(admission, actor, command, intent, step).await)
@@ -823,7 +824,45 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
     }
-    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+    let offer_level = if reward_callbacks::needs_level(admission, actor, command, &intent, &runtime)
+    {
+        let context = admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        );
+        drop(runtime);
+        let Some(level) = reward_callbacks::read_level(admission, command).await else {
+            return rejected();
+        };
+        runtime = admission.runtime.lock().await;
+        if !runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+            || admission
+                .states
+                .spell_states
+                .try_lock()
+                .map_or(true, |states| states.is_dead(actor))
+            || admission.states.npc_conversations.current_npc(
+                &admission.states.chat,
+                &runtime,
+                actor,
+                session,
+                &intent,
+            ) != context
+        {
+            return rejected();
+        }
+        Some(level)
+    } else {
+        None
+    };
+    if let Some(step) =
+        reward_callbacks::prepare(admission, actor, command, &intent, &runtime, offer_level)
+    {
         drop(runtime);
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;
