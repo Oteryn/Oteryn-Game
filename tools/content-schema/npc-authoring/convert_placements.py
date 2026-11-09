@@ -24,6 +24,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+import native_contacts
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 OUT = ROOT / "content/world/npc-placements"
@@ -64,6 +66,8 @@ def cell_of(position: dict) -> tuple[int, int, int]:
 
 
 def provenance(candidate: dict, placement: dict) -> list[dict]:
+    if placement.get("origin") == "native_wiki_br":
+        return [candidate["native_provenance"]]
     # Only the placement decisions are evidence for the cell; offer or trade arbitration is not.
     arbitration = sorted(
         (row for row in candidate.get("arbitration", []) if row.get("fact") == "placements"), key=dump
@@ -108,6 +112,12 @@ def convert() -> dict[str, str]:
     report = json.loads(CANDIDATES.read_text())
     candidates = {c["identity"]["key"]: c for c in report["candidates"]}
     scope = json.loads(SCOPE.read_text())
+    native = native_contacts.candidates(NPCS, scope.get("native_contacts", []))
+    if set(native) & set(candidates):
+        raise ValueError("native contacts cannot replace donor candidates")
+    if not set(native) <= set(scope["npcs"]):
+        raise ValueError("native_contacts names an unscoped NPC")
+    candidates.update(native)
     admitted = admitted_keys()
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):
@@ -224,6 +234,8 @@ def convert() -> dict[str, str]:
             "inputs": {
                 "candidates_sha256": hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
                 "scope_sha256": hashlib.sha256(SCOPE.read_bytes()).hexdigest(),
+                **({"native_contacts_sha256": hashlib.sha256(dump(native).encode()).hexdigest()}
+                   if native else {}),
             },
             "npc_count": len(placed),
             "population_state": "POPULATED",

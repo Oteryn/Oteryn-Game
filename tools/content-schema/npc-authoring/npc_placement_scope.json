@@ -36,6 +36,7 @@
     "oteryn:npc.lily",
     "oteryn:npc.maris_mistrock",
     "oteryn:npc.mayor_pocaro",
+    "oteryn:npc.minzy",
     "oteryn:npc.miraia",
     "oteryn:npc.morgan",
     "oteryn:npc.muriel",
@@ -85,5 +86,8 @@
   },
   "block_solid_contacts": [
     "oteryn:npc.zarifan"
+  ],
+  "native_contacts": [
+    "oteryn:npc.minzy"
   ]
 }

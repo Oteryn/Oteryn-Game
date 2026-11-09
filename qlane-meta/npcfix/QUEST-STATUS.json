@@ -189,5 +189,38 @@
     "fmt": "PASS",
     "pin_check": "PASS sequential rerun after concurrent verification was killed",
     "duplicate_migrations": "PASS"
+  },
+  "minzy_contact_slice": {
+    "state": "GREEN_FOCUSED_BROAD_CHECKS_RUNNING",
+    "scope": "Published source-informed basic contact; favour exchanges and source-accurate off-event presence remain unqualified",
+    "source_cell": [
+      32743,
+      31971,
+      12
+    ],
+    "source": "content/npcs/definitions/npcs-00500-00999.json:1#records/295",
+    "source_sha256": "792ec5bbc93991f54d94d97ca9149f6ae8df781f2bb93eb7ccc77949bba6df62",
+    "red": {
+      "authoring": "0 != 1 contacts",
+      "compiler_seconds": 25.0,
+      "compiler": "M38 Minzy source placement is not published"
+    },
+    "green": {
+      "placement_authoring_tests": 14,
+      "real_map_seconds": 24.69,
+      "compiler_clippy": "PASS all-targets -D warnings",
+      "fmt": "PASS",
+      "native_regeneration": "PASS",
+      "world_pin_refresh": "PASS",
+      "content_tree": "PASS",
+      "duplicate_migrations": "PASS"
+    },
+    "pending": [
+      "quest-authoring checks completion",
+      "114-module quest-authoring unit runner completion",
+      "workspace all-target compile completion",
+      "live basic-contact PG story"
+    ],
+    "migrations": []
   }
 }

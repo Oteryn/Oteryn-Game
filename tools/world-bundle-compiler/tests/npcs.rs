@@ -640,6 +640,9 @@ fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
     Ok(())
 }
 
+#[path = "npcs/m38_minzy.rs"]
+mod m38_minzy;
+
 #[path = "npcs/m38_mistrock.rs"]
 mod m38_mistrock;
 
