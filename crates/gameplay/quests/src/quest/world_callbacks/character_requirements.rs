@@ -132,7 +132,13 @@ pub(super) fn entry_admitted(callback: &super::Callback) -> bool {
         && callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && callback.native_rule.is_none()
-        && callback.effects.is_empty()
+        && (callback.effects.is_empty()
+            || (route == "25_years_of_tibia_quest"
+                && callback.effects
+                    == super::CallbackEffects {
+                        scripted_teleport: true,
+                        ..Default::default()
+                    }))
         && callback.state_ops.is_empty()
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
