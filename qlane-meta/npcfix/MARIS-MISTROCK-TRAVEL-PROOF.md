@@ -11,4 +11,4 @@ POSTGRES_EXECUTED S10T maris_mistrock yalahar fare=100 authored=(32649, 31292, 6
 
 Each added passage exercises NPC_TALK quoting, an injected arrival transaction failure and rollback, reconciliation, successful placement and durable receipt replay without double charging. The existing Premium-entitled scenario is retained. Fares and coordinates are the already admitted Global-selected values; no production travel data or guard was changed.
 
-The test-only change compiled and passed its real PG case. Focused all-target/all-feature cargo check and strict Clippy are still running; final formatting verification remains pending. Mission and newlywed/access-held routes are not qualified by this case. No main or qmech merge and no node boot were performed.
+The test-only change passed its real PG case, focused dispatch all-target/all-feature cargo check, strict Clippy (-D warnings), cargo fmt --all --check, and git diff --check. Check and Clippy emitted only existing vendor deprecation warnings. Mission and newlywed/access-held routes are not qualified by this case. No main or qmech merge and no node boot were performed.
