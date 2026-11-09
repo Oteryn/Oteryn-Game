@@ -1425,6 +1425,103 @@ pub async fn prepare_corpse_in_transaction(
     })
 }
 
+/// An item-arrival consequence must consume the exact arrived root, never a
+/// same-definition corpse substituted at the top of the destination stack.
+/// Reuse the real corpse/subtree reader and retain its locks in this transaction.
+/// This reservation is preparation data; the arrival receipt must still prove
+/// its ordinary move and commit retirement and the summon in the same fence.
+pub async fn prepare_arrival_corpse_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    target: &SpellGroundTarget,
+    qualified: &QualifiedItemDefinition,
+    arrived: ([u8; 16], u64),
+) -> Result<DurableCorpseReservation> {
+    if arrived.0 == [0; 16]
+        || arrived.1 == 0
+        || arrived.1 == u64::MAX
+        || qualified.content_generation_digest != authority.compatible_content_digest
+        || !qualified.ground_destination
+        || qualified.stack_maximum != 1
+    {
+        return Err(SpellItemError::Rejected(
+            "arrival corpse identity or Content",
+        ));
+    }
+    let reservation = prepare_corpse_in_transaction(tx, authority, target, qualified).await?;
+    if reservation.item_instance_id != arrived.0
+        || reservation.state_revision != arrived.1
+        || reservation.quantity != 1
+    {
+        return Err(SpellItemError::Rejected(
+            "arrived corpse no longer current top root",
+        ));
+    }
+    Ok(reservation)
+}
+
+/// Reserve a corpse only after its ordinary move reached this tile in the
+/// current physical transaction. Historical receipts cannot start a summon.
+/// The compositor must still retire the reservation and record the boss latch
+/// before committing this same transaction (M49 remains a partial caller).
+pub async fn prepare_moved_arrival_corpse_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    target: &SpellGroundTarget,
+    qualified: &QualifiedItemDefinition,
+    arrived: ([u8; 16], u64),
+    moved: &super::item_loop_move::LoopMoveReceipt,
+) -> Result<DurableCorpseReservation> {
+    check_transaction(tx, authority).await?;
+    if authority.due_read_only || moved.replayed || !matches!(moved.operation, 1 | 4) {
+        return Err(SpellItemError::Rejected("arrival requires a fresh Ground drop"));
+    }
+    let valid: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM game_item_loop_move_receipts r
+            JOIN game_item_loop_move_lines l USING(transaction_id)
+            JOIN game_item_instances i USING(item_instance_id)
+            WHERE r.transaction_id=encode($1,'hex')::uuid
+              AND r.event_id=encode($2,'hex')::uuid AND r.operation IN(1,4)
+              AND r.character_id=encode($3,'hex')::uuid
+              AND r.game_session_id=encode($4,'hex')::uuid
+              AND r.command_id=$5::text::numeric
+              AND r.world_id=encode($6,'hex')::uuid
+              AND r.channel_id=encode($7,'hex')::uuid
+              AND r.scope_generation=$8::text::numeric
+              AND r.content_digest=$9
+              AND r.lease_generation=$10::text::numeric
+              AND r.connection_generation=$11::text::numeric
+              AND r.created_xact_id=pg_current_xact_id()
+              AND l.created_xact_id=r.created_xact_id
+              AND l.item_instance_id=encode($12,'hex')::uuid
+              AND l.to_kind=3 AND ((r.operation=4 AND l.from_kind IN (1,2)) OR (r.operation=1 AND l.from_kind=3))
+              AND l.to_spatial_position=$13
+              AND l.quantity_before=1 AND l.quantity_after=1
+              AND i.state_revision=$14::text::numeric
+              AND i.state_revision=l.state_revision_before+1
+              AND i.last_transaction_id=r.transaction_id
+              AND (l.definition_family,l.definition_production_key,l.definition_revision_ref)
+                  =(i.definition_family,i.definition_production_key,i.definition_revision_ref)
+        )"
+    )
+    .bind(moved.transaction_id.as_slice()).bind(moved.event_id.as_slice())
+    .bind(authority.character.as_slice())
+    .bind(authority.command.game_session_id().as_bytes().as_slice())
+    .bind(authority.command.command_id().get().to_string())
+    .bind(authority.world.as_slice()).bind(authority.channel_bytes()?.as_slice())
+    .bind(authority.ownership_generation.to_string())
+    .bind(authority.compatible_content_digest.as_slice())
+    .bind(authority.character_lease_generation.to_string())
+    .bind(authority.connection_generation.get().to_string())
+    .bind(arrived.0.as_slice()).bind(&target.spatial_position).bind(arrived.1.to_string())
+    .fetch_one(&mut **tx).await?;
+    if !valid {
+        return Err(SpellItemError::Rejected("arrival move is not current in this transaction"));
+    }
+    prepare_arrival_corpse_in_transaction(tx, authority, target, qualified, arrived).await
+}
+
 pub async fn read_spell_tile_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,

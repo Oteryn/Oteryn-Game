@@ -75,20 +75,27 @@ impl CallbackStates {
         });
     }
 
+    fn readset_matches(&self, entries: impl IntoIterator<Item = (u64, u64)>) -> bool {
+        let mut keys = BTreeSet::new();
+        for (key, revision) in entries {
+            if keys.len() == 8
+                || !keys.insert(key)
+                || revision == u64::MAX
+                || self.hidden.contains(&key)
+                || self.changed.get(&key).map_or(0, |(current, _)| *current) != revision
+            {
+                return false;
+            }
+        }
+        !keys.is_empty()
+    }
+
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
             QuestCallbackProjection::ReadsetTransforms { entries, reset } => {
-                let keys: BTreeSet<_> = entries.iter().map(|(key, _, _)| *key).collect();
-                if entries.is_empty()
-                    || entries.len() > 8
-                    || keys.len() != entries.len()
-                    || keys.contains(&owner)
-                    || entries.iter().any(|(key, expected, _)| {
-                        *expected == u64::MAX
-                            || self.hidden.contains(key)
-                            || self.changed.get(key).map_or(0, |(revision, _)| *revision)
-                                != *expected
-                    })
+                if entries.iter().any(|(key, _, _)| *key == owner)
+                    || !self
+                        .readset_matches(entries.iter().map(|(key, revision, _)| (*key, *revision)))
                 {
                     return false;
                 }
@@ -269,6 +276,25 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// Fence up to eight already qualified map placements without transforming
+    /// them. The synchronous consequence runs under the same map owner lock,
+    /// so an arrival can publish its prepared spawn while charges stay intact.
+    /// The caller retains the Channel owner and must not reenter map callbacks
+    /// from `publish`, or perform asynchronous/durable work inside this lock.
+    pub fn with_quest_readset<R>(
+        &self,
+        readset: &[(u64, u64)],
+        publish: impl FnOnce() -> R,
+    ) -> Option<R> {
+        let states = self.callbacks.lock().ok()?;
+        if !states.readset_matches(readset.iter().copied()) {
+            return None;
+        }
+        let result = publish();
+        drop(states);
+        Some(result)
+    }
+
     /// A transformed/removed callback entry changes floor routing with its visible stack.
     /// Unchanged tiles keep the compact boot-time table and incur no stack scan.
     pub(crate) fn quest_callback_floor_mask(
@@ -1191,6 +1217,47 @@ mod lifecycle_tests {
 #[cfg(test)]
 mod readset_tests {
     use super::*;
+    #[test]
+    fn m49_arrival_readset_holds_all_eight_cells_without_mutating_charges() -> Result<(), String> {
+        let facts = BundleFacts::default();
+        let cells: Vec<_> = (10..18).map(|key| (key, 0)).collect();
+        let published = facts.with_quest_readset(&cells, || {
+            // Keep the same map owner locked through consequence publication.
+            assert!(facts.callbacks.try_lock().is_err());
+            49
+        });
+        assert_eq!(published, Some(49));
+        for (key, revision) in &cells {
+            assert_eq!(facts.object_revision(*key), *revision);
+        }
+        let mut calls = 0;
+        let mut publish = || {
+            calls += 1;
+        };
+        assert!(facts.with_quest_readset(&[], &mut publish).is_none());
+        assert!(
+            facts
+                .with_quest_readset(&[(10, 0), (10, 0)], &mut publish)
+                .is_none()
+        );
+        assert!(
+            facts
+                .with_quest_readset(&[(10, u64::MAX)], &mut publish)
+                .is_none()
+        );
+        let too_many: Vec<_> = (10..19).map(|key| (key, 0)).collect();
+        assert!(facts.with_quest_readset(&too_many, &mut publish).is_none());
+        assert_eq!(calls, 0);
+        let mut stale = cells.clone();
+        stale[7].1 = 1;
+        assert!(facts.with_quest_readset(&stale, || 1).is_none());
+        let mut states = facts.callbacks.lock().map_err(|_| "map owner")?;
+        Arc::make_mut(&mut states).hidden.insert(17);
+        drop(states);
+        assert!(facts.with_quest_readset(&cells, || 1).is_none());
+        Ok(())
+    }
+
     #[test]
     fn multi_cell_readset_refuses_stale_unchanged_cell_without_partial_writes() {
         let facts = BundleFacts::default();

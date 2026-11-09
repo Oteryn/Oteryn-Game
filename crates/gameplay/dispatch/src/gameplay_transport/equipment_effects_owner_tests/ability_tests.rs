@@ -156,6 +156,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // P11: mechanical rod 9306 from Crystal 201189f items.xml:25156-25159
     // (tools/content-migration/gathering_item_profiles.py). It has speed_bonus=0.
     ("P11-MECHANICAL-FISHING", 1),
+    // M49: ten Elemental Spheres corpse stages and ten stationary altar/charged
+    // objects from Crystal 201189f items.xml (floor-assembly-item-profiles.json).
+    // The existing energy-field owner retains 2126; all twenty new keys have speed 0.
+    ("QM49-ELEMENTAL-SPHERES", 20),
     // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
     // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
     ("QNPCFX", 1),
@@ -897,5 +901,40 @@ fn equipment_effects_owner_preserves_unknown_speed_and_rejects_ability_errors() 
     )?)?;
     let equipment = snapshot(&content, "oteryn:item.tibia.i2854", 9);
     assert!(equipment_effects(&equipment, &content).is_none());
+    Ok(())
+}
+
+#[test]
+fn m49_native_corpse_admission_preserves_capacity_and_original_decay() -> TestResult {
+    use crate::durability::spell_items_abi::{QualifiedItemDefinition, SpellFieldClass};
+
+    let content = native(&input()?)?;
+    for (id, capacity, duration, target) in [
+        (8139, 14, 500_000, None),
+        (8140, 14, 500_000, None),
+        (8141, 11, 500_000, None),
+        (8106, 15, 300_000, Some("oteryn:item.tibia.i8107")),
+    ] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let policy = content
+            .item_policy(&key, "definition-r1")
+            .ok_or("source corpse policy")?;
+        let qualified = QualifiedItemDefinition::from_native_policy(policy)?;
+        assert!(qualified.materializable && qualified.movable && qualified.ground_destination);
+        assert!(!qualified.inventory_destination);
+        assert_eq!(qualified.container_capacity, Some(capacity));
+        let decay = qualified.decay.ok_or("source corpse deadline")?;
+        assert_eq!(decay.duration_millis, duration);
+        assert_eq!(
+            decay.target.as_ref().map(|d| d.production_key.as_str()),
+            target
+        );
+        assert_eq!(qualified.field_class, SpellFieldClass::NotField);
+    }
+    // Energy charge 2126 keeps its original field-condition owner and damage.
+    let field = content
+        .item_policy("oteryn:item.tibia.i2126", "definition-r1")
+        .ok_or("energy field")?;
+    assert!(field.record().attributes.field_condition.is_some());
     Ok(())
 }
