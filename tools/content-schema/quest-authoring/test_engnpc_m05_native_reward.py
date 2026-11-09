@@ -63,6 +63,8 @@ class M05NativeRewardTests(unittest.TestCase):
         document = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_text())
         records = [r for r in document['records'] if r['production_definition']['production_key'] == 'oteryn:item.tibia.i27654']
         self.assertEqual(len(records), 1)
+        packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/engnpc-m05-item-profiles.json').read_text())
+        self.assertEqual(records[0]['admission'], packet['records'][0]['admission'])
         admission = records[0]['admission']
         self.assertTrue(admission['materializable'])
         self.assertIn('CharacterInventory', admission['legal_destinations'])

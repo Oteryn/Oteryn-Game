@@ -353,7 +353,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "9d03cd20b2e1fe1e8ce27a53b01792166bf05387e1590f1ed100635202c248f3"
+      "sha256": "82040e65589f1df2f51c795aa4772ec3553904d57391455dd7f9a54b1cd27dbc"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
@@ -541,9 +541,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     }
   ]
