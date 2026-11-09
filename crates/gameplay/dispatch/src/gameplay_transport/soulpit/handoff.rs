@@ -31,6 +31,17 @@ pub use super::handoff_owner::NativeSoulpitHandoff as BossActivityHandoff;
 #[derive(Default)]
 pub struct BossActivityHandoffSlot(OnceLock<Arc<BossActivityHandoff>>);
 
+impl Clone for BossActivityHandoffSlot {
+    fn clone(&self) -> Self {
+        // Activity views retain the exact installed canonical owner Arc.
+        Self(OnceLock::from(
+            self.0
+                .get_or_init(|| Arc::new(super::handoff_owner::NativeSoulpitHandoff))
+                .clone(),
+        ))
+    }
+}
+
 impl BossActivityHandoffSlot {
     pub fn install(&self, owner: Arc<BossActivityHandoff>) -> Result<(), Arc<BossActivityHandoff>> {
         self.0.set(owner)

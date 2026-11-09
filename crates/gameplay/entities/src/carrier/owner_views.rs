@@ -21,6 +21,7 @@ impl CurrentOwnerExactActorCommit<'_> {
             self.content,
             Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
             self.now_ms,
+            self.now_us,
         )
     }
 
@@ -49,6 +50,7 @@ impl CurrentOwnerExactActorCommit<'_> {
             self.content,
             Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
             self.now_ms,
+            self.now_us,
         )
     }
 }
@@ -77,21 +79,58 @@ impl CurrentOwnerExactActorCommit<'_> {
         damage: OwnerDamageCommand<'_>,
     ) -> Result<OwnerDamageResult, CarrierError> {
         let lease = self.bound_attacker_lease(attacker, command)?;
-        self.carrier.commit_creature_damage_with_pin_inner(
+        let source = self
+            .content
+            .map(|pin| {
+                self.carrier.soul_war_health_context(
+                    self.continuity,
+                    Some(attacker),
+                    Some(command),
+                    self.now_ms,
+                    super::soul_war_player_source::SoulWarPlayerSourceOrigin::Combat,
+                    pin,
+                )
+            })
+            .transpose()?;
+        let attribution = AttackerCommand::new(
+            lease.character_id(),
+            lease.generation(),
+            command,
+            sub_ordinal,
+        );
+        if let Some(result) = self.try_source_mirror_damage(
+            actor,
+            attacker,
+            attribution,
+            Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
+            false,
+            &damage,
+            source.as_ref(),
+        )? {
+            return Ok(result);
+        }
+        let blood =
+            self.prepare_cloak_blood_direct(actor, command, sub_ordinal, &damage, source.as_ref())?;
+        let result = self.carrier.commit_creature_damage_with_pin_source_inner(
             self.continuity,
             actor.0,
             damage,
-            Some(AttackerCommand::new(
-                lease.character_id(),
-                lease.generation(),
-                command,
-                sub_ordinal,
-            )),
+            Some(attribution),
             false,
             self.content,
             Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
             self.now_ms,
-        )
+            source.as_ref(),
+            self.now_us,
+        )?;
+        if result.applied {
+            self.carrier.install_cloak_blood_events(blood);
+        }
+        if result.applied && result.health_after < result.health_before {
+            self.carrier
+                .record_drome_last_hitter(self.continuity, attacker, actor);
+        }
+        Ok(result)
     }
 
     /// ATTACK-1b swing identity: every swing of one attack lineage reuses the lineage's
@@ -120,7 +159,38 @@ impl CurrentOwnerExactActorCommit<'_> {
             .swing_lineage_admission(self.continuity, actor.0, command)?;
         // Every u16 swing ordinal is admissible: the lineage's last ordinal (`u16::MAX`) still
         // swings, and attack.rs ends the lineage after it.
-        self.carrier.commit_creature_damage_inner_limited(
+        let source = self
+            .content
+            .map(|pin| {
+                self.carrier.soul_war_health_context(
+                    self.continuity,
+                    Some(attacker),
+                    Some(lineage),
+                    self.now_ms,
+                    super::soul_war_player_source::SoulWarPlayerSourceOrigin::Combat,
+                    pin,
+                )
+            })
+            .transpose()?;
+        if let Some(result) = self.try_source_mirror_damage(
+            actor,
+            attacker,
+            command,
+            None,
+            true,
+            &damage,
+            source.as_ref(),
+        )? {
+            return Ok(result);
+        }
+        let blood = self.prepare_cloak_blood_direct(
+            actor,
+            lineage,
+            swing_ordinal,
+            &damage,
+            source.as_ref(),
+        )?;
+        let result = self.carrier.commit_creature_damage_inner_limited_source(
             self.continuity,
             actor.0,
             damage,
@@ -129,7 +199,100 @@ impl CurrentOwnerExactActorCommit<'_> {
             None,
             true,
             self.now_ms,
-        )
+            source.as_ref(),
+            self.now_us,
+        )?;
+        if result.applied {
+            self.carrier.install_cloak_blood_events(blood);
+        }
+        if result.applied && result.health_after < result.health_before {
+            self.carrier
+                .record_drome_last_hitter(self.continuity, attacker, actor);
+        }
+        Ok(result)
+    }
+}
+
+impl CurrentOwnerExactActorCommit<'_> {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source callback enriches the actual owner using its exact current attacker/command, policy and content inputs"
+    )]
+    fn try_source_mirror_damage(
+        &mut self,
+        actor: ExactActorRef,
+        attacker: ExactActorRef,
+        attribution: AttackerCommand,
+        max_sub_ordinal: Option<u16>,
+        deferred: bool,
+        damage: &OwnerDamageCommand<'_>,
+        source: Option<&super::soul_war_health::HealthSourceContext>,
+    ) -> Result<Option<OwnerDamageResult>, CarrierError> {
+        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        if !matches!(&self.carrier.slots[index], Slot::CreatureOccupied { spell_combat, .. }
+            if spell_combat.soul_war_health.as_deref().is_some_and(|p| p.kind() == oteryn_gameplay_content::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::MirrorImage))
+        {
+            return Ok(None);
+        }
+        let pin = self.content.ok_or(CarrierError::ContentPinWorldMismatch)?;
+        if damage.damage <= 0 {
+            return Err(CarrierError::InvalidDamage);
+        }
+        if damage.binding.is_empty() || attribution.lease_generation == 0 {
+            return Err(CarrierError::InvalidCommitBinding);
+        }
+        if damage.binding.len() > MAX_OWNER_COMMIT_BINDING_BYTES {
+            return Err(CarrierError::CommitBindingTooLarge);
+        }
+        if max_sub_ordinal.is_some_and(|max| attribution.sub_ordinal >= max) {
+            return Err(CarrierError::SubOrdinalOutOfRange);
+        }
+        let Slot::CreatureOccupied {
+            generation,
+            target_identity,
+            damage_contributors,
+            ..
+        } = &self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if *generation != actor.0.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        if target_identity.as_ref() != damage.target {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        if !deferred {
+            damage_contributors.admission(attribution)?;
+        }
+        let prefix = |digest: [u8; 32]| {
+            u64::from_be_bytes([
+                digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6],
+                digest[7],
+            ])
+        };
+        let context = PreProductionPositionContext {
+            scope: positions::PositionScope::from_validated_scope(self.carrier.runtime_scope),
+            scope_generation: self.carrier.scope_generation,
+            coordinate_frame_marker: prefix(pin.frame_binding_digest()),
+            map_revision_marker: prefix(pin.map_revision_digest()),
+            content_generation_marker: pin.activation_sequence(),
+        };
+        let Some(reaction) = self.carrier.prepare_source_mirror_reaction(
+            self.continuity,
+            context,
+            actor,
+            attacker,
+            attribution.session,
+            source,
+            damage.binding,
+        )?
+        else {
+            return Ok(None);
+        };
+        self.carrier
+            .apply_source_mirror_reaction(self.continuity, reaction)
+            .map(Some)
     }
 }
 
@@ -347,10 +510,12 @@ impl ChannelActorCarrier {
             now_ms: Option<u64>,
         ) -> CurrentOwnerExactActorCommit<'a> {
             CurrentOwnerExactActorCommit {
+                owner_cycle: None,
                 content: None,
                 carrier: self,
                 continuity,
                 now_ms,
+                now_us: None,
             }
         }
     }

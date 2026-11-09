@@ -31,35 +31,19 @@ pub(super) async fn death(
     creature: &str,
     command: u64,
 ) -> TestResult {
-    queued_deaths(owner, admitted, creature, &[command]).await
+    death_actor(owner, admitted, creature, command)
+        .await
+        .map(|_| ())
 }
 
-/// Capture a whole native cohort before any receipt advances its observed quest revision.
-pub(super) async fn queued_deaths(
+pub(super) async fn death_actor(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     creature: &str,
-    commands: &[u64],
-) -> TestResult {
-    use crate::gameplay_transport::kill_reward::DrainOutcome;
-    capture_deaths(owner, admitted, creature, commands).await?;
-    for _ in 0..2 {
-        assert_eq!(
-            owner.drain_kill_rewards(admitted.game_session_id).await,
-            DrainOutcome::Drained
-        );
-    }
-    Ok(())
-}
-
-pub(super) async fn capture_deaths(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
-    creature: &str,
-    commands: &[u64],
-) -> TestResult {
+    command: u64,
+) -> TestResult<oteryn_gameplay_entities::ExactActorRef> {
     use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
-    use crate::gameplay_transport::kill_reward::KillSink;
+    use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink};
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;
     owner.refresh_quest_session(session, false).await;
@@ -71,67 +55,74 @@ pub(super) async fn capture_deaths(
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
-    {
+    let target = {
         let mut runtime = owner.runtime.lock().await;
         let at = runtime
             .read_actor_position(actor)
             .map_err(debug)?
             .position();
         let policy = runtime.companion_policy(creature).map_err(debug)?;
-        for &command in commands {
-            let target = runtime
-                .admit_encounter_actor(
-                    creature,
-                    policy.maximum_health,
-                    MovementLocalPosition { x: at.x + 1, ..at },
-                )
-                .map_err(debug)?;
-            runtime
-                .install_creature_policy(target, creature)
-                .map_err(debug)?;
-            let lease = runtime
-                .bound_attacker_lease(actor, session)
-                .map_err(debug)?;
-            let health = runtime.companion_snapshot(target).map_err(debug)?.health;
-            runtime
-                .borrow_exact_actor_commit_at(now)
-                .commit_damage_for_bound_attacker(
-                    target,
+        let target = runtime
+            .admit_encounter_actor(
+                creature,
+                policy.maximum_health,
+                MovementLocalPosition { x: at.x + 1, ..at },
+            )
+            .map_err(debug)?;
+        runtime
+            .install_creature_policy(target, creature)
+            .map_err(debug)?;
+        let lease = runtime
+            .bound_attacker_lease(actor, session)
+            .map_err(debug)?;
+        let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+        runtime
+            .borrow_exact_actor_commit_at(now)
+            .commit_damage_for_bound_attacker(
+                target,
+                actor,
+                CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+                0,
+                crate::foundation::OwnerDamageCommand {
+                    target: creature.as_bytes(),
+                    occurrence: session.as_bytes(),
+                    binding: b"qengine-native-trial-death",
+                    damage: health,
+                },
+            )
+            .map_err(debug)?;
+        for _ in 0..2 {
+            crate::gameplay_transport::kill_reward::record_creature_kill(
+                &mut runtime,
+                KillSink {
+                    prey: None,
+                    activity: &[],
+                    queue: &queue,
+                    rewards: native.reward_table(),
+                    charms: None,
+                },
+                target,
+                crate::combat::CapturedRewardPrincipal {
+                    character: lease.character_id(),
+                    lease_generation: lease.generation(),
+                    session,
                     actor,
-                    CommandRef::new(session, CommandId::new(command).map_err(debug)?),
-                    0,
-                    crate::foundation::OwnerDamageCommand {
-                        target: creature.as_bytes(),
-                        occurrence: session.as_bytes(),
-                        binding: b"qengine-native-trial-death",
-                        damage: health,
-                    },
-                )
-                .map_err(debug)?;
-            for _ in 0..2 {
-                crate::gameplay_transport::kill_reward::record_creature_kill(
-                    &mut runtime,
-                    KillSink {
-                        prey: None,
-                        activity: &[],
-                        queue: &queue,
-                        rewards: native.reward_table(),
-                        charms: None,
-                    },
-                    target,
-                    crate::combat::CapturedRewardPrincipal {
-                        character: lease.character_id(),
-                        lease_generation: lease.generation(),
-                        session,
-                        actor,
-                    },
-                    now,
-                    Some(observed),
-                );
-            }
+                },
+                now,
+                Some(observed),
+            );
         }
-    }
-    Ok(())
+        target
+    };
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    Ok(target)
 }
 
 async fn claim(
@@ -358,6 +349,105 @@ pub(super) async fn exercise(
                 if bit == 1 { 1 } else { 3 },
             )
             .await?;
+        }
+    }
+    Ok(())
+}
+
+pub(super) async fn queued_deaths(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    creature: &str,
+    commands: &[u64],
+) -> TestResult {
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+    capture_deaths(owner, admitted, creature, commands).await?;
+    for _ in 0..2 {
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Drained
+        );
+    }
+    Ok(())
+}
+
+pub(super) async fn capture_deaths(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    creature: &str,
+    commands: &[u64],
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
+    use crate::gameplay_transport::kill_reward::KillSink;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let session = admitted.game_session_id;
+    owner.refresh_quest_session(session, false).await;
+    assert!(owner.refresh_source_party_presence(actor, session).await);
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let queue = owner.states.attack.lock().await.kills().clone();
+    let observed = owner.owner_now();
+    let now = observed.get() / 1000;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let at = runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        let policy = runtime.companion_policy(creature).map_err(debug)?;
+        for &command in commands {
+            let target = runtime
+                .admit_encounter_actor(
+                    creature,
+                    policy.maximum_health,
+                    MovementLocalPosition { x: at.x + 1, ..at },
+                )
+                .map_err(debug)?;
+            runtime
+                .install_creature_policy(target, creature)
+                .map_err(debug)?;
+            let lease = runtime
+                .bound_attacker_lease(actor, session)
+                .map_err(debug)?;
+            let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+            runtime
+                .borrow_exact_actor_commit_at(now)
+                .commit_damage_for_bound_attacker(
+                    target,
+                    actor,
+                    CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+                    0,
+                    crate::foundation::OwnerDamageCommand {
+                        target: creature.as_bytes(),
+                        occurrence: session.as_bytes(),
+                        binding: b"qengine-native-trial-death",
+                        damage: health,
+                    },
+                )
+                .map_err(debug)?;
+            for _ in 0..2 {
+                crate::gameplay_transport::kill_reward::record_creature_kill(
+                    &mut runtime,
+                    KillSink {
+                        prey: None,
+                        activity: &[],
+                        queue: &queue,
+                        rewards: native.reward_table(),
+                        charms: None,
+                    },
+                    target,
+                    crate::combat::CapturedRewardPrincipal {
+                        character: lease.character_id(),
+                        lease_generation: lease.generation(),
+                        session,
+                        actor,
+                    },
+                    now,
+                    Some(observed),
+                );
+            }
         }
     }
     Ok(())

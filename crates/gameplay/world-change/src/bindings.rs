@@ -45,6 +45,8 @@ pub struct NativeBindings {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidNativeBinding;
 
+mod active_layer;
+
 impl NativeBindings {
     /// Compile only identities already implemented by map, spawn, NPC and raid owners.
     /// The durable owner binds the resulting bytes to the World and immutable reset day.

@@ -6,9 +6,9 @@
 )]
 use crate::content::ActiveGeneration;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
-use crate::durability::character_equipment::{
-    EquipmentError, assert_equipment_authority_in_transaction,
-};
+#[cfg(test)]
+use crate::durability::character_equipment::assert_equipment_authority_in_transaction;
+use crate::durability::character_equipment::{EquipmentError, read_cast_equipment_in_transaction};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::durability::{DurabilityError, DurabilityRoot};
@@ -313,7 +313,7 @@ pub async fn read_owned_cast_facts_in_transaction(
     let native = active
         .native_gameplay()
         .ok_or(AccessFactsError::Unavailable("active gameplay artifact"))?;
-    let authority = assert_equipment_authority_in_transaction(
+    let reader = read_cast_equipment_in_transaction(
         tx,
         root,
         recovery,
@@ -325,20 +325,14 @@ pub async fn read_owned_cast_facts_in_transaction(
     .await?;
     // An uninitialized equipment owner is unavailable. Initialization belongs to its independent
     // admission/Item command, never to a rejected cast's hidden side effects.
-    let raw =
-        crate::durability::character_equipment::read_raw_cast_facts_in_transaction(tx, &authority)
-            .await?;
+    let raw = reader.read_facts(tx).await?;
     let ruleset = crate::wheel_gem_data::WheelGemData::embedded()
         .ok()
         .and_then(|data| data.wheel_ruleset().ok());
     let wheel = match ruleset {
-        Some(ruleset) => retain_wheel_read(
-            crate::durability::character_wheel::read_current_allocation_in_transaction(
-                tx, &authority, &ruleset,
-            )
-            .await,
-        )?
-        .map(|read| (read, ruleset)),
+        Some(ruleset) => {
+            retain_wheel_read(reader.read_wheel(tx, &ruleset).await)?.map(|read| (read, ruleset))
+        }
         None => None,
     };
     Ok(OwnedCastRead { raw, wheel })

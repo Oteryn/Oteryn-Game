@@ -150,7 +150,12 @@ pub(super) fn usage(value: &OneItemImbuementV1) -> TransactionResourceUsage {
     let whole = value
         .materials
         .iter()
-        .filter(|material| material.after.as_ref().is_some_and(|after| after.quantity == 0))
+        .filter(|material| {
+            material
+                .after
+                .as_ref()
+                .is_some_and(|after| after.quantity == 0)
+        })
         .count() as u64;
     TransactionResourceUsage {
         touched_item_instances: 1 + count,

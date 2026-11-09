@@ -67,7 +67,8 @@ pub enum ItemKey {
     /// A live item instance: the main backpack, its entries and a corpse's entries, and a Ground
     /// item of the map view.
     Instance([u8; 16]),
-    /// A movable base entry of the map view (MAP-WIRE-1 §3 Move source), never an ItemInstance.
+    /// An interactive base entry of the map view, never an ItemInstance.
+    /// Captured source-container handles permit observation; pickup still checks physical facts.
     MapBase {
         bundle_digest: [u8; 32],
         placement_key: u64,
@@ -727,13 +728,20 @@ impl SessionItemView {
     ) -> Result<(), ItemViewError> {
         let keys: Vec<ItemKey> = entities
             .iter()
-            .filter(|entity| matches!(entity.detail, EntityDetail::Object { .. }))
+            .filter(|entity| {
+                matches!(
+                    entity.detail,
+                    EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. }
+                )
+            })
             .map(|entity| ItemKey::Entity(entity.entity.identity))
             .collect();
         self.table.replace(View::Spatial, &keys)?;
         for entity in entities {
             let key = ItemKey::Entity(entity.entity.identity);
-            if let EntityDetail::Object { item_handle, .. } = &mut entity.detail {
+            if let EntityDetail::Object { item_handle, .. }
+            | EntityDetail::ObjectWithAppearance { item_handle, .. } = &mut entity.detail
+            {
                 *item_handle = self.table.handle(&key);
             }
         }

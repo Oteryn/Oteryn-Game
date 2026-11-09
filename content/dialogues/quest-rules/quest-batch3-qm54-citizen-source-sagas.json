@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.citizen-source-sagas",
+  "quest": "oteryn:quest.outfit_and_addon_quests",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-mainland",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:88"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-rook",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/amber.lua:92"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/citizen-source/lubo",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "trigger": "say",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ],
+      "effects": [
+        {
+          "kind": "complete_source",
+          "track": "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-mainland"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:88"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/citizen-source/hanna",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hanna",
+      "trigger": "say",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Pretty hat, isn't it?"
+      ],
+      "effects": [
+        {
+          "kind": "complete_source",
+          "track": "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-mainland"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/citizen-source/amber",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.amber",
+      "trigger": "say",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ],
+      "effects": [
+        {
+          "kind": "complete_source",
+          "track": "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-rook"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/amber.lua:92"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/lubo.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+    },
+    {
+      "path": "data-global/npc/hanna.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
+    },
+    {
+      "path": "data-global/npc/amber.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+    }
+  ]
+}

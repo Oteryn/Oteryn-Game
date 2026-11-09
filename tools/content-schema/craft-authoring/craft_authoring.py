@@ -25,13 +25,14 @@ from lower_item_consumption_packet import items_xml_lines
 sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
 from reward_claim_authoring import item_ref
 from digging import append_rows, map_facts
+from tainted_souls import row as tainted_souls_row
 
 FAMILY = "item_conversion"
 DIRECTORY = "content/craft/"
 INDEX = DIRECTORY + "index.json"
 CATALOGUE = DIRECTORY + "recipes.json"
 SOURCES = DIRECTORY + "sources.json"
-SNAPSHOT_SHA256 = "62cf16d9367b55e489da0e5f22e794f5b4b20ad7618dc865e59192cc4fc9997b"
+SNAPSHOT_SHA256 = "308a912c4995fe985ee6084a94828bb16990a16e88c67687a6f7c115ce558e5d"
 XML_SHA256 = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
 CURVE = {"base": 10000, "per_skill": 597, "skill_offset": 10,
          "minimum": 10000, "maximum": 50000, "roll_scale": 1000, "roll_max": 100}
@@ -186,7 +187,16 @@ def build():
     row("corpse-mechanical", "mechanical_fishing", (1, 36), 9306,
         {"kind": "map_item", "definition": item(9582)}, [operand("USED", 9306, "KEEP")],
         weighted(entries), tool="rod", target_effect={"effect": "RETIRE"})
+    target = operand("TARGET", 10297, "TRANSFORM_TO", output=22008)
+    target["capture_target_stack"] = True
+    row("tainted-antler-talisman", "tainted_star_herb", (8, 14), 3736,
+        {"kind": "carried"}, [operand("USED", 3736, "CONSUME"), target], fixed())
+    recipes[-1]["recipe"]["source"]["differences"].append(
+        "M22 captures the whole antlers object; admitted 15.30 appearances prove the output is one nonstacking talisman. "
+        "Canary game.cpp transformItem lines 3401-3538 transforms one target object; no per-unit crafting loop is substituted.")
     append_rows(row, snapshot, items_xml_lines(), item, operand, fixed)
+    import tainted_souls
+    recipes.append(tainted_souls.row(item, operand, fixed, MESSAGES))
     return sorted(recipes, key=lambda r: r["identity"]["key"])
 
 

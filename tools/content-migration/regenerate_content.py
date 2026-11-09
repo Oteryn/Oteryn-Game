@@ -66,6 +66,8 @@ REGISTRY = (
 EXTRA_DERIVED = (
     "content/interactions/index.json",
     "content/quests/grizzly-boss-rooms.json",
+    "content/quests/last-creep-native.json",
+    "tools/content-schema/world-authoring/samples/world-base-capture-v1.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
 )
 # Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
@@ -81,18 +83,25 @@ PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
 SPELLS_MANIFEST = "content/spells.manifest.json"
 
 AUTHORING_TOOLS = (
+    "tools/content-migration/qengine_equipment_audit.py",
     "tools/content-migration/raid_catalogue.py",
     "tools/content-schema/craft-authoring/craft_authoring.py",
+    "tools/content-schema/quest-authoring/questpc3_collectors.py",
+    "tools/content-schema/quest-authoring/questpc3_native_entries.py",
     "tools/content-schema/imbuement-authoring/imbuement_content.py",
     "tools/content-schema/charm-authoring/charm_authoring.py",
     "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
     "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+    "tools/content-schema/quest-authoring/first_dragon_activity.py",
     "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
     ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/arena_completion.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
@@ -615,11 +624,16 @@ def main() -> int:
         run(["python3", "tools/contracts/update_capability_golden.py", args.capability_golden, "--client-registrations"])
         return 0
     if args.native_only:
+        run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
+        run(["python3", "tools/content-schema/quest-authoring/questpc3_collectors.py", "content"])
+        run(["python3", "tools/content-schema/quest-authoring/questpc3_native_entries.py", "content"])
         run(["python3", "tools/content-migration/register_spell_families.py"])
+        run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
         run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
+        run(["python3", "tools/content-schema/quest-authoring/first_dragon_activity.py", "content"])
         run(["python3", "tools/content-migration/raid_catalogue.py", "content"])
         run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
         if not args.skip_checks:
@@ -635,17 +649,20 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
     refresh_quest_callback_proof()
     # Source-backed field regeneration uses the same explicit source root as its tests.
     # Without local donor checkouts the committed, pinned source catalogue is retained.
     if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
+    run(["python3", "tools/content-schema/quest-authoring/last_creep_native.py"])
     materialize_world()
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
+    run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])

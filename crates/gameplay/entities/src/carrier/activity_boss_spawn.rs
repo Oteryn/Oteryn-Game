@@ -16,6 +16,12 @@ impl ChannelRuntimeV1 {
             self.binding.runtime_scope(),
             RuntimeScopeRefV1::Instance { .. }
         ) || !self.positioned_actor_census()?.is_empty()
+            || !self.visible_corpses().is_empty()
+            || template.spite_source_setup().is_some_and(|setup| {
+                active
+                    .native_gameplay()
+                    .is_none_or(|native| setup.source_digest() != native.source_digest())
+            })
             || !template
                 .issue_runtime_pin(active)
                 .is_ok_and(|pin| &pin == self.content_pin())

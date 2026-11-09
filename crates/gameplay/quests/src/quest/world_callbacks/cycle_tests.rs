@@ -110,3 +110,72 @@ fn oramond_five_native_roots_reopen_only_on_daily_epoch() -> Result<(), String> 
     }
     Ok(())
 }
+
+#[test]
+fn native_per_use_rewards_require_exact_physical_admission() -> Result<(), String> {
+    let callbacks = load()?;
+    let source = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-callback/m07/lion-strength")
+        .ok_or("native source")?;
+    let reward = callbacks
+        .iter()
+        .find_map(|c| c.effects.item_reward.clone())
+        .ok_or("existing reward")?;
+    let mut value = serde_json::to_value(source).map_err(|e| e.to_string())?;
+    value["item_on_target"] = serde_json::Value::Null;
+    value["passages"] = serde_json::json!([]);
+    value["world_requirements"] = serde_json::json!([]);
+    value["state_ops"] = serde_json::json!([]);
+    value["storage"] = serde_json::json!([{
+        "track":"oteryn:quest-progress/m07/native-producer-start","minimum":-1,
+        "maximum":100,"set":1,"at_least":true
+    }]);
+    value["effects"] = serde_json::json!({"item_reward":reward,"item_reward_per_use":true});
+    let document =
+        |v: &serde_json::Value| serde_json::json!({"schema":1,"callbacks":[v]}).to_string();
+    let parsed = parse(&document(&value))?;
+    let serialized = serde_json::to_value(&parsed[0].effects).map_err(|e| e.to_string())?;
+    assert_eq!(
+        serialized["item_reward_per_use"], true,
+        "explicit repeat mode survives lowering"
+    );
+    for mutation in 0..5 {
+        let mut changed = value.clone();
+        match mutation {
+            0 => changed["requires_world_admission"] = false.into(),
+            1 => changed["selector"]["native"] = serde_json::Value::Null,
+            2 => changed["reversible"] = true.into(),
+            3 => changed["effects"]["item_reward"] = serde_json::Value::Null,
+            _ => changed["effects"]["item_reward_cycle"] = "oteryn:quest-progress/m07/epoch".into(),
+        }
+        assert!(
+            parse(&document(&changed)).is_err(),
+            "unsafe per-use mode {mutation}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn native_per_use_producer_accepts_a_current_world_guard_without_widening_legacy_rewards()
+-> Result<(), String> {
+    let mut callback = load()?
+        .into_iter()
+        .find(|c| c.key == "oteryn:quest-callback/m07/lion-flower-west")
+        .ok_or("native flower producer")?;
+    let document = |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+    assert!(!callback.world_requirements.is_empty());
+    parse(&document(&callback))?;
+    callback.effects.item_reward_per_use = false;
+    let flag = callback.storage.first_mut().ok_or("source start flag")?;
+    flag.maximum = 0;
+    flag.at_least = false;
+    assert!(
+        parse(&document(&callback)).is_err(),
+        "legacy reward cannot borrow a physical guard"
+    );
+    callback.world_requirements.clear();
+    parse(&document(&callback))?;
+    Ok(())
+}

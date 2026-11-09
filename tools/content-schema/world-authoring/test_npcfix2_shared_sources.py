@@ -69,5 +69,16 @@ class CapturedSharedSources(unittest.TestCase):
                 self.assertIn((palette[item], 1, {'action': number}), tiles[(x,y)])
 
 
+    def test_committed_outlaw_key_placements_match_the_source_packet(self):
+        index = json.loads((sources.ROOT / registry.INDEX).read_bytes())
+        palette = {r['source_item_id']: n for n, r in enumerate(index['palette'])}
+        tiles = {(x, y): items for _, sector in codec.decode_region(
+            (sources.ROOT / sources.REGION).read_bytes())[3]
+            for x, y, _, _, _, items in sector}
+        for x, y, number, item in sources.SPECS:
+            with self.subTest(position=(x, y), number=number):
+                self.assertIn((palette[item], 1, {'action': number}), tiles[(x, y)])
+
+
 if __name__ == '__main__':
     unittest.main()

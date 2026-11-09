@@ -14,3 +14,4 @@ include!("spawn_limits.rs");
 include!("spawn_mixed_sources.rs");
 include!("spawn_owner_windows.rs");
 include!("support.rs");
+include!("forced_player_steps.rs");

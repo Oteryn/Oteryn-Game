@@ -174,7 +174,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE game_character_equipment_slots SET slot=2")
+    sqlx::query("UPDATE game_character_equipment_slots SET slot=7")
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;

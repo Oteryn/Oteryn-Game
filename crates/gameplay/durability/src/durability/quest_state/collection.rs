@@ -1,4 +1,4 @@
-//! COLLECT reads the fenced custody owner after a committed native Item move.
+//! COLLECT reads the fenced custody owner after a committed native Item move or reward MINT.
 use super::*;
 use oteryn_gameplay_quests::quest::authored_bindings::collection::Collection;
 
@@ -16,12 +16,12 @@ pub(super) async fn admit(
     }
     let character = fence.character_id.as_bytes().as_slice();
     let session = command.game_session_id();
-    let moved: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM game_item_loop_move_receipts r WHERE r.character_id=encode($1,'hex')::uuid AND r.game_session_id=encode($2,'hex')::uuid AND r.command_id=$3::text::numeric AND r.operation<>4 AND r.connection_generation=$4::text::numeric AND r.lease_generation=$5::text::numeric UNION ALL SELECT 1 FROM game_item_transfer_receipts r WHERE r.character_id=encode($1,'hex')::uuid AND r.game_session_id=encode($2,'hex')::uuid AND r.command_id=$3::text::numeric)")
+    let changed: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_item_loop_move_receipts r WHERE r.character_id=encode($1,'hex')::uuid AND r.game_session_id=encode($2,'hex')::uuid AND r.command_id=$3::text::numeric AND r.operation<>4 AND r.connection_generation=$4::text::numeric AND r.lease_generation=$5::text::numeric UNION ALL SELECT 1 FROM game_item_transfer_receipts r WHERE r.character_id=encode($1,'hex')::uuid AND r.game_session_id=encode($2,'hex')::uuid AND r.command_id=$3::text::numeric UNION ALL SELECT 1 FROM game_reward_claim_mint_receipts r WHERE r.character_id=encode($1,'hex')::uuid AND r.game_session_id=encode($2,'hex')::uuid AND r.command_id=$3::text::numeric)")
         .bind(character).bind(session.as_bytes().as_slice()).bind(command.command_id().get().to_string())
         .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string())
         .fetch_one(&mut **tx).await?;
-    if !moved {
+    if !changed {
         return Ok(false);
     }
     let keys: Vec<_> = collection

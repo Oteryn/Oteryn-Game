@@ -6,6 +6,9 @@ use crate::durability::item_mint::{
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use oteryn_gameplay_quests::quest::world_callbacks::{GroundStackItem, Position};
 
+mod fixture;
+use fixture::{context, mint_at};
+
 const CRATE: &str = "oteryn:item.m02.fixture_crate";
 const URN: &str = "oteryn:item.m02.fixture_urn";
 
@@ -40,16 +43,6 @@ fn m02_ground_stack_postgres_exact_custody_order_quantity_and_no_consumption() -
         .map_err(Into::into)
 }
 
-fn context() -> QuestWorldContext {
-    QuestWorldContext {
-        map_revision: "map-1".into(),
-        content_revision: "content-1".into(),
-        placement_context: h::id(6).to_vec(),
-        reset_epoch: 0,
-        actor_placement: h::id(7),
-        movement_revision: 1,
-    }
-}
 fn position() -> Position {
     Position {
         x: 120,
@@ -61,71 +54,7 @@ fn position() -> Position {
 async fn mint(harness: &h::Harness, actor: u32, key: &str, quantity: u32) -> h::TestResult {
     mint_at(harness, actor, key, quantity, position(), &context()).await
 }
-async fn mint_at(
-    harness: &h::Harness,
-    actor: u32,
-    key: &str,
-    quantity: u32,
-    at: Position,
-    context: &QuestWorldContext,
-) -> h::TestResult {
-    let seal = harness.recovery.seal_current().map_err(h::debug)?;
-    let recovery = harness
-        .root
-        .open_character_authority(&seal)
-        .await
-        .map_err(h::debug)?;
-    let mut candidate = harness
-        .root
-        .freeze_item_mint(
-            &recovery,
-            &harness.node,
-            ItemMintRequest {
-                cause: ItemMintCause::for_test(
-                    WorldId::decode(&h::id(h::WORLD)).map_err(h::debug)?,
-                    ChannelId::decode(&h::id(h::CHANNEL)).map_err(h::debug)?,
-                    ScopeOwnershipGeneration::new(1).map_err(h::debug)?,
-                    actor,
-                    1,
-                    TypedDefinitionRef {
-                        family: "LootTable".into(),
-                        production_key: "fixture:ground.loot".into(),
-                        revision_ref: "definition-r1".into(),
-                    },
-                    "fixture:m02.drop".into(),
-                    0,
-                ),
-                item: TypedDefinitionRef {
-                    family: "Item".into(),
-                    production_key: key.into(),
-                    revision_ref: "definition-r1".into(),
-                },
-                quantity,
-                ground: GroundPlacement {
-                    spatial_position: super::spatial(at),
-                    corpse_ref: h::id(3).to_vec(),
-                    map_revision: context.map_revision.clone(),
-                    content_revision: context.content_revision.clone(),
-                    native_room_placement_context: context.placement_context.clone(),
-                },
-                content_revision: context.content_revision.clone(),
-                ruleset_revision: "ruleset-1".into(),
-                sim_revision: "sim-1".into(),
-            },
-        )
-        .await
-        .map_err(h::debug)?;
-    let permit = candidate.fresh_death_lane_permit().await;
-    assert!(matches!(
-        harness
-            .root
-            .commit_item_mint(&permit, &recovery, &harness.node, &mut candidate)
-            .await
-            .map_err(h::debug)?,
-        ItemMintOutcome::Committed(_)
-    ));
-    Ok(())
-}
+
 async fn check(
     harness: &h::Harness,
     requirement: WorldRequirement,
@@ -148,6 +77,7 @@ async fn exercise(harness: &h::Harness) -> h::TestResult {
     mint(harness, 1002, CRATE, 1).await?;
     mint(harness, 1003, URN, 2).await?;
     let requirement = WorldRequirement {
+        ground: None,
         position: position(),
         appearance: 0,
         ground_stack: Some(vec![

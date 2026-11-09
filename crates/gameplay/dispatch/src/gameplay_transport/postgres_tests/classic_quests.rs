@@ -39,6 +39,28 @@ pub(super) async fn install<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
 ) -> TestResult<[EntityRef; N]> {
+    install_with_offsets(owner, admitted, keys, None).await
+}
+
+pub(super) async fn install_with_offsets<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    offsets: Option<[(i32, i32); N]>,
+) -> TestResult<[EntityRef; N]> {
+    install_offsets(owner, admitted, keys, |i| offsets.as_ref().and_then(|offsets| usize::try_from(i).ok().and_then(|i| offsets.get(i))).copied().unwrap_or((i, 1))).await
+}
+
+pub(super) async fn install_above<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession, keys: [&str; N],
+) -> TestResult<[EntityRef; N]> {
+    install_offsets(owner, admitted, keys, |i| (i, -1)).await
+}
+
+async fn install_offsets<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession, keys: [&str; N],
+    offset: impl Fn(i32) -> (i32, i32),
+) -> TestResult<[EntityRef; N]> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"), npc_catalogue_preproduction_limits(),
@@ -58,9 +80,10 @@ pub(super) async fn install<const N: usize>(
         ).map_err(debug)?).map_err(debug)?;
     let at = runtime.read_actor_position(actor).map_err(debug)?.position();
     let mut placements = keys.into_iter().enumerate().map(|(i,key)| {
+            let (dx,dy) = offset(i32::try_from(i)?);
             Ok(NpcPlacements { key: key.into(), placements: vec![NpcPlacement {
-                x: u16::try_from(at.x + i32::try_from(i)?)?,
-                y: u16::try_from(at.y + 1)?,
+                x: u16::try_from(at.x + dx)?,
+                y: u16::try_from(at.y + dy)?,
                 floor: -i8::try_from(at.floor)?,
                 direction: MovementFacing::South,
             }]})

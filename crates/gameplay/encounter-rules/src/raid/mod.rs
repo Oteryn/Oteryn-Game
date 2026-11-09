@@ -9,6 +9,7 @@ mod lua_schedule;
 mod placement;
 mod runner;
 mod schedule;
+pub mod source_claustrophobic;
 
 pub use calendar::{CalendarDay, CalendarSelector};
 pub use catalogue::{

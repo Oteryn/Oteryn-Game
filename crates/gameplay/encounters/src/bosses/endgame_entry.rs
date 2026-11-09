@@ -213,9 +213,13 @@ where
         return Err(EntryRefusal::InvalidInput);
     }
     for (index, participant) in participants.iter().enumerate() {
-        if participants[..index]
-            .iter()
-            .any(|other| other.character == participant.character)
+        // The full-roster check above follows Crystal boss_lever.lua:183-218.
+        // A zero revision is not a current Character snapshot and must never
+        // be forwarded to the shared admission owner.
+        if participant.character_revision == 0
+            || participants[..index]
+                .iter()
+                .any(|other| other.character == participant.character)
         {
             return Err(EntryRefusal::InvalidInput);
         }

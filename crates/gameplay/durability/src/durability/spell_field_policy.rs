@@ -48,10 +48,7 @@ pub struct WorldFieldPolicyData {
 impl WorldFieldPolicyData {
     /// Borrow binds the actual same SQL transaction retaining the readiness
     /// lock and its immutable policy facts through field's physical owner install.
-    pub fn bind<'r, 'h>(
-        self,
-        tx: &'r Transaction<'h, Postgres>,
-    ) -> WorldFieldPolicyRead<'r, 'h> {
+    pub fn bind<'r, 'h>(self, tx: &'r Transaction<'h, Postgres>) -> WorldFieldPolicyRead<'r, 'h> {
         WorldFieldPolicyRead {
             _transaction: tx,
             world: self.world,

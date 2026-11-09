@@ -285,6 +285,7 @@ fn parse(source: &'static str) -> Result<Document, String> {
                 return Err("personal journal counter ownership".into());
             }
             counter.compiled = Some(Counter {
+                authored_stage: false,
                 transition: counter.transition,
                 creature: counter.creature,
                 quest: counter.quest,

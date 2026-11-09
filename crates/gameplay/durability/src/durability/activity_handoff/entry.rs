@@ -146,18 +146,67 @@ fn binding(
             }
         }
     }
+    if let Some(admission) = soulpit {
+        hash_field(&mut hash, b"soulpit-core-v1");
+        hash_field(&mut hash, &admission.request.source);
+        hash_field(&mut hash, &admission.request.intent);
+        hash_field(
+            &mut hash,
+            &admission.request.started_at_micros.to_be_bytes(),
+        );
+        let mut participants = admission.request.participants.clone();
+        participants.sort_by_key(|fact| *fact.character.as_bytes());
+        for fact in participants {
+            hash_field(&mut hash, fact.character.as_bytes());
+            hash_field(&mut hash, &[u8::from(fact.game_master)]);
+        }
+    }
     hash.finalize().into()
 }
 
-pub(super) async fn enter_in_transaction(
+#[allow(
+    clippy::too_many_arguments,
+    reason = "shared entry consumes the recovery fence and optional atomic Soulpit debit"
+)]
+pub(super) async fn enter_in_transaction<
+    G: super::super::quest_state::grizzly::GrizzlyPremiumGate,
+>(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
     r: &ActivityEnterRequest,
     boss_room: bool,
     soulpit: Option<super::soulpit::SoulpitEntryContext<'_>>,
+    premium: &G,
 ) -> Result<ActivityEnterOutcome> {
-    if (r.activity_key == super::super::soulpit::SOULPIT_ACTIVITY_KEY) != soulpit.is_some() {
+    if (r.activity_key == super::super::soulpit::SOULPIT_ACTIVITY_KEY) != soulpit.is_some()
+        || soulpit.as_ref().is_some_and(|context| {
+            boss_room
+                || r.time_limit_ms != 600_000
+                || context.request.handoff_id != r.handoff_id
+                || context.request.command.command_id().get() != r.command_id
+                || r.participants
+                    .iter()
+                    .find(|participant| {
+                        participant.source.character_id.as_bytes()
+                            == r.initiating_character_id.as_bytes()
+                    })
+                    .is_none_or(|participant| {
+                        participant.source.game_session_id
+                            != context.request.command.game_session_id()
+                    })
+                || context.request.participants.len() != r.participants.len()
+                || r.participants.iter().any(|participant| {
+                    context
+                        .request
+                        .participants
+                        .iter()
+                        .filter(|fact| fact.character == participant.source.character_id)
+                        .count()
+                        != 1
+                })
+        })
+    {
         return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
     }
     let initiator = r
@@ -275,9 +324,9 @@ pub(super) async fn enter_in_transaction(
             ));
         }
     }
-    let now = now_ms(tx).await?;
+    let now = quest_activity_now_ms(tx, root).await?;
     let boss_plan = if boss_room {
-        match super::boss_room::prepare_in_transaction(tx, r, now).await? {
+        match super::boss_room::prepare_in_transaction(tx, r, now, premium).await? {
             Ok(plan) => Some(plan),
             Err(reason) => return Ok(ActivityEnterOutcome::Refused(reason)),
         }
@@ -335,6 +384,7 @@ pub(super) async fn enter_in_transaction(
             }
         }
     }
+    super::super::quest_state::rotten_flame::record_entry_origin(tx, r).await?;
     // 0265 source-ended trigger would abort PREPARED. Decide before terminalizing
     // any source; its deferred proof checks all fresh destinations at COMMIT.
     sqlx::query("UPDATE game_activity_handoff_groups SET state=2,decided_at=$2 WHERE handoff_id=encode($1,'hex')::uuid AND state=1")
@@ -355,7 +405,6 @@ pub(super) async fn enter_in_transaction(
                 origin: Some(*channel_id.as_bytes()),
                 transport: p.destination_transport,
             },
-            now,
         )
         .await?;
     }
@@ -428,8 +477,11 @@ pub(super) async fn issue_successor(
     tx: &mut Transaction<'_, Postgres>,
     root: &DurabilityRoot,
     successor: SuccessorSession,
-    now: i64,
 ) -> Result<()> {
+    // Session protection and authority publications use transaction wall time.
+    // Encounter test clocks can advance deadlines without backdating or
+    // future-dating the existing admission owner's claims.
+    let now = now_ms(tx).await?;
     let SuccessorSession {
         source,
         destination,

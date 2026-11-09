@@ -6,7 +6,10 @@ NPC keys of npc_placement_scope.json, and only those that the NPC catalogue admi
 with another placement is held (SCHEDULE_VARIANT, SHARED_CELL) instead of written; one NPC listed
 twice at one cell and direction is one record. A wiki-origin placement has no direction in the
 source and is written as north. Optional placement_cells narrows a scoped NPC to
-a distinct subset of its candidate cells; it cannot introduce coordinates or bypass holds. The source is OTS_HYPOTHESIS_ONLY migration evidence: only
+a distinct subset of its candidate cells; it cannot introduce coordinates or bypass sharing holds.
+Optional block_solid_contacts explicitly admits source-backed contacts occupying solid objects;
+the compiler still checks walls, floor changes and other terrain hazards.
+The source is OTS_HYPOTHESIS_ONLY migration evidence: only
 normalized facts are written. Fails closed on an unadmitted key or an out-of-range position.
 
     python convert_placements.py [--check]
@@ -20,6 +23,8 @@ import json
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+import native_contacts
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -61,6 +66,8 @@ def cell_of(position: dict) -> tuple[int, int, int]:
 
 
 def provenance(candidate: dict, placement: dict) -> list[dict]:
+    if placement.get("origin") == "native_wiki_br":
+        return [candidate["native_provenance"]]
     # Only the placement decisions are evidence for the cell; offer or trade arbitration is not.
     arbitration = sorted(
         (row for row in candidate.get("arbitration", []) if row.get("fact") == "placements"), key=dump
@@ -105,6 +112,12 @@ def convert() -> dict[str, str]:
     report = json.loads(CANDIDATES.read_text())
     candidates = {c["identity"]["key"]: c for c in report["candidates"]}
     scope = json.loads(SCOPE.read_text())
+    native = native_contacts.candidates(NPCS, scope.get("native_contacts", []))
+    if set(native) & set(candidates):
+        raise ValueError("native contacts cannot replace donor candidates")
+    if not set(native) <= set(scope["npcs"]):
+        raise ValueError("native_contacts names an unscoped NPC")
+    candidates.update(native)
     admitted = admitted_keys()
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):
@@ -115,6 +128,9 @@ def convert() -> dict[str, str]:
 
     # A candidate can include both the Global world and an example map. Scope
     # may select known cells, but never introduce a cell or bypass sharing rules.
+    contacts = scope.get("block_solid_contacts", [])
+    if not isinstance(contacts, list) or not set(contacts) <= set(npcs):
+        sys.exit("block_solid_contacts names an unscoped NPC")
     selections = scope.get("placement_cells", {})
     if not isinstance(selections, dict) or not set(selections) <= set(npcs):
         sys.exit("placement_cells names an unscoped NPC")
@@ -183,6 +199,9 @@ def convert() -> dict[str, str]:
                     "provenance": rows,
                 }
             }
+    for record in records.values():
+        if record["declaration"]["npc"] in contacts:
+            record["declaration"]["block_solid_contact"] = True
     placed = {r["declaration"]["npc"] for r in records.values()}
     for npc in npcs:
         if npc not in placed and not any(h["npc"] == npc for h in held):
@@ -215,6 +234,8 @@ def convert() -> dict[str, str]:
             "inputs": {
                 "candidates_sha256": hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
                 "scope_sha256": hashlib.sha256(SCOPE.read_bytes()).hexdigest(),
+                **({"native_contacts_sha256": hashlib.sha256(dump(native).encode()).hexdigest()}
+                   if native else {}),
             },
             "npc_count": len(placed),
             "population_state": "POPULATED",

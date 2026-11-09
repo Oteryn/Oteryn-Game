@@ -225,6 +225,23 @@ pub(super) async fn exercise(
         i64::from(active) * 4,
         "same-value reactivation invalidates every previously captured death"
     );
+    // Every source death is captured and drained twice by the helper. Reach the
+    // authored threshold, then prove fresh deaths cannot exceed it; a closed
+    // world must still award no personal credit throughout the same sequence.
+    for death in 2..=counter.maximum + 1 {
+        super::qengine_kill_stories::death(
+            owner,
+            admitted,
+            counter.creature,
+            20002 + u64::try_from(death)?,
+        )
+        .await?;
+        assert_eq!(
+            count(h, counter.track).await?,
+            if active { death.min(counter.maximum) } else { 0 },
+            "world-gated personal count after death {death}"
+        );
+    }
     Ok(())
 }
 

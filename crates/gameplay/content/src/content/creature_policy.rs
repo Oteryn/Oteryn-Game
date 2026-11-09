@@ -90,6 +90,9 @@ impl CompiledCreaturePolicy {
 pub struct CompiledCreaturePolicies {
     source_digest: [u8; 32],
     policies: Vec<Arc<CompiledCreaturePolicy>>,
+    soul_war_health: Vec<Arc<super::native_soul_war_callbacks::QualifiedSoulWarHealthPolicy>>,
+    native_death_events: Vec<Arc<super::native_creature_death_events::QualifiedNativeDeathEvents>>,
+    native_health_events: Vec<Arc<super::native_monster_callbacks::QualifiedNativeHealthEvent>>,
 }
 impl CompiledCreaturePolicies {
     pub const fn source_digest(&self) -> [u8; 32] {
@@ -106,7 +109,63 @@ impl CompiledCreaturePolicies {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         self.source_digest = digest;
+        for policy in &mut self.soul_war_health {
+            Arc::make_mut(policy).bind_outer(digest);
+        }
+        for policy in &mut self.native_death_events {
+            Arc::make_mut(policy).bind_outer(digest);
+        }
+        for policy in &mut self.native_health_events {
+            Arc::make_mut(policy).bind_outer(digest);
+        }
         Ok(())
+    }
+    pub fn native_health_event(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> Option<&super::native_monster_callbacks::QualifiedNativeHealthEvent> {
+        self.native_health_events
+            .iter()
+            .map(Arc::as_ref)
+            .find(|policy| policy.matches(self.source_digest, key, revision))
+    }
+    pub fn soul_war_health_policy(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> Option<&super::native_soul_war_callbacks::QualifiedSoulWarHealthPolicy> {
+        self.soul_war_health
+            .iter()
+            .map(Arc::as_ref)
+            .find(|policy| policy.matches(self.source_digest, key, revision))
+    }
+    pub fn native_death_events(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> Option<Arc<super::native_creature_death_events::QualifiedNativeDeathEvents>> {
+        self.native_death_events
+            .iter()
+            .find(|policy| policy.matches(self.source_digest, key, revision))
+            .cloned()
+    }
+    pub(crate) fn bind_soul_war_health_callbacks(
+        &mut self,
+        document: &super::native_gameplay::CreatureProfilesDocument,
+    ) {
+        self.soul_war_health =
+            super::native_soul_war_callbacks::health_policies(document, self.source_digest)
+                .into_iter()
+                .map(Arc::new)
+                .collect();
+        self.native_death_events =
+            super::native_creature_death_events::death_event_policies(document, self.source_digest);
+        self.native_health_events =
+            super::native_monster_callbacks::health_event_policies(document, self.source_digest)
+                .into_iter()
+                .map(Arc::new)
+                .collect();
     }
     /// The activation loader supplies only decoded, artifact-qualified CreatureAuthoring data.
     /// Missing health/speed/outfit/details must be rejected there, never filled with prototypes.
@@ -167,6 +226,9 @@ impl CompiledCreaturePolicies {
         Ok(Self {
             source_digest,
             policies,
+            soul_war_health: Vec::new(),
+            native_death_events: Vec::new(),
+            native_health_events: Vec::new(),
         })
     }
 }

@@ -20,6 +20,19 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    // Filter before a held queue or item-walk/hotkey retransmission peek can
+    // treat old source-session bytes as a current successor operation.
+    let incoming = match &next {
+        Next::Frame(Ok(frame)) | Next::Held(frame, _) => Some(frame),
+        _ => None,
+    };
+    if let Some(frame) = incoming {
+        match command_session_matches(frame, session.admitted, session.require_session_binding) {
+            Ok(false) => return Ok(None),
+            Ok(true) => {}
+            Err(error) => return Err(close(stream, session.admitted, error).await),
+        }
+    }
     let buffered_original = matches!(&next, Next::StepDue);
     let (frame, arrived_while_buffered) = match next {
         // SPEED-1: the buffered step is due; its frame runs now, before any frame held
@@ -159,6 +172,7 @@ where
                 )
                 .await
                 .ok_or(ServeEnd::Disconnected)?;
+                super::native_cues::refresh(stream, authority, session).await?;
                 achievement_notices::refresh(stream, authority, session).await
             };
             return match tokio::time::timeout(interval, updates).await {

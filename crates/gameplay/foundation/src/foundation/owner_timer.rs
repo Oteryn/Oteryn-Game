@@ -304,6 +304,27 @@ where
             .count()
     }
 
+    /// Read-only scheduling projection of this lane; firing still requires
+    /// `drain_due` with the independently current owner fence and target census.
+    #[must_use]
+    pub fn earliest_due(&self) -> Option<SemanticTimeMicros> {
+        self.entries.iter().map(|entry| entry.due).min()
+    }
+
+    /// Original pending deadline for a retained source occurrence. This is
+    /// metadata only and cannot acknowledge or fire the occurrence.
+    #[must_use]
+    pub fn occurrence_due(
+        &self,
+        family: Family,
+        occurrence: Occurrence,
+    ) -> Option<SemanticTimeMicros> {
+        self.entries
+            .iter()
+            .find(|entry| entry.family == family && entry.occurrence == occurrence)
+            .map(|entry| entry.due)
+    }
+
     /// Schedules one owner-scoped timer (FND-03 §10.1).
     ///
     /// `scheduling_stamp` must be a `RuntimeWorkStamp` this same `owner_fence` issued
@@ -400,7 +421,21 @@ where
         &mut self,
         clock: &impl OwnerClock,
         owner_fence: &ScopeRuntimeFence,
+        target_is_current: impl FnMut(ExactActorRef) -> bool,
+    ) -> Vec<FiredTimer<Family, Occurrence>> {
+        self.drain_due_matching(clock, owner_fence, target_is_current, |_, _| true)
+    }
+
+    /// Drain due occurrences whose source facts are ready, preserving unprepared entries
+    /// with their original deadline, stamp and sequence. For skip-to-latest families the
+    /// latest occurrence decides readiness for the whole key; an older ready occurrence
+    /// never runs in its place. Stale targets are still purged before readiness is queried.
+    pub fn drain_due_matching(
+        &mut self,
+        clock: &impl OwnerClock,
+        owner_fence: &ScopeRuntimeFence,
         mut target_is_current: impl FnMut(ExactActorRef) -> bool,
+        mut ready: impl FnMut(Family, Occurrence) -> bool,
     ) -> Vec<FiredTimer<Family, Occurrence>> {
         if !owner_fence.is_current_for_scope(self.scope, self.generation) {
             return Vec::new();
@@ -434,7 +469,7 @@ where
         // later entries for the same key always replace earlier ones here; the earlier missed
         // occurrences are dropped without ever being returned or mutated.
         let mut kept: Vec<ScheduledTimer<Family, Occurrence>> = Vec::new();
-        for entry in due {
+        for entry in due.iter().copied() {
             let collapses =
                 self.policy_for_family(entry.family).catch_up == CatchUpPolicy::SkipToLatest;
             if collapses
@@ -455,6 +490,32 @@ where
                 right.sequence,
             ))
         });
+
+        let mut unready = Vec::new();
+        kept.retain(|entry| {
+            if ready(entry.family, entry.occurrence) {
+                true
+            } else {
+                unready.push(*entry);
+                false
+            }
+        });
+        // Restore original entries rather than scheduling replacements: ordering, deadlines
+        // and capacity accounting remain exactly those of the original owner input.
+        let restored: Vec<_> = due
+            .into_iter()
+            .filter(|entry| {
+                unready.iter().any(|blocked| {
+                    if self.policy_for_family(entry.family).catch_up == CatchUpPolicy::SkipToLatest
+                    {
+                        blocked.family == entry.family && blocked.target == entry.target
+                    } else {
+                        blocked.sequence == entry.sequence
+                    }
+                })
+            })
+            .collect();
+        self.entries.extend(restored);
 
         kept.into_iter()
             .map(|entry| {
@@ -657,6 +718,165 @@ mod tests {
             ],
         )
         .expect("caps within their registered maximum")
+    }
+
+    #[test]
+    fn srx3_unprepared_deadline_keeps_original_identity_and_deadline() {
+        let generation = generation(1);
+        let scope = scope_for(1);
+        let mut owner = fence(scope, generation);
+        let stamp = issue_stamp(&mut owner, generation);
+        let mut lane = generous_lane(scope, generation);
+        for (occurrence, deadline) in [(1, 10), (2, 20)] {
+            lane.schedule(
+                &owner,
+                stamp,
+                TestFamily::Respawn,
+                occurrence,
+                None,
+                SemanticTimeMicros::from_micros(deadline),
+            )
+            .expect("schedule source stage");
+        }
+        let original = lane.entries[0];
+        let next_sequence = lane.next_sequence;
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(30));
+        let fired =
+            lane.drain_due_matching(&clock, &owner, |_| true, |_, occurrence| occurrence == 2);
+        assert_eq!(lane.entries[0].sequence, original.sequence);
+        assert_eq!(lane.entries[0].scheduling_stamp, original.scheduling_stamp);
+        assert_eq!(lane.next_sequence, next_sequence);
+        assert_eq!(
+            fired
+                .iter()
+                .map(|timer| timer.occurrence)
+                .collect::<Vec<_>>(),
+            vec![2]
+        );
+        assert_eq!(
+            lane.earliest_due(),
+            Some(SemanticTimeMicros::from_micros(10))
+        );
+        let later = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(40));
+        let fired = lane.drain_due_matching(&later, &owner, |_| true, |_, _| true);
+        assert_eq!(fired.len(), 1);
+        assert_eq!(fired[0].occurrence, 1);
+        assert_eq!(fired[0].due, SemanticTimeMicros::from_micros(10));
+    }
+
+    #[test]
+    fn srx3_unprepared_latest_catch_up_never_fires_an_older_ready_occurrence() {
+        let generation = generation(1);
+        let scope = scope_for(1);
+        let mut owner = fence(scope, generation);
+        let stamp = issue_stamp(&mut owner, generation);
+        let mut lane = OwnerTimerLane::for_generation(
+            scope,
+            generation,
+            [(
+                TestFamily::Respawn,
+                FamilyPolicy {
+                    max_pending: 2,
+                    catch_up: CatchUpPolicy::SkipToLatest,
+                },
+            )],
+        )
+        .expect("bounded source timer family");
+        for (occurrence, deadline) in [(1_u64, 10), (2, 20)] {
+            lane.schedule(
+                &owner,
+                stamp,
+                TestFamily::Respawn,
+                occurrence,
+                None,
+                SemanticTimeMicros::from_micros(deadline),
+            )
+            .expect("schedule source stage");
+        }
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(30));
+        assert!(
+            lane.drain_due_matching(&clock, &owner, |_| true, |_, occurrence| occurrence == 1)
+                .is_empty()
+        );
+        assert_eq!(lane.pending_len(), 2);
+        let fired = lane.drain_due_matching(&clock, &owner, |_| true, |_, _| true);
+        assert_eq!(fired.len(), 1);
+        assert_eq!(fired[0].occurrence, 2);
+        assert_eq!(fired[0].due, clock.now());
+        assert_eq!(lane.pending_len(), 0);
+    }
+
+    #[test]
+    fn srx3_unprepared_stale_future_target_is_purged_without_preparing_source_facts() {
+        let generation = generation(1);
+        let scope = scope_for(1);
+        let mut owner = fence(scope, generation);
+        let stamp = issue_stamp(&mut owner, generation);
+        let mut lane = generous_lane(scope, generation);
+        lane.schedule(
+            &owner,
+            stamp,
+            TestFamily::Respawn,
+            1,
+            Some(actor(1)),
+            SemanticTimeMicros::from_micros(1000),
+        )
+        .expect("schedule future source stage");
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+        let mut prepared = 0;
+        assert!(
+            lane.drain_due_matching(
+                &clock,
+                &owner,
+                |_| false,
+                |_, _| {
+                    prepared += 1;
+                    true
+                }
+            )
+            .is_empty()
+        );
+        assert_eq!(prepared, 0);
+        assert_eq!(lane.pending_len(), 0);
+    }
+
+    #[test]
+    fn srx3_unprepared_foreign_owner_cannot_query_or_consume_source_stage() {
+        let generation = generation(1);
+        let scope = scope_for(1);
+        let mut owner = fence(scope, generation);
+        let stamp = issue_stamp(&mut owner, generation);
+        let mut lane = generous_lane(scope, generation);
+        lane.schedule(
+            &owner,
+            stamp,
+            TestFamily::Respawn,
+            1,
+            None,
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("schedule source stage");
+        let foreign = fence(scope_for(2), generation);
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(10));
+        let mut target_queries = 0;
+        let mut prepared = 0;
+        assert!(
+            lane.drain_due_matching(
+                &clock,
+                &foreign,
+                |_| {
+                    target_queries += 1;
+                    true
+                },
+                |_, _| {
+                    prepared += 1;
+                    true
+                }
+            )
+            .is_empty()
+        );
+        assert_eq!((target_queries, prepared), (0, 0));
+        assert_eq!(lane.pending_len(), 1);
     }
 
     #[test]

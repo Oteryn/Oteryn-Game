@@ -1,14 +1,22 @@
 //! Cook delivery composes native Inbox MINT and the existing coin/bank fee owner.
-use super::super::{DurabilityError, DurabilityRoot};
-use super::super::character_authority::{ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence};
+use super::super::character_authority::{
+    ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
+};
+use super::super::character_inbox::{
+    RewardClaimInboxError, RewardClaimInboxMintOutput, RewardClaimInboxMintRequest,
+    RewardClaimInboxOutcome, RewardClaimInboxPlan,
+};
 use super::super::character_progression::CurrentCharacterGameplayFence;
-use super::super::character_inbox::{RewardClaimInboxError, RewardClaimInboxMintRequest,
-    RewardClaimInboxMintOutput, RewardClaimInboxOutcome, RewardClaimInboxPlan};
 use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
-use super::super::item_fee_burn::{FeeBurnCause, FeeBurnError, FeeBurnRequest, HirelingFeeChange, burn_hireling_fee_in_transaction};
+use super::super::item_fee_burn::{
+    FeeBurnCause, FeeBurnError, FeeBurnRequest, HirelingFeeChange, burn_hireling_fee_in_transaction,
+};
 use super::super::item_mint::TypedDefinitionRef;
-use super::super::item_transfer::{CurrentCharacterItemFence, ItemDefinitionFacts, ItemWeightLookup};
+use super::super::item_transfer::{
+    CurrentCharacterItemFence, ItemDefinitionFacts, ItemWeightLookup,
+};
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
+use super::super::{DurabilityError, DurabilityRoot};
 use crate::domain::{CharacterId, hireling::food::FoodPlan};
 use crate::foundation::{ChannelId, CommandRef};
 use sha2::{Digest, Sha256};
@@ -17,15 +25,15 @@ use sqlx::{Postgres, Row, Transaction};
 #[derive(Debug, Clone)]
 pub struct HirelingFoodRequest {
     pub command: CommandRef,
-    pub hireling_id: [u8;16],
-    pub intent_binding: [u8;32],
+    pub hireling_id: [u8; 16],
+    pub intent_binding: [u8; 32],
     pub food: FoodPlan,
     pub item: ItemDefinitionFacts,
-    pub output_id: [u8;16],
-    pub mint_transaction: [u8;16],
-    pub fee_transaction: [u8;16],
-    pub fee_event: [u8;16],
-    pub fee_occurrence: [u8;16],
+    pub output_id: [u8; 16],
+    pub mint_transaction: [u8; 16],
+    pub fee_transaction: [u8; 16],
+    pub fee_event: [u8; 16],
+    pub fee_occurrence: [u8; 16],
     pub change: HirelingFeeChange,
     pub content_revision: String,
     pub ruleset_revision: String,
@@ -33,7 +41,10 @@ pub struct HirelingFoodRequest {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HirelingFoodOutcome { Committed, AlreadyCommitted }
+pub enum HirelingFoodOutcome {
+    Committed,
+    AlreadyCommitted,
+}
 
 #[derive(Debug)]
 pub enum HirelingFoodError {
@@ -49,23 +60,39 @@ pub enum HirelingFoodError {
 /// Same active House identity, current effective owner and character-wide entitlement.
 /// Runs after the caller holds recovery/admission and the exact House item fence.
 pub(crate) async fn service_in_transaction(
-    tx: &mut Transaction<'_, Postgres>, fence: &CurrentCharacterItemFence, hireling: [u8;16], skill: Option<u16>,
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    hireling: [u8; 16],
+    skill: Option<u16>,
 ) -> Result<bool, DurabilityError> {
-    let row = sqlx::query("SELECT h.owner_character_id::text AS owner FROM game_house_hirelings h \
+    let row = sqlx::query(
+        "SELECT h.owner_character_id::text AS owner FROM game_house_hirelings h \
         JOIN game_durability_reconnect_sessions s ON s.game_session_id=encode($2,'hex')::uuid \
         WHERE h.hireling_id=encode($1,'hex')::uuid AND h.active \
         AND h.world_id=s.world_id AND h.house_key=s.runtime_scope_house_key \
         AND s.runtime_scope_kind=2 AND s.runtime_scope_house_key IS NOT NULL \
         AND game_house_effective_owner(h.world_id,h.house_key)=h.owner_character_id \
-        FOR SHARE OF h")
-        .bind(hireling.as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-    let Some(row) = row else { return Ok(false); };
-    let Some(skill) = skill else { return Ok(true); };
+        FOR SHARE OF h",
+    )
+    .bind(hireling.as_slice())
+    .bind(fence.game_session_id.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(row) = row else {
+        return Ok(false);
+    };
+    let Some(skill) = skill else {
+        return Ok(true);
+    };
     let owner: String = row.try_get("owner")?;
-    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_hireling_entitlements \
-        WHERE character_id=$1::uuid AND entitlement_id=$2 FOR SHARE)")
-        .bind(owner).bind(i16::try_from(skill).map_err(|_| DurabilityError::InvalidStoredState)?)
-        .fetch_one(&mut **tx).await?)
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_hireling_entitlements \
+        WHERE character_id=$1::uuid AND entitlement_id=$2 FOR SHARE)",
+    )
+    .bind(owner)
+    .bind(i16::try_from(skill).map_err(|_| DurabilityError::InvalidStoredState)?)
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 fn valid_food(plan: FoodPlan) -> bool {
@@ -76,20 +103,31 @@ fn valid_food(plan: FoodPlan) -> bool {
     }
 }
 
-fn source_binding(request: &HirelingFoodRequest) -> [u8;32] {
-    let mut hash = Sha256::new(); hash.update(b"oteryn:hireling-food:v1\0");
-    hash.update(request.intent_binding); hash.update(request.hireling_id);
-    hash.update(request.food.item_id.to_be_bytes()); hash.update(request.food.gold.to_be_bytes());
-    hash.update(request.fee_transaction); hash.update(request.fee_event); hash.update(request.fee_occurrence);
+fn source_binding(request: &HirelingFoodRequest) -> [u8; 32] {
+    let mut hash = Sha256::new();
+    hash.update(b"oteryn:hireling-food:v1\0");
+    hash.update(request.intent_binding);
+    hash.update(request.hireling_id);
+    hash.update(request.food.item_id.to_be_bytes());
+    hash.update(request.food.gold.to_be_bytes());
+    hash.update(request.fee_transaction);
+    hash.update(request.fee_event);
+    hash.update(request.fee_occurrence);
     hash.finalize().into()
 }
 
 impl DurabilityRoot {
     /// Historical replay never reacquires live NPC or House access.
-    pub async fn read_hireling_food_receipt(&self, authority: &ReconciledCharacterAuthority<'_, '_>,
-        character: CharacterId, command: CommandRef, intent_binding: [u8;32],
+    pub async fn read_hireling_food_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        command: CommandRef,
+        intent_binding: [u8; 32],
     ) -> Result<bool, HirelingFoodError> {
-        let recovery = authority.record_for(self).map_err(|_| HirelingFoodError::AuthorityRejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| HirelingFoodError::AuthorityRejected)?;
         self.try_issue_semantic_pass().map_err(HirelingFoodError::Unavailable)?.run(move |holder,deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
@@ -103,28 +141,76 @@ impl DurabilityRoot {
         })).await.map_err(HirelingFoodError::Unavailable)?
     }
 
-    pub async fn commit_hireling_food(&self, authority: &ReconciledCharacterAuthority<'_, '_>, node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence, origin_channel: ChannelId, request: HirelingFoodRequest,
+    pub async fn commit_hireling_food(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        origin_channel: ChannelId,
+        request: HirelingFoodRequest,
         weights: &dyn ItemWeightLookup,
     ) -> Result<HirelingFoodOutcome, HirelingFoodError> {
-        if !valid_food(request.food) || request.item.definition.production_key != format!("oteryn:item.tibia.i{}",request.food.item_id)
-            || request.command.game_session_id() != fence.game_session_id {
+        if !valid_food(request.food)
+            || request.item.definition.production_key
+                != format!("oteryn:item.tibia.i{}", request.food.item_id)
+            || request.command.game_session_id() != fence.game_session_id
+        {
             return Err(HirelingFoodError::InvalidInput);
         }
-        if self.read_hireling_food_receipt(authority,fence.character_id,request.command,request.intent_binding).await? {
+        if self
+            .read_hireling_food_receipt(
+                authority,
+                fence.character_id,
+                request.command,
+                request.intent_binding,
+            )
+            .await?
+        {
             return Ok(HirelingFoodOutcome::AlreadyCommitted);
         }
-        let plan = RewardClaimInboxPlan { command:request.command, character_id:fence.character_id,
-            world_id:fence.runtime_scope.world_id(),channel_id:origin_channel,transaction_id:request.mint_transaction,
-            source_binding:source_binding(&request),item_instance_ids:vec![request.output_id] };
-        let mint = RewardClaimInboxMintRequest { claim:TypedDefinitionRef {family:"RewardClaim".into(),
-            production_key:format!("oteryn:reward.hireling.food.{}",request.food.item_id),revision_ref:"crystal-201189f".into()},
-            content_revision:request.content_revision.clone(),ruleset_revision:request.ruleset_revision.clone(),sim_revision:request.sim_revision.clone(),
-            outputs:vec![RewardClaimInboxMintOutput {source_line:2190,item:request.item.clone(),quantity:1,key_number:None}] };
-        let mut candidate = self.prepare_hireling_inbox_mint(authority,node,fence.item_fence(),&plan,mint).await.map_err(map_inbox)?;
-        struct Owner<'a> { request:HirelingFoodRequest, node:NodeIncarnationProof, weights:&'a dyn ItemWeightLookup,
-            failure:Option<HirelingFoodError>, at:i64 }
-        let mut owner = Owner { request,node:node.clone(),weights,failure:None,at:candidate.occurred_at_unix_ms() };
+        let plan = RewardClaimInboxPlan {
+            command: request.command,
+            character_id: fence.character_id,
+            world_id: fence.runtime_scope.world_id(),
+            channel_id: origin_channel,
+            transaction_id: request.mint_transaction,
+            source_binding: source_binding(&request),
+            item_instance_ids: vec![request.output_id],
+        };
+        let mint = RewardClaimInboxMintRequest {
+            claim: TypedDefinitionRef {
+                family: "RewardClaim".into(),
+                production_key: format!("oteryn:reward.hireling.food.{}", request.food.item_id),
+                revision_ref: "crystal-201189f".into(),
+            },
+            content_revision: request.content_revision.clone(),
+            ruleset_revision: request.ruleset_revision.clone(),
+            sim_revision: request.sim_revision.clone(),
+            outputs: vec![RewardClaimInboxMintOutput {
+                source_line: 2190,
+                item: request.item.clone(),
+                quantity: 1,
+                key_number: None,
+            }],
+        };
+        let mut candidate = self
+            .prepare_hireling_inbox_mint(authority, node, fence.item_fence(), &plan, mint)
+            .await
+            .map_err(map_inbox)?;
+        struct Owner<'a> {
+            request: HirelingFoodRequest,
+            node: NodeIncarnationProof,
+            weights: &'a dyn ItemWeightLookup,
+            failure: Option<HirelingFoodError>,
+            at: i64,
+        }
+        let mut owner = Owner {
+            request,
+            node: node.clone(),
+            weights,
+            failure: None,
+            at: candidate.occurred_at_unix_ms(),
+        };
         let result = self.commit_hireling_inbox_mint(authority,node,fence.item_fence(),&mut candidate,&mut owner,
             move |context,owner| Box::pin(async move {
                 if !service_in_transaction(context.transaction(),&fence.item_fence(),owner.request.hireling_id,Some(1002)).await? {
@@ -165,20 +251,24 @@ impl DurabilityRoot {
                 Ok(())
             })).await;
         match result {
-            Ok(RewardClaimInboxOutcome::Committed {..})=>Ok(HirelingFoodOutcome::Committed),
-            Ok(RewardClaimInboxOutcome::AlreadyCommitted(_))=>Ok(HirelingFoodOutcome::AlreadyCommitted),
-            Err(error)=>Err(owner.failure.unwrap_or_else(||map_inbox(error))),
+            Ok(RewardClaimInboxOutcome::Committed { .. }) => Ok(HirelingFoodOutcome::Committed),
+            Ok(RewardClaimInboxOutcome::AlreadyCommitted(_)) => {
+                Ok(HirelingFoodOutcome::AlreadyCommitted)
+            }
+            Err(error) => Err(owner.failure.unwrap_or_else(|| map_inbox(error))),
         }
     }
 }
 
-fn map_inbox(error:RewardClaimInboxError)->HirelingFoodError {
+fn map_inbox(error: RewardClaimInboxError) -> HirelingFoodError {
     match error {
-        RewardClaimInboxError::Unavailable(error)=>HirelingFoodError::Unavailable(error),
-        RewardClaimInboxError::AuthorityRejected=>HirelingFoodError::AuthorityRejected,
-        RewardClaimInboxError::ConflictingDelivery=>HirelingFoodError::Conflict,
-        RewardClaimInboxError::CapacityExceeded|RewardClaimInboxError::Delivery(_)=>HirelingFoodError::InboxFull,
-        _=>HirelingFoodError::InvalidInput,
+        RewardClaimInboxError::Unavailable(error) => HirelingFoodError::Unavailable(error),
+        RewardClaimInboxError::AuthorityRejected => HirelingFoodError::AuthorityRejected,
+        RewardClaimInboxError::ConflictingDelivery => HirelingFoodError::Conflict,
+        RewardClaimInboxError::CapacityExceeded | RewardClaimInboxError::Delivery(_) => {
+            HirelingFoodError::InboxFull
+        }
+        _ => HirelingFoodError::InvalidInput,
     }
 }
 
@@ -187,10 +277,27 @@ mod tests {
     use super::*;
     #[test]
     fn only_donor_dish_price_pairs_are_accepted() {
-        for id in 29408..=29415 {assert!(valid_food(FoodPlan{item_id:id,gold:90_000}));}
-        assert!(!valid_food(FoodPlan{item_id:29416,gold:90_000}));
-        assert!(valid_food(FoodPlan{item_id:29409,gold:15_000}));
-        assert!(!valid_food(FoodPlan{item_id:35173,gold:15_000}));
-        assert!(!valid_food(FoodPlan{item_id:29412,gold:1}));
+        for id in 29408..=29415 {
+            assert!(valid_food(FoodPlan {
+                item_id: id,
+                gold: 90_000
+            }));
+        }
+        assert!(!valid_food(FoodPlan {
+            item_id: 29416,
+            gold: 90_000
+        }));
+        assert!(valid_food(FoodPlan {
+            item_id: 29409,
+            gold: 15_000
+        }));
+        assert!(!valid_food(FoodPlan {
+            item_id: 35173,
+            gold: 15_000
+        }));
+        assert!(!valid_food(FoodPlan {
+            item_id: 29412,
+            gold: 1
+        }));
     }
 }

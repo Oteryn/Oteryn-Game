@@ -1,5 +1,6 @@
-//! Accepted PROJECT_SOURCE_MARKER_LOCAL. Three pinned boss heal callbacks, not a Lua interpreter.
-//! Native Creature HP; private condition88888-equivalent cooldown. No Global condition interoperability.
+//! Three pinned boss heal callbacks using native Creature HP and the shared
+//! canonical regeneration/subID88888 condition. Pending timers retain their
+//! exact source occurrence independently of fresh defense proposals.
 use crate::content::{
     ProjectReferenceRecord as Record, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Draft, ProjectV2Family as Family,
@@ -31,6 +32,7 @@ pub enum ThresholdHealError {
     Clock,
     Capacity,
     Carrier(CarrierError),
+    Condition(oteryn_gameplay_entities::ConditionOwnerError),
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThresholdHealOutcome {
@@ -55,6 +57,100 @@ pub struct ThresholdHealSource {
     fingerprint: [u8; 32],
 }
 impl ThresholdHealSource {
+    /// Qualifies actual active native bodies without manufacturing a Project Draft.
+    /// The world is descriptor data; mutation separately checks its current owner fence.
+    pub fn qualify_native(
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        caster: &Ref,
+        index: usize,
+        world: [u8; 16],
+    ) -> Result<Self, ThresholdHealError> {
+        use ThresholdHealError as E;
+        let proof = crate::bosses::source_callbacks::native_witness::qualify(
+            native,
+            caster,
+            index,
+            ScheduleList::Defence,
+        )
+        .map_err(|_| E::Source)?
+        .ok_or(E::Source)?;
+        let (threshold, minimum, maximum_draw, delay_ms, cooldown_ms) =
+            match (caster.key.as_str(), proof.entry().ability.key.as_str()) {
+                ("oteryn:creature.lisa", "oteryn:ability.creature.lisa.field-fill-lisa_heal") => {
+                    (70000, 18000, 23000, 6000_u64, 6000_u64)
+                }
+                ("oteryn:creature.tyrn", "oteryn:ability.creature.tyrn.field-fill-tyrn_heal") => {
+                    (200000, 5000, 7500, 0, 900000)
+                }
+                (
+                    "oteryn:creature.professor_maxxen",
+                    "oteryn:ability.spell.glooth_fairy_healing",
+                ) => (100000, 7500, 8000, 10000, 30000),
+                _ => return Err(E::Source),
+            };
+        let record = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target == *caster)
+            .ok_or(E::Source)?;
+        let Data::Creature(creature) = &record.profile.data else {
+            return Err(E::Source);
+        };
+        let Data::Behavior(behavior) = &record.behavior.as_ref().ok_or(E::Source)?.data else {
+            return Err(E::Source);
+        };
+        let entry = behavior.defenses.get(index).ok_or(E::Source)?;
+        if entry.interval_ms != 1000 || entry.chance_ppm != 1000000 {
+            return Err(E::Source);
+        }
+        let definitions = record.attack_definitions.as_ref().ok_or(E::Source)?;
+        let parent = definitions
+            .profiles
+            .iter()
+            .find(|profile| profile.target == entry.ability)
+            .ok_or(E::Source)?;
+        let Data::Ability(ability) = &parent.data else {
+            return Err(E::Source);
+        };
+        let encounter = proof.encounter_profile().map_err(|_| E::Source)?;
+        static EXPECTED: std::sync::OnceLock<Option<std::collections::BTreeMap<String, Data>>> =
+            std::sync::OnceLock::new();
+        let expected=EXPECTED.get_or_init(||serde_json::from_str(include_str!("../../../../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-expected-encounters.json")).ok()).as_ref().ok_or(E::Source)?;
+        if expected.get(&encounter.target.key) != Some(&encounter.data) {
+            return Err(E::Source);
+        }
+        let maximum = creature
+            .health
+            .filter(|health| *health > 0 && *health <= i64::MAX as u64)
+            .ok_or(E::Source)?;
+        let world = world
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        let content = proof.content();
+        let fingerprint = Sha256::digest(
+            serde_json::to_vec(&(
+                caster, index, entry, ability, encounter, maximum, content, &world,
+            ))
+            .map_err(|_| E::Source)?,
+        )
+        .into();
+        Ok(Self {
+            caster: caster.clone(),
+            ability: entry.ability.clone(),
+            index,
+            world,
+            content,
+            maximum,
+            threshold_ppm: threshold,
+            minimum,
+            maximum_draw,
+            delay_us: delay_ms.checked_mul(1000).ok_or(E::Source)?,
+            cooldown_us: cooldown_ms.checked_mul(1000).ok_or(E::Source)?,
+            fingerprint,
+        })
+    }
     pub fn from_native(
         d: &ProjectV2Draft,
         caster: &Ref,
@@ -229,11 +325,14 @@ impl ThresholdHealSource {
     fn guard(
         &self,
         r: &ChannelRuntimeV1,
-        f: &ScopeRuntimeFence,
+        f: Option<&ScopeRuntimeFence>,
         stamp: RuntimeWorkStamp,
         actor: ExactActorRef,
     ) -> Result<(), ThresholdHealError> {
         let binding = r.binding();
+        let f = f
+            .or_else(|| r.owner_fence().ok())
+            .ok_or(ThresholdHealError::Fence)?;
         if !f.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
             || !f.accepts_stamp(stamp)
             || r.content_pin().server_artifact_digest() != self.content
@@ -259,7 +358,6 @@ pub struct Marker {
     sequence: u64,
     occurrence: String,
     last_us: u64,
-    unlock_us: u64,
     pub pending: Option<(u64, u64)>,
     last: ThresholdHealOutcome,
 }
@@ -272,6 +370,28 @@ impl ThresholdHealOwner {
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+        s: &ThresholdHealSource,
+        p: &ProfileAbilityProposal,
+        now: u64,
+    ) -> Result<ThresholdHealOutcome, ThresholdHealError> {
+        self.cast_bound(r, Some(f), stamp, s, p, now)
+    }
+    pub fn cast_current(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        s: &ThresholdHealSource,
+        p: &ProfileAbilityProposal,
+        now: u64,
+    ) -> Result<ThresholdHealOutcome, ThresholdHealError> {
+        self.cast_bound(r, None, stamp, s, p, now)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn cast_bound(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        f: Option<&ScopeRuntimeFence>,
         stamp: RuntimeWorkStamp,
         s: &ThresholdHealSource,
         p: &ProfileAbilityProposal,
@@ -326,11 +446,16 @@ impl ThresholdHealOwner {
         let health = r
             .read_source_creature_health(p.issuer, &s.caster.key, s.maximum)
             .map_err(E::Carrier)?;
-        let locked = existing
-            .is_some_and(|i| now < self.markers[i].unlock_us || self.markers[i].pending.is_some());
+        let shared_marker = r
+            .actor_conditions_at(p.issuer, None, now)
+            .map_err(E::Condition)?
+            // Lua getCondition returns the stored pointer until the source
+            // postattack executeConditions phase, including the exact deadline.
+            .get(oteryn_gameplay_domain::domain::condition::ConflictKey::SpellRegeneration(88888))
+            .is_some();
+        let locked = shared_marker || existing.is_some_and(|i| self.markers[i].pending.is_some());
         let started = !locked && below_health_threshold(health, s.maximum, s.threshold_ppm);
         let mut pending = existing.and_then(|i| self.markers[i].pending);
-        let mut unlock = existing.map_or(0, |i| self.markers[i].unlock_us);
         let mut healed = None;
         let occurrence_owned = occurrence.to_owned();
         let key = s.caster.key.clone();
@@ -350,7 +475,7 @@ impl ThresholdHealOwner {
             self.markers.try_reserve(1).map_err(|_| E::Capacity)?;
         }
         if started {
-            unlock = checked_deadline(now, s.cooldown_us).ok_or(E::Clock)?;
+            checked_deadline(now, s.cooldown_us).ok_or(E::Clock)?;
             let due = checked_deadline(now, s.delay_us).ok_or(E::Clock)?;
             let digest = Sha256::new()
                 .chain_update(b"oteryn:threshold-heal:v1")
@@ -368,6 +493,61 @@ impl ThresholdHealOwner {
             .map_err(|_| E::Source)?;
             let draw =
                 crate::spell::uniform_draw(draw, s.minimum as i64, s.maximum_draw as i64) as u64;
+            // Lua installs CONDITION_REGENERATION/subID88888 before healing.
+            // Its zero integral gains are a marker in the SAME canonical actor
+            // condition store consumed by other pinned native callbacks.
+            use oteryn_gameplay_domain::domain::condition::ConditionValues;
+            use oteryn_gameplay_entities::{ActorConditionTransition, ConditionSource};
+            use oteryn_gameplay_foundation::foundation::condition::{
+                ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+            };
+            let root = GameplayDecisionRoot::from_bytes(s.content);
+            // Regeneration markers have no speed operation. As in the
+            // canonical non-speed condition owners, this unused fact is zero;
+            // marker admission does not require a companion relationship.
+            let base_speed = 0;
+            let definition = ConditionDefinition::new(
+                "source.monster.regeneration-marker.88888",
+                1,
+                ConditionValues::SpellRegeneration {
+                    duration_ms: u32::try_from(s.cooldown_us / 1000).map_err(|_| E::Clock)?,
+                    sub_id: 88888,
+                    health_gain: 0,
+                    health_interval_ms: u32::try_from(s.cooldown_us / 1000)
+                        .map_err(|_| E::Clock)?,
+                    mana_gain: 0,
+                    mana_interval_ms: 1000,
+                },
+            )
+            .ok_or(E::Source)?;
+            let at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
+            let plan = r
+                .prepare_actor_condition(
+                    p.issuer,
+                    None,
+                    ActorConditionTransition::Apply {
+                        definition: &definition,
+                        source: ConditionSource {
+                            actor: p.issuer,
+                            session: None,
+                            kind: ConditionSourceKind::SelfUse,
+                        },
+                        immunities: &[],
+                        facts: ApplicationFacts {
+                            now,
+                            base_speed,
+                            mana_shield_capacity: 0,
+                            target_reentry_protected: false,
+                            source_reentry_protected: false,
+                            target_is_player: false,
+                            decision_root: &root,
+                            occurrence: DecisionOccurrenceId::from_bytes(id),
+                        },
+                    },
+                    at,
+                )
+                .map_err(E::Condition)?;
+            r.commit_actor_condition(&plan, at).map_err(E::Condition)?;
             if s.delay_us == 0 {
                 healed = Some(
                     r.commit_source_creature_heal_batch(
@@ -394,7 +574,6 @@ impl ThresholdHealOwner {
             sequence,
             occurrence: occurrence_owned,
             last_us: now,
-            unlock_us: unlock,
             pending,
             last: result.clone(),
         };
@@ -411,6 +590,28 @@ impl ThresholdHealOwner {
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+        s: &ThresholdHealSource,
+        actor: ExactActorRef,
+        now: u64,
+    ) -> Result<Option<ThresholdHealOutcome>, ThresholdHealError> {
+        self.tick_bound(r, Some(f), stamp, s, actor, now)
+    }
+    pub fn tick_current(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        s: &ThresholdHealSource,
+        actor: ExactActorRef,
+        now: u64,
+    ) -> Result<Option<ThresholdHealOutcome>, ThresholdHealError> {
+        self.tick_bound(r, None, stamp, s, actor, now)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn tick_bound(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        f: Option<&ScopeRuntimeFence>,
         stamp: RuntimeWorkStamp,
         s: &ThresholdHealSource,
         actor: ExactActorRef,

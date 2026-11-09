@@ -29,6 +29,7 @@ FAMILIES = {
     'elemental protection holy': 'PROTECTION_HOLY', 'elemental protection ice': 'PROTECTION_ICE',
     'increase capacity': 'INCREASE_CAPACITY', 'increase speed': 'INCREASE_SPEED',
     'life leech': 'LIFE_LEECH', 'mana leech': 'MANA_LEECH', 'paralysis deflection': 'PARALYSIS_REMOVAL',
+    'paralysis removal': 'PARALYSIS_REMOVAL',
     'skillboost axe': 'SKILL_AXE', 'skillboost club': 'SKILL_CLUB', 'skillboost distance': 'SKILL_DISTANCE',
     'skillboost fist': 'SKILL_FIST', 'skillboost magic level': 'SKILL_MAGIC_LEVEL',
     'skillboost shielding': 'SKILL_SHIELDING', 'skillboost sword': 'SKILL_SWORD',

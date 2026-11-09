@@ -6322,8 +6322,134 @@
       "minimum_level": 500,
       "nonexclusive_count": 33,
       "normal_three_slot_capacity": true,
+      "runtime_available_count": 31,
+      "runtime_unsettleable_count": 25,
+      "tier": 5
+    },
+    {
+      "examples": [
+        "Rat",
+        "Spit Nettle",
+        "Lion",
+        "Troll Champion",
+        "Smuggler",
+        "Nomad Female",
+        "Elf Scout",
+        "Pirate Quartermaster"
+      ],
+      "expanded_three_slot_capacity": true,
+      "experience_max": 99,
+      "experience_min": 1,
+      "minimum_level": 1,
+      "nonexclusive_count": 89,
+      "normal_three_slot_capacity": true,
+      "runtime_available_count": 88,
+      "runtime_unsettleable_count": 85,
+      "tier": 1
+    },
+    {
+      "examples": [
+        "Darklight Emitter",
+        "Night Harpy",
+        "Paladin's Apparition",
+        "Bloated Man-Maggot",
+        "Rotten Man-Maggot",
+        "Radiant Acolyte",
+        "Devoted Radiant Inquisitor",
+        "Devoted Radiant Warden"
+      ],
+      "expanded_three_slot_capacity": false,
+      "experience_max": null,
+      "experience_min": 20000,
+      "minimum_level": 500,
+      "nonexclusive_count": 33,
+      "normal_three_slot_capacity": true,
       "runtime_available_count": 33,
       "runtime_unsettleable_count": 27,
+      "tier": 5
+    },
+    {
+      "examples": [
+        "Infernoid Blob",
+        "Fire Devil",
+        "Dwarf Guard",
+        "Pirate Buccaneer",
+        "Shadow Pupil",
+        "Dragon Lord Hatchling",
+        "Bog Raider",
+        "Braindeath"
+      ],
+      "expanded_three_slot_capacity": true,
+      "experience_max": 999,
+      "experience_min": 100,
+      "minimum_level": 50,
+      "nonexclusive_count": 162,
+      "normal_three_slot_capacity": true,
+      "runtime_available_count": 158,
+      "runtime_unsettleable_count": 157,
+      "tier": 2
+    },
+    {
+      "examples": [
+        "Deepling Spellsinger",
+        "Exotic Bat",
+        "Pirat Scoundrel",
+        "Deepling Guard",
+        "Draken Warmaster",
+        "Crusader",
+        "Frost Flower Asura",
+        "Moonstone Overseer"
+      ],
+      "expanded_three_slot_capacity": true,
+      "experience_max": 4999,
+      "experience_min": 1000,
+      "minimum_level": 100,
+      "nonexclusive_count": 188,
+      "normal_three_slot_capacity": true,
+      "runtime_available_count": 184,
+      "runtime_unsettleable_count": 184,
+      "tier": 3
+    },
+    {
+      "examples": [
+        "Crazed Summer Vanguard",
+        "Ogre Sage",
+        "Thanatursus",
+        "True Frost Flower Asura",
+        "Raubritter Skirmisher",
+        "Sulphur Spouter",
+        "Brachiodemon",
+        "Crypt Construct"
+      ],
+      "expanded_three_slot_capacity": true,
+      "experience_max": 19999,
+      "experience_min": 5000,
+      "minimum_level": 250,
+      "nonexclusive_count": 154,
+      "normal_three_slot_capacity": true,
+      "runtime_available_count": 144,
+      "runtime_unsettleable_count": 144,
+      "tier": 4
+    },
+    {
+      "examples": [
+        "Darklight Emitter",
+        "Night Harpy",
+        "Paladin's Apparition",
+        "Bloated Man-Maggot",
+        "Rotten Man-Maggot",
+        "Radiant Acolyte",
+        "Devoted Radiant Inquisitor",
+        "Devoted Radiant Warden"
+      ],
+      "expanded_three_slot_capacity": false,
+      "experience_max": null,
+      "experience_min": 20000,
+      "minimum_level": 500,
+      "nonexclusive_count": 33,
+      "normal_three_slot_capacity": false,
+      "runtime_available_count": 16,
+      "runtime_unsettleable_count": 10,
       "tier": 5
     }
   ]

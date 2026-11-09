@@ -8,6 +8,7 @@ from unittest.mock import patch
 import import_spell_families as producer
 import monster_seven_spell_overlay as overlay
 import register_spell_families as registration
+import soul_war_appearance_profiles as source_appearances
 import qengine_reward_item_profiles as qengine
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -27,14 +28,34 @@ class AcceptedOverlayTests(unittest.TestCase):
         adopted=overlay.apply_overlay(ROOT,self.base)
         for entry in self.receipt["files"]:
             self.assertEqual(overlay.digest(adopted[entry["path"]]),entry["output_sha256"])
-        actual=bind_definitions(ROOT,adopted)
+        bound=bind_definitions(ROOT,adopted)
+        actual=dict(bound)
+        appearance_path=producer.PROVIDER_DESTINATIONS["spell_appearances"]
+        # Match registration.outputs: the accepted Seven snapshot is followed
+        # by the independently pinned W11 callback outfit provider.
+        source_appearances.admit(ROOT,actual,appearance_path,registration.NATIVE_MANIFEST)
+        for path in overlay.ALLOWED_PATHS - {"content/creatures/definitions/spell-native-profiles.json", "content/spells.manifest.json"}:
+            self.assertEqual(actual[path],(ROOT/path).read_bytes(),path)
+        # Independently replay the complete registered successor after every owner.
         for path in overlay.ALLOWED_PATHS:
             self.assertEqual(self.current[path],(ROOT/path).read_bytes(),path)
         self.assertEqual(before,{k:overlay.digest(v) for k,v in self.base.items()})
         self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1870)
         looks=json.loads(actual['content/presentations/bindings/spell-appearances.json'])
-        self.assertEqual(len(looks['records']),334)
+        original_looks=json.loads(bound[appearance_path])
+        fragment=json.loads((ROOT/source_appearances.SOURCE).read_bytes())
+        self.assertEqual(len(original_looks['records']),334)
+        self.assertEqual(looks['records'],original_looks['records']+fragment['records'])
+        self.assertEqual(len(looks['records']),336)
+        self.assertEqual({r['look_type'] for r in fragment['records']},{242,286})
         self.assertEqual(len(looks['item_appearances']),6)
+        for path in bound.keys()-{appearance_path,registration.NATIVE_MANIFEST}:
+            self.assertEqual(actual[path],bound[path],path)
+        manifest=json.loads(actual[registration.NATIVE_MANIFEST])
+        self.assertEqual(manifest['spell_appearances']['sha256'],overlay.digest(actual[appearance_path]))
+        replay=dict(actual)
+        source_appearances.admit(ROOT,replay,appearance_path,registration.NATIVE_MANIFEST)
+        self.assertEqual(replay,actual)
     def test_registration_replays_all_current_outputs(self):
         actual=self.current
         # PREY-DIFF registers the generated tier and slot-value tables below;
@@ -43,16 +64,18 @@ class AcceptedOverlayTests(unittest.TestCase):
         # source-qualified reward Item proof alongside the43 SEASON outputs.
         self.assertEqual(len(actual.keys() - {qengine.PROOF}),43)
         self.assertIn(qengine.PROOF,actual)
-        # Independently rebuild the complete pinned60-identity packet; a count
+        # Independently rebuild the complete pinned64-identity packet (M12 root, QN4 ingredients, QN3 jar); a count
         # alone cannot authorize a missing, duplicate or substituted reward.
         expected_packet=qengine.capture(ROOT)
         expected_raw=(json.dumps(expected_packet,ensure_ascii=False,indent=2)+'\n').encode()
         self.assertEqual(actual[qengine.PROOF],expected_raw)
         packet=json.loads(actual[qengine.PROOF])
         keys=[row['production_definition']['production_key'] for row in packet['records']]
-        self.assertEqual(len(keys),60)
-        self.assertEqual(len(set(keys)),60)
+        self.assertEqual(len(keys),64)
+        self.assertEqual(len(set(keys)),64)
         self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
+        self.assertTrue({'oteryn:item.tibia.i21291', 'oteryn:item.tibia.i21504',
+                         'oteryn:item.tibia.i21505'}.issubset(keys))
         native=json.loads(actual[producer.PROVIDER_DESTINATIONS['item_profiles']])
         by_key={row['production_definition']['production_key']:row for row in native['records']}
         for row in packet['records']:
@@ -170,6 +193,29 @@ class AcceptedOverlayTests(unittest.TestCase):
             ), self.assertRaisesRegex(ValueError, 'CONSUMPTION_PROFILE_'):
                 registration.admit_consumable_profiles(ROOT, planned)
             self.assertEqual(planned, self.base)
+    def test_later_source_appearance_evidence_tamper_is_refused_without_mutation(self):
+        actual_read=Path.read_bytes
+        wanted=ROOT/source_appearances.SOURCE
+        planned=dict(self.base)
+        before=dict(planned)
+        with patch.object(Path,'read_bytes',lambda path: actual_read(path)+(b' ' if path==wanted else b'')):
+            with self.assertRaisesRegex(ValueError,'SOUL_WAR_CALLBACK_APPEARANCE_SOURCE_CHANGED'):
+                source_appearances.admit(ROOT,planned,producer.PROVIDER_DESTINATIONS["spell_appearances"],registration.NATIVE_MANIFEST)
+        self.assertEqual(planned,before)
+    def test_later_source_appearance_conflict_is_refused_without_mutation(self):
+        path=producer.PROVIDER_DESTINATIONS["spell_appearances"]
+        expected=json.loads((ROOT/source_appearances.SOURCE).read_bytes())['records']
+        for operator in ('partial','changed'):
+            document=json.loads(self.base[path])
+            record=copy.deepcopy(expected[0])
+            if operator=='changed':
+                record['look_type']+=1
+            document['records'].append(record)
+            planned=self.base|{path:producer.canonical_bytes(document)}
+            before=dict(planned)
+            with self.subTest(operator=operator),self.assertRaisesRegex(ValueError,'SOUL_WAR_CALLBACK_APPEARANCE_CONFLICT'):
+                source_appearances.admit(ROOT,planned,path,registration.NATIVE_MANIFEST)
+            self.assertEqual(planned,before)
     def test_adopted_qualification_tamper_is_refused(self):
         actual_read=Path.read_bytes
         wanted=ROOT/'imports/spells/monster-seven/adopted-qualification.json'

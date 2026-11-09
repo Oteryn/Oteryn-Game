@@ -1,0 +1,2883 @@
+{
+  "abilities": [
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.omrafir_beam",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.omrafir_healing_2",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "beam_damage": {
+    "element": "fire",
+    "maximum": 10000,
+    "minimum": 7000
+  },
+  "beam_delay_ms": 4000,
+  "beam_matrices": [
+    [
+      ".....c.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      "...........",
+      "..........."
+    ],
+    [
+      "...........",
+      "...........",
+      "...........",
+      "...........",
+      "...........",
+      "..xxxxxxxxc",
+      "...........",
+      "...........",
+      "...........",
+      "...........",
+      "..........."
+    ],
+    [
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....x.....",
+      ".....c.....",
+      "..........."
+    ],
+    [
+      "...........",
+      "...........",
+      "...........",
+      "...........",
+      "...........",
+      "cxxxxxxxx..",
+      "...........",
+      "...........",
+      "...........",
+      "...........",
+      "..........."
+    ]
+  ],
+  "callbacks": {
+    "data-otservbr-global/monster/quests/roshamuul/omrafir.lua": "d5d600fab74a3e4f56277552b1538f03a46bfcb067443257e4d7120e541fb798",
+    "data-otservbr-global/scripts/spells/monster/omrafir_beam.lua": "f87b630bdca5cf7ffc6167bc9301833e955f39586c7ff151322e0ae011e3d4ab",
+    "data-otservbr-global/scripts/spells/monster/omrafir_healing_2.lua": "ba2790a574ae9deba86d903e60cf8271e4ad86e51141256d90ceebb679927036"
+  },
+  "creature_events": {
+    "boom_delay_ms": 10,
+    "callback": {
+      "path": "data-otservbr-global/scripts/creaturescripts/monster/omrafir_explode.lua",
+      "sha256": "bad7511af294bebc5a9d94345252d0ba03784172a73463d772be6350a467cbcf"
+    },
+    "hp_at_most_ppm": 500000,
+    "reform": {
+      "extended": false,
+      "forced": true,
+      "name": "Omrafir",
+      "position": [
+        33586,
+        32379,
+        12
+      ]
+    },
+    "reform_delay_ms": 26764,
+    "storage": {
+      "initial": -1,
+      "key": 112416,
+      "normal_reform_below": 2
+    },
+    "summon": {
+      "amount": 9,
+      "center": [
+        33589,
+        32379,
+        12
+      ],
+      "extended": true,
+      "forced": true,
+      "name": "Hellfire Fighter",
+      "offset_x": [
+        -8,
+        8
+      ],
+      "offset_y": [
+        -9,
+        9
+      ]
+    },
+    "summons_below": 4,
+    "terminal_hp_at_most_ppm": 30000,
+    "terminal_reform": {
+      "extended": false,
+      "forced": true,
+      "name": "Omrafir2",
+      "position": [
+        33586,
+        32379,
+        12
+      ],
+      "result": "unknown-monster-nil-then-lua-error"
+    }
+  },
+  "event_children": [
+    {
+      "native": {
+        "attack_definitions": {
+          "profiles": [
+            {
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "effects": [
+                      {
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.creature.hellfire_fighter.attack-1",
+                          "revision": "definition-r1"
+                        },
+                        "kind": "Executable"
+                      }
+                    ],
+                    "impact_cue": "canary.sound:effect/102",
+                    "kind": "Melee",
+                    "needs_direction": false,
+                    "needs_target": true,
+                    "range_tiles": 1
+                  }
+                }
+              },
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.hellfire_fighter.attack-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "area": {
+                      "radius_tiles": 3,
+                      "shape": "Circle"
+                    },
+                    "cast_cue": "canary.sound:effect/9",
+                    "effects": [
+                      {
+                        "effect": {
+                          "key": "oteryn:effect.creature.hellfire_fighter.attack-2",
+                          "operation": {
+                            "item": {
+                              "family": "Item",
+                              "key": "oteryn:item.tibia.i2118",
+                              "revision": "definition-r1"
+                            },
+                            "operation": "CreateItem"
+                          },
+                          "presentation": {
+                            "projectile_asset_binding": "canary.appearance:missile/fire"
+                          }
+                        },
+                        "kind": "Inline"
+                      }
+                    ],
+                    "impact_cue": "canary.sound:effect/1025",
+                    "kind": "Spell",
+                    "needs_direction": false,
+                    "needs_target": false,
+                    "range_tiles": 7
+                  }
+                }
+              },
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.hellfire_fighter.attack-2",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "area": {
+                      "length_tiles": 8,
+                      "shape": "Beam",
+                      "spread_tiles": 0
+                    },
+                    "effects": [
+                      {
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.creature.hellfire_fighter.attack-3",
+                          "revision": "definition-r1"
+                        },
+                        "kind": "Executable"
+                      }
+                    ],
+                    "impact_cue": "canary.sound:effect/2041",
+                    "kind": "Spell",
+                    "needs_direction": true,
+                    "needs_target": false,
+                    "range_tiles": 0
+                  }
+                }
+              },
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.hellfire_fighter.attack-3",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "area": {
+                      "radius_tiles": 3,
+                      "shape": "Circle"
+                    },
+                    "effects": [
+                      {
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.creature.hellfire_fighter.attack-4",
+                          "revision": "definition-r1"
+                        },
+                        "kind": "Executable"
+                      }
+                    ],
+                    "impact_cue": "canary.sound:effect/2015",
+                    "kind": "Spell",
+                    "needs_direction": false,
+                    "needs_target": false,
+                    "range_tiles": 7
+                  }
+                }
+              },
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.hellfire_fighter.attack-4",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "area": {
+                      "north": [
+                        "......x......",
+                        "....xxxxx....",
+                        "...xxxxxxx...",
+                        "..xxxxxxxxx..",
+                        ".xxxxxxxxxxx.",
+                        ".xxxxxxxxxxx.",
+                        "xxxxxxCxxxxxx",
+                        ".xxxxxxxxxxx.",
+                        ".xxxxxxxxxxx.",
+                        "..xxxxxxxxx..",
+                        "...xxxxxxx...",
+                        "....xxxxx....",
+                        "......x......"
+                      ],
+                      "shape": "Matrix"
+                    },
+                    "effects": [
+                      {
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.spell.hellfire_fighter_soulfire.effect",
+                          "revision": "definition-r1"
+                        },
+                        "kind": "Executable"
+                      },
+                      {
+                        "effect": {
+                          "key": "oteryn:effect.spell.hellfire_fighter_soulfire.effect-condition-1",
+                          "operation": {
+                            "condition": {
+                              "condition_type": "fire",
+                              "damage_over_time": {
+                                "first_tick": "AfterInterval",
+                                "tick_profile": "Fixed",
+                                "ticks": [
+                                  {
+                                    "amount": 10,
+                                    "count": 20,
+                                    "interval_ms": 9000
+                                  }
+                                ]
+                              },
+                              "lifetime": "DamageSchedule"
+                            },
+                            "operation": "Condition"
+                          }
+                        },
+                        "kind": "Inline"
+                      }
+                    ],
+                    "kind": "Spell",
+                    "needs_direction": false,
+                    "needs_target": false,
+                    "range_tiles": 0
+                  }
+                }
+              },
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.hellfire_fighter_soulfire",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Behavior",
+                "profile": {
+                  "attacks": [
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.hellfire_fighter.attack-1",
+                        "revision": "definition-r1"
+                      },
+                      "chance_ppm": 1000000,
+                      "interval_ms": 2000
+                    },
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.hellfire_fighter.attack-2",
+                        "revision": "definition-r1"
+                      },
+                      "chance_ppm": 100000,
+                      "interval_ms": 2000
+                    },
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.hellfire_fighter.attack-3",
+                        "revision": "definition-r1"
+                      },
+                      "chance_ppm": 100000,
+                      "interval_ms": 2000
+                    },
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.hellfire_fighter.attack-4",
+                        "revision": "definition-r1"
+                      },
+                      "chance_ppm": 150000,
+                      "interval_ms": 2000
+                    },
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.spell.hellfire_fighter_soulfire",
+                        "revision": "definition-r1"
+                      },
+                      "chance_ppm": 150000,
+                      "interval_ms": 2000,
+                      "magnitude": {
+                        "maximum": 0,
+                        "minimum": 0
+                      }
+                    }
+                  ],
+                  "movement": {
+                    "can_walk": true,
+                    "pass_through": false,
+                    "push_creatures": true,
+                    "push_items": true,
+                    "pushable": false,
+                    "walks_on_energy": false,
+                    "walks_on_fire": true,
+                    "walks_on_poison": false
+                  },
+                  "targeting": {
+                    "can_target": true,
+                    "change_target": {
+                      "chance_ppm": 100000,
+                      "interval_ms": 4000
+                    },
+                    "flee_health": 0,
+                    "hostile": true,
+                    "sense_invisible": true,
+                    "static_attack_chance_ppm": 900000,
+                    "strategy_weights": {
+                      "damage": 0,
+                      "health": 0,
+                      "nearest": 80,
+                      "random": 20
+                    },
+                    "target_distance_tiles": 1
+                  }
+                }
+              },
+              "target": {
+                "family": "Behavior",
+                "key": "oteryn:behavior.creature.hellfire_fighter",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Creature",
+                "profile": {
+                  "abilities": [
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.hellfire_fighter.attack-1",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.hellfire_fighter.attack-2",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.hellfire_fighter.attack-3",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.hellfire_fighter.attack-4",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.hellfire_fighter_soulfire",
+                      "revision": "definition-r1"
+                    }
+                  ],
+                  "armor": 62,
+                  "bestiary": {
+                    "charm_points": 50,
+                    "difficulty": "hard",
+                    "kill_thresholds": [
+                      100,
+                      1000,
+                      2500
+                    ],
+                    "occurrence": "common"
+                  },
+                  "details": {
+                    "article": "a",
+                    "bestiary": {
+                      "class": "Demon",
+                      "locations": "Pits of Inferno, Demon Forge, Fury Dungeon.",
+                      "stars": 4,
+                      "taxonomy": "demon"
+                    },
+                    "condition_immunities": [
+                      "invisible",
+                      "paralyze"
+                    ],
+                    "corpse_item": {
+                      "family": "Item",
+                      "key": "oteryn:item.tibia.i6323",
+                      "revision": "definition-r1"
+                    },
+                    "critical_chance_ppm": 0,
+                    "defense": 35,
+                    "display_name": "Hellfire Fighter",
+                    "flags": {
+                      "attackable": true,
+                      "health_hidden": false,
+                      "illusionable": false
+                    },
+                    "inspection": "a hellfire fighter",
+                    "reference_level": null,
+                    "spawn_eligibility": {
+                      "blocked_by_nearby_players": false,
+                      "ignore_period_underground": false,
+                      "period": "All"
+                    },
+                    "summoning": {
+                      "convinceable": false,
+                      "is_familiar": false,
+                      "summonable": false
+                    },
+                    "system_eligibility": {
+                      "exclusive_prey": false,
+                      "forge": true,
+                      "prey": true,
+                      "reward_boss": false
+                    }
+                  },
+                  "experience": 3800,
+                  "health": 3800,
+                  "mitigation": {
+                    "denominator": 50,
+                    "numerator": 127
+                  },
+                  "resistances": [
+                    {
+                      "damage_type": "death",
+                      "percent": {
+                        "denominator": 1,
+                        "numerator": 20
+                      }
+                    },
+                    {
+                      "damage_type": "energy",
+                      "percent": {
+                        "denominator": 1,
+                        "numerator": 20
+                      }
+                    },
+                    {
+                      "damage_type": "fire",
+                      "percent": {
+                        "denominator": 1,
+                        "numerator": 100
+                      }
+                    },
+                    {
+                      "damage_type": "ice",
+                      "percent": {
+                        "denominator": 1,
+                        "numerator": -25
+                      }
+                    },
+                    {
+                      "damage_type": "physical",
+                      "percent": {
+                        "denominator": 1,
+                        "numerator": 50
+                      }
+                    }
+                  ],
+                  "speed": 165
+                }
+              },
+              "target": {
+                "family": "Creature",
+                "key": "oteryn:creature.hellfire_fighter",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "physical",
+                  "mitigated_by": [
+                    "Armor",
+                    "Shield"
+                  ]
+                }
+              },
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.hellfire_fighter.attack-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "fire",
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/fireattack"
+                  }
+                }
+              },
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.hellfire_fighter.attack-3",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "fire",
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/hitbyfire"
+                  }
+                }
+              },
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.hellfire_fighter.attack-4",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "fire",
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/fireattack"
+                  }
+                }
+              },
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.spell.hellfire_fighter_soulfire.effect",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "CasterMagnitude"
+                }
+              },
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.caster-magnitude",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "Range",
+                  "maximum": 520,
+                  "minimum": 0
+                }
+              },
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.hellfire_fighter.attack-1-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "Range",
+                  "maximum": 1500,
+                  "minimum": 392
+                }
+              },
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.hellfire_fighter.attack-3-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "Range",
+                  "maximum": 330,
+                  "minimum": 60
+                }
+              },
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.hellfire_fighter.attack-4-1",
+                "revision": "definition-r1"
+              }
+            }
+          ],
+          "records": [
+            {
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.hellfire_fighter.attack-1",
+                  "revision": "definition-r1"
+                }
+              ],
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.hellfire_fighter.attack-1",
+                "revision": "definition-r1"
+              },
+              "kind": "Ability"
+            },
+            {
+              "effects": [],
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.hellfire_fighter.attack-2",
+                "revision": "definition-r1"
+              },
+              "kind": "Ability"
+            },
+            {
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.hellfire_fighter.attack-3",
+                  "revision": "definition-r1"
+                }
+              ],
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.hellfire_fighter.attack-3",
+                "revision": "definition-r1"
+              },
+              "kind": "Ability"
+            },
+            {
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.hellfire_fighter.attack-4",
+                  "revision": "definition-r1"
+                }
+              ],
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.hellfire_fighter.attack-4",
+                "revision": "definition-r1"
+              },
+              "kind": "Ability"
+            },
+            {
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.spell.hellfire_fighter_soulfire.effect",
+                  "revision": "definition-r1"
+                }
+              ],
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.hellfire_fighter_soulfire",
+                "revision": "definition-r1"
+              },
+              "kind": "Ability"
+            },
+            {
+              "client_projection": "ServerOnly",
+              "identity": {
+                "family": "Behavior",
+                "key": "oteryn:behavior.creature.hellfire_fighter",
+                "revision": "definition-r1"
+              },
+              "kind": "Generic"
+            },
+            {
+              "behavior": {
+                "family": "Behavior",
+                "key": "oteryn:behavior.creature.hellfire_fighter",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ClientSafe",
+              "identity": {
+                "family": "Creature",
+                "key": "oteryn:creature.hellfire_fighter",
+                "revision": "definition-r1"
+              },
+              "kind": "Creature",
+              "loot": {
+                "family": "Loot",
+                "key": "oteryn:loot.creature.hellfire_fighter",
+                "revision": "definition-r1"
+              },
+              "presentation": {
+                "family": "Presentation",
+                "key": "oteryn:presentation.creature.hellfire_fighter",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "client_projection": "ServerOnly",
+              "effect_family": "Damage",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.hellfire_fighter.attack-1-1",
+                "revision": "definition-r1"
+              },
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.hellfire_fighter.attack-1",
+                "revision": "definition-r1"
+              },
+              "kind": "Effect"
+            },
+            {
+              "client_projection": "ServerOnly",
+              "effect_family": "Damage",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.hellfire_fighter.attack-3-1",
+                "revision": "definition-r1"
+              },
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.hellfire_fighter.attack-3",
+                "revision": "definition-r1"
+              },
+              "kind": "Effect"
+            },
+            {
+              "client_projection": "ServerOnly",
+              "effect_family": "Damage",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.hellfire_fighter.attack-4-1",
+                "revision": "definition-r1"
+              },
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.hellfire_fighter.attack-4",
+                "revision": "definition-r1"
+              },
+              "kind": "Effect"
+            },
+            {
+              "client_projection": "ServerOnly",
+              "effect_family": "Damage",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.caster-magnitude",
+                "revision": "definition-r1"
+              },
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.spell.hellfire_fighter_soulfire.effect",
+                "revision": "definition-r1"
+              },
+              "kind": "Effect"
+            },
+            {
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.caster-magnitude",
+                "revision": "definition-r1"
+              },
+              "kind": "Formula"
+            },
+            {
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.hellfire_fighter.attack-1-1",
+                "revision": "definition-r1"
+              },
+              "kind": "Formula"
+            },
+            {
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.hellfire_fighter.attack-3-1",
+                "revision": "definition-r1"
+              },
+              "kind": "Formula"
+            },
+            {
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.hellfire_fighter.attack-4-1",
+                "revision": "definition-r1"
+              },
+              "kind": "Formula"
+            }
+          ]
+        },
+        "behavior": {
+          "data": {
+            "kind": "Behavior",
+            "profile": {
+              "attacks": [
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.hellfire_fighter.attack-1",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 1000000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.hellfire_fighter.attack-2",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 100000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.hellfire_fighter.attack-3",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 100000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.hellfire_fighter.attack-4",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 150000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.hellfire_fighter_soulfire",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 150000,
+                  "interval_ms": 2000,
+                  "magnitude": {
+                    "maximum": 0,
+                    "minimum": 0
+                  }
+                }
+              ],
+              "movement": {
+                "can_walk": true,
+                "pass_through": false,
+                "push_creatures": true,
+                "push_items": true,
+                "pushable": false,
+                "walks_on_energy": false,
+                "walks_on_fire": true,
+                "walks_on_poison": false
+              },
+              "targeting": {
+                "can_target": true,
+                "change_target": {
+                  "chance_ppm": 100000,
+                  "interval_ms": 4000
+                },
+                "flee_health": 0,
+                "hostile": true,
+                "sense_invisible": true,
+                "static_attack_chance_ppm": 900000,
+                "strategy_weights": {
+                  "damage": 0,
+                  "health": 0,
+                  "nearest": 80,
+                  "random": 20
+                },
+                "target_distance_tiles": 1
+              }
+            }
+          },
+          "target": {
+            "family": "Behavior",
+            "key": "oteryn:behavior.creature.hellfire_fighter",
+            "revision": "definition-r1"
+          }
+        },
+        "monster_melee": {
+          "ability": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.hellfire_fighter.attack-1",
+            "revision": "definition-r1"
+          },
+          "chance_ppm": 1000000,
+          "execution_status": "approximate_nonlethal_physical_melee",
+          "interval_ms": 2000,
+          "maximum": 520,
+          "minimum": 0,
+          "source_path": "data-otservbr-global/monster/demons/hellfire_fighter.lua",
+          "source_repository": "opentibiabr/canary",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_sha256": "78923f1d2bb7f9be7c62efb3f49c7ff37244023869abed5d881f72d299b23a1b"
+        },
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.creature.hellfire_fighter",
+          "revision": "definition-r1"
+        },
+        "profile": {
+          "data": {
+            "kind": "Creature",
+            "profile": {
+              "abilities": [
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.hellfire_fighter.attack-1",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.hellfire_fighter.attack-2",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.hellfire_fighter.attack-3",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.hellfire_fighter.attack-4",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.hellfire_fighter_soulfire",
+                  "revision": "definition-r1"
+                }
+              ],
+              "armor": 62,
+              "bestiary": {
+                "charm_points": 50,
+                "difficulty": "hard",
+                "kill_thresholds": [
+                  100,
+                  1000,
+                  2500
+                ],
+                "occurrence": "common"
+              },
+              "details": {
+                "article": "a",
+                "bestiary": {
+                  "class": "Demon",
+                  "locations": "Pits of Inferno, Demon Forge, Fury Dungeon.",
+                  "stars": 4,
+                  "taxonomy": "demon"
+                },
+                "condition_immunities": [
+                  "invisible",
+                  "paralyze"
+                ],
+                "corpse_item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6323",
+                  "revision": "definition-r1"
+                },
+                "critical_chance_ppm": 0,
+                "defense": 35,
+                "display_name": "Hellfire Fighter",
+                "flags": {
+                  "attackable": true,
+                  "health_hidden": false,
+                  "illusionable": false
+                },
+                "inspection": "a hellfire fighter",
+                "reference_level": null,
+                "spawn_eligibility": {
+                  "blocked_by_nearby_players": false,
+                  "ignore_period_underground": false,
+                  "period": "All"
+                },
+                "summoning": {
+                  "convinceable": false,
+                  "is_familiar": false,
+                  "summonable": false
+                },
+                "system_eligibility": {
+                  "exclusive_prey": false,
+                  "forge": true,
+                  "prey": true,
+                  "reward_boss": false
+                }
+              },
+              "experience": 3800,
+              "health": 3800,
+              "mitigation": {
+                "denominator": 50,
+                "numerator": 127
+              },
+              "resistances": [
+                {
+                  "damage_type": "death",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 20
+                  }
+                },
+                {
+                  "damage_type": "energy",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 20
+                  }
+                },
+                {
+                  "damage_type": "fire",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 100
+                  }
+                },
+                {
+                  "damage_type": "ice",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": -25
+                  }
+                },
+                {
+                  "damage_type": "physical",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 50
+                  }
+                }
+              ],
+              "speed": 165
+            }
+          },
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.hellfire_fighter",
+            "revision": "definition-r1"
+          }
+        },
+        "source_item_abilities": [
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 3,
+                    "shape": "Circle"
+                  },
+                  "cast_cue": "canary.sound:effect/9",
+                  "effects": [
+                    {
+                      "effect": {
+                        "key": "oteryn:effect.creature.hellfire_fighter.attack-2",
+                        "operation": {
+                          "item": {
+                            "family": "Item",
+                            "key": "oteryn:item.tibia.i2118",
+                            "revision": "definition-r1"
+                          },
+                          "operation": "CreateItem"
+                        },
+                        "presentation": {
+                          "projectile_asset_binding": "canary.appearance:missile/fire"
+                        }
+                      },
+                      "kind": "Inline"
+                    }
+                  ],
+                  "impact_cue": "canary.sound:effect/1025",
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 7
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.hellfire_fighter.attack-2",
+              "revision": "definition-r1"
+            }
+          }
+        ]
+      },
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "demons/hellfire_fighter",
+        "identity_namespace": "canary/monster-file",
+        "source_key": "oteryn:source.canary",
+        "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.hellfire_fighter",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  ],
+  "healing": {
+    "exact_ids": [
+      1487,
+      1492,
+      1500
+    ],
+    "health_below_ppm": 999900,
+    "maximum": 9000,
+    "minimum": 7500,
+    "require_tile": true,
+    "source_name": "Omrafir"
+  },
+  "native": {
+    "attack_definitions": {
+      "profiles": [
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "effects": [
+                  {
+                    "effect": {
+                      "family": "Effect",
+                      "key": "oteryn:effect.creature.omrafir.attack-1",
+                      "revision": "definition-r1"
+                    },
+                    "kind": "Executable"
+                  }
+                ],
+                "impact_cue": "canary.sound:effect/100",
+                "kind": "Melee",
+                "needs_direction": false,
+                "needs_target": true,
+                "range_tiles": 1
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-1",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "area": {
+                  "length_tiles": 10,
+                  "shape": "Beam",
+                  "spread_tiles": 3
+                },
+                "effects": [
+                  {
+                    "effect": {
+                      "family": "Effect",
+                      "key": "oteryn:effect.creature.omrafir.attack-4",
+                      "revision": "definition-r1"
+                    },
+                    "kind": "Executable"
+                  }
+                ],
+                "impact_cue": "canary.sound:effect/2041",
+                "kind": "Spell",
+                "needs_direction": true,
+                "needs_target": false,
+                "range_tiles": 0
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-4",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "area": {
+                  "radius_tiles": 3,
+                  "shape": "Circle"
+                },
+                "effects": [
+                  {
+                    "effect": {
+                      "family": "Effect",
+                      "key": "oteryn:effect.creature.omrafir.attack-5",
+                      "revision": "definition-r1"
+                    },
+                    "kind": "Executable"
+                  }
+                ],
+                "impact_cue": "canary.sound:effect/2015",
+                "kind": "Spell",
+                "needs_direction": false,
+                "needs_target": false,
+                "range_tiles": 0
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-5",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "area": {
+                  "radius_tiles": 4,
+                  "shape": "Circle"
+                },
+                "effects": [
+                  {
+                    "effect": {
+                      "family": "Effect",
+                      "key": "oteryn:effect.creature.omrafir.attack-6",
+                      "revision": "definition-r1"
+                    },
+                    "kind": "Executable"
+                  }
+                ],
+                "impact_cue": "canary.sound:effect/2028",
+                "kind": "Spell",
+                "needs_direction": false,
+                "needs_target": false,
+                "range_tiles": 0
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-6",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "area": {
+                  "radius_tiles": 1,
+                  "shape": "Circle"
+                },
+                "cast_cue": "canary.sound:effect/9",
+                "effects": [
+                  {
+                    "effect": {
+                      "family": "Effect",
+                      "key": "oteryn:effect.creature.omrafir.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "kind": "Executable"
+                  }
+                ],
+                "impact_cue": "canary.sound:effect/2015",
+                "kind": "Spell",
+                "needs_direction": false,
+                "needs_target": true,
+                "range_tiles": 0
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-7",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "area": {
+                  "radius_tiles": 3,
+                  "shape": "Circle"
+                },
+                "cast_cue": "canary.sound:effect/9",
+                "effects": [
+                  {
+                    "effect": {
+                      "key": "oteryn:effect.creature.omrafir.attack-8",
+                      "operation": {
+                        "item": {
+                          "family": "Item",
+                          "key": "oteryn:item.tibia.i2118",
+                          "revision": "definition-r1"
+                        },
+                        "operation": "CreateItem"
+                      },
+                      "presentation": {
+                        "impact_asset_binding": "canary.appearance:effect/fireattack",
+                        "projectile_asset_binding": "canary.appearance:missile/fire"
+                      }
+                    },
+                    "kind": "Inline"
+                  }
+                ],
+                "impact_cue": "canary.sound:effect/1025",
+                "kind": "Spell",
+                "needs_direction": false,
+                "needs_target": true,
+                "range_tiles": 0
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-8",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "effects": [
+                  {
+                    "effect": {
+                      "family": "Effect",
+                      "key": "oteryn:effect.creature.omrafir.defense-1",
+                      "revision": "definition-r1"
+                    },
+                    "kind": "Executable"
+                  }
+                ],
+                "impact_cue": "canary.sound:effect/2013",
+                "kind": "Spell",
+                "needs_direction": false,
+                "needs_target": false,
+                "range_tiles": 0
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.defense-1",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "area": {
+                  "north": [
+                    "..xxx..",
+                    ".xxxxx.",
+                    "xxxxxxx",
+                    "xxxCxxx",
+                    "xxxxxxx",
+                    ".xxxxx.",
+                    "..xxx.."
+                  ],
+                  "shape": "Matrix"
+                },
+                "effects": [
+                  {
+                    "effect": {
+                      "key": "oteryn:effect.spell.omrafir_summon.effect-summon",
+                      "operation": {
+                        "count": 4,
+                        "count_mode": "FillToLimit",
+                        "creatures": [
+                          {
+                            "family": "Creature",
+                            "key": "oteryn:creature.flame_of_omrafir",
+                            "revision": "definition-r1"
+                          }
+                        ],
+                        "max_offset_tiles": 2,
+                        "only_below_summons": 4,
+                        "operation": "SummonCreature",
+                        "owned": true
+                      }
+                    },
+                    "kind": "Inline"
+                  }
+                ],
+                "kind": "Spell",
+                "needs_direction": false,
+                "needs_target": false,
+                "range_tiles": 0
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.omrafir_summon",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "area": {
+                  "north": [
+                    "....xxx....",
+                    "....xxx....",
+                    ".....x.....",
+                    ".....C....."
+                  ],
+                  "shape": "Matrix"
+                },
+                "effects": [
+                  {
+                    "effect": {
+                      "family": "Effect",
+                      "key": "oteryn:effect.spell.omrafir_wave.effect",
+                      "revision": "definition-r1"
+                    },
+                    "kind": "Executable"
+                  }
+                ],
+                "kind": "Spell",
+                "needs_direction": true,
+                "needs_target": false,
+                "range_tiles": 0
+              }
+            }
+          },
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.omrafir_wave",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Behavior",
+            "profile": {
+              "attacks": [
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.omrafir.attack-1",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 1000000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.omrafir_wave",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 170000,
+                  "interval_ms": 2000,
+                  "magnitude": {
+                    "maximum": 1000,
+                    "minimum": 500
+                  }
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.omrafir.attack-4",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 150000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.omrafir.attack-5",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 200000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.omrafir.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 190000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.omrafir.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 150000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.omrafir.attack-8",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 120000,
+                  "interval_ms": 2000
+                }
+              ],
+              "defenses": [
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.omrafir.defense-1",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 220000,
+                  "interval_ms": 2000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.omrafir_summon",
+                    "revision": "definition-r1"
+                  },
+                  "chance_ppm": 500000,
+                  "interval_ms": 2000
+                }
+              ],
+              "movement": {
+                "can_walk": true,
+                "pass_through": false,
+                "push_creatures": true,
+                "push_items": true,
+                "pushable": false,
+                "walks_on_energy": true,
+                "walks_on_fire": true,
+                "walks_on_poison": true
+              },
+              "targeting": {
+                "can_target": true,
+                "change_target": {
+                  "chance_ppm": 250000,
+                  "interval_ms": 2000
+                },
+                "flee_health": 0,
+                "hostile": true,
+                "sense_invisible": true,
+                "static_attack_chance_ppm": 900000,
+                "strategy_weights": {
+                  "damage": 10,
+                  "health": 10,
+                  "nearest": 70,
+                  "random": 10
+                },
+                "target_distance_tiles": 1
+              },
+              "voices": {
+                "chance_ppm": 100000,
+                "entries": [
+                  {
+                    "mode": "Yell",
+                    "text": "FIRST I'LL OBLITERATE YOU THEN I BURN THIS PRISON DOWN!!"
+                  },
+                  {
+                    "mode": "Yell",
+                    "text": "I'M TOO HOT FOR YOU TO HANDLE!"
+                  },
+                  {
+                    "mode": "Yell",
+                    "text": "FREEDOM FOR THE PRINCES!"
+                  },
+                  {
+                    "mode": "Yell",
+                    "text": "OMRAFIR INHALES DEEPLY!"
+                  },
+                  {
+                    "mode": "Yell",
+                    "text": "OMRAFIR BREATHES INFERNAL FIRE"
+                  },
+                  {
+                    "mode": "Yell",
+                    "text": "THE POWER OF HIS INTERNAL FIRE RENEWS OMRAFIR!"
+                  },
+                  {
+                    "mode": "Yell",
+                    "text": "I WILL RULE WHEN THE NEW ORDER IS ESTABLISHED!"
+                  },
+                  {
+                    "mode": "Yell",
+                    "text": "INFERNATIL! COME HERE AND FIGHT ME YOU COWARD!"
+                  }
+                ],
+                "interval_ms": 5000
+              }
+            }
+          },
+          "target": {
+            "family": "Behavior",
+            "key": "oteryn:behavior.creature.omrafir",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Creature",
+            "profile": {
+              "abilities": [
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.omrafir.attack-1",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.omrafir.attack-4",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.omrafir.attack-5",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.omrafir.attack-6",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.omrafir.attack-7",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.omrafir.attack-8",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.omrafir.defense-1",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.omrafir_summon",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.omrafir_wave",
+                  "revision": "definition-r1"
+                }
+              ],
+              "armor": 155,
+              "details": {
+                "bosstiary": {
+                  "category": "nemesis",
+                  "expertise_kills": 3,
+                  "expertise_points": 30,
+                  "mastery_kills": 5,
+                  "mastery_points": 60,
+                  "prowess_kills": 1,
+                  "prowess_points": 10
+                },
+                "condition_immunities": [
+                  "invisible",
+                  "outfit"
+                ],
+                "corpse_item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6068",
+                  "revision": "definition-r1"
+                },
+                "critical_chance_ppm": 0,
+                "defense": 165,
+                "display_name": "Omrafir",
+                "encyclopedia_document": {
+                  "family": "Document",
+                  "key": "oteryn:document/monster-encyclopedia/omrafir",
+                  "revision": "definition-r1"
+                },
+                "flags": {
+                  "attackable": true,
+                  "health_hidden": false,
+                  "illusionable": false
+                },
+                "inspection": "Omrafir",
+                "reference_level": null,
+                "spawn_eligibility": {
+                  "blocked_by_nearby_players": false,
+                  "ignore_period_underground": false,
+                  "period": "All"
+                },
+                "summoning": {
+                  "convinceable": false,
+                  "is_familiar": false,
+                  "summonable": false
+                },
+                "system_eligibility": {
+                  "exclusive_prey": false,
+                  "forge": true,
+                  "prey": true,
+                  "reward_boss": true
+                }
+              },
+              "experience": 50000,
+              "health": 200000,
+              "mitigation": {
+                "denominator": 5,
+                "numerator": 27
+              },
+              "resistances": [
+                {
+                  "damage_type": "death",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 0
+                  }
+                },
+                {
+                  "damage_type": "earth",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 0
+                  }
+                },
+                {
+                  "damage_type": "energy",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 0
+                  }
+                },
+                {
+                  "damage_type": "fire",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 100
+                  }
+                },
+                {
+                  "damage_type": "holy",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 0
+                  }
+                },
+                {
+                  "damage_type": "ice",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 0
+                  }
+                },
+                {
+                  "damage_type": "physical",
+                  "percent": {
+                    "denominator": 1,
+                    "numerator": 0
+                  }
+                }
+              ],
+              "speed": 240
+            }
+          },
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.omrafir",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Effect",
+            "profile": {
+              "damage_type": "physical",
+              "mitigated_by": [
+                "Armor",
+                "Shield"
+              ]
+            }
+          },
+          "target": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-1",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Effect",
+            "profile": {
+              "damage_type": "fire",
+              "presentation": {
+                "impact_asset_binding": "canary.appearance:effect/fireattack"
+              }
+            }
+          },
+          "target": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-4",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Effect",
+            "profile": {
+              "damage_type": "fire",
+              "presentation": {
+                "impact_asset_binding": "canary.appearance:effect/magic_red"
+              }
+            }
+          },
+          "target": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-5",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Effect",
+            "profile": {
+              "damage_type": "fire",
+              "presentation": {
+                "impact_asset_binding": "canary.appearance:effect/explosionhit"
+              }
+            }
+          },
+          "target": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-6",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Effect",
+            "profile": {
+              "damage_type": "fire",
+              "presentation": {
+                "impact_asset_binding": "canary.appearance:effect/hitbyfire",
+                "projectile_asset_binding": "canary.appearance:missile/fire"
+              }
+            }
+          },
+          "target": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-7",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Effect",
+            "profile": {
+              "damage_type": "healing"
+            }
+          },
+          "target": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.defense-1",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Effect",
+            "profile": {
+              "damage_type": "fire",
+              "presentation": {
+                "impact_asset_binding": "canary.appearance:effect/explosionhit"
+              }
+            }
+          },
+          "target": {
+            "family": "Effect",
+            "key": "oteryn:effect.spell.omrafir_wave.effect",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Formula",
+            "profile": {
+              "formula": "CasterMagnitude"
+            }
+          },
+          "target": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.caster-magnitude",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Formula",
+            "profile": {
+              "attack": 500,
+              "formula": "MeleeAttackSkill",
+              "skill": 392
+            }
+          },
+          "target": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-1-1",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Formula",
+            "profile": {
+              "formula": "Range",
+              "maximum": 3000,
+              "minimum": 1000
+            }
+          },
+          "target": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-4-1",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Formula",
+            "profile": {
+              "formula": "Range",
+              "maximum": 400,
+              "minimum": 200
+            }
+          },
+          "target": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-5-1",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Formula",
+            "profile": {
+              "formula": "Range",
+              "maximum": 300,
+              "minimum": 150
+            }
+          },
+          "target": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-6-1",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Formula",
+            "profile": {
+              "formula": "Range",
+              "maximum": 0,
+              "minimum": 0
+            }
+          },
+          "target": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-7-1",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "data": {
+            "kind": "Formula",
+            "profile": {
+              "formula": "Range",
+              "maximum": 800,
+              "minimum": 440
+            }
+          },
+          "target": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.defense-1-1",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "records": [
+        {
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.omrafir.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "identity": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Ability"
+        },
+        {
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.omrafir.attack-4",
+              "revision": "definition-r1"
+            }
+          ],
+          "identity": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-4",
+            "revision": "definition-r1"
+          },
+          "kind": "Ability"
+        },
+        {
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.omrafir.attack-5",
+              "revision": "definition-r1"
+            }
+          ],
+          "identity": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-5",
+            "revision": "definition-r1"
+          },
+          "kind": "Ability"
+        },
+        {
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.omrafir.attack-6",
+              "revision": "definition-r1"
+            }
+          ],
+          "identity": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-6",
+            "revision": "definition-r1"
+          },
+          "kind": "Ability"
+        },
+        {
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.omrafir.attack-7",
+              "revision": "definition-r1"
+            }
+          ],
+          "identity": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-7",
+            "revision": "definition-r1"
+          },
+          "kind": "Ability"
+        },
+        {
+          "effects": [],
+          "identity": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.attack-8",
+            "revision": "definition-r1"
+          },
+          "kind": "Ability"
+        },
+        {
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.omrafir.defense-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "identity": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.omrafir.defense-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Ability"
+        },
+        {
+          "effects": [],
+          "identity": {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.omrafir_summon",
+            "revision": "definition-r1"
+          },
+          "kind": "Ability"
+        },
+        {
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "oteryn:effect.spell.omrafir_wave.effect",
+              "revision": "definition-r1"
+            }
+          ],
+          "identity": {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.omrafir_wave",
+            "revision": "definition-r1"
+          },
+          "kind": "Ability"
+        },
+        {
+          "client_projection": "ServerOnly",
+          "identity": {
+            "family": "Behavior",
+            "key": "oteryn:behavior.creature.omrafir",
+            "revision": "definition-r1"
+          },
+          "kind": "Generic"
+        },
+        {
+          "behavior": {
+            "family": "Behavior",
+            "key": "oteryn:behavior.creature.omrafir",
+            "revision": "definition-r1"
+          },
+          "client_projection": "ClientSafe",
+          "identity": {
+            "family": "Creature",
+            "key": "oteryn:creature.omrafir",
+            "revision": "definition-r1"
+          },
+          "kind": "Creature",
+          "loot": {
+            "family": "Loot",
+            "key": "oteryn:loot.creature.omrafir",
+            "revision": "definition-r1"
+          },
+          "presentation": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.creature.omrafir",
+            "revision": "definition-r1"
+          }
+        },
+        {
+          "client_projection": "ServerOnly",
+          "effect_family": "Damage",
+          "formula": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-1-1",
+            "revision": "definition-r1"
+          },
+          "identity": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Effect"
+        },
+        {
+          "client_projection": "ServerOnly",
+          "effect_family": "Damage",
+          "formula": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-4-1",
+            "revision": "definition-r1"
+          },
+          "identity": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-4",
+            "revision": "definition-r1"
+          },
+          "kind": "Effect"
+        },
+        {
+          "client_projection": "ServerOnly",
+          "effect_family": "Damage",
+          "formula": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-5-1",
+            "revision": "definition-r1"
+          },
+          "identity": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-5",
+            "revision": "definition-r1"
+          },
+          "kind": "Effect"
+        },
+        {
+          "client_projection": "ServerOnly",
+          "effect_family": "Damage",
+          "formula": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-6-1",
+            "revision": "definition-r1"
+          },
+          "identity": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-6",
+            "revision": "definition-r1"
+          },
+          "kind": "Effect"
+        },
+        {
+          "client_projection": "ServerOnly",
+          "effect_family": "Damage",
+          "formula": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-7-1",
+            "revision": "definition-r1"
+          },
+          "identity": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.attack-7",
+            "revision": "definition-r1"
+          },
+          "kind": "Effect"
+        },
+        {
+          "client_projection": "ServerOnly",
+          "effect_family": "Heal",
+          "formula": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.defense-1-1",
+            "revision": "definition-r1"
+          },
+          "identity": {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.omrafir.defense-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Effect"
+        },
+        {
+          "client_projection": "ServerOnly",
+          "effect_family": "Damage",
+          "formula": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.caster-magnitude",
+            "revision": "definition-r1"
+          },
+          "identity": {
+            "family": "Effect",
+            "key": "oteryn:effect.spell.omrafir_wave.effect",
+            "revision": "definition-r1"
+          },
+          "kind": "Effect"
+        },
+        {
+          "identity": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.caster-magnitude",
+            "revision": "definition-r1"
+          },
+          "kind": "Formula"
+        },
+        {
+          "identity": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-1-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Formula"
+        },
+        {
+          "identity": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-4-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Formula"
+        },
+        {
+          "identity": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-5-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Formula"
+        },
+        {
+          "identity": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-6-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Formula"
+        },
+        {
+          "identity": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.attack-7-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Formula"
+        },
+        {
+          "identity": {
+            "family": "Formula",
+            "key": "oteryn:formula.creature.omrafir.defense-1-1",
+            "revision": "definition-r1"
+          },
+          "kind": "Formula"
+        }
+      ]
+    },
+    "behavior": {
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.omrafir.attack-1",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 1000000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.omrafir_wave",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 170000,
+              "interval_ms": 2000,
+              "magnitude": {
+                "maximum": 1000,
+                "minimum": 500
+              }
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.omrafir.attack-4",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 150000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.omrafir.attack-5",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 200000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.omrafir.attack-6",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 190000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.omrafir.attack-7",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 150000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.omrafir.attack-8",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 120000,
+              "interval_ms": 2000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.omrafir.defense-1",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 220000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.omrafir_summon",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 500000,
+              "interval_ms": 2000
+            }
+          ],
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "push_creatures": true,
+            "push_items": true,
+            "pushable": false,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_ppm": 250000,
+              "interval_ms": 2000
+            },
+            "flee_health": 0,
+            "hostile": true,
+            "sense_invisible": true,
+            "static_attack_chance_ppm": 900000,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 1
+          },
+          "voices": {
+            "chance_ppm": 100000,
+            "entries": [
+              {
+                "mode": "Yell",
+                "text": "FIRST I'LL OBLITERATE YOU THEN I BURN THIS PRISON DOWN!!"
+              },
+              {
+                "mode": "Yell",
+                "text": "I'M TOO HOT FOR YOU TO HANDLE!"
+              },
+              {
+                "mode": "Yell",
+                "text": "FREEDOM FOR THE PRINCES!"
+              },
+              {
+                "mode": "Yell",
+                "text": "OMRAFIR INHALES DEEPLY!"
+              },
+              {
+                "mode": "Yell",
+                "text": "OMRAFIR BREATHES INFERNAL FIRE"
+              },
+              {
+                "mode": "Yell",
+                "text": "THE POWER OF HIS INTERNAL FIRE RENEWS OMRAFIR!"
+              },
+              {
+                "mode": "Yell",
+                "text": "I WILL RULE WHEN THE NEW ORDER IS ESTABLISHED!"
+              },
+              {
+                "mode": "Yell",
+                "text": "INFERNATIL! COME HERE AND FIGHT ME YOU COWARD!"
+              }
+            ],
+            "interval_ms": 5000
+          }
+        }
+      },
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.omrafir",
+        "revision": "definition-r1"
+      }
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "oteryn:presentation.creature.omrafir",
+      "revision": "definition-r1"
+    },
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.omrafir.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.omrafir.attack-4",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.omrafir.attack-5",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.omrafir.attack-6",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.omrafir.attack-7",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.omrafir.attack-8",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.omrafir.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.omrafir_summon",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.omrafir_wave",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 155,
+          "details": {
+            "bosstiary": {
+              "category": "nemesis",
+              "expertise_kills": 3,
+              "expertise_points": 30,
+              "mastery_kills": 5,
+              "mastery_points": 60,
+              "prowess_kills": 1,
+              "prowess_points": 10
+            },
+            "condition_immunities": [
+              "invisible",
+              "outfit"
+            ],
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i6068",
+              "revision": "definition-r1"
+            },
+            "critical_chance_ppm": 0,
+            "defense": 165,
+            "display_name": "Omrafir",
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/omrafir",
+              "revision": "definition-r1"
+            },
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Omrafir",
+            "reference_level": null,
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 50000,
+          "health": 200000,
+          "mitigation": {
+            "denominator": 5,
+            "numerator": 27
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": 0
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 0
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 0
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 0
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "denominator": 1,
+                "numerator": 0
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "denominator": 1,
+                "numerator": 0
+              }
+            }
+          ],
+          "speed": 240
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.omrafir",
+        "revision": "definition-r1"
+      }
+    },
+    "source_item_abilities": [
+      {
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "area": {
+                "radius_tiles": 3,
+                "shape": "Circle"
+              },
+              "cast_cue": "canary.sound:effect/9",
+              "effects": [
+                {
+                  "effect": {
+                    "key": "oteryn:effect.creature.omrafir.attack-8",
+                    "operation": {
+                      "item": {
+                        "family": "Item",
+                        "key": "oteryn:item.tibia.i2118",
+                        "revision": "definition-r1"
+                      },
+                      "operation": "CreateItem"
+                    },
+                    "presentation": {
+                      "impact_asset_binding": "canary.appearance:effect/fireattack",
+                      "projectile_asset_binding": "canary.appearance:missile/fire"
+                    }
+                  },
+                  "kind": "Inline"
+                }
+              ],
+              "impact_cue": "canary.sound:effect/1025",
+              "kind": "Spell",
+              "needs_direction": false,
+              "needs_target": true,
+              "range_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.omrafir.attack-8",
+          "revision": "definition-r1"
+        }
+      }
+    ]
+  },
+  "regeneration_marker": {
+    "duration_ms": 5000,
+    "health_gain": 0,
+    "sub_id": 88888
+  },
+  "schedules": [
+    {
+      "index": 2,
+      "list": "attacks",
+      "schedule": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.spell.omrafir_beam",
+          "revision": "definition-r1"
+        },
+        "chance_ppm": 150000,
+        "interval_ms": 2000
+      }
+    },
+    {
+      "index": 2,
+      "list": "defenses",
+      "schedule": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.spell.omrafir_healing_2",
+          "revision": "definition-r1"
+        },
+        "chance_ppm": 200000,
+        "interval_ms": 2000
+      }
+    }
+  ],
+  "schema": "OTERYN_OMRAFIR_SOURCE_ATTACK_OVERLAY/v1",
+  "source_binding": {
+    "disposition": "EXACT",
+    "external_id": "quests/roshamuul/omrafir",
+    "identity_namespace": "canary/monster-file",
+    "source_key": "oteryn:source.canary",
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.omrafir",
+      "revision": "definition-r1"
+    }
+  },
+  "source_definitions_sha256": "97b6be5d2d4d1de6f263393c696709b1bc00f0f7b41750f369b4b84c3b4afbcf",
+  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+}

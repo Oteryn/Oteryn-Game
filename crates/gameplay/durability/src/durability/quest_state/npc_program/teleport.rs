@@ -90,6 +90,7 @@ pub fn preview_teleport(
         NpcEvaluationFacts {
             eligibility,
             player_name: None,
+            appearance: (&BTreeMap::new(), 0),
         },
     )
 }
@@ -117,8 +118,8 @@ pub(super) fn evaluate(
         level: facts.eligibility.level,
         premium_current: facts.eligibility.premium_current,
         vocation: &facts.eligibility.vocation,
-        sex: 0,
-        outfits: &BTreeMap::new(),
+        sex: facts.appearance.1,
+        outfits: facts.appearance.0,
     })
 }
 
@@ -129,6 +130,7 @@ pub(super) fn response(plan: &NpcRulePlan) -> NpcProgramCommit {
         next_topic: plan.next_topic,
         read_only: true,
         inventory_changed: false,
+        magic_effects: Vec::new(),
         end_conversation: items::ends(plan),
         end_delay_ms: items::end_delay(plan),
     }
@@ -208,6 +210,7 @@ pub(super) async fn load_read_only(
         next_topic: row.try_get("next_topic")?,
         read_only: true,
         inventory_changed: false,
+        magic_effects: Vec::new(),
         end_conversation: row.try_get("end_conversation")?,
         end_delay_ms: u64::try_from(row.try_get::<i32, _>("end_delay_ms")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,

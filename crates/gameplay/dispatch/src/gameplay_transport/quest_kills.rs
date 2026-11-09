@@ -69,7 +69,7 @@ pub(super) async fn settle(
         }
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let outcome = slot
-            .commit_native_quest_kill(
+            .commit_native_quest_kill_with_admission(
                 owner.root,
                 owner.character,
                 owner.holder,
@@ -77,6 +77,7 @@ pub(super) async fn settle(
                 QuestCause::CreatureDeath(occurrence),
                 &recipient.death,
                 Arc::clone(catalogue),
+                &owner.premium_coordinator,
             )
             .await;
         drop(slot);

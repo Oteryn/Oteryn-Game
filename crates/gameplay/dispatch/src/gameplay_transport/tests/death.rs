@@ -289,6 +289,12 @@ fn identifiers_are_fresh_uuid_v7_and_nonzero_transport() {
     let second = identifiers.game_session_id().expect("session");
     assert_ne!(first, second);
     assert_eq!(first.as_bytes()[6] >> 4, 7);
+    let source_event = identifiers.source_think_event_id().expect("source DATA");
+    let next_event = identifiers.source_think_event_id().expect("source DATA");
+    assert_ne!(source_event, next_event);
+    assert_ne!(&source_event, first.as_bytes());
+    assert_eq!(source_event[6] >> 4, 7);
+    assert_eq!(source_event[8] >> 6, 2);
     assert_ne!(identifiers.transport_ref(), identifiers.transport_ref());
     assert!(identifiers.transport_ref().is_some());
     let _ = (

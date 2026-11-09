@@ -14,6 +14,7 @@ pub(super) fn requirements() -> Vec<WorldRequirement> {
     [WINDOW.x - 1, WINDOW.x]
         .into_iter()
         .map(|x| WorldRequirement {
+            ground: None,
             position: Position {
                 x,
                 y: WINDOW.y - 1,

@@ -42,9 +42,9 @@ pub(super) fn prepare(
                 "monolith",
             ];
             if let Some(index) = labels.iter().position(|label| text == *label) {
-                let active =
-                    oteryn_gameplay_quests::quest::shared_world_progress::ACTIVE_TRACKS[index];
-                return Some(Choice{transition:(tracks.get(active).copied().unwrap_or(0)==0).then(||oteryn_gameplay_quests::quest::shared_world_progress::accept_key(index)),next_topic:None,reply:vec!["Mission accepted. Ask for trade to buy its reusable tools. Report after completing every objective; dissolved chitin requires eight crawler collections and eight swarmer-drum gatherings.".into()]});
+                // The durable owner distinguishes an active mission in this
+                // cycle from stale progress that must restart in a new cycle.
+                return Some(Choice{transition:Some(oteryn_gameplay_quests::quest::shared_world_progress::accept_key(index)),next_topic:None,reply:vec!["Mission accepted. Ask for trade to buy its reusable tools. Report after completing every objective; dissolved chitin requires eight crawler collections and eight swarmer-drum gatherings.".into()]});
             }
             if !matches!(text.as_str(), "mission" | "report" | "completed" | "yes") {
                 return None;

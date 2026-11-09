@@ -137,6 +137,8 @@ impl ChannelRuntimeV1 {
                 if spell_combat.forge.is_some()
                     || spell_combat.echo.is_some()
                     || spell_combat.soulpit.is_some()
+                    || spell_combat.tibiadrome
+                    || spell_combat.soul_war_reflection > 0
                 {
                     spell_combat.maximum_health
                 } else {
@@ -288,6 +290,7 @@ impl ChannelRuntimeV1 {
             let maximum = if spell_combat.forge.is_some()
                 || spell_combat.echo.is_some()
                 || spell_combat.soulpit.is_some()
+                || spell_combat.tibiadrome
             {
                 spell_combat.maximum_health
             } else {
@@ -347,6 +350,7 @@ impl ChannelRuntimeV1 {
                     <= if spell_combat.forge.is_some()
                         || spell_combat.echo.is_some()
                         || spell_combat.soulpit.is_some()
+                        || spell_combat.tibiadrome
                     {
                         spell_combat.maximum_health
                     } else {

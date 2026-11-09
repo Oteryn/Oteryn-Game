@@ -1,5 +1,89 @@
 {
   "oteryn:quest.bear_room_quest": {
-    "groups": [["kv/bear_chest1"], ["kv/bear_chest2"], ["kv/bear_chest3"]]
+    "groups": [
+      [
+        "kv/bear_chest1"
+      ],
+      [
+        "kv/bear_chest2"
+      ],
+      [
+        "kv/bear_chest3"
+      ]
+    ]
+  },
+  "oteryn:quest.behemoth_quest": {
+    "groups": [
+      [
+        "kv/behemothquest1"
+      ],
+      [
+        "kv/behemothquest2"
+      ],
+      [
+        "kv/behemothquest3"
+      ],
+      [
+        "kv/behemothquest4"
+      ]
+    ]
+  },
+  "oteryn:quest.circle_room_quest": {
+    "groups": [
+      [
+        "kv/circleroom1"
+      ],
+      [
+        "kv/circleroom2"
+      ]
+    ],
+    "mint_only": true
+  },
+  "oteryn:quest.crystal_wand_quest": {
+    "groups": [
+      [
+        "kv/crystalwand1"
+      ],
+      [
+        "kv/crystalwand2"
+      ]
+    ],
+    "mint_only": true
+  },
+  "oteryn:quest.demona_ring_quest": {
+    "groups": [
+      [
+        "kv/demonaring1"
+      ],
+      [
+        "kv/demonaring2"
+      ]
+    ],
+    "mint_only": true
+  },
+  "oteryn:quest.double_hero_quest": {
+    "groups": [
+      [
+        "kv/doublehero1"
+      ],
+      [
+        "kv/doublehero2"
+      ]
+    ],
+    "mint_only": true
+  },
+  "oteryn:quest.griffin_shield_quest": {
+    "groups": [
+      [
+        "kv/griffinshield1"
+      ],
+      [
+        "kv/griffinshield2"
+      ],
+      [
+        "kv/griffinshield3"
+      ]
+    ],
+    "mint_only": true
   }
 }

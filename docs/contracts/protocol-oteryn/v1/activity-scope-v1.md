@@ -83,3 +83,23 @@ without automatic retry; the destination remains playable after a successful ACK
 Crystal 201189f `data-global/scripts/quests/soulpit/soulpit_fight.lua:79-106` and
 `data-global/scripts/actions/soulpit/soulpit_arena_exit.lua:8-16` supply the group
 entry and exit behavior; command710 is the native shared-owner transport fence.
+
+## Native client adoption
+
+The Session decoder checks the source session, World and retained selection before
+reading the destination's full sequence1 snapshot. Its first domain99 must match
+the committed barrier exactly and use the destination connection generation as
+its revision. No identity, counter or domain cache changes until the complete
+snapshot validates. A current-session domain99 in cold admission or requested
+recovery is an idempotent typed projection; it preserves the admitted counters.
+
+The native play task discards buffered source projections and unsent source
+commands, clears source panels, targets and scene inputs, then renders the fresh
+map. Channel and Instance remain distinct tagged identities. Destination actions
+are enabled after the native view acknowledges that scope. An in-flight source
+request interrupted by the barrier returns local `ScopeChanged`, which keeps the
+play loop alive without inventing a server command result.
+
+Every command after adoption carries the destination GameSession UUID in
+ClientCommand field16, including the first command when both old and new streams
+use connection generation1 and command1. Requested recovery retains that binding.

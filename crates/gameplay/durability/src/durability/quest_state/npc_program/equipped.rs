@@ -25,9 +25,10 @@ pub(super) async fn inventory(
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut inventory = NpcInventorySnapshot::default();
     for item in &equipment.items {
+        // Durable GAME-ITEM-01 semantic slot codes, never protocol enum values.
         let slot = match item.slot {
             1 => "head",
-            2 => "necklace",
+            7 => "necklace",
             _ => continue,
         };
         inventory

@@ -49,16 +49,16 @@
       "claim_key": "oteryn:reward-claim.kv.circleroom1",
       "test": "qready1_circle_room_quest_exact_reward_once",
       "marker": "qready1_circle_room_quest",
-      "duration_seconds": 108.309447725,
-      "claim_sha256": "d2b9b8527ef00f7bd58055223118fb387195929239aba1c1559f5f40a25b2205"
+      "duration_seconds": 108.752516591,
+      "claim_sha256": "65f817878649cde60e668a5a44f46a7682dedb5e7df997454dd19d2575da5090"
     },
     {
       "wiki_title": "Circle Room Quest",
       "claim_key": "oteryn:reward-claim.kv.circleroom2",
       "test": "qready1_circle_room_quest_exact_reward_once",
       "marker": "qready1_circle_room_quest",
-      "duration_seconds": 108.309447725,
-      "claim_sha256": "42bf3cd7596a0e66a131c020681ea34e732d9a576ebb3d3d6eed5c4d8f8547d1"
+      "duration_seconds": 108.752516591,
+      "claim_sha256": "8c2b5716a5d4370664be4963f4ea3a9482d42eef7f62499dbd4bc249a969746c"
     },
     {
       "wiki_title": "Combat Knife Quest",

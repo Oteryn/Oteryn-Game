@@ -1,9 +1,9 @@
 //! Focused durable dance proof: final source STEP, achievement, exact replay and fences.
 //!
 //! This uses the existing synthetic callback test map only to exercise the owner seam.
-//! It does not qualify production map collision or diagonal movement. Initial DanceStatus
-//! comes from its existing scalar NPC transition; fifteen setup steps use the actual
-//! fenced world writer. No quest rows, equipment edges or achievements are seeded by SQL.
+//! It does not qualify production map collision. Initial DanceStatus comes from its
+//! existing scalar NPC transition; all sixteen dance steps use the wire dispatcher.
+//! No quest rows, equipment edges or achievements are seeded by SQL.
 use super::*;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
@@ -18,11 +18,13 @@ use std::sync::Arc;
 const ACHIEVEMENT: &str = "oteryn:achievement/talented_dancer";
 
 #[test]
-fn unnatural_dance_postgres_final_achievement_replay_stale_and_native_gate() -> TestResult {
+fn unnatural_dance_postgres_full_wire_route_achievement_replay_stale_and_native_gate() -> TestResult
+{
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run("unnatural-dance", || {
+    let started = std::time::Instant::now();
+    let result = super::super::kill_reward_e2e::scenario_thread::run("unnatural-dance", || {
         super::scenario(
             "unnatural-selection-dance-2",
             Position {
@@ -32,7 +34,13 @@ fn unnatural_dance_postgres_final_achievement_replay_stale_and_native_gate() -> 
             },
             false,
         )
-    })
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED m40-unnatural-dance duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
 }
 
 fn request(
@@ -160,9 +168,6 @@ pub(super) async fn exercise(
     }
     assert_eq!(counts(h).await?, (0, 0, 0));
 
-    let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
-    let setup_context = context(owner, admitted).await?;
-    let permit = owner.spell_lane_permit().await.ok_or("lane")?;
     {
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let start = QuestTransitionRequest {
@@ -186,30 +191,77 @@ pub(super) async fn exercise(
             .map_err(debug)?,
             QuestTransitionOutcome::Committed(_)
         ));
-        for (index, tile) in dance::SEQUENCE.into_iter().take(15).enumerate() {
-            let key = format!("oteryn:quest-callback/unnatural-selection-dance-{tile}");
-            assert!(callbacks.iter().any(|entry| entry.key == key));
-            let result = slot
-                .commit_world_callback(
-                    owner.root,
-                    owner.character,
-                    owner.holder,
-                    fence,
-                    request(admitted.game_session_id, &key, 1000 + u64::try_from(index)?)?,
-                    catalogue.clone(),
-                    &permit,
-                    setup_context.clone(),
-                    None,
-                )
-                .await
-                .map_err(debug)?;
-            assert!(
-                matches!(result, QuestTransitionOutcome::Committed(_)),
-                "setup step {index}: {result:?}"
-            );
-        }
     }
-    drop(permit);
+    let initial_revision = context(owner, admitted).await?.movement_revision;
+    let mut diagonal_steps = 0;
+    for (index, tile) in dance::SEQUENCE.into_iter().take(15).enumerate() {
+        let (x, y, floor) = dance::TILES[usize::from(tile) - 1];
+        let at = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        let direction = match (i32::from(x) - at.x, i32::from(y) - at.y) {
+            (0, -1) => StepDirection::North,
+            (1, 0) => StepDirection::East,
+            (0, 1) => StepDirection::South,
+            (-1, 0) => StepDirection::West,
+            (1, -1) => StepDirection::NorthEast,
+            (1, 1) => StepDirection::SouthEast,
+            (-1, 1) => StepDirection::SouthWest,
+            (-1, -1) => StepDirection::NorthWest,
+            _ => return Err("nonadjacent dance step".into()),
+        };
+        if matches!(
+            direction,
+            StepDirection::NorthEast
+                | StepDirection::SouthEast
+                | StepDirection::SouthWest
+                | StepDirection::NorthWest
+        ) {
+            diagonal_steps += 1;
+        }
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        let ordinal = u64::try_from(index)? + 1;
+        let reply = wire(
+            owner,
+            admitted,
+            ordinal,
+            1,
+            oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction),
+        )
+        .await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Moved,
+            "dance step {index}"
+        );
+        let position = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?;
+        assert_eq!(position.position(), local(Position { x, y, floor }));
+        assert_eq!(position.revision(), initial_revision + ordinal);
+        let state = owner
+            .root
+            .read_character_quest_state(authority, fence.character_id)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            state.tracks().get(dance::DANCE_STATUS_TRACK),
+            Some(&(i64::try_from(index)? + 2))
+        );
+        assert_eq!(counts(h).await?, (i64::try_from(index)? + 1, 0, 0));
+    }
+    assert_eq!(diagonal_steps, 12);
+    let setup_context = context(owner, admitted).await?;
     let state = owner
         .root
         .read_character_quest_state(authority, fence.character_id)
@@ -271,14 +323,13 @@ pub(super) async fn exercise(
         "SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
 
-    // The source does not guard fromPosition. Enter final tile2 from the fixture's
-    // western neighbour with a real existing cardinal STEP command.
+    // Complete the source route from tile5 to tile2 through the same wire dispatcher.
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
-    let payload = oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::East);
-    let reply = wire(owner, admitted, 1, 1, payload.clone()).await?;
+    let payload = oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::North);
+    let reply = wire(owner, admitted, 16, 1, payload.clone()).await?;
     assert_eq!(
         oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
         StepDisposition::Moved
@@ -292,6 +343,10 @@ pub(super) async fn exercise(
             .map_err(debug)?
             .position(),
         local(trigger)
+    );
+    assert_eq!(
+        context(owner, admitted).await?.movement_revision,
+        initial_revision + 16
     );
     let state = owner
         .root
@@ -370,13 +425,13 @@ pub(super) async fn exercise(
     assert_eq!(final_receipt(h, &callback.key).await?, original_receipt);
     assert_eq!(counts(h).await?, (16, 1, 1));
     // Transport replay also preserves the receipt and must not repeat finish text.
-    let _ = wire(owner, admitted, 1, 1, payload).await?;
+    let _ = wire(owner, admitted, 16, 1, payload).await?;
     assert_eq!(final_receipt(h, &callback.key).await?, original_receipt);
     assert_eq!(counts(h).await?, (16, 1, 1));
     assert!(!owner.states.chat.drain(admitted.game_session_id).iter().any(|line|
         matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == "Krunus should be pleased.")));
     eprintln!(
-        "UNNATURAL_DANCE POSTGRES_CASE_COMPLETED final16to17 achievement_atomic replay_exact stale_lease stale_connection renamed_native_generic_refused"
+        "UNNATURAL_DANCE POSTGRES_CASE_COMPLETED wire_steps=16 diagonal_steps=12 final16to17 achievement_atomic replay_exact stale_lease stale_connection renamed_native_generic_refused"
     );
     Ok(())
 }

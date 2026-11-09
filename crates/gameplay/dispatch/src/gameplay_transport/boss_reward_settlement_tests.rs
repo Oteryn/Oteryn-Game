@@ -42,8 +42,12 @@ fn frozen() -> FrozenBossDeath {
         died_at_unix_ms: 1_000_000,
         reward: Arc::new(CreatureRewardRow {
             xp_amount: oteryn_simulation_determinism::ExactI64::new(100),
-            corpse_item: LootDefinitionRef::new("Item", "oteryn:item.tibia.i3058", "definition-r1"),
-            loot_table_ref: table_reference(),
+            corpse_item: Some(LootDefinitionRef::new(
+                "Item",
+                "oteryn:item.tibia.i3058",
+                "definition-r1",
+            )),
+            loot_table_ref: Some(table_reference()),
             loot_table: LootTableDefinition {
                 algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
                 entries: vec![LootTableEntry {
@@ -263,3 +267,6 @@ fn boss_reward_settlement_same_scope_bytes_cannot_alias_channel_and_instance_dea
     assert_ne!(first, scoped_death_id(channel, 1, 2, 1));
     assert_eq!(first, scoped_death_id(channel, 1, 1, 1));
 }
+
+#[path = "boss_reward_settlement_tests/soul_war_literal.rs"]
+mod soul_war_literal;

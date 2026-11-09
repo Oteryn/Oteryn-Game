@@ -143,6 +143,9 @@ message WorldSpatialEntityV1 {
   // at most 64 bytes, no control characters. Never on objects. Unknown to old
   // decoders, so omitted unless negotiated. Named entries allow at most 194 bytes.
   string display_name = 13;
+  // Capability386 only; objects only, exact source-pinned native resource1..65535.
+  // The generation-local item_definition_ref and canonical handle remain unchanged.
+  uint32 native_object_appearance_id = 15;
 }
 
 // StateDomainSnapshot.payload of domain 1, snapshot type 2. At most 256 entities (MOVE-RL-11),

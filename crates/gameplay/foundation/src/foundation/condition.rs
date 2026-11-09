@@ -190,9 +190,12 @@ impl ConditionDefinition {
                     mana_interval_ms,
                     sub_id,
                 } => {
+                    // The source callbacks use the same canonical regeneration
+                    // condition with sub-ID 88888 and integral gain zero. It is
+                    // a shared lifetime marker; the scripted heal is separate.
+                    let source_marker = sub_id == 88_888 && health_gain == 0 && mana_gain == 0;
                     duration_ms > 0
-                        && sub_id <= 1
-                        && (health_gain > 0 || mana_gain > 0)
+                        && (source_marker || (sub_id <= 1 && (health_gain > 0 || mana_gain > 0)))
                         && interval_ok(health_interval_ms)
                         && interval_ok(mana_interval_ms)
                 }
@@ -564,6 +567,33 @@ impl<S> ConditionInstance<S> {
             mana_blocked: false,
         })
     }
+    fn non_ticking_ends_at(&self) -> Option<u64> {
+        matches!(
+            self.definition.values,
+            ConditionValues::TimedStatus { .. }
+                | ConditionValues::Gate { .. }
+                | ConditionValues::SourceAttributes { .. }
+                | ConditionValues::SpellLight { .. }
+                | ConditionValues::SpellSkills { .. }
+                | ConditionValues::Invisible { .. }
+                | ConditionValues::Outfit { .. }
+                | ConditionValues::ItemOutfit { .. }
+                | ConditionValues::Attributes { .. }
+                | ConditionValues::IntenseHex { .. }
+                | ConditionValues::RationalSpeed { .. }
+                | ConditionValues::Speed { .. }
+                | ConditionValues::Light { .. }
+                | ConditionValues::ManaShield { .. }
+                | ConditionValues::SpellRegeneration {
+                    health_gain: 0,
+                    mana_gain: 0,
+                    ..
+                }
+        )
+        .then_some(self.ends_at)
+        .flatten()
+    }
+
     fn age_at(&self, now: u64) -> u64 {
         self.elapsed_before_start
             .saturating_add(now.saturating_sub(self.started_at))
@@ -902,29 +932,26 @@ impl<S: Clone> ConditionStore<S> {
             .map_or(0, |instance| instance.speed_delta)
     }
 
+    /// Exact housekeeping deadline. Periodic damage/recovery debt remains owned
+    /// exclusively by `take_due`; reading this value never advances either lane.
+    pub fn next_non_ticking_expiry(&self) -> Option<u64> {
+        self.instances
+            .iter()
+            .filter_map(ConditionInstance::non_ticking_ends_at)
+            .chain(
+                self.cleanse_immunities
+                    .iter()
+                    .map(|immunity| immunity.until),
+            )
+            .min()
+    }
+
     /// Owner-local expiry without executing or discarding any scheduled occurrence.
     /// DOT, food and recovery remain exclusively under `take_due`, including overdue ticks.
     pub fn expire_non_ticking(&mut self, now: u64) -> bool {
         let before = (self.instances.len(), self.cleanse_immunities.len());
-        self.instances.retain(|instance| {
-            !matches!(
-                instance.definition.values,
-                ConditionValues::TimedStatus { .. }
-                    | ConditionValues::Gate { .. }
-                    | ConditionValues::SourceAttributes { .. }
-                    | ConditionValues::SpellLight { .. }
-                    | ConditionValues::SpellSkills { .. }
-                    | ConditionValues::Invisible { .. }
-                    | ConditionValues::Outfit { .. }
-                    | ConditionValues::ItemOutfit { .. }
-                    | ConditionValues::Attributes { .. }
-                    | ConditionValues::IntenseHex { .. }
-                    | ConditionValues::RationalSpeed { .. }
-                    | ConditionValues::Speed { .. }
-                    | ConditionValues::Light { .. }
-                    | ConditionValues::ManaShield { .. }
-            ) || instance.ends_at.is_none_or(|end| now < end)
-        });
+        self.instances
+            .retain(|instance| instance.non_ticking_ends_at().is_none_or(|end| now < end));
         self.cleanse_immunities
             .retain(|immunity| now < immunity.until);
         before != (self.instances.len(), self.cleanse_immunities.len())
@@ -1282,6 +1309,8 @@ impl<S: Clone> ConditionStore<S> {
                 duration_ms,
                 health_interval_ms,
                 mana_interval_ms,
+                health_gain,
+                mana_gain,
                 ..
             } => {
                 // Crystal condition.cpp:436-447,1287-1298: same COMBAT/subid
@@ -1308,10 +1337,15 @@ impl<S: Clone> ConditionStore<S> {
                     now.checked_add(ms(duration_ms))
                         .ok_or(ConditionRefusal::TimeOverflow)?,
                 );
-                instance.next_tick_at = Some(
-                    now.checked_add(h.min(m))
-                        .ok_or(ConditionRefusal::TimeOverflow)?,
-                );
+                // Zero-gain source markers retain lifetime/conflict state but no tick debt.
+                instance.next_tick_at = if health_gain != 0 || mana_gain != 0 {
+                    Some(
+                        now.checked_add(h.min(m))
+                            .ok_or(ConditionRefusal::TimeOverflow)?,
+                    )
+                } else {
+                    None
+                };
             }
             ConditionValues::Attributes {
                 duration_ms,

@@ -13,6 +13,7 @@ pub struct CounterRef<'a> {
     pub gate_value: i64,
     pub minimum: i64,
     pub maximum: i64,
+    pub encounter_source: Option<&'a str>,
 }
 
 impl Counter {
@@ -23,9 +24,10 @@ impl Counter {
             quest: self.quest,
             track: self.track,
             gate: self.gate,
-            gate_value: 1,
+            gate_value: self.gate_value(),
             minimum: 0,
             maximum: self.maximum,
+            encounter_source: None,
         }
     }
 }

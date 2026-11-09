@@ -1,0 +1,462 @@
+{
+  "schema": 1,
+  "tracks": [],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/qnpcfx-oldrak-hallowed-axe",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.oldrak",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3274",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i919",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Let's see....<mumbles a prayer>....here we go. The blessing on this axe will be absorbed by all the demonic energy around here. I presume it will not last very long, so better hurry. Actually, I can refresh the blessing as often as you like."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oldrak.lua:sha256:dc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/progress",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "magic_effects": [
+        {
+          "effect": "CONST_ME_YELLOWENERGY",
+          "target": "npc"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-inquisition-kulag_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.kulag_the_guard",
+      "keywords": [
+        "authorities"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/kulag_guard",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "They should throw you all into jail instead of giving you all those quests and rewards an honest watchman can only dream about."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kulag_the_guard.lua:sha256:82aabb19e069164b2db452deeb0098708eac61c436df9dbc5e28f905c7cc49e3"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "magic_effects": [
+        {
+          "effect": "CONST_ME_HOLYAREA",
+          "target": "player"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-inquisition-grof_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.grof_the_guard",
+      "keywords": [
+        "authorities"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/grof_guard",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Yes I'm pretty sure they have failed to send the laundry police to take care of it, you fool."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/grof_the_guard.lua:sha256:0a24a756c9c3c75d099edda56d9f11eebc26d8535043e54d8d634af610cc0c5b"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "magic_effects": [
+        {
+          "effect": "CONST_ME_HOLYAREA",
+          "target": "player"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-inquisition-tim_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.tim_the_guard",
+      "keywords": [
+        "gods would allow"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/tim_guard",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "It's not a drama!! I think there is just no god who's responsible for toothbrush safety, that's all ...",
+        "And even IF through some miracle the stupid toothbrush had jumped out of the toilet into my hand, I honestly doubt I would ever use it again."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tim_the_guard.lua:sha256:73a58ccd97514f92f460d5a386f48690310857a953e2009125b036de000ff364"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "magic_effects": [
+        {
+          "effect": "CONST_ME_HOLYAREA",
+          "target": "player"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-inquisition-walter_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.walter_the_guard",
+      "keywords": [
+        "gods would allow"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/walter_guard",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "If the gods had created the world a paradise, no one had to steal at all."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/walter_the_guard.lua:sha256:e5ca68e4716886fced81f52c6975d2e97a30806833e62e5539e3f406f25ea205"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "magic_effects": [
+        {
+          "effect": "CONST_ME_HOLYAREA",
+          "target": "player"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-inquisition-miles_guard",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.miles_the_guard",
+      "keywords": [
+        "trouble will arise in the near future"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/miles_guard",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I think the gods and the government do their best to keep away harm from the citizens."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/miles_the_guard.lua:sha256:dc6f4b5c03087b233d993c5b000ffc95156531bbe29de8de4e9e255aaf16f296"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "magic_effects": [
+        {
+          "effect": "CONST_ME_HOLYAREA",
+          "target": "player"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-oldrak-begin",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.oldrak",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/progress",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "A demon oak?!? <mumbles some blessings> May the gods be on our side. You'll need a {hallowed axe} to harm that tree. Bring me a simple {axe} and I'll prepare it for you."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oldrak.lua:sha256:dc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-inquisition-join",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "So be it. Now you are a member of the inquisition. You might ask me for a {mission} to raise in my esteem."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-inquisition-start",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Let's see if you are worthy. Take an inquisitor's field guide from the box in the back room. ...",
+        "Follow the instructions in the guide to talk to the Thaian guards that protect the walls and gates of the city and test their loyalty. Then report to me about your {mission}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qnpcfx-inquisition-report",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission01",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/kulag_guard",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/grof_guard",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/tim_guard",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/walter_guard",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/miles_guard",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Indeed, this is exactly what my other sources told me. Of course I knew the outcome of this investigation in advance. This was just a test. ...",
+        "Well, now that you've proven yourself as useful, you can ask me for another mission. Let's see if you can handle some field duty, too."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    }
+  ]
+}

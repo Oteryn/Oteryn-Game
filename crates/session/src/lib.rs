@@ -16,6 +16,12 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
+/// Real wire codecs for downstream transport fixtures; no session mutation helpers.
+#[cfg(feature = "test-support")]
+pub mod test_support {
+    pub use oteryn_protocol_oteryn as wire;
+}
+
 /// Account achievement query and typed result.
 pub mod account_achievements;
 /// Account-only observer transport; separate from the player Session.
@@ -24,13 +30,13 @@ pub mod cast_viewer;
 
 /// Display and control vocabulary for S17.
 pub use oteryn_protocol_oteryn::cast;
+/// Typed fresh-session activity barriers and their scope namespace.
+pub mod activity_scope;
 
 #[path = "achievement_notices.rs"]
 mod achievement_notices_transport;
 pub use oteryn_protocol_oteryn::achievement_notices;
 mod activity_handoff;
-/// Server-committed shared activity scope receipts.
-pub use oteryn_protocol_oteryn::activity_scope;
 pub mod analyser_transport;
 mod appearance_state;
 pub use oteryn_protocol_oteryn::presentation::{
@@ -362,6 +368,8 @@ pub struct Session<S> {
     deadline: Duration,
     last_received: tokio::time::Instant,
     connection_generation: u64,
+    world_id: [u8; 16],
+    activity_scope: Option<activity_scope::ActivityScopeSnapshot>,
     next_command_id: u64,
     last_server_sequence: u64,
     spatial_revision: u64,
@@ -442,3 +450,5 @@ pub use error::SessionError;
 use framing::*;
 pub use framing::{read_frame, write_frame};
 pub use outcomes::*;
+
+pub use oteryn_protocol_oteryn::personal_map_marks;

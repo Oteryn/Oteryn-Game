@@ -16,6 +16,9 @@ pub const SNAPSHOT_TYPE_WORLD_SPATIAL_V1: u32 = 1;
 /// result with [`StepDisposition::TooEarly`] and the `step_wait_ms` pacing receipt
 /// (STEP-PACE-WIRE-0), and owns no command type or domain.
 pub const CAPABILITY_PACED_MOVEMENT_V1: u32 = 13;
+/// M40: eight-way steps and the corresponding three-times pacing receipt.
+pub const CAPABILITY_DIAGONAL_MOVEMENT_V1: u32 = 449;
+pub const MAX_DIAGONAL_STEP_WAIT_MS: u32 = MAX_STEP_WAIT_MS * 3;
 
 /// First-child semantic bounds (#642 packet 5853255180).
 pub const MAX_STEP_INTENT_BYTES: usize = 4;
@@ -49,6 +52,33 @@ pub enum StepDirection {
     SouthWest = 7,
     NorthWest = 8,
 }
+
+impl StepDirection {
+    #[must_use]
+    pub const fn delta(self) -> (i32, i32) {
+        match self {
+            Self::North => (0, -1),
+            Self::East => (1, 0),
+            Self::South => (0, 1),
+            Self::West => (-1, 0),
+            Self::NorthEast => (1, -1),
+            Self::SouthEast => (1, 1),
+            Self::SouthWest => (-1, 1),
+            Self::NorthWest => (-1, -1),
+        }
+    }
+    #[must_use]
+    pub const fn is_diagonal(self) -> bool {
+        matches!(
+            self,
+            Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest
+        )
+    }
+}
+
+#[cfg(test)]
+#[path = "world_spatial/m40_diagonal_tests.rs"]
+mod m40_diagonal_tests;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StepDisposition {
@@ -181,15 +211,23 @@ pub fn encode_step_result(disposition: StepDisposition) -> Vec<u8> {
 }
 
 /// Whether `result` may be sent to a session; `paced` is whether it selected capability 13.
-fn check_step_result(result: StepResult, paced: bool) -> Result<(), WorldSpatialError> {
+fn check_step_result(
+    result: StepResult,
+    paced: bool,
+    diagonal: bool,
+) -> Result<(), WorldSpatialError> {
+    let maximum = if diagonal {
+        MAX_DIAGONAL_STEP_WAIT_MS
+    } else {
+        MAX_STEP_WAIT_MS
+    };
     let wait = result.step_wait_ms;
     let valid = match result.disposition {
         StepDisposition::Blocked | StepDisposition::Rejected => wait == 0,
         StepDisposition::Moved => {
-            wait == 0
-                || (paced && wait <= MAX_STEP_WAIT_MS && wait.is_multiple_of(STEP_WAIT_BEAT_MS))
+            wait == 0 || (paced && wait <= maximum && wait.is_multiple_of(STEP_WAIT_BEAT_MS))
         }
-        StepDisposition::TooEarly => paced && wait <= MAX_STEP_WAIT_MS,
+        StepDisposition::TooEarly => paced && wait <= maximum,
     };
     if valid {
         Ok(())
@@ -206,7 +244,16 @@ pub fn encode_step_result_paced(
     result: StepResult,
     paced: bool,
 ) -> Result<Vec<u8>, WorldSpatialError> {
-    check_step_result(result, paced)?;
+    encode_step_result_with_diagonal(result, paced, false)
+}
+
+/// A larger receipt is valid only for a session that selected diagonal movement.
+pub fn encode_step_result_with_diagonal(
+    result: StepResult,
+    paced: bool,
+    diagonal: bool,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    check_step_result(result, paced, diagonal)?;
     let mut output = encode_step_result(result.disposition);
     if result.step_wait_ms != 0 {
         push_tag(&mut output, 2, 0);
@@ -239,6 +286,15 @@ pub fn decode_step_result_paced(
 pub fn decode_step_result_receipt(
     payload: &[u8],
     paced: bool,
+) -> Result<StepResult, WorldSpatialError> {
+    decode_step_result_receipt_with_diagonal(payload, paced, false)
+}
+
+/// Decode the negotiated receipt without widening the legacy paced contract.
+pub fn decode_step_result_receipt_with_diagonal(
+    payload: &[u8],
+    paced: bool,
+    diagonal: bool,
 ) -> Result<StepResult, WorldSpatialError> {
     let maximum = if paced {
         MAX_PACED_STEP_RESULT_BYTES
@@ -277,7 +333,7 @@ pub fn decode_step_result_receipt(
         disposition,
         step_wait_ms,
     };
-    check_step_result(result, paced)?;
+    check_step_result(result, paced, diagonal)?;
     Ok(result)
 }
 
@@ -382,7 +438,12 @@ pub fn encode_step_outcome(
         disposition,
         step_wait_ms,
     };
-    encode_step_result_paced(result, true).unwrap_or_else(|_| encode_step_result(disposition))
+    encode_step_result_with_diagonal(
+        result,
+        true,
+        selected_capabilities.contains(&CAPABILITY_DIAGONAL_MOVEMENT_V1),
+    )
+    .unwrap_or_else(|_| encode_step_result(disposition))
 }
 
 #[cfg(test)]

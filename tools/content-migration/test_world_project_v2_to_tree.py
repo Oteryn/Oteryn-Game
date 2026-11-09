@@ -110,6 +110,9 @@ def test_closed_weapon_metadata_admission():
             raise AssertionError("forged weapon packet accepted")
     print("ok test_closed_weapon_metadata_admission")
 source_claim_count = len(json.loads((ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
+sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
+import engclaim_native
+source_claim_count += len(engclaim_native.CASES)
 project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
 manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
 lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))
@@ -127,6 +130,23 @@ if quest_families:
     assert set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]})
 
 reference = json.loads((ROOT / 'content/world/definitions/reference.json').read_text())
+from validate_world_project_v2_to_tree import source_qualified_item_references
+expected_items = source_qualified_item_references(reference, ROOT)
+legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
+assert len(legacy_items) == 34111, "legacy package count remains unchanged"
+assert [row["identity"]["key"] for row in expected_items[len(legacy_items):]] == [
+    f"oteryn:item.tibia.i{item}" for item in (43860, 43589, 43590, 42851, 42853, 43625)
+], "only the exact source-qualified reference extensions are admitted"
+# Replaying an extension with a changed semantic fact must refuse, not normalize it.
+tampered = copy.deepcopy(reference)
+tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items):]))
+tampered["records"][-1]["materializable"] = True
+try:
+    source_qualified_item_references(tampered, ROOT)
+except ValueError as error:
+    assert str(error) == "BOSS_MOVEMENT_REFERENCE_CHANGED", error
+else:
+    raise AssertionError("changed source-qualified reference accepted")
 # Match the materializer's source-proven, exact Primal empty-loot admission.
 # Its witness rejects changed identities and every nonempty or unrelated Loot.
 from primal_reference_overlay import apply_reference
@@ -135,7 +155,7 @@ creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
 assert family_counts['Creature'] == 1_864
 assert lock["family_counts"] == {
-    "Item": 34111, "Mount": 252,  # E06 minted 68 client-only Crystal market Items.
+    "Item": len(expected_items), "Mount": 252,  # Exact source-qualified extensions above.
     **family_counts, "Document": 1609,
     "Encounter.Raid": json.loads((ROOT / "content/encounters/raids/index.json").read_text())["record_count"],
     "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10, "Encounter": 108, "Charm": 25,

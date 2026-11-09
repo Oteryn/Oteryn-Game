@@ -1,0 +1,20 @@
+{
+  "id": 451,
+  "name": "PERSONAL_MAP_MARKS_V1",
+  "constant": "personal_map_marks::CAPABILITY_PERSONAL_MAP_MARKS_V1",
+  "requires": [
+    3,
+    18
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    733
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

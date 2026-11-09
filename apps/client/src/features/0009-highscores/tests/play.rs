@@ -75,6 +75,9 @@ fn shell_input_queries_live_highscores_and_projects_reply() -> Result<(), String
         .map_err(|_| "highscores scenario panicked".to_string())?
 }
 fn scenario() -> Result<(), String> {
+    scenario_category(2)
+}
+fn scenario_category(category: u32) -> Result<(), String> {
     let (link, commands, outbox) = play_channel();
     let runtime = ClientRuntime::new().map_err(|e| e.to_string())?;
     runtime
@@ -103,14 +106,14 @@ fn scenario() -> Result<(), String> {
     let text = highscores::panel_text(&link.highscores_panel());
     assert!(text.contains("Ada Knight") && text.contains("123456"));
     link.highscores_request(Action::Filter {
-        category: 2,
+        category,
         vocation: 1,
     });
     wait(&|| {
         link.highscores_panel()
             .reply
             .as_ref()
-            .is_some_and(|r| r.category == 2)
+            .is_some_and(|r| r.category == category)
     })?;
     // docs/reference/tibia-manual/combat.md:262: native filters use the existing highscore wire for both Drome lists.
     for (category, label) in [
@@ -130,7 +133,21 @@ fn scenario() -> Result<(), String> {
         let text = highscores::panel_text(&link.highscores_panel());
         assert!(text.contains(label) && text.contains("Ada Knight") && text.contains("123456"));
     }
+    if category == 13 {
+        let text = highscores::panel_text(&link.highscores_panel());
+        assert!(text.contains("Tibiadrome levels") && text.contains("123456"));
+    }
     drop(link);
     runtime.shutdown(Duration::from_millis(250));
     Ok(())
+}
+
+#[test]
+fn srx3_drome_lifetime_highscores_native_filter_crosses_session() -> Result<(), String> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario_category(13))
+        .map_err(|error| error.to_string())?
+        .join()
+        .map_err(|_| "Drome lifetime native Highscores thread panicked".to_owned())?
 }

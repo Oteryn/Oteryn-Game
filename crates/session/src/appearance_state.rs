@@ -73,9 +73,12 @@ pub(crate) fn validate_entities(
             .values()
             .filter(|e| e.kind == world_spatial_entities::EntityKind::Player)
         {
-            let world_spatial_entities::EntityDetail::Actor { appearance_ref, .. } = entity.detail
-            else {
-                return Err(invalid());
+            let appearance_ref = match entity.detail {
+                world_spatial_entities::EntityDetail::Actor { appearance_ref, .. }
+                | world_spatial_entities::EntityDetail::ActorWithIcons { appearance_ref, .. } => {
+                    appearance_ref
+                }
+                _ => return Err(invalid()),
             };
             state
                 .resolve(entity.entity, appearance_ref)
@@ -195,7 +198,10 @@ impl<S: SessionStream> Session<S> {
                     .and_then(|stored| stored.lights.get(&entity.entity.identity))
                     .map(|light| (light.level, light.color)),
                 look: match entity.detail {
-                    world_spatial_entities::EntityDetail::Actor { appearance_ref, .. } => self
+                    world_spatial_entities::EntityDetail::Actor { appearance_ref, .. }
+                    | world_spatial_entities::EntityDetail::ActorWithIcons {
+                        appearance_ref, ..
+                    } => self
                         .appearance
                         .as_ref()
                         .and_then(|state| state.resolve(entity.entity, appearance_ref))

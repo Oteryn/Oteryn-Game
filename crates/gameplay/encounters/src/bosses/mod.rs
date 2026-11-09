@@ -1,10 +1,15 @@
 //! Source-specific boss and encounter implementations.
 pub mod bone_overlord;
 pub mod boreth;
+pub mod claustrophobic_inferno;
 pub mod crystal_deaths;
 pub mod endgame_entry;
 pub mod gaz_haragoth;
 pub mod goshnars_greed;
+pub mod goshnars_hatred;
+pub mod goshnars_malice;
+pub mod goshnars_megalomania;
+pub mod goshnars_spite;
 pub mod hazard_primal;
 pub mod herald_of_fire;
 pub mod icicle;
@@ -17,6 +22,9 @@ pub mod rotten_blood;
 pub mod rum_barrel;
 pub mod seven_encounters;
 pub mod smelly_cheese;
+pub mod soul_war_cruelty;
+pub mod soul_war_second_taint;
+pub mod soul_war_torment;
 pub mod source_callbacks;
 pub mod summer_2026;
 pub mod tentacles;
