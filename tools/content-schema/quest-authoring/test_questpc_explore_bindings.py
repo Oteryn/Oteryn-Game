@@ -21,9 +21,47 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_two_pinned_script_destination_entries_are_activated(self):
+        callbacks = explore.callbacks(ROOT)
+        for quest in ('oteryn:quest.ferumbras_ascension_quest',
+                      'oteryn:quest.heart_of_destruction_quest'):
+            with self.subTest(quest=quest):
+                entries = [c for c in callbacks if c['quest'] == quest]
+                self.assertEqual(len(entries), 1, 'one pinned script destination is activated')
+                self.assertEqual(entries[0]['minimum_level'], 150)
+                self.assertEqual(entries[0]['admission'], {'premium': True})
+
+    def test_heart_of_destruction_binds_the_zao_breach_destination(self):
+        binding = (('oteryn:quest.heart_of_destruction_quest', 's1',
+                    'source-approach:heart-zao-breach', 'chosen-source/heart_of_destruction_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 32118, 'y': 31355, 'floor': -13},
+                'ordinal': 0, 'appearance': 23054})
+            self.assertEqual(callback['minimum_level'], 150)
+            self.assertEqual(callback['admission'], {'premium': True})
+            self.assertIsNone(callback['teleport'])
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_script_destination_rejects_a_changed_source_revision(self):
+        import tempfile
+        import questpc_source_approaches as source
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            definitions = root / 'content/quests/definitions'
+            definitions.mkdir(parents=True)
+            definition = {'identity': {'key': source.QUEST}, 'source_refs': {'quest': {
+                'key': 'canary:quest/ferumbras_ascension_quest', 'revision': 'changed-source'}}}
+            (definitions / 'quests-00000-00000.json').write_text(
+                json.dumps({'records': [{'definition': definition}]}))
+            with self.assertRaisesRegex(ValueError, 'source approach quest owner changed'):
+                source.resolve(root, source.QUEST, 'source-approach:ferumbras-entrance')
+
     def test_script_destination_approach_rejects_foreign_owners(self):
         import questpc_source_approaches as source
         for quest, reference in ((source.QUEST, 'source-approach:unknown'),
+                                 (source.QUEST, 'ferumbras-entrance'),
                                  ('oteryn:quest.longsword_quest', 'source-approach:ferumbras-entrance')):
             with self.subTest(quest=quest, reference=reference):
                 with self.assertRaisesRegex(ValueError, 'exact quest'):

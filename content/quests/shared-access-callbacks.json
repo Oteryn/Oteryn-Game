@@ -636,6 +636,61 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/ferumbras-ascension/s1/entry",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33276,
+          "y": 32390,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410,
+        "native": {
+          "position": {
+            "x": 33276,
+            "y": 32390,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 410
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/ferumbras_ascension_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/ferumbras_ascension_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/ferumbras_ascension/movements_entrance.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 150
+    },
+    {
       "key": "oteryn:quest-callback/m01b/fire-axe/s1/entry",
       "quest": "oteryn:quest.fire_axe_quest",
       "trigger": "step_in",
@@ -907,6 +962,61 @@
       "admission": {
         "premium": true
       }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/heart-of-destruction/s1/entry",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32118,
+          "y": 31355,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 23054,
+        "native": {
+          "position": {
+            "x": 32118,
+            "y": 31355,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 23054
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/heart_of_destruction_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/heart_of_destruction_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/heart_of_destruction/movements_teleport.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 150
     },
     {
       "key": "oteryn:quest-callback/m01b/iron-helmet/s1/ironhelmet",

@@ -33,6 +33,12 @@ mod treasure_entries;
 #[path = "m01b_explore/cave_entry.rs"]
 mod cave_entry;
 
+#[path = "m01b_explore/infernal_entry.rs"]
+mod infernal_entry;
+
+#[path = "m01b_explore/breach_entry.rs"]
+mod breach_entry;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -303,6 +309,12 @@ pub(super) fn world(
     }
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
+    }
+    if name == "m01b/ferumbras-ascension/s1/entry" {
+        return infernal_entry::world(native);
+    }
+    if name == "m01b/heart-of-destruction/s1/entry" {
+        return breach_entry::world(native);
     }
     if name == "m01b/dragon-corpse/s1/entry" {
         return cave_entry::world(native);

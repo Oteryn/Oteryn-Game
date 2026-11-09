@@ -5,6 +5,8 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.ferumbras_ascension_quest', 's1', 'source-approach:ferumbras-entrance', 'chosen-source/ferumbras_ascension_quest'),
+    ('oteryn:quest.heart_of_destruction_quest', 's1', 'source-approach:heart-zao-breach', 'chosen-source/heart_of_destruction_quest'),
     ('oteryn:quest.dragon_corpse_quest', 's1', 'area-approach:oteryn:area.hunting_place.rookgaard_bear_cave', 'chosen-source/dragon_corpse_quest'),
     ('oteryn:quest.fishing_box_quest', 's1', 'claim:canary:reward-claim/quest/u8_0/fishing_box', 'chosen-source/fishing_box_quest'),
     ('oteryn:quest.berserker_treasure_quest', 's1', 'claim:canary:reward-claim/quest/u6_4/berserker_treasure/rewards/white_pearls', 'chosen-source/berserker_treasure_quest'),

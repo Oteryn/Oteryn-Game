@@ -31,7 +31,7 @@ These callbacks grant visit counters only. Premium/level requirements remain
 in force. No Item, XP, teleport or whole-quest completion is granted. Native
 PostgreSQL qualification is recorded separately in the lane status ledger.
 
-## Ferumbras arrival (prepared, inactive)
+## Ferumbras arrival
 
 Source: https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/ferumbras_ascension/movements_entrance.lua
 
@@ -43,3 +43,15 @@ neighbour (33276, 32390, 8), appearance 410. The retained B3 map has ground
 (33277, 32390, 8). This binds a visit on the initial entrance floor; it does
 not replace the portal or grant seven-boss completion/access to later floors.
 The canonical recipe's Current Premium requirement and level 150 are retained.
+
+## Heart of Destruction Zao breach
+
+Source: https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/heart_of_destruction/movements_teleport.lua
+
+Action 48069 is explicitly labelled "from farmine" and lands at
+(32117,31355,13); action 48068 goes back to Farmine. The chosen EXPLORE
+approach is its clear eastern neighbour (32118,31355,13), appearance23054.
+The retained map has ground23113 at the source landing and ground23049 at
+the next eastern starting tile (32119,31355,13). The chosen recipe's level150
+and Current Premium gates stay in place. Visiting this landing does not
+replace the portal, grant boss access or manufacture any later-stage credit.

@@ -3,22 +3,34 @@ import json
 from pathlib import Path
 
 QUEST = 'oteryn:quest.ferumbras_ascension_quest'
-SOURCE_QUEST = 'canary:quest/ferumbras_ascension_quest'
-URL = ('https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/'
-       'data-otservbr-global/scripts/quests/ferumbras_ascension/movements_entrance.lua')
+BASE = ('https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/'
+        'data-otservbr-global/scripts/quests/')
+SITES = {
+    'ferumbras-entrance': (QUEST, 'canary:quest/ferumbras_ascension_quest',
+        'ferumbras_ascension/movements_entrance.lua',
+        (33275, 32390, -8), (33276, 32390, -8, 410)),
+    'heart-zao-breach': ('oteryn:quest.heart_of_destruction_quest',
+        'canary:quest/heart_of_destruction_quest', 'heart_of_destruction/movements_teleport.lua',
+        (32117, 31355, -13), (32118, 31355, -13, 23054)),
+}
 
 
 def resolve(root, quest, reference):
-    if (quest, reference) != (QUEST, 'source-approach:ferumbras-entrance'):
+    site = (SITES.get(reference.removeprefix('source-approach:'))
+            if reference.startswith('source-approach:') else None)
+    if site is None or site[0] != quest:
         raise ValueError('Source approach is not declared for this exact quest')
+    _, source_quest, script, origin, (x, y, floor, appearance) = site
     definitions = [r['definition']
                    for p in (Path(root) / 'content/quests/definitions').glob('quests-*.json')
                    for r in json.loads(p.read_text())['records']
                    if r['definition']['identity']['key'] == quest]
     if (len(definitions) != 1
-            or definitions[0]['source_refs']['quest']['key'] != SOURCE_QUEST):
+            or definitions[0]['source_refs']['quest']['key'] != source_quest
+            or definitions[0]['source_refs']['quest']['revision']
+                != 'canary-04b83b51+crystalserver-9f5a72c6'):
         raise ValueError('Pinned source approach quest owner changed')
-    # The level-150 portal's uncompleted destination is (33275,32390,8).
-    # Its clear eastern neighbour preserves the source portal and native landing.
-    return (dict(x=33276, y=32390, floor=-8), 410,
-            [URL, 'OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only'])
+    if floor != origin[2] or abs(x - origin[0]) + abs(y - origin[1]) != 1:
+        raise ValueError('Source approach must remain adjacent on its original floor')
+    return (dict(x=x, y=y, floor=floor), appearance,
+            [BASE + script, 'OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only'])

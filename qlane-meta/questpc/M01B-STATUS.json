@@ -27,9 +27,11 @@
       "Minotaur Hell Quest",
       "Fishing Box Quest",
       "Berserker Treasure Quest",
-      "Dragon Corpse Quest"
+      "Dragon Corpse Quest",
+      "Ferumbras' Ascension Quest",
+      "Heart of Destruction Quest"
     ],
-    "wired_explore_stages": 20,
+    "wired_explore_stages": 22,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -49,9 +51,10 @@
       "Katana Quest",
       "Minotaur Hell Quest",
       "Fishing Box Quest",
-      "Berserker Treasure Quest"
+      "Berserker Treasure Quest",
+      "Dragon Corpse Quest"
     ],
-    "wired_native_visit_anchors": 23
+    "wired_native_visit_anchors": 25
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -117,9 +120,14 @@
     "ferumbras_source_preparation": "INACTIVE:public pinned Canary entrance script checked;source destination33275,32390,z8;adjacent410ground verified. REDunsupportedreference0.194s -> GREEN0.782s,level150+Premium preserved,foreign-owner rejection covered.",
     "cave_clippy": "GREEN quests+dispatch all-targets -Dwarnings4m13s",
     "cave_profile": "GREEN5Rustprofiletests0.04s",
-    "cave_postgres": "PENDING:own native case building after strictClippy/profile;2 preceding treasure cases GREEN121.65s"
+    "cave_postgres": "GREEN62.798078182s actualSTEP,freshonce,replay/revisit,completion0;compiled Rust/data snapshot10571521d",
+    "two_source_activation": "RED2missingcallbacks6.539s -> GREEN39Python124.281s;CurrentPremium+level150 retained on both actual source destination approaches",
+    "source_resolver_guards": "REDmissing Heart site0.191s;REDmissing sourceprefix0.206s;REDchanged source revision0.003s -> GREEN4focusedtests1.676s;foreign quest/alias/revision and nonadjacent floor guards",
+    "two_source_clippy": "GREEN quests+dispatch all-targets strict -Dwarnings4m21s",
+    "two_source_profile": "GREEN5Rustprofiletests0.04s",
+    "two_source_postgres": "PENDING2ownnativecases building after strictClippy/profile;not claimed green"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "20wired,19PG-proven;26routes/36stages unwired. FinishDragonCorpse nativePG,then activateFerumbras. M01b PARTIAL."
+  "continuation": "22wired,20PG-proven;24routes/34stages unwired. FinishFerumbras/Heart nativePG;then next own EXPLORE route. M01b PARTIAL."
 }
