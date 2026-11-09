@@ -25,7 +25,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One coalesced creature think pass. The same Channel's scheduler is shared by
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
-        self.drain_arena_victories(self.owner_now().get()).await;
+        self.drain_arena_matches(self.owner_now().get()).await;
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
@@ -38,7 +38,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) {
-        self.drain_arena_victories(now.get()).await;
+        self.drain_arena_matches(now.get()).await;
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };

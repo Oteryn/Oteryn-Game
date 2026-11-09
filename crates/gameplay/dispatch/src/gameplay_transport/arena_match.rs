@@ -14,6 +14,8 @@ use std::time::{Duration, Instant};
 
 #[path = "arena_match/death_poll.rs"]
 mod death_poll;
+#[path = "arena_match/departure_poll.rs"]
+mod departure_poll;
 #[path = "arena_match/pillar.rs"]
 mod pillar;
 #[path = "arena_match/portal_step.rs"]
@@ -135,6 +137,11 @@ pub(in crate::gameplay_transport) fn tick(
             .try_lock()
             .is_ok_and(|states| states.is_dead(live.actor));
         if present && inside && !expired && !dead {
+            return true;
+        }
+        // Retain the run until its fenced native departure reset settles. A
+        // failed database pass must not discard the only retry owner.
+        if present && !inside && !expired && !dead {
             return true;
         }
         if let Some(opponent) = live.opponent {
@@ -605,18 +612,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else if state.phase == 3 || state.rank == 0 {
             let current = runtime.read_actor_position(actor).ok()?.position();
             let reward_room = position(donor::REWARD_ROOM);
+            if let Some(old) = self.states.arena_matches.live.lock().ok()?.remove(&session) {
+                let _ = pillar::project(self, &old.state, PillarProjection::Release);
+                if let Some(opponent) = old.opponent {
+                    let _ = runtime.remove_arena_opponent(opponent);
+                }
+            }
             if (1..=10).any(|pit| in_pit(current, pit))
                 || (state.rank == 0
                     && current.floor == reward_room.floor
                     && current.x.abs_diff(reward_room.x) <= 20
                     && current.y.abs_diff(reward_room.y) <= 30)
             {
-                if let Some(old) = self.states.arena_matches.live.lock().ok()?.remove(&session) {
-                    let _ = pillar::project(self, &old.state, PillarProjection::Release);
-                    if let Some(opponent) = old.opponent {
-                        let _ = runtime.remove_arena_opponent(opponent);
-                    }
-                }
                 let before = runtime.read_actor_position(actor).ok()?;
                 runtime
                     .relocate_arena_player(

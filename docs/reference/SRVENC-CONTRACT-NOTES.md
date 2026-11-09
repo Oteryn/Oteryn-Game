@@ -2334,3 +2334,28 @@ M51 remains PARTIAL: this slice exposes the SDK; native departure producer and
 complete source reset closure follow.
 Durability clippy --all-targets -D warnings PASS53.614s; cargo fmt --all --check
 PASS15.231s; engine-only pin identity unchanged.
+
+## M51: native departure producer and retry ownership
+
+The existing coalesced creature pass now checks fighting/victory runs for an
+actual outside position before observing a kill. The spell lane, current native
+snapshot/control, Character lease, node/session fence and revision slot are
+rechecked before writing the typed Leave origin. Existing kill rewards settle
+before opponent removal. A pending departure retains its live retry owner if a
+database pass fails. Committed idle/reward states always clear their old exact
+run projection, including when the player has already left the pit/reward box;
+relocation remains limited to the existing source return areas.
+Source: Crystal201189f movements_arena_pit.lua:14-20 and svargrond_arena.lua:
+259-287. No new schema or ids. A separate actual PG story enters with fee, leaves
+through native relocation, then requires ordinary creature cadence to persist
+idle, free custody, remove the opponent and emit one native departure receipt,
+without a client Leave or any kill. Existing full-ten-pit story remains intact.
+RED actual PG51.98s (469.539s including cold compilation): rank/phase stays1/1.
+GREEN real PG native departure51.154184337s; native ten-pit fights/STEP/reward
+58.489216135s; two tests PASS199.256s including retry compilation. First green
+link attempt ran out of disk; stale own incremental/library variants were removed
+and the same unmodified tests rerun. PostgreSQL180006, entry fee1000, rank1,
+one reward claim/item remain proven. M51 remains PARTIAL pending full pit reset
+and silent timeout-state persistence closure.
+Dispatch clippy --lib -D warnings PASS124.540s; cargo fmt --all --check
+PASS15.897s; engine-only pin identity unchanged.

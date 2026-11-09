@@ -1,10 +1,10 @@
-//! M51 silent source death consumer, on the existing coalesced creature cadence.
+//! M51 silent death/departure consumer on the coalesced creature cadence.
 //! Crystal201189f creaturescripts_arena_kill.lua:2-38. The current runtime proves
 //! most-damage credit; the existing fenced arena writer persists the victory.
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(in crate::gameplay_transport) async fn drain_arena_victories(&self, now_us: u64) {
+    pub(in crate::gameplay_transport) async fn drain_arena_matches(&self, now_us: u64) {
         {
             let Ok(mut poll) = self.states.arena_matches.victory_poll.lock() else {
                 return;
@@ -27,13 +27,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return;
             };
             live.iter()
-                .filter(|(_, live)| live.state.phase == 1)
+                .filter(|(_, live)| matches!(live.state.phase, 1 | 2))
                 .take(10)
                 .map(|(session, live)| (*session, live.clone()))
                 .collect::<Vec<_>>()
         };
         for (session, live) in pending {
-            self.settle_arena_victory(session, live).await;
+            // Keep the optional reset future out of every connection's stack.
+            let _ = Box::pin(self.settle_arena_departure(session, &live)).await;
+            if live.state.phase == 1 {
+                self.settle_arena_victory(session, live).await;
+            }
         }
     }
 

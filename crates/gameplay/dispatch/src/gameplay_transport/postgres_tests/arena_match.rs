@@ -66,7 +66,29 @@ fn scenario(funded: bool) -> TestResult {
     scenario_path(funded, false)
 }
 
+#[test]
+fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, true, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "M51 native departure worker panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES native departure duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+
 fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
+    scenario_route(funded, native_portals, false)
+}
+fn scenario_route(funded: bool, native_portals: bool, leave_early: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "arena_match", false, false).await?;
@@ -268,6 +290,64 @@ fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
             .await
             .ok_or("entry replay")?;
         assert_eq!(wire::decode_match_result(&replay).map_err(debug)?, entered);
+        if leave_early {
+            let target = {
+                let mut runtime = deps.runtime.lock().await;
+                let target = runtime
+                    .visible_entities()
+                    .creatures
+                    .iter()
+                    .find(|c| runtime.contains_live_creature(c.actor))
+                    .ok_or("live arena opponent")?
+                    .actor;
+                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                runtime
+                    .relocate_arena_player(
+                        deps.actor,
+                        admitted.game_session_id,
+                        before,
+                        crate::foundation::MovementLocalPosition {
+                            x: 32251,
+                            y: 31098,
+                            floor: 6,
+                        },
+                    )
+                    .map_err(debug)?;
+                target
+            };
+            owner.clock_origin -= std::time::Duration::from_secs(3);
+            owner.drain_monster_melee().await;
+            let stored: (i32, i32) = sqlx::query_as("SELECT (body->>'rank')::int,(body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                stored,
+                (0, 0),
+                "native departure must cancel without client Leave"
+            );
+            let leases: i64 = sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(
+                leases, 0,
+                "departure releases durable custody before the timer expires"
+            );
+            assert!(
+                !deps.runtime.lock().await.contains_live_creature(target),
+                "departure removes its old opponent"
+            );
+            let native: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2")
+                .bind(i32::try_from(b"oteryn:svargrond-native-departure:v1".len())?)
+                .bind(b"oteryn:svargrond-native-departure:v1".as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(native, 1);
+            let victories: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_victories")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(
+                victories, 0,
+                "leaving cannot create a kill or completed rank"
+            );
+            return Ok(());
+        }
         for pit in 1..=10 {
             assert_eq!(
                 command(&owner, &mut admitted, A::Advance)
