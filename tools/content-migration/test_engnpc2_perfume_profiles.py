@@ -5,6 +5,19 @@ import qengine_reward_item_profiles as profiles
 
 
 class PerfumeCustody(unittest.TestCase):
+    def test_guardcatcher_has_source_qualified_portable_custody(self):
+        records = {row['production_definition']['production_key']: row
+                   for row in profiles.capture()['records']}
+        self.assertIn('oteryn:item.tibia.i17669', set(records))
+        row = records['oteryn:item.tibia.i17669']
+        self.assertEqual(row['admission'], {
+            'materializable': True, 'stack_class': 'NonStackable',
+            'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(row['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 800})
+        for field in ('charges', 'temporal'):
+            self.assertEqual(row['semantics'][field], {'state': 'NOT_APPLICABLE'})
+
     def test_paint_vial_has_exact_native_portable_facts(self):
         records = {row['production_definition']['production_key']: row
                    for row in profiles.capture()['records']}
