@@ -72,3 +72,72 @@ fn sorted_filtered_quest_selection_sends_the_displayed_server_id() -> Result<(),
     );
     Ok(())
 }
+
+#[test]
+fn journal_search_and_sort_use_confirmed_mission_text_and_keep_server_cursor() -> Result<(), String>
+{
+    use oteryn_client_runtime::quest_log::QuestMission;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.quest_initialize(QuestState {
+        selected: true,
+        revision: Some(0),
+        ..Default::default()
+    });
+    let log = QuestLog {
+        view: Some(QuestLogView::List(vec![
+            QuestListEntry {
+                quest_index: 1,
+                completed: false,
+            },
+            QuestListEntry {
+                quest_index: 2,
+                completed: true,
+            },
+        ])),
+        tracked: vec![QuestLine {
+            quest_index: 1,
+            completed: false,
+            missions: vec![QuestMission {
+                mission_index: 1,
+                name: "The tower".into(),
+                text: "Find the key".into(),
+                done: false,
+            }],
+        }],
+    };
+    outbox.push(vec![oteryn_session::SessionEvent::QuestLog(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: log.clone(),
+        },
+    )]);
+    link.quest_list_options(" KEY ", QuestSort::NumberDescending);
+    let p = link.quest_panel();
+    assert_eq!(
+        quest_rows(&p)
+            .iter()
+            .map(|q| q.quest_index)
+            .collect::<Vec<_>>(),
+        [1]
+    );
+    assert_eq!(p.state.log, log);
+    link.quest_list_options("", QuestSort::CompletedFirst);
+    let p = link.quest_panel();
+    let painted = quest_rows(&p)
+        .iter()
+        .map(|q| q.quest_index)
+        .collect::<Vec<_>>();
+    assert_eq!(painted, [2, 1]);
+    link.quest_request(&quest_row_query(&p, &painted, 0).ok_or("selected row")?);
+    let Ok(PlayCommand::QuestLog(bytes)) = commands.try_recv() else {
+        return Err("quest command".into());
+    };
+    assert_eq!(
+        decode_quest_log_query(&bytes).map_err(|e| format!("{e:?}"))?,
+        QuestLogQuery::Quest { quest_index: 2 }
+    );
+    assert_eq!(link.quest_panel().state.log, log);
+    Ok(())
+}

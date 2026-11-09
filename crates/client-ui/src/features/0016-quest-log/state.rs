@@ -10,3 +10,12 @@ pub struct QuestPanel {
     pub pending_query: Option<QuestLogQuery>,
     pub tracker: QuestTracker,
 }
+
+impl QuestPanel {
+    pub fn set_list_options(&mut self, search: &str, sort: QuestSort) {
+        if self.state.selected && search.len() <= 512 && !search.contains('\0') {
+            self.list_search = search.to_owned();
+            self.list_sort = sort;
+        }
+    }
+}

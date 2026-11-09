@@ -1,6 +1,75 @@
 use super::*;
 
 #[test]
+fn mouse_presets_validate_route_and_survive_restart() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceStore, SettingsState};
+    use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
+    let path = std::env::temp_dir().join(format!("cgopt-mouse-{}.json", std::process::id()));
+    let mut settings = SettingsState::new(Some(path.clone()));
+    let mut preferences = settings.preferences.clone();
+    preferences.set_mouse_preset(1)?;
+    preferences.keyboard_delay_ms = 250;
+    preferences.rotation_modifier = "SHIFT".into();
+    settings.apply(preferences);
+    let mut restored = SettingsState::new(Some(path.clone()));
+    assert_eq!(PreferenceStore::load(path.clone())?.preferences(), &settings.preferences);
+    let press = NormalizedInputEvent::MouseButton { button: MouseButton::SECONDARY, state: ButtonState::Pressed, modifiers: Modifiers::NONE };
+    assert!(matches!(restored.input(std::slice::from_ref(&press)).0.as_slice(), [NormalizedInputEvent::MouseButton { button: MouseButton::PRIMARY, .. }]));
+    restored.preferences.set_mouse_preset(0)?;
+    assert_eq!(restored.input(std::slice::from_ref(&press)).0, vec![press]);
+    let before = restored.preferences.clone();
+    assert!(restored.preferences.set_mouse_preset(2).is_err());
+    assert_eq!(restored.preferences, before);
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn basic_options_dispatch_selects_all_categories_without_editing_preferences() {
+    use crate::play::{SettingsPage, SettingsState};
+    let mut state = SettingsState::new(None);
+    assert!(state.request_open());
+    let before = state.preferences.clone();
+    for (index, page) in SettingsPage::ALL.iter().enumerate() {
+        assert!(state.select_page(index));
+        assert_eq!(state.page, *page);
+        assert_eq!(state.preferences, before);
+    }
+    let last = state.page;
+    assert!(!state.select_page(SettingsPage::ALL.len()));
+    assert_eq!(state.page, last);
+    for category in [SettingsPage::Gameplay, SettingsPage::Interface, SettingsPage::Graphics, SettingsPage::Sound] {
+        assert!(SettingsPage::ALL.contains(&category));
+    }
+}
+
+#[test]
+fn console_font_preference_reaches_the_live_panel_mailbox() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _, _) = play_channel();
+    let mut settings = crate::play::SettingsState::new(None);
+    let mut preferences = settings.preferences.clone();
+    preferences.console_font_px = 20;
+    settings.apply(preferences);
+    settings.sync_local_preferences(&link);
+    assert_eq!(crate::play::mailbox::lock(&link.mailbox).local_preferences.console_font_px, 20);
+    let mut invalid = settings.preferences.clone();
+    invalid.console_font_px = 33;
+    assert!(view()?.set_preferences(invalid).is_err());
+    Ok(())
+}
+
+#[test]
+fn compact_status_style_projects_confirmed_vitals_only() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.vitals = Some(oteryn_session::ActorVitals { health: 50, max_health: 100, mana: 20, max_mana: 40, ..Default::default() });
+    let mut preferences = play.preferences().clone();
+    preferences.compact_status = true;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.hud_status(), oteryn_client_ui::spell_action_bar::vitals_text(play.actor_vitals()));
+    Ok(())
+}
+
+#[test]
 fn hud_arc_geometry_uses_configured_distance_and_size() -> Result<(), Box<dyn std::error::Error>> {
     let mut play = view()?;
     play.vitals = Some(oteryn_session::ActorVitals {
@@ -280,5 +349,5 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 9);
+    assert_eq!(SettingsPage::ALL.len(), 12);
 }

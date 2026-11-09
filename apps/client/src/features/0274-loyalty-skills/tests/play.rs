@@ -14,6 +14,87 @@ use tokio::sync::Notify;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
+#[test]
+fn skills_widget_uses_server_progress_and_saves_visible_order() -> Result<(), Error> {
+    use crate::play::mailbox::lock;
+    use oteryn_session::skill_display::SkillDisplay;
+    use oteryn_session::skill_progress::{SkillProgress, SkillProgressSnapshot};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.skill_display_initialize(true);
+    link.skills_widget_request();
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if command.capability == 370 && command.kind == 640 && command.payload.is_empty())
+    );
+    let mut snapshot = SkillDisplay {
+        trained: SkillProgressSnapshot {
+            skills: [SkillProgress {
+                level: 20,
+                progress: 450,
+                required: 1000,
+                percent: 4500,
+            }; 8],
+        },
+        level: 30,
+        experience: 100_000,
+        level_percent: 2345,
+        loyalty_bonus_percent: 10,
+        loyalty_levels: [23; 8],
+        current_levels: Some([24; 8]),
+    };
+    outbox.skill_progress_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: snapshot.encode().ok_or("encode")?,
+    });
+    let widget = link.skills_widget();
+    assert_eq!(widget.rows.len(), 8);
+    assert_eq!(widget.rows[0].progress, Some(4500));
+    assert_eq!(widget.rows[0].trained, 20);
+    assert_eq!(widget.rows[0].loyalty, Some(23));
+    assert_eq!(widget.rows[0].current, Some(24));
+    let path = std::env::temp_dir().join(format!("clientgap-skills-{}.json", std::process::id()));
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.skills_layout.preferences.order = vec![7, 0];
+        mailbox.skills_layout.dirty = true;
+        mailbox.skills_layout.edit = crate::play::feature_0017_attack::view::next_edit();
+    }
+    settings.sync_skills_layout(&link);
+    assert_eq!(
+        link.skills_widget()
+            .rows
+            .iter()
+            .map(|row| row.family)
+            .collect::<Vec<_>>(),
+        [7, 0]
+    );
+    assert_eq!(
+        crate::play::PreferenceStore::load(path.clone())?
+            .preferences()
+            .skills_layout
+            .order,
+        [7, 0]
+    );
+    snapshot.current_levels = None;
+    snapshot.trained.skills[7].required = 0;
+    outbox.skill_progress_result(&GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status: CommandStatus::Accepted,
+        payload: snapshot.encode().ok_or("encode")?,
+    });
+    assert_eq!(link.skills_widget().rows[0].current, None);
+    assert_eq!(link.skills_widget().rows[0].progress, None);
+    let mut invalid = settings.preferences.clone();
+    invalid.skills_layout.order = vec![8];
+    settings.apply(invalid);
+    assert_eq!(settings.preferences.skills_layout.order, [7, 0]);
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
 struct Reply {
     status: CommandStatus,
     payload: Vec<u8>,
@@ -231,106 +312,5 @@ fn loyalty_skills_native_input_refresh_and_replay_use_the_queue_and_clear_on_log
     })
 }
 
-#[test]
-fn loyalty_skills_refusal_and_malformed_reply_keep_confirmed_values_and_allow_retry()
--> Result<(), Error> {
-    scenario(|| {
-        let runtime = oteryn_client_runtime::ClientRuntime::new()?;
-        runtime.block_on(async {
-            let confirmed = boosted_snapshot();
-            let mut refreshed = confirmed.clone();
-            refreshed.points = 7_000;
-            refreshed.title = Some("Enlightened of Tibia".into());
-            let mut truncated = refreshed.encode().ok_or("malformed fixture")?;
-            truncated.pop();
-            let peer = Peer::new(
-                true,
-                [
-                    Reply::new(
-                        CommandStatus::Accepted,
-                        confirmed.encode().ok_or("initial")?,
-                    ),
-                    // A syntactically valid payload accompanying a refusal is not an
-                    // authoritative replacement for the last accepted snapshot.
-                    Reply::new(
-                        CommandStatus::Rejected,
-                        refreshed.encode().ok_or("refused")?,
-                    ),
-                    Reply::new(CommandStatus::Accepted, truncated),
-                    Reply::new(CommandStatus::Accepted, refreshed.encode().ok_or("retry")?),
-                ],
-            );
-            let commands = Arc::clone(&peer.commands);
-            let (link, incoming, outbox) = play_channel();
-            let task = tokio::spawn(run_session(peer, incoming, outbox));
-            ready(&link, |panel| panel.selected).await?;
-            link.loyalty_skills_request();
-            ready(&link, |panel| panel.snapshot.is_some() && !panel.pending).await?;
-            for _ in 0..2 {
-                link.loyalty_skills_request();
-                let refused = ready(&link, |panel| panel.error.is_some() && !panel.pending).await?;
-                assert_eq!(refused.snapshot.as_ref(), Some(&confirmed));
-                assert!(refused.selected);
-            }
-            link.loyalty_skills_request();
-            let recovered = ready(&link, |panel| !panel.pending).await?;
-            assert_eq!(recovered.snapshot.as_ref(), Some(&refreshed));
-            assert!(recovered.error.is_none());
-            assert!(panel_text(&recovered).contains("Enlightened of Tibia"));
-            assert_eq!(
-                commands
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .len(),
-                4
-            );
-            link.request_logout();
-            task.await?;
-            Ok::<(), Error>(())
-        })?
-    })
-}
-
-#[test]
-fn loyalty_skills_unselected_session_receives_no_skills_command() -> Result<(), Error> {
-    scenario(|| {
-        let runtime = oteryn_client_runtime::ClientRuntime::new()?;
-        runtime.block_on(async {
-            let peer = Peer::new(false, []);
-            let commands = Arc::clone(&peer.commands);
-            let served = Arc::clone(&peer.served);
-            let (link, incoming, outbox) = play_channel();
-            let task = tokio::spawn(run_session(peer, incoming, outbox));
-            tokio::time::timeout(Duration::from_secs(3), served.notified()).await?;
-            link.loyalty_skills_request();
-            link.loyalty_skills_request();
-            let panel = link.loyalty_skills_panel();
-            assert!(!panel.selected);
-            assert!(!panel.pending);
-            assert!(panel.snapshot.is_none());
-            assert!(panel_text(&panel).contains("unavailable"));
-            link.request_logout();
-            task.await?;
-            assert!(
-                commands
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .is_empty()
-            );
-            assert_eq!(link.loyalty_skills_panel(), LoyaltySkillsPanel::default());
-            Ok::<(), Error>(())
-        })?
-    })
-}
-
-#[test]
-fn loyalty_skills_closed_command_queue_releases_pending_request() {
-    let (link, incoming, outbox) = play_channel();
-    outbox.loyalty_skills_initialize(true);
-    drop(incoming);
-    link.loyalty_skills_request();
-    let panel = link.loyalty_skills_panel();
-    assert!(!panel.pending);
-    assert_eq!(panel.error, Some("Session ended"));
-    assert!(panel.snapshot.is_none());
-}
+#[path = "play_additional.rs"]
+mod additional;

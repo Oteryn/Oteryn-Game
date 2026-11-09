@@ -8,11 +8,13 @@ pub(in crate::play) fn vitals_events(mailbox: &mut Mailbox, events: &[SessionEve
     for event in events {
         match event {
             SessionEvent::ActorCooldowns(delta) => {
-                mailbox.spell_bar.bar.cooldowns = Some(delta.value.clone())
+                mailbox.spell_bar.bar.cooldowns = Some(delta.value.clone());
+                mailbox.spell_bar.cooldown_received_at = Some(std::time::Instant::now());
             }
             SessionEvent::GatedSnapshotReplaced(delta) if delta.value.domain_id == 20 => {
                 mailbox.spell_bar.bar.cooldowns =
                     oteryn_session::decode_actor_cooldowns(&delta.value.payload).ok();
+                mailbox.spell_bar.cooldown_received_at = Some(std::time::Instant::now());
             }
             _ => {}
         }
@@ -28,6 +30,7 @@ impl Outbox {
         mailbox.spell_bar = Default::default();
         mailbox.spell_bar.bar.cooldowns =
             cooldowns.and_then(|bytes| oteryn_session::decode_actor_cooldowns(&bytes).ok());
+        mailbox.spell_bar.cooldown_received_at = Some(std::time::Instant::now());
     }
     pub(in crate::play) fn vitals(&self, vitals: Option<ActorVitals>) {
         if let Some(vitals) = vitals {

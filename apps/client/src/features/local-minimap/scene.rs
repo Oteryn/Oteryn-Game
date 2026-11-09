@@ -38,6 +38,13 @@ impl Scene {
                 + ((u32::from(index) / px) as f32 + 0.5) / self.world.atlas().height() as f32;
             [u, v, u, v]
         };
+        let remembered: std::collections::BTreeMap<_, _> = self
+            .minimap_memory
+            .tiles
+            .iter()
+            .filter(|(_, _, floor, _)| *floor == self.minimap_floor)
+            .map(|&(x, y, _, speed)| ((x, y), speed))
+            .collect();
         for y in 0..ROWS as i32 {
             for x in 0..COLUMNS as i32 {
                 let cell = TileCoord::new(x, y);
@@ -66,6 +73,36 @@ impl Scene {
                         size: [TILE_PX as f32; 2],
                         uv: color_uv(color),
                     })?;
+                } else if let Some(speed) = remembered.get(&(tile.x, tile.y))
+                    && !self.minimap_origin.is_some_and(|origin| {
+                        oteryn_session::world_map::in_window(
+                            origin,
+                            oteryn_session::ActorPosition {
+                                x: tile.x,
+                                y: tile.y,
+                                floor: self.minimap_floor,
+                            },
+                        )
+                    })
+                {
+                    memory_pixel(
+                        &mut self.sprites,
+                        &view,
+                        self.world.atlas(),
+                        cell,
+                        if *speed == 0 { [2, 2, 2] } else { [2, 4, 2] },
+                    )?;
+                }
+                if self.minimap_memory.marks.iter().any(|mark| {
+                    mark.floor == self.minimap_floor && mark.x == tile.x && mark.y == tile.y
+                }) {
+                    memory_pixel(
+                        &mut self.sprites,
+                        &view,
+                        self.world.atlas(),
+                        cell,
+                        [5, 4, 0],
+                    )?;
                 }
                 if floor == self.minimap_floor
                     && map.zoom == 1
@@ -110,4 +147,26 @@ impl Scene {
         }
         Ok(())
     }
+}
+
+// Original minimap colours use the builtin palette; no asset bytes enter transfer files.
+fn memory_pixel(
+    batch: &mut oteryn_renderer::SpriteBatch,
+    view: &TileView,
+    atlas: &oteryn_renderer::AtlasImage,
+    cell: TileCoord,
+    [r, g, b]: [u32; 3],
+) -> Result<(), BatchError> {
+    let palette = u32::from(oteryn_renderer::world::PALETTE_CELL);
+    let columns = atlas.width() / atlas.cell_px();
+    let index = r * 36 + g * 6 + b;
+    let x = palette % columns * atlas.cell_px() + index % atlas.cell_px();
+    let y = palette / columns * atlas.cell_px() + index / atlas.cell_px();
+    let u = (x as f32 + 0.5) / atlas.width() as f32;
+    let v = (y as f32 + 0.5) / atlas.height() as f32;
+    batch.push_quad(oteryn_renderer::QuadInstance {
+        position: view.tile_to_screen(cell),
+        size: [view.tile_px() as f32; 2],
+        uv: [u, v, u, v],
+    })
 }

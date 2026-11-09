@@ -53,6 +53,10 @@ impl Application {
         }
     }
     pub(super) fn leave_play(&mut self, message: &str) {
+        if let Some(renderer) = &mut self.renderer {
+            renderer.cancel_capture();
+        }
+        self.captures = Default::default();
         self.audio.stop();
         self.play = None;
         if let Some(entry) = &mut self.entry {

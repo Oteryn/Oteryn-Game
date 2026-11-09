@@ -13,6 +13,9 @@ struct Catalogue {
 }
 #[derive(Deserialize)]
 struct Record {
+    name: String,
+    size_sqm: u32,
+    beds: u16,
     identity: Identity,
     kind: CatalogueKind,
     rent_gold: u64,
@@ -71,6 +74,19 @@ pub(super) fn entrance(key: &str) -> Option<crate::foundation::LocalPosition> {
         x: record.entrance.x,
         y: record.entrance.y,
         floor: record.entrance.z,
+    })
+}
+fn details(key: &str) -> Option<wire::HouseDetails> {
+    let metadata = catalogue()?.iter().find(|h| h.identity.key == key)?;
+    Some(wire::HouseDetails {
+        name: metadata.name.clone(),
+        size: metadata.size_sqm,
+        beds: metadata.beds,
+        entrance: (
+            metadata.entrance.x.try_into().ok()?,
+            metadata.entrance.y.try_into().ok()?,
+            metadata.entrance.z.checked_neg()?.try_into().ok()?,
+        ),
     })
 }
 pub(super) fn source_house_kind(key: &str) -> Option<CatalogueKind> {
@@ -180,6 +196,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .into_iter()
                     .map(|r| {
                         Some(wire::HouseSummary {
+                            details: if query.details {
+                                Some(details(&r.house)?)
+                            } else {
+                                None
+                            },
                             house: r.house,
                             kind: match r.kind.as_str() {
                                 "private_house" => wire::HouseKind::PrivateHouse,
@@ -209,6 +230,112 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn house_details_use_shipped_catalogue_and_native_negative_floor()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let record = catalogue()
+            .and_then(|rows| rows.first())
+            .ok_or("missing catalogue")?;
+        let metadata = details(&record.identity.key).ok_or("missing details")?;
+        assert_eq!(metadata.name, record.name);
+        assert_eq!(metadata.size, record.size_sqm);
+        assert_eq!(metadata.beds, record.beds);
+        assert_eq!(i16::from(metadata.entrance.2), -record.entrance.z);
+        assert!((-15..=0).contains(&metadata.entrance.2));
+        assert!(details("oteryn:house.missing").is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn house_query_dispatch_preserves_metadata_opt_in()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+                use super::super::connection::{
+                    AdmissionRefusal, AdmittedSession, FreshAdmissionAttempt,
+                };
+                struct Authority(std::cell::Cell<bool>);
+                impl FreshAdmissionAuthority for Authority {
+                    async fn admit(
+                        &self,
+                        _: FreshAdmissionAttempt<'_>,
+                    ) -> Result<AdmittedSession, AdmissionRefusal> {
+                        Err(AdmissionRefusal::Unavailable)
+                    }
+                    async fn house_query(
+                        &self,
+                        _: ExactActorRef,
+                        _: UseCommand,
+                        query: wire::HouseQuery,
+                        _: bool,
+                    ) -> Option<Vec<u8>> {
+                        self.0.set(query.details);
+                        let record = catalogue()?.iter().find(|h| h.town.key == query.town)?;
+                        let row = wire::HouseSummary {
+                            details: query
+                                .details
+                                .then(|| details(&record.identity.key))
+                                .flatten(),
+                            house: record.identity.key.clone(),
+                            kind: wire::HouseKind::PrivateHouse,
+                            state: 1,
+                            rent: record.rent_gold,
+                            revision: 1,
+                            acl_revision: 1,
+                            owned: false,
+                            move_out_ms: None,
+                            price: 0,
+                            ends_ms: None,
+                            own_maximum: None,
+                        };
+                        wire::encode_house_page(&[row], None, false).ok()
+                    }
+                }
+                let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+                runtime.block_on(async {
+                    use crate::foundation::{ChannelId, GameSessionId, WorldId};
+                    let mut id = [1; 16];
+                    id[6] = 0x70;
+                    id[8] = 0x80;
+                    let actor = ExactActorRef::transport_fixture(
+                        WorldId::decode(&id).map_err(|e| format!("{e:?}"))?,
+                        ChannelId::decode(&id).map_err(|e| format!("{e:?}"))?,
+                    );
+                    let command = UseCommand {
+                        game_session_id: GameSessionId::decode(&id)
+                            .map_err(|e| format!("{e:?}"))?,
+                        command_id: 1,
+                        item_fence: None,
+                    };
+                    let mut query = vec![10, 16];
+                    query.extend(id);
+                    let town = b"oteryn:content.area.city.thais";
+                    query.extend([18, town.len() as u8]);
+                    query.extend(town);
+                    let authority = Authority(std::cell::Cell::new(false));
+                    let legacy = dispatch(&authority, actor, command, &query, false)
+                        .await
+                        .ok_or("missing legacy reply")?;
+                    assert!(!authority.0.get());
+                    query.extend([32, 1]);
+                    let detailed = dispatch(&authority, actor, command, &query, false)
+                        .await
+                        .ok_or("missing detailed reply")?;
+                    assert!(authority.0.get());
+                    assert!(detailed.len() > legacy.len());
+                    query.extend([32, 1]);
+                    assert_eq!(
+                        dispatch(&authority, actor, command, &query, false).await,
+                        Some(wire::encode_house_result(D::Rejected, 0))
+                    );
+                    Ok(())
+                })
+            })?
+            .join()
+            .map_err(|_| "house query test thread panicked")?
+    }
 
     #[test]
     fn shipped_catalogue_retains_all_three_global_building_classes() {

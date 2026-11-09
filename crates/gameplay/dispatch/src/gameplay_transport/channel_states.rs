@@ -92,6 +92,7 @@ pub struct ChannelSessionStates {
     pub(super) resting_areas: super::resting_area::RestingAreaSessions,
     /// RAIDS-GLOBAL: the Channel and its Activity scopes share current recipients.
     pub(super) server_messages: std::sync::Arc<super::raid_notices::ServerMessageHub>,
+    pub(super) server_modals: std::sync::Arc<super::server_modal::ModalHub>,
     /// PARITY-EVENT-CALLBACKS-1: the currently due server-save countdown minute.
     pub(super) server_save: super::server_save_countdown::ServerSaveCountdownHub,
     /// VITALS-SOUL-1: the soul hook of each settled kill, applied on the killer's cadence.
@@ -143,6 +144,7 @@ impl ChannelSessionStates {
             gameplay_idle_policy: self.gameplay_idle_policy,
             input_gate: std::sync::Arc::clone(&self.input_gate),
             server_messages: std::sync::Arc::clone(&self.server_messages),
+            server_modals: std::sync::Arc::clone(&self.server_modals),
             ..Default::default()
         }
     }

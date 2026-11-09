@@ -9,7 +9,7 @@
     "maximum": 16
   },
   "failure_category": "INVALID_INPUT",
-  "allocation_impact": "The node configuration list is bounded and checked sorted, unique and registered before the dependency closure is built; boot then refuses the generation (no readiness) when a declared ID or the mandatory floor is unoffered. The closure stays bounded by the protocol capability count (128) and the existing negotiated-selection capacity; no larger set is allocated.",
+  "allocation_impact": "The node configuration list is bounded and checked sorted, unique and registered before the dependency closure is built; boot then refuses the generation (no readiness) when a declared ID or the mandatory floor is unoffered. The closure stays bounded by the protocol capability count (256, CAPCAP-3) and the existing negotiated-selection capacity; no larger set is allocated.",
   "client_visible": false,
   "boundary_tests": [
     "gameplay_transport::world_required_capabilities::tests::the_declared_limit_is_registered_and_applies_before_closure",

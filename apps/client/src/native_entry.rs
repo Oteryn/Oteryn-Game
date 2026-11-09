@@ -31,7 +31,7 @@ use oteryn_platform_client::native_login::{
     AttemptRef, GatewayLogin, NativeLoginClient, NativeLoginError, NativeLoginGrant, NativeTicket,
     PublicClass, parse_uuid_v7, secure_random,
 };
-use oteryn_session::{Admission, AdmissionPublicClass, CLIENT_SUPPORTED_CAPABILITIES, CharacterId};
+use oteryn_session::{Admission, AdmissionPublicClass, CharacterId};
 use oteryn_session_tcp::connection::CONNECT_DEADLINE;
 use oteryn_session_tcp::load_root_certificate;
 use rustls::pki_types::CertificateDer;
@@ -155,6 +155,10 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     }
 
     async fn admit(&mut self) -> Result<Self::Output, Option<u32>> {
+        let capabilities = crate::play::feature_0179_hotkey_equip::view::supported_capabilities(
+            *self.character_id.as_bytes(),
+            crate::play::PreferenceStore::path().as_deref(),
+        );
         self.queue = None;
         let session = oteryn_session_tcp::connection::admit_detailed(
             &self.grant.endpoint.host,
@@ -166,7 +170,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
                 character_id: self.character_id,
                 admission_material: self.grant.grant_bytes(),
                 client_build_id: &self.config.client_build,
-                supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+                supported_capabilities: &capabilities,
                 deadline: CONNECT_DEADLINE,
             },
             &self.root,
@@ -180,6 +184,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         })?;
         Ok(AdmittedSession {
             character_id: self.login.character_id.to_owned(),
+            preference_character_id: self.character_id,
             character_name: self.character_name.clone(),
             training_requested: self.training_requested,
             session,
@@ -217,3 +222,7 @@ mod premium_tests;
 #[cfg(test)]
 #[path = "native_entry/training_tests.rs"]
 mod training_tests;
+
+#[cfg(test)]
+#[path = "native_entry/training_batch_tests.rs"]
+mod training_batch_tests;
