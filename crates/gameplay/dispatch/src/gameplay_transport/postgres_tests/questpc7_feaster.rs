@@ -87,7 +87,7 @@ pub(super) fn objects() -> TestResult<Vec<(Position, u16)>> {
         .collect())
 }
 async fn carried(h: &Harness, item: u32) -> TestResult<i64> {
-    Ok(sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.definition_production_key=$2").bind(super::fixture::id(41).as_slice()).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
+    Ok(sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_production_key=$3").bind(super::fixture::id(41).as_slice()).bind(super::fixture::id(42).as_slice()).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
 }
 async fn at(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
