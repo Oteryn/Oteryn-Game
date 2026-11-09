@@ -151,6 +151,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // P11: mechanical rod 9306 from Crystal 201189f items.xml:25156-25159
     // (tools/content-migration/gathering_item_profiles.py). It has speed_bonus=0.
     ("P11-MECHANICAL-FISHING", 1),
+    // M49 fire soil, altar, inactive/charged hole and corpse from pinned
+    // Crystal 201189f XML/client, qualified by elemental_spheres_profiles.py.
+    ("QMECH-M49", 5),
     // QMECH M50: nine stationary elevator/landing profiles, captured from Crystal
     // 201189f items.xml and the pinned client bank by rafzane_elevator_profiles.py.
     // None has a speed override or portable admission.
