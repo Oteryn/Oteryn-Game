@@ -20582,6 +20582,150 @@
       "research": [
         "OTS_HYPOTHESIS_ONLY: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/harlow_vengoth.lua:1; sha256:25ee2a79a96c2df5f803445e7e916aa3a437e32adf9a387d43a4d18442e74ff5; internalNpcName=Harlow. Existing audited retail anchor retained. Displayed identity only."
       ]
+    },
+    {
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.maris_mistrock",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.maris_mistrock",
+          "revision": "definition-r1"
+        },
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.walk_height_sha256",
+            "value": {
+              "type": "Text",
+              "value": "e41d88414de18ab3d02abf895484d2b73f37350cd404b36d724f097070779a66"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.maris_mistrock",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.maris_mistrock",
+          "revision": "definition-r1"
+        },
+        "services": [
+          {
+            "family": "Service",
+            "key": "oteryn:service.travel.maris_mistrock",
+            "revision": "definition-r1"
+          }
+        ]
+      },
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.maris_mistrock",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.maris_mistrock",
+          "revision": "definition-r1"
+        },
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Maris"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.walk_height_sha256",
+            "value": {
+              "type": "Text",
+              "value": "e41d88414de18ab3d02abf895484d2b73f37350cd404b36d724f097070779a66"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.maris_mistrock",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.maris_mistrock",
+          "revision": "definition-r1"
+        },
+        "services": [
+          {
+            "family": "Service",
+            "key": "oteryn:service.travel.maris_mistrock",
+            "revision": "definition-r1"
+          }
+        ]
+      },
+      "research": [
+        "OTS_HYPOTHESIS_ONLY: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/maris_mistrock.lua:1; sha256:4bcd7342494cb23d49db54e1dfd0026034a8df39e445aefb16f3a185d91d97b1; internalNpcName=Maris. Existing audited retail anchor retained. Displayed identity only."
+      ]
     }
   ]
 }
