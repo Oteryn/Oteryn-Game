@@ -43,3 +43,21 @@ NPC lessons, melee kill, or final reward delivery in PostgreSQL; the ordered
 reducer test covers those bindings. The PG fixture uses genuine native damage
 witnesses and the production sequenced writer, without fabricating a character
 revision or receipt chain.
+
+
+The additional mounted `engenc_ordinary_hits` PostgreSQL cases drive framed
+ordinary ATTACK and paid rune USE through `serve_admitted`, using the actual
+native Party Skeleton and source Item policies. Their fixture starts at the
+respective authored lesson, provisions custody, and lets the real combat owner
+produce damage and the sequenced writer persist the phase and exactly one
+native-hit receipt. The spear caller reads the equipped ranged definition even
+when the proficiency catalogue has no entry for that weapon. The rune case
+replays the same command and requires one charge debit and one quest receipt.
+It reuses the paid-caster fixture's production Druid build choice; the quest
+reducer itself makes no vocation or spell grant.
+
+The real rune caller also exposed two missing eligibility entries for 17512:
+the pure direct-rune planner and the non-field USE gate. Both now admit this
+existing native training rune through the same geometry-free damage/heal rule
+as the ordinary light-magic-missile rune. Empty effects and unrelated rune IDs
+remain refused; quest credit still requires committed positive health loss.

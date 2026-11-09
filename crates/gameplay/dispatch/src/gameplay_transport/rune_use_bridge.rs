@@ -340,7 +340,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !matches!(
                     spell.carrier,
                     crate::spell::Carrier::Rune {
-                        item: 3165 | 3174 | 3177 | 3178 | 3188 | 3197,
+                        item: 3165 | 3174 | 3177 | 3178 | 3188 | 3197 | 17512,
                         ..
                     }
                 )

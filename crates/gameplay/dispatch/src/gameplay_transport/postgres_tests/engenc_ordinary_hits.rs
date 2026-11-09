@@ -133,3 +133,61 @@ pub(super) async fn qualify(
     eprintln!("M30A_ORDINARY_SPEAR_POSTGRES_EXECUTED");
     Ok(())
 }
+
+#[test]
+fn engenc_postgres_framed_magic_missile_hit_credits_child_training() -> TestResult {
+    super::item_look::large_stack(|| {
+        super::fixture::run(async |admin| {
+            super::rune_use_bridge::run_case(admin, super::rune_use_bridge::Case::EngencTraining)
+                .await
+        })
+    })
+}
+
+pub(super) async fn prepare_rune(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+) -> TestResult {
+    let mut bindings = Bindings::parse(include_bytes!(
+        "../../../../../../content/quests/authored-bindings/engenc-child-of-destiny.json"
+    ))?;
+    bindings.verify_embedded_recipe_evidence()?;
+    // Isolate the actual paid rune caller at the authored rune lesson.
+    bindings.quests[0]
+        .tracks
+        .iter_mut()
+        .find(|track| track.key == PHASE)
+        .ok_or("training phase")?
+        .initial = 3;
+    owner.quest_catalogue = Some(Arc::new(
+        bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?,
+    ));
+    owner.refresh_quest_session(session, true).await;
+    Ok(())
+}
+
+pub(super) async fn assert_rune(pool: &sqlx::PgPool) -> TestResult {
+    let quantity: i64 = sqlx::query_scalar(
+        "SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(71).as_slice())
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(
+        quantity, 2,
+        "one real paid rune cast despite command replay"
+    );
+    for (track, expected) in [
+        ("oteryn:quest-progress/engenc/child/rune", 1_i64),
+        (PHASE, 4),
+    ] {
+        let value: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+            .bind(id(41).as_slice()).bind(track).fetch_one(pool).await?;
+        assert_eq!(value, expected, "{track}");
+    }
+    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND cause_kind='native_hit'")
+        .bind(id(41).as_slice()).fetch_one(pool).await?;
+    assert_eq!(receipts, 1);
+    eprintln!("M30A_ORDINARY_RUNE_POSTGRES_EXECUTED");
+    Ok(())
+}

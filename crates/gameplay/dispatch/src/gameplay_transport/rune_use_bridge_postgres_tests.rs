@@ -48,6 +48,7 @@ pub(super) const VICTIM: MovementLocalPosition = MovementLocalPosition {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Case {
+    EngencTraining,
     ParalyzeMonster,
     ParalyzePlayer,
     Replay,
@@ -202,6 +203,16 @@ async fn client_cast(
         None => 0,
     };
     match case {
+        Case::EngencTraining => {
+            send_use(
+                client,
+                first_id,
+                &intent,
+                Expected::Result(UseDisposition::Committed),
+            )
+            .await?;
+            send_use(client, first_id, &intent, Expected::Replay).await?;
+        }
         Case::ParalyzeMonster | Case::ParalyzePlayer => {
             if case == Case::ParalyzePlayer {
                 let mut modes = oteryn_protocol_oteryn::pvp_expert::ExpertFightModes::default();
@@ -541,6 +552,11 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         native.spell_book().clone(),
     )?;
     let (actor, session) = (dependencies.actor, dependencies.admitted.game_session_id);
+    let target_key = if case == Case::EngencTraining {
+        "oteryn:creature.party_skeleton"
+    } else {
+        "oteryn:creature.rat"
+    };
     let mut victim = None;
     {
         let mut runtime = dependencies.runtime.lock().await;
@@ -549,7 +565,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             .policies()
             .policies()
             .iter()
-            .find(|policy| policy.definition_key == "oteryn:creature.rat")
+            .find(|policy| policy.definition_key == target_key)
             .ok_or("target creature policy")?
             .as_ref()
             .clone();
@@ -579,11 +595,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?;
         if case != Case::ParalyzePlayer {
             runtime
-                .realize_native_qualification_spawn(
-                    channel_pin,
-                    "oteryn:creature.rat",
-                    target_position,
-                )
+                .realize_native_qualification_spawn(channel_pin, target_key, target_position)
                 .map_err(debug)?;
             let creature = runtime.visible_entities().creatures[0];
             victim = Some(EntityRef {
@@ -722,6 +734,8 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
     let source_key = if case == Case::UnqualifiedSource {
         "oteryn:item.tibia.i3607"
+    } else if case == Case::EngencTraining {
+        "oteryn:item.tibia.i17512"
     } else if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
         "oteryn:item.tibia.i3165"
     } else {
@@ -731,6 +745,19 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+    if case == Case::EngencTraining {
+        super::engenc_ordinary_hits::prepare_rune(&mut owner, session).await?;
+        tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            serve_cast(&owner, &harness, admitted, victim, case, None),
+        )
+        .await??;
+        super::engenc_ordinary_hits::assert_rune(&harness.pool).await?;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return harness.cleanup().await;
+    }
     if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
         super::paralyze_rune::prepare_target(&owner, &harness, victim, case).await?;
         tokio::time::timeout(
