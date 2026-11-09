@@ -21,6 +21,47 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_script_destination_approach_rejects_foreign_owners(self):
+        import questpc_source_approaches as source
+        for quest, reference in ((source.QUEST, 'source-approach:unknown'),
+                                 ('oteryn:quest.longsword_quest', 'source-approach:ferumbras-entrance')):
+            with self.subTest(quest=quest, reference=reference):
+                with self.assertRaisesRegex(ValueError, 'exact quest'):
+                    source.resolve(ROOT, quest, reference)
+
+    def test_ferumbras_arrival_approach_keeps_level_and_premium(self):
+        binding = (('oteryn:quest.ferumbras_ascension_quest', 's1',
+                    'source-approach:ferumbras-entrance', 'chosen-source/ferumbras_ascension_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 33276, 'y': 32390, 'floor': -8},
+                'ordinal': 0, 'appearance': 410})
+            self.assertEqual(callback['minimum_level'], 150)
+            self.assertEqual(callback['admission'], {'premium': True})
+            self.assertIsNone(callback['teleport'])
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_dragon_corpse_cave_entry_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT)
+                     if c['quest'] == 'oteryn:quest.dragon_corpse_quest']
+        self.assertEqual(len(callbacks), 1, 'Dragon Corpse cave entry is activated')
+        self.assertEqual(callbacks[0]['key'], 'oteryn:quest-callback/m01b/dragon-corpse/s1/entry')
+
+    def test_dragon_corpse_entry_precedes_the_lower_shovel_route(self):
+        binding = (('oteryn:quest.dragon_corpse_quest', 's1',
+                    'area-approach:oteryn:area.hunting_place.rookgaard_bear_cave',
+                    'chosen-source/dragon_corpse_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 32147, 'y': 32207, 'floor': -7},
+                'ordinal': 0, 'appearance': 4409})
+            self.assertNotIn('admission', callback)
+            self.assertIsNone(callback['teleport'])
+            self.assertFalse(callback['offerings'])
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
     def test_fishing_and_berserker_entries_are_activated(self):
         callbacks = explore.callbacks(ROOT)
         for quest in ('oteryn:quest.fishing_box_quest', 'oteryn:quest.berserker_treasure_quest'):

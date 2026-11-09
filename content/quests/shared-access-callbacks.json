@@ -425,6 +425,58 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/dragon-corpse/s1/entry",
+      "quest": "oteryn:quest.dragon_corpse_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32147,
+          "y": 32207,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4409,
+        "native": {
+          "position": {
+            "x": 32147,
+            "y": 32207,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_corpse_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_corpse_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/343",
+        "https://tibia.fandom.com/index.php?curid=1219&oldid=1113674",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/dragon-tower/s1/entry",
       "quest": "oteryn:quest.dragon_tower_quest",
       "trigger": "step_in",

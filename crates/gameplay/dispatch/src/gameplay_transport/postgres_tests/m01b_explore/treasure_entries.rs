@@ -51,9 +51,14 @@ pub(super) fn world(
                 "/../../../content/world/placements/region-z07-x125-y122.b3"
             )),
             region: (7, 125, 122),
-            bounds: (32016, 31409, 32018, 31410),
+            bounds: (32015, 31409, 32018, 31410),
             start: (32017, 31409),
             expected: vec![
+                ExpectedTile {
+                    position: (32015, 31409),
+                    ids: vec![799, 2473],
+                    counted_entry: None,
+                },
                 ExpectedTile {
                     position: (32016, 31409),
                     ids: vec![6587],
@@ -72,9 +77,14 @@ pub(super) fn world(
                 "/../../../content/world/placements/region-z11-x129-y124.b3"
             )),
             region: (11, 129, 124),
-            bounds: (33197, 31923, 33199, 31924),
+            bounds: (33197, 31923, 33200, 31924),
             start: (33197, 31923),
             expected: vec![
+                ExpectedTile {
+                    position: (33199, 31923),
+                    ids: vec![352, 2469],
+                    counted_entry: None,
+                },
                 ExpectedTile {
                     position: (33198, 31923),
                     ids: vec![353],

@@ -26,9 +26,10 @@
       "Katana Quest",
       "Minotaur Hell Quest",
       "Fishing Box Quest",
-      "Berserker Treasure Quest"
+      "Berserker Treasure Quest",
+      "Dragon Corpse Quest"
     ],
-    "wired_explore_stages": 19,
+    "wired_explore_stages": 20,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -46,9 +47,11 @@
       "Iron Helmet Quest",
       "Goblin Temple Quest",
       "Katana Quest",
-      "Minotaur Hell Quest"
+      "Minotaur Hell Quest",
+      "Fishing Box Quest",
+      "Berserker Treasure Quest"
     ],
-    "wired_native_visit_anchors": 22
+    "wired_native_visit_anchors": 23
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -102,13 +105,21 @@
     "four_claim_postgres": "GREEN4passed248.49s:GoblinTemple61.463286153s,IronHelmet60.566955281s,Katana61.722523584s,MinotaurHell64.73660606s;actualSTEP,freshonce,replay/revisit,completion0",
     "next_two_claim_resolvers": "FishingBox/Berserker:REDunsupportedclaim0.199s -> focusedGREEN1.593s;inactive,activeJSONunchanged",
     "treasure_activation": "RED2missingentries5.136s -> GREEN32Python88.274s;realB3 entry and starting tiles verified;CurrentPremium preserved",
-    "treasure_postgres": "PENDING2nativecases:Cargo build started after strictClippy/profile passed",
+    "treasure_postgres": "GREEN2passed121.65s:Berserker61.223152997s,FishingBox60.423790548s;CurrentPremium refusal,old replay no credit,freshonce,revisit no farming;original source corpse/chest retained in native crops",
     "treasure_clippy": "GREEN quests+dispatch all-targets -Dwarnings5m39s",
     "treasure_profile": "GREEN5Rustprofiletests0.05s",
     "treasure_content_tree": "GREEN independent content-tree validation",
-    "treasure_regeneration": "GREEN repo native-provider regeneration and qengine_access --check;no generated pin changes;duplicate migration check empty"
+    "treasure_regeneration": "GREEN repo native-provider regeneration and qengine_access --check;no generated pin changes;duplicate migration check empty",
+    "treasure_authoring_modules": "GREEN all112modules rc0;own32tests94.830s;no disabled or weakened tests",
+    "treasure_authoring_checks": "GREEN run_checks.py --part checks",
+    "cave_resolver": "REDunsupportedArea0.213s -> GREEN0.476s;canonicalBearCave origin unchanged,clear north approach and east start verified on B3",
+    "cave_activation": "RED missingentry6.206s -> GREEN34Python93.173s;latestinactiveFerumbras helper and foreign-owner tests36Python96.105s",
+    "ferumbras_source_preparation": "INACTIVE:public pinned Canary entrance script checked;source destination33275,32390,z8;adjacent410ground verified. REDunsupportedreference0.194s -> GREEN0.782s,level150+Premium preserved,foreign-owner rejection covered.",
+    "cave_clippy": "GREEN quests+dispatch all-targets -Dwarnings4m13s",
+    "cave_profile": "GREEN5Rustprofiletests0.04s",
+    "cave_postgres": "PENDING:own native case building after strictClippy/profile;2 preceding treasure cases GREEN121.65s"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "FinishFishingBox/Berserker nativecases;19wired,17PG-proven;27routes/37stages unwired. M01b PARTIAL."
+  "continuation": "20wired,19PG-proven;26routes/36stages unwired. FinishDragonCorpse nativePG,then activateFerumbras. M01b PARTIAL."
 }

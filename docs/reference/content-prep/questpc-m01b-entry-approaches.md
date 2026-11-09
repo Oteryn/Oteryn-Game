@@ -30,3 +30,16 @@ https://tibia.fandom.com/index.php?curid=19176&oldid=1114456
 These callbacks grant visit counters only. Premium/level requirements remain
 in force. No Item, XP, teleport or whole-quest completion is granted. Native
 PostgreSQL qualification is recorded separately in the lane status ledger.
+
+## Ferumbras arrival (prepared, inactive)
+
+Source: https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/ferumbras_ascension/movements_entrance.lua
+
+The pinned entrance script rejects players below level 150. Its action 24837
+sends an uncompleted player to (33275, 32390, 8), while the completed branch
+uses floor 9. The chosen first-cycle EXPLORE approach is the clear eastern
+neighbour (33276, 32390, 8), appearance 410. The retained B3 map has ground
+409 at both the script destination and the next eastern starting tile
+(33277, 32390, 8). This binds a visit on the initial entrance floor; it does
+not replace the portal or grant seven-boss completion/access to later floors.
+The canonical recipe's Current Premium requirement and level 150 are retained.

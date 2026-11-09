@@ -5,6 +5,7 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.dragon_corpse_quest', 's1', 'area-approach:oteryn:area.hunting_place.rookgaard_bear_cave', 'chosen-source/dragon_corpse_quest'),
     ('oteryn:quest.fishing_box_quest', 's1', 'claim:canary:reward-claim/quest/u8_0/fishing_box', 'chosen-source/fishing_box_quest'),
     ('oteryn:quest.berserker_treasure_quest', 's1', 'claim:canary:reward-claim/quest/u6_4/berserker_treasure/rewards/white_pearls', 'chosen-source/berserker_treasure_quest'),
     ('oteryn:quest.iron_helmet_quest', 's1', 'claim:canary:reward-claim/kv/ironhelmet', 'chosen-source/iron_helmet_quest'),
@@ -106,7 +107,10 @@ def callbacks(root):
         requirements = recipe['requirements']
         if requirements['prerequisites']:
             raise ValueError('Explore route requires additional authoritative guards: ' + quest)
-        if area.startswith('spawn-approach:'):
+        if area.startswith('source-approach:'):
+            import questpc_source_approaches
+            at, appearance, sources = questpc_source_approaches.resolve(root, quest, area)
+        elif area.startswith('spawn-approach:'):
             import questpc_spawn_approaches
             at, appearance, sources = questpc_spawn_approaches.resolve(root, quest, area)
         elif area.startswith('area-approach:'):
