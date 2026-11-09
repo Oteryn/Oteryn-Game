@@ -20,6 +20,13 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 200)
         self.assertEqual(record['semantics']['stack']['value']['stack_max']['value'], 100)
 
+    def test_fanfare_copper_key_has_native_portable_nonstackable_facts(self):
+        records = q.capture()['records']
+        record = next((r for r in records if r['production_definition']['production_key'] == 'oteryn:item.tibia.i2973'), None)
+        self.assertIsNotNone(record, 'Fanfare key 3520 needs its exact physical Item owner')
+        self.assertEqual(record['production_binding']['external_id'], '2973')
+        self.assertEqual(record['admission'], dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
+
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
         new = copy.deepcopy(old)
