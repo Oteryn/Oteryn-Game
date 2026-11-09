@@ -11149,5 +11149,29 @@
       "duplicate_migrations": "PASS"
     },
     "remaining": "Offering slice qualified; repeatable well producer, Beauty and other assigned M07 trial/puzzle wiring remain"
+  },
+  "m07_lion_well": {
+    "status": "PARTIAL",
+    "capability": "explicit native per-use item_reward; distinct command/session/character/source mint identity, existing transaction owner",
+    "binding": "oteryn:quest-callback/m07/lion-well",
+    "source": "Crystal201189 actions_lions_rock.lua:96-111; B3z6 exact well21394 ordinal1",
+    "validation": {
+      "model_red": "new per-use mode rejected by old callback format",
+      "model_green": "cycle_tests5/5 3.571s; native requirements and cycle exclusivity",
+      "claim_keys_green": "1/1 0.008s; old paid-exchange key unchanged",
+      "authoring_checks_seconds": 350.157,
+      "authoring_units_seconds": 536.906,
+      "content_tree_seconds": 190.504,
+      "clippy_seconds": 223.146,
+      "pg_tears_regression_seconds": 59.979037201,
+      "pg_well_partial_seconds": 59.567954483,
+      "pg_well_last_red": "new test expected Rejected for revision99; production returned contract-correct StaleState; expectation corrected, full rerun pending",
+      "build_recovery": "two SIGKILLs; serial build, bounded allocator and coroutine frame succeeded; temporary linker wrapper removed",
+      "workspace_all_targets_seconds": 240.128,
+      "fmt": "PASS",
+      "pin_check_seconds": 27.818,
+      "duplicate_migrations": "PASS"
+    },
+    "remaining": "Compiling WIP published under owner cadence exception; corrected native well PG rerun pending (second fresh grant, replay/stale receipt assertions); M07 not DONE"
   }
 }

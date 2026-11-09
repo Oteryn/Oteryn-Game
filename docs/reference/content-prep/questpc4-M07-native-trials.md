@@ -38,3 +38,15 @@ for15 seconds. Current B3 `region-z08-x129-y126.b3` preserves pedestal
 The PG crop starts on actual ground499 at33155,32278; no donor UID is
 invented. A fresh Crystal-namespaced Tears flag follows the Strength
 namespace decision; the original TibiaTales questline remains its owner.
+
+### Repeatable sacred-well producer
+
+Crystal201189 `actions_lions_rock.lua:96-111` grants one21466 on every use
+at33137,32351,z6, raises Questline to at least1, and sets TibiaTales.DefaultStart.
+Current B3 region-z06-x129-y126 has4409/21394 there (well ordinal1) and
+walkable4407 at33136,32351. The new explicit native per-use reward mode
+uses a command/session/character/source scoped claim in the existing mint
+transaction. A repeated command returns its historical receipt; a new admitted
+USE can grant again. It neither creates a daily epoch nor weakens once-only
+or preserved-epoch reward modes. Original DefaultStart is not a proven lowered
+alias, so the callback uses its separate Crystal namespace as for the trial flags.

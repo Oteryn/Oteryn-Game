@@ -36,6 +36,7 @@ mod counterparts;
 mod effects;
 mod ground_stack;
 mod imported_explore;
+mod per_use_reward;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,

@@ -16,6 +16,10 @@ fn m07_lion_strength_postgres_exact_consumption_counter_and_pagoda_reset()->Test
 fn m07_lion_tears_postgres_exact_consumption_counter_and_pagoda_reset()->TestResult {
     run("m07/lion-tears",Position{x:33154,y:32279,floor:-8})
 }
+#[test]
+fn m07_lion_well_postgres_repeatable_exact_reward_and_command_replay()->TestResult {
+    run("m07/lion-well",Position{x:33137,y:32351,floor:-6})
+}
 fn run(name:&'static str,source:Position)->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
     let started=std::time::Instant::now();eprintln!("POSTGRES_CASE_STARTED {name}");
@@ -26,12 +30,23 @@ fn run(name:&'static str,source:Position)->TestResult {
     eprintln!("POSTGRES_CASE_COMPLETED {name} duration={:?} success={}",started.elapsed(),result.is_ok());result
 }
 pub(super) fn start(name:&str)->Position {
-    if name=="m07/lion-tears" {Position{x:33155,y:32278,floor:-8}}
+    if name=="m07/lion-well" {Position{x:33136,y:32351,floor:-6}}
+    else if name=="m07/lion-tears" {Position{x:33155,y:32278,floor:-8}}
     else {Position{x:33136,y:32291,floor:-8}}
 }
 
 pub(super) fn world(native:&NativeGameplayState,name:&str)->TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{NativeCrop,ExpectedTile,native_scene_with_appearances};
+    if name=="m07/lion-well" {
+        return native_scene_with_appearances(native,vec![NativeCrop{
+            bytes:include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../content/world/placements/region-z06-x129-y126.b3")),
+            region:(6,129,126),bounds:(33135,32350,33139,32353),start:(33136,32351),
+            expected:vec![
+                ExpectedTile{position:(33137,32351),ids:vec![4409,21394],counted_entry:None},
+                ExpectedTile{position:(33136,32351),ids:vec![4407],counted_entry:None},
+            ],
+        }],&[],&[]);
+    }
     if name=="m07/lion-tears" {
         return native_scene_with_appearances(native,vec![NativeCrop{
             bytes:include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../content/world/placements/region-z08-x129-y126.b3")),
@@ -56,6 +71,9 @@ pub(super) fn world(native:&NativeGameplayState,name:&str)->TestResult<crate::ma
 
 pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,
     harness:&Harness,fence:CurrentCharacterGameplayFence,callback:&Callback)->TestResult {
+    if callback.effects.item_reward_per_use {
+        return Box::pin(well_exercise(owner,admitted,harness,fence,callback)).await;
+    }
     let version:String=sqlx::query_scalar("SELECT current_setting('server_version')").fetch_one(&harness.pool).await?;
     eprintln!("POSTGRES_DATABASE_READY {} version={version}",callback.key);
     let native=callback.selector.native.as_ref().ok_or("native offering selector")?;
@@ -122,4 +140,36 @@ async fn carried(harness:&Harness,item:&str)->TestResult<i64> {
 }
 async fn counts(harness:&Harness)->TestResult<(i64,i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_receipts),(SELECT count(*) FROM game_quest_callback_consumptions)").fetch_one(&harness.pool).await?)
+}
+
+async fn well_exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,
+    harness:&Harness,fence:CurrentCharacterGameplayFence,callback:&Callback)->TestResult {
+    let version:String=sqlx::query_scalar("SELECT current_setting('server_version')").fetch_one(&harness.pool).await?;
+    eprintln!("POSTGRES_DATABASE_READY {} version={version}",callback.key);
+    let native=callback.selector.native.as_ref().ok_or("native well")?;
+    let map=owner.bundle_map().ok_or("map")?;
+    let source=placement_key(crate::map::overlay::TilePos{x:native.position.x,y:native.position.y,floor:native.position.floor},native.ordinal).ok_or("well key")?;
+    let mut placement=map.overlay.base().digest().to_vec();placement.extend_from_slice(&source.to_be_bytes());
+    let payload=|expected_revision|oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget{placement:placement.clone(),expected_revision}).map_err(debug);
+    let item="oteryn:item.tibia.i21466";
+    assert_eq!(carried(harness,item).await?,0);
+    let mut first=None;
+    for (index,(id,revision,quantity,disposition)) in [
+        (1,0,1,UseDisposition::Committed),
+        (1,0,1,UseDisposition::Committed),
+        (2,99,1,UseDisposition::StaleState),
+        (3,0,2,UseDisposition::Committed),
+    ].into_iter().enumerate() {
+        pace(owner)?;
+        // Keep the large connection future outside this scenario's coroutine frame.
+        let reply=Box::pin(super::quest_world_callbacks::wire(owner,admitted,id,2,payload(revision)?)).await?;
+        assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,disposition);
+        assert_eq!(carried(harness,item).await?,quantity,"producer command {index}");
+        assert_eq!(counts(harness).await?,(quantity,0),"one receipt per fresh grant; replay/stale source add none");
+        if index==1 {assert_eq!(&reply,first.as_ref().ok_or("first result")?);}
+        if index==0 {first=Some(reply);}
+    }
+    let state=owner.root.read_character_quest_state(owner.character,fence.character_id).await.map_err(debug)?;
+    assert_eq!(state.tracks().get(&callback.state_ops[0].track).copied(),Some(1),"well starts but never advances the offering counter");
+    Ok(())
 }

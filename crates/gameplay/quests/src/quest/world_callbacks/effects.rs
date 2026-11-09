@@ -44,6 +44,9 @@ pub struct CallbackEffects {
     /// An existing, preserved local quest epoch; commands never create reward cycles.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward_cycle: Option<String>,
+    /// Source-authored renewable pickup: one mint for each admitted USE command.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub item_reward_per_use: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     /// Source-authored public player MONSTER_SAY, emitted only after commit.
@@ -231,6 +234,9 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
+        return false;
+    }
     if effects.player_speech.as_ref().is_some_and(|text| {
         callback.actor_kind != ActorKind::Player
             || text.is_empty()
@@ -299,10 +305,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         };
         callback.trigger != Trigger::Use
             || !callback.has_personal_state()
-            || callback
-                .storage
-                .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || (!effects.item_reward_per_use
+                && callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || !item(&reward.item, reward.count)
             || !reward.valid_literal_text()
             || reward.additional.len() > 19

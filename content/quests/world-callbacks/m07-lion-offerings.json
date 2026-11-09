@@ -186,6 +186,82 @@
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:30-79"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/lion-well",
+      "quest": "oteryn:quest.tibia_tales",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33137,
+          "y": 32351,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21394,
+        "native": {
+          "position": {
+            "x": 33137,
+            "y": 32351,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 21394
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_1/tibia_tales/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 0,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "requires_world_admission": true,
+      "admission": {
+        "premium": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You took some holy water from the sacred well.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21466",
+          "count": 1,
+          "contents": [],
+          "premium": true
+        },
+        "item_reward_per_use": true
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:96-111"
+      ]
     }
   ]
 }

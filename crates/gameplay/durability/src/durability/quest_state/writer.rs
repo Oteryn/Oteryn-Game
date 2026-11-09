@@ -1097,6 +1097,8 @@ impl DurabilityRoot {
                             super::super::reward_claim_mint::quest::QuestMintClaim::Cycle {
                                 track, value: stored.get(track).copied().unwrap_or(initial),
                             }
+                        } else if world.effects.item_reward_per_use {
+                            super::super::reward_claim_mint::quest::QuestMintClaim::WorldUse
                         } else { super::super::reward_claim_mint::quest::QuestMintClaim::Once };
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
                             || admission.weights.generation_digest() != admission.native.source_digest()

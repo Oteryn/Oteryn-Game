@@ -664,7 +664,7 @@ fn scenario_case(
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if m07_lion {
-            super::super::m07_lion_offerings::exercise(&mut owner,&mut admitted,&h,fence,&callback).await?;
+            Box::pin(super::super::m07_lion_offerings::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
         } else if m07_dreamer {
             super::super::m07_dreamer_levers::exercise(&mut owner,&mut admitted,&h,&callback).await?;
         } else if mead {
