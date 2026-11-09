@@ -117,9 +117,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let ordinary = self
             .paid_travel_talk(actor, command, &intent, ordinary)
             .await;
-        if ordinary.inventory_changed || ordinary.unknown || !self.tutorial_enabled().await {
+        if ordinary.inventory_changed || ordinary.unknown {
             return ordinary;
         }
+        let tutorial_enabled = self.tutorial_enabled().await;
         let (route, conversation, catalogue, capture, work, npc_key) = {
             let mut runtime = self.runtime.lock().await;
             if self.states.spell_states.lock().await.is_dead(actor) {
@@ -146,7 +147,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(position) = runtime.read_actor_position(actor) else {
                 return ordinary;
             };
-            if !tutorial_session::tutorial_cell(position.position()) {
+            if route == NewhavenRoute::Seagull
+                && (!tutorial_enabled || !tutorial_session::tutorial_cell(position.position()))
+            {
                 return ordinary;
             }
             let Some(fence) = command.item_fence else {
@@ -169,19 +172,79 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 key,
             )
         };
-        let now = self.owner_now().get() / 1000;
+        // Anna's topic lives with NPC focus; Crystal has no separate passage deadline.
+        let now = if route == NewhavenRoute::Anna {
+            0
+        } else {
+            self.owner_now().get() / 1000
+        };
         let text = intent.text.trim().to_ascii_lowercase();
+        // Crystal 201189f8 anna.lua:82-95; no quest/storage prerequisite.
+        // Read the durable level; the commit owner independently checks it again.
+        let anna = route == NewhavenRoute::Anna;
+        let contains = |word: &str| {
+            text.split(|c: char| !c.is_alphanumeric())
+                .any(|token| token == word)
+        };
+        let passage = if anna {
+            contains("passage")
+        } else {
+            text == "rookgaard"
+        };
+        let yes = if anna {
+            contains("yes")
+        } else {
+            text == "yes" || text == "sure"
+        };
+        if anna && (passage || yes) {
+            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                return ordinary;
+            };
+            let Ok(Some(progress)) = self
+                .root
+                .read_character_progression(self.character, fence.character_id)
+                .await
+            else {
+                return ordinary;
+            };
+            if progress.level < route.min_level() {
+                if yes
+                    && !passage
+                    && let Ok(mut prompts) = self.states.newhaven_travel.prompts.lock()
+                {
+                    prompts.remove(&session);
+                }
+                return NpcConversations::bank_reply(
+                    &intent,
+                    if passage {
+                        "You need to be at least level 8 to travel to Targuna. Keep training!"
+                    } else {
+                        "You need to be at least level 8 to travel."
+                    }
+                    .into(),
+                );
+            }
+        }
         let prompt = {
             let Ok(mut prompts) = self.states.newhaven_travel.prompts.lock() else {
                 return ordinary;
             };
-            if text == "no" || text == "bye" {
-                prompts.remove(&session);
+            if text == "bye"
+                || (anna && !passage && !yes && contains("no"))
+                || (!anna && text == "no")
+            {
+                let cancelled = prompts.remove(&session).is_some_and(|prompt| {
+                    prompt.is_current(&(intent.npc_actor, conversation, catalogue), now)
+                });
+                if anna && cancelled && text != "bye" {
+                    return NpcConversations::bank_reply(
+                        &intent,
+                        "No problem. Come back when you're ready to explore Targuna!".into(),
+                    );
+                }
                 return ordinary;
             }
-            if (route == NewhavenRoute::Anna && text == "passage")
-                || (route == NewhavenRoute::Seagull && text == "rookgaard")
-            {
+            if passage {
                 prompts.insert(
                     session,
                     Prompt::new(
@@ -193,10 +256,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 return NpcConversations::bank_reply(
                     &intent,
-                    format!(
-                        "Do you want a free passage to {}?",
-                        route.key().replace('_', " ")
-                    ),
+                    if anna {
+                        "I'm offering a ferry service to the island {Targuna}, are you interested?"
+                            .into()
+                    } else {
+                        format!(
+                            "Do you want a free passage to {}?",
+                            route.key().replace('_', " ")
+                        )
+                    },
                 );
             }
             let Some(prompt) = prompts.get_mut(&session) else {
@@ -207,7 +275,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 prompts.remove(&session);
                 return ordinary;
             }
-            if text != "yes" && text != "sure" {
+            if !yes {
                 return ordinary;
             }
             match prompt.confirm(&context, now) {
@@ -295,7 +363,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let known = self.reconcile_newhaven_travel(actor, session).await;
         match known {
             Some(true) => {
-                let mut reply = NpcConversations::bank_reply(&intent, "Safe travels.".into());
+                let mut reply = NpcConversations::bank_reply(&intent, if anna {
+                    "Very well, I'll take you to Targuna then. The locals there could use a helping hand!"
+                } else { "Safe travels." }.into());
                 if let Some(conversation) = reply.conversation.as_mut() {
                     conversation.open = None;
                 }

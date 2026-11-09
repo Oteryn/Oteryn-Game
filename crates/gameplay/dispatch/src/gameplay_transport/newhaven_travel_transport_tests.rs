@@ -14,7 +14,7 @@ impl FreshAdmissionAuthority for RelocatingNpcAuthority {
 
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         if self.moved.get() {
-            Some(at(32472))
+            Some(at(31938))
         } else {
             self.ordinary.observe(actor).await
         }
@@ -72,7 +72,7 @@ fn tutorial_npc_relocation_sends_the_actual_spatial_delta_after_the_talk_result(
                 let delta = oteryn_protocol_oteryn::decode_state_delta(wire.payload())?;
                 if delta.domain_id == STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
                     assert!(saw_result);
-                    assert_eq!(delta.payload, encode_world_spatial(&at(32472)));
+                    assert_eq!(delta.payload, encode_world_spatial(&at(31938)));
                     relocated = true;
                 }
             }
