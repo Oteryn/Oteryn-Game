@@ -273,9 +273,10 @@ fn destination_with_lookup<'a>(
         CardinalStep::NorthWest => (-1, -1),
     };
     let mut next = shifted(origin, dx, dy, 0)?;
-    // game.cpp2048..2079 uses source z8/7 boundaries and height3.
+    // Canary 99902524 game.cpp2045..2079 excludes diagonals from implicit
+    // height-three stairs; explicit tile floor changes below still apply.
     let origin_tile = lookup(origin)?.ok_or(MovementError::Blocked)?;
-    if origin.floor != -8 && has_height(&origin_tile)? {
+    if !direction.is_diagonal() && origin.floor != -8 && has_height(&origin_tile)? {
         let above = lookup(shifted(origin, 0, 0, 1)?)?;
         if above.is_none_or(|t| !t.ground_present() && !t.solid)
             && let Some(upper) = lookup(shifted(next, 0, 0, 1)?)?
@@ -286,7 +287,7 @@ fn destination_with_lookup<'a>(
             next = shifted(next, 0, 0, 1)?;
         }
     }
-    if origin.floor != -7 && origin.floor == next.floor {
+    if !direction.is_diagonal() && origin.floor != -7 && origin.floor == next.floor {
         let here = lookup(next)?;
         if here.is_none_or(|t| !t.ground_present() && !t.solid)
             && let Some(lower) = lookup(shifted(next, 0, 0, -1)?)?
@@ -718,6 +719,81 @@ mod tests {
             })
             .is_err()
         );
+    }
+
+    #[test]
+    fn m40_diagonals_skip_implicit_stairs_but_follow_explicit_floor_changes() {
+        let (_runtime, room, _actor, _session) = owner();
+        let p = |x, y, floor| MovementLocalPosition { x, y, floor };
+        let cells = room.movement_cells();
+        let clear = tile(cells, p(0, 4, -5)).unwrap().unwrap();
+        let down = tile(cells, p(0, 5, -5)).unwrap().unwrap();
+        assert!(changes(clear).unwrap().is_empty());
+        assert_eq!(changes(down).unwrap(), &[SourceFloorChange::Down]);
+        let view = |tile, height_count| TileView {
+            tile,
+            solid: false,
+            height_count,
+        };
+        // Isolated query graphs exercise the source algorithm, not live proofs.
+        for direction in [
+            CardinalStep::North,
+            CardinalStep::East,
+            CardinalStep::South,
+            CardinalStep::West,
+            CardinalStep::NorthEast,
+            CardinalStep::SouthEast,
+            CardinalStep::SouthWest,
+            CardinalStep::NorthWest,
+        ] {
+            let (x, y) = direction.delta();
+            let entered = p(x, y, -5);
+            let upper = p(x, y, -4);
+            let lower = p(x, y, -6);
+            let graph = std::collections::BTreeMap::from([
+                ((0, 0, -5), view(clear, 3)),
+                ((x, y, -5), view(clear, 0)),
+                ((x, y, -4), view(clear, 0)),
+            ]);
+            assert_eq!(
+                destination_with_lookup(p(0, 0, -5), direction, |p| {
+                    Ok(graph.get(&(p.x, p.y, p.floor)).copied())
+                }),
+                Ok(if direction.is_diagonal() {
+                    entered
+                } else {
+                    upper
+                }),
+                "implicit climb {direction:?}"
+            );
+            let graph = std::collections::BTreeMap::from([
+                ((0, 0, -5), view(clear, 0)),
+                ((x, y, -6), view(clear, 3)),
+            ]);
+            assert_eq!(
+                destination_with_lookup(p(0, 0, -5), direction, |p| {
+                    Ok(graph.get(&(p.x, p.y, p.floor)).copied())
+                }),
+                if direction.is_diagonal() {
+                    Err(MovementError::Blocked)
+                } else {
+                    Ok(lower)
+                },
+                "implicit descent {direction:?}"
+            );
+            let graph = std::collections::BTreeMap::from([
+                ((0, 0, -5), view(clear, 0)),
+                ((x, y, -5), view(down, 0)),
+                ((x, y, -6), view(clear, 0)),
+            ]);
+            assert_eq!(
+                destination_with_lookup(p(0, 0, -5), direction, |p| {
+                    Ok(graph.get(&(p.x, p.y, p.floor)).copied())
+                }),
+                Ok(lower),
+                "explicit floor change {direction:?}"
+            );
+        }
     }
 
     #[test]
