@@ -145,7 +145,7 @@ class HeavyGateTests(unittest.TestCase):
         self.assertEqual(node_boot.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0],
                          build.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0])
         self.assertNotIn("    needs:", node_boot)
-        for fragment in ("    runs-on: ubuntu-24.04\n", "    timeout-minutes: 60\n",
+        for fragment in ("    runs-on: ubuntu-24.04\n", "    timeout-minutes: 240\n",
                          "    permissions:\n      contents: read\n",
                          "    name: PR heavy / Node boot against the real Platform\n"):
             self.assertIn(fragment, node_boot)
@@ -157,6 +157,28 @@ class HeavyGateTests(unittest.TestCase):
         self.assertEqual(node_boot.split("    steps:\n", 1)[1].split("\n  #", 1)[0].rstrip(),
                          expected_steps.rstrip())
         self.assertIn("          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}\n", self.job)
+
+    def test_node_boot_job_outlives_serial_natural_clock_and_light_observations(self):
+        source = (ROOT / "apps/game-server/src/qualification/client_phases/full_e2ef7.rs").read_text()
+        observation_seconds = 0
+        for journey in ("clock_journey", "light_journey"):
+            deadline = re.search(r"Duration::from_secs\(([0-9_]+)\),\s*" + journey + r"\(", source)
+            self.assertIsNotNone(deadline, journey)
+            observation_seconds += int(deadline[1].replace("_", ""))
+        budgets = []
+        for filename, job_name in (("pr-postgres-harness.yml", "node_boot"),
+                                   ("merge-group-gate.yml", "node_boot"),
+                                   ("node-boot-qualification.yml", "node-boot")):
+            with self.subTest(workflow=filename):
+                job = indented_yaml_mapping_block((ROOT / ".github/workflows" / filename).read_text(), job_name, 2)
+                self.assertIsNotNone(job)
+                timeout = re.search(r"^    timeout-minutes: ([0-9]+)$", job, re.MULTILINE)
+                self.assertIsNotNone(timeout)
+                seconds = int(timeout[1]) * 60
+                budgets.append(seconds)
+                self.assertGreater(seconds, observation_seconds,
+                                   "Node boot job expires before its serial natural observations finish")
+        self.assertEqual(len(set(budgets)), 1, "Every Node boot entry point needs the same job budget")
 
     def test_runner_and_service_have_identical_routing(self):
         job = indented_yaml_mapping_block(self.text, "durability_postgres", 2)
