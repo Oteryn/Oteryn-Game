@@ -189,6 +189,9 @@ pub struct Encounter {
 pub struct EncounterTiming {
     pub spawn_after_ms: u32,
     pub reset_after_ms: u32,
+    /// Retire only this occurrence's exact spawns, including actors that left the room.
+    #[serde(default, skip_serializing_if = "super::is_false")]
+    pub cleanup_spawned_only: bool,
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {

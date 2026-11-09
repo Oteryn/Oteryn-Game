@@ -761,6 +761,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-engenc-corpse" {
         return super::engenc_corpse_use::exercise(owner, admitted, h).await;
     }
+    if name == super::engenc_timed_cleanup::CASE {
+        return super::engenc_timed_cleanup::exercise(owner, admitted, h).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
     }

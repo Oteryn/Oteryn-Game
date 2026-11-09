@@ -17,6 +17,7 @@ pub(super) struct TimedEncounter {
     spawn_at: u64,
     reset_at: u64,
     attempted_spawn: bool,
+    spawned: Vec<ExactActorRef>,
 }
 impl TimedEncounter {
     pub(super) fn next_due_us(&self) -> u64 {
@@ -24,6 +25,24 @@ impl TimedEncounter {
             self.reset_at
         } else {
             self.spawn_at
+        }
+    }
+
+    fn spawned_cleanup(&self) -> bool {
+        self.callback
+            .effects
+            .encounter
+            .as_ref()
+            .and_then(|encounter| encounter.timing)
+            .is_some_and(|timing| timing.cleanup_spawned_only)
+    }
+
+    fn cleanup_spawned(&self, runtime: &mut ChannelRuntimeV1) {
+        for actor in &self.spawned {
+            // ExactActorRef fences recycled slots; missing/dead actors are already settled.
+            if runtime.contains_live_creature(*actor) {
+                let _ = runtime.remove_encounter_actor(*actor);
+            }
         }
     }
 }
@@ -109,6 +128,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             spawn_at,
             reset_at,
             attempted_spawn: false,
+            spawned: Vec::new(),
         });
         states.owner_wake.notify_one();
         UseDisposition::Committed
@@ -140,8 +160,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if memo.content != runtime.content_pin().server_artifact_digest()
                 || memo.map != map.overlay.base().digest()
                 || memo.scope != runtime.encounter_owner_scope()
-                || map.facts.object_revision(memo.key) != memo.revision
             {
+                pending.remove(index);
+                continue;
+            }
+            if map.facts.object_revision(memo.key) != memo.revision {
+                if memo.spawned_cleanup() {
+                    memo.cleanup_spawned(&mut runtime);
+                }
                 pending.remove(index);
                 continue;
             }
@@ -153,9 +179,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
-            let Ok(census) = runtime.current_live_creature_candidates(4096) else {
-                index += 1;
-                continue;
+            let census = if memo.spawned_cleanup() {
+                Vec::new()
+            } else {
+                let Ok(census) = runtime.current_live_creature_candidates(4096) else {
+                    index += 1;
+                    continue;
+                };
+                census
             };
             if now >= memo.reset_at {
                 let Some(pair) = memo.callback.lever else {
@@ -166,20 +197,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     index += 1;
                     continue;
                 };
-                for actor in census {
-                    let in_room = runtime
-                        .read_actor_position(actor)
-                        .ok()
-                        .and_then(|snapshot| native(snapshot.position()))
-                        .is_some_and(|position| {
-                            position.floor == encounter.room_min.floor
-                                && (encounter.room_min.x..=encounter.room_max.x)
-                                    .contains(&position.x)
-                                && (encounter.room_min.y..=encounter.room_max.y)
-                                    .contains(&position.y)
-                        });
-                    if in_room {
-                        let _ = runtime.remove_encounter_actor(actor);
+                if memo.spawned_cleanup() {
+                    memo.cleanup_spawned(&mut runtime);
+                } else {
+                    for actor in census {
+                        let in_room = runtime
+                            .read_actor_position(actor)
+                            .ok()
+                            .and_then(|snapshot| native(snapshot.position()))
+                            .is_some_and(|position| {
+                                position.floor == encounter.room_min.floor
+                                    && (encounter.room_min.x..=encounter.room_max.x)
+                                        .contains(&position.x)
+                                    && (encounter.room_min.y..=encounter.room_max.y)
+                                        .contains(&position.y)
+                            });
+                        if in_room {
+                            let _ = runtime.remove_encounter_actor(actor);
+                        }
                     }
                 }
                 if map.facts.apply_quest_callback(
@@ -231,8 +266,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 monsters.push((monster.creature.as_str(), policy.maximum_health, at));
             }
-            if admissible {
-                let _ = runtime.commit_quest_creature_spawn(&monsters);
+            if admissible && let Ok(spawned) = runtime.commit_quest_creature_spawn(&monsters) {
+                memo.spawned = spawned;
             }
             memo.attempted_spawn = true;
             index += 1;

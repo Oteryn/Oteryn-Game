@@ -11,6 +11,24 @@ fn author(callback: serde_json::Value) -> Result<Vec<Callback>, String> {
     parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string())
 }
 #[test]
+fn spawned_only_cleanup_is_explicit_and_preserves_legacy_receipts() -> Result<(), String> {
+    let legacy = source()?;
+    let mut owned = legacy.clone();
+    owned["effects"]["encounter"]["timing"]["cleanup_spawned_only"] = true.into();
+    let callbacks = author(owned)?;
+    let encoded = serde_json::to_value(&callbacks[0]).map_err(|error| error.to_string())?;
+    assert_eq!(
+        encoded["effects"]["encounter"]["timing"]["cleanup_spawned_only"],
+        true
+    );
+    let callbacks = author(legacy.clone())?;
+    assert_eq!(
+        serde_json::to_value(&callbacks[0]).map_err(|error| error.to_string())?,
+        legacy
+    );
+    Ok(())
+}
+#[test]
 fn timed_spawn_does_not_relax_ordinary_party_entry() -> Result<(), String> {
     let mut callback = source()?;
     author(callback.clone())?;
