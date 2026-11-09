@@ -321,7 +321,20 @@ pub(super) async fn check(
         tick_now + 1_000_000,
     )
     .await?;
-    super::m26_rotten_vemiath_production::check(
+    let next = super::m26_rotten_vemiath_production::check(
+        owner,
+        &mut runtime,
+        &mut states,
+        &mut attack,
+        room,
+        native,
+        &permit,
+        &revisions,
+        position,
+        next,
+    )
+    .await?;
+    super::m26_rotten_bakragore_population::check(
         owner,
         &mut runtime,
         &mut states,
@@ -424,10 +437,14 @@ pub(super) async fn admit_source_actor(
                                     .is_some();
                             }
                         }
-                        if captured && key == "oteryn:creature.vemiath" {
-                            // Six close population children, their boss and one spare need eight
-                            // actually free, admissible cells. This is fixture selection,
-                            // not a bypass of native placement or source creation refusals.
+                        if captured
+                            && matches!(
+                                key,
+                                "oteryn:creature.vemiath" | "oteryn:creature.bakragore"
+                            )
+                        {
+                            // Close-population cases need an open patch, not an entry corridor.
+                            // Native placement still independently admits or refuses each spawn.
                             let mut free = 0;
                             for oy in -1..=1 {
                                 for ox in -1..=1 {

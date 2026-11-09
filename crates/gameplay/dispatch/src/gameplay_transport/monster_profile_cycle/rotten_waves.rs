@@ -96,7 +96,10 @@ struct RoomWave {
 pub(super) fn supports(key: &str) -> bool {
     matches!(
         key,
-        "oteryn:creature.ichgahal" | "oteryn:creature.murcion" | "oteryn:creature.vemiath"
+        "oteryn:creature.ichgahal"
+            | "oteryn:creature.murcion"
+            | "oteryn:creature.vemiath"
+            | "oteryn:creature.bakragore"
     )
 }
 
@@ -123,7 +126,9 @@ pub(super) async fn warm(runtime: &ChannelRuntimeV1, map: &mut CurrentMonsterMap
             continue;
         }
         let centre = position.position();
-        let offset = if runtime.matches_live_creature_identity(actor, b"oteryn:creature.vemiath") {
+        let offset = if runtime.matches_live_creature_identity(actor, b"oteryn:creature.vemiath")
+            || runtime.matches_live_creature_identity(actor, b"oteryn:creature.bakragore")
+        {
             1
         } else {
             2
@@ -330,6 +335,7 @@ impl RoomWaveStates {
             "oteryn:creature.ichgahal" => [33008, 32334, 15],
             "oteryn:creature.murcion" => [33008, 32367, 15],
             "oteryn:creature.vemiath" => [33043, 32335, 15],
+            "oteryn:creature.bakragore" => [33043, 32397, 15],
             _ => return Err(()),
         };
         if room.source_world().is_none() {

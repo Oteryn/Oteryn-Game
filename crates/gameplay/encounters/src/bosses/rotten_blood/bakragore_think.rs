@@ -247,25 +247,22 @@ impl BakragoreThinkOwner {
         }
 
         if !facts.mechanics_disabled {
-            if !facts.bloodjaw_spawn_paused {
-                add_spawns(
-                    &mut effects,
-                    ELDER_BLOODJAW_KEY,
-                    facts.bloodjaw_target.saturating_sub(facts.nearby_bloodjaws),
-                    facts.boss,
-                );
-            }
-            add_spawns(
-                &mut effects,
-                MUSHROOM_KEY,
-                SUMMON_FLOOR.saturating_sub(facts.nearby_mushrooms),
-                facts.boss,
-            );
-            add_spawns(
-                &mut effects,
-                PILLAR_KEY,
-                SUMMON_FLOOR.saturating_sub(facts.nearby_pillars),
-                facts.boss,
+            effects.extend(
+                population(&BakragorePopulationFacts {
+                    boss: facts.boss,
+                    mechanics_disabled: facts.mechanics_disabled,
+                    bloodjaw_spawn_paused: facts.bloodjaw_spawn_paused,
+                    bloodjaw_target: facts.bloodjaw_target,
+                    nearby_bloodjaws: facts.nearby_bloodjaws,
+                    nearby_mushrooms: facts.nearby_mushrooms,
+                    nearby_pillars: facts.nearby_pillars,
+                })
+                .into_iter()
+                .map(|spawn| BakragoreEffect::Spawn {
+                    creature_key: spawn.creature_key,
+                    around: spawn.around,
+                    offset_tiles: spawn.offset_tiles,
+                }),
             );
             self.agony_elapsed_ms = self.agony_elapsed_ms.saturating_add(facts.interval_ms);
             if self.agony_elapsed_ms >= AGONY_CHECK_INTERVAL_MS {
@@ -328,13 +325,60 @@ impl BakragoreThinkOwner {
     }
 }
 
+/// Exact source population inputs; timers, agony and essence state are separate phases.
+#[derive(Clone, Copy, Debug)]
+pub struct BakragorePopulationFacts {
+    pub boss: RoomPosition,
+    pub mechanics_disabled: bool,
+    pub bloodjaw_spawn_paused: bool,
+    pub bloodjaw_target: u8,
+    pub nearby_bloodjaws: u8,
+    pub nearby_mushrooms: u8,
+    pub nearby_pillars: u8,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BakragorePopulationSpawn {
+    pub creature_key: &'static str,
+    pub around: RoomPosition,
+    pub offset_tiles: u8,
+}
+
+pub fn population(facts: &BakragorePopulationFacts) -> Vec<BakragorePopulationSpawn> {
+    let mut effects = Vec::new();
+    if facts.mechanics_disabled {
+        return effects;
+    }
+    if !facts.bloodjaw_spawn_paused {
+        add_spawns(
+            &mut effects,
+            ELDER_BLOODJAW_KEY,
+            facts.bloodjaw_target.saturating_sub(facts.nearby_bloodjaws),
+            facts.boss,
+        );
+    }
+    add_spawns(
+        &mut effects,
+        MUSHROOM_KEY,
+        SUMMON_FLOOR.saturating_sub(facts.nearby_mushrooms),
+        facts.boss,
+    );
+    add_spawns(
+        &mut effects,
+        PILLAR_KEY,
+        SUMMON_FLOOR.saturating_sub(facts.nearby_pillars),
+        facts.boss,
+    );
+    effects
+}
+
 fn add_spawns(
-    effects: &mut Vec<BakragoreEffect>,
+    effects: &mut Vec<BakragorePopulationSpawn>,
     creature_key: &'static str,
     count: u8,
     around: RoomPosition,
 ) {
-    effects.extend((0..count).map(|_| BakragoreEffect::Spawn {
+    effects.extend((0..count).map(|_| BakragorePopulationSpawn {
         creature_key,
         around,
         offset_tiles: SUMMON_OFFSET_TILES,

@@ -577,3 +577,79 @@ fn vemiath_native_population_rejects_other_boss_shapes_and_replays_exact_childre
     assert!(!replay.newly_created);
     assert_eq!(map.calls, 1);
 }
+
+#[test]
+fn bakragore_native_population_bounds_thirteen_close_requests_and_rejects_waves() {
+    let (mut runtime, boss, fence, stamp) = setup("oteryn:creature.bakragore");
+    let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("Bakragore native owner");
+    let mut map = map();
+    for (key, placement) in [
+        (
+            "oteryn:creature.mushroom",
+            SummonPlacement::Random { offset_tiles: 1 },
+        ),
+        (
+            "oteryn:creature.elder_bloodjaw",
+            SummonPlacement::Close { offset_tiles: 2 },
+        ),
+        (
+            "oteryn:creature.pillar_of_dark_energy",
+            SummonPlacement::Close { offset_tiles: 2 },
+        ),
+        (
+            "oteryn:creature.echo_of_murcion",
+            SummonPlacement::Close { offset_tiles: 1 },
+        ),
+    ] {
+        let request = SummonWaveEffect::Spawn {
+            creature_key: key,
+            around: RoomPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            placement,
+        };
+        assert_eq!(
+            owner.spawn(&mut runtime, &fence, stamp, 1, 0, &request, &mut map),
+            Err(NativeWaveSpawnError::InvalidSource)
+        );
+    }
+    assert_eq!(
+        map.calls, 0,
+        "invalid source requests never reach placement"
+    );
+    let request = SummonWaveEffect::Spawn {
+        creature_key: "oteryn:creature.pillar_of_dark_energy",
+        around: RoomPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+        placement: SummonPlacement::Close { offset_tiles: 1 },
+    };
+    assert_eq!(
+        owner.spawn(&mut runtime, &fence, stamp, 1, 13, &request, &mut map),
+        Err(NativeWaveSpawnError::InvalidSource)
+    );
+    let child = owner
+        .spawn(&mut runtime, &fence, stamp, 1, 12, &request, &mut map)
+        .expect("thirteenth source request");
+    assert_eq!(
+        runtime
+            .companion_snapshot(child.child)
+            .expect("native Pillar")
+            .state
+            .policy
+            .definition_key,
+        "oteryn:creature.pillar_of_dark_energy"
+    );
+    assert!(runtime.native_summon_master(child.child).is_none());
+    map.answer = None;
+    let replay = owner
+        .spawn(&mut runtime, &fence, stamp, 1, 12, &request, &mut map)
+        .expect("source replay");
+    assert_eq!(replay.child, child.child);
+    assert!(!replay.newly_created);
+    assert_eq!(map.calls, 1);
+}

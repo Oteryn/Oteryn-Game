@@ -68,7 +68,9 @@ fn source_bosses_fill_taint_population_and_first_wave() {
             "{key} wave"
         );
     }
-    assert!(SummonWaveOwner::for_boss("oteryn:creature.bakragore").is_none());
+    assert!(SummonWaveOwner::for_boss("oteryn:creature.bakragore").is_some());
+    assert!(SummonWaveOwner::for_boss("oteryn:creature.chagorz").is_none());
+    assert!(SummonWaveOwner::for_boss("unqualified:boss").is_none());
 }
 
 #[test]
@@ -243,5 +245,76 @@ fn vemiath_population_counts_both_minions_at_seventeen_tiles_on_its_floor() {
             ),
             pillars
         );
+    }
+}
+
+#[test]
+fn bakragore_population_has_three_source_kinds_and_its_own_disabled_gate() {
+    for (disabled, paused, expected_bloodjaws, expected_others) in [
+        (false, false, 5, 4),
+        (false, true, 0, 4),
+        (true, false, 0, 0),
+    ] {
+        let mut owner = SummonWaveOwner::for_boss("oteryn:creature.bakragore")
+            .expect("Bakragore native population");
+        let mut input = facts(&[]);
+        input.mechanics_disabled = disabled;
+        input.bloodjaw_spawn_paused = paused;
+        let draws = Cell::new(0_u32);
+        let effects = owner
+            .think(&input, || {
+                draws.set(draws.get() + 1);
+                8_000
+            })
+            .expect("population");
+        assert_eq!(
+            draws.get(),
+            0,
+            "population does not consume a wave timer draw"
+        );
+        for (key, count) in [
+            ("oteryn:creature.elder_bloodjaw", expected_bloodjaws),
+            ("oteryn:creature.mushroom", expected_others),
+            ("oteryn:creature.pillar_of_dark_energy", expected_others),
+        ] {
+            assert_eq!(
+                count_spawn(&effects, key, SummonPlacement::Close { offset_tiles: 1 }),
+                count
+            );
+        }
+        assert_eq!(effects.len(), expected_bloodjaws + 2 * expected_others);
+    }
+}
+
+#[test]
+fn bakragore_population_counts_three_kinds_on_its_twenty_tile_floor() {
+    for (distance, floor, expected) in [
+        (20, 15, [4, 3, 3]),
+        (21, 15, [5, 4, 4]),
+        (20, 14, [5, 4, 4]),
+    ] {
+        let keys = [
+            "oteryn:creature.elder_bloodjaw",
+            "oteryn:creature.mushroom",
+            "oteryn:creature.pillar_of_dark_energy",
+        ];
+        let neighbours = keys.map(|key| SummonNeighbour {
+            creature_key: key,
+            position: RoomPosition {
+                x: BOSS.x + distance,
+                y: BOSS.y,
+                floor,
+            },
+        });
+        let mut owner = SummonWaveOwner::for_boss("oteryn:creature.bakragore").expect("Bakragore");
+        let effects = owner
+            .think(&facts(&neighbours), || 8_000)
+            .expect("source population");
+        for (key, count) in keys.into_iter().zip(expected) {
+            assert_eq!(
+                count_spawn(&effects, key, SummonPlacement::Close { offset_tiles: 1 }),
+                count
+            );
+        }
     }
 }

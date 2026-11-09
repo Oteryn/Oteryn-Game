@@ -22,7 +22,7 @@ pub(super) async fn check(
     revisions: &crate::ability::RevisionSet,
     position: MovementLocalPosition,
     now: u64,
-) -> super::TestResult {
+) -> Result<u64, Box<dyn std::error::Error>> {
     states.rotten_waves = Default::default();
     let boss = admit_source_actor(
         owner,
@@ -144,7 +144,7 @@ pub(super) async fn check(
     eprintln!(
         "M26_VEMIATH_POPULATION production_driver=true pg_map=true fill=true native_ai=true refill=true orphan_cleanup=true"
     );
-    Ok(())
+    Ok(now + (tick + 1) * 1_000_000)
 }
 
 fn population(
