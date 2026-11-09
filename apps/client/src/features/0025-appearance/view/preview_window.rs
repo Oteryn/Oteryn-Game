@@ -12,7 +12,7 @@ use std::{
     ptr::{null, null_mut},
     sync::{Arc, Mutex, Weak},
 };
-use windows_sys::Win32::{Foundation::HWND, Graphics::Gdi::*, UI::WindowsAndMessaging::*};
+use windows_sys::Win32::{Graphics::Gdi::*, UI::WindowsAndMessaging::*};
 type WeakMailbox = Weak<Mutex<Mailbox>>;
 fn wide(text: &str) -> Vec<u16> {
     text.replace('\0', "\u{fffd}")

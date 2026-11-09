@@ -46,3 +46,23 @@ pub(super) fn default_panels() -> Vec<String> {
         .map(str::to_owned)
         .collect()
 }
+
+pub(super) const PANEL_IDS: &[&str] = &[
+    "battle",
+    "chat",
+    "guild",
+    "hireling",
+    "imbuement",
+    "inventory",
+    "market",
+    "minimap",
+    "npc-shop",
+    "party",
+    "prey",
+    "quest-log",
+    "stash",
+    "task-board",
+    "trade",
+    "vip",
+    "wheel",
+];

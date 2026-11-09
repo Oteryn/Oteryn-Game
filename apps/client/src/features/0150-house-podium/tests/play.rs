@@ -160,6 +160,41 @@ fn cp01_house_podium_scenario() -> Result<(), Error> {
                     for (i, value) in [(1, "1"), (2, "2"), (3, "citizen")] {
                         link.house_podium_edit(i, value.into());
                     }
+                    for (kind, looks, object) in [
+                        (1, [128, 136], false),
+                        (2, [368, 368], false),
+                        (3, [2122, 2122], true),
+                    ] {
+                        assert!(link.house_podium_choose_display(kind, 1));
+                        let preview = wire::preview::Request {
+                            display_kind: kind,
+                            direction: 1,
+                            key: "citizen".into(),
+                        };
+                        let artwork = wire::preview::Artwork {
+                            object,
+                            direction: 1,
+                            looks,
+                        };
+                        send(
+                            &link,
+                            &exchanges,
+                            Intent::Preview,
+                            wire::preview::COMMAND_PREVIEW,
+                            preview.encode().ok_or("preview request")?,
+                            CommandStatus::Accepted,
+                            wire::preview::Artwork::encode(Some(artwork)).ok_or("preview reply")?,
+                        )
+                        .await?;
+                        assert_eq!(link.house_podium_panel().artwork, Some(artwork));
+                        assert_eq!(
+                            link.house_podium_panel().revision,
+                            Some(0),
+                            "preview cannot mutate the podium"
+                        );
+                    }
+                    assert!(link.house_podium_choose_display(1, 2));
+                    assert!(link.house_podium_panel().artwork.is_none());
                     let set = wire::SetRequest {
                         item: ITEM,
                         expected_revision: 0,
@@ -326,5 +361,20 @@ fn podium_creature_selection_uses_the_existing_wire_and_creature_preview()
         oteryn_client_ui::house_podium::panel_text(&link.house_podium_panel())
             .contains("Preview: creature oteryn:creature.dragon facing south")
     );
+    Ok(())
+}
+
+#[test]
+fn podium_creature_selector_updates_the_real_panel_without_sending()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, _) = crate::play::play_channel();
+    link.house_podium_edit(3, "oteryn:creature.test".into());
+    assert!(link.house_podium_choose_display(3, 2));
+    let panel = link.house_podium_panel();
+    assert_eq!(panel.fields[1], "3");
+    assert_eq!(panel.fields[2], "2");
+    assert!(oteryn_client_ui::house_podium::panel_text(&panel).contains("creature"));
+    assert!(!link.house_podium_choose_display(4, 0));
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

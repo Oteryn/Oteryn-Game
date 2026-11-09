@@ -14,6 +14,9 @@ impl PlayView {
 }
 
 pub(in crate::play) fn send_cast(link: &crate::play::PlayLink, spell: NonZeroU32) {
+    if super::view::activate_extra(link, spell) {
+        return;
+    }
     use crate::play::mailbox::lock;
     let bound = {
         let mut mailbox = lock(&link.mailbox);
@@ -53,7 +56,7 @@ pub(in crate::play) fn configure(
     panel: &mut oteryn_client_ui::spell_action_bar::ActionBarPanel,
     fields: &[String],
 ) -> bool {
-    if fields.len() != 4 && fields.len() != ACTION_BAR_SLOTS {
+    if !matches!(fields.len(), 4 | 12 | ACTION_BAR_SLOTS) {
         return false;
     }
     let mut next = panel.bar.clone();
@@ -96,6 +99,9 @@ pub(in crate::play) fn submit(
     let Some(slot) = u32::try_from(action).ok().and_then(NonZeroU32::new) else {
         return;
     };
+    if super::view::activate_extra_shared(mailbox, commands, slot) {
+        return;
+    }
     crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(mailbox);
     if let Some(spell) = mailbox.spell_bar.bar.spell(slot) {
         let _ = commands.send(crate::combat_input::PlayCommand::Combat(
@@ -119,6 +125,57 @@ pub(in crate::play) fn edit_slot(
         mailbox.spell_bar.feedback = "Select a slot in the row".into();
         return;
     };
+    if action == 8 {
+        mailbox.spell_bar.feedback = if fields
+            .get(4)
+            .is_some_and(|key| super::view::bind_custom_key(mailbox, slot - 1, key))
+        {
+            "Saved hotkey".into()
+        } else {
+            "Choose an unused keyboard chord; reserved and duplicate keys are rejected".into()
+        };
+        return;
+    }
+    if action >= 3 {
+        use super::view::{BarAction, PassiveAbility};
+        let extra = match action {
+            3 => fields
+                .get(2)
+                .and_then(|text| text.trim().parse().ok())
+                .map(|definition| BarAction::Equip { definition }),
+            4 => fields
+                .get(3)
+                .map(|text| BarAction::Text { text: text.clone() }),
+            5 => Some(BarAction::Passive {
+                ability: PassiveAbility::BattleInstinct,
+            }),
+            6 => Some(BarAction::Passive {
+                ability: PassiveAbility::Harmony,
+            }),
+            7 => Some(BarAction::Passive {
+                ability: PassiveAbility::Serene,
+            }),
+            9..=11 => fields
+                .get(2)
+                .and_then(|text| text.trim().parse().ok())
+                .map(|definition| BarAction::Use {
+                    definition,
+                    mode: match action {
+                        9 => super::view::ItemUseMode::SelfActor,
+                        10 => super::view::ItemUseMode::Target,
+                        _ => super::view::ItemUseMode::Cursor,
+                    },
+                }),
+            _ => None,
+        };
+        mailbox.spell_bar.feedback =
+            if extra.is_some_and(|extra| super::view::set_extra(mailbox, slot - 1, extra)) {
+                "Saved action assignment".into()
+            } else {
+                "Choose a carried item or valid text (1–1020 bytes)".into()
+            };
+        return;
+    }
     if action == 2 {
         submit(mailbox, commands, slot, &[]);
         return;

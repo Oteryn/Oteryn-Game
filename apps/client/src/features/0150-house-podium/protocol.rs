@@ -4,8 +4,27 @@ use oteryn_client_ui::house_podium::{Intent, Panel};
 use oteryn_session::property_services::house_podium as wire;
 
 pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureCommand, String> {
+    if intent == Intent::Preview {
+        let request = wire::preview::Request {
+            display_kind: panel.fields[1]
+                .trim()
+                .parse()
+                .map_err(|_| "Choose a display kind")?,
+            direction: panel.fields[2]
+                .trim()
+                .parse()
+                .map_err(|_| "Choose a direction")?,
+            key: panel.fields[3].trim().into(),
+        };
+        return Ok(FeatureCommand {
+            capability: 150,
+            kind: wire::preview::COMMAND_PREVIEW,
+            payload: request.encode().ok_or("Invalid preview draft")?,
+        });
+    }
     let item = uuid(&panel.fields[0])?;
     let (kind, payload) = match intent {
+        Intent::Preview => return Err("Invalid preview draft".into()),
         Intent::Refresh => (wire::COMMAND_QUERY, item.to_vec()),
         Intent::Projection => (wire::COMMAND_PROJECTION, item.to_vec()),
         Intent::Set => {
@@ -48,10 +67,22 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     if !accepted(result) {
+        panel.artwork = None;
         panel.revision = None;
         panel.feedback = "The server refused the podium request".into();
         return;
     }
+    if command.kind == wire::preview::COMMAND_PREVIEW {
+        panel.artwork = wire::preview::Artwork::decode(&result.payload).flatten();
+        panel.feedback = if panel.artwork.is_some() {
+            "Artwork preview loaded; this grants no ownership"
+        } else {
+            "Artwork is unavailable for this content key"
+        }
+        .into();
+        return;
+    }
+    panel.artwork = None;
     if command.kind == wire::COMMAND_SET {
         match wire::SetResult::decode(&result.payload) {
             Some(wire::SetResult::Accepted { revision }) => {

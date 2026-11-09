@@ -10,6 +10,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Vec<HWND> {
             "Minimap...",
             "Frames...",
             "General options...",
+            "Screenshots...",
         ]
         .iter()
         .enumerate()
