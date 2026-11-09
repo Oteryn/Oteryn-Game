@@ -198,6 +198,74 @@ impl DurabilityRoot {
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
     ) -> Result<NpcProgramCommit> {
+        self.commit_character_npc_program_with_premium(
+            authority, node, permit, fence, request, catalogue, items,
+            &super::grizzly::NoGrizzlyPremium,
+        ).await
+    }
+
+    /// Join native Premium authority to the existing fenced NPC transaction.
+    #[allow(clippy::too_many_arguments, reason = "the Premium participant joins the existing independent authority, lane and item proofs")]
+    pub async fn commit_character_npc_program_with_premium<
+        C: super::super::item_loop_move::ItemLoopContent,
+        G: super::grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        fence: CurrentCharacterGameplayFence,
+        request: NpcProgramRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        items: &C,
+        premium: &G,
+    ) -> Result<NpcProgramCommit> {
+        let source = NpcRuleCatalog::runtime()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        self.commit_npc_program_from_source(
+            authority, node, permit, fence, request, catalogue, items, source, premium,
+        ).await
+    }
+
+    /// Qualify a minimal bound source fixture through the production transaction.
+    #[cfg(feature = "test-support")]
+    #[allow(clippy::too_many_arguments, reason = "the fixture supplies one trusted source catalogue alongside the production proofs")]
+    pub async fn fixture_commit_npc_program_from_source<
+        C: super::super::item_loop_move::ItemLoopContent,
+        G: super::grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        fence: CurrentCharacterGameplayFence,
+        request: NpcProgramRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        items: &C,
+        source: &NpcRuleCatalog,
+        premium: &G,
+    ) -> Result<NpcProgramCommit> {
+        self.commit_npc_program_from_source(
+            authority, node, permit, fence, request, catalogue, items, source, premium,
+        ).await
+    }
+
+    #[allow(clippy::too_many_arguments, reason = "source admission and the Premium participant preserve the existing independent transaction proofs")]
+    async fn commit_npc_program_from_source<
+        C: super::super::item_loop_move::ItemLoopContent,
+        G: super::grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        fence: CurrentCharacterGameplayFence,
+        request: NpcProgramRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        items: &C,
+        source: &NpcRuleCatalog,
+        premium: &G,
+    ) -> Result<NpcProgramCommit> {
         if request.command.game_session_id() != fence.game_session_id
             || request.message.len() > 255
             || !request.transition_key.starts_with("oteryn:quest-npc/")
@@ -214,12 +282,12 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        let source = NpcRuleCatalog::runtime()
-            .and_then(|source| source.admitted_for_npc(&request.npc, &catalogue))
+        let source = source.admitted_for_npc(&request.npc, &catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .ok_or(CharacterProgressionError::InvalidInput)?;
-        let mut content = items;
-        self.try_issue_semantic_pass()?.run_with_context(&mut content, move |holder,deadline,content| Box::pin(async move {
+        let mut context = (items, premium);
+        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder,deadline,context| Box::pin(async move {
+            let (content, premium) = *context;
             let mut tx=super::super::db::begin_type2_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
             lock_admission_relations(&mut tx).await?;
@@ -284,6 +352,17 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && !plan.track_changes.is_empty()=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            // Independent programmes can share one aggregate quest. Requirements
+            // belong to the programmes whose rules actually contributed to this plan.
+            if source.programs().iter().any(|program| program.document.premium_required
+                && program.document.rules.iter().any(|rule| plan.selected_rule_keys.contains(&rule.key))) {
+                let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id).fetch_one(&mut **tx).await?;
+                let account: [u8;16] = account.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
+                if !premium.task_permitted(&mut tx, account).await? {
+                    return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+                }
+            }
             let experience = rewards::experience(&plan.effects)?;
             if father_items && fathers_burden::experience(&plan)? != experience { return Err(DurabilityError::InvalidStoredState); }
             if experience > 0 {
@@ -321,11 +400,11 @@ impl DurabilityRoot {
                     Err(super::super::character_equipment::EquipmentError::Database(error)) => return Err(error.into()),
                 }
                 let applied = if marlin_items {
-                    marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
+                    marlin_trophy::apply(&mut tx, fence, &request, &plan, content, &node).await?
                 } else if generic_items {
-                    items::apply(&mut tx, fence, &request, &plan, *content, &node, permit).await?
+                    items::apply(&mut tx, fence, &request, &plan, content, &node, permit).await?
                 } else {
-                    fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?
+                    fathers_burden::apply(&mut tx, fence, &request, &plan, content, &node).await?
                 };
                 match applied {
                     true => {},

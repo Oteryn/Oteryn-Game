@@ -283,10 +283,17 @@ pub struct NpcRuleDocument {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub program_key: Option<String>,
     pub quest: String,
+    /// Live account authority is rechecked by the durable NPC writer.
+    #[serde(default, skip_serializing_if = "npc_false")]
+    pub premium_required: bool,
     pub tracks: Vec<NpcTrackDefinition>,
     pub rules: Vec<NpcRule>,
     #[serde(default)]
     pub source_files: Vec<NpcSourceFile>,
+}
+
+fn npc_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Debug, Clone)]
@@ -681,6 +688,8 @@ pub fn legacy_defaults<'a>(
         })
 }
 
+#[cfg(test)]
+mod premium_tests;
 #[cfg(test)]
 mod tests;
 

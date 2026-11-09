@@ -430,7 +430,7 @@ pub(super) async fn apply(
             && (request.transition_key.ends_with("-deliver")
                 || request.transition_key.ends_with("/mission-complete"));
     let outcome = slot
-        .commit_npc_program(
+        .commit_npc_program_with_premium(
             admission.root,
             admission.character,
             admission.holder,
@@ -451,6 +451,7 @@ pub(super) async fn apply(
                 },
             )
             .with_wheel(admission.premium_coordinator),
+            &admission.premium_coordinator,
         )
         .await;
     drop(slot);
