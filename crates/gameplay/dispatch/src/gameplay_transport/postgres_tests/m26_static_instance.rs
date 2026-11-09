@@ -393,6 +393,59 @@ async fn scenario(admin: String) -> TestResult {
         ),
         "wrong lifecycle content is refused concretely: {refused:?}"
     );
+    let command = CommandRef::new(admitted.game_session_id, CommandId::new(7).map_err(debug)?);
+    let cast = read_activity_cast(
+        &destination,
+        &gameplay.item_fence(),
+        command,
+        native.source_digest(),
+    )
+    .await?;
+    assert!(
+        cast.is_ok(),
+        "activity familiar cast reads its actual bound facts: {cast:?}"
+    );
+    let cast = cast.map_err(debug)?;
+    assert_eq!(cast.command, command);
+    assert_eq!(cast.fence, gameplay.item_fence());
+    assert_eq!(cast.level, 250);
+    assert_eq!(cast.equipment.content_digest, native.source_digest());
+    let foreign_command = CommandRef::new(
+        deps.admitted.game_session_id,
+        CommandId::new(7).map_err(debug)?,
+    );
+    assert_ne!(foreign_command.game_session_id(), command.game_session_id());
+    let refused = read_activity_cast(
+        &destination,
+        &gameplay.item_fence(),
+        foreign_command,
+        native.source_digest(),
+    )
+    .await?;
+    assert!(
+        matches!(
+            refused,
+            Err(
+                crate::durability::character_equipment::EquipmentError::Rejected(
+                    "activity cast command session"
+                )
+            )
+        ),
+        "another session's command grants no activity cast facts: {refused:?}"
+    );
+    let refused =
+        read_activity_cast(&destination, &gameplay.item_fence(), command, [0xb6; 32]).await?;
+    assert!(
+        matches!(
+            refused,
+            Err(
+                crate::durability::character_equipment::EquipmentError::Rejected(
+                    "activity equipment destination Content pin"
+                )
+            )
+        ),
+        "a command cannot substitute another activity content generation: {refused:?}"
+    );
     assert!(started.elapsed().as_secs_f64() > 0.01);
     eprintln!(
         "M26_STATIC_INSTANCE POSTGRES_CASE_COMPLETED duration={:?} success=true",
@@ -424,6 +477,38 @@ async fn read_activity_lifecycle(
             match owner
                 .root
                 .read_lifecycle_durable_facts(owner.character, owner.holder, fence, digest)
+                .await
+            {
+                Err(EquipmentError::Durability(
+                    DurabilityError::Unavailable
+                    | DurabilityError::RootUnavailable
+                    | DurabilityError::RootPassDeadlineExceeded,
+                )) => Err(AdmissionRefusal::Unavailable),
+                result => Ok(result),
+            }
+        })
+        .await
+        .map_err(debug)
+}
+
+async fn read_activity_cast(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+    command: CommandRef,
+    digest: [u8; 32],
+) -> TestResult<
+    Result<
+        crate::durability::character_equipment::RawCastDurableFacts,
+        crate::durability::character_equipment::EquipmentError,
+    >,
+> {
+    use crate::durability::{DurabilityError, character_equipment::EquipmentError};
+    use crate::gameplay_transport::connection::AdmissionRefusal;
+    crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root)
+        .retry_unavailable(async || {
+            match owner
+                .root
+                .read_cast_durable_facts(owner.character, owner.holder, fence, command, digest)
                 .await
             {
                 Err(EquipmentError::Durability(

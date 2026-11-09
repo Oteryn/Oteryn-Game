@@ -171,3 +171,49 @@ pub(super) async fn read_lifecycle(
         })
         .await?
 }
+
+/// The familiar cast reader retains the real command but returns only facts.
+/// This transaction-local authority is never supplied to an Item writer.
+pub(super) async fn read_cast(
+    root: &DurabilityRoot,
+    recovery: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    content_digest: [u8; 32],
+) -> Result<RawCastDurableFacts> {
+    if command.game_session_id() != fence.game_session_id {
+        return Err(rejected("activity cast command session"));
+    }
+    let record = recovery
+        .record_for(root)
+        .map_err(|_| rejected("activity cast recovery root"))?;
+    let node = node.clone();
+    let fence = *fence;
+    root.try_issue_semantic_pass()?
+        .run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
+                let mut authority = match assert_current_activity_equipment_in_transaction(
+                    &mut tx,
+                    &record,
+                    &node,
+                    &fence,
+                    content_digest,
+                )
+                .await
+                {
+                    Ok(authority) => authority,
+                    Err(error) => return Ok(Err(error)),
+                };
+                authority.command = Some(command);
+                let facts = match read_raw_cast_facts_in_transaction(&mut tx, &authority).await {
+                    Ok(facts) => facts,
+                    Err(error) => return Ok(Err(error)),
+                };
+                super::super::db::commit_semantic_transaction(tx, deadline).await?;
+                Ok(Ok(facts))
+            })
+        })
+        .await?
+}

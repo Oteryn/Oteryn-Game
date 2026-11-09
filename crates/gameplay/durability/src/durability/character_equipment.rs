@@ -1086,6 +1086,13 @@ impl DurabilityRoot {
         command: CommandRef,
         content_digest: [u8; 32],
     ) -> Result<RawCastDurableFacts> {
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return activity_read::read_cast(self, recovery, node, fence, command, content_digest)
+                .await;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| rejected("equipment recovery root"))?;
