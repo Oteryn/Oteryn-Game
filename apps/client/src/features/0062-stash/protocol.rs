@@ -22,6 +22,10 @@ impl Outbox {
 
 impl Mailbox {
     pub(in crate::play) fn stash_end(&mut self) {
-        self.stash = Default::default();
+        self.stash = oteryn_client_ui::stash::StashPanel {
+            sort: self.stash.sort,
+            sort_edit: self.stash.sort_edit,
+            ..Default::default()
+        };
     }
 }
