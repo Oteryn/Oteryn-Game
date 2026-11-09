@@ -11091,5 +11091,23 @@
     "pg": "unchanged qualified binary; PostgreSQL180006 success marker14.685194148s",
     "scope": "authoring representation only; no additional quest completion claim",
     "unit_runner": "115 modules PASS580.943s"
+  },
+  "m07_lion_strength": {
+    "state": "TESTED_NATIVE_OFFERING_STAGE",
+    "owner": "oteryn:quest.tibia_tales",
+    "source_flag": "Crystal OuterSanctum.LionsStrength; no invented Canary alias",
+    "model": "RED missing binding; GREEN9/9 3.354s",
+    "postgres": "18.6 success marker60.571310712s; nextest60.619s",
+    "dreamer_regression": "18.6 success marker59.628807242s; nextest59.681s",
+    "author_checks": "PASS362.493s",
+    "author_units": "115 modules PASS521.593s",
+    "content_tree": "PASS187.262s",
+    "behavior": "exact one9634; missing input or wrong pagoda costs0; flag1/QL2; 15s reset; repeat trial does not charge",
+    "remaining": "Beauty/Tears inputs and bindings, other M07 trials/puzzles not done",
+    "clippy": "quests/dispatch all-targets all-features -D warnings PASS3m49s",
+    "pin_check": "PASS",
+    "duplicate_migrations": "PASS",
+    "workspace_check": "PASS --workspace --all-targets",
+    "fmt": "PASS"
   }
 }

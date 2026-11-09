@@ -226,3 +226,42 @@ fn m07_native_offering_can_bind_an_exact_input_and_physical_world_predicate() ->
     );
     Ok(())
 }
+
+#[test]
+fn m07_lion_strength_owns_exact_input_and_reuses_original_tales_counter() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|c| c.key == "oteryn:quest-callback/m07/lion-strength")
+        .ok_or("Lion Strength native binding missing")?;
+    assert_eq!(callback.quest, "oteryn:quest.tibia_tales");
+    assert!(callback.requires_world_admission);
+    let input = callback.item_on_target.as_ref().ok_or("cobra tongue")?;
+    assert_eq!(
+        (input.item.as_str(), input.count, input.reusable),
+        ("oteryn:item.tibia.i9634", 1, false)
+    );
+    assert_eq!(callback.effects.passages_reset_after_ms, Some(15000));
+    assert_eq!(callback.passages.len(), 1);
+    assert_eq!(
+        (
+            callback.passages[0].appearance,
+            callback.passages[0].replacement
+        ),
+        (2074, Some(2075))
+    );
+    assert_eq!(callback.state_ops.len(), 1);
+    assert_eq!(
+        callback.state_ops[0].track,
+        "oteryn:quest-progress/quest/u10_70/lions_rock/questline"
+    );
+    let catalogue = crate::quest::loader::load_embedded_quest_state("m07-native-lion")
+        .map_err(|e| format!("{e:?}"))?;
+    let flag = callback.storage.first().ok_or("source flag")?;
+    let track = catalogue
+        .catalogue()
+        .track(&flag.track)
+        .ok_or("flag track")?;
+    assert_eq!(track.quest, "oteryn:quest.tibia_tales");
+    assert_eq!(track.initial, -1);
+    Ok(())
+}

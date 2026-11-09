@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/m07/lion-strength",
+      "quest": "oteryn:quest.tibia_tales",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33137,
+          "y": 32291,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21390,
+        "native": {
+          "position": {
+            "x": 33137,
+            "y": 32291,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 21390
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33134,
+            "y": 32289,
+            "floor": -8
+          },
+          "appearance": 2074,
+          "replacement": 2075
+        }
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 33134,
+            "y": 32289,
+            "floor": -8
+          },
+          "appearance": 2074
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u10_70/lions_rock/outer_sanctum/lions_strength",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 2
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i9634",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "requires_world_admission": true,
+      "admission": {
+        "premium": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have sacrificed a cobra tongue at an ancient statue. The light in the small pyramid nearby begins to shine.",
+      "effects": {
+        "passages_reset_after_ms": 15000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:13-79"
+      ]
+    }
+  ]
+}
