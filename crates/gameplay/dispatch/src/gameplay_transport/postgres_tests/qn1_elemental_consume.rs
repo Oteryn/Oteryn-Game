@@ -61,6 +61,8 @@ use crate::durability::spell_owner_commit::SpellLanePermit;
 use fixture as f;
 use oteryn_gameplay_quests::quest::elemental_arrival as rules;
 
+#[path = "qn1_elemental_consume/handoff.rs"]
+mod handoff;
 #[path = "qn1_elemental_consume/projection.rs"]
 mod projection;
 
@@ -143,6 +145,10 @@ fn qn1_elemental_arrival_rolls_back_loot_and_drop_for_parent_failure() -> f::Tes
 fn qn1_elemental_arrival_consumes_fluid_loot_and_archives_its_state() -> f::TestResult {
     run(true, 3)
 }
+#[test]
+fn qn1_elemental_corpse_keeps_classification_after_owner_generation_move() -> f::TestResult {
+    run(true, 4)
+}
 fn run(native: bool, loot: u8) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
@@ -160,6 +166,7 @@ fn run(native: bool, loot: u8) -> f::TestResult {
                             (_, 1) => "qn1_elemental_loot",
                             (_, 2) => "qn1_elemental_loot_rollback",
                             (_, 3) => "qn1_elemental_fluid_loot",
+                            (_, 4) => "qn1_elemental_corpse_handoff",
                             (true, _) => "qn1_elemental_native",
                             (false, _) => "qn1_elemental_consume",
                         },
@@ -296,6 +303,9 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
     }
     let (item,revision):(Vec<u8>,String)=sqlx::query_as("SELECT decode(replace(item_instance_id::text,'-',''),'hex'),state_revision::text FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i8139' AND lifecycle=1").fetch_one(&h.pool).await?;
     let item: [u8; 16] = item.try_into().map_err(|_| "corpse identity")?;
+    if loot == 4 {
+        return handoff::exercise(h, &authority, &content, item).await;
+    }
     let mut loot_ids = Vec::new();
     if loot > 0 {
         use crate::durability::item_mint::{
