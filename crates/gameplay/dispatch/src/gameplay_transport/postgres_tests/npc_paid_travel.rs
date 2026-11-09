@@ -755,7 +755,8 @@ fn scenario() -> TestResult {
             .bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         for (index, (captain, destination, fare, tile)) in S10T_PASSAGES.iter().enumerate() {
-            if *captain == "junkar_mines" {
+            // Grant the ship discount only when the final discounted group begins.
+            if *captain == "junkar_mines" && *destination == "kazordoon" && *fare == 0 {
                 let mut tx = h.pool.begin().await?;
                 sqlx::query("SET LOCAL session_replication_role=replica")
                     .execute(&mut *tx)
@@ -1326,7 +1327,11 @@ const S10T_PASSAGES: &[Passage] = &[
     ("petros", "issavi", 130, (33902, 31462, 6)),
     ("tarak_inner", "monument tower", 50, (32939, 31182, 7)),
     ("tarak_sunken", "passage", 0, (32916, 31199, 7)),
-    // The fixture grants Grand Postman rank for these final ship cases, reducing each fare by ten.
+    // Mission six alone does not discount ship fares.
+    ("junkar_mines", "kazordoon", 10, (32660, 31957, 15)),
+    ("junkar_mines", "robsons_isle", 70, (32527, 32036, 14)),
+    ("junkar_mines", "thais", 90, (32370, 32180, 13)),
+    // Grand Postman rank reduces each subsequent fare by ten.
     ("junkar_mines", "kazordoon", 0, (32660, 31957, 15)),
     ("junkar_mines", "robsons_isle", 60, (32527, 32036, 14)),
     ("junkar_mines", "thais", 80, (32370, 32180, 13)),
