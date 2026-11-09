@@ -276,5 +276,9 @@
  "Welcome back!": "Witaj ponownie!",
  "Refresh reward": "Odśwież nagrodę",
  "Claim gift": "Odbierz prezent",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Czeka prezent powitalny. Otwórz nagrodę dzienną (Ctrl+D), a następnie nagrodę za powrót, aby go odebrać."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Czeka prezent powitalny. Otwórz nagrodę dzienną (Ctrl+D), a następnie nagrodę za powrót, aby go odebrać.",
+ "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Boss: {boss_key}\nWersja: {content_revision}\nWybrany poziom trudności: {selected_difficulty}\nRekord postaci: {personal_highest}\nOdblokowana trudność: {unlocked_max} / {maximum_difficulty}",
+ "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nRekord postaci: {personal_highest}\nOdblokowana trudność: {unlocked_max} / {maximum_difficulty}\n",
+ "Enter a difficulty from 0 to 28": "Podaj poziom trudności od 0 do 28",
+ "Phosphorus Record": "Rekord Phosphorusa"
 }

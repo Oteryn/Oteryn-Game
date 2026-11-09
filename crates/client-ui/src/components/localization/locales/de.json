@@ -276,5 +276,9 @@
  "Welcome back!": "Willkommen zurück!",
  "Refresh reward": "Belohnung aktualisieren",
  "Claim gift": "Geschenk abholen",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Ein Rückkehrgeschenk ist verfügbar. Öffne die tägliche Belohnung (Strg+D) und dann die Rückkehrbelohnung, um es abzuholen."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Ein Rückkehrgeschenk ist verfügbar. Öffne die tägliche Belohnung (Strg+D) und dann die Rückkehrbelohnung, um es abzuholen.",
+ "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Boss: {boss_key}\nRevision: {content_revision}\nGewählter Schwierigkeitsgrad: {selected_difficulty}\nPersönlicher Höchststand: {personal_highest}\nFreigeschalteter Schwierigkeitsgrad: {unlocked_max} / {maximum_difficulty}",
+ "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nPersönlicher Höchststand: {personal_highest}\nFreigeschalteter Schwierigkeitsgrad: {unlocked_max} / {maximum_difficulty}\n",
+ "Enter a difficulty from 0 to 28": "Gib einen Schwierigkeitsgrad von 0 bis 28 ein",
+ "Phosphorus Record": "Phosphorus-Rekord"
 }

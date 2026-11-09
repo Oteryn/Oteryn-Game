@@ -142,11 +142,19 @@ fn tibiadrome_category_migration_retires_old_tokens_and_preserves_revision_floor
         for category in [13_i32, 15, 16] {
             assert!(sqlx::query("INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) VALUES(encode($1,'hex')::uuid,$2,0,'reserved',0)").bind(id(WORLD).as_slice()).bind(category).execute(&h.pool).await.is_err());
             assert!(sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category) VALUES(encode($1,'hex')::uuid,$2)").bind(id(WORLD).as_slice()).bind(category).execute(&h.pool).await.is_err());
-            assert!(!served_category(u8::try_from(category)?));
+            assert_eq!(served_category(u8::try_from(category)?), category == 16);
         }
         for category in [15_i16, 16] {
             assert!(sqlx::query("INSERT INTO game_public_highscores(world_id,category,projection_revision,revised_at) VALUES(encode($1,'hex')::uuid,$2,1,0)").bind(id(WORLD).as_slice()).bind(category).execute(&h.pool).await.is_err());
         }
+        // The historical1107 checks above still exclude16. Restore the current
+        // forward migration's category bounds before exercising today's publisher.
+        let current = include_str!("../../../migrations/2727_boss_difficulty_victories.sql");
+        let bounds = current
+            .split_once("-- Phosphorus Record category admission.")
+            .ok_or("2727 category bounds")?
+            .1;
+        h.pool.execute(bounds).await?;
         assert!(matches!(
             h.root
                 .read_highscore_page(world(), 14, None, 1, u64::try_from(tokens[3])?, asking())

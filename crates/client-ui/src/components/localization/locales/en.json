@@ -276,5 +276,9 @@
  "Welcome back!": "Welcome back!",
  "Refresh reward": "Refresh reward",
  "Claim gift": "Claim gift",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.",
+ "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}",
+ "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n",
+ "Enter a difficulty from 0 to 28": "Enter a difficulty from 0 to 28",
+ "Phosphorus Record": "Phosphorus Record"
 }

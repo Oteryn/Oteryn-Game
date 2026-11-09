@@ -312,7 +312,7 @@ fn tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical
         let mut public_captured = Vec::new();
         for category in [14, 17] {
             let held: Vec<_> = (1..=12)
-                .chain([14, 17])
+                .chain([14, 16, 17])
                 .filter(|c| *c != category)
                 .map(|c| format!("{world_text}:{c}"))
                 .collect();
