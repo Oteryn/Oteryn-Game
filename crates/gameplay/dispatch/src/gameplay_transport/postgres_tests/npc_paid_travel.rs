@@ -808,6 +808,18 @@ fn scenario() -> TestResult {
             let command_id = 100 + u64::try_from(index)? * 10;
             owner.clock_origin -= std::time::Duration::from_secs(1);
             talk(&owner, &dependencies, npc, command_id, "hi").await?;
+            if *captain == "maris_mistrock" {
+                let before = gold(&h).await?;
+                owner.premium_coordinator = Some(&free);
+                let refused = talk(&owner, &dependencies, npc, command_id + 1, destination).await?;
+                assert_eq!(
+                    line(&refused),
+                    "I'm sorry, but you need a premium account in order to travel."
+                );
+                assert!(!refused.inventory_changed);
+                assert_eq!(gold(&h).await?, before);
+                owner.premium_coordinator = Some(&coordinator);
+            }
             if *captain == "petros" && *destination == "issavi" {
                 let before = gold(&h).await?;
                 let mut tx = h.pool.begin().await?;
@@ -914,6 +926,30 @@ fn scenario() -> TestResult {
                 .map_err(|_| "S10T fence")?
                 .ok_or("S10T session")?
                 .item_fence();
+            if *captain == "maris_mistrock" {
+                // Entitlement may expire after a successful Premium quote.
+                owner.premium_coordinator = Some(&free);
+                let refused = talk(&owner, &dependencies, npc, command_id + 7, "yes").await?;
+                assert_eq!(
+                    line(&refused),
+                    "I'm sorry, but you need a premium account in order to travel."
+                );
+                assert!(!refused.inventory_changed);
+                assert_eq!(gold(&h).await?, before);
+                let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
+                    .fetch_one(&h.pool)
+                    .await?;
+                assert_eq!(after, receipts, "a refused confirmation creates no receipt");
+                let position = dependencies.runtime.lock().await
+                    .read_actor_position(dependencies.actor).map_err(debug)?.position();
+                assert_eq!((position.x, position.y, position.floor), (32310, 32210, 6));
+                owner.premium_coordinator = Some(&coordinator);
+                assert_eq!(
+                    line(&talk(&owner, &dependencies, npc, command_id + 8, destination).await?),
+                    format!("Do you seek a passage to {} for {fare} gold?", route.keyword)
+                );
+                eprintln!("POSTGRES_EXECUTED S10T maris_mistrock {destination} Premium refused at quote and confirmation; no charge, receipt or movement");
+            }
             // Retain the exact production request across an injected transaction rollback,
             // then reconcile it and replay its durable receipt as in the original passage case.
             sqlx::raw_sql("CREATE FUNCTION s10t_travel_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'S10T injected arrival failure'; END; $$; CREATE TRIGGER s10t_travel_fail BEFORE INSERT ON game_character_pending_arrivals FOR EACH ROW EXECUTE FUNCTION s10t_travel_fail()").execute(&h.pool).await?;
