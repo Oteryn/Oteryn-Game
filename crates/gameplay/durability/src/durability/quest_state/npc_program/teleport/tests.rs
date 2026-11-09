@@ -267,6 +267,23 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
             .await
             .is_err()
     );
+    let mut other_world = arrival;
+    other_world.world_id = oteryn_protocol_oteryn::WorldId::decode(&f::id(99)).map_err(f::debug)?;
+    assert!(
+        h.root
+            .commit_character_npc_teleport(
+                &authority,
+                &h.node,
+                &permit,
+                fence,
+                request.clone(),
+                catalogue.clone(),
+                &NoItems,
+                NpcTeleportAdmission { arrival: other_world },
+            )
+            .await
+            .is_err()
+    );
     let mut wrong = arrival;
     wrong.destination.x += 1;
     assert!(
@@ -437,4 +454,29 @@ fn command(ordinal: u64) -> f::TestResult<crate::foundation::CommandRef> {
         GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
         CommandId::new(ordinal).map_err(f::debug)?,
     ))
+}
+
+#[test]
+fn m37_destination_conversion_rejects_out_of_map_coordinates() {
+    use super::NpcTeleportAdmission;
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition;
+
+    for (x, y, floor) in [
+        (-1, 0, 0),
+        (65536, 0, 0),
+        (0, -1, 0),
+        (0, 65536, 0),
+        (0, 0, -16),
+        (0, 0, 1),
+    ] {
+        assert!(NpcTeleportAdmission::runtime_destination(NpcRulePosition { x, y, floor }).is_none());
+    }
+    for (x, y, floor) in [(0, 0, 0), (65535, 65535, -15)] {
+        let destination = NpcTeleportAdmission::runtime_destination(NpcRulePosition { x, y, floor });
+        assert_eq!(destination, Some(crate::durability::character_last_position::LastPositionCell {
+            x,
+            y,
+            floor: -floor,
+        }));
+    }
 }
