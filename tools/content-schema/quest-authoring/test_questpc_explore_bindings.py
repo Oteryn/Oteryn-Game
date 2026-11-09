@@ -11,6 +11,24 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_qm55_chakoya_entry_preserves_premium_and_once_only_progress(self):
+        callback = next(c for c in explore.callbacks(ROOT)
+                        if c['quest'] == 'oteryn:quest.authored.chakoya_iceberg_mini_world_change')
+        self.assertEqual(callback['admission'], {'premium': True})
+        self.assertEqual(callback['selector']['native'], {
+            'position': {'x': 32623, 'y': 32584, 'floor': -7},
+            'ordinal': 0, 'appearance': 799})
+        self.assertTrue(callback['requires_world_admission'])
+        visit, counter = callback['storage']
+        track = 'oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1'
+        self.assertEqual(visit['track'], track + '/visited/entry')
+        self.assertEqual((visit['minimum'], visit['maximum'], visit['set']), (0, 0, 1))
+        self.assertEqual(counter['track'], track)
+        self.assertEqual((counter['minimum'], counter['maximum'], counter['set']), (0, 0, 1))
+        self.assertTrue(counter['increment'])
+        self.assertEqual(callback['offerings'], [])
+        self.assertIsNone(callback['teleport'])
+
     def test_non_explore_and_unknown_stages_are_rejected(self):
         for stage in ('s2', 'missing'):
             binding = tuple((q, stage, a, t) for q, _, a, t in explore.BINDINGS)
@@ -26,8 +44,8 @@ class ExploreBindingsTests(unittest.TestCase):
                 explore.callbacks(ROOT)
 
     def test_unimplemented_required_guard_is_not_silently_dropped(self):
-        guarded = (('oteryn:quest.authored.asura_palace_quest', 's1',
-                    'oteryn:area.hunting_place.asura_palace', 'authored/asura_palace_quest'),)
+        guarded = (('oteryn:quest.fury_gates_mini_world_change', 's1',
+                    'oteryn:area.hunting_place.fury_gate', 'chosen-source/fury_gates_mini_world_change'),)
         with mock.patch.object(explore, 'BINDINGS', guarded):
             with self.assertRaisesRegex(ValueError, 'additional authoritative guards'):
                 explore.callbacks(ROOT)
@@ -57,7 +75,12 @@ class ExploreBindingsTests(unittest.TestCase):
                             self.assertEqual(house, 0)
                             found = [index['palette'][palette]['source_item_id']
                                      for palette, depth, _ in items if depth == 0]
-                self.assertEqual(found, [native['appearance']])
+                # The retained Chakoya tile has a ground root plus its ice overlay.
+                expected = ([799, 7152] if callback['quest'] ==
+                            'oteryn:quest.authored.chakoya_iceberg_mini_world_change'
+                            else [native['appearance']])
+                self.assertEqual(found, expected)
+                self.assertEqual(found[native['ordinal']], native['appearance'])
 
     def test_geomancer_uses_its_exact_canonical_area_and_counter(self):
         callback = next(c for c in explore.callbacks(ROOT)
