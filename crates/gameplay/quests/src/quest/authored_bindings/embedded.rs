@@ -63,7 +63,8 @@ struct Recipe {
     complete: bool,
     data_holds: bool,
     claim_only_pending: bool,
-    admission_free: bool,
+    minimum_level: Option<u32>,
+    level_only_admission: bool,
 }
 
 impl RecipeEvidence {
@@ -151,10 +152,13 @@ impl RecipeEvidence {
                         )
                     ) || (selected.original_source_gaps && entry["code"] == "reported_source_gap")
                 });
-            let admission_free = selected.recipe.is_some_and(|recipe| {
+            let minimum_level = selected
+                .recipe
+                .and_then(|recipe| recipe["requirements"]["min_level"].as_u64())
+                .and_then(|minimum| u32::try_from(minimum).ok());
+            let level_only_admission = selected.recipe.is_some_and(|recipe| {
                 let requirements = &recipe["requirements"];
-                requirements["min_level"] == 0
-                    && requirements["premium"] == false
+                requirements["premium"] == false
                     && requirements["prerequisites"]
                         .as_array()
                         .is_some_and(Vec::is_empty)
@@ -178,7 +182,8 @@ impl RecipeEvidence {
                     complete: selected.complete,
                     data_holds,
                     claim_only_pending,
-                    admission_free,
+                    minimum_level,
+                    level_only_admission,
                 },
             );
         }
@@ -200,17 +205,32 @@ impl RecipeEvidence {
                     quest.quest
                 ));
             }
-            let pure_progress = quest.stages.iter().all(|stage| {
-                !stage.completes
-                    && matches!(
-                        stage.trigger,
-                        super::Trigger::TerrainUse { .. }
-                            | super::Trigger::Collect { .. }
-                            | super::Trigger::Kill { .. }
-                    )
+            let native_observations = quest.stages.iter().all(|stage| {
+                matches!(
+                    stage.trigger,
+                    super::Trigger::TerrainUse { .. }
+                        | super::Trigger::Collect { .. }
+                        | super::Trigger::Kill { .. }
+                )
             });
+            let admission_matches = recipe.level_only_admission
+                && recipe.minimum_level
+                    == Some(
+                        quest
+                            .admission
+                            .as_ref()
+                            .map_or(0, |gate| gate.minimum_level),
+                    );
+            if (native_observations || quest.admission.is_some()) && !admission_matches {
+                return Err(format!(
+                    "authored Quest requires its exact native actor admission: {}",
+                    quest.quest
+                ));
+            }
+            let pure_progress =
+                native_observations && quest.stages.iter().all(|stage| !stage.completes);
             if recipe.data_holds
-                && !(recipe.claim_only_pending && recipe.admission_free && pure_progress)
+                && !(recipe.claim_only_pending && admission_matches && pure_progress)
             {
                 return Err(format!(
                     "authored Quest has unresolved data holds: {}",

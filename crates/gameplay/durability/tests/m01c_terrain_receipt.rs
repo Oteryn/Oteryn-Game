@@ -677,8 +677,99 @@ async fn production_fanfare_collection(
     let incomplete: bool = sqlx::query_scalar("SELECT completed_character_revision IS NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.fanfare_quest'")
         .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
     assert!(incomplete);
+    level_admission_fixture(h, authority, &catalogue, reward_fixture::command(9881)?).await?;
     eprintln!(
         "M01C_FANFARE production_collect native_reward_receipt wrong_key_refused forged_command_refused exact_key_committed custody_preserved replay_safe completion_held"
     );
+    Ok(())
+}
+
+async fn level_admission_fixture(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    source: &QuestStateCatalogue,
+    command: foundation::CommandRef,
+) -> f::TestResult {
+    use oteryn_gameplay_quests::quest::authored_bindings::{
+        Bindings, Trigger, actor_admission::ActorAdmission,
+    };
+    let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    let level = u32::try_from(level)?;
+    let above = level.checked_add(1).ok_or("level fixture boundary")?;
+    let mut quest = source
+        .authored_bindings()
+        .and_then(|bindings| {
+            bindings
+                .quests
+                .iter()
+                .find(|quest| quest.quest == "oteryn:quest.fanfare_quest")
+        })
+        .ok_or("Fanfare binding fixture")?
+        .clone();
+    quest.quest = "oteryn:quest.m01c_level_fixture".into();
+    quest.sources = vec!["M01c engine level fixture; no production quest qualification".into()];
+    quest.tracks[0].key = "oteryn:quest-progress/m01c-level-fixture".into();
+    let Trigger::Collect { collection } = &mut quest.stages[0].trigger else {
+        return Err("collection fixture".into());
+    };
+    collection.key = "oteryn:quest-collection/m01c-level-fixture".into();
+    collection.storage[0].track = quest.tracks[0].key.clone();
+    let key = collection.key.clone();
+    for minimum in [above, level] {
+        quest.admission = Some(ActorAdmission {
+            minimum_level: minimum,
+        });
+        let bindings = Bindings {
+            schema: 1,
+            quests: vec![quest.clone()],
+        };
+        let catalogue = Arc::new(
+            bindings
+                .attach(&QuestStateCatalogue::empty("content-1").ok_or("revision")?)
+                .map_err(f::debug)?,
+        );
+        let request = QuestTransitionRequest {
+            transition_key: key.clone(),
+            cause: QuestCause::Command(command),
+        };
+        let outcome = h
+            .root
+            .commit_character_quest_transition(
+                authority,
+                &h.node,
+                f::fence(6)?,
+                request.clone(),
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(f::debug)?;
+        if minimum == above {
+            if !matches!(
+                outcome,
+                QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+            ) {
+                return Err(format!("native level guard must refuse minimum {minimum} for level {level}: {outcome:?}").into());
+            }
+        } else {
+            assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+            let replay = h
+                .root
+                .commit_character_quest_transition(
+                    authority,
+                    &h.node,
+                    f::fence(6)?,
+                    request,
+                    catalogue,
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(matches!(
+                replay,
+                QuestTransitionOutcome::AlreadyCommitted(_)
+            ));
+        }
+    }
+    eprintln!("M01C_LEVEL actor_level={level} above_refused threshold_committed replay_stable");
     Ok(())
 }

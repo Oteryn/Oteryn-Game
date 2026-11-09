@@ -2,6 +2,7 @@
 //!
 //! A binding set belongs to the same immutable catalogue as its tracks and transitions.
 //! The ordinary NPC/world/kill owners remain the only execution and durable-write paths.
+pub mod actor_admission;
 pub mod collection;
 pub(crate) mod embedded;
 mod imported_recipe;
@@ -72,6 +73,8 @@ pub struct Stage {
 pub struct BoundQuest {
     pub quest: String,
     pub recipe_sha256: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission: Option<actor_admission::ActorAdmission>,
     pub tracks: Vec<Track>,
     pub stages: Vec<Stage>,
     pub sources: Vec<String>,
@@ -417,6 +420,9 @@ fn digest(value: &str) -> bool {
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
         && value.bytes().any(|b| b != b'0')
 }
+
+#[cfg(test)]
+mod actor_admission_tests;
 
 #[cfg(test)]
 mod collection_tests;
