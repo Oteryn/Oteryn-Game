@@ -27,6 +27,12 @@ impl Stepper for Peer {
         &mut self,
         command: &FeatureCommand,
     ) -> Result<GatedCommandResult, SessionError> {
+        self.exchanges
+            .release
+            .acquire()
+            .await
+            .map_err(|_| SessionError::SessionUnusable)?
+            .forget();
         let (kind, payload, status, reply) = self
             .exchanges
             .entries
@@ -37,12 +43,6 @@ impl Stepper for Peer {
         assert_eq!(command.capability, 86);
         assert_eq!(command.kind, kind);
         assert_eq!(command.payload, payload);
-        self.exchanges
-            .release
-            .acquire()
-            .await
-            .map_err(|_| SessionError::SessionUnusable)?
-            .forget();
         Ok(GatedCommandResult {
             command_id: 1,
             server_sequence: 1,
@@ -243,6 +243,7 @@ fn pc04_house_transfer_scenario() -> Result<(), Error> {
                     link.house_transfer_edit(0, fields[0].into());
                     link.house_transfer_request(intent);
                     assert!(link.house_transfer_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.house_transfer_panel();
                     assert!(!ended.pending && !ended.selected && !ended.open);

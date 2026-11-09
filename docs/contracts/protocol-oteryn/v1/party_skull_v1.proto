@@ -11,8 +11,11 @@ package oteryn.party_skull.v1;
 // An absent/unavailable owner observation sends nothing; it never means solo.
 // The bundle replaces the icon view. Entity leaves remove their icons; a resume
 // reconstructs the bundle from current owners. No CharacterId/PartyId is sent.
-message PartySkullQueryV1 {}
+// Empty: icons, unchanged. Canonical bytes 08 01: own PvP observation.
+// Other selectors, duplicate/unknown fields and alternate encodings are rejected.
+message PartySkullQueryV1 { uint32 view = 1; }
 message PartyIconsV1 {
+  PvpStatusV1 own_pvp = 2; // only for view=1; mutually exclusive with icons
   repeated PartyIconV1 icons = 1; // <=256, distinct identities, <=12288 bytes
 }
 message PartyIconV1 {
@@ -31,3 +34,25 @@ message PartyIconV1 {
 // has an unexpired aggression edge to the other side / any destination member.
 // Retains the existing receipted PARTY-1 REJECTED wire outcome for old clients.
 // No blanket ban on permanent red/black skulls is inferred from reference code.
+
+// Self-only, session-fenced; amounts and remaining durations are server-owned.
+// Millipoints retain assist fractions. Durations are milliseconds at observation.
+// The client counts down skull time with its monotonic presentation clock.
+message PvpStatusV1 {
+  uint64 daily_points_milli = 1;
+  uint64 weekly_points_milli = 2;
+  uint64 monthly_points_milli = 3;
+  uint64 daily_red_limit_milli = 4;
+  uint64 weekly_red_limit_milli = 5;
+  uint64 monthly_red_limit_milli = 6;
+  uint64 daily_black_limit_milli = 7;
+  uint64 weekly_black_limit_milli = 8;
+  uint64 monthly_black_limit_milli = 9;
+  uint32 skull = 10; // 0 none, 3 white, 4 red, 5 black
+  uint64 remaining_ms = 11; // <=45 days; zero for no skull
+  repeated PvpSituationV1 situations = 12; // <=64 current-placement aggression edges
+}
+message PvpSituationV1 {
+  bool incoming = 1;
+  uint64 remaining_ms = 2; // 1..900000
+}

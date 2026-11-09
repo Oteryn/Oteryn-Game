@@ -225,7 +225,10 @@ fn newhaven_starter_wire_data_reaches_native_equipment_backpack_and_quiver_panel
     Ok(())
 }
 
-include!("bulk.rs");
+mod bulk {
+    include!("bulk.rs");
+}
+
 
 #[path = "bulk_session.rs"]
 mod bulk_session;

@@ -183,6 +183,19 @@ impl Reentry {
                 PublicClass::SessionUnavailable,
             )),
         };
+        // Cancel and poll are serialized by the UI owner. A completed worker may have
+        // queued its result just before cancellation; it must not start play afterward.
+        let result = if self
+            .attempt_cancellation
+            .as_ref()
+            .is_some_and(CancellationToken::is_cancelled)
+        {
+            Err(GameplayEntryError::Rejected(
+                PublicClass::SessionUnavailable,
+            ))
+        } else {
+            result
+        };
         self.pending = None;
         self.attempt_cancellation = None;
         self.progress = None;
@@ -330,6 +343,32 @@ mod tests {
         assert!(token.is_cancelled());
         assert!(!entry.client.runtime.cancellation().is_cancelled());
         assert!(!entry.cancel_entry());
+        entry.shutdown();
+        Ok(())
+    }
+    #[test]
+    fn cancel_before_poll_overrides_an_already_queued_admission_result()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut entry = Reentry::new(ClientBootstrap::new()?);
+        entry.state = EntryState::Entering;
+        entry.attempt_cancellation = Some(CancellationToken::new());
+        let (sender, receiver) = mpsc::channel();
+        entry.pending = Some(receiver);
+        assert!(
+            sender
+                .send(Err(GameplayEntryError::Rejected(
+                    PublicClass::TemporarilyUnavailable
+                )))
+                .is_ok()
+        );
+        assert!(entry.cancel_entry());
+        let result = entry.poll().ok_or("queued result missing")?;
+        assert_eq!(
+            result.as_ref().err().copied(),
+            Some(GameplayEntryError::Rejected(
+                PublicClass::SessionUnavailable
+            ))
+        );
         entry.shutdown();
         Ok(())
     }

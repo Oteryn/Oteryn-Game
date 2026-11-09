@@ -17,6 +17,9 @@ use windows_sys::Win32::{
     UI::WindowsAndMessaging::*,
 };
 
+#[path = "native/transfer.rs"]
+mod transfer;
+
 fn wide(text: &str) -> Vec<u16> {
     text.encode_utf16().chain(Some(0)).collect()
 }
@@ -28,7 +31,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             let id = (w & 0xffff) as u16;
             let notification = (w >> 16) & 0xffff;
             if ((101..=102).contains(&id) && notification == LBN_SELCHANGE as usize)
-                || ((103..=107).contains(&id) && notification == BN_CLICKED as usize)
+                || ((103..=108).contains(&id) && notification == BN_CLICKED as usize)
             {
                 let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Vec<u16>;
                 if !actions.is_null() {
@@ -73,7 +76,7 @@ pub(in crate::play) fn open_shared(
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
                     520,
-                    530,
+                    570,
                     null_mut(),
                     null_mut(),
                     null_mut(),
@@ -150,6 +153,7 @@ pub(in crate::play) fn open_shared(
                             null(),
                         );
                     }
+                    let target_view = transfer::create(hwnd);
                     let mut destination = None;
                     let status = CreateWindowExW(
                         0,
@@ -157,7 +161,7 @@ pub(in crate::play) fn open_shared(
                         wide("").as_ptr(),
                         WS_CHILD | WS_VISIBLE,
                         10,
-                        410,
+                        450,
                         480,
                         65,
                         hwnd,
@@ -190,6 +194,9 @@ pub(in crate::play) fn open_shared(
                         }
                         let mut destination_changed = false;
                         for action in actions.drain(..) {
+                            if transfer::submit(action, target_view, &mut mailbox, &commands) {
+                                continue;
+                            }
                             match action {
                                 106 => {
                                     destination = mailbox
@@ -291,22 +298,21 @@ pub(in crate::play) fn open_shared(
                                     SendMessageW(entries, LB_SETCURSEL, i, 0);
                                 }
                             }
-                            SetWindowTextW(
-                                status,
-                                wide(&format!(
-                                    "{}\r\nDestination: {}",
-                                    oteryn_client_ui::house_container_capacity::view::panel_text(
-                                        panel
-                                    ),
-                                    destination.map_or_else(
-                                        || "choose an open container".into(),
-                                        |(id, handle)| format!("view {id}, container {handle}")
-                                    )
-                                ))
-                                .as_ptr(),
-                            );
                             held = Some(panel.clone());
                         }
+                        SetWindowTextW(
+                            status,
+                            wide(&format!(
+                                "{}\r\nDestination: {}\r\n{}",
+                                oteryn_client_ui::house_container_capacity::view::panel_text(panel),
+                                destination.map_or_else(
+                                    || "choose an open container".into(),
+                                    |(id, handle)| format!("view {id}, container {handle}")
+                                ),
+                                mailbox.item_movement.feedback.unwrap_or_default()
+                            ))
+                            .as_ptr(),
+                        );
                         if let Some(panel) = &held
                             && let Some(view) = panel.current()
                         {

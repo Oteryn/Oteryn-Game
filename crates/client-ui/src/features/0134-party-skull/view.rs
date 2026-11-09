@@ -12,10 +12,26 @@ pub fn panel_text(panel: &Panel) -> String {
         }
     );
     if let Some(timer) = panel.skull_timer {
-        text.push_str(&format!("\r\n{}", timer.text()));
+        text.push_str(&format!(
+            "\r\n{}",
+            timer.text_at(panel.status_received_at.map_or(0, |at| {
+                u64::try_from(at.elapsed().as_millis()).unwrap_or(u64::MAX)
+            }))
+        ));
     }
     if let Some(snapshot) = &panel.unjustified {
         text.push_str(&format!("\r\n{}", snapshot.text()));
+    }
+    if let Some([daily, weekly, monthly]) = panel.black_limits_milli {
+        text.push_str(&format!(
+            "\r\nBlack skull limits (daily / weekly / monthly): {}.{:03} / {}.{:03} / {}.{:03}",
+            daily / 1000,
+            daily % 1000,
+            weekly / 1000,
+            weekly % 1000,
+            monthly / 1000,
+            monthly % 1000
+        ));
     }
     text
 }

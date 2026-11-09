@@ -1,3 +1,7 @@
+#[path = "state/atlas.rs"]
+pub mod atlas;
+#[path = "view/atlas.rs"]
+pub mod atlas_view;
 mod input;
 mod state;
 mod view;
