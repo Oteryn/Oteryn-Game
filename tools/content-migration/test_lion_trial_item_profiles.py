@@ -59,6 +59,48 @@ class LionTrialItemProfiles(unittest.TestCase):
             self.assertEqual(records[f'oteryn:item.tibia.i{item_id}'],
                              profiles.qualify(*self.values(item_id)))
 
+    def test_native_provider_contains_exact_records_once_and_is_repeatable(self):
+        import quest_callback_profiles as provider
+
+        profile = 'content/items/definitions/spell-native-profiles.json'
+        manifest = 'content/items/native-manifest.json'
+        original = json.loads((ROOT / profile).read_bytes())
+        original['records'] = [row for row in original['records']
+                               if row['production_definition']['production_key']
+                               not in {f'oteryn:item.tibia.i{i}' for i in profiles.SOURCE_RECORDS}]
+        # Match the immediately preceding producer stage in register_spell_families.
+        # The final published provider also carries later, unrelated overlays.
+        import quests_2_emperor_item_profiles as emperor
+        packet = json.loads((ROOT / emperor.PATH).read_bytes())
+        before = {row['production_definition']['production_key']: row
+                  for row in packet['records']}
+        original['records'] = [before.get(row['production_definition']['production_key'], row)
+                               for row in original['records']]
+        generated = {profile: json.dumps(original).encode(),
+                     manifest: b'{"item_profiles":{"sha256":"pending"}}'}
+        def admit():
+            provider.admit(ROOT, generated, profile, manifest,
+                           lambda row: row['production_definition']['production_key'],
+                           lambda value: (json.dumps(value, sort_keys=True) + '\n').encode())
+        admit()
+        first = generated[profile]
+        document = json.loads(first)
+        for item_id in profiles.SOURCE_RECORDS:
+            key = f'oteryn:item.tibia.i{item_id}'
+            rows = [row for row in document['records']
+                    if row['production_definition']['production_key'] == key]
+            self.assertEqual(rows, [profiles.qualify(*self.values(item_id))])
+        self.assertEqual(json.loads(generated[manifest])['item_profiles']['sha256'],
+                         owner.hashlib.sha256(first).hexdigest())
+        admit()
+        self.assertEqual(generated[profile], first)
+        flower = next(row for row in document['records']
+                      if row['production_definition']['production_key'] == 'oteryn:item.tibia.i21389')
+        flower['semantics']['physical']['value']['weight']['value'] += 1
+        generated[profile] = json.dumps(document).encode()
+        with self.assertRaisesRegex(ValueError, 'LION_TRIAL_NATIVE_PROFILE_DRIFT'):
+            admit()
+
     def test_source_duration_and_custom_action_changes_are_refused(self):
         for item_id in profiles.SOURCE_RECORDS:
             for key, value in [('duration', '1'), ('script', 'custom')]:

@@ -152,6 +152,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    # M07's Rust-authored Lion trials need the same native physical Item owner.
+    import lion_trial_item_profiles
+    keys.update(f'oteryn:item.tibia.i{i}' for i in lion_trial_item_profiles.SOURCE_RECORDS)
     keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
@@ -223,9 +226,18 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
     source_items = ET.fromstring(raw).findall('item')
+    lion_records = lion_trial_item_profiles.records(root, raw, definitions)
     import quests_2_emperor_item_profiles
     source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
     for key, definition in sorted(definitions.items()):
+        if key in lion_records:
+            record = lion_records[key]
+            if key in present:
+                if present[key] != record:
+                    raise ValueError('LION_TRIAL_NATIVE_PROFILE_DRIFT')
+            else:
+                document['records'].append(record)
+            continue
         # These exact source-qualified Items retain their canonical identity;
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(

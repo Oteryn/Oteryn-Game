@@ -25,6 +25,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.root = Path(self.temp.name)
         (self.root / 'content/quests').mkdir(parents=True)
         (self.root / 'content/interactions').symlink_to(ROOT / 'content/interactions', target_is_directory=True)
+        (self.root / 'content/assets').symlink_to(ROOT / 'content/assets', target_is_directory=True)
         (self.root / 'content/items').symlink_to(ROOT / 'content/items', target_is_directory=True)
         (self.root / 'imports').symlink_to(ROOT / 'imports', target_is_directory=True)
         (self.root / 'tools').symlink_to(ROOT / 'tools', target_is_directory=True)
@@ -32,10 +33,18 @@ class QuestCallbackProfiles(unittest.TestCase):
         (self.root / 'content/quests/killing-in-the-name-of.json').write_bytes(
             (ROOT / 'content/quests/killing-in-the-name-of.json').read_bytes())
         self.document = json.loads((ROOT / PROFILE).read_bytes())
+        # Recreate this producer's actual input stage, before later provider overlays.
+        import quests_2_emperor_item_profiles as emperor
+        packet = json.loads((ROOT / emperor.PATH).read_bytes())
+        preceding = {row['production_definition']['production_key']: row
+                     for row in packet['records']}
+        self.document['records'] = [preceding.get(row['production_definition']['production_key'], row)
+                                    for row in self.document['records']]
         self.document['records'] = [r for r in self.document['records']
                                     if r['production_definition']['production_key'] not in
                                     (KEY, 'oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',
-                                     BLOODY_TEAR, 'oteryn:item.tibia.i9388')]
+                                     BLOODY_TEAR, 'oteryn:item.tibia.i9388',
+                                     'oteryn:item.tibia.i21389', 'oteryn:item.tibia.i21466')]
         self.generated = {PROFILE: json.dumps(self.document).encode(),
                           MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
 
