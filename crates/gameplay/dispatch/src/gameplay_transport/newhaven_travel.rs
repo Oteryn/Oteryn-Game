@@ -4,18 +4,12 @@ use super::*;
 use crate::content::newhaven_travel::NewhavenRoute;
 use crate::durability::character_last_position::FinalLastPosition;
 use crate::durability::npc_travel::{PendingArrival, TravelOccurrence};
+use oteryn_gameplay_npc::travel_prompt::{TravelConfirmation, TravelPrompt};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::collections::HashMap;
 
-#[derive(Clone)]
-struct Prompt {
-    npc: EntityRef,
-    conversation: u64,
-    catalogue: u64,
-    expires: u64,
-    confirmations: u8,
-}
+type Prompt = TravelPrompt<NewhavenRoute, (EntityRef, u64, u64)>;
 
 #[derive(Clone)]
 pub(super) enum Departure {
@@ -170,13 +164,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 prompts.insert(
                     session,
-                    Prompt {
-                        npc: intent.npc_actor,
-                        conversation,
-                        catalogue,
-                        expires: now.saturating_add(60_000),
-                        confirmations: 1,
-                    },
+                    Prompt::new(
+                        route,
+                        (intent.npc_actor, conversation, catalogue),
+                        now,
+                        route == NewhavenRoute::Seagull,
+                    ),
                 );
                 return NpcConversations::bank_reply(
                     &intent,
@@ -189,29 +182,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(prompt) = prompts.get_mut(&session) else {
                 return ordinary;
             };
-            if prompt.npc != intent.npc_actor
-                || prompt.conversation != conversation
-                || prompt.catalogue != catalogue
-                || now > prompt.expires
-            {
+            let context = (intent.npc_actor, conversation, catalogue);
+            if !prompt.is_current(&context, now) {
                 prompts.remove(&session);
                 return ordinary;
             }
             if text != "yes" && text != "sure" {
                 return ordinary;
             }
-            if route == NewhavenRoute::Seagull && prompt.confirmations == 1 {
-                prompt.confirmations = 2;
-                return NpcConversations::bank_reply(
-                    &intent,
-                    "This passage is one way. Are you sure?".into(),
-                );
+            match prompt.confirm(&context, now) {
+                TravelConfirmation::RepeatConfirmation => {
+                    return NpcConversations::bank_reply(
+                        &intent,
+                        "This passage is one way. Are you sure?".into(),
+                    );
+                }
+                TravelConfirmation::Ready(selected) => {
+                    prompts.remove(&session);
+                    Some(selected)
+                }
+                TravelConfirmation::Refused => {
+                    prompts.remove(&session);
+                    None
+                }
             }
-            prompts.remove(&session)
         };
-        if prompt.is_none() {
+        let Some(route) = prompt else {
             return ordinary;
-        }
+        };
         let Ok(command_id) = crate::foundation::CommandId::new(command.command_id) else {
             return ordinary;
         };

@@ -444,7 +444,7 @@
     "capability": "Captured route and context; one or two confirmations; single-use exclusive 60-second deadline",
     "red": "2 failing expiry cases; 2 passing context/route cases",
     "green": "4 focused NPC unit cases PASS",
-    "production_wiring": "Next slice: replace Newhaven inline Prompt; Anna Targuna is not enabled",
+    "production_wiring": "GREEN: Anna and Seagull use the captured route; explicit Targuna remains disabled pending atomic relocation/citizenship.",
     "workspace": "PASS 10m44s",
     "clippy": "PASS strict NPC and quests all-target/all-feature 4m04s",
     "fmt": "PASS",
@@ -459,5 +459,18 @@
     "fix": "Watch nearest existing ancestor until optional directory is created; keep registry scope/limits unchanged",
     "red": "Real Cargo rebuilt unchanged fixture twice; expected once",
     "green": "Cargo integration regression PASS 0.47s; unchanged builds cached and first new binding detected"
+  },
+  "travel_prompt_wiring": {
+    "state": "GREEN",
+    "caller": "crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs",
+    "scope": "Existing Anna/Seagull confirmations; captured route used for destination and receipt, ordinary-message validity reads do not consume a confirmation",
+    "tests": "5 focused prompt cases PASS; existing expiry RED carried from component slice",
+    "workspace": "PASS 12m34s",
+    "clippy": "PASS strict NPC/dispatch all-target/all-feature 10m54s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged inputs",
+    "duplicate_migrations": "PASS; no SQL changes",
+    "pg": "No new PG case claimed; SQL/arrival owners unchanged",
+    "whole_M38": "PARTIAL; Targuna, last-port and other unfinished source bindings remain"
   }
 }

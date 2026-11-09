@@ -27,7 +27,7 @@ impl<Route: Copy, Context: Eq> TravelPrompt<Route, Context> {
 
     /// A stale binding or a consumed/expired prompt cannot authorize a departure.
     pub fn confirm(&mut self, context: &Context, now_ms: u64) -> TravelConfirmation<Route> {
-        if self.remaining == 0 || &self.context != context || now_ms >= self.expires_ms {
+        if !self.is_current(context, now_ms) {
             self.remaining = 0;
             return TravelConfirmation::Refused;
         }
@@ -37,6 +37,11 @@ impl<Route: Copy, Context: Eq> TravelPrompt<Route, Context> {
         } else {
             TravelConfirmation::RepeatConfirmation
         }
+    }
+
+    /// Checking an ordinary talk message never consumes a confirmation or extends the window.
+    pub fn is_current(&self, context: &Context, now_ms: u64) -> bool {
+        self.remaining > 0 && &self.context == context && now_ms < self.expires_ms
     }
 }
 

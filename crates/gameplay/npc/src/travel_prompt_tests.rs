@@ -53,3 +53,17 @@ fn m38_travel_prompt_retires_after_npc_conversation_or_catalogue_drift() {
         assert_eq!(prompt.confirm(&(1, 2, 3), 201), TravelConfirmation::Refused);
     }
 }
+
+#[test]
+fn m38_travel_prompt_ordinary_messages_do_not_consume_the_selected_departure() {
+    let mut prompt = TravelPrompt::new(NewhavenRoute::Anna, (1, 2, 3), 100, false);
+    for now in [101, 102, 60_099] {
+        assert!(prompt.is_current(&(1, 2, 3), now));
+    }
+    assert!(!prompt.is_current(&(1, 2, 9), 60_099));
+    assert_eq!(
+        prompt.confirm(&(1, 2, 3), 60_099),
+        TravelConfirmation::Ready(NewhavenRoute::Anna)
+    );
+    assert!(!prompt.is_current(&(1, 2, 3), 60_099));
+}
