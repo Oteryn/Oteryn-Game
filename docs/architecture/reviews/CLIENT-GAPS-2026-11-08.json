@@ -362,9 +362,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Action Bars: rows/amounts/labels/tooltips/cooldowns/auto-insert spells",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnej strony ustawień barów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/view.rs:109 + t058_tooltip_toggle_projects_live_slot_details; apps/client/src/features/local-spell-action-bar/view.rs:118 + t058_rune_amounts_use_live_inventory_stacks + t058_auto_insert_uses_learned_server_catalog_once + t058_bar_labels_and_cooldowns_are_independent; apps/client/src/features/local-spell-action-bar/view.rs:115 + t058_row_layout_preserves_all_twelve_slots"
  },
  {
   "id": "T059",

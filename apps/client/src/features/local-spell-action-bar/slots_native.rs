@@ -5,7 +5,10 @@ use windows_sys::Win32::{
     UI::WindowsAndMessaging::*,
 };
 
+#[path = "tooltips_native.rs"]
+mod tips;
 pub(super) struct SpellRow {
+    tips: tips::Tips,
     buttons: Vec<HWND>,
     pressed: Vec<bool>,
     parent: HWND,
@@ -16,6 +19,7 @@ fn wide(text: &str) -> Vec<u16> {
 impl SpellRow {
     pub(super) fn new(parent: HWND) -> Option<Self> {
         let mut row = Self {
+            tips: tips::Tips::new(parent, oteryn_client_runtime::spell::ACTION_BAR_SLOTS),
             buttons: Vec::new(),
             pressed: vec![false; oteryn_client_runtime::spell::ACTION_BAR_SLOTS],
             parent,
@@ -44,7 +48,13 @@ impl SpellRow {
         }
         Some(row)
     }
-    pub(super) fn update(&mut self, labels: Option<&[String]>, grid: (usize, usize)) -> Vec<usize> {
+    pub(super) fn update(
+        &mut self,
+        labels: Option<&[String]>,
+        grid: (usize, usize),
+        tooltips: &[String],
+    ) -> Vec<usize> {
+        self.tips.update(self.parent, &self.buttons, tooltips);
         let mut clicked = Vec::new();
         unsafe {
             let mut rect: RECT = std::mem::zeroed();

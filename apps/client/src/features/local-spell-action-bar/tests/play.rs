@@ -279,3 +279,31 @@ fn t058_auto_insert_uses_learned_server_catalog_once() {
     crate::play::mailbox::lock(&link.mailbox).spell_bar.bar.bind(4,None);
     assert!(!link.spell_slot_labels()[4].contains("Oteryn test spell"));
 }
+
+#[test]
+fn t058_tooltip_toggle_projects_live_slot_details() {
+    let (link, _, _)=crate::play::play_channel();
+    assert!(link.spell_slot_tooltips()[0].contains("Cooldown"));
+    crate::play::mailbox::lock(&link.mailbox).local_preferences.action_bar.tooltips=false;
+    assert!(link.spell_slot_tooltips().iter().all(String::is_empty));
+}
+
+#[test]
+fn t058_rune_amounts_use_live_inventory_stacks() -> Result<(),Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::spell_catalog::{SpellCatalog,SpellCatalogEntry};
+    let (link,_,_)=crate::play::play_channel();
+    {
+        let mut mailbox=crate::play::mailbox::lock(&link.mailbox);
+        mailbox.spell_catalog.catalog.replace(SpellCatalog {revision:1,entries:vec![SpellCatalogEntry {cast_index:1,name:"Rune".into(),words:String::new(),level:1,mana:0,mana_percent:false,soul:0,learned:true,available:true,cooldown_groups:vec![],rune_item:Some(42)}]});
+    }
+    {
+        let mut mailbox=crate::play::mailbox::lock(&link.mailbox);
+        mailbox.inventory.apply(Some(oteryn_session::CharacterInventory { entries:vec![oteryn_session::ItemEntry {handle:1_u64.try_into()?,item_definition_ref:42_u32.try_into()?,count:7_u32.try_into()?,sub_type:0}], ..Default::default() }));
+    }
+    assert!(link.spell_slot_labels()[0].ends_with("×7"));
+    crate::play::mailbox::lock(&link.mailbox).inventory.inventory.as_mut().ok_or("inventory")?.entries[0].count=3_u32.try_into()?;
+    assert!(link.spell_slot_labels()[0].ends_with("×3"));
+    crate::play::mailbox::lock(&link.mailbox).local_preferences.action_bar.amounts=false;
+    assert!(!link.spell_slot_labels()[0].contains('×'));
+    Ok(())
+}

@@ -126,10 +126,11 @@ impl super::Application {
             if let Some(hud) = &mut self.hud {
                 hud.arcs.update(play.view.hud_arc_layout());
                 let labels = play.link.spell_slot_labels();
-                for slot in hud
-                    .spells
-                    .update(Some(&labels), play.link.action_bar_grid())
-                {
+                for slot in hud.spells.update(
+                    Some(&labels),
+                    play.link.action_bar_grid(),
+                    &play.link.spell_slot_tooltips(),
+                ) {
                     if let Some(slot) = u32::try_from(slot).ok().and_then(std::num::NonZeroU32::new)
                     {
                         play.link.cast_spell_slot(slot);
@@ -152,7 +153,7 @@ impl super::Application {
         if self.play.is_none()
             && let Some(hud) = &mut self.hud
         {
-            hud.spells.update(None, (12, 1));
+            hud.spells.update(None, (12, 1), &[]);
             hud.arcs.update(None);
             hud.shortcuts.update(None);
             hud.update(None, [8, 8, 900, 40]);

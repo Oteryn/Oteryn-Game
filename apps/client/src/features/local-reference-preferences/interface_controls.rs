@@ -3,7 +3,7 @@ use super::*;
 use oteryn_client::play::ReferencePreferences;
 
 pub(crate) struct InterfaceControls {
-    game_window: [HWND; 12],
+    game_window: [HWND; 14],
     label: HWND,
     scale: HWND,
     cursor: HWND,
@@ -44,6 +44,8 @@ impl InterfaceControls {
                 "Action bar cooldowns",
                 "Three action-bar rows",
                 "Insert newly learned spells",
+                "Action-bar item amounts",
+                "Action-bar tooltips",
             ]
             .map(|label| {
                 control(
@@ -160,6 +162,8 @@ impl InterfaceControls {
                 bar_cooldowns,
                 three_rows,
                 auto_insert,
+                amounts,
+                bar_tooltips,
             ] = self
                 .game_window
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
@@ -175,6 +179,8 @@ impl InterfaceControls {
             preferences.action_bar.cooldowns = bar_cooldowns;
             preferences.action_bar.three_rows = three_rows;
             preferences.action_bar.auto_insert = auto_insert;
+            preferences.action_bar.amounts = amounts;
+            preferences.action_bar.tooltips = bar_tooltips;
             preferences.hud_names = self
                 .names
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
@@ -212,6 +218,8 @@ impl InterfaceControls {
                 preferences.action_bar.cooldowns,
                 preferences.action_bar.three_rows,
                 preferences.action_bar.auto_insert,
+                preferences.action_bar.amounts,
+                preferences.action_bar.tooltips,
             ]) {
                 SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
             }

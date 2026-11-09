@@ -106,6 +106,12 @@ impl crate::play::PlayLink {
             cast_index,
         )
     }
+    pub fn spell_slot_tooltips(&self) -> Vec<String> {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let mut labels = oteryn_client_ui::spell_action_bar::slot_labels(&mailbox.spell_bar, &mailbox.spell_catalog.catalog);
+        if !mailbox.local_preferences.action_bar.tooltips { labels.iter_mut().for_each(String::clear); }
+        labels
+    }
     pub fn action_bar_grid(&self) -> (usize, usize) {
         crate::play::mailbox::lock(&self.mailbox).local_preferences.action_bar.grid()
     }
@@ -127,6 +133,15 @@ impl crate::play::PlayLink {
             &mailbox.spell_bar, &mailbox.spell_catalog.catalog,
         );
         mailbox.local_preferences.action_bar.project(&mut labels);
+        if mailbox.local_preferences.action_bar.amounts {
+            let items=mailbox.inventory.rows();
+            for (field, label) in mailbox.spell_bar.bar.fields().iter().zip(&mut labels) {
+                if let Some(item)=mailbox.spell_catalog.catalog.entries().iter().find(|entry| field.parse::<u32>().ok()==Some(entry.cast_index)).and_then(|entry| entry.rune_item) {
+                    let count:u64=items.iter().filter(|entry| entry.item_definition_ref.get()==item).map(|entry| u64::from(entry.count.get())).sum();
+                    if mailbox.inventory.inventory.is_some() { label.push_str(&format!(" ×{count}")); }
+                }
+            }
+        }
         labels
     }
     pub fn cast_spell_slot(&self, slot: std::num::NonZeroU32) {
