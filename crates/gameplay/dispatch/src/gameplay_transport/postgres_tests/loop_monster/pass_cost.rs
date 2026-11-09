@@ -129,6 +129,13 @@ fn pass_cost(spread: bool) -> TestResult {
         )
         .map_err(debug)?;
         for now in [10_000_000, 10_050_000] {
+            let prepared_names = owner.capture_native_health_names(&runtime).map_err(debug)?;
+            let read_names = owner
+                .read_prepared_native_health_names(&permit, prepared_names)
+                .await;
+            let names = owner
+                .seal_native_health_names(&runtime, read_names)
+                .map_err(debug)?;
             let before = ground_scans(owner.root).await?;
             let started = std::time::Instant::now();
             owner
@@ -142,6 +149,7 @@ fn pass_cost(spread: bool) -> TestResult {
                     &revisions,
                     &[],
                     now,
+                    &names,
                 )
                 .await
                 .map_err(debug)?;

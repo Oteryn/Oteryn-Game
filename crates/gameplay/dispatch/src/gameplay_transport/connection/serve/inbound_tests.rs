@@ -618,6 +618,7 @@ fn activity_successor_rejects_already_queued_old_move_before_counter() -> TestRe
                             frame: old_frame,
                             arrived_while_buffered: false,
                             buffered_original: false,
+                            received_at: tokio::time::Instant::now(),
                         },
                     )
                     .await
