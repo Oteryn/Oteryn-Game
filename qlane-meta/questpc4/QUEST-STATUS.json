@@ -11165,12 +11165,13 @@
       "clippy_seconds": 223.146,
       "pg_tears_regression_seconds": 59.979037201,
       "pg_well_partial_seconds": 59.567954483,
-      "pg_well_last_red": "new test expected Rejected for revision99; production returned contract-correct StaleState; expectation corrected, full rerun pending",
+      "pg_well_last_red": "PG18.6 60.011407783s: first grant/replay/stale source passed; second fresh request incorrectly sent old source revision0 and got StaleState. Test now sends revision1 and asserts cursor only advances on fresh grants; rerun pending",
       "build_recovery": "two SIGKILLs; serial build, bounded allocator and coroutine frame succeeded; temporary linker wrapper removed",
       "workspace_all_targets_seconds": 240.128,
       "fmt": "PASS",
       "pin_check_seconds": 27.818,
-      "duplicate_migrations": "PASS"
+      "duplicate_migrations": "PASS",
+      "cursor_workspace_seconds": 218.055
     },
     "remaining": "Compiling WIP published under owner cadence exception; corrected native well PG rerun pending (second fresh grant, replay/stale receipt assertions); M07 not DONE"
   }

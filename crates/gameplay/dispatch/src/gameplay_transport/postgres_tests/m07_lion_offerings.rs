@@ -158,7 +158,7 @@ async fn well_exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&m
         (1,0,1,UseDisposition::Committed),
         (1,0,1,UseDisposition::Committed),
         (2,99,1,UseDisposition::StaleState),
-        (3,0,2,UseDisposition::Committed),
+        (3,1,2,UseDisposition::Committed),
     ].into_iter().enumerate() {
         pace(owner)?;
         // Keep the large connection future outside this scenario's coroutine frame.
@@ -166,6 +166,8 @@ async fn well_exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&m
         assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,disposition);
         assert_eq!(carried(harness,item).await?,quantity,"producer command {index}");
         assert_eq!(counts(harness).await?,(quantity,0),"one receipt per fresh grant; replay/stale source add none");
+        assert_eq!(owner.bundle_map().ok_or("map")?.facts.object_revision(source),u64::try_from(quantity)?,
+            "fresh USE advances the source cursor; replay and stale requests do not");
         if index==1 {assert_eq!(&reply,first.as_ref().ok_or("first result")?);}
         if index==0 {first=Some(reply);}
     }
