@@ -45,6 +45,8 @@ mod counter_initials;
 mod counter_initials_tests;
 mod counterparts;
 mod craft_epoch;
+mod dense_ground;
+mod dense_step_teleport;
 mod effects;
 mod feaster_routes;
 pub mod ground;
@@ -696,7 +698,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (callback.has_ground_stack_requirements()
                 && callback.has_personal_state()
                 && !callback.supports_ground_stack_guard())
-            || callback.world_requirements.len() > MAX_EFFECTS
+            || (callback.world_requirements.len() > MAX_EFFECTS
+                && !dense_ground::admitted(callback))
             || callback.world_requirements.iter().any(|r| {
                 !r.valid()
                     || (r.ground.is_none()

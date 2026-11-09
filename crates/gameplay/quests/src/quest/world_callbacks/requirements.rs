@@ -8,8 +8,8 @@ impl Callback {
             .any(|r| r.ground_stack.is_some())
     }
 
-    /// Initial composition is a personal progress-only action. Item consumption,
-    /// rewards and reversible map actions retain their existing lock contracts.
+    /// Personal progress-only actions may include a bounded dense STEP teleport.
+    /// Item consumption, rewards and reversible map actions retain their contracts.
     pub fn supports_ground_stack_guard(&self) -> bool {
         self.has_ground_stack_requirements()
             && self.actor_kind == ActorKind::Player
@@ -20,7 +20,7 @@ impl Callback {
             && !self.opening_only
             && self.lever.is_none()
             && self.passages.is_empty()
-            && self.teleport.is_none()
+            && (self.teleport.is_none() || super::dense_step_teleport::admitted(self))
             && self.effects.is_empty()
             && self.offerings.is_empty()
             && self.item_on_target.is_none()

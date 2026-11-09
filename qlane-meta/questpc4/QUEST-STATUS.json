@@ -11570,5 +11570,177 @@
         "exit": 1
       }
     }
+  },
+  "m07_dense_ground_callback_slice": {
+    "state": "PARTIAL",
+    "scope": "Callback parser admits the complete 36-cell single-item Ground pattern only for fenced progress-only actions; other effect/readset budgets remain unchanged.",
+    "red": "Two new parser regression tests failed invalid callback before implementation; /tmp/questpc4-dense-callback-red.log.",
+    "validation": {
+      "focused_tests": 25,
+      "focused_seconds": 6.088,
+      "clippy_seconds": 11.86,
+      "fmt": "PASS",
+      "workspace": {
+        "seconds": 307.371,
+        "exit": 0
+      },
+      "pg": "Not run: parser-only Rust change, no SQL or native callback wiring changed.",
+      "pin_verify": {
+        "seconds": 8.949,
+        "exit": 1,
+        "error": "key: unknown key oteryn:world-object.tibia.i10736"
+      }
+    },
+    "pending": "Native Dreamer puzzle callback and pillow profile qualification remain. Repair PG blocked by published migration 2020.",
+    "decision": "Portable Ground-only predicates already permit appearance=0 in production. Preserve that admission and test rejection when both the immutable appearance and Ground predicate are absent."
+  },
+  "m07_native_ground_snapshot_slice": {
+    "state": "PARTIAL",
+    "scope": "Move the typed Channel Ground snapshot adapter to the map owner and reject unexpected stack cardinality before resolving custody ordinals. Dispatch uses the shared adapter.",
+    "red": "m07_native_ground_snapshot_bounds_cells_before_identity_resolution failed because an expected one-item cell returned a two-item snapshot. /tmp/questpc4-runtime-ground-red.log",
+    "validation": {
+      "focused_test": "map::overlay::quest_ground::tests::m07_native_ground_snapshot_bounds_cells_before_identity_resolution",
+      "focused_seconds": 0.06,
+      "database_used": false,
+      "clippy": {
+        "crates": [
+          "oteryn-gameplay-world",
+          "oteryn-gameplay-dispatch",
+          "oteryn-gameplay-durability"
+        ],
+        "features": "test-support",
+        "targets": "lib",
+        "seconds": 158.635,
+        "exit": 0
+      },
+      "workspace": {
+        "head": "555146f56b28cea9083b59b9dddbe3018273a060",
+        "seconds": 279.603,
+        "exit": 0
+      },
+      "fmt_seconds": 20.098,
+      "pin_verify": {
+        "seconds": 8.968,
+        "exit": 1,
+        "error": "key: unknown key oteryn:world-object.tibia.i10736"
+      },
+      "default_lib_failure": "Unrelated ChannelContentPin comparison/Clone errors: world_respawns/elemental.rs:158 and monster_profile_cycle/native_callbacks/outburst_cast.rs:390.",
+      "dispatch_test_targets": "All-target Clippy PASS, not a dispatch test execution claim.",
+      "clippy_all_targets": {
+        "head": "555146f56b28cea9083b59b9dddbe3018273a060",
+        "seconds": 290.878,
+        "exit": 0
+      },
+      "focused_pushed_head": {
+        "head": "555146f56b28cea9083b59b9dddbe3018273a060",
+        "case_seconds": 0.055,
+        "command_seconds": 122.24,
+        "exit": 0
+      }
+    },
+    "sql_changed": false,
+    "pending": "Native Dreamer callback/pillow profile wiring remains incomplete; foreign migration 2020 still prevents repair PG setup.",
+    "preserved": "House, visible movable Base, volatile overlay, definition family, World/Channel scope, nonzero instance identity and durable ordinal checks are retained. Existing dispatch Ground movement/revision test remains unchanged.",
+    "fixture_compile_fix": "Gate test-only ground_stack::matches consistently with its already-gated imports, row type and callers. No production predicate or SQL changes; test-support path remains enabled."
+  },
+  "m07_dense_ground_step_teleport_slice": {
+    "state": "PARTIAL",
+    "scope": "Allow fenced progress-only StepIn teleport composition with a complete 36-cell Ground readset. Legacy small Ground callbacks, use/step-out triggers, rewards and map mutations remain excluded.",
+    "source": "Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua:46-66",
+    "red": "Two new parser/binding tests failed invalid callback before implementation; /tmp/questpc4-ground-teleport-red.log.",
+    "validation": {
+      "focused_tests": 27,
+      "focused_seconds": 6.802,
+      "clippy": {
+        "seconds": 15.095,
+        "exit": 0
+      },
+      "workspace": {
+        "seconds": 324.251,
+        "exit": 0
+      },
+      "sql_changed": false,
+      "pg": "Not run for parser-only change; no durable SQL or runtime teleport ordering changed.",
+      "fmt": {
+        "seconds": 22.837,
+        "exit": 0
+      },
+      "pin_verify": {
+        "seconds": 10.106,
+        "exit": 1,
+        "error": "key: unknown key oteryn:world-object.tibia.i10736"
+      },
+      "duplicates": "PASS"
+    },
+    "ordering_evidence": "quest_callbacks/execute.rs preflights teleport at498-516, commits fenced world callback at881, applies source step at1071-1073. gated_binding hashes the full callback including destination and Ground predicates.",
+    "pending": "Native Dreamer portal wiring, row/column shifts and pillow reset remain. Full M07 not qualified.",
+    "checked_facts": "Current spell-native-profiles already admits i2394 as materializable with inventory/Ground destinations and definition-r1. Did not invent a revision mismatch or alter profiles."
+  },
+  "m07_coherent_ground_patterns_slice": {
+    "state": "PARTIAL",
+    "scope": "Read-only matcher for two complete dense Ground configurations over the same cells, preserving the selected branch and borrowed physical instance witnesses. Never combines per-cell alternatives.",
+    "source": "Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua:53: all nine yellow cells are 2397 OR all nine are 900.",
+    "red": "Both new matcher tests failed before the alternative/configuration validation implementation; /tmp/questpc4-coherent-pattern-red.log.",
+    "validation": {
+      "focused_tests": 29,
+      "focused_seconds": 6.196,
+      "clippy_seconds": 12.439,
+      "workspace": {
+        "seconds": 296.026,
+        "exit": 0
+      },
+      "sql_changed": false,
+      "pg": "No SQL or durable integration changed in this slice.",
+      "fmt": {
+        "seconds": 20.899,
+        "exit": 0
+      },
+      "pin_verify": {
+        "seconds": 8.596,
+        "exit": 1,
+        "error": "key: unknown key oteryn:world-object.tibia.i10736"
+      },
+      "duplicates": "PASS"
+    },
+    "pending": "Native callback data, durable alternative-branch integration, rotation/reset and complete quest story remain unqualified.",
+    "safety": "Rejects malformed unused alternatives, duplicate/ambiguous plans, different footprints/floors, mixed observations, reused instance identities and missing cells. Returns read evidence only, no mutation or completion authority."
+  },
+  "m07_migration_conflict_current": {
+    "tested_head": "e0e8bd3e071b804863ddc3cb5cc8d3b0a7e71b86",
+    "case_seconds": 6.027891459,
+    "error": "callback harness: while executing migration 2020: error returned from database: quest reward quantity variable requires exact guard anchor: actual BIGINT; at line 3909",
+    "root": "1830_native_authored_reward_claims.sql:36-42 already renames actual to native_consumed_count; 2020_quest_reward_quantity_variable.sql:9-16 requires the old literal.",
+    "command": "bash /tmp/questpc4-run-focused-dispatch.sh 'test(m07_machinery_postgres_repair_)' /tmp/questpc4-current-repair-pg-confirm.log",
+    "decision": "No foreign migration edit, migration reordering, main/qmech merge or harness bypass. Own 2060-2069 forward migrations cannot execute before 2020."
+  },
+  "m07_ground_rotation_plan_slice": {
+    "state": "PARTIAL",
+    "scope": "Read-only cyclic move planner for six single-item Ground cells, two cells after a row/column control. Last-first plan order and wrap match the pinned Source script.",
+    "source": "Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle.lua:7-47",
+    "red": "Both new tests failed against the no-op baseline, including invalid-control admission and incorrect wrapping; /tmp/questpc4-ground-rotation-red.log.",
+    "validation": {
+      "focused_tests": 31,
+      "focused_seconds": 6.075,
+      "clippy_seconds": 12.442,
+      "workspace": {
+        "seconds": 279.989,
+        "exit": 0
+      },
+      "sql_changed": false,
+      "pg": "No SQL or custody mutation changed.",
+      "fmt": {
+        "seconds": 19.599,
+        "exit": 0
+      },
+      "pin_verify": {
+        "seconds": 8.764,
+        "exit": 1,
+        "error": "key: unknown key oteryn:world-object.tibia.i10736"
+      },
+      "duplicates": "PASS"
+    },
+    "decision": "Closed complete-line subset: refuse incomplete/multi-item/stacked lines rather than execute a partial shift. Preserve original physical identities and definition witnesses. No new destination ordinals invented.",
+    "pending": "Actual durable six-item transaction, pressure-pad runtime wiring and reset remain. The planner is not custody authority, a committed receipt, or proof of a playable native quest.",
+    "safety": "Writer must revalidate, lock by global item identity and commit the whole plan atomically; source iteration order is not a lock order."
   }
 }
