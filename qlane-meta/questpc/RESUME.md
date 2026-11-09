@@ -1,3 +1,27 @@
+# Current questpc continuation: M01b
+
+Work branch: `claude/happy-davinci-ijz3wy-qm-questpc`. Push only this branch,
+normal fast-forward; verify every push with git ls-remote. Do not merge qmech or
+main. Do not edit CLAIMS.md. Older branch/publication instructions below are history.
+
+Packet audit:46 routes,56 EXPLORE stages.38 routes/41 stages/55 native anchors
+have first/stage-level PG proofs;8 routes/15 stages remain unwired. This does not
+claim whole-quest completion. Latest slice: Chakoya first personal iceberg survey,
+real native STEP with Current Premium/refused replay/fresh once/revisit;
+PG78.48657683s;no kill/chamber/reward/completion/global-event credit.
+
+All latest gates passed:122 authoring modules/1229 tests,checks/content-tree,
+regeneration/pins/duplicates,strict all-feature quests+dispatch Clippy5m02s,
+workspace all-targets5m32s,fmt and explicit auto-mounted Rust format checks.
+
+Next prioritize the unwired non-World follow-ups Dragon Corpse s3,Dragon Tower s3,
+Edron Goblin s3. The older claim that all non-World extra stages were finished
+was incorrect. Exact claim placements and approach candidates are in local lane
+notes;verify physical traversal,retain all predecessor guards,and never seed an
+EXPLORE counter in its own PG proof. Other missing stages are listed below.
+
+## Historical continuation notes
+
 # questpc continuation
 
 Publish to claude/happy-davinci-ijz3wy-qmech only. Earlier lane branches frozen.
@@ -230,3 +254,7 @@ Bewitched s1 nativePG GREEN71.68814649s;37routes40stages54anchorsPG-proven;9rout
 Chakoya s1fixedpersonalexpeditionresolver PREPARED INACTIVE. Exactrecipeadaptation/once/objective/spoilerhashandArea75507rev1117033+nativeicebergstack[799,7152]required;Premiumretained;globalWorldHELDunchanged. Target32622,32585,-7ground6585,startSouth32622,32586ground6582.3focusedtestsRED->GREEN0.680s;4nativeanchor+3cauldrontestsGREEN. ExistingBewitchednativePGregressionGREEN181.037823667s,NOTChakqualification. Fullgatesrunning;noBINDINGSactivation/noChakPGclaim.37routes40stages54anchorsprovenunchanged;9routes16stagesremain. OwnPremiumcasepreparedin.lane/iceberg_entry.rs.
 
 IcebergpreparedpublicationgatesALLGREEN:122modules1228tests,checks/tree/callbackcheck/equipment5795pin/dupmigrations/workspacealltargets8m23s/fmt. ExistingrealBewitchedPGregression181.037823667s. NoChakoyacallbackactivation/noChakPGclaimyet;counts37routes40stages54anchorsunchanged. NextactivateBINDINGSandmountpreparedPremiumcase;nativeSouthstartmustbeexplicit,andgenericexercise_premiumneedsNorth/Southdirectionselectionforexactnewkey. BewitchedadditionalallfeaturesClippy4m12sPASSon07594.
+
+Chakoya s1 fixed personal iceberg nativePG GREEN78.48657683s:realPremiumguard/refusedreplay/freshonce/revisit,actualsnow/iceSourcepreserved;kill/chambertracks0,wholecompletion0,globalWorldstate0.38routes41stages55anchorsPG-proven;8routes15stagesunwired. M01bPARTIAL;finalClippy/workspace gatesrunning. Packet-auditconfirms46routes56Explorestages;earlierhandoffclaimallnonWorldextrasfinishedwasWRONG. NextprioritizeDragonCorpse s3,DragonTower s3,EdronGoblin s3;exactsingleclaimplacementsandclearapproachcandidatesretainedlocally. OtherremainingstagesChakoya3,Chyll1,Deeplings4,DevEssence1,DownDrain1,Fury2,Hive1,Insectoid1,Jungle1+3,Kingsday1,Lumberjack1.
+
+Chakoya s1 fixed personal iceberg nativePG GREEN78.48657683s.38routes41stages55anchorsPG-proven;8routes15stagesunwired.122modules1229authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictquests+dispatchalltargetsALLFEATURESClippy5m02s;workspacealltargets5m32s. FirstsurveyONLY;M01bPARTIAL.

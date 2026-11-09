@@ -36,6 +36,9 @@ mod treasure_entries;
 #[path = "m01b_explore/cave_entry.rs"]
 mod cave_entry;
 
+#[path = "m01b_explore/iceberg_entry.rs"]
+mod iceberg_entry;
+
 #[path = "m01b_explore/infernal_entry.rs"]
 mod infernal_entry;
 
@@ -329,6 +332,12 @@ fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
 }
 
 pub(super) fn start(name: &str, trigger: Position) -> Position {
+    if name == "m01b/chakoya-iceberg-mini-world-change/s1/entry" {
+        return Position {
+            y: trigger.y + 1,
+            ..trigger
+        };
+    }
     if name == "m01b/horse-station-world-change/s1/entry" {
         return Position {
             y: trigger.y - 1,
@@ -377,6 +386,9 @@ pub(super) fn world(
     }
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
+    }
+    if name == "m01b/chakoya-iceberg-mini-world-change/s1/entry" {
+        return iceberg_entry::world(native);
     }
     if name == "m01b/bewitched/s1/entry" {
         return cauldron_entry::world(native);
@@ -616,6 +628,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.key == "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s1/entry" {
+        return iceberg_entry::exercise(owner, admitted, h, callback).await;
+    }
     if callback.key == "oteryn:quest-callback/m01b/bewitched/s1/entry" {
         return cauldron_entry::exercise(owner, admitted, h).await;
     }
@@ -833,7 +848,12 @@ async fn exercise_premium(
     if let Some(minimum) = callback.minimum_level {
         koshei::seed_level(h, i64::from(minimum)).await?;
     }
-    let (entry, exit) = if callback.key.ends_with("m01b/fire-axe/s1/entry")
+    let (entry, exit) = if callback
+        .key
+        .ends_with("m01b/chakoya-iceberg-mini-world-change/s1/entry")
+    {
+        (StepDirection::North, StepDirection::South)
+    } else if callback.key.ends_with("m01b/fire-axe/s1/entry")
         || callback
             .key
             .ends_with("m01b/berserker-treasure/s1/white_pearls")

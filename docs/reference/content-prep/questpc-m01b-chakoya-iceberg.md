@@ -31,4 +31,10 @@ The native snow/ice footprint itself is inspected in the retained B3 data.
 Premium remains required by the canonical recipe. The resolver refuses other
 quests/stages and changed personal-route intent, repeat mode, objective or spoiler
 provenance. The default global World owner remains HELD and is not aliased.
-This is initially prepared but inactive; no new native PG qualification is claimed.
+The first-survey callback is active. Real native dispatch PostgreSQL case
+`m01b_chakoya_native_personal_iceberg_entry_requires_current_premium` passed
+in78.48657683s (0ignored): original landmark stack preserved; missing Current
+Premium refuses credit; gaining Premium cannot retroactively credit a replay;
+fresh entry credits once and revisits do not farm it. Kill/chamber track rows,
+whole-quest completion and global iceberg event state remain zero.
+This qualifies only the first survey, not the remaining expedition or its reward.

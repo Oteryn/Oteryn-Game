@@ -5,6 +5,7 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.authored.chakoya_iceberg_mini_world_change', 's1', 'iceberg-approach:port-hope', 'authored/chakoya_iceberg_mini_world_change'),
     ('oteryn:quest.authored.bewitched', 's1', 'cauldron-approach:green-claw-swamp', 'authored/bewitched'),
     ('oteryn:quest.horse_station_world_change', 's1', 'station-approach:palomino-pasture', 'chosen-source/horse_station_world_change'),
     ('oteryn:quest.hero_of_rathleton_quest', 's3', 'source-approach:hero-into-the-fire', 'chosen-source/hero_of_rathleton_quest'),
