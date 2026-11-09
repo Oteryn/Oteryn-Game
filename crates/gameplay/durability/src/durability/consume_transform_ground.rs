@@ -35,6 +35,7 @@ impl GroundActionSource {
 pub struct GroundActionContext {
     source: GroundActionSource,
     house: Option<String>,
+    actor_position: MovementLocalPosition,
 }
 impl GroundActionContext {
     pub fn from_native_owner(
@@ -107,7 +108,7 @@ impl GroundActionContext {
             }
             Err(_) => return Err("ground action House membership unavailable"),
         };
-        Ok(Self { source, house })
+        Ok(Self { source, house, actor_position: at })
     }
     pub(super) async fn dispenser_row(
         &self,
@@ -131,6 +132,9 @@ impl GroundActionContext {
     }
     pub fn in_house(&self) -> bool {
         self.house.is_some()
+    }
+    pub fn actor_position(&self) -> GroundEffect {
+        GroundEffect { x: self.actor_position.x, y: self.actor_position.y, floor: self.actor_position.floor }
     }
     pub fn effect_position(&self) -> GroundEffect {
         GroundEffect {
@@ -352,7 +356,7 @@ pub(super) async fn write<C: ItemLoopContent>(
             }
             Preparation::Ready(plan) => plan,
             Preparation::Unrelated => {
-                let Some(plan) = novelty_items::plan_ground(
+                let Some(plan) = novelty_items::plan_ground_for_actor(
                     native,
                     &source.definition,
                     *fence.game_session_id.as_bytes(),
@@ -360,6 +364,7 @@ pub(super) async fn write<C: ItemLoopContent>(
                     request.source,
                     context.effect_position(),
                     context.in_house(),
+                    context.actor_position(),
                 ) else {
                     return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
                 };
