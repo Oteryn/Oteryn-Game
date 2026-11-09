@@ -2200,3 +2200,24 @@ Source rule: Crystal201189f creaturescripts_arena_kill.lua:22-35.
 RED actual missing-portal assertion:31.086s. GREEN final source map test:14.016s;
 world/dispatch clippy -D warnings:121.696s; cargo fmt --all --check PASS.
 Engine-only derive-identity equals committed pin identity; no SQL or allocation.
+
+## M51: actual STEP ingress drives all ten arena portals
+
+Committed ordinary movement now calls the native arena portal owner. It retains
+its spell lane, compares the actual movement snapshot/actor lease, requires the
+exact run's visible portal, then uses the existing revision slot and typed native
+receipt. Fresh current pit custody is rechecked by the writer. Busy next pits
+preserve the credited victory; the tenth portal grants the existing achievement
+and enters the reward room. Native replay reads its full origin and restores the
+currently committed state instead of treating the step as a client command.
+Source: Crystal201189f movements_arena_pit.lua:24-64. No new numbers or SQL DDL.
+The existing funded/unfunded UI scenarios retain their original route. The new
+native-route scenario uses real admitted content, fee, ten production combat
+victories, ten ordinary routed movement steps, ten native receipts, rank reward
+and its unchanged replay/backpack assertions. No arena Advance command is sent
+for those ten successful transitions.
+Real PG m51_postgres_native_portals_complete_all_ten_pits_and_reward:
+58.949343258s (491.644s including cold compilation). World source regression:
+14.016s; world/dispatch clippy -D warnings:121.696s. Fmt and pin identity PASS.
+M51 remains PARTIAL: silent-death publication, runtime-role lease privileges and
+full source reset closure still follow; victory is currently observed by Status.

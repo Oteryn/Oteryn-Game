@@ -43,7 +43,30 @@ async fn command(
     assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
     wire::decode_match_result(&bytes).map_err(debug)
 }
+#[test]
+fn m51_postgres_native_portals_complete_all_ten_pits_and_reward() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_path(true, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "M51 native portal run panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES native ten-pit portal run duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+
 fn scenario(funded: bool) -> TestResult {
+    scenario_path(funded, false)
+}
+
+fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "arena_match", false, false).await?;
@@ -62,7 +85,11 @@ fn scenario(funded: bool) -> TestResult {
         )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        let (bytes, pins) = fixture::bundle(native)?;
+        let (bytes, pins) = if native_portals {
+            fixture::bundle_with_pillars(native)?
+        } else {
+            fixture::bundle(native)?
+        };
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let world = crate::map::boot::boot(
             &bytes,
@@ -260,7 +287,63 @@ fn scenario(funded: bool) -> TestResult {
                     .actor
             };
             fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
-            let advanced = command(&owner, &mut admitted, A::Advance).await?;
+            let advanced = if native_portals {
+                let victory = command(&owner, &mut admitted, A::Status).await?;
+                assert_eq!((victory.state.pit, victory.state.phase), (pit, 2));
+                let layout = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(pit)
+                    .ok_or("source pit")?
+                    .layout();
+                let [x, y, floor] = layout.pillar;
+                {
+                    let mut runtime = deps.runtime.lock().await;
+                    let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                    runtime
+                        .relocate_arena_player(
+                            deps.actor,
+                            admitted.game_session_id,
+                            before,
+                            crate::foundation::MovementLocalPosition {
+                                x: x + 1,
+                                y,
+                                floor: -floor as i16,
+                            },
+                        )
+                        .map_err(debug)?;
+                }
+                let moved = crate::gameplay_transport::connection::regression_routed_step(
+                    &owner,
+                    admitted,
+                    deps.actor,
+                    oteryn_protocol_oteryn::world_spatial::StepDirection::West,
+                )
+                .await?;
+                assert_eq!(
+                    moved.disposition,
+                    oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved,
+                    "native portal STEP in pit {pit}"
+                );
+                let at = deps
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position();
+                let expected = if pit == 10 {
+                    crate::durability::arena_match::donor::REWARD_ROOM
+                } else {
+                    let (x, y) = crate::durability::arena_match::donor::CENTERS[usize::from(pit)];
+                    (x, y, 7)
+                };
+                assert_eq!(
+                    (at.x, at.y, at.floor),
+                    expected,
+                    "portal must use its native progression owner"
+                );
+                command(&owner, &mut admitted, A::Status).await?
+            } else {
+                command(&owner, &mut admitted, A::Advance).await?
+            };
             assert_eq!(advanced.disposition, D::Applied, "pit {pit}: {advanced:?}");
             assert_eq!(advanced.state.pit, if pit == 10 { 0 } else { pit + 1 });
         }
@@ -268,6 +351,15 @@ fn scenario(funded: bool) -> TestResult {
             .fetch_one(&harness.pool)
             .await?;
         assert_eq!(victories, 10);
+        if native_portals {
+            let native_receipts: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_arena_match_receipts WHERE native_step_binding IS NOT NULL",
+            ).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                native_receipts, 10,
+                "one native STEP receipt per pit, no arena Advance command"
+            );
+        }
         let achievements:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/greenhorn'").fetch_one(&harness.pool).await?;
         assert_eq!(achievements, 1);
         let status = command(&owner, &mut admitted, A::Status).await?;

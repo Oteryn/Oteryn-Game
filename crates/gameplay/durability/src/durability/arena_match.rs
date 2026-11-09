@@ -135,6 +135,44 @@ impl DurabilityRoot {
         command: CommandRef,
         payload: &[u8],
     ) -> Result<MatchRead, CharacterProgressionError> {
+        self.read_arena_match_origin(authority, node, fence, command, payload, None)
+            .await
+    }
+
+    pub async fn read_arena_portal_step(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        step: &NativeArenaStep,
+    ) -> Result<MatchRead, CharacterProgressionError> {
+        if step.command().game_session_id() != fence.game_session_id {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
+        let payload = oteryn_protocol_oteryn::arena::encode_match_request(
+            oteryn_protocol_oteryn::arena::ArenaAction::Advance,
+        )
+        .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        self.read_arena_match_origin(
+            authority,
+            node,
+            fence,
+            step.command(),
+            &payload,
+            Some(step.binding().to_vec()),
+        )
+        .await
+    }
+
+    async fn read_arena_match_origin(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        payload: &[u8],
+        origin: Option<Vec<u8>>,
+    ) -> Result<MatchRead, CharacterProgressionError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -152,7 +190,7 @@ impl DurabilityRoot {
                     let state = load_state(&mut tx, fence).await?;
                     let masks = claimed_masks(&mut tx, fence).await?;
                     let now_ms = now(&mut tx).await?;
-                    let replay = replay(&mut tx, fence, command, &payload).await?;
+                    let replay = replay_origin(&mut tx, fence, command, &payload, origin.as_deref()).await?;
                     let dead: bool = matches!(state.phase,1|2) && sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision>$2::text::numeric)")
                         .bind(fence.character_id.as_bytes().as_slice()).bind(state.entry_revision.to_string()).fetch_one(&mut *tx).await?;
                     let pit_owned = !matches!(state.phase,1|2) || (!dead &&

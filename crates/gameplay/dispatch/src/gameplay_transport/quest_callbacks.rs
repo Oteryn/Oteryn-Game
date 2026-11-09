@@ -868,6 +868,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             entered
         };
         let entered = self
+            .step_arena_portal(permit, actor, session, origin, entered)
+            .await;
+        let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
         self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)

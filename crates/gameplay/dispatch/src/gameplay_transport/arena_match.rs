@@ -14,6 +14,8 @@ use std::time::{Duration, Instant};
 
 #[path = "arena_match/pillar.rs"]
 mod pillar;
+#[path = "arena_match/portal_step.rs"]
+mod portal_step;
 
 macro_rules! authority_methods {
     () => {
