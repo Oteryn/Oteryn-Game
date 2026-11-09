@@ -27,3 +27,13 @@ Code head: 091dd870bfce5dcb919ab0f0e2ae434a5dbd1f03. The four repaired physical 
 - maris_mistrock: 85.44926148s.
 
 The Captain Waverider test separately passed both existing anchors in 172.15 seconds. A fresh dispatch all-target/all-feature cargo check passed after the complete batch. Formatting and strict dispatch Clippy passed; full content, quest and integration validations are recorded in the individual repair proofs. No pending local code commit is being withheld. Full travel and mission behavior is not promoted by these physical identity proofs.
+
+## Subsequent service and mission execution
+
+The identity-only checkpoint above is historical. Subsequent focused PostgreSQL coverage qualifies these existing native paths without changing production travel admission or quest rules:
+
+- [Maris Mistrock travel](MARIS-MISTROCK-TRAVEL-PROOF.md): Fenrock and Yalahar, Premium refusal at quote and confirmation, rollback, arrival and receipt replay; expanded scenario passed in 122.40 seconds.
+- [Junkar Mines travel](JUNKAR-MINES-TRAVEL-PROOF.md): all three underground returns at full fares with mission six completed, then discounted fares after Grand Postman rank; fixture RED 154.50 seconds, GREEN 145.23 seconds, with six passage execution markers.
+- [Maris Beregar clue](MARIS-BEREGAR-CLUE-PROOF.md): exact dialogue, one atomic quest-track write, durable replay and repeat dialogue without a duplicate receipt; isolated case passed in 121.34 seconds with a positive-duration success marker.
+
+Each proof records passing focused dispatch cargo check, strict Clippy, formatting and diff checks. These paths extend the physical identity evidence; they do not qualify the whole S10 slice. Harlow and Ferryman Kamil travel holds remain in place pending separate access qualification. GNOPS remains dropped from the donor-backed batch for the source absence documented above. No main/qmech merge or local node boot was performed.
