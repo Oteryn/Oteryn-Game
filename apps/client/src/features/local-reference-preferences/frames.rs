@@ -173,7 +173,12 @@ mod tests {
             SettingsState::new(Some(path.clone())).preferences.frames,
             prefs
         );
-        updated.frames.foreground = 361;
+        for foreground in [0, 361, 500] {
+            let frames = FramePreferences { foreground, ..prefs };
+            assert!(frames.valid());
+            assert!(super::super::PerformanceSettings::from(frames).valid());
+        }
+        updated.frames.foreground = 501;
         settings.apply(updated);
         assert_eq!(settings.preferences.frames, prefs);
         std::fs::remove_file(path)?;
