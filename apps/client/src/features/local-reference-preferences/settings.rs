@@ -33,6 +33,9 @@ mod controls;
 #[path = "frames.rs"]
 mod frames;
 pub use frames::{FramePacer, FramePreferences};
+#[path = "performance.rs"]
+mod performance;
+pub use performance::{FramePacer as PerformancePacer, PerformanceSettings};
 #[path = "graphics.rs"]
 mod graphics;
 #[path = "gameplay.rs"]
@@ -90,6 +93,8 @@ use defaults::*;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub performance: PerformanceSettings,
     #[serde(skip)]
     pub miscellaneous: MiscellaneousPreferences,
     #[serde(default)]
@@ -259,6 +264,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            performance: PerformanceSettings::default(),
             miscellaneous: Default::default(),
             boss_area_opacity: default_boss_opacity(),
             graphics: GraphicsPreferences::default(),

@@ -30,7 +30,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (87, &[103], &[52]),
         (60, &[78], &[26]),
         (62, &[79], &[27]),
-        (63, &[80], &[28]),
+        (63, &[80, 6126], &[28]),
         (64, &[81], &[]),
         // P-C01 already enables charm progression and PvP expert; preserve that exact table.
         (67, &[84], &[]),

@@ -107,6 +107,8 @@ impl Outbox {
 
     /// The first end wins.
     pub(in crate::play) fn end(&self, class: PublicClass) {
+        self.market_details_end();
+        self.performance_reset();
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
@@ -163,6 +165,8 @@ impl Outbox {
     }
 
     pub(in crate::play) fn logged_out(&self) {
+        self.market_details_end();
+        self.performance_reset();
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);

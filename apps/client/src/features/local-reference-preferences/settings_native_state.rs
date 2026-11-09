@@ -11,6 +11,7 @@ impl Settings {
             parent: null_mut(),
             shortcuts: Vec::new(),
             collapse: null_mut(),
+            performance_label: null_mut(),
         }
     }
     pub(in super::super) fn attach(&mut self, window: &Window) {
@@ -49,6 +50,7 @@ impl Settings {
                 }
                 DrawMenuBar(self.parent);
             }
+            self.performance_label = control(self.parent, "STATIC", "", 0, [420, 50, 250, 26], 0);
             let hud_menu = CreatePopupMenu();
             let menu = GetMenu(self.parent);
             if !hud_menu.is_null() && !menu.is_null() {

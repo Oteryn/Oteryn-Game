@@ -136,6 +136,7 @@ impl ApplicationHandler for Application {
                     self.fail(event_loop, ShellError::RendererResize);
                 }
             }
+            WindowEvent::Occluded(value) => self.frame_timing.occluded(value),
             WindowEvent::RedrawRequested => {
                 self.redraw(event_loop);
             }

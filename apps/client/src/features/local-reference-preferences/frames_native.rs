@@ -21,13 +21,7 @@ impl Settings {
     pub(in crate::windows_shell) fn frame_preferences(
         &self,
     ) -> oteryn_client::play::FramePreferences {
-        let state = lock(&self.shared);
-        let mut frames = state.preferences.frames;
-        if frames == oteryn_client::play::FramePreferences::default() {
-            frames.foreground = state.preferences.foreground_fps;
-            frames.background = state.preferences.background_fps;
-        }
-        frames
+        lock(&self.shared).preferences.render_performance().into()
     }
 }
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
@@ -68,7 +62,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         let labels = control(
             hwnd,
             "STATIC",
-            "Foreground limit (1–500 FPS)\r\n\r\nBackground limit (1–500 FPS)",
+            "Foreground limit (0 unlimited, 1–500 FPS)\r\n\r\nBackground limit (1–500 FPS)",
             0,
             [16, 20, 340, 85],
             0,
@@ -103,7 +97,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         let latency = control(
             hwnd,
             "BUTTON",
-            "Show server RTT estimate",
+            "Show latency indicators",
             653,
             [315, 115, 300, 28],
             BS_AUTOCHECKBOX as u32,
@@ -112,7 +106,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         let info = control(
             hwnd,
             "STATIC",
-            "Limits apply when the game window gains or loses focus. VSync can lower the achieved rate.\r\nThe title shows completed frames and the server's smoothed round-trip estimate; unavailable data is labelled.",
+            "Focus/occlusion select the FPS limit; VSync may lower FPS.\r\nCommand RTT includes processing; stale samples show —. Server RTT is the server estimate.",
             0,
             [16, 202, 600, 55],
             0,
@@ -138,7 +132,9 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                 }
             }
             let mut state = lock(&shared);
-            let snapshot = (state.character_scope(), state.preferences.frames);
+            let effective: oteryn_client::play::FramePreferences =
+                state.preferences.render_performance().into();
+            let snapshot = (state.character_scope(), effective);
             if held
                 .as_ref()
                 .is_some_and(|old: &(Option<[u8; 16]>, _)| old.0 != snapshot.0)
@@ -162,15 +158,18 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                         if prefs.frames.valid() {
                             prefs.foreground_fps = prefs.frames.foreground;
                             prefs.background_fps = prefs.frames.background;
+                            prefs.performance = Default::default();
                             state.apply(prefs);
                         } else {
-                            state.feedback = "Choose frame limits from 1 to 500".into();
+                            state.feedback = "Use foreground 0–500 and background 1–500".into();
                         }
                     }
-                    _ => state.feedback = "Enter whole-number frame limits from 1 to 500".into(),
+                    _ => state.feedback = "Enter foreground 0–500 and background 1–500".into(),
                 }
             }
-            let snapshot = (state.character_scope(), state.preferences.frames);
+            let effective: oteryn_client::play::FramePreferences =
+                state.preferences.render_performance().into();
+            let snapshot = (state.character_scope(), effective);
             if held.as_ref() != Some(&snapshot) {
                 SetWindowTextW(
                     foreground,

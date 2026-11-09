@@ -1,4 +1,6 @@
 use super::*;
+#[path = "performance.rs"]
+mod performance_tests;
 
 #[path = "action_key_interfaces.rs"]
 mod action_key_interfaces;

@@ -20,7 +20,7 @@ impl Default for FramePreferences {
 }
 impl FramePreferences {
     pub fn valid(self) -> bool {
-        (1..=500).contains(&self.foreground) && (1..=500).contains(&self.background)
+        self.foreground <= 500 && (1..=500).contains(&self.background)
     }
     pub fn indicator(self, fps: Option<u32>, latency: Option<u32>) -> String {
         let mut labels = Vec::new();
@@ -56,8 +56,12 @@ impl FramePacer {
         } else {
             preferences.background
         }
-        .clamp(1, 500);
-        let period = 1_000_000_000 / u64::from(limit);
+        .min(500);
+        let period = if limit == 0 {
+            0
+        } else {
+            1_000_000_000 / u64::from(limit)
+        };
         let due = self
             .last_request
             .map_or(now, |last| last.saturating_add(period));
@@ -169,7 +173,7 @@ mod tests {
             SettingsState::new(Some(path.clone())).preferences.frames,
             prefs
         );
-        updated.frames.foreground = 0;
+        updated.frames.foreground = 361;
         settings.apply(updated);
         assert_eq!(settings.preferences.frames, prefs);
         std::fs::remove_file(path)?;

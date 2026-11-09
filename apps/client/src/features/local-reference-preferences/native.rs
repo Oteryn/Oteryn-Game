@@ -73,6 +73,7 @@ pub(super) struct Settings {
     parent: HWND,
     shortcuts: Vec<HWND>,
     collapse: HWND,
+    performance_label: HWND,
 }
 #[path = "settings_native_state.rs"]
 mod settings_native_state;
@@ -232,3 +233,6 @@ mod navigation_controls;
 
 #[path = "localization_window.rs"]
 mod localization_window;
+
+#[path = "performance_native.rs"]
+mod performance_native;

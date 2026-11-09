@@ -4,6 +4,8 @@ use super::connection::AdmittedSession;
 use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRow};
 use std::num::NonZeroU32;
+#[path = "market/details.rs"]
+mod details;
 
 macro_rules! authority_methods {
     () => {
@@ -54,11 +56,61 @@ pub(super) async fn execute(
     id: u64,
     payload: &[u8],
 ) -> Option<Vec<u8>> {
-    let Ok(request) = wire::decode_request(payload) else {
-        return refused(9);
+    let query = if oteryn_protocol_oteryn::market_details::is_query(payload) {
+        match oteryn_protocol_oteryn::market_details::decode_query(payload) {
+            Ok(query) => Some(query),
+            Err(_) => {
+                return oteryn_protocol_oteryn::market_details::encode_reply(
+                    &oteryn_protocol_oteryn::market_details::Reply::Refused { code: 9 },
+                )
+                .ok();
+            }
+        }
+    } else {
+        None
+    };
+    let refusal = |code| {
+        if query.is_some() {
+            oteryn_protocol_oteryn::market_details::encode_reply(
+                &oteryn_protocol_oteryn::market_details::Reply::Refused { code },
+            )
+            .ok()
+        } else {
+            refused(code)
+        }
+    };
+    let request = if let Some(query) = &query {
+        wire::MarketRequest {
+            action: if matches!(
+                query,
+                oteryn_protocol_oteryn::market_details::Query::Statistics { .. }
+                    | oteryn_protocol_oteryn::market_details::Query::Book { .. }
+            ) {
+                2
+            } else {
+                1
+            },
+            definition: match query {
+                oteryn_protocol_oteryn::market_details::Query::Statistics { definition }
+                | oteryn_protocol_oteryn::market_details::Query::Book { definition, .. } => {
+                    *definition
+                }
+                _ => 0,
+            },
+            offer: [0; 16],
+            amount: 0,
+            price: 0,
+            anonymous: false,
+            page: 0,
+        }
+    } else {
+        match wire::decode_request(payload) {
+            Ok(request) => request,
+            Err(_) => return refusal(9),
+        }
     };
     let Some(fence) = admitted.item_fence else {
-        return refused(9);
+        return refusal(9);
     };
     if !admitted
         .continuity
@@ -72,7 +124,7 @@ pub(super) async fn execute(
         || fence.connection_generation.get() != admitted.continuity.connection_generation
         || fence.runtime_scope != RuntimeScopeRefV1::channel(admitted.world_id, admitted.channel_id)
     {
-        return refused(9);
+        return refusal(9);
     }
     let actor = admitted.runtime_actor?;
     let _permit = owner.spell_lane_permit().await?;
@@ -85,7 +137,7 @@ pub(super) async fn execute(
             states.is_dead(actor),
             states.has_pending_spell_commit(actor, admitted.game_session_id),
         ) else {
-            return refused(9);
+            return refusal(9);
         };
         let town = super::bundle_map_position(&mut runtime, owner.movement_cells(), actor)
             .as_ref()
@@ -96,14 +148,17 @@ pub(super) async fn execute(
         (town, definition, native)
     };
     let Some(town) = town else {
-        return refused(11);
+        return refusal(11);
     };
     if matches!(request.action, 2 | 5 | 6)
         && !definition
             .as_ref()
             .is_some_and(|d| marketable(native, &d.production_key, &d.revision_ref))
     {
-        return refused(14);
+        return refusal(14);
+    }
+    if let Some(query) = query.clone() {
+        return details::project(owner, fence, native, town, query, definition).await;
     }
     if matches!(request.action, 5 | 6)
         && !owner
@@ -111,10 +166,10 @@ pub(super) async fn execute(
             .await
             .premium_current()
     {
-        return refused(12);
+        return refusal(12);
     }
     if request.action >= 5 && crate::durability::bank::fee_payer_is_junior(fence.character_id) {
-        return refused(13);
+        return refusal(13);
     }
     if owner
         .root
@@ -123,7 +178,7 @@ pub(super) async fn execute(
         .is_err()
     {
         // The requested trade has not started; background market work can retry later.
-        return refused(9);
+        return refusal(9);
     }
     if request.action == 8 {
         let offers = owner
@@ -132,7 +187,7 @@ pub(super) async fn execute(
             .await
             .ok()?;
         let Some((offer, _)) = offers.first() else {
-            return refused(6);
+            return refusal(6);
         };
         let index = native.item_index()?;
         let Some(reference) = index.definition_ref(
@@ -140,10 +195,10 @@ pub(super) async fn execute(
             offer.definition.key(),
             offer.definition.revision(),
         ) else {
-            return refused(14);
+            return refusal(14);
         };
         if !marketable(native, offer.definition.key(), offer.definition.revision()) {
-            return refused(14);
+            return refusal(14);
         }
         definition = super::item_look::typed_definition(index, reference);
     }

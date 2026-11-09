@@ -994,10 +994,10 @@
   "src": "TIBAUD-1",
   "area": "Market",
   "feature": "Browse/buy/sell/create/cancel/history",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Handel/anonimowość są; brak pełnego katalogu filtrów, statystyk cen i tabel UI.",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/features/0063-market/input.rs:5 + market_side_filter_preserves_server_offer_identity (page side filter only; remaining gaps unchanged)"
+  "evidence": "apps/client/src/features/0063-market/protocol/details.rs:10 + t124_catalogue_and_completed_prices_reach_the_real_session_caller; crates/gameplay/dispatch/src/gameplay_transport/market/details.rs:6 and crates/gameplay/durability/src/durability/market/projection.rs:20 + t124_market_completed_prices_and_catalogue_through_real_dispatch; apps/client/src/features/0063-market/view/table_native.rs:116 + t124_market_buy_sell_tables_have_independent_pages_and_bounded_books; crates/client-ui/src/features/0063-market/view.rs:93 + t124_table_selection_preserves_displayed_identity_after_reorder_and_removal. PostgreSQL: 2 passed in 117.99s."
  },
  {
   "id": "T125",

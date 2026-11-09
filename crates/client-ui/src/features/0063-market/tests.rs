@@ -149,3 +149,60 @@ fn market_page_statistics_keep_items_and_sides_separate() {
     assert!(text.contains("Loaded page sell: 1 offers, 4 units, price 30–30, weighted average 30"));
     assert!(text.contains("Statistics cover the loaded item page"));
 }
+
+#[test]
+fn t124_market_distinguishes_completed_30_day_statistics_from_loaded_quotes()
+-> Result<(), Box<dyn std::error::Error>> {
+    let panel = MarketPanel {
+        selected: true,
+        definition: 42,
+        ..Default::default()
+    };
+    assert!(panel_text(&panel).contains("30-day completed trades"));
+    Ok(())
+}
+
+#[test]
+fn t124_changing_item_invalidates_offer_selection() -> Result<(), Box<dyn std::error::Error>> {
+    let mut panel = MarketPanel {
+        definition: 42,
+        selected_offer: Some([7; 16]),
+        ..Default::default()
+    };
+    assert!(edit_details(&mut panel, "43", "1", "10", true, false));
+    assert!(panel.selected_offer.is_none());
+    Ok(())
+}
+
+#[test]
+fn t124_table_selection_preserves_displayed_identity_after_reorder_and_removal()
+-> Result<(), &'static str> {
+    let first = market::MarketRow {
+        offer: [1; 16],
+        definition: 42,
+        side: 1,
+        amount: 1,
+        price: 100,
+        state: 1,
+        anonymous: false,
+    };
+    let other = market::MarketRow {
+        offer: [2; 16],
+        price: 200,
+        ..first.clone()
+    };
+    let shown = vec![
+        (first.offer, first.definition),
+        (other.offer, other.definition),
+    ];
+    let rows = vec![other.clone(), first.clone()];
+    assert_eq!(
+        table_selection(&rows, &shown, 0)
+            .ok_or("retained offer")?
+            .offer,
+        first.offer
+    );
+    assert!(table_selection(&[other], &shown, 0).is_none());
+    assert!(table_selection(&rows, &shown, 2).is_none());
+    Ok(())
+}

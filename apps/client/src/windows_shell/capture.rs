@@ -41,6 +41,9 @@ impl Application {
         false
     }
     pub(super) fn redraw(&mut self, event_loop: &ActiveEventLoop) {
+        if !self.frame_timing.begin_redraw(self.settings.performance()) {
+            return;
+        }
         let scene = self
             .play
             .as_ref()
@@ -56,6 +59,7 @@ impl Application {
             renderer.set_atlas(scene.atlas().clone());
             self.atlas = Some(scene.atlas().clone());
         }
+        let before = renderer.state().presented_frames();
         if renderer
             .render_batches(self.generation, scene.tiles(), scene.sprites())
             .is_err()
@@ -63,7 +67,9 @@ impl Application {
             self.fail(event_loop, ShellError::RendererRender);
             return;
         }
-        self.frame_timing.presented();
+        if renderer.state().presented_frames() > before {
+            self.frame_timing.presented();
+        }
         self.settings
             .screenshots(renderer, scene, self.play.as_ref().map(|play| &play.link));
     }

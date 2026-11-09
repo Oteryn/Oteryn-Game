@@ -19,6 +19,7 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.performance_reset();
     if !session_initialize::initialize(&session, &outbox) {
         return;
     }
@@ -46,11 +47,15 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
+            Ok(PlayCommand::Feature(command)) => {
+                let started = std::time::Instant::now();
+                match session.feature(&command).await {
                 Ok(result) => {
+                    outbox.performance_command_result(started.elapsed());
                     match command.capability {
                         7 => outbox.console_result(&result),
                         10 => outbox.analyser_result(&command, &result),
+                        63 => outbox.market_details_result(&command, &result),
                         72 if command.kind==oteryn_client_runtime::task_board::task_board::soulpit::COMMAND_TYPE => outbox.soulseal_result(&command,&result),
                         72 => outbox.task_board_full_result(&result),
                         14 => outbox.player_trade_container_result(&result),
@@ -92,7 +97,7 @@ pub async fn run_session<T: Stepper>(
                     continue;
                 }
                 Err(error) => error,
-            },
+            }},
             Ok(PlayCommand::BrowseFieldMove(intent)) => {
                 match session.move_item(oteryn_client_runtime::inventory::MoveRequest {source:intent.source,destination:intent.destination,count:None}).await {
                     Ok(response) => {
@@ -189,8 +194,10 @@ pub async fn run_session<T: Stepper>(
                 }
             }
             Ok(PlayCommand::Step(direction)) => {
+                let started = std::time::Instant::now();
                 match session.step(step_direction(direction)).await {
                     Ok(outcome) => {
+                        outbox.performance_command_result(started.elapsed());
                         outbox.action_feedback(session.refusal_detail().map(|detail| detail.reference_message()));
                         outbox.stepped(outcome);
                         publish(&mut session, &outbox, &mut held);
