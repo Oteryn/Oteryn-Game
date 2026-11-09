@@ -3419,19 +3419,11 @@ mod tests {
         let native = controller.active().unwrap().native_gameplay().unwrap();
         let rewards = native.reward_table();
         use crate::content::creature_reward::NoSettlementReason;
-        for (creature, item, private_refusal) in [
-            (
-                "oteryn:creature.goshnar_s_spite",
-                "oteryn:item.tibia.i33867",
-                // The source body has 48 slots; private rows retain the 30-slot bound.
-                NoSettlementReason::CorpseItemInadmissible,
-            ),
-            (
-                "oteryn:creature.bakragore",
-                "oteryn:item.tibia.i44012",
-                NoSettlementReason::LootItemInadmissible,
-            ),
-        ] {
+        for (creature, item, private_refusal) in [(
+            "oteryn:creature.bakragore",
+            "oteryn:item.tibia.i44012",
+            NoSettlementReason::LootItemInadmissible,
+        )] {
             assert_eq!(rewards.row(creature).err(), Some(private_refusal));
             let corpse = rewards.reward_boss_corpse(creature).unwrap();
             assert_eq!(corpse.corpse_item.production_key, item);
@@ -3440,6 +3432,30 @@ mod tests {
         assert!(rewards.reward_boss_corpse("oteryn:creature.rat").is_none());
         assert!(rewards.reward_boss_corpse("fixture:unknown").is_none());
         assert!(rewards.row("oteryn:creature.the_primal_menace").is_ok());
+        // Main separates a reward boss's physical body from its private loot
+        // budget. The branch's exact native-goal loot closure now qualifies Spite.
+        let spite = rewards.row("oteryn:creature.goshnar_s_spite").unwrap();
+        assert_eq!(spite.corpse_item.production_key, "oteryn:item.tibia.i33867");
+        assert!(!spite.loot_table.entries.is_empty());
+        let supplied = NativeGameplayInput::from_manifest(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json"),
+        )
+        .unwrap();
+        let loot: crate::content::creature_reward::LootTablesSection =
+            serde_json::from_slice(&supplied.loot_tables.as_ref().unwrap().bytes).unwrap();
+        let body = loot
+            .items
+            .iter()
+            .find(|facts| facts.item.key == "oteryn:item.tibia.i33867")
+            .unwrap();
+        assert!(body.materializable);
+        assert_eq!(body.container_capacity, Some(48));
+        let empty = rewards
+            .reward_boss_corpse("oteryn:creature.goshnar_s_spite")
+            .unwrap();
+        assert_eq!(empty.corpse_item, spite.corpse_item);
+        assert!(empty.loot_table.entries.is_empty());
     }
     #[test]
     fn item_key_set_section_is_pinned_digest_bound_and_absent_or_empty_offers_no_index() {

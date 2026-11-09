@@ -237,9 +237,7 @@ fn boss_slot_loot_fixture_compiles_kneebiter_row() {
 fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability()
 -> Result<(), String> {
     use crate::content::creature_reward::{LootTablesSection, NoSettlementReason};
-    use oteryn_gameplay_domain::domain::loot_data::{
-        GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm,
-    };
+    use oteryn_gameplay_domain::domain::loot_data::{LootDefinitionRef, LootSelectionAlgorithm};
     let supplied = manifest_input();
     let loot: LootTablesSection = serde_json::from_slice(
         &supplied
@@ -265,7 +263,10 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // Keep each exact admission reason:
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
-    let newly_admitted = ["oteryn:creature.the_percht_queen"];
+    let newly_admitted = [
+        "oteryn:creature.the_percht_queen",
+        "oteryn:creature.goshnar_s_spite",
+    ];
     let mut missing = 0;
     let mut inadmissible = 0;
     let mut admitted = Vec::new();
@@ -291,19 +292,56 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     && facts.item.key == corpse.key
                     && facts.item.revision == corpse.revision
                     && facts.materializable
-                    && facts.container_capacity.is_some_and(|capacity| {
-                        (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u32).contains(&capacity)
-                    })
+                    // Main's private reward owner requires a real container;
+                    // its personal loot plan keeps the independent entry bound.
+                    && facts.container_capacity.is_some_and(|capacity| capacity > 0)
             })
         });
         let expected = if let Some(corpse) = materializable_corpse {
             if matches!(
                 policy.definition_key.as_str(),
-                "oteryn:creature.bazir" | "oteryn:creature.infernatil"
+                "oteryn:creature.bazir"
+                    | "oteryn:creature.infernatil"
+                    | "oteryn:creature.demodras"
+                    | "oteryn:creature.the_old_widow"
             ) {
                 // Loot regeneration refreshes their already qualified source body;
-                // none of these eight unsupported loot identities becomes a grant.
-                assert_eq!(corpse.key, "oteryn:item.tibia.i4097");
+                // The native-goal owner now qualifies these three identities;
+                // the other five still forbid this entire private loot table.
+                for key in [
+                    "oteryn:item.tibia.i3061",
+                    "oteryn:item.tibia.i3072",
+                    "oteryn:item.tibia.i2903",
+                ] {
+                    let facts = loot
+                        .items
+                        .iter()
+                        .find(|facts| facts.item.key == key)
+                        .ok_or("qualified native-goal loot identity")?;
+                    assert!(facts.materializable);
+                    assert_eq!(facts.item.family, "Item");
+                    assert_eq!(facts.item.revision, "definition-r1");
+                }
+                let (body, refused): (&str, &[&str]) = match policy.definition_key.as_str() {
+                    "oteryn:creature.demodras" => {
+                        ("oteryn:item.tibia.i5984", &["oteryn:item.tibia.i5919"])
+                    }
+                    "oteryn:creature.the_old_widow" => (
+                        "oteryn:item.tibia.i5977",
+                        &["oteryn:item.tibia.i7416", "oteryn:item.tibia.i12320"],
+                    ),
+                    _ => (
+                        "oteryn:item.tibia.i4097",
+                        &[
+                            "oteryn:item.tibia.i3002",
+                            "oteryn:item.tibia.i3070",
+                            "oteryn:item.tibia.i3069",
+                            "oteryn:item.tibia.i3116",
+                            "oteryn:item.tibia.i3309",
+                        ],
+                    ),
+                };
+                assert_eq!(corpse.key, body);
                 let binding = loot
                     .creature_loot
                     .iter()
@@ -317,16 +355,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     .ok_or("source refused boss table")?;
                 assert_eq!(
                     source_loot_refusals::items(&table.entries, &loot.items),
-                    [
-                        "oteryn:item.tibia.i3002",
-                        "oteryn:item.tibia.i3061",
-                        "oteryn:item.tibia.i3072",
-                        "oteryn:item.tibia.i3070",
-                        "oteryn:item.tibia.i3069",
-                        "oteryn:item.tibia.i2903",
-                        "oteryn:item.tibia.i3116",
-                        "oteryn:item.tibia.i3309",
-                    ]
+                    refused
                 );
                 assert_eq!(
                     source.reward_table().row(&policy.definition_key).err(),
@@ -342,10 +371,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.apprentice_sheng"
                     | "oteryn:creature.armenius_creature"
                     | "oteryn:creature.bakragore"
-                    | "oteryn:creature.bazir"
                     | "oteryn:creature.dharalion"
                     | "oteryn:creature.grand_mother_foulscale"
-                    | "oteryn:creature.infernatil"
                     | "oteryn:creature.orshabaal"
                     | "oteryn:creature.the_weakened_count"
             ) {
@@ -490,14 +517,16 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
+    assert_eq!((missing, inadmissible, admitted.len()), (52, 323, 4));
     assert_eq!(
-        (missing, inadmissible, admitted.len()),
-        (52, 328 - newly_admitted.len(), 2 + newly_admitted.len())
+        missing + inadmissible + admitted.len() + shared_body.len(),
+        bosses.len()
     );
     admitted.sort_unstable();
     assert_eq!(
         admitted,
         [
+            "oteryn:creature.goshnar_s_spite",
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.the_percht_queen",
             "oteryn:creature.the_primal_menace"
@@ -507,7 +536,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     refreshed_body_loot_refusals.sort_unstable();
     assert_eq!(
         refreshed_body_loot_refusals,
-        ["oteryn:creature.bazir", "oteryn:creature.infernatil"]
+        [
+            "oteryn:creature.bazir",
+            "oteryn:creature.demodras",
+            "oteryn:creature.infernatil",
+            "oteryn:creature.the_old_widow"
+        ]
     );
     assert_eq!(
         shared_body,
@@ -516,10 +550,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.apprentice_sheng",
             "oteryn:creature.armenius_creature",
             "oteryn:creature.bakragore",
-            "oteryn:creature.bazir",
             "oteryn:creature.dharalion",
             "oteryn:creature.grand_mother_foulscale",
-            "oteryn:creature.infernatil",
             "oteryn:creature.orshabaal",
             "oteryn:creature.the_weakened_count",
         ]
