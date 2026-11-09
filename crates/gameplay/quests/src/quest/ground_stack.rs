@@ -10,6 +10,8 @@ use std::collections::BTreeSet;
 
 pub const MAX_STACK_ITEMS: usize = 64;
 
+mod dense_pattern;
+
 /// One required mutable stack entry, in bottom-to-top append order.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -127,13 +129,17 @@ pub fn match_stack<'a>(
 
 /// Match a bounded multi-tile readset while preserving each Ground owner's
 /// ordered witness. The caller must protect all observations through commit.
-/// Instance identities cannot be reused across tiles.
+/// Instance identities cannot be reused across tiles. Larger readsets are limited
+/// to a complete6x6 pattern with one required/observed Item per cell.
 pub fn match_readset<'a>(
     requirements: &[GroundStackRequirement],
     snapshots: &'a [GroundStackSnapshot],
 ) -> Result<Option<Vec<GroundStackWitness<'a>>>, GroundStackError> {
     const MAX_TILES: usize = 8;
-    if requirements.is_empty() || requirements.len() > MAX_TILES || snapshots.len() > MAX_TILES {
+    if requirements.is_empty()
+        || ((requirements.len() > MAX_TILES || snapshots.len() > MAX_TILES)
+            && !dense_pattern::admitted(requirements, snapshots))
+    {
         return Err(GroundStackError::LimitExceeded);
     }
     let mut positions = BTreeSet::new();
@@ -336,3 +342,6 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod dense_pattern_tests;

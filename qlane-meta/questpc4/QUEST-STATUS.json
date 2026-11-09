@@ -4062,7 +4062,7 @@
       },
       "shared_world_switch_personal_expiry": {
         "status": "QUALIFIED",
-        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0\u21921, Diprath<=1\u21922, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
+        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0→1, Diprath<=1→2, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
         "migration": "1258_quest_source_expiry.sql",
         "postgres": {
           "status": "GREEN",
@@ -9667,7 +9667,7 @@
         "requires_world_admission_unknown_field": 51.489982592,
         "renamed_stripped_binding_committed_protected_story": 89.599955017
       },
-      "shadow_actual": "Ok(Committed), story-1\u21921 and character revision1\u21922 through weaker generic API; this is the concrete gap, not a hypothetical"
+      "shadow_actual": "Ok(Committed), story-1→1 and character revision1→2 through weaker generic API; this is the concrete gap, not a hypothetical"
     },
     "implemented": [
       "opening_only durable work only on opening, restricted value-free close",
@@ -11504,9 +11504,10 @@
       "authoring_unit_seconds": 845.515,
       "content_tree_seconds": 224.136,
       "changed_crate_clippy_seconds": 317.657,
-      "fmt_seconds": 19.984
+      "fmt_seconds": 19.984,
+      "postmerge_workspace_all_targets_seconds": 345.616
     },
-    "pending": "Real repair PG fails before gameplay in foreign migration2020; workspace all-target check still running. Publishing compiling WIP per owner push-now rule; not QUALIFIED or DONE.",
+    "pending": "WIP pushed5a703e41da469a6845f803bd2a48cb1de445877a. Workspace/clippy/fmt/models pass; realPG fails in foreign published migration2020 before repair gameplay. Own2060-2069 migrations cannot run before2020.",
     "sql_changed": true,
     "new_migrations": [],
     "postmerge_pg_red": {
@@ -11548,5 +11549,26 @@
     "red": "Crafting and reward captures disagreed on accepted description punctuation and known trade facts",
     "green": "3 profile overlap tests PASS; 7 crafting unit tests1.373s PASS; source builder --check PASS",
     "scope": "Reuse accepted-first policy with physical/stack/container/temporal conflict guards; source capture regenerated; no operative/custody fact changes"
+  },
+  "m07_dense_ground_pattern_slice": {
+    "state": "PARTIAL",
+    "scope": "Bounded complete 6x6 single-item Ground readsets retain typed instance/revision/quantity witnesses. Legacy eight-tile stack bounds unchanged.",
+    "red": "Two new dense-pattern tests returned LimitExceeded before implementation; /tmp/questpc4-dense-pattern-red.log.",
+    "pending": "Native Dreamer callback, qualified pillow profiles and real PostgreSQL puzzle wiring are not implemented in this slice. Repair PG remains blocked by foreign migration 2020 exact guard anchor error.",
+    "sql_changed": false,
+    "validation": {
+      "focused_tests": 22,
+      "focused_seconds": 6.248,
+      "clippy_seconds": 12.12,
+      "fmt": "PASS",
+      "pg": "Not run: model-only slice; no SQL or runtime wiring changed.",
+      "workspace_all_targets_seconds": 277.76,
+      "pin_verify": {
+        "command": "oteryn-world-bundle-compiler pin-check . /tmp/questpc4-dense-pin-verify",
+        "error": "key: unknown key oteryn:world-object.tibia.i10736",
+        "seconds": 8.634,
+        "exit": 1
+      }
+    }
   }
 }
