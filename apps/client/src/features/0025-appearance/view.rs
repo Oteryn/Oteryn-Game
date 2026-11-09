@@ -6,7 +6,7 @@ impl PlayLink {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
-    use crate::play::feature_0115_mail::view::native::{Form, open};
+    use self::native::{Form, open};
     open(
         link,
         Form {
@@ -85,7 +85,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
 
 #[cfg(any(windows, test))]
 #[path = "view/preview.rs"]
-pub(in crate::play) mod preview;
+pub(in crate::play) mod gallery_preview;
 
 #[cfg(windows)]
 #[path = "view/preview_window.rs"]
@@ -93,3 +93,10 @@ mod preview_window;
 
 #[path = "view/memorial.rs"]
 pub(in crate::play) mod memorial;
+
+#[cfg(windows)]
+#[path = "native.rs"]
+mod native;
+#[cfg(any(windows, test))]
+#[path = "preview.rs"]
+pub(in crate::play) mod preview;

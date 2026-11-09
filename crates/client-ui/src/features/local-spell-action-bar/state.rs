@@ -4,4 +4,5 @@ pub struct ActionBarPanel {
     pub open: bool,
     pub bar: ActionBar,
     pub feedback: String,
+    pub cooldown_received_at: Option<std::time::Instant>,
 }

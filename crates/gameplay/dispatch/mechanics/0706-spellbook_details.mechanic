@@ -1,0 +1,8 @@
+name=spellbook_details
+commands=733
+transport=spellbook_details
+composed=spellbook_details
+authority=spellbook_details
+offer=703,spellbook_details::offered,spellbook_details_available
+[route]
+routing::spellbook_details::route(authority, &session.admitted, command).await

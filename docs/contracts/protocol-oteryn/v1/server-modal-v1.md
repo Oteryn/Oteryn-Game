@@ -4,7 +4,7 @@ Game owns dialog content, identities, choices and accepted answers. The client o
 presents the descriptor and returns opaque control ids. This feature never grants
 items, cosmetics, commercial entitlements or local authority.
 
-This authoring slice defines the codec. Capability 449 and commands 736 (query)
+This authoring slice defines the codec. Capability 450 and commands 736 (query)
 and 737 (answer) remain unadvertised until their server and client handlers land.
 The transport uses the existing gated command envelope; no legacy frame changes.
 

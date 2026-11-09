@@ -194,3 +194,6 @@ mod tests {
         assert!(encode_result(&r).is_err());
     }
 }
+
+#[path = "cyclopedia_atlas.rs"]
+pub mod atlas;

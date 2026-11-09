@@ -1,5 +1,5 @@
 //! Generic server-owned choices, buttons and bounded inline image data.
-pub const CAPABILITY_SERVER_MODAL_V1: u32 = 449;
+pub const CAPABILITY_SERVER_MODAL_V1: u32 = 450;
 pub const COMMAND_TYPE_SERVER_MODAL_QUERY: u32 = 736;
 pub const COMMAND_TYPE_SERVER_MODAL_ANSWER: u32 = 737;
 pub const MAX_REPLY_BYTES: usize = crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES;

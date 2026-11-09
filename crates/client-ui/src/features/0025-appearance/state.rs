@@ -158,3 +158,33 @@ impl Panel {
         true
     }
 }
+
+/// A draft projected from the currently granted outfit and palette.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Preview {
+    pub look_type: u32,
+    pub addons: u8,
+    pub colours: [[u8; 3]; 4],
+}
+impl Panel {
+    pub fn preview(&self) -> Option<Preview> {
+        if !self.selected {
+            return None;
+        }
+        let outfit = self
+            .catalogue
+            .as_ref()?
+            .outfits
+            .iter()
+            .find(|o| o.key == self.fields[0])?;
+        let addons = self.fields[1].parse::<u8>().ok()?;
+        if addons & !outfit.permitted_addons != 0 {
+            return None;
+        }
+        Some(Preview {
+            look_type: outfit.look_type,
+            addons,
+            colours: self.preview_colours()?,
+        })
+    }
+}

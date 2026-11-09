@@ -102,7 +102,7 @@ fn prey_native_capability_routes_tier_and_confirmed_pick_and_refuses_without_sel
 }
 
 #[test]
-fn derived_gated_routes_match_previous_table() {
+fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
     // Former routes plus PKG5 hotkeys and CP01 property/service commands.
     // Compare sets because
     // the protocol registry generates its entries in capability order.
@@ -208,14 +208,15 @@ fn derived_gated_routes_match_previous_table() {
         (383, &[], &[]),
         (384, &[669], &[]),
         (448, &[732], &[]),
-        (449, &[736, 737], &[]),
+        (450, &[736, 737], &[]),
+        (449, &[733], &[]),
         (207, &[402], &[]),
         (445, &[730], &[]),
         (446, &[], &[]),
         (447, &[731], &[]),
         // CL25J: native feature adapters now use these existing gated wire routes.
         (151, &[177], &[]),
-        (152, &[181, 668], &[]),
+        (152, &[181, 668, 6116], &[]),
         (153, &[182], &[]),
         (154, &[183, 184, 185, 186], &[]),
         (195, &[378, 379, 380, 392, 393, 394, 395, 641, 660], &[]),
@@ -233,4 +234,5 @@ fn derived_gated_routes_match_previous_table() {
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();
     assert_eq!(derived, expected);
+    Ok(())
 }

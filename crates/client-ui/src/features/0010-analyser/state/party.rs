@@ -123,7 +123,7 @@ pub fn text(panel: &Panel) -> String {
         }
         return text;
     }
-    let mut text = "Party Hunt\r\nConfirmed current-party members · each current connection interval\r\nName | seconds | kills | XP | loot items/value | supplies/cost | damage/healing\r\n".to_owned();
+    let mut text = "Party Hunt\r\nConfirmed current-party members · each current connection interval\r\nName | seconds | kills | XP | loot items/value | supplies/cost | balance | damage/healing\r\n".to_owned();
     for row in &panel.party {
         if !row.available {
             let _ = writeln!(text, "{} | measurements unavailable", row.name);
@@ -131,7 +131,7 @@ pub fn text(panel: &Panel) -> String {
         }
         let _ = write!(
             text,
-            "{} | {} | {} | {} | {}/{} | {}/{} | {}/{}\r\n",
+            "{} | {} | {} | {} | {}/{} | {}/{} | {} | {}/{}\r\n",
             row.name,
             row.elapsed_seconds,
             row.kills,
@@ -140,6 +140,7 @@ pub fn text(panel: &Panel) -> String {
             row.loot_value,
             row.supplies,
             row.supply_cost,
+            i128::from(row.loot_value) - i128::from(row.supply_cost),
             row.damage,
             row.healing
         );

@@ -7,6 +7,8 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub offline_confirmed: bool,
+    pub batch_summary: String,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,

@@ -43,7 +43,7 @@ fn world_event_shell_query_crosses_the_session_loop()
                     Err(SessionError::SessionUnusable)
                 }
                 fn feature_selected(&self, capability: u32) -> bool {
-                    capability != 449
+                    capability != oteryn_client_runtime::server_modal::CAPABILITY_SERVER_MODAL_V1
                 }
                 // oteryn-choice: the all-capability fixture must provide the selected catalogue.
                 fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {

@@ -3,7 +3,7 @@
     unsafe_code,
     reason = "The preview window and GDI context stay on this thread"
 )]
-use super::preview::PreviewAssets;
+use super::gallery_preview::PreviewAssets;
 use crate::play::{
     PlayLink,
     mailbox::{Mailbox, lock},

@@ -139,6 +139,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
     oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
     oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
+    spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
 ];
 
@@ -240,6 +241,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
     oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
+    spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
 ];
 
