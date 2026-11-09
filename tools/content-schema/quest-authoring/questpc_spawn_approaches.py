@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 SOURCE = 'content/world/spawns/spawns-42000-43999.json'
+FRAME = 'global-target-2026-09-27'
 ANCHORS = {
     'oteryn:spawn.x33230_y31696_z12#3': (
         'oteryn:quest.behemoth_quest', 'oteryn:creature.behemoth',
@@ -18,7 +19,10 @@ def resolve(root, quest, reference):
     if quest != owner:
         raise ValueError('Spawn approach must belong to the same quest binding')
     identity, ordinal = key.rsplit('#', 1)
-    records = json.loads((Path(root) / SOURCE).read_text())['records']
+    document = json.loads((Path(root) / SOURCE).read_text())
+    if document.get('coordinate_frame') != FRAME:
+        raise ValueError('Pinned spawn coordinate frame changed')
+    records = document['records']
     matches = [(index, row['declaration']) for index, row in enumerate(records)
                if row['declaration']['identity']['key'] == identity]
     if len(matches) != 1:

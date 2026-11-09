@@ -29,7 +29,10 @@
       "Elvenbane Quest",
       "Edron Goblin Quest",
       "Lion's Rock Quest",
-      "Koshei the Deathless Quest"
+      "Koshei the Deathless Quest",
+      "Berserk Potion Quest",
+      "Dragon Tower Quest",
+      "Fire Axe Quest"
     ],
     "wired_native_visit_anchors": 14
   },
@@ -69,13 +72,14 @@
     "koshei_lint": "Unused test import removed after run;behavior unchanged;strict Clippy next with next slice",
     "fire_axe_authoring": "RED missing active entry18.863s -> GREEN17tests19.505s;with inactive adjacent-Area resolver18tests20.974s",
     "fire_axe_profile": "5Rust profile testsPASS0.05s",
-    "fire_axe_postgres": "RED old southern-start scene55.015954915s:StartNotEnterable;revised outer approach native retry pending",
+    "fire_axe_postgres": "GREEN revised clear approach60.718034379s;old startRED55.015954915s preserved as evidence",
     "area_approach_resolver": "Changed origins and undeclared distances rejected;FireAxe explicit distance2,Shadowthorn/Helheim distance1;canonical markers unchanged",
     "three_clear_approaches": "20Python testsPASS26.589s;5Rust profile testsPASS0.04s;all3native cases building",
     "behemoth_floor_resolver": "RED unsupported reference26.280s -> GREEN21Python tests26.278s;floor12Behemoth source point33234,31695 and adjacentclear499ground verified;foreignquest rejected;inactiveJSONunchanged",
-    "three_clear_approaches_progress": "BerserkPotion nativePASS61.915477873s;DragonTower/FireAxe stillrunning;batchnotpromotedyet"
+    "three_clear_approaches_progress": "GREEN3passed181.96s:Berserk61.915477873s,DragonTower59.325819576s,FireAxe60.718034379s;Rust/data snapshot ece58df60",
+    "spawn_coordinate_frame": "RED missing frame guard0.022s -> GREEN22Python tests26.943s;foreign coordinate frame rejected;activeJSONunchanged"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish3native approach cases;then activate Behemoth floor entry with native proof.11wired,8PG-proven,batchinprogress;35routes/45stages unwired."
+  "continuation": "11wired/11PG-proven stages,14anchors. Activate Behemoth next with native floor12 proof;35routes/45stages unwired. M01b PARTIAL."
 }

@@ -21,6 +21,22 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_spawn_approach_rejects_another_coordinate_frame(self):
+        import questpc_spawn_approaches as spawns
+        source = ROOT / spawns.SOURCE
+        read = Path.read_text
+        def other_frame(path, *args, **kwargs):
+            raw = read(path, *args, **kwargs)
+            if path == source:
+                document = json.loads(raw)
+                document['coordinate_frame'] = 'another-world-frame'
+                return json.dumps(document)
+            return raw
+        with mock.patch.object(Path, 'read_text', other_frame):
+            with self.assertRaisesRegex(ValueError, 'coordinate frame'):
+                spawns.resolve(ROOT, 'oteryn:quest.behemoth_quest',
+                               'spawn-approach:oteryn:spawn.x33230_y31696_z12#3')
+
     def test_behemoth_visit_reaches_the_retained_behemoth_floor(self):
         reference = 'spawn-approach:oteryn:spawn.x33230_y31696_z12#3'
         binding = (('oteryn:quest.behemoth_quest', 's1', reference, 'chosen-source/behemoth_quest'),)
