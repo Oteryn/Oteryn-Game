@@ -4,11 +4,11 @@ use super::{
 };
 use crate::domain::weapon_proficiency::ProficiencyModifiedPerk;
 use crate::domain::{CharacterId, CharacterRevision};
-use crate::durability::character_proficiency_modification::load_track_modifications;
 use crate::durability::character_authority::{
     ReconciledCharacterAuthority, assert_recovery_fence,
     verify_character_proficiency_history_with_definitions,
 };
+use crate::durability::character_proficiency_modification::load_track_modifications;
 use crate::durability::character_progression::{CharacterProgressionError, numeric_u64, uuid_text};
 use crate::durability::db::{begin_semantic_transaction, commit_semantic_transaction};
 use crate::durability::{DurabilityError, DurabilityRoot};

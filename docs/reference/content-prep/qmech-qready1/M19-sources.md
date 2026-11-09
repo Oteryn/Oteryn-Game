@@ -53,3 +53,26 @@ clock proof a full Threatened Dreams walkthrough qualification.
 the PostgreSQL Quest writer, including exact interval, atomic refusal, stale
 revision and replay. It is a durable-owner proof, not a production region/input
 qualification. Native bindings and end-to-end content checks remain separate.
+
+## Registered bindings (M19 second slice)
+
+`qready1_clock_callbacks.py` generates both registered callbacks. Bewitched
+consumes three spider fangs and three wood units on the authored underground
+cauldron site, fenced by a daily SQL clock. It does not grant final quest XP.
+`qready1_clock_landmarks.py` installs that explicitly Oteryn-authored landmark
+without changing donor terrain, houses or zones. Item flags and weights are
+normalized from pinned donor XML and official appearance metadata, not guessed.
+
+The Raven Herb grant uses the new committed clock value as its reward epoch.
+The positive elapsed guard prevents command IDs from manufacturing reward epochs.
+`qready1_raven_herb_clock_reward` proved atomic inventory/refusal/replay in PG
+(52.713960823 seconds). `qready1_world_clocks` additionally exercises both
+registered callbacks through wire USE in a composed PostgreSQL dispatch fixture;
+that fixture is not a full quest walkthrough or night-spawn qualification.
+
+Regeneration scope: M19 changes Native Item providers and a Native placement,
+not legacy WorldProjectV2 inputs. Use `regenerate_content.py --native-only`
+for provider/cohort/raid registries, the authored landmark overlay for the B3
+placement, and the World bundle compiler's `pin-refresh` for Native World pins.
+The equipment cohort is independently fixed at the four source-qualified IDs;
+the pin tool rejects duplicate IDs or any changed zero-speed qualification.

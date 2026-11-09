@@ -185,7 +185,14 @@ impl DurabilityRoot {
         source_plan: &RewardClaimInboxPlan,
         request: RewardClaimInboxMintRequest,
     ) -> Result<RewardClaimInboxMintCandidate, RewardClaimInboxError> {
-        self.prepare_inbox_mint(authority, node, InboxAuthority::Character(fence), source_plan, request).await
+        self.prepare_inbox_mint(
+            authority,
+            node,
+            InboxAuthority::Character(fence),
+            source_plan,
+            request,
+        )
+        .await
     }
 
     pub async fn prepare_hireling_inbox_mint(
@@ -196,7 +203,14 @@ impl DurabilityRoot {
         source_plan: &RewardClaimInboxPlan,
         request: RewardClaimInboxMintRequest,
     ) -> Result<RewardClaimInboxMintCandidate, RewardClaimInboxError> {
-        self.prepare_inbox_mint(authority, node, InboxAuthority::Hireling(fence), source_plan, request).await
+        self.prepare_inbox_mint(
+            authority,
+            node,
+            InboxAuthority::Hireling(fence),
+            source_plan,
+            request,
+        )
+        .await
     }
 
     pub async fn prepare_hireling_recall_inbox_mint(
@@ -207,7 +221,14 @@ impl DurabilityRoot {
         source_plan: &RewardClaimInboxPlan,
         request: RewardClaimInboxMintRequest,
     ) -> Result<RewardClaimInboxMintCandidate, RewardClaimInboxError> {
-        self.prepare_inbox_mint(authority, node, InboxAuthority::Recall(recall), source_plan, request).await
+        self.prepare_inbox_mint(
+            authority,
+            node,
+            InboxAuthority::Recall(recall),
+            source_plan,
+            request,
+        )
+        .await
     }
 
     async fn prepare_inbox_mint(
@@ -245,7 +266,12 @@ impl DurabilityRoot {
                         Ok(None) => false,
                         Err(error) => return Ok(Err(error)),
                     };
-                    if !replay && authority_kind.assert_current(&mut tx, &node, &query_plan).await?.is_none() {
+                    if !replay
+                        && authority_kind
+                            .assert_current(&mut tx, &node, &query_plan)
+                            .await?
+                            .is_none()
+                    {
                         return Ok(Err(RewardClaimInboxError::AuthorityRejected));
                     }
                     let item_ids: Vec<String> = query_plan
@@ -374,7 +400,15 @@ impl DurabilityRoot {
             > + Send
             + 'static,
     {
-        self.commit_inbox_mint(authority, node, InboxAuthority::Character(fence), candidate, owner, operation).await
+        self.commit_inbox_mint(
+            authority,
+            node,
+            InboxAuthority::Character(fence),
+            candidate,
+            owner,
+            operation,
+        )
+        .await
     }
 
     pub async fn commit_hireling_inbox_mint<T, C, F>(
@@ -397,7 +431,15 @@ impl DurabilityRoot {
             > + Send
             + 'static,
     {
-        self.commit_inbox_mint(authority, node, InboxAuthority::Hireling(fence), candidate, owner, operation).await
+        self.commit_inbox_mint(
+            authority,
+            node,
+            InboxAuthority::Hireling(fence),
+            candidate,
+            owner,
+            operation,
+        )
+        .await
     }
 
     pub async fn commit_hireling_recall_inbox_mint<T, C, F>(
@@ -420,7 +462,15 @@ impl DurabilityRoot {
             > + Send
             + 'static,
     {
-        self.commit_inbox_mint(authority, node, InboxAuthority::Recall(recall), candidate, owner, operation).await
+        self.commit_inbox_mint(
+            authority,
+            node,
+            InboxAuthority::Recall(recall),
+            candidate,
+            owner,
+            operation,
+        )
+        .await
     }
 
     async fn commit_inbox_mint<T, C, F>(

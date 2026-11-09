@@ -3,6 +3,7 @@
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
 use std::sync::Arc;
+mod encounters;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
 
@@ -34,6 +35,7 @@ struct NativeCounterCapture {
     transition: String,
     creature: String,
     definition_hash: Option<[u8; 32]>,
+    encounter_source: Option<String>,
 }
 
 fn capture_native(
@@ -54,6 +56,7 @@ fn capture_native(
                 transition: key.clone(),
                 creature: counter.creature.into(),
                 definition_hash,
+                encounter_source: counter.encounter_source.map(str::to_owned),
             })
         })
         .collect()
@@ -84,6 +87,8 @@ pub(super) struct FrozenGrizzlyDeath {
 pub(super) struct GrizzlyCaptureCache {
     sessions: Vec<TaskSnapshot>,
     deaths: Vec<(ExactActorRef, [u8; 16], Arc<FrozenGrizzlyDeath>)>,
+    encounters: Vec<encounters::EncounterRun>,
+    pub(super) hits: super::quest_hits::queue::HitQueue,
 }
 
 impl GrizzlyCaptureCache {
@@ -91,12 +96,12 @@ impl GrizzlyCaptureCache {
         &mut self,
         target: ExactActorRef,
         occurrence: [u8; 16],
-        captured: impl FnOnce(&[TaskSnapshot]) -> FrozenGrizzlyDeath,
+        captured: impl FnOnce(&[TaskSnapshot], &[encounters::EncounterRun]) -> FrozenGrizzlyDeath,
     ) -> Arc<FrozenGrizzlyDeath> {
         if let Some((_, _, death)) = self.deaths.iter().find(|(_, id, _)| *id == occurrence) {
             return Arc::clone(death);
         }
-        let frozen = Arc::new(captured(&self.sessions));
+        let frozen = Arc::new(captured(&self.sessions, &self.encounters));
         self.deaths.push((target, occurrence, Arc::clone(&frozen)));
         frozen
     }
@@ -156,7 +161,7 @@ fn freeze(
             continue;
         }
         for counter in &snapshot.native_counters {
-            if counter.creature == creature {
+            if counter.creature == creature && counter.encounter_source.is_none() {
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -261,6 +266,9 @@ pub(super) fn capture(
     if !runtime.retains_corpse_projection(entry.target) {
         return;
     }
+    for run in &mut cache.encounters {
+        let _ = run.roster.record_death(entry.facts.death);
+    }
     let principal = entry.facts.principal;
     // Gone and untracked contributors make the ordinary queue use a lethal-hit fallback.
     // Crystal functions.lua:1064-1072 requires a present most-damage player; neither
@@ -290,7 +298,7 @@ pub(super) fn capture(
         .filter(|source| source.world == *runtime.binding().world_id().as_bytes())
         .cloned();
     entry.grizzly = Some(
-        cache.remember(entry.target, entry.facts.occurrence, |snapshots| {
+        cache.remember(entry.target, entry.facts.occurrence, |snapshots, runs| {
             let live: Vec<_> = snapshots
                 .iter()
                 .filter(|snapshot| {
@@ -310,6 +318,53 @@ pub(super) fn capture(
                 &entry.creature,
                 &live,
             );
+            if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
+                for recipient in &mut frozen.native {
+                    if recipient.death.transition != "oteryn:quest-transition/native-kills/first-dragon-selected" { continue; }
+                    let crate::durability::quest_state::native_kills::NativeDeathSource::Party(party) = &recipient.death.source else { continue; };
+                    recipient.death.source = crate::durability::quest_state::native_kills::NativeDeathSource::InstanceBoss {
+                        party: Arc::clone(party), death: entry.facts.death,
+                        died_at_unix_ms: entry.facts.died_at_unix_ms,
+                    };
+                }
+            }
+            let origin = runtime
+                .read_actor_position(entry.target)
+                .ok()
+                .and_then(|facts| {
+                    let at = facts.position();
+                    Some((
+                        u16::try_from(at.x).ok()?,
+                        u16::try_from(at.y).ok()?,
+                        i8::try_from(at.floor.checked_neg()?).ok()?,
+                    ))
+                });
+            frozen.native.retain_mut(|recipient| {
+                if !recipient
+                    .death
+                    .transition
+                    .starts_with("oteryn:quest-transition/native-kills/m31/")
+                {
+                    return true;
+                }
+                if !oteryn_gameplay_quests::quest::world_change_journals::admits_position(
+                    &recipient.death.transition,
+                    origin,
+                ) {
+                    return false;
+                }
+                use crate::durability::quest_state::native_kills::NativeDeathSource;
+                let (NativeDeathSource::Party(source), Some(position)) =
+                    (&recipient.death.source, origin)
+                else {
+                    return false;
+                };
+                recipient.death.source = NativeDeathSource::PositionedParty {
+                    source: Arc::clone(source),
+                    position,
+                };
+                true
+            });
             frozen.native.extend(super::quest_batch3_c::capture(
                 runtime,
                 entry,
@@ -322,6 +377,25 @@ pub(super) fn capture(
                     objectives: snapshot.source_objectives.clone(),
                 }),
             ));
+                frozen.native.extend(encounters::capture(
+                    runtime,
+                    entry,
+                    &live,
+                    runs,
+                    principal_present,
+                ));
+                frozen.native.extend(super::quest_batch3_c::capture(
+                    runtime,
+                    entry,
+                    live.iter().map(|snapshot| super::quest_batch3_c::Snapshot {
+                        actor: snapshot.actor,
+                        session: snapshot.session,
+                        character: snapshot.character,
+                        lease_generation: snapshot.lease_generation,
+                        observed_revision: snapshot.observed_revision,
+                        objectives: snapshot.source_objectives.clone(),
+                    }),
+                ));
             frozen
         }),
     );
@@ -352,28 +426,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .find(|(_, _, observed)| *observed == Some(session))?
                         .0;
                     let lease = runtime.bound_attacker_lease(actor, session).ok()?;
-                    Some(TaskSnapshot {
-                        actor,
-                        session,
-                        character: *lease.character_id().as_bytes(),
-                        lease_generation: lease.generation(),
-                        observed_revision: revision,
-                        active_tasks,
-                        native_counters: self
-                            .quest_catalogue
-                            .as_deref()
-                            .map(|catalogue| capture_native(catalogue, copy.tracks()))
-                            .unwrap_or_default(),
-                        source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
+                    let hit_snapshot = self.quest_catalogue.as_ref().and_then(|catalogue| {
+                        super::quest_hits::queue::Snapshot::new(
+                            Arc::clone(catalogue),
+                            actor,
+                            session,
+                            lease,
+                            revision,
                             copy.tracks(),
-                        ),
-                    })
+                        )
+                    });
+                    Some((
+                        TaskSnapshot {
+                            actor,
+                            session,
+                            character: *lease.character_id().as_bytes(),
+                            lease_generation: lease.generation(),
+                            observed_revision: revision,
+                            active_tasks,
+                            native_counters: self
+                                .quest_catalogue
+                                .as_deref()
+                                .map(|catalogue| capture_native(catalogue, copy.tracks()))
+                                .unwrap_or_default(),
+                            source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
+                                copy.tracks(),
+                            ),
+                        },
+                        hit_snapshot,
+                    ))
                 })
+        };
+        let (snapshot, hit_snapshot) = match snapshot {
+            Some((snapshot, hit_snapshot)) => (Some(snapshot), hit_snapshot),
+            None => (None, None),
         };
         let attack = self.states.attack.lock().await;
         let Ok(mut cache) = attack.kills().1.lock() else {
             return;
         };
+        if !cache.hits.install(&runtime, session, hit_snapshot) {
+            super::operator_event("quest_hit_snapshot_capacity_refused");
+        }
         cache.sessions.retain(|snapshot| {
             snapshot.session != session
                 && runtime
@@ -492,3 +586,269 @@ pub(super) async fn settle(
 #[cfg(test)]
 #[path = "grizzly_kills/tests.rs"]
 mod tests;
+
+/// Quest eligibility frozen by the existing admitted encounter owner, before its
+/// entry publishes. Social-party membership does not choose encounter recipients.
+#[derive(Debug, Clone)]
+pub(super) struct EncounterCredit {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    character: [u8; 16],
+    lease_generation: u64,
+    observed_revision: u64,
+    counters: Vec<&'static str>,
+    source: PartySnapshot,
+}
+
+pub(super) fn capture_encounter_admission(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+    players: &[(ExactActorRef, GameSessionId)],
+) -> Result<Vec<EncounterCredit>, crate::foundation::CarrierError> {
+    use crate::foundation::CarrierError;
+    owner
+        .quest_catalogue
+        .as_deref()
+        .ok_or(CarrierError::PlanConflict)?;
+    let sessions = owner
+        .states
+        .quest_sessions
+        .lock()
+        .map_err(|_| CarrierError::PlanConflict)?;
+    let mut credits = Vec::new();
+    credits
+        .try_reserve(players.len())
+        .map_err(|_| CarrierError::AllocationFailed)?;
+    for &(actor, session) in players {
+        let lease = runtime.bound_attacker_lease(actor, session)?;
+        let copy = sessions
+            .get(&session)
+            .and_then(|s| s.copy.as_ref())
+            .ok_or(CarrierError::PlanConflict)?;
+        let revision = copy
+            .character_revision()
+            .ok_or(CarrierError::PlanConflict)?
+            .get();
+        let source = runtime
+            .cached_world_party(actor, session)?
+            .filter(|s| {
+                s.character == *lease.character_id().as_bytes()
+                    && s.world == *runtime.binding().world_id().as_bytes()
+                    && s.is_well_formed()
+            })
+            .cloned()
+            .ok_or(CarrierError::PlanConflict)?;
+        credits.push(EncounterCredit {
+            actor,
+            session,
+            character: *lease.character_id().as_bytes(),
+            lease_generation: lease.generation(),
+            observed_revision: revision,
+            counters: oteryn_gameplay_quests::quest::native_kills::active_encounter(copy.tracks()),
+            source,
+        });
+    }
+    Ok(credits)
+}
+
+pub(super) fn freeze_encounter_credit(
+    runtime: &ChannelRuntimeV1,
+    states: &super::actor_spell::ChannelSpellStates,
+    creature: &str,
+    admitted: &[EncounterCredit],
+    shares: &[crate::foundation::RewardDamageShare],
+) -> Vec<super::quest_kills::Recipient> {
+    let mut recipients = Vec::new();
+    for participant in admitted {
+        if states.is_dead(participant.actor)
+            || !shares.iter().any(|share| {
+                share.total > 0
+                    && share.character.as_bytes() == &participant.character
+                    && share.session == Some(participant.session)
+                    && share.lease_generation == Some(participant.lease_generation)
+            })
+            || !runtime
+                .bound_attacker_lease(participant.actor, participant.session)
+                .is_ok_and(|lease| {
+                    lease.character_id().as_bytes() == &participant.character
+                        && lease.generation() == participant.lease_generation
+                })
+        {
+            continue;
+        }
+        // This is the participant's actual World-owned party snapshot. It neither
+        // fabricates an encounter as a social party nor fans credit out to its members.
+        let source = runtime
+            .cached_world_party(participant.actor, participant.session)
+            .ok()
+            .flatten()
+            .filter(|s| s.character == participant.character && s.is_well_formed())
+            .unwrap_or(&participant.source);
+        let source = Arc::new(source.clone());
+        for counter in participant
+            .counters
+            .iter()
+            .filter_map(|key| oteryn_gameplay_quests::quest::native_kills::counter(key))
+            .filter(|c| c.creature == creature)
+        {
+            recipients.push(super::quest_kills::Recipient {
+                actor: participant.actor,
+                session: participant.session,
+                character: participant.character,
+                lease_generation: participant.lease_generation,
+                death: crate::durability::quest_state::native_kills::NativeQuestDeath {
+                    transition: counter.transition.into(),
+                    definition_hash: None,
+                    creature: creature.into(),
+                    observed_revision: participant.observed_revision,
+                    source: crate::durability::quest_state::native_kills::NativeDeathSource::Party(
+                        Arc::clone(&source),
+                    ),
+                },
+            });
+        }
+    }
+    recipients
+}
+
+pub(super) fn replace_encounter_native_credit(
+    entry: &mut PendingKillSettlement,
+    recipients: Vec<super::quest_kills::Recipient>,
+) {
+    let frozen = entry
+        .grizzly
+        .get_or_insert_with(|| Arc::new(FrozenGrizzlyDeath::default()));
+    Arc::make_mut(frozen).native = recipients;
+}
+
+#[cfg(test)]
+mod encounter_credit_tests {
+    use super::*;
+    use crate::foundation::*;
+    use oteryn_gameplay_entities::carrier::{ActorState, LocalPosition};
+
+    fn id(tag: u8) -> [u8; 16] {
+        [1, 0, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
+    }
+
+    #[test]
+    fn admitted_damage_dealers_get_credit_without_last_hit_and_outside_principal_does_not()
+    -> Result<(), CarrierError> {
+        let world = WorldId::decode(&id(1)).map_err(|_| CarrierError::PlanConflict)?;
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(2)).map_err(|_| CarrierError::PlanConflict)?,
+            NodeId::decode(&id(3)).map_err(|_| CarrierError::PlanConflict)?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(world),
+        )?;
+        let mut credits = Vec::new();
+        for tag in 4..=6 {
+            let session =
+                GameSessionId::decode(&id(tag)).map_err(|_| CarrierError::PlanConflict)?;
+            let character =
+                CharacterId::decode(&id(tag + 10)).map_err(|_| CarrierError::PlanConflict)?;
+            let lease = crate::foundation::CharacterLease::new(character, 1)
+                .map_err(|_| CarrierError::PlanConflict)?;
+            let (carrier, continuity) = runtime.encounter_parts_mut();
+            let actor = carrier.admit_bound_test_attacker(continuity, session, lease)?;
+            let source = PartySnapshot {
+                world: *world.as_bytes(),
+                character: *character.as_bytes(),
+                party_id: None,
+                revision: None,
+                leader: None,
+                shared_xp_enabled: false,
+                members: Vec::new(),
+                observed_database_micros: 1,
+            };
+            runtime.project_world_party(actor, session, source.clone())?;
+            credits.push(EncounterCredit {
+                actor,
+                session,
+                character: *character.as_bytes(),
+                lease_generation: 1,
+                observed_revision: 1,
+                source,
+                counters: vec!["oteryn:quest-transition/native-kills/cults-essence"],
+            });
+        }
+        let shares: Vec<_> = credits
+            .iter()
+            .enumerate()
+            .map(|(i, p)| {
+                Ok(crate::foundation::RewardDamageShare {
+                    character: CharacterId::decode(&p.character)
+                        .map_err(|_| CarrierError::PlanConflict)?,
+                    total: (i as u64 + 1) * 10,
+                    lease_generation: Some(p.lease_generation),
+                    session: Some(p.session),
+                    last_damage_at_ms: Some(1),
+                })
+            })
+            .collect::<Result<Vec<_>, CarrierError>>()?;
+        let target = ExactActorRef(runtime.admit_encounter_fixture_actor(
+            ActorState(0),
+            "oteryn:creature.essence_of_malice",
+            100,
+            Some(LocalPosition {
+                x: 101,
+                y: 100,
+                floor: 7,
+            }),
+        )?);
+        let outsider = &credits[2];
+        runtime
+            .borrow_exact_actor_commit()
+            .commit_damage_for_bound_attacker(
+                target,
+                outsider.actor,
+                CommandRef::new(
+                    outsider.session,
+                    CommandId::new(1).map_err(|_| CarrierError::PlanConflict)?,
+                ),
+                0,
+                OwnerDamageCommand {
+                    target: b"oteryn:creature.essence_of_malice",
+                    occurrence: b"phase",
+                    binding: b"phase",
+                    damage: 100,
+                },
+            )?;
+        let mut death = runtime.borrow_combat_death();
+        let lethal = death.committed_lethal_receipt(target)?;
+        death.project_committed_lethal(lethal)?;
+        let states = super::super::actor_spell::ChannelSpellStates::default();
+        let result = freeze_encounter_credit(
+            &runtime,
+            &states,
+            "oteryn:creature.essence_of_malice",
+            &credits[..2],
+            &shares,
+        );
+        assert_eq!(result.len(), 2);
+        assert!(
+            result
+                .iter()
+                .all(|recipient| recipient.character != outsider.character)
+        );
+        runtime.remove_test_actor(credits[0].actor)?;
+        let result = freeze_encounter_credit(
+            &runtime,
+            &states,
+            "oteryn:creature.essence_of_malice",
+            &credits[..2],
+            &shares,
+        );
+        assert_eq!(
+            result.len(),
+            1,
+            "a retired admitted actor cannot credit its replacement"
+        );
+        Ok(())
+    }
+}

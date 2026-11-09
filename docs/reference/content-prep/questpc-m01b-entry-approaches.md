@@ -1,0 +1,181 @@
+# M01b chosen entry approaches
+
+These are explicit Oteryn visit points, not claims that a wiki Area marker is
+an enterable tile or that reaching an entry completes its quest.
+
+| Quest | Pinned marker | Chosen visit | Native start |
+| --- | --- | --- | --- |
+| Fire Axe Quest | Edron Dragon Lair: 33098,31701,-7 | 33098,31703,-7; ground4408 | west33097,31703,-7; ground4406+border1103 |
+| Dragon Tower Quest | Shadowthorn: 33075,32170,-7 | north33075,32169,-7; ground408 | west33074,32169,-7; ground408 |
+| Berserk Potion Quest | Helheim: 32478,31179,-7 | east32479,31179,-7; ground6593 | east32480,31179,-7; ground6590 |
+
+The source marker positions and exact page/revision bindings remain unchanged
+in `content/world/areas/hunting-places/hunting-places-00000-00444.json`.
+Each selected point and start was decoded from the retained B3 region. The
+Fire Axe offset is explicitly two tiles; the other two offsets are one tile.
+The resolver pins the original position, floor and declared distance.
+
+The original Fire Axe attempt failed with `StartNotEnterable` after
+55.015954915s. Its start contained Item1855. A WorldObject declaration of
+nonblocking decoration does not prove that this Item's native solidity is
+known. The runtime's conservative collision rule remains unchanged.
+
+Public source checked:
+https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data/items/items.xml
+contains `1854..1855` named `stones`, `1856` named `stone`, and `4457..4502`
+named `mountain`. Those names do not establish native nonblocking flags.
+The original Edron Area source is:
+https://tibia.fandom.com/index.php?curid=19176&oldid=1114456
+
+These callbacks grant visit counters only. Premium/level requirements remain
+in force. No Item, XP, teleport or whole-quest completion is granted. Native
+PostgreSQL qualification is recorded separately in the lane status ledger.
+
+## Ferumbras arrival
+
+Source: https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/ferumbras_ascension/movements_entrance.lua
+
+The pinned entrance script rejects players below level 150. Its action 24837
+sends an uncompleted player to (33275, 32390, 8), while the completed branch
+uses floor 9. The chosen first-cycle EXPLORE approach is the clear eastern
+neighbour (33276, 32390, 8), appearance 410. The retained B3 map has ground
+409 at both the script destination and the next eastern starting tile
+(33277, 32390, 8). This binds a visit on the initial entrance floor; it does
+not replace the portal or grant seven-boss completion/access to later floors.
+The canonical recipe's Current Premium requirement and level 150 are retained.
+
+## Heart of Destruction Zao breach
+
+Source: https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/heart_of_destruction/movements_teleport.lua
+
+Action 48069 is explicitly labelled "from farmine" and lands at
+(32117,31355,13); action 48068 goes back to Farmine. The chosen EXPLORE
+approach is its clear eastern neighbour (32118,31355,13), appearance23054.
+The retained map has ground23113 at the source landing and ground23049 at
+the next eastern starting tile (32119,31355,13). The chosen recipe's level150
+and Current Premium gates stay in place. Visiting this landing does not
+replace the portal, grant boss access or manufacture any later-stage credit.
+
+## Grave Danger chosen twelve-visit stage
+
+Conservative chosen rule: visit seven sanctification-grave approaches and five
+tomb antechambers once each. Visiting grants neither sanctification nor boss
+credit. The five antechamber anchors use the source boss queue positions before
+lever activation. The source movement script checks boss cooldowns, with no
+chosen-stage prerequisite; this binding does not replace its portals or timers.
+
+Source movement: https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/movements_enter_tps.lua
+
+| Visit | Source position (native floor) | Chosen entry (native floor) | Appearance |
+|---|---|---|---|
+| dark-cathedral | 32644, 32394, 8 | 32645, 32394, 8 | 410 |
+| femor-hills | 32542, 31846, 6 | 32542, 31845, 6 | 11417 |
+| ankrahmun | 33376, 32806, 8 | 33376, 32805, 8 | 418 |
+| vengoth | 32959, 31534, 7 | 32960, 31534, 7 | 7062 |
+| orclands | 32776, 31817, 8 | 32777, 31817, 8 | 4409 |
+| ice-islands | 32012, 31558, 7 | 32012, 31557, 7 | 436 |
+| kilmaresh | 33813, 31624, 9 | 33813, 31628, 9 | 469 |
+| duke-krule | 33455, 31493, 13 | 33456, 31493, 13 | 429 |
+| count-vlarkorth | 33455, 31413, 13 | 33456, 31413, 13 | 429 |
+| earl-osam | 33516, 31444, 13 | 33517, 31444, 13 | 429 |
+| lord-azaram | 33422, 31493, 13 | 33423, 31493, 13 | 429 |
+| baeloc-nictros | 33424, 31413, 13 | 33425, 31413, 13 | 429 |
+
+Sources checked (pinned Canary):
+
+- https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua
+- https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_duke_krule.lua
+- https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_count_vlarkorth_.lua
+- https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_earl_osam.lua
+- https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_lord_azaram.lua
+- https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_baeloc_nictros.lua
+
+All entry and eastern starting tiles were checked against the retained B3
+placements. Kilmaresh's immediate grave ring contains retained tomb/pillar
+objects: use its clear southern outer approach four tiles away, with ground469.
+This explicit bounded exception changes no source placements or collision rules.
+All other chosen approaches are adjacent on the original source floor.
+Canonical level250 and Current Premium requirements remain mandatory.
+The later Cobra Bastion EXPLORE stage is separate and remains unwired here.
+
+## Emperor's Cookies first passage
+
+Evidence: tools/content-schema/quest-authoring/samples/chests/claims.json,
+claim `canary:reward-claim/quest/key/id3800`, declared by the canonical quest.
+Source: https://github.com/opentibiabr/canary/tree/04b83b51
+
+The Key3800 chest is at32605,31908,z3 (appearance2472). The selected entry
+is its clear northern neighbour32605,31907,z3,ground436;the eastern starting
+tile32606,31907,z3 also has only436. This visits the western secret passage
+before the later Key3800 chamber step. It grants no key,cookies or completion.
+
+## Grimvale current-moon surface entry
+
+Canonical source: content/world/areas/hunting-places/hunting-places-00000-00444.json,
+`oteryn:area.hunting_place.grimvale`;the generator carries its exact pinned
+TibiaWiki URL. The canonical marker33333,31690,z7 retains tree objects.
+Use the clear eastern approach33335,31690,z7,ground4515,with starting
+tile33336,31690,z7 also4515. Source placements and collision rules remain intact.
+
+World authority is reused from the qualified `grimvale` entry in
+content/encounters/world-changes/owner-catalogue.json and the existing
+crates/gameplay/durability/src/durability/world_event.rs current-reset reader.
+The predicate is `callback.world_change=grimvale`,not a retained UI moon snapshot.
+This counts a first-cycle surface visit during the committed full-moon day;
+it neither spawns Feroxa nor manufactures the encounter-owned portal.
+
+## Inukaya and Medusa crypt approaches
+
+Evidence: tools/content-schema/quest-authoring/samples/chests/claims.json,
+canonical claims `quest/u8_0/shardsof_ancient_winters/inukaya` and
+`quest/u7_3/the_medusa_quest`. Source: https://github.com/opentibiabr/canary/tree/04b83b51
+
+Inukaya source cache32483,31110,z8 retains6684+2523;its clear north-eastern
+approach32484,31109,z8 is6684,with eastern start6685. Medusa cache33049,32399,z10
+retains17544+17470+1983;its clear north-eastern approach33050,32398,z10 and
+eastern start are410. Both explicit distances are2 on the source floor.
+No source objects or collision rules change;no chest claim occurs on STEP.
+
+## Mad Mage prison hall
+
+Position evidence: tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json,
+`oteryn:npc.a_prisoner`,32394,32138,z13. Wiki reference:
+https://tibia.fandom.com/index.php?curid=5361&oldid=1114111
+
+This candidate is geometry evidence only (OTS hypothesis),not a runtime NPC
+placement promotion or a canonical Tibia-fidelity claim. The selected chosen
+entry32396,32138,z13 (408) and eastern start32397,32138 (432) lie outside
+the retained2184cell door at32395,32138. No apple,key or door action is
+required for the first hall visit. Canonical level40 is retained.
+
+## Bear and Ghoul outer door approaches
+
+Source: tools/content-schema/quest-authoring/samples/doors/gates.json,
+`canary:door-gate/key/4601` and `canary:door-gate/key/3600`,linked through
+each canonical quest's own key claim. https://github.com/opentibiabr/canary/tree/04b83b51
+
+Bear gate32145,32100,z11 retains351+1631;stone1791remains immediately
+south. Observe from32145,32102,z11 ground355,starting south on354. This
+precedes the mud-floor/key/stone-switch steps. Ghoul gate32506,32175,z14
+retains409+5106;observe from its eastern outside tile32507,32175ground409,
+starting east32508,32175ground409. Neither hook crosses or unlocks its door.
+
+## Hero of Rathleton pipe-room approach
+
+Source geometry: samples/promotion-candidates-v1.json, Strange Pipe at33533,31950,z14; https://tibia.fandom.com/index.php?curid=69693&oldid=1116848 . This is an OTS-hypothesis geometry reference, not NPC placement promotion. Chosen entry33533,31951,z14 retains native20545ground; eastern start33534,31951 retains20533. Canonical CurrentPremium remains required. This first investigation precedes the workshop and dungeon-access stages; it grants no later-stage credit.
+
+## Elvenbane dragon-floor second visit
+
+Canonical chosen recipe s2 requires reaching the dragon floor after s1 basement entry. Sources: https://tibia.fandom.com/index.php?curid=8007&oldid=265159 and retained content/world/spawns/spawns-02000-03999.json, oteryn:spawn.x32590_y31645_z5 point0 (Dragon). Chosen approach32591,31645,z5 and eastern start32592,31645 both retain436ground. The first-stage track is checked read-only at exactly1; this approach grants no kill, treasure or whole-quest completion.
+
+## Completion prerequisites for imported exploration
+
+Lion Trophy canonically requires The Ice Islands Quest (content/quests/definitions/quests-00200-00299.json and the Lion recipe). Exact display names resolve to one canonical quest key; unknown, ambiguous, duplicate and self dependencies are refused. The server checks completed_character_revision for the fenced character in game_character_quest_states and locks matching rows FOR SHARE until its callback transaction ends. Character completion is independent of Current Premium. This guard does not create prerequisite progress or claim that the prerequisite route is playable. Native Lion activation is a separate tested slice.
+
+## Deeplings navigator survey approach
+
+Deeplings chosen survey geometry: use the clear eastern approach33641,31379,z9 (8287),one tile east of pinned Canary navigator destination33640,31379,z9;start33642,31379(8276). Source: https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/deeplings_worldchange/actions_golden_anchor.lua . This selects a survey point using the return-anchor destination as geometry evidence; existing travel and boss-access interactions retain their own rules. Preserve CurrentPremium and current Worldowner keydeeplings. Resolver tested INACTIVE; native activation follows separately.
+
+## Fire from the Earth volcano survey
+
+Fire from the Earth entry uses the existing QUALIFIED fire_from_the_earth World predicate. The older authored on-demand wording is conservatively interpreted as a personal once-only programme within an admitted eruption; scheduling remains with the existing World producer. Geometry follows its committed native_choices in content/encounters/world-changes/credited-kills.json: retained Fire Elemental home32073,32603,z2 (spawn.x32072_y32603_z2#0). Chosen clear southwest approach32072,32604 ground4401,startsouth32072,32605ground4396;the blocked spawn cell and its objects remain intact. Explicit distance2 applies only to this declared source. Source: https://tibia.fandom.com/index.php?curid=76221&oldid=887143 .

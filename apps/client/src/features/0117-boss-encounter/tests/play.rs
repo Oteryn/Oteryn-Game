@@ -127,3 +127,6 @@ fn cooldown_shortcut_opens_only_the_tracker_and_queries_real_command() -> Result
     assert!(matches!(commands.try_recv(), Ok(crate::combat_input::PlayCommand::Feature(FeatureCommand { capability: 117, kind: 133, .. }))));
     Ok(())
 }
+
+#[path = "actual_capture.rs"]
+mod actual_capture;

@@ -93,8 +93,8 @@ async fn prove(h: &fixture::Harness) -> TestResult {
     assert_eq!(schedule.corpses.len(), 1);
     assert_eq!(schedule.corpses[0].corpse_item_instance_id, item);
     assert_eq!(
-        schedule.corpses[0].decay_at_unix_ms - schedule.corpses[0].materialized_at_unix_ms,
-        670000
+        schedule.corpses[0].decay_at_unix_ms,
+        Some(schedule.corpses[0].materialized_at_unix_ms + 670000)
     );
     assert_eq!(
         h.root

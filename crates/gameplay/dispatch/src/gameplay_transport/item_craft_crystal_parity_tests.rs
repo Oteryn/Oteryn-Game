@@ -240,3 +240,20 @@ fn i11_carried_ingredient_path_keeps_death_and_spell_idle_guards() {
     assert!(!super::carried_ingredient_action_allowed(false, false));
     assert!(super::carried_ingredient_action_allowed(false, true));
 }
+
+#[test]
+fn m20_cursed_crystal_beeswax_requires_exact_world_oven() {
+    let controller = native();
+    let state = controller
+        .active()
+        .and_then(|a| a.native_gameplay())
+        .expect("native");
+    for oven in OVENS {
+        assert_eq!(outputs(state, 5902, oven), out(&[(9106, 1)]));
+        assert_eq!(carried_outputs(state, 5902, oven), None);
+        assert_eq!(outputs(state, oven, 5902), None);
+    }
+    for station in MILLSTONES {
+        assert_eq!(outputs(state, 5902, station), None);
+    }
+}

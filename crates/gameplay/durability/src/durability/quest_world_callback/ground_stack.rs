@@ -1,13 +1,19 @@
 //! M02: physical Ground predicates participate in the existing fenced quest TX.
 //! Nomads Land chosen recipe s4 (Wiki spoiler revision 1002600) needs actual
 //! crates/amphorae. Static ItemPresence projections cannot establish this fact.
+#[cfg(any(test, feature = "test-support"))]
+use crate::durability::spell_item_transaction::SpellItemScopeAuthority;
 use crate::durability::spell_item_transaction::{
-    SpellItemError, SpellItemScopeAuthority, assert_spell_item_scope_with_recovery,
-    check_scope_transaction,
+    SpellItemError, assert_spell_item_scope_with_recovery, check_scope_transaction,
 };
+#[cfg(any(test, feature = "test-support"))]
 use crate::durability::spell_items_abi::SpellGroundTarget;
+#[cfg(any(test, feature = "test-support"))]
+use oteryn_gameplay_quests::quest::ground_stack::GroundStackEntry as NativeGroundStackFact;
+use oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement;
+#[cfg(any(test, feature = "test-support"))]
 use oteryn_gameplay_quests::quest::world_callbacks::{
-    GroundStackEntry, GroundStackFact, WorldRequirement, ground_stack_matches,
+    GroundStackEntry, Position, ground_stack_matches_at,
 };
 
 fn owner_error(error: SpellItemError) -> DurabilityError {
@@ -18,6 +24,7 @@ fn owner_error(error: SpellItemError) -> DurabilityError {
     }
 }
 
+#[cfg(any(test, feature = "test-support"))]
 #[derive(sqlx::FromRow)]
 struct GroundRoot {
     item_instance_id: sqlx::types::Uuid,
@@ -25,7 +32,8 @@ struct GroundRoot {
     definition_production_key: String,
     definition_revision_ref: String,
     quantity: i64,
-    stack_ordinal: i64,
+    stack_ordinal: Option<i64>,
+    ownership_generation: String,
     map_revision: String,
     content_revision: String,
     native_room_placement_context: Vec<u8>,
@@ -45,6 +53,32 @@ pub(super) async fn require(
     if !requirements.iter().any(|r| r.ground_stack.is_some()) {
         return Ok(true);
     }
+    // Lock the readset's Item identities before the existing Ground owner.
+    // The scope authority below also takes key 33, so issuing it first would
+    // reverse the move owner's Item -> Ground order and permit a deadlock.
+    if !matches_requirements(tx, permit, fence, context, requirements).await? {
+        return Ok(false);
+    }
+    // The scope issuer also takes namespace 33 with a blocking lock. Acquire
+    // it non-blockingly first, before asking that issuer for its same-TX token.
+    // Otherwise the later NOWAIT rows cannot prevent a pickup lock cycle.
+    let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Ok(false);
+    };
+    let available: bool = sqlx::query_scalar(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended(encode($1,'hex')||encode($2,'hex'),33))",
+    )
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
+    if !available {
+        return Ok(false);
+    }
     let authority = assert_spell_item_scope_with_recovery(
         tx,
         permit,
@@ -55,26 +89,9 @@ pub(super) async fn require(
     )
     .await
     .map_err(owner_error)?;
-    for requirement in requirements {
-        let Some(stack) = &requirement.ground_stack else {
-            continue;
-        };
-        let p = requirement.position;
-        let target = SpellGroundTarget {
-            spatial_position: [
-                i32::from(p.x).to_be_bytes().as_slice(),
-                i32::from(p.y).to_be_bytes().as_slice(),
-                i16::from(p.floor).to_be_bytes().as_slice(),
-            ]
-            .concat(),
-            map_revision: context.map_revision.clone(),
-            content_revision: context.content_revision.clone(),
-            placement_context: context.placement_context.clone(),
-        };
-        if !matches(tx, &authority, &target, stack).await? {
-            return Ok(false);
-        }
-    }
+    check_scope_transaction(tx, &authority)
+        .await
+        .map_err(owner_error)?;
     Ok(true)
 }
 
@@ -97,23 +114,44 @@ pub async fn matches(
         return Ok(false);
     }
     let world = authority.world_bytes();
-    // Existing Item owner, migrations 0034:21-32 and 0049:360-376; no second
-    // tile lock or independent custody store is introduced.
-    sqlx::query(
-        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex')||encode($2,'hex'),33))",
+    // Existing Ground namespace (0034/0049). Try-lock plus NOWAIT Item locks
+    // preserve Item-before-Ground ordering: a concurrent pickup must cause
+    // refusal/rollback instead of a cycle with this progress transaction.
+    let available: bool = sqlx::query_scalar(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended(encode($1,'hex')||encode($2,'hex'),33))",
     )
     .bind(world.as_slice())
     .bind(channel.as_slice())
-    .execute(&mut **tx)
+    .fetch_one(&mut **tx)
     .await?;
-    let mut rows = sqlx::query_as::<_, GroundRoot>("SELECT i.item_instance_id,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,g.stack_ordinal,g.map_revision,g.content_revision,g.native_room_placement_context FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.scope_kind=1 AND g.instance_id IS NULL AND g.spatial_position=$3 AND i.lifecycle=1 ORDER BY i.item_instance_id LIMIT 65 FOR UPDATE OF i,g")
+    if !available {
+        return Ok(false);
+    }
+    let mut rows = sqlx::query_as::<_, GroundRoot>("SELECT i.item_instance_id,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,g.stack_ordinal,g.runtime_scope_ownership_generation::text AS ownership_generation,g.map_revision,g.content_revision,g.native_room_placement_context FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id,world_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.scope_kind=1 AND g.instance_id IS NULL AND g.spatial_position=$3 AND i.lifecycle=1 ORDER BY i.item_instance_id LIMIT 65 FOR UPDATE OF i,g NOWAIT")
         .bind(world.as_slice()).bind(channel.as_slice()).bind(&target.spatial_position)
         .fetch_all(&mut **tx).await?;
     if rows.len() != expected.len() {
         return Ok(false);
     }
     rows.sort_by_key(|r| r.stack_ordinal);
-    Ok(ground_stack_matches(
+    let mut previous = 0;
+    for row in &rows {
+        let Some(ordinal) = row.stack_ordinal.filter(|n| *n > previous) else {
+            return Ok(false);
+        };
+        previous = ordinal;
+        if row.ownership_generation != authority.generation().to_string() {
+            return Ok(false);
+        }
+    }
+    // The SQL predicate proves the exact serialized target address; the shared
+    // stack comparator below only compares entries within that proven cell.
+    Ok(ground_stack_matches_at(
+        Position {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
         expected,
         rows.iter().map(|row| {
             if row.definition_family != "Item"
@@ -124,10 +162,12 @@ pub async fn matches(
             {
                 return None;
             }
-            Some(GroundStackFact {
+            Some(NativeGroundStackFact {
                 instance: *row.item_instance_id.as_bytes(),
-                item: &row.definition_production_key,
-                count: u32::try_from(row.quantity).ok()?,
+                item: row.definition_production_key.clone(),
+                revision: row.definition_revision_ref.clone(),
+                quantity: u32::try_from(row.quantity).ok()?,
+                ordinal: u64::try_from(row.stack_ordinal?).ok()?,
             })
         }),
     ))
@@ -217,7 +257,7 @@ pub(crate) async fn matches_requirements(
         // not a pre-wait snapshot. Item share locks retain quantities until the
         // enclosing Quest receipt commits. No Ground row or Item is mutated.
         let rows = sqlx::query(
-            "SELECT i.item_instance_id::text AS item,i.definition_production_key,i.quantity,g.stack_ordinal \
+            "SELECT i.item_instance_id::text AS item,i.definition_production_key,i.definition_revision_ref,i.quantity,g.stack_ordinal \
              FROM game_item_ground_locations g JOIN game_item_instances i \
              USING(item_instance_id,world_id) \
              WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid \
@@ -255,6 +295,7 @@ pub(crate) async fn matches_requirements(
                 return Ok(false);
             };
             if row.try_get::<&str, _>("definition_production_key")? != expected.item
+                || row.try_get::<&str, _>("definition_revision_ref")? != "definition-r1"
                 || row.try_get::<i64, _>("quantity")? != i64::from(expected.count)
             {
                 return Ok(false);
@@ -276,3 +317,15 @@ fn spatial(position: oteryn_gameplay_quests::quest::world_callbacks::Position) -
 
 #[cfg(test)]
 mod tests;
+
+/// Isolated PG fixture entry: the supplied owner token is still checked against
+/// this exact physical transaction; no mutable registry or authority bypass.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn fixture_matches(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &SpellItemScopeAuthority,
+    target: &SpellGroundTarget,
+    expected: &[GroundStackEntry],
+) -> Result<bool, DurabilityError> {
+    matches(tx, authority, target, expected).await
+}

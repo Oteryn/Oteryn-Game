@@ -7,6 +7,11 @@ use crate::durability::item_mint_audit::Type2Transaction;
 use oteryn_gameplay_content::content::npc_catalogue::travel::TravelRoute;
 use sha2::{Digest, Sha256};
 
+#[path = "clear_gate.rs"]
+mod clear_gate;
+#[path = "ticket.rs"]
+mod ticket;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TravelRefusal {
     UnavailableRoute,
@@ -59,16 +64,25 @@ async fn quote(
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
     if let Some(change) = &route.world_change
-        && !crate::durability::world_event::change_active(tx, fence.runtime_scope.world_id(), change).await?
+        && !crate::durability::world_event::change_active(
+            tx,
+            fence.runtime_scope.world_id(),
+            change,
+        )
+        .await?
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
     if route.yalahar_gate || route.yalahar_town_gate.is_some() {
         let town = route.yalahar_town_gate.as_deref().unwrap_or("ab_dendriel");
-        let track = format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}");
+        let track = format!(
+            "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}"
+        );
         let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND ((track_key=$2 AND value=1) OR (track_key='oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/towns_counter' AND value>=5)))")
             .bind(fence.character_id.as_bytes().as_slice()).bind(track).fetch_one(&mut ***tx).await?;
-        if !permitted { return Ok(Err(TravelRefusal::UnavailableRoute)); }
+        if !permitted {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
     }
     if let Some(track) = &route.quest_gate {
         let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value>=1)")
@@ -76,6 +90,16 @@ async fn quote(
         if !permitted {
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }
+    }
+    if let Some(track) = &route.quest_clear_gate
+        && !clear_gate::permitted(tx, fence.character_id, track).await?
+    {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
+    if let Some(requirement) = &route.ticket
+        && !ticket::permitted(tx, fence.character_id, requirement).await?
+    {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
     }
     let level: Option<i64> = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
@@ -195,6 +219,8 @@ impl DurabilityRoot {
             if route.yalahar_gate { hash.update(b"yalahar-searoutes-gate:v1"); }
             if let Some(town) = &route.yalahar_town_gate { hash.update(town.as_bytes()); }
             if let Some(track) = &route.quest_gate { hash.update(track.as_bytes()); }
+            if let Some(track) = &route.quest_clear_gate { clear_gate::bind(&mut hash, track); }
+            if let Some(requirement) = &route.ticket { ticket::bind(&mut hash, requirement); }
             hash.update(arrival.destination.x.to_be_bytes());
             hash.update(arrival.destination.y.to_be_bytes());
             hash.update(arrival.destination.floor.to_be_bytes());

@@ -1271,6 +1271,13 @@ pub(super) async fn exercise(
         )
         .map_err(debug)?,
     ));
+    if family == "royal-costume" {
+        assert!(setup_keys.is_empty(), "the complete Royal Costume story starts without seeded quest progress");
+        let version: String = sqlx::query_scalar("SELECT version()").fetch_one(&h.pool).await?;
+        eprintln!("QENGINE2_N3_ROYAL_COSTUME_POSTGRES {version}");
+        let started: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.royal_costume_outfits_quest'").fetch_one(&h.pool).await?;
+        assert_eq!(started, 0, "no pre-completed or pre-started Royal Costume quest");
+    }
     for (index, key) in setup_keys.iter().enumerate() {
         commit_fixture(owner, admitted, key, 9000 + u64::try_from(index)?).await?;
     }
@@ -1859,6 +1866,14 @@ pub(super) async fn exercise(
             callback.key
         );
         assert_eq!(after.2, before.2 + i64::from(callback.give.is_some()));
+        if family == "royal-costume" {
+            let terminal = step_index == 2;
+            let completed: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key='oteryn:quest.royal_costume_outfits_quest'").fetch_one(&h.pool).await?;
+            assert_eq!(completed, terminal, "only the final crown hand-in completes Royal Costume");
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.royal_costume_outfits_quest' AND completes").fetch_one(&h.pool).await?;
+            assert_eq!(receipts, i64::from(terminal), "one durable completion receipt, after all three exchanges");
+        }
+
         if let (Some(gift), Some(before)) = (&callback.give, gift_before) {
             assert_eq!(
                 quantity(h, &gift.item).await?,

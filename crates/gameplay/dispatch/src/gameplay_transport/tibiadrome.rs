@@ -11,14 +11,15 @@ use oteryn_protocol_oteryn::arena::{self as wire, DromeAction as A};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-
-#[path = "tibiadrome/modifiers.rs"]
-mod modifiers;
-use modifiers::Modifier;
-pub(super) use modifiers::somersault;
+pub(super) mod modifiers;
 
 #[derive(Default)]
 pub(super) struct Drome {
+    /// Mechanics-only tests exercise the preexisting physical path without donor qualification.
+    #[cfg(test)]
+    pub(super) mechanics_test_context: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) mechanics_test_hazards: std::sync::atomic::AtomicBool,
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, Live>>,
 }
@@ -28,23 +29,15 @@ impl Drome {
         &self,
         session: GameSessionId,
     ) -> Result<(), &'static str> {
-        self.test_modifier(session, Modifier::ExplodingCorpses)
+        modifiers::select_test_modifier(self, session,
+            oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::DromeModifier::ExplodingCorpses)
     }
     pub(in crate::gameplay_transport) fn test_somersault(
         &self,
         session: GameSessionId,
     ) -> Result<(), &'static str> {
-        self.test_modifier(session, Modifier::Somersault)
-    }
-    fn test_modifier(
-        &self,
-        session: GameSessionId,
-        modifier: Modifier,
-    ) -> Result<(), &'static str> {
-        let live = self.live.lock().map_err(|_| "Drome registry")?;
-        let current = live.get(&session).ok_or("Drome participant")?;
-        current.battle.lock().map_err(|_| "Drome battle")?.modifier = modifier;
-        Ok(())
+        modifiers::select_test_modifier(self, session,
+            oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::DromeModifier::Somersault)
     }
 }
 struct Live {
@@ -58,12 +51,8 @@ struct Live {
     mana: u32,
 }
 struct Battle {
-    modifier: Modifier,
-    mark: Option<modifiers::Mark>,
-    next_modifier: Instant,
-    effect_sequence: u64,
-    exploded: Vec<(ExactActorRef, GameSessionId)>,
-    somersaults: Vec<(ExactActorRef, u64)>,
+    modifiers: Option<modifiers::ModifierOwner>,
+    modifier_deaths: Vec<ExactActorRef>,
     center: MovementLocalPosition,
     opponents: Vec<ExactActorRef>,
     wave: u32,
@@ -231,6 +220,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         after.completed = battle.clears;
                     }
                     after.wave = battle.wave;
+                    after.preparing = battle.preparing;
                     after.expires = read.now.saturating_add(
                         u32::try_from(
                             battle
@@ -281,7 +271,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .vitals();
                         if !entry_ready(self, &runtime, at) {
                             disposition = 6;
-                        } else {
+                        } else if let Some(modifier_context) = modifiers::qualified_context(
+                            self,
+                            &runtime,
+                            crate::durability::arena_match::identity(command, b"drome"),
+                            1,
+                            at,
+                        ) {
                             let existing = live
                                 .values()
                                 .find(|l| !l.ended)
@@ -290,15 +286,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 (
                                     crate::durability::arena_match::identity(command, b"drome"),
                                     Arc::new(Mutex::new(Battle {
-                                        modifier: Modifier::Somersault,
-                                        mark: None,
-                                        next_modifier: Instant::now(),
-                                        effect_sequence: 0,
-                                        exploded: Vec::new(),
-                                        somersaults: Vec::new(),
+                                        modifiers: Some(modifier_context),
+                                        modifier_deaths: Vec::new(),
                                         center: at,
                                         opponents: Vec::new(),
-                                        wave: after.progress.start.saturating_add(1),
+                                        wave: after.progress.start,
                                         completed: after.progress.start,
                                         clears: 0,
                                         preparing: true,
@@ -319,8 +311,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 {
                                     return None;
                                 }
-                                battle.wave =
-                                    battle.wave.min(after.progress.start.saturating_add(1));
+                                battle.wave = battle.wave.min(after.progress.start);
                                 battle.completed = battle.wave.saturating_sub(1);
                                 after.completed = battle.clears;
                                 after.wave = battle.wave;
@@ -329,6 +320,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             after.session = *admitted.game_session_id.as_bytes();
                             after.generation = fence.scope_ownership_generation.get();
                             after.active = true;
+                            after.preparing = true;
                             after.expires = read.now.saturating_add(rules::PREPARATION_SECONDS);
                             live.insert(
                                 admitted.game_session_id,
@@ -344,12 +336,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 },
                             );
                             runtime.set_tibiadrome(actor, true).ok()?;
+                            if let Some(modifiers) = &live
+                                .get(&admitted.game_session_id)?
+                                .battle
+                                .lock()
+                                .ok()?
+                                .modifiers
+                            {
+                                runtime
+                                    .bind_tibiadrome_modifiers(actor, run, modifiers.selected())
+                                    .ok()?;
+                            }
                             self.states
                                 .spell_states
                                 .try_lock()
                                 .ok()?
                                 .get_mut(&runtime, actor, admitted.game_session_id)?
                                 .drome_practice = true;
+                        } else {
+                            // No admitted native pool/room: never grant a legacy arena substitute.
+                            disposition = 6;
                         }
                     }
                 }
@@ -399,6 +405,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after.clone(),
                 disposition,
                 cosmetics,
+                modifiers::snapshot(self, admitted.game_session_id),
             )
             .await
             .ok()?;
@@ -645,7 +652,7 @@ pub(in crate::gameplay_transport) fn tick_at(
         // Manual combat.md:255,264: native victory earns one clear immediately.
         // Corpse effects may await their HP owner, and participant exit must not
         // erase an already completed wave. Keep physical advancement below gated.
-        if defeated_in_time && battle.completed < battle.wave {
+        if defeated_in_time && (battle.clears == 0 || battle.completed < battle.wave) {
             battle.completed = battle.wave;
             battle.clears = battle.clears.saturating_add(1);
         }
@@ -656,38 +663,40 @@ pub(in crate::gameplay_transport) fn tick_at(
             }
             continue;
         }
-        let bursts_complete = modifiers::deaths(owner, runtime, &live, &mut battle, current.run);
-        if defeated_in_time && bursts_complete {
+        let modifier_players: Vec<_> = live
+            .iter()
+            .filter(|(_, member)| member.run == current.run && !member.ended)
+            .map(|(session, member)| (member.actor, *session))
+            .collect();
+        modifiers::deaths(runtime, &mut battle, &modifier_players);
+        if !battle.preparing {
+            modifiers::tick(owner, runtime, &mut battle, &modifier_players);
+        }
+        if defeated_in_time
+            && battle
+                .modifiers
+                .as_ref()
+                .is_none_or(|modifiers| modifiers.settled())
+        {
             battle.wave = battle.wave.saturating_add(1);
             for target in battle.opponents.drain(..) {
                 let _ = runtime.remove_arena_opponent(target);
             }
+            battle.modifier_deaths.clear();
+            // ARENA1 A4/RL-08: reaching300 has the ordinary left-battle
+            // settlement, after crediting clear299 and before preparing300.
+            if battle.wave >= rules::MAX_WAVE {
+                battle.ended = true;
+                battle.preparing = false;
+                continue;
+            }
             battle.preparing = true;
-            battle.mark = None;
             battle.deadline = now + Duration::from_secs(u64::from(rules::PREPARATION_SECONDS));
         }
-        if !battle.preparing {
-            modifiers::timed(owner, runtime, &live, &mut battle, current.run, now);
-        }
         if battle.preparing && now >= battle.deadline {
-            // oteryn-choice: use qualified native arena profiles; the pinned donors provide
-            // neither Drome creature profiles nor a numeric difficulty curve.
-            // Manual combat.md:269-278 supplies all nine modifiers independently
-            // of the still-missing Drome-exclusive base profiles.
-            battle.modifier = Modifier::draw(current.run, battle.wave);
-            battle.mark = None;
-            battle.exploded.clear();
-            battle.somersaults.clear();
-            battle.effect_sequence = 0;
-            let interval = if matches!(battle.modifier, Modifier::SownSorrow | Modifier::BadRoots) {
-                [20, 17, 14, 11, 8]
-                    .get(players.saturating_sub(1))
-                    .copied()
-                    .unwrap_or(20)
-            } else {
-                15
-            };
-            battle.next_modifier = now + Duration::from_secs(interval);
+            // STOPPED W17 content: these legacy arena profiles do not qualify as
+            // the five Drome monsters or the nine accepted modifier consumers.
+            // Exact native identities/speeds/attack clocks remain source-pending.
             let count = rules::monster_count(players).unwrap_or(0);
             let placements: Vec<_> = battle_cells(owner, runtime, battle.center)
                 .into_iter()
@@ -709,9 +718,10 @@ pub(in crate::gameplay_transport) fn tick_at(
                         let _ = runtime.remove_arena_opponent(target);
                         break;
                     }
-                    if runtime
-                        .set_tibiadrome_escalation(target, battle.modifier == Modifier::Escalated)
-                        .is_err()
+                    if let Some(modifiers) = &battle.modifiers
+                        && runtime
+                            .bind_tibiadrome_modifiers(target, current.run, modifiers.selected())
+                            .is_err()
                     {
                         let _ = runtime.remove_arena_opponent(target);
                         break;
@@ -725,6 +735,19 @@ pub(in crate::gameplay_transport) fn tick_at(
                 }
                 battle.ended = true;
             } else {
+                let wave = battle.wave;
+                if let Some(modifiers) = &mut battle.modifiers
+                    && !modifiers.begin_wave(wave, owner.owner_now().get(), players)
+                {
+                    battle.ended = true;
+                }
+                if battle.opponents.iter().any(|actor| {
+                    runtime
+                        .begin_drome_native_wave(*actor, owner.owner_now().get())
+                        .is_err()
+                }) {
+                    battle.ended = true;
+                }
                 battle.preparing = false;
                 battle.deadline = now + Duration::from_secs(u64::from(rules::WAVE_SECONDS));
                 // The projection's ms clock is the same runtime clock_origin;
@@ -837,7 +860,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 current.actor,
                 current.run,
                 battle.clears,
-                battle.completed,
+                if battle.clears > 0 {
+                    battle.completed + 1
+                } else {
+                    0
+                },
                 current.ended || battle.ended,
             )
         };

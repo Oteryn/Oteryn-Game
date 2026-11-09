@@ -108,10 +108,14 @@ impl PlayView {
     }
 }
 
+mod activity_scope;
+#[cfg(test)]
+pub(crate) mod capture_test_support;
 mod end;
 mod input;
 mod mailbox;
 mod refusal_details;
+mod session_initialize;
 mod session_loop;
 mod session_stepper;
 #[cfg(windows)]

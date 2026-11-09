@@ -205,3 +205,90 @@ fn monk_copy_derives_count_once_and_reserves_projection_capacity_atomically() {
     assert!(copy.apply(&committed));
     assert_eq!(copy.tracks().get(COUNT_TRACK), Some(&1));
 }
+
+#[test]
+fn srx3_rotten_area_source_think_cause_has_its_own_occurrence_namespace() {
+    let cause = QuestCause::stored("source_think", id(24), 0)
+        .expect("server-owned source think must decode its own immutable occurrence namespace");
+    assert_eq!(cause.kind(), "source_think");
+    assert_eq!(cause.key(), (id(24), 0));
+    let character = CharacterId::from_bytes(id(1)).expect("actual character");
+    assert_ne!(
+        request_binding(
+            character,
+            &request(cause, "oteryn:quest-transition/rotten-blood/area-icons/1")
+        ),
+        request_binding(
+            character,
+            &request(
+                QuestCause::Step(command(24, 1)),
+                "oteryn:quest-transition/rotten-blood/area-icons/1"
+            )
+        ),
+        "native onThink is never a fabricated committed movement step"
+    );
+    assert!(QuestCause::stored("source_think", id(24), 1).is_err());
+    assert!(QuestCause::stored("source_think", [0; 16], 0).is_err());
+}
+
+#[test]
+fn srx3_source_step_cause_is_server_owned_and_roundtrips_without_command_ref() {
+    let occurrence = SourceStepOccurrence::from_binding_digest([42; 32]);
+    let cause = QuestCause::SourceStep(occurrence);
+    assert_eq!(cause.kind(), "source_step");
+    let (uuid, ordinal) = cause.key();
+    assert_eq!(ordinal, 0);
+    assert_eq!(
+        uuid[6] >> 4,
+        8,
+        "deterministic data UUID must not pretend to be UUIDv7 wall time"
+    );
+    assert_eq!(
+        QuestCause::stored("source_step", uuid, 0)
+            .expect("opaque physical source cause must roundtrip"),
+        cause
+    );
+    assert!(QuestCause::stored("source_step", uuid, 1).is_err());
+    assert!(QuestCause::stored("source_step", [0; 16], 0).is_err());
+    assert!(
+        QuestCause::stored("source_step", id(24), 0).is_err(),
+        "a session UUIDv7 cannot impersonate the physical-step namespace"
+    );
+    assert_ne!(
+        SourceStepOccurrence::from_binding_digest([42; 32]),
+        SourceStepOccurrence::from_binding_digest([43; 32])
+    );
+}
+
+#[test]
+fn qm55_first_save_restart_receipt_requires_scoped_journal_reload() {
+    let quest = "oteryn:quest.qm55_first_restart";
+    let mut copy = QuestStateCopy::default();
+    let mut receipt = CommittedQuestTransition {
+        character_id: CharacterId::from_bytes(id(1)).expect("character"),
+        cause: QuestCause::Command(command(2, 1)),
+        transition_key:
+            oteryn_gameplay_quests::quest::shared_world_progress::save_event_restart_key(quest),
+        quest_key: quest.into(),
+        original_character_revision: CharacterRevision::new(1).expect("revision"),
+        committed_character_revision: CharacterRevision::new(2).expect("revision"),
+        pinned_content_revision: "content-1".into(),
+        definition_hash: [7; 32],
+        completes: false,
+        changes: vec![],
+        experience: None,
+    };
+    assert!(!copy.has_save_event_scope());
+    assert!(copy.apply(&receipt));
+    assert!(
+        copy.has_save_event_scope(),
+        "the first restart must qualify the cached journal for a durable reload"
+    );
+    assert!(copy.save_event_scope_needs_refresh(Some(1)));
+    assert!(copy.save_event_scope_needs_refresh(Some(2)));
+    // A similarly named transition owned by another quest cannot create a profile.
+    let mut unrelated = QuestStateCopy::default();
+    receipt.quest_key = "oteryn:quest.other".into();
+    assert!(unrelated.apply(&receipt));
+    assert!(!unrelated.has_save_event_scope());
+}

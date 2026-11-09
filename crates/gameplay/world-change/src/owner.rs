@@ -101,6 +101,10 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
         "stampede" => day.stampede,
         // Preserve main's independently admitted, epoch-bound static layers.
         "fury_gates" => day.fury_gates.is_some(),
+        key if crate::daily::FURY_LAYERS.contains(&key) => {
+            crate::bindings::NativeBindings::compile(day)
+                .is_ok_and(|bindings| bindings.admits_entry_layer(key))
+        }
         // Flower Month's waves are still held; the NPC alone is not completion.
         _ => false,
     }
@@ -124,4 +128,27 @@ pub fn counter_admitted(kind: crate::counter::CounterKind) -> bool {
     })
     .iter()
     .any(|key| key == kind.key())
+}
+
+#[cfg(test)]
+mod imported_layer_tests {
+    use super::*;
+
+    #[test]
+    fn m01b_exact_fury_entry_requires_selected_city_and_committed_epoch() {
+        let mut day = DailyWorldChanges::roll(1, 6, 13, |_| 0);
+        day.fury_exit = "fury_gates/thais";
+        day.fury_gates = Some(day.fury_exit);
+        assert!(is_active(&day, "fury_gates/thais"));
+        assert!(!is_active(&day, "fury_gates/venore"));
+        assert!(!is_active(&day, "fury_gates/unknown"));
+        day.fury_gates = None;
+        assert!(
+            !is_active(&day, "fury_gates/thais"),
+            "retained exit is not an entrance"
+        );
+        day.fury_gates = Some(day.fury_exit);
+        day.reset_epoch = 0;
+        assert!(!is_active(&day, "fury_gates/thais"));
+    }
 }

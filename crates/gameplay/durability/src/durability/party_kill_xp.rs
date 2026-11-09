@@ -82,6 +82,7 @@ pub fn encode_death_key(death: crate::foundation::CreatureDeathOccurrenceKey) ->
     key
 }
 
+/// Read-only tagged namespace decoding; grants no death or gameplay authority.
 pub(crate) fn decoded_death_scope(
     death: &[u8],
 ) -> Option<(crate::foundation::RuntimeScopeRefV1, u64)> {

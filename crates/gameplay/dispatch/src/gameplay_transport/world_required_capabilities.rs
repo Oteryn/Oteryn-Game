@@ -148,6 +148,33 @@ pub fn offered_for_scope_with(
     }
 }
 
+/// Bind the SAME observation-only native map presentation offer used by fresh
+/// negotiation. The BOOT caller supplies its actual post-Bundle room and pin;
+/// cached descriptor slices retain no source or runtime authority.
+pub fn with_native_map_presentation_offer(
+    base: &'static [OfferedCapability],
+    active: Option<&crate::content::ActiveGeneration>,
+    room: Option<&crate::content::QualifiedNativeEntryRoom>,
+    pin: &crate::foundation::ChannelContentPin,
+) -> &'static [OfferedCapability] {
+    if !matches!((active,room),(Some(active),Some(room))
+        if super::native_cue_offer::source_available(active,room,pin))
+    {
+        return base;
+    }
+    type Set = &'static [OfferedCapability];
+    static CACHE: std::sync::Mutex<Vec<(Set, Set)>> = std::sync::Mutex::new(Vec::new());
+    let mut cache = CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some((_, set)) = cache.iter().find(|(key, _)| *key == base) {
+        return set;
+    }
+    let set: Set = Box::leak(super::native_cue_offer::offered(base, true).into_boxed_slice());
+    cache.push((base, set));
+    set
+}
+
 /// `base` without capability 286 as a `'static` slice, built once per distinct base set.
 fn without_entity_names(base: &'static [OfferedCapability]) -> &'static [OfferedCapability] {
     type Cached = (&'static [OfferedCapability], &'static [OfferedCapability]);

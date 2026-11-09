@@ -52,7 +52,7 @@ fn m20_cursed_crystal_final_plans_preserve_higher_progress_and_bind_all_outputs(
         let track = &recipe.storage[0];
         let catalogue = QuestStateCatalogue::new(
             "m20-recipes",
-            vec![super::super::QuestTrack {
+            vec![crate::quest::QuestTrack {
                 key: track.track.clone(),
                 quest: recipe.quest.clone(),
                 initial: -1,
@@ -120,5 +120,17 @@ fn m20_durable_recipe_plan_is_distinct_from_legacy_tool_proofs() -> Result<(), S
         durable_plan(legacy)?,
         serde_json::to_value(legacy).map_err(|e| e.to_string())?
     );
+    Ok(())
+}
+
+#[test]
+fn m20_stateful_recipes_are_repeatable_paid_exchanges() -> Result<(), String> {
+    for callback in load()?.into_iter().filter(|c| c.carried_target.is_some()) {
+        assert!(!callback.storage.is_empty());
+        assert!(callback.is_paid_exchange());
+        let mut legacy = callback;
+        legacy.carried_target = None;
+        assert!(!legacy.is_paid_exchange());
+    }
     Ok(())
 }

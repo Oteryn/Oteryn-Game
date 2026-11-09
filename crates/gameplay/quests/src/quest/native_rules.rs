@@ -4,7 +4,8 @@
 //! next snapshot. It never obtains values from a session cache or writes state.
 
 use super::{
-    QuestEffect, QuestEffectKind, QuestRefusal, barbarian_mead, cults_of_tibia, unnatural_selection,
+    QuestEffect, QuestEffectKind, QuestRefusal, barbarian_mead, cults_of_tibia, ice_islands_seals,
+    unnatural_selection,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -15,6 +16,9 @@ pub enum NativeRule {
     BarbarianMead,
     CultsSymbol { symbol: u8 },
     UnnaturalDance { tile: u8 },
+    IceSealPaint { seal: u16 },
+    SoulWarRemorse,
+    SoulWarEnergy,
 }
 
 impl NativeRule {
@@ -23,18 +27,23 @@ impl NativeRule {
             Self::BarbarianMead => barbarian_mead::QUEST,
             Self::CultsSymbol { .. } => cults_of_tibia::QUEST,
             Self::UnnaturalDance { .. } => unnatural_selection::QUEST,
+            Self::IceSealPaint { .. } => ice_islands_seals::QUEST,
+            Self::SoulWarRemorse | Self::SoulWarEnergy => super::soul_war::source_items::QUEST,
         }
     }
 
-    pub const fn tracks(self) -> &'static [&'static str] {
+    pub fn tracks(self) -> Vec<&'static str> {
         match self {
-            Self::BarbarianMead => &barbarian_mead::TRACKS,
-            Self::CultsSymbol { .. } => &[
+            Self::BarbarianMead => barbarian_mead::NATIVE_TRACKS.to_vec(),
+            Self::CultsSymbol { .. } => vec![
                 cults_of_tibia::MISSION,
                 cults_of_tibia::TEMP,
                 cults_of_tibia::OBJECTS,
             ],
-            Self::UnnaturalDance { .. } => &unnatural_selection::TRACKS,
+            Self::UnnaturalDance { .. } => unnatural_selection::TRACKS.to_vec(),
+            Self::SoulWarRemorse => vec![super::soul_war::source_items::REMORSE],
+            Self::SoulWarEnergy => super::soul_war::source_items::ENERGY_TRACKS.to_vec(),
+            Self::IceSealPaint { .. } => ice_islands_seals::TRACKS.to_vec(),
         }
     }
 
@@ -44,6 +53,12 @@ impl NativeRule {
             Self::BarbarianMead => out.push(3),
             Self::CultsSymbol { symbol } => out.extend_from_slice(&[1, symbol]),
             Self::UnnaturalDance { tile } => out.extend_from_slice(&[2, tile]),
+            Self::IceSealPaint { seal } => {
+                out.push(5);
+                out.extend_from_slice(&seal.to_be_bytes());
+            }
+            Self::SoulWarRemorse => out.push(6),
+            Self::SoulWarEnergy => out.push(4),
         }
     }
 
@@ -52,6 +67,8 @@ impl NativeRule {
             Self::BarbarianMead => true,
             Self::CultsSymbol { symbol } => symbol < cults_of_tibia::SYMBOL_COUNT,
             Self::UnnaturalDance { tile } => tile >= 1 && tile <= 9,
+            Self::IceSealPaint { seal } => seal < ice_islands_seals::targets::TARGET_COUNT,
+            Self::SoulWarRemorse | Self::SoulWarEnergy => true,
         }
     }
 
@@ -92,16 +109,23 @@ impl NativeRule {
         }
         let read = |key: &str| values.get(key).copied().ok_or(QuestRefusal::NotSupported);
         let next = match self {
-            Self::BarbarianMead => barbarian_mead::apply(
-                [
+            Self::BarbarianMead => {
+                let before = [
                     read(barbarian_mead::TRACKS[0])?,
                     read(barbarian_mead::TRACKS[1])?,
                     read(barbarian_mead::TRACKS[2])?,
                     read(barbarian_mead::TRACKS[3])?,
-                ],
-                roll.ok_or(QuestRefusal::NotSupported)?,
-            )?
-            .to_vec(),
+                ];
+                let random = barbarian_mead::needs_draw(before[0], before[3]);
+                let roll = if random {
+                    roll.ok_or(QuestRefusal::NotSupported)?
+                } else {
+                    1
+                };
+                let mut after = barbarian_mead::apply(before, roll)?.to_vec();
+                after.push(if random { i64::from(roll) } else { 0 });
+                after
+            }
             Self::CultsSymbol { symbol } => {
                 let snapshot = cults_of_tibia::apply_symbol(
                     symbol,
@@ -112,6 +136,17 @@ impl NativeRule {
                     },
                 )?;
                 vec![snapshot.mission, snapshot.temp, snapshot.objects]
+            }
+            Self::IceSealPaint { seal } => {
+                let snapshot = ice_islands_seals::paint(
+                    seal,
+                    ice_islands_seals::Snapshot {
+                        questline: read(ice_islands_seals::QUESTLINE)?,
+                        targets: read(ice_islands_seals::TARGETS)?,
+                        mission04: read(ice_islands_seals::MISSION04)?,
+                    },
+                )?;
+                vec![snapshot.questline, snapshot.targets, snapshot.mission04]
             }
             Self::UnnaturalDance { tile } => {
                 let snapshot = unnatural_selection::apply_dance(
@@ -126,6 +161,41 @@ impl NativeRule {
                     snapshot.dance_status,
                     snapshot.mission03,
                     snapshot.questline,
+                ]
+            }
+            Self::SoulWarRemorse => {
+                use super::soul_war::source_items::{Kind, REMORSE, SourceItemState};
+                let before = u8::try_from(read(REMORSE)?).map_err(|_| QuestRefusal::OutOfRange)?;
+                let plan = SourceItemState {
+                    remorse: before,
+                    ..Default::default()
+                }
+                .apply(Kind::Remorse, 0, true)
+                .ok_or(QuestRefusal::OutOfRange)?;
+                vec![i64::from(plan.after.remorse)]
+            }
+            Self::SoulWarEnergy => {
+                use super::soul_war::source_items::{ENERGY_TRACKS, Kind, SourceItemState};
+                let mut floors = 0;
+                for (index, track) in ENERGY_TRACKS.iter().skip(1).enumerate() {
+                    match read(track)? {
+                        0 => {}
+                        1 => floors |= 1 << index,
+                        _ => return Err(QuestRefusal::OutOfRange),
+                    }
+                }
+                let plan = SourceItemState {
+                    energy: read(ENERGY_TRACKS[0])?,
+                    floors,
+                    ..Default::default()
+                }
+                .apply(Kind::Energy, 0, true)
+                .ok_or(QuestRefusal::OutOfRange)?;
+                vec![
+                    plan.after.energy,
+                    i64::from(plan.after.floors & 1 != 0),
+                    i64::from(plan.after.floors & 2 != 0),
+                    i64::from(plan.after.floors & 4 != 0),
                 ]
             }
         };
@@ -221,6 +291,10 @@ mod tests {
             NativeRule::CultsSymbol { symbol: u8::MAX },
             NativeRule::UnnaturalDance { tile: 0 },
             NativeRule::UnnaturalDance { tile: 10 },
+            NativeRule::IceSealPaint {
+                seal: ice_islands_seals::targets::TARGET_COUNT,
+            },
+            NativeRule::IceSealPaint { seal: u16::MAX },
         ] {
             assert!(!rule.valid_effects(rule.quest(), &effects(rule)));
             assert_eq!(
@@ -258,6 +332,48 @@ mod tests {
         ] {
             assert!(serde_json::from_str::<NativeRule>(text).is_err());
         }
+        Ok(())
+    }
+    #[test]
+    fn srx3_source_items_native_remorse_rule_uses_exact_locked_track_set() -> Result<(), String> {
+        let rule = NativeRule::SoulWarRemorse;
+        let values =
+            BTreeMap::from([(super::super::soul_war::source_items::REMORSE.to_owned(), 1)]);
+        let after = rule.evaluate(&values).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            after.get(super::super::soul_war::source_items::REMORSE),
+            Some(&0)
+        );
+        let mut extra = values;
+        extra.insert("oteryn:unrelated".into(), 0);
+        assert_eq!(rule.evaluate(&extra), Err(QuestRefusal::NotSupported));
+        Ok(())
+    }
+    #[test]
+    fn srx3_source_items_native_energy_rule_preserves_completed_item_counter() -> Result<(), String>
+    {
+        let rule = NativeRule::SoulWarEnergy;
+        let tracks = super::super::soul_war::source_items::ENERGY_TRACKS;
+        let values = tracks
+            .into_iter()
+            .zip([69, 0, 0, 0])
+            .map(|(k, v)| (k.to_owned(), v))
+            .collect();
+        let after = rule.evaluate(&values).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            tracks.map(|k| after.get(k).copied()),
+            [Some(0), Some(1), Some(1), Some(1)]
+        );
+        let values = tracks
+            .into_iter()
+            .zip([1000, 0, 0, 1])
+            .map(|(k, v)| (k.to_owned(), v))
+            .collect();
+        let after = rule.evaluate(&values).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            tracks.map(|k| after.get(k).copied()),
+            [Some(1001), Some(0), Some(0), Some(1)]
+        );
         Ok(())
     }
 }

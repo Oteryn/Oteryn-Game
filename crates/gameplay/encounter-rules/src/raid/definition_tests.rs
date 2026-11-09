@@ -186,3 +186,40 @@ fn qn5_feroxa_requires_moon_and_has_source_boss_death_or_twenty_hour_end()
     );
     Ok(())
 }
+
+#[test]
+fn qn5_feroxa_lua_timeline_spawns_at_seventy_five_minutes_in_source_room()
+-> Result<(), Box<dyn std::error::Error>> {
+    let catalogue = RaidCatalogue::embedded()?;
+    let key = ProductionKey::new("raid:edron.feroxa")?;
+    let selected = catalogue
+        .get(&key)
+        .ok_or("Feroxa")?
+        .select([7; 32], [9; 16])?;
+    assert_eq!(selected.definition.waves.len(), 1);
+    let wave = &selected.definition.waves[0];
+    assert_eq!(
+        wave.delay_ms,
+        75 * 60_000,
+        "source final() runs 30 minutes after the 45-minute spectator pass"
+    );
+    let area = selected
+        .areas
+        .get(&wave.entries[0].area_anchor)
+        .ok_or("source anchor")?;
+    assert_eq!(
+        (area.from.x, area.from.y, area.from.floor),
+        (33380, 31537, 11)
+    );
+    assert_eq!(area.from, area.to);
+    assert_eq!(
+        selected
+            .definition
+            .announcements
+            .iter()
+            .map(|a| a.delay_ms)
+            .collect::<Vec<_>>(),
+        [0, 45 * 60_000, 60 * 60_000]
+    );
+    Ok(())
+}

@@ -1,0 +1,16 @@
+{
+  "id": 451,
+  "name": "PERSONAL_MAP_MARKS_V1",
+  "owner_decision": "QMECH M16 owner assignment to questpc5, 2026-11-08",
+  "owner": "Character Quest receipt; read-only current controller projection",
+  "requires": [
+    3,
+    18
+  ],
+  "command_types": [
+    733
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Bundle World with native gameplay and at least one native NPC map-mark callback."
+}

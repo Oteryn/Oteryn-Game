@@ -1,6 +1,10 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
 
+#[path = "elemental_arrival.rs"]
+mod elemental_arrival;
+pub use elemental_arrival::ElementalArrivalReservation;
+
 #[path = "quest_item_batch.rs"]
 mod item_batch;
 pub use item_batch::QuestMapItemMove;
@@ -11,6 +15,14 @@ pub use timed_passages::QuestTimedPassage;
 #[cfg(test)]
 #[path = "quest_timed_passages_tests.rs"]
 mod timed_passages_tests;
+
+#[path = "rafzane_elevator.rs"]
+mod rafzane_elevator;
+pub use rafzane_elevator::RafzaneElevator;
+
+#[path = "arena_pillars.rs"]
+mod arena_pillars;
+pub use arena_pillars::ArenaPillarProjection;
 
 #[derive(Clone, Debug)]
 struct MovementDecay {
@@ -58,14 +70,26 @@ pub enum QuestCallbackProjection {
     },
 }
 
+type EffectScope = (
+    crate::foundation::RuntimeScopeRefV1,
+    crate::foundation::ScopeOwnershipGeneration,
+);
+type ScopedMovementEffect = (u64, Option<EffectScope>, TilePos, u16);
+
 #[derive(Clone, Debug, Default)]
 pub(super) struct CallbackStates {
+    pub(super) feroxa_phase: Option<Arc<super::feroxa_map_phases::FeroxaMapPhase>>,
+    pub(super) reserved: BTreeSet<u64>,
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
+    pub(super) actions: BTreeMap<u64, Option<u16>>,
     pub(super) hidden: BTreeSet<u64>,
     passable: BTreeMap<u64, bool>,
+    arena_pillars: BTreeMap<u64, [u8; 16]>,
+    arena_recreated: BTreeMap<TilePos, arena_pillars::RecreatedPillar>,
     pub(super) movement_items: BTreeMap<TilePos, Vec<view::ComposedEntry>>,
     movement_sequence: u64,
-    pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
+    pub(super) movement_effects: std::collections::VecDeque<ScopedMovementEffect>,
+    pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
@@ -75,6 +99,15 @@ pub(super) struct CallbackStates {
 }
 
 impl CallbackStates {
+    fn position_reserved(&self, position: TilePos) -> bool {
+        self.reserved.iter().any(|key| {
+            view::placement_of(*key)
+                .map(|(pos, _)| pos)
+                .or_else(|| self.movement_item(*key).map(|(pos, _)| pos))
+                == Some(position)
+        })
+    }
+
     fn remove_portals(&mut self, owner: u64) {
         self.portals.retain(|pos, portal| {
             if portal.owner != owner {
@@ -90,6 +123,21 @@ impl CallbackStates {
         });
     }
 
+    fn readset_matches(&self, entries: impl IntoIterator<Item = (u64, u64)>) -> bool {
+        let mut keys = BTreeSet::new();
+        for (key, revision) in entries {
+            if keys.len() == 8
+                || !keys.insert(key)
+                || revision == u64::MAX
+                || self.hidden.contains(&key)
+                || self.changed.get(&key).map_or(0, |(current, _)| *current) != revision
+            {
+                return false;
+            }
+        }
+        !keys.is_empty()
+    }
+
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
             QuestCallbackProjection::TimedPassages {
@@ -102,17 +150,9 @@ impl CallbackStates {
                 }
             }
             QuestCallbackProjection::ReadsetTransforms { entries, reset } => {
-                let keys: BTreeSet<_> = entries.iter().map(|(key, _, _)| *key).collect();
-                if entries.is_empty()
-                    || entries.len() > 8
-                    || keys.len() != entries.len()
-                    || keys.contains(&owner)
-                    || entries.iter().any(|(key, expected, _)| {
-                        *expected == u64::MAX
-                            || self.hidden.contains(key)
-                            || self.changed.get(key).map_or(0, |(revision, _)| *revision)
-                                != *expected
-                    })
+                if entries.iter().any(|(key, _, _)| *key == owner)
+                    || !self
+                        .readset_matches(entries.iter().map(|(key, revision, _)| (*key, *revision)))
                 {
                     return false;
                 }
@@ -280,11 +320,37 @@ impl CallbackStates {
             })
         })
     }
-    fn has_capacity(&self, additional: usize) -> bool {
-        let used = self.changed.len()
+    pub(super) fn phase_has_dynamic_blocker(&self, pos: TilePos) -> bool {
+        self.solid_items.contains(&pos) || self.batch_blockers.contains(&pos)
+    }
+
+    pub(super) fn clear_feroxa_scenery(&mut self, inside: impl Fn(TilePos) -> bool) {
+        let key_inside = |key: &u64| view::placement_of(*key).is_some_and(|(p, _)| inside(p));
+        self.changed.retain(|key, _| !key_inside(key));
+        self.hidden.retain(|key| !key_inside(key));
+        self.passable.retain(|key, _| !key_inside(key));
+        self.movement_decays.retain(|(_, key), _| !key_inside(key));
+        let cleared = |p: &TilePos| {
+            p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
+        };
+        self.movement_items.retain(|p, _| !cleared(p));
+        self.solid_items.retain(|p| !cleared(p));
+        self.batch_blockers.retain(|p| !inside(*p));
+        self.portals.retain(|p, _| !cleared(p));
+        self.presences.retain(|_, (p, _)| !cleared(p));
+    }
+
+    pub(super) fn has_capacity(&self, additional: usize) -> bool {
+        let used = self.feroxa_phase.as_ref().map_or(0, |p| p.footprint())
+            + self.reserved.len()
+            + self.arena_pillars.len()
+            + self.arena_recreated.len()
+            + self.changed.len()
+            + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
             + self.movement_effects.len()
+            + self.creature_visuals.len()
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
@@ -295,6 +361,25 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// Fence up to eight already qualified map placements without transforming
+    /// them. The synchronous consequence runs under the same map owner lock,
+    /// so an arrival can publish its prepared spawn while charges stay intact.
+    /// The caller retains the Channel owner and must not reenter map callbacks
+    /// from `publish`, or perform asynchronous/durable work inside this lock.
+    pub fn with_quest_readset<R>(
+        &self,
+        readset: &[(u64, u64)],
+        publish: impl FnOnce() -> R,
+    ) -> Option<R> {
+        let states = self.callbacks.lock().ok()?;
+        if !states.readset_matches(readset.iter().copied()) {
+            return None;
+        }
+        let result = publish();
+        drop(states);
+        Some(result)
+    }
+
     /// A transformed/removed callback entry changes floor routing with its visible stack.
     /// Unchanged tiles keep the compact boot-time table and incur no stack scan.
     pub(crate) fn quest_callback_floor_mask(
@@ -304,6 +389,9 @@ impl BundleFacts {
     ) -> Option<u8> {
         let states = self.callbacks.lock().ok().map(|s| Arc::clone(&s))?;
         let first = placement_key(pos, 0)?;
+        if states.phase_entry(pos, 0).is_some() {
+            return Some(0);
+        }
         if states.changed.range(first..=first + 63).next().is_none()
             && states.hidden.range(first..=first + 63).next().is_none()
         {
@@ -341,6 +429,46 @@ impl BundleFacts {
         Some(mask)
     }
 
+    pub fn emit_creature_visual(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        cue: CreatureVisualCue,
+    ) -> bool {
+        if !cue.current(runtime) {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        let Some(sequence) = states.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        if !states.has_capacity(usize::from(states.creature_visuals.len() < 512)) {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        states.movement_sequence = sequence;
+        if states.creature_visuals.len() == 512 {
+            states.creature_visuals.pop_front();
+        }
+        states
+            .creature_visuals
+            .push_back((sequence, cue.into_kind()));
+        true
+    }
+    pub fn creature_visuals_since(&self, after: u64) -> Vec<(u64, CreatureVisualKind)> {
+        self.callbacks
+            .lock()
+            .map(|states| {
+                states
+                    .creature_visuals
+                    .iter()
+                    .filter(|(sequence, _)| *sequence > after)
+                    .copied()
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
     /// Records a committed monster step for the dispatch-owned trap pass.
     pub fn record_monster_step(&self, step: MonsterStep) -> bool {
         let Ok(mut steps) = self.monster_steps.lock() else {
@@ -386,6 +514,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.reserved.contains(&key) {
+            return false;
+        }
         let Some(revision) = states
             .changed
             .get(&key)
@@ -414,7 +545,8 @@ impl BundleFacts {
         let states = self.callbacks.lock().ok()?;
         states
             .movement_decays
-            .first_key_value()
+            .iter()
+            .find(|((_, key), _)| !states.reserved.contains(key))
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
@@ -439,14 +571,17 @@ impl BundleFacts {
             states.remove_portals(owner);
             changed += 1;
         }
-        while states
+        let due: Vec<_> = states
             .movement_decays
-            .first_key_value()
-            .is_some_and(|((due, _), _)| *due <= now)
-        {
-            let Some(((_, key), decay)) = states.movement_decays.pop_first() else {
-                break;
+            .range(..=(now, u64::MAX))
+            .filter(|((_, key), _)| !states.reserved.contains(key))
+            .map(|(key, _)| *key)
+            .collect();
+        for at in due {
+            let Some(decay) = states.movement_decays.remove(&at) else {
+                continue;
             };
+            let key = at.1;
             if states
                 .changed
                 .get(&key)
@@ -485,18 +620,158 @@ impl BundleFacts {
         entries.next().is_none().then_some(facts)
     }
 
-    /// The bath's occupied state cannot be picked up while its player stands inside it.
-    pub fn transform_movement_item(&self, key: u64, appearance: u16) -> bool {
+    /// Transform the actual current source object and its action under the same
+    /// callback owner commit. Other bound attributes, including destination,
+    /// unique id and description, remain on the same physical placement.
+    pub fn transform_movement_item_with_action(
+        &self,
+        key: u64,
+        expected_revision: u64,
+        expected_appearance: u16,
+        appearance: u16,
+        action: Option<u16>,
+    ) -> bool {
+        if self.object_revision(key) != expected_revision {
+            return false;
+        }
         let Some(mut after) = self.movement_item_facts(appearance) else {
             return false;
         };
         if appearance == 26100 {
             after.pickupable = false;
         }
+        let Some(original) = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()
+            .and_then(|index| self.palette.get(self.placements[index].1.palette as usize))
+        else {
+            return false;
+        };
+        let passable = self.palette.iter().find_map(|entry| {
+            (entry.static_surface
+                && entry.facts.definition == after.definition
+                && entry.facts.appearance_id == appearance)
+                .then_some(!entry.solid)
+        });
+        let Ok(mut state) = self.callbacks.lock() else {
+            return false;
+        };
+        let current = state.changed.get(&key);
+        if current.map_or(0, |(revision, _)| *revision) != expected_revision
+            || current.map_or(original.facts.appearance_id, |(_, facts)| {
+                facts.appearance_id
+            }) != expected_appearance
+            || state.hidden.contains(&key)
+            || expected_revision == u64::MAX
+            || !state.has_capacity(
+                usize::from(!state.changed.contains_key(&key))
+                    + usize::from(!state.actions.contains_key(&key))
+                    + usize::from(passable.is_some() && !state.passable.contains_key(&key)),
+            )
+        {
+            return false;
+        }
+        let state = Arc::make_mut(&mut state);
+        state.changed.insert(key, (expected_revision + 1, after));
+        state.actions.insert(key, action);
+        if let Some(passable) = passable {
+            state.passable.insert(key, passable);
+        }
+        true
+    }
+
+    /// The bath's occupied state cannot be picked up while its player stands inside it.
+    pub fn transform_movement_item(&self, key: u64, appearance: u16) -> bool {
+        if key >> 62 == 2 {
+            return self.compare_transform_movement_item(
+                key,
+                self.object_revision(key),
+                appearance,
+            );
+        }
+        let Some(mut after) = self.movement_item_facts(appearance) else {
+            return false;
+        };
+        if appearance == 26100 {
+            after.pickupable = false;
+        }
+        // These source-published states have no inventory Item identity. Their
+        // native collision must change in the same existing map callback commit
+        // as their visible state (Bakragore's four flame pairs).
+        if let Some(passable) = self.palette.iter().find_map(|entry| {
+            (entry.static_surface
+                && entry.facts.definition == after.definition
+                && entry.facts.appearance_id == appearance)
+                .then_some(!entry.solid)
+        }) {
+            return self.apply_quest_callback(
+                key,
+                self.object_revision(key),
+                after,
+                &[],
+                &[(key, after, passable)],
+                false,
+                None,
+            );
+        }
         self.apply_quest_callback(key, self.object_revision(key), after, &[], &[], false, None)
     }
+    /// Transform one callback-created item without replacing its native identity.
+    /// Base, durable Ground/House and stable world-change objects have other owners.
+    pub fn compare_transform_movement_item(
+        &self,
+        key: u64,
+        expected: u64,
+        appearance: u16,
+    ) -> bool {
+        if key >> 62 != 2 || expected == u64::MAX {
+            return false;
+        }
+        let Some(mut after) = self.movement_item_facts(appearance) else {
+            return false;
+        };
+        if appearance == 26100 {
+            after.pickupable = false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if states
+            .changed
+            .get(&key)
+            .map_or(0, |(revision, _)| *revision)
+            != expected
+            || !states.has_capacity(usize::from(!states.changed.contains_key(&key)))
+        {
+            return false;
+        }
+        let Some((pos, id)) = states.movement_item(key) else {
+            return false;
+        };
+        let states = Arc::make_mut(&mut states);
+        let Some(entry) = states.movement_items.get_mut(&pos).and_then(|entries| {
+            entries
+                .iter_mut()
+                .find(|entry| entry.source == view::EntrySource::Added(id))
+        }) else {
+            return false;
+        };
+        after.bound = entry.facts.bound;
+        after.count = entry.facts.count;
+        entry.facts = after;
+        states.changed.insert(key, (expected + 1, after));
+        true
+    }
+
     /// Crystal yellow_pillow.lua:9: native monster-say, independent of the player's chat limiter.
     pub fn emit_movement_speech(&self, speech: MovementSpeech) -> bool {
+        if speech.text.is_empty()
+            || speech.text.len() > oteryn_protocol_oteryn::chat::MAX_CHAT_TEXT_BYTES
+            || !matches!(speech.talk_type, 36 | 37)
+        {
+            return false;
+        }
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
@@ -529,6 +804,25 @@ impl BundleFacts {
     }
     /// Native movement magic effects share the map callback's bounded occurrence stream.
     pub fn emit_movement_effect(&self, pos: TilePos, effect: u16) -> bool {
+        self.emit_effect_in_scope(None, pos, effect)
+    }
+
+    /// A private owner uses the same bounded map outbox and sequence. This is
+    /// presentation data only; the caller must prove current scope custody.
+    pub fn emit_scoped_movement_effect(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        generation: crate::foundation::ScopeOwnershipGeneration,
+        pos: TilePos,
+        effect: u16,
+    ) -> bool {
+        if !matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
+            return false;
+        }
+        self.emit_effect_in_scope(Some((scope, generation)), pos, effect)
+    }
+
+    fn emit_effect_in_scope(&self, scope: Option<EffectScope>, pos: TilePos, effect: u16) -> bool {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
@@ -543,7 +837,9 @@ impl BundleFacts {
         if states.movement_effects.len() == 512 {
             states.movement_effects.pop_front();
         }
-        states.movement_effects.push_back((sequence, pos, effect));
+        states
+            .movement_effects
+            .push_back((sequence, scope, pos, effect));
         true
     }
     /// Crystal trap.lua:39-42. Reserve the map projection before consuming the wolf.
@@ -561,6 +857,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.position_reserved(pos) {
+            return false;
+        }
         let Some(sequence) = states.movement_sequence.checked_add(1) else {
             return false;
         };
@@ -583,7 +882,9 @@ impl BundleFacts {
         if states.movement_effects.len() == 512 {
             states.movement_effects.pop_front();
         }
-        states.movement_effects.push_back((sequence, pos, effect));
+        states
+            .movement_effects
+            .push_back((sequence, None, pos, effect));
         true
     }
 
@@ -598,6 +899,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.position_reserved(pos) {
+            return false;
+        }
         let Some(index) = states.movement_items.get(&pos).and_then(|entries| {
             entries.iter().position(|entry| {
                 matches!(entry.source,
@@ -666,6 +970,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.position_reserved(pos) {
+            return false;
+        }
         if states.changed.get(&key).map_or(0, |(r, _)| *r) != revision {
             return false;
         }
@@ -691,6 +998,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        if states.position_reserved(pos) {
+            return false;
+        }
         // A repeated projection cannot undo a harvest or create a second source.
         if states.movement_items.get(&pos).is_some_and(|entries| {
             entries
@@ -741,6 +1051,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return Some(false);
         };
+        if states.position_reserved(pos) {
+            return Some(false);
+        }
         let Some((actual, _)) = states.movement_item(key) else {
             return Some(false);
         };
@@ -779,7 +1092,32 @@ impl BundleFacts {
                 s.movement_effects
                     .iter()
                     .copied()
-                    .filter(|(sequence, _, _)| *sequence > after)
+                    .filter(|(sequence, scope, _, _)| *sequence > after && scope.is_none())
+                    .map(|(sequence, _, pos, effect)| (sequence, pos, effect))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Read only this exact private scope and owner generation. Legacy Channel
+    /// effects and another House's entries are never a fallback.
+    pub fn scoped_movement_effects_since(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        generation: crate::foundation::ScopeOwnershipGeneration,
+        after: u64,
+    ) -> Vec<(u64, TilePos, u16)> {
+        self.callbacks
+            .lock()
+            .map(|states| {
+                states
+                    .movement_effects
+                    .iter()
+                    .copied()
+                    .filter(|(sequence, owner, _, _)| {
+                        *sequence > after && *owner == Some((scope, generation))
+                    })
+                    .map(|(sequence, _, pos, effect)| (sequence, pos, effect))
                     .collect()
             })
             .unwrap_or_default()
@@ -880,8 +1218,12 @@ impl BundleFacts {
     /// Reserve no durable inputs unless the bounded local projection can be installed.
     pub fn quest_callback_capacity(&self, key: u64, expected: u64, passages: usize) -> bool {
         self.callbacks.lock().is_ok_and(|s| {
-            s.changed.get(&key).map_or(0, |(r, _)| *r) == expected
+            s.changed
+                .get(&key)
+                .map_or_else(|| s.phase_revision(key).unwrap_or(0), |(r, _)| *r)
+                == expected
                 && expected < u64::MAX
+                && !s.reserved.contains(&key)
                 && passages <= 8
                 && s.has_capacity(passages)
         })
@@ -972,7 +1314,32 @@ impl BundleFacts {
             }
             _ => usize::from(projection.is_some()) * 8,
         };
-        if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
+        if states
+            .changed
+            .get(&key)
+            .map_or_else(|| states.phase_revision(key).unwrap_or(0), |(r, _)| *r)
+            != expected
+            || states.reserved.contains(&key)
+            || passages.iter().any(|key| states.reserved.contains(key))
+            || replacements
+                .iter()
+                .any(|(key, _, _)| states.reserved.contains(key))
+            || projection.is_some_and(|projection| match projection {
+                QuestCallbackProjection::ReadsetTransforms { entries, .. } => entries
+                    .iter()
+                    .any(|(key, _, _)| states.reserved.contains(key)),
+                QuestCallbackProjection::ItemPresence { position, .. }
+                | QuestCallbackProjection::ItemCycle { position, .. } => {
+                    states.position_reserved(*position)
+                }
+                QuestCallbackProjection::Portals { endpoints, .. } => endpoints
+                    .iter()
+                    .any(|(pos, _, _)| states.position_reserved(*pos)),
+                QuestCallbackProjection::TimedPassages { entries, .. } => entries
+                    .iter()
+                    .any(|entry| states.reserved.contains(&entry.key)),
+                QuestCallbackProjection::TimedTransform { .. } => false,
+            })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8
             || !states.has_capacity(passages.len() + replacements.len() + projection_capacity)
@@ -1041,6 +1408,9 @@ impl BundleFacts {
             return false;
         };
         let revision = states.changed.get(&wall).map_or(0, |(r, _)| *r);
+        if states.reserved.contains(&key) || states.reserved.contains(&wall) {
+            return false;
+        }
         if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
             || expected == u64::MAX
             || revision == u64::MAX
@@ -1095,8 +1465,18 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos) || states.batch_blockers.contains(&pos) {
+        if states.solid_items.contains(&pos)
+            || states.batch_blockers.contains(&pos)
+            || states.arena_pillar_closed_at(pos)
+        {
             return true;
+        }
+        if states.phase_entry(pos, 0).is_some() {
+            return states
+                .phase_spell(pos)
+                .ok()
+                .flatten()
+                .is_none_or(|tile| tile.flags().block_solid);
         }
         let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
             return true;
@@ -1249,6 +1629,47 @@ mod lifecycle_tests {
 #[cfg(test)]
 mod readset_tests {
     use super::*;
+    #[test]
+    fn m49_arrival_readset_holds_all_eight_cells_without_mutating_charges() -> Result<(), String> {
+        let facts = BundleFacts::default();
+        let cells: Vec<_> = (10..18).map(|key| (key, 0)).collect();
+        let published = facts.with_quest_readset(&cells, || {
+            // Keep the same map owner locked through consequence publication.
+            assert!(facts.callbacks.try_lock().is_err());
+            49
+        });
+        assert_eq!(published, Some(49));
+        for (key, revision) in &cells {
+            assert_eq!(facts.object_revision(*key), *revision);
+        }
+        let mut calls = 0;
+        let mut publish = || {
+            calls += 1;
+        };
+        assert!(facts.with_quest_readset(&[], &mut publish).is_none());
+        assert!(
+            facts
+                .with_quest_readset(&[(10, 0), (10, 0)], &mut publish)
+                .is_none()
+        );
+        assert!(
+            facts
+                .with_quest_readset(&[(10, u64::MAX)], &mut publish)
+                .is_none()
+        );
+        let too_many: Vec<_> = (10..19).map(|key| (key, 0)).collect();
+        assert!(facts.with_quest_readset(&too_many, &mut publish).is_none());
+        assert_eq!(calls, 0);
+        let mut stale = cells.clone();
+        stale[7].1 = 1;
+        assert!(facts.with_quest_readset(&stale, || 1).is_none());
+        let mut states = facts.callbacks.lock().map_err(|_| "map owner")?;
+        Arc::make_mut(&mut states).hidden.insert(17);
+        drop(states);
+        assert!(facts.with_quest_readset(&cells, || 1).is_none());
+        Ok(())
+    }
+
     #[test]
     fn multi_cell_readset_refuses_stale_unchanged_cell_without_partial_writes() {
         let facts = BundleFacts::default();

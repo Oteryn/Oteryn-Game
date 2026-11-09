@@ -1,4 +1,6 @@
 //! MOUNTTAME: existing USE -> carried item -> current creature -> fenced durable attempt.
+pub(super) mod quest_objects;
+
 use super::{
     ComposedFreshAdmission,
     connection::{UseCommand, UseOutcome},
@@ -50,8 +52,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        if intent.use_with_map_item.is_some() {
+            let corpse = match item_target {
+                Some(ItemKey::Instance(id)) => Some(id),
+                _ => None,
+            };
+            if let Some(result) = self
+                .use_carried_quest_item(actor, command, &intent, source, corpse)
+                .await?
+            {
+                return Ok(Some(result));
+            }
+        }
+        if intent.use_with_map_item.is_some()
+            && let Some(result) = self
+                .use_carried_quest_item_with_target(actor, command, &intent, source, item_target)
+                .await?
+        {
+            return Ok(Some(result));
+        }
         if let Some(result) = self
-            .tame_quest_object(actor, command, &intent, source)
+            .use_quest_tool_object(actor, command, &intent, source)
             .await?
         {
             return Ok(Some(result));
@@ -66,8 +87,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// M14 uses the existing world receipt, not an unguarded chance-based grant.
-    async fn tame_quest_object(
+    /// Carried quest tools use the registered World receipt and exact selected custody.
+    async fn use_quest_tool_object(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
@@ -79,8 +100,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let Some(ItemKey::Instance(source)) = source else {
-            return Ok(None);
+        let source = match (&intent.target, source) {
+            (UseTarget::Item(_), Some(ItemKey::Instance(item))) => Some(item),
+            (UseTarget::ItemByDefinition(_), None) => None,
+            _ => return Ok(None),
         };
         let Some(map) = self.bundle_map() else {
             return Ok(None);
@@ -101,7 +124,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let callbacks = self.callback_content();
         let Some(callback) = callbacks.iter().find(|callback| {
-            callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY
+            quest_objects::accepts(callback)
                 && super::quest_callbacks::matches(map, callback, resolved.placement_key)
         }) else {
             return Ok(None);
@@ -123,13 +146,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .any(|entry| {
-                entry.item.item_instance_id == source
-                    && entry.item.definition.production_key == required.item
+                entry.item.definition.production_key == required.item
+                    && quest_objects::matches_source(
+                        &intent.target,
+                        source,
+                        entry.item.item_instance_id,
+                        self.active_generation
+                            .and_then(crate::content::ActiveGeneration::native_gameplay)
+                            .and_then(|native| native.item_index())
+                            .and_then(|index| {
+                                index.definition_ref(
+                                    &entry.item.definition.family,
+                                    &entry.item.definition.production_key,
+                                    &entry.item.definition.revision_ref,
+                                )
+                            }),
+                    )
             });
         if !selected {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));
         }
-        Ok(self.use_quest_callback(actor, command, map, target).await)
+        let intent =
+            oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
+        Ok(self
+            .use_quest_callback_with_tool(
+                actor,
+                command,
+                map,
+                target,
+                source.map(|source| (source, intent)),
+            )
+            .await)
     }
 
     async fn tame(

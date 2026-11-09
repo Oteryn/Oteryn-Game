@@ -76,6 +76,7 @@ impl NativeDecision {
             world_counters: false,
             counter_stages: [0; 8],
             counter_generations: [0; 8],
+            counter_quest_occurrences: [0; 8],
             counter_progress: [[0; 3]; 8],
             shared_used_sources_mask: 0,
         })

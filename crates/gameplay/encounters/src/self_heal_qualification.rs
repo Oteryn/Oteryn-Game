@@ -15,6 +15,36 @@ impl QualifiedCreatureSelfHeal {
         QualifiedSelfHealRules::qualify(draft, target, ability).map(Self)
     }
 
+    /// Qualify a native-only body's exact closure through the current opaque loader state.
+    pub fn qualify_current_native(
+        runtime: &oteryn_gameplay_entities::ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        target: &str,
+        ability: &str,
+    ) -> Result<Self, &'static str> {
+        runtime.owner_fence().map_err(|_| "current native owner")?;
+        if runtime.content_pin().server_artifact_digest() != native.source_digest() {
+            return Err("detached native content");
+        }
+        let row = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|row| row.profile.target.key == target)
+            .ok_or("loaded native Creature")?;
+        let closure = row
+            .attack_definitions
+            .as_ref()
+            .ok_or("loaded native closure")?;
+        QualifiedSelfHealRules::qualify_native_parts(
+            &closure.records,
+            &closure.profiles,
+            target,
+            ability,
+        )
+        .map(Self)
+    }
+
     pub fn removes_paralysis(&self) -> bool {
         self.0.removes_paralysis()
     }

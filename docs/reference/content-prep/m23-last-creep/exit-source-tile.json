@@ -1,0 +1,24 @@
+{
+  "path": "content/world/placements/region-z07-x129-y126.b3",
+  "sha256": "7f7e57523aab1544bf81e7d9c01c03cef29ae81344769857b1c9a4b0e30a5c15",
+  "tiles": [
+    {
+      "position": [
+        33264,
+        32366,
+        7
+      ],
+      "flags": 0,
+      "house": 0,
+      "zones": [],
+      "items": [
+        [
+          231,
+          0,
+          null
+        ]
+      ]
+    }
+  ],
+  "physical_source_id": 231
+}

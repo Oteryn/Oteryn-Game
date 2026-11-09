@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/engenc2/cults-essence",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 5500,
+        "appearance": 8912
+      },
+      "lever": [
+        8912,
+        8911
+      ],
+      "reversible": true,
+      "opening_only": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua:245-298",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua#L245-L298",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua#L4"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 0,
+          "players": [
+            {
+              "from": {
+                "x": 33095,
+                "y": 31943,
+                "floor": -15
+              },
+              "to": {
+                "x": 33098,
+                "y": 31921,
+                "floor": -15
+              }
+            },
+            {
+              "from": {
+                "x": 33095,
+                "y": 31944,
+                "floor": -15
+              },
+              "to": {
+                "x": 33098,
+                "y": 31921,
+                "floor": -15
+              }
+            },
+            {
+              "from": {
+                "x": 33095,
+                "y": 31945,
+                "floor": -15
+              },
+              "to": {
+                "x": 33098,
+                "y": 31921,
+                "floor": -15
+              }
+            },
+            {
+              "from": {
+                "x": 33095,
+                "y": 31946,
+                "floor": -15
+              },
+              "to": {
+                "x": 33098,
+                "y": 31921,
+                "floor": -15
+              }
+            },
+            {
+              "from": {
+                "x": 33095,
+                "y": 31947,
+                "floor": -15
+              },
+              "to": {
+                "x": 33098,
+                "y": 31921,
+                "floor": -15
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "creature": "oteryn:creature.pillar_of_summoning",
+              "position": {
+                "x": 33093,
+                "y": 31919,
+                "floor": -15
+              }
+            },
+            {
+              "creature": "oteryn:creature.pillar_of_death",
+              "position": {
+                "x": 33098,
+                "y": 31915,
+                "floor": -15
+              }
+            },
+            {
+              "creature": "oteryn:creature.pillar_of_protection",
+              "position": {
+                "x": 33103,
+                "y": 31919,
+                "floor": -15
+              }
+            },
+            {
+              "creature": "oteryn:creature.pillar_of_healing",
+              "position": {
+                "x": 33101,
+                "y": 31925,
+                "floor": -15
+              }
+            },
+            {
+              "creature": "oteryn:creature.pillar_of_draining",
+              "position": {
+                "x": 33095,
+                "y": 31925,
+                "floor": -15
+              }
+            },
+            {
+              "creature": "oteryn:creature.eshtaba_the_conjurer_stop",
+              "position": {
+                "x": 33094,
+                "y": 31919,
+                "floor": -15
+              }
+            },
+            {
+              "creature": "oteryn:creature.malkhar_deathbringer_stop",
+              "position": {
+                "x": 33098,
+                "y": 31916,
+                "floor": -15
+              }
+            },
+            {
+              "creature": "oteryn:creature.eliz_the_unyielding_stop",
+              "position": {
+                "x": 33102,
+                "y": 31919,
+                "floor": -15
+              }
+            },
+            {
+              "creature": "oteryn:creature.mezlon_the_defiler_stop",
+              "position": {
+                "x": 33101,
+                "y": 31924,
+                "floor": -15
+              }
+            },
+            {
+              "creature": "oteryn:creature.dorokoll_the_mystic_stop",
+              "position": {
+                "x": 33095,
+                "y": 31924,
+                "floor": -15
+              }
+            }
+          ],
+          "room_min": {
+            "x": 33084,
+            "y": 31907,
+            "floor": -15
+          },
+          "room_max": {
+            "x": 33114,
+            "y": 31933,
+            "floor": -15
+          },
+          "phase": "cults_boss_phase_closures"
+        }
+      }
+    }
+  ]
+}

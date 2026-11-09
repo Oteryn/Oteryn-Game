@@ -170,14 +170,10 @@ fn tibiadrome_controls_cross_session_and_preserve_server_authority()
                 );
                 link.arena_request(intent);
                 assert!(link.arena_panel().drome.is_none());
-                runtime.block_on(run_session(
-                    Server {
-                        request,
-                        response: vec![8, 2, 16, 8, 24, 15, 32, 10, 40, 150, 1, 80, 2, 88, 3],
-                    },
-                    commands,
-                    outbox,
-                ));
+                let phase = (index % 3) as u8;
+                let mut response = vec![8, 2, 16, 8, 24, 15, 32, 10, 40, 150, 1, 80, 2, 88, 3];
+                response.extend_from_slice(&[48, phase]);
+                runtime.block_on(run_session(Server { request, response }, commands, outbox));
                 let panel = link.arena_panel();
                 let state = panel.drome.ok_or("missing Drome reply")?;
                 assert_eq!(
@@ -196,6 +192,11 @@ fn tibiadrome_controls_cross_session_and_preserve_server_authority()
                 assert!(text.contains("Inventory full"));
                 assert!(text.contains("Drome points: 150"));
                 assert!(text.contains("Unclaimed potions: 3"));
+                assert!(text.contains(match phase {
+                    0 => "Idle: wave",
+                    1 => "Preparation: wave",
+                    _ => "Fighting: wave",
+                }));
             }
             // Invalid wire data must release pending without publishing a bogus score.
             let (link, commands, outbox) = play_channel();
@@ -249,3 +250,6 @@ fn arena_pending_controls_close_on_disconnect_and_logout() -> Result<(), &'stati
     }
     Ok(())
 }
+
+#[path="hazard_play.rs"]
+mod hazard_play;

@@ -10,7 +10,7 @@ pub const TELEPORT_DELAY_MS: u64 = 2_000;
 pub const COOLDOWN_MS: u64 = 10_000;
 
 /// (creature key, line), sorted by key.
-pub const TAINT_TELEPORT_MONSTERS: [(&str, &str); 6] = [
+pub const TAINT_TELEPORT_MONSTERS: [(&str, &str); 7] = [
     ("oteryn:creature.bony_sea_devil", "Get out the way!"),
     ("oteryn:creature.brachiodemon", "Burn in hell!"),
     (
@@ -18,6 +18,10 @@ pub const TAINT_TELEPORT_MONSTERS: [(&str, &str); 6] = [
         "My growth is your death!",
     ),
     ("oteryn:creature.cloak_of_terror", "I am your terror!"),
+    (
+        "oteryn:creature.dreadful_harvester",
+        "You have been chosen for a harvest!",
+    ),
     ("oteryn:creature.many_faces", "Hands off my comrades!"),
     (
         "oteryn:creature.spiteful_spitter",
@@ -127,6 +131,36 @@ pub struct TaintTeleportOwner {
 }
 
 impl TaintTeleportOwner {
+    /// Original deadline of the next retained source continuation.
+    #[must_use]
+    pub fn next_pending_due_ms(&self) -> Option<u64> {
+        self.pending.iter().map(|pending| pending.due_ms).min()
+    }
+
+    /// Data for preparing current facts for eligible callbacks only.
+    pub fn pending_pairs_through(
+        &self,
+        eligible_through_ms: u64,
+        now_ms: u64,
+    ) -> impl Iterator<Item = (u64, u64)> + '_ {
+        self.pending
+            .iter()
+            .filter(move |pending| {
+                pending.due_ms <= eligible_through_ms && pending.due_ms <= now_ms
+            })
+            .map(|pending| (pending.monster, pending.player))
+    }
+
+    #[must_use]
+    pub fn advance(
+        &mut self,
+        now_ms: u64,
+        facts: impl FnMut(u64, u64) -> Option<DueFacts>,
+        player_online: impl FnMut(u64) -> bool,
+    ) -> Vec<TaintTeleportEffect> {
+        self.advance_through(now_ms, now_ms, facts, player_online)
+    }
+
     pub fn think(
         &mut self,
         monster: u64,
@@ -148,7 +182,7 @@ impl TaintTeleportOwner {
         }
 
         let mut farthest = 0_u32;
-        let mut picked = None;
+        let mut picked: Option<&TeleportCandidate> = None;
         for candidate in candidates {
             let distance = position
                 .x
@@ -158,7 +192,10 @@ impl TaintTeleportOwner {
                 && distance <= SEARCH_RANGE_TILES
                 && candidate.has_teleport_taint
                 && (in_soul_war_hunting_zone(candidate.position) || candidate.in_boss_zone)
-                && distance > farthest
+                && distance > 0
+                && (distance > farthest
+                    || (distance == farthest
+                        && picked.is_none_or(|previous| candidate.actor < previous.actor)))
             {
                 farthest = distance;
                 picked = Some(candidate);
@@ -167,12 +204,18 @@ impl TaintTeleportOwner {
         let Some(candidate) = picked else {
             return Ok(Vec::new());
         };
-        if self.cooldowns.contains_key(&candidate.actor) {
+        if self
+            .cooldowns
+            .get(&candidate.actor)
+            .is_some_and(|until| *until > now_ms)
+            || self
+                .pending
+                .iter()
+                .any(|pending| pending.player == candidate.actor)
+        {
             return Ok(Vec::new());
         }
 
-        self.cooldowns
-            .insert(candidate.actor, now_ms.saturating_add(COOLDOWN_MS));
         self.pending.push(Pending {
             monster,
             player: candidate.actor,
@@ -191,17 +234,22 @@ impl TaintTeleportOwner {
         ])
     }
 
+    /// The cutoff selects original callbacks; `now_ms` remains the actual
+    /// execution clock for cooldowns and is never replaced by a deadline.
     #[must_use]
-    pub fn advance(
+    pub fn advance_through(
         &mut self,
+        eligible_through_ms: u64,
         now_ms: u64,
         mut facts: impl FnMut(u64, u64) -> Option<DueFacts>,
-        mut player_online: impl FnMut(u64) -> bool,
+        _player_online: impl FnMut(u64) -> bool,
     ) -> Vec<TaintTeleportEffect> {
         let mut effects = Vec::new();
         let mut index = 0;
         while index < self.pending.len() {
-            if self.pending[index].due_ms > now_ms {
+            if self.pending[index].due_ms > now_ms
+                || self.pending[index].due_ms > eligible_through_ms
+            {
                 index += 1;
                 continue;
             }
@@ -209,6 +257,9 @@ impl TaintTeleportOwner {
             if let Some(facts) = facts(pending.monster, pending.player)
                 && facts.destination_allows_teleport
             {
+                // Accepted SW-3 Q1a: only a successful move starts cooldown.
+                self.cooldowns
+                    .insert(pending.player, now_ms.saturating_add(COOLDOWN_MS));
                 effects.extend([
                     TaintTeleportEffect::Say {
                         monster: pending.monster,
@@ -229,14 +280,15 @@ impl TaintTeleportOwner {
                 ]);
             }
         }
-        self.cooldowns
-            .retain(|player, clear_at| *clear_at > now_ms || !player_online(*player));
+        self.cooldowns.retain(|_, clear_at| *clear_at > now_ms);
         effects
     }
 
     #[must_use]
     pub fn cooldown_active(&self, player: u64) -> bool {
+        // The accepted action blocks another pending move as well as cooldown.
         self.cooldowns.contains_key(&player)
+            || self.pending.iter().any(|pending| pending.player == player)
     }
 }
 

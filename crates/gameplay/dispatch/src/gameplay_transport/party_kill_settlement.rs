@@ -311,14 +311,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             slots.push(slot);
         }
-        let endgame_kill =
-            oteryn_gameplay_quests::quest::soul_war::SoulWarBoss::from_creature(&entry.creature)
+        let endgame_kill = entry.soulpit_experience.is_none()
+            && (oteryn_gameplay_quests::quest::soul_war::SoulWarBoss::from_creature(&entry.creature)
                 .is_some()
                 || oteryn_gameplay_quests::quest::rotten_blood::RottenBloodBoss::from_creature_key(
                     &entry.creature,
                 )
                 .is_some()
-                || entry.creature == "oteryn:creature.the_primal_menace";
+                || entry.creature == "oteryn:creature.the_primal_menace");
         if endgame_kill {
             // The fences above retain the expected revisions. Invalidate the
             // cached cursors before the await so cancellation after an uncertain
@@ -359,8 +359,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
                     let death = key(entry);
-                    // Preserve the native owner's tagged Instance namespace. All
-                    // endgame consumers independently re-prove this scope and generation.
+                    // Keep the native death namespace intact. Each source family
+                    // independently validates exact scope/generation and every current
+                    // contributor before the shared transaction can publish rewards.
                     let endgame_death = endgame_kill.then(|| death.clone());
 
                     if let Some(awards) = party_kill_xp::reconcile_in_transaction(
@@ -372,7 +373,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .map_err(|_| DurabilityError::InvalidStoredState)?,
                         &entry.creature,
-                        entry.experience().ok_or(DurabilityError::InvalidStoredState)?
+                        entry
+                            .experience()
+                            .ok_or(DurabilityError::InvalidStoredState)?
                             .get(),
                         (
                             entry.facts.death_at_ms,
@@ -470,7 +473,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             )
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                             creature: entry.creature.clone(),
-                            base_xp: entry.experience().ok_or(DurabilityError::InvalidStoredState)?
+                            base_xp: entry
+                                .experience()
+                            .ok_or(DurabilityError::InvalidStoredState)?
                                 .get(),
                             death_at_ms: entry.facts.death_at_ms,
                             death_at_us: entry

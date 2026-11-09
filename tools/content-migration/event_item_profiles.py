@@ -76,7 +76,9 @@ def world_map_item_ids(root):
     if novelty['schema'] != 'OTERYN_NOVELTY_ITEM_ACTIONS/v1':
         raise ValueError('NOVELTY_ITEM_ACTION_SCHEMA')
     _, seasonal_map = seasonal_item_sets(json.loads((root / ACTIONS).read_bytes()))
-    return (world_layer_item_ids(root) | set(novelty['map_item_ids']) | seasonal_map
+    sys.path.insert(0, str(root / 'tools/content-schema/quest-authoring'))
+    import last_creep_native
+    return (last_creep_native.map_item_ids(root) | world_layer_item_ids(root) | set(novelty['map_item_ids']) | seasonal_map
             | {item for family in world_door_families(root) for item in family})
 
 
@@ -104,6 +106,11 @@ def item_action_ids(root):
     # Seed/flower actions still require ordinary native policy for their existing
     # mutation and harvesting owners. The Horse return floor only supplies geometry.
     ids.update(novelty['map_action_item_ids'])
+    sys.path.insert(0, str(root / 'tools/content-schema/quest-authoring'))
+    import quest_item_disguises
+    ids.update(rule['appearance'] for rule in quest_item_disguises.build(root))
+    import last_creep_native
+    ids.update(last_creep_native.native_item_ids(root))
     for row in novelty['house_transforms']:
         ids.update((row['item_id'], row['target']))
     return ids

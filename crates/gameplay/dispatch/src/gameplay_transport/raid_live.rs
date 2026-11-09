@@ -24,6 +24,7 @@ struct RaidRetry {
 #[derive(Default)]
 pub(super) struct RaidEffectProgress {
     seen_dead: BTreeSet<RaidSpawnIdentity>,
+    source_applied: BTreeMap<[u8; 16], u32>,
     closed_bosses: BTreeSet<[u8; 16]>,
     source_aborted: BTreeSet<[u8; 16]>,
     settled_ends: BTreeSet<[u8; 16]>,
@@ -31,6 +32,15 @@ pub(super) struct RaidEffectProgress {
 }
 
 impl RaidEffectProgress {
+    pub(super) fn source_applied(&self, firing: [u8; 16], ordinal: u32) -> bool {
+        self.source_applied
+            .get(&firing)
+            .is_some_and(|previous| *previous >= ordinal)
+    }
+    pub(super) fn mark_source_applied(&mut self, firing: [u8; 16], ordinal: u32) {
+        self.source_applied.insert(firing, ordinal);
+    }
+
     fn begin(&mut self, firing: [u8; 16], key: &crate::content::ProductionKey) -> Result<(), ()> {
         if let Some(retry) = self.retries.get(&firing) {
             return if &retry.key == key { Ok(()) } else { Err(()) };
@@ -75,6 +85,10 @@ impl RaidEffectProgress {
             .collect()
     }
 
+    pub(super) fn completed_source(&mut self, firing: [u8; 16]) {
+        self.source_applied.remove(&firing);
+        self.retries.remove(&firing);
+    }
     fn completed(&mut self, firing: [u8; 16]) {
         self.seen_dead
             .retain(|identity| identity.firing_id != firing);
@@ -184,7 +198,9 @@ fn dead_bosses(
                     && status.boss
             })?;
             match status.outcome {
-                RaidSpawnOutcome::Placed(_) if status.alive => return None,
+                RaidSpawnOutcome::Placed(_) if status.alive || status.replacement_pending => {
+                    return None;
+                }
                 RaidSpawnOutcome::Placed(_) => dead.push(creature_identity(status.identity)),
                 RaidSpawnOutcome::Failed => {}
             }
@@ -290,9 +306,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await?,
         );
         let statuses = {
-            let runtime = self.runtime.lock().await;
+            let mut runtime = self.runtime.lock().await;
             if runtime.binding().scope_generation() != identity.generation {
                 return Err(());
+            }
+            if let Some(map) = self.bundle_map() {
+                advance_feroxa_forms(&mut runtime, identity.firing_id, seed, map);
+            }
+            // Crystal 9f5a72c creaturescripts/quests/grimvale/feroxa.lua:
+            // create Feroxa2 at <=50k, then remove the first body. Keep the
+            // admitted raid identity alive across the physical actor handoff.
+            if selected.definition.waves.iter().any(|wave| {
+                wave.entries
+                    .iter()
+                    .any(|entry| entry.creature.as_str() == "oteryn:creature.feroxa")
+            }) {
+                for status in runtime.raid_creatures(identity.firing_id).map_err(|_| ())? {
+                    let RaidSpawnOutcome::Placed(actor) = status.outcome else {
+                        continue;
+                    };
+                    if !status.alive || !status.boss {
+                        continue;
+                    }
+                    let Ok(snapshot) = runtime.companion_snapshot(actor) else {
+                        continue;
+                    };
+                    if snapshot.state.policy.definition_key != "oteryn:creature.feroxa"
+                        || snapshot.maximum_health != 100_000
+                        || snapshot.health > 50_000
+                    {
+                        continue;
+                    }
+                    let Ok(policy) = runtime.companion_policy("oteryn:creature.feroxa2") else {
+                        continue;
+                    };
+                    let Ok(next) =
+                        oteryn_gameplay_entities::carrier::NativeRaidSpawnSpec::qualified(
+                            "oteryn:creature.feroxa2",
+                            &policy.definition_revision,
+                            runtime.content_pin().server_artifact_digest(),
+                            true,
+                        )
+                    else {
+                        continue;
+                    };
+                    let Ok(stamp) = runtime.issue_owner_work() else {
+                        continue;
+                    };
+                    // Capacity/reservation refusals leave the old body intact;
+                    // they cannot obstruct the existing lifetime cleanup path.
+                    let _ = runtime.replace_raid_body(stamp, status.identity, &snapshot, &next);
+                }
             }
             runtime.raid_creatures(identity.firing_id).map_err(|_| ())?
         };
@@ -301,6 +365,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|status| {
                 matches!(status.outcome, RaidSpawnOutcome::Placed(_))
                     && !status.alive
+                    && !status.replacement_pending
                     && !progress.seen_dead.contains(&status.identity)
             })
             .map(|status| status.identity)
@@ -494,6 +559,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             progress.completed(firing);
             return Ok(());
         }
+        if let Some(raid) =
+            oteryn_gameplay_encounter_rules::raid::source_claustrophobic::Raid::from_key(
+                key.as_str(),
+            )
+        {
+            return self
+                .drive_claustrophobic_raid(firing, raid, now_ms, progress)
+                .await;
+        }
         let raid = catalogue.get(key).filter(|raid| raid.active).ok_or(())?;
         let selected = raid.select(seed, firing).map_err(|_| ())?;
         let identity = RaidStepIdentity {
@@ -502,6 +576,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             generation,
             ordinal: 0,
         };
+        if key.as_str() == "raid:edron.feroxa" {
+            self.apply_feroxa_map_clock(firing, now_ms).await?;
+        }
         if let Some(terminal) = progress.terminal(firing) {
             self.apply_current_raid_step(&terminal, &selected, progress, seed, now_ms)
                 .await?;
@@ -694,3 +771,122 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 #[path = "raid_live_tests.rs"]
 mod tests;
+
+/// Source CreatureEvents preserve the firing while creating fresh full-health bodies.
+pub(super) fn advance_feroxa_forms(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    firing: [u8; 16],
+    seed: [u8; 32],
+    map: &crate::map::boot::BundleMap,
+) {
+    let Ok(statuses) = runtime.raid_creatures(firing) else {
+        return;
+    };
+    for status in statuses {
+        if !status.boss {
+            continue;
+        }
+        let RaidSpawnOutcome::Placed(actor) = status.outcome else {
+            continue;
+        };
+        let Ok(body) = runtime.companion_snapshot_including_dead(actor) else {
+            continue;
+        };
+        let key = body.state.policy.definition_key.as_str();
+        let next = match (key, body.maximum_health, body.health) {
+            ("oteryn:creature.feroxa", 100_000, 1..=50_000) => "oteryn:creature.feroxa2",
+            ("oteryn:creature.feroxa2", 50_000, 1..=25_000) => {
+                match oteryn_gameplay_encounter_rules::raid::RaidRandom::new(seed, firing)
+                    .feroxa_form()
+                {
+                    Ok(3) => "oteryn:creature.feroxa3",
+                    Ok(4) => "oteryn:creature.feroxa4",
+                    _ => continue,
+                }
+            }
+            ("oteryn:creature.feroxa3" | "oteryn:creature.feroxa4", 130_000, 0) => {
+                "oteryn:creature.feroxa5"
+            }
+            _ => continue,
+        };
+        if continue_feroxa_body(runtime, status.identity, &body, next)
+            && body.health > 0
+            && !runtime.contains_live_creature(actor)
+            && map.overlay.runtime_scope() == runtime.binding().runtime_scope()
+        {
+            // Crystal 9f5a72c creaturescripts_feroxa_transform.lua:8,16:
+            // both live handoffs emit CONST_ME_POFF (qualified effect3).
+            // Pending replacement and the death callback emit no duplicate cue.
+            if let (Ok(x), Ok(y), Some(floor)) = (
+                u16::try_from(body.position.x),
+                u16::try_from(body.position.y),
+                i8::try_from(body.position.floor)
+                    .ok()
+                    .and_then(i8::checked_neg),
+            ) {
+                map.facts
+                    .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, 3);
+            }
+        }
+    }
+}
+
+/// Runs before the ordinary corpse/reward projection can retire an intermediate body.
+/// Its physical statistics have already been captured; both source forms have zero XP.
+pub(super) fn continue_feroxa_death(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+) -> bool {
+    let Ok(body) = runtime.companion_snapshot_including_dead(actor) else {
+        return false;
+    };
+    if body.health != 0
+        || body.maximum_health != 130_000
+        || !matches!(
+            body.state.policy.definition_key.as_str(),
+            "oteryn:creature.feroxa3" | "oteryn:creature.feroxa4"
+        )
+    {
+        return false;
+    }
+    let Ok(Some(identity)) = runtime.raid_identity_for_actor_including_dead(actor) else {
+        return false;
+    };
+    continue_feroxa_body(runtime, identity, &body, "oteryn:creature.feroxa5")
+}
+
+fn continue_feroxa_body(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    identity: RaidSpawnIdentity,
+    body: &oteryn_gameplay_entities::CompanionSnapshot,
+    key: &str,
+) -> bool {
+    let revision = runtime.companion_policy(key).map_or_else(
+        |_| body.state.policy.definition_revision.clone(),
+        |policy| policy.definition_revision.clone(),
+    );
+    let Ok(next) = oteryn_gameplay_entities::carrier::NativeRaidSpawnSpec::qualified(
+        key,
+        &revision,
+        runtime.content_pin().server_artifact_digest(),
+        true,
+    ) else {
+        return false;
+    };
+    let Ok(stamp) = runtime.issue_owner_work() else {
+        return false;
+    };
+    let result = if body.health == 0 {
+        runtime.replace_dead_raid_body(stamp, identity, body, &next)
+    } else {
+        runtime.replace_raid_body(stamp, identity, body, &next)
+    };
+    result.is_ok()
+        || runtime
+            .raid_creatures(identity.firing_id)
+            .is_ok_and(|statuses| {
+                statuses
+                    .iter()
+                    .any(|status| status.identity == identity && status.replacement_pending)
+            })
+}

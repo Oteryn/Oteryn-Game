@@ -88,19 +88,16 @@ fn fee_at_price(imbuement: OneItemImbuementV1, fee: u64) -> OneItemFeeBurnV1 {
     let change = burned - fee;
     value.burned_gold_units = burned;
     value.change_gold_units = change;
-    value.change = [
-        (Coin::Platinum, change / 100),
-        (Coin::Gold, change % 100),
-    ]
-    .into_iter()
-    .filter(|(_, count)| *count > 0)
-    .enumerate()
-    .map(|(n, (coin, count))| {
-        let mut mint = minted(coin, 120 + n as u8, count as u32, 200 + n as u64);
-        wide(&mut mint.after);
-        mint
-    })
-    .collect();
+    value.change = [(Coin::Platinum, change / 100), (Coin::Gold, change % 100)]
+        .into_iter()
+        .filter(|(_, count)| *count > 0)
+        .enumerate()
+        .map(|(n, (coin, count))| {
+            let mut mint = minted(coin, 120 + n as u8, count as u32, 200 + n as u64);
+            wide(&mut mint.after);
+            mint
+        })
+        .collect();
     value.cause = Some(OneItemFeeBurnCauseV1 {
         cause: Some(FeeBurnCauseV1::Imbuement(Box::new(imbuement))),
     });
@@ -119,13 +116,7 @@ fn clear() -> OneItemImbuementV1 {
 
 #[test]
 fn imbuement_audit_maximum_coin_inputs_materials_and_change_fit() {
-    for cause in [
-        OneItemImbuementV1 {
-            tier: 1,
-            ..apply()
-        },
-        clear(),
-    ] {
+    for cause in [OneItemImbuementV1 { tier: 1, ..apply() }, clear()] {
         let value = fee(cause);
         assert_eq!(value.change.len(), 2);
         assert_eq!(check_fee_burn(&value), Ok(()));
@@ -138,7 +129,9 @@ fn imbuement_audit_maximum_coin_inputs_materials_and_change_fit() {
         assert!(usage.participants <= FEE_RL06_PARTICIPANTS_MAX);
         assert!(usage.effect_work_units <= FEE_RL06_EFFECT_WORK_UNITS_MAX);
         let mut too_many = value;
-        too_many.lines.insert(0, coin_line(Coin::Gold, 125, 120, 1, 0));
+        too_many
+            .lines
+            .insert(0, coin_line(Coin::Gold, 125, 120, 1, 0));
         too_many.burned_gold_units += 1;
         too_many.change_gold_units += 1;
         too_many.change[1].after.as_mut().unwrap().quantity += 1;
@@ -168,8 +161,18 @@ fn imbuement_audit_prices_by_action_and_tier() {
         );
     }
     assert_eq!(clear().fee_gold_units(), Some(15_000));
-    assert_eq!(OneItemImbuementV1 { tier: 4, ..apply() }.fee_gold_units(), None);
-    assert_eq!(OneItemImbuementV1 { action: 3, ..apply() }.fee_gold_units(), None);
+    assert_eq!(
+        OneItemImbuementV1 { tier: 4, ..apply() }.fee_gold_units(),
+        None
+    );
+    assert_eq!(
+        OneItemImbuementV1 {
+            action: 3,
+            ..apply()
+        }
+        .fee_gold_units(),
+        None
+    );
     // A fee that differs from the cause's price is refused.
     let mut value = fee(clear());
     value.fee_gold_units = 5_000;
@@ -234,5 +237,8 @@ fn imbuement_audit_refuses_each_malformed_cause() {
     }
     let mut value = clear();
     value.materials = apply().materials;
-    assert_eq!(imbuement_cause::check(&value), Err(AuditError::InvalidInput));
+    assert_eq!(
+        imbuement_cause::check(&value),
+        Err(AuditError::InvalidInput)
+    );
 }

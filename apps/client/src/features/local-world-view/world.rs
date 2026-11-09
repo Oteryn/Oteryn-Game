@@ -42,6 +42,8 @@ impl World {
         let mut sheets = SpriteSheets::new(store, catalog);
         let origin = map.header.origin;
         let mut entries = Vec::new();
+        #[cfg(test)]
+        let mut native_resolved_items = Vec::new();
         for tile in map.tiles.iter().filter(|tile| visible(map, tile.position)) {
             let hook = tile
                 .items
@@ -68,6 +70,13 @@ impl World {
                 if let Ok(resolved) =
                     index.resolve(&sheets, u32::from(item.appearance_id), placement)
                 {
+                    #[cfg(test)]
+                    if !resolved.cells.is_empty()
+                        && let oteryn_session::world_map::MapDefinition::Item(reference) =
+                            item.definition
+                    {
+                        native_resolved_items.push((tile.position, reference.get()));
+                    }
                     let layer = if resolved.ground {
                         0
                     } else if resolved.ground_border {
@@ -127,6 +136,8 @@ impl World {
                 .collect()
         });
         let mut world = Self {
+            #[cfg(test)]
+            native_resolved_items,
             center: (origin.x, origin.y, origin.floor),
             tiles: HashMap::new(),
             layers: BTreeMap::new(),

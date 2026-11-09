@@ -8,6 +8,41 @@ use std::sync::Arc;
 
 #[test]
 fn qn2_unordered_claims_durably_complete_on_last_chest() -> TestResult {
+    claim_set_scenario(
+        "qn2_claim_sets",
+        "oteryn:quest.bear_room_quest",
+        &["bear_chest3", "bear_chest1", "bear_chest2"],
+    )
+}
+
+#[test]
+fn qn2_behemoth_claims_complete_only_after_the_fourth_chest() -> TestResult {
+    claim_set_scenario(
+        "qn2_behemoth",
+        "oteryn:quest.behemoth_quest",
+        &[
+            "behemothquest4",
+            "behemothquest2",
+            "behemothquest1",
+            "behemothquest3",
+        ],
+    )
+}
+
+#[test]
+fn qn2_circle_room_claims_complete_only_after_both_chests() -> TestResult {
+    claim_set_scenario(
+        "qn2_circle_room",
+        "oteryn:quest.circle_room_quest",
+        &["circleroom2", "circleroom1"],
+    )
+}
+
+fn claim_set_scenario(
+    tag: &'static str,
+    quest: &'static str,
+    markers: &'static [&'static str],
+) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
@@ -15,9 +50,7 @@ fn qn2_unordered_claims_durably_complete_on_last_chest() -> TestResult {
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
             runtime().map_err(debug)?.block_on(async move {
-                let harness = Harness::create(admin, "qn2_claim_sets", true)
-                    .await
-                    .map_err(debug)?;
+                let harness = Harness::create(admin, tag, true).await.map_err(debug)?;
                 eprintln!("QN2_POSTGRES_READY");
                 let seal = harness.recovery.seal_current().map_err(debug)?;
                 let authority = harness
@@ -32,10 +65,7 @@ fn qn2_unordered_claims_durably_complete_on_last_chest() -> TestResult {
                         .clone(),
                 );
                 let character = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
-                for (index, marker) in ["bear_chest3", "bear_chest1", "bear_chest2"]
-                    .iter()
-                    .enumerate()
-                {
+                for (index, marker) in markers.iter().enumerate() {
                     let request = QuestTransitionRequest {
                         transition_key: format!("oteryn:quest-transition/kv/{marker}/chest"),
                         cause: QuestCause::Command(CommandRef::new(
@@ -57,7 +87,7 @@ fn qn2_unordered_claims_durably_complete_on_last_chest() -> TestResult {
                     let QuestTransitionOutcome::Committed(receipt) = outcome else {
                         return Err(format!("{outcome:?}"));
                     };
-                    assert_eq!(receipt.completes, index == 2);
+                    assert_eq!(receipt.completes, index + 1 == markers.len());
                     let replay = harness
                         .root
                         .commit_character_quest_transition(
@@ -78,10 +108,7 @@ fn qn2_unordered_claims_durably_complete_on_last_chest() -> TestResult {
                         .read_character_quest_state(&authority, character)
                         .await
                         .map_err(debug)?;
-                    assert_eq!(
-                        copy.states()["oteryn:quest.bear_room_quest"].completed,
-                        index == 2
-                    );
+                    assert_eq!(copy.states()[quest].completed, index + 1 == markers.len());
                 }
                 drop(authority);
                 drop(seal);

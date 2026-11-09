@@ -182,7 +182,33 @@ impl DurabilityRoot {
                     before = reset.after().clone();
                 }
                 if before.retired { continue; }
-                let action = if let Some(lua_candidate) = &candidate.lua {
+                // The retained XML supplies physical waves; Grimvale's source
+                // state owns occurrence selection independently of XML odds.
+                let feroxa_definition = (candidate.key.as_str() == super::FEROXA_KEY).then(|| {
+                    let mut definition = candidate.definition.clone();
+                    definition.policy = RaidPolicy::SourceScheduled;
+                    definition
+                });
+                let definition = feroxa_definition.as_ref().unwrap_or(&candidate.definition);
+                let action = if feroxa_definition.is_some() {
+                    if request.now_ms < before.next_check_at_ms { continue; }
+                    // The runner advances source Active under firing -> occurrence
+                    // locks. Match that order before selected() locks the occurrence;
+                    // write_transition() also updates this existing firing below.
+                    if let Some(firing) = &before.latest_firing {
+                        sqlx::query("SELECT 1 FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
+                            .bind(firing.firing_id.as_slice()).execute(&mut *tx).await?;
+                    }
+                    let prior = before.latest_firing.as_ref()
+                        .filter(|firing| firing.reset_epoch == request.reset_epoch)
+                        .map(|firing| firing.fired_at_ms);
+                    let selected = super::feroxa::selected(&mut tx, request.world,
+                        request.reset_epoch, before.check_ordinal, request.now_ms, prior).await?;
+                    RaidAction::ResolvedCheck {
+                        now_ms: request.now_ms, selected,
+                        firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
+                    }
+                } else if let Some(lua_candidate) = &candidate.lua {
                     let running = before.latest_firing.as_ref()
                         .is_some_and(|firing| firing.state == FiringState::Running);
                     let selected = match lua::selected(&mut tx, request.world, &candidate.key,
@@ -232,7 +258,7 @@ impl DurabilityRoot {
                         firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
                     }
                 };
-                let planned = before.plan(request.world, &candidate.key, &candidate.definition, action)
+                let planned = before.plan(request.world, &candidate.key, definition, action)
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
                 if planned.after() == planned.before() { continue; }
                 storage::write_transition(&mut tx, request.world, &candidate.key, &planned).await

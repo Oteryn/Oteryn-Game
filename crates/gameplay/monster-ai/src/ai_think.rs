@@ -140,6 +140,7 @@ pub struct CreatureAiState {
     last: Option<ThinkReport>,
     /// The admitted creature definition key, `oteryn:creature.<name>`; selects the think hook.
     creature_key: Option<String>,
+    creature_revision: Option<String>,
 }
 
 impl std::fmt::Debug for CreatureAiState {
@@ -180,7 +181,20 @@ impl CreatureAiState {
             schedule: ProfileScheduleState::new(actor),
             last: None,
             creature_key: None,
+            creature_revision: None,
         }
+    }
+
+    // A source setType replaces the definition, not the existing creature's
+    // target/home, think occurrence or shared attack/defense schedule clocks.
+    fn rebind_native_profile(
+        &mut self,
+        profile: CreatureBehaviourProfile,
+        creature: &crate::content::ProjectV2DefinitionRef,
+    ) {
+        self.profile = profile;
+        self.creature_key = Some(creature.key.clone());
+        self.creature_revision = Some(creature.revision.clone());
     }
 
     #[must_use]
@@ -379,7 +393,7 @@ impl CreatureAiTable {
             .filter(|(_, entry)| entry.due_us.is_none())
             .filter_map(|(identity, entry)| {
                 let position = position_of(entry.state.actor())?;
-                targeting::sees(player, position)
+                targeting::perceives(entry.state.profile.is_native(), position, player)
                     .then(|| (targeting::plane_distance(player, position), *identity))
             })
             .collect::<Vec<_>>();

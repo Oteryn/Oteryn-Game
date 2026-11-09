@@ -60,3 +60,43 @@ fn world_callback_clock_operations_are_lowered_and_bounded() -> Result<(), Strin
     assert_eq!(primary_transition(&clock_only)?.effects.len(), 1);
     Ok(())
 }
+
+#[test]
+fn elapsed_clock_can_own_a_repeatable_world_reward_epoch() -> Result<(), String> {
+    let mut callback = load()?
+        .into_iter()
+        .find(|c| c.effects.item_reward.is_some())
+        .ok_or("world reward fixture")?;
+    let reward = callback.effects.item_reward.clone();
+    callback.storage.clear();
+    callback.minimum_level = None;
+    callback.requires_world_admission = false;
+    callback.opening_only = false;
+    callback.reversible = false;
+    callback.native_rule = None;
+    callback.monk_reward = None;
+    callback.item_on_target = None;
+    callback.offerings.clear();
+    callback.world_requirements.clear();
+    let track = "oteryn:quest-progress/clock-test/reward-epoch";
+    callback.state_ops = serde_json::from_value(serde_json::json!([{
+        "track":track,"from":{"kind":"elapsed_at_least","seconds":86400},
+        "effect":{"kind":"set_now"}
+    }]))
+    .map_err(|e| e.to_string())?;
+    callback.effects = serde_json::from_value(serde_json::json!({
+        "item_reward":reward,"item_reward_cycle":track
+    }))
+    .map_err(|e| e.to_string())?;
+    let document = |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+    parse(&document(&callback))?;
+    for from in [
+        serde_json::json!({"kind":"any"}),
+        serde_json::json!({"kind":"elapsed_at_least","seconds":0}),
+    ] {
+        let mut bad = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
+        bad["state_ops"][0]["from"] = from;
+        assert!(parse(&serde_json::json!({"schema":1,"callbacks":[bad]}).to_string()).is_err());
+    }
+    Ok(())
+}

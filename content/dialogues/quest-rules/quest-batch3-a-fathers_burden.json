@@ -200,7 +200,8 @@
       ],
       "exclude_keywords": [
         "cloak"
-      ]
+      ],
+      "completes": true
     },
     {
       "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-already-complete",

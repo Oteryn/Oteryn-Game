@@ -1,4 +1,6 @@
 //! USE cosmetic items through the shared item-action transaction and existing Premium owner.
+pub(super) mod quest_targets;
+
 use super::ComposedFreshAdmission;
 use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
@@ -340,12 +342,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Ordinary carried quest tools borrow the same fenced quest/value owner as
     /// NPC exchanges. The selected instance and ingress remain in its input proof.
-    pub(super) async fn use_carried_quest_item(
+    pub(super) async fn use_carried_quest_item_with_target(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
+        target: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_carried_quest_item_targeted(actor, command, intent, source, target)
+            .await
+    }
+
+    pub(super) async fn use_carried_quest_item_targeted(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        source: Option<ItemKey>,
+        target: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
@@ -388,8 +403,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Rejected
             })));
         }
-        let Some(ItemKey::Instance(source)) = source else {
+        // Recipe receipts remain replayable after both inventory handles retire.
+        // Fresh map tools and unowned World targets belong to their existing owner.
+        if matches!(
+            intent.use_with_map_item.as_ref(),
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
+        ) && !matches!(target, Some(ItemKey::Instance(_)))
+        {
             return Ok(None);
+        }
+        let source = match (&intent.target, source) {
+            (
+                oteryn_protocol_oteryn::world_object::UseTarget::Item(_),
+                Some(ItemKey::Instance(item)),
+            ) => Some(item),
+            (oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_), None) => None,
+            _ => return Ok(None),
         };
         let Ok(inventory) = self
             .root
@@ -403,10 +432,268 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
             .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
-            .find(|item| item.item_instance_id == source)
+            .find(|item| {
+                super::mount_taming::quest_objects::matches_source(
+                    &intent.target,
+                    source,
+                    item.item_instance_id,
+                    self.active_generation
+                        .and_then(crate::content::ActiveGeneration::native_gameplay)
+                        .and_then(|native| native.item_index())
+                        .and_then(|index| {
+                            index.definition_ref(
+                                &item.definition.family,
+                                &item.definition.production_key,
+                                &item.definition.revision_ref,
+                            )
+                        }),
+                )
+            })
         else {
             return Ok(None);
         };
+        let source = item.item_instance_id;
+        if let Some(rules) =
+            oteryn_gameplay_quests::quest::item_disguises::rules().filter(|rules| {
+                rules
+                    .iter()
+                    .any(|rule| rule.item == item.definition.production_key)
+            })
+        {
+            // This source is retained. No quest transition, value grant or receipt is
+            // invented for an action that only changes the live appearance conflict.
+            if intent.use_with.is_some()
+                || intent.use_with_map_item.is_some()
+                || intent.use_with_position.is_some()
+                || !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, Some(source))
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let Some(_permit) = self.spell_lane_permit().await else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            let _slot = self
+                .revision_sequencer
+                .acquire(item_fence.character_id)
+                .await;
+            // DROP, MOVE, EQUIP and trade share this exclusive scope lane. The
+            // preliminary route lookup predates it, so re-prove exact custody here.
+            let retained = self
+                .root
+                .read_item_use_inventory(self.character, self.holder, item_fence)
+                .await
+                .map_err(|_| ())?;
+            if !retained
+                .backpack
+                .iter()
+                .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
+                .chain(retained.nested.iter().map(|(_, entry)| &entry.item))
+                .any(|current| {
+                    current.item_instance_id == source && current.definition == item.definition
+                })
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let copy = self
+                .root
+                .read_character_quest_state(self.character, item_fence.character_id)
+                .await
+                .map_err(|_| ())?;
+            let Some(catalogue) = self.quest_catalogue.as_ref() else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            let mut eligible = rules.iter().filter(|rule| {
+                rule.item == item.definition.production_key
+                    && copy
+                        .tracks()
+                        .get(&rule.track)
+                        .copied()
+                        .or_else(|| catalogue.track(&rule.track).map(|track| track.initial))
+                        == Some(rule.required)
+                    && rule
+                        .requires
+                        .iter()
+                        .all(|required| required.holds(catalogue, copy.tracks()))
+            });
+            let rule = eligible.next();
+            if eligible.next().is_some() {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            if self
+                .current_quest_fence(command.game_session_id)
+                .await
+                .map_err(|_| ())?
+                .is_none_or(|fence| fence.item_fence() != item_fence)
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let Some(native) = self
+                .active_generation
+                .and_then(|generation| generation.native_gameplay())
+            else {
+                return Err(());
+            };
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            if !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+                || !runtime
+                    .bound_attacker_lease(actor, command.game_session_id)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == item_fence.character_id.as_bytes()
+                            && lease.generation() == item_fence.character_lease_generation
+                    })
+                || runtime.binding().runtime_scope() != item_fence.runtime_scope
+                || runtime.binding().scope_generation() != item_fence.scope_ownership_generation
+                || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                    .is_none()
+                || states.is_dead(actor)
+                || !states.spell_idle(&runtime, actor, command.game_session_id)
+                || !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, Some(source))
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            // Crystal returns true even outside the quest stage, with no effect.
+            let Some(rule) = rule else {
+                return Ok(Some(outcome(UseDisposition::Committed)));
+            };
+            let Some(map) = self.bundle_map() else {
+                return Err(());
+            };
+            let at = runtime
+                .read_actor_position(actor)
+                .map_err(|_| ())?
+                .position();
+            let position = crate::map::overlay::TilePos {
+                x: u16::try_from(at.x).map_err(|_| ())?,
+                y: u16::try_from(at.y).map_err(|_| ())?,
+                floor: i8::try_from(-at.floor).map_err(|_| ())?,
+            };
+            if map.overlay.runtime_scope() != runtime.binding().runtime_scope()
+                || map
+                    .overlay
+                    .base()
+                    .tile(position.x, position.y, position.floor)
+                    .is_none()
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            if rule.activation.is_some_and(|required| {
+                required.x != position.x
+                    || required.y != position.y
+                    || required.floor != position.floor
+            }) {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let appearance = format!("oteryn:item.tibia.i{}", rule.appearance);
+            if native
+                .item_index()
+                .and_then(|index| index.definition_ref("Item", &appearance, "definition-r1"))
+                .is_none()
+                || native
+                    .spell_appearances()
+                    .and_then(|appearances| appearances.for_item(&appearance, "definition-r1"))
+                    .is_none()
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let Some(definition) =
+                crate::foundation::ConditionDefinition::new_permanent_item_outfit(&rule.key, 1)
+                    .and_then(|definition| {
+                        definition.with_item_appearance(
+                            &appearance,
+                            "definition-r1",
+                            native.source_digest(),
+                        )
+                    })
+            else {
+                return Err(());
+            };
+            let Some(current) = states.get(&runtime, actor, command.game_session_id) else {
+                return Err(());
+            };
+            let mut next = current.clone();
+            let mut conditions = current.owned_conditions().clone();
+            let decision = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+                native.source_digest(),
+            );
+            let facts = crate::foundation::ApplicationFacts {
+                now: self.owner_now().get(),
+                base_speed: 1,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &decision,
+                occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(
+                    [0; 16],
+                ),
+            };
+            let changed = match conditions.apply(
+                &definition,
+                None,
+                crate::foundation::ConditionSourceKind::SelfUse,
+                &[],
+                &facts,
+            ) {
+                Ok(_) => true,
+                Err(crate::domain::condition::ConditionRefusal::KeptCurrent) => false,
+                Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
+            };
+            if changed {
+                next.apply_batch_conditions(current.owned_conditions(), &conditions)
+                    .map_err(|_| ())?;
+                next.advance_batch_revision().map_err(|_| ())?;
+                if !states.commit(&runtime, actor, command.game_session_id, next) {
+                    return Err(());
+                }
+            }
+            map.facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: actor,
+                    position,
+                    talk_type: rule.speech_type,
+                    text: rule.use_text.to_owned(),
+                    captured_name: None,
+                });
+            map.facts.emit_movement_effect(position, rule.use_effect);
+            states.owner_wake.notify_one();
+            return Ok(Some(outcome(UseDisposition::Committed)));
+        }
+        let recipe_target = match target {
+            Some(ItemKey::Instance(id))
+                if id != source
+                    && inventory
+                        .backpack
+                        .iter()
+                        .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
+                        .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+                        .any(|item| item.item_instance_id == id) =>
+            {
+                Some(id)
+            }
+            Some(ItemKey::Instance(_)) if intent.use_with_map_item.is_some() => None,
+            Some(_) => return Ok(None),
+            None => None,
+        };
+        let target_item = recipe_target.and_then(|selected| {
+            inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
+                .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+                .find(|item| item.item_instance_id == selected)
+        });
+        if recipe_target.is_some() && target_item.is_none() {
+            return Ok(None);
+        }
         let Some(catalogue) = self.quest_catalogue.as_deref() else {
             return Ok(None);
         };
@@ -414,14 +701,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
-            // M20 recipe admission remains closed until the exact second operand is supplied.
-            .filter(|c| c.carried_target.is_none())
+            .filter(|c| {
+                c.carried_target.as_deref()
+                    == target_item.map(|item| item.definition.production_key.as_str())
+            })
             .collect::<Vec<_>>();
         if bound.is_empty() {
             return Ok(None);
         }
-        if intent.use_with_map_item.is_some()
+        if (intent.use_with_map_item.is_some()
+            && !(recipe_target.is_some()
+                && matches!(
+                    intent.use_with_map_item.as_ref(),
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
+                )))
             || intent.use_with_position.is_some()
+            || recipe_target.is_some_and(|id| {
+                !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, Some(id))
+            })
             || !self
                 .states
                 .player_trades
@@ -458,8 +758,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                 };
             let mut selected = bound.into_iter().filter(|c| {
-                ((c.peer_requires.is_some() || c.creature_target.is_some())
-                    == intent.use_with.is_some())
+                quest_targets::accepts(c, intent)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops
@@ -491,22 +790,79 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if fence.item_fence() != item_fence {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        let creature = if callback.creature_target.is_some() {
-            let runtime = self.runtime.lock().await;
-            let proof = crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
-                &runtime, actor, fence, command_ref, &callback, intent);
-            let Some(proof) = proof else {
-                return Ok(Some(outcome(UseDisposition::Rejected)));
-            };
-            Some(proof)
-        } else {
-            None
-        };
         let peer = if callback.peer_requires.is_some() {
             match self.quest_peer_use(actor, command, intent).await {
                 Ok(peer) => peer,
                 Err(()) => return Ok(Some(outcome(UseDisposition::Rejected))),
             }
+        } else {
+            None
+        };
+        let corpse_operand = if callback.fresh_corpse {
+            let Some(ItemKey::Instance(item)) = target else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            let Some(ground) = self
+                .root
+                .read_ground_action_source(self.character, item_fence, item)
+                .await
+                .map_err(|_| ())?
+            else {
+                return Ok(Some(outcome(UseDisposition::StaleState)));
+            };
+            Some(ground.quest_corpse_operand())
+        } else {
+            None
+        };
+        // Lane -> Character sequence -> runtime is retained through COMMIT.
+        // The proof's borrow prevents detaching a live target snapshot.
+        let mut sequence = self.revision_sequencer.acquire(fence.character_id).await;
+        let creature_runtime =
+            if callback.creature_target.is_some() || callback.self_target.is_some() {
+                Some(self.runtime.lock().await)
+            } else {
+                None
+            };
+        let creature = if let Some(runtime) = creature_runtime.as_ref() {
+            use crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof;
+            let proof = if callback.corpse_target.is_some() {
+                let Some(ItemKey::Instance(corpse)) = target else {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                };
+                QuestCreatureUseProof::read_current_corpse(
+                    runtime,
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                    corpse,
+                )
+            } else if let Some(operand) = corpse_operand {
+                QuestCreatureUseProof::read_corpse(
+                    runtime,
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                    operand,
+                    &permit,
+                )
+            } else {
+                QuestCreatureUseProof::read_current(
+                    runtime,
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                )
+            };
+            let Some(proof) = proof else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            Some(proof)
         } else {
             None
         };
@@ -517,13 +873,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let use_ = QuestCarriedUse {
             source,
-            recipe_target: None,
+            recipe_target,
             intent: encoded,
         };
-        let result = self
-            .revision_sequencer
-            .acquire(fence.character_id)
-            .await
+        let result = sequence
             .commit_quest_reward(
                 self.root,
                 self.character,
@@ -547,6 +900,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| ())?;
+        drop(creature);
+        drop(creature_runtime);
+        drop(sequence);
         drop(permit);
         let disposition = if matches!(
             result,

@@ -64,8 +64,12 @@ fn row(drops: usize) -> Arc<CreatureRewardRow> {
     let item = |key: String| LootDefinitionRef::new("Item", key, "definition-r1");
     Arc::new(CreatureRewardRow {
         xp_amount: ExactI64::new(5),
-        corpse_item: item("oteryn:item.corpse".into()),
-        loot_table_ref: LootDefinitionRef::new("Loot", "oteryn:loot.test", "definition-r1"),
+        corpse_item: Some(item("oteryn:item.corpse".into())),
+        loot_table_ref: Some(LootDefinitionRef::new(
+            "Loot",
+            "oteryn:loot.test",
+            "definition-r1",
+        )),
         loot_table: LootTableDefinition {
             algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
             entries: (0..drops)
@@ -165,6 +169,9 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
             native_room_placement_context: b"room".to_vec(),
         },
         target: actor,
+        source_death_pending: false,
+        source_drop_rates: None,
+        source_completion: None,
         no_progression_logged: false,
     }
 }
@@ -172,8 +179,11 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
 fn pending_with_ordinary_surprise_bag() -> PendingKillSettlement {
     let mut pending = pending(2, 50, 3, 0);
     let row = Arc::make_mut(pending.row.as_mut().expect("reward row"));
-    row.loot_table_ref =
-        LootDefinitionRef::new("Loot", "oteryn:loot.creature.rat", "definition-r1");
+    row.loot_table_ref = Some(LootDefinitionRef::new(
+        "Loot",
+        "oteryn:loot.creature.rat",
+        "definition-r1",
+    ));
     row.loot_table.entries.push(LootTableEntry {
         item: LootDefinitionRef::new("Item", "oteryn:item.tibia.i6570", "definition-r1"),
         min_count: 1,
@@ -1046,11 +1056,11 @@ fn mint(seed: u8) -> crate::durability::item_mint::CommittedItemMint {
     }
 }
 
-fn committed(corpse: u8) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
-    Ok(CommittedCorpseLoot {
+fn committed(corpse: u8) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
+    Ok(Some(CommittedCorpseLoot {
         corpse: mint(corpse),
         entries: vec![mint(corpse.wrapping_add(10))],
-    })
+    }))
 }
 
 #[test]
@@ -1492,4 +1502,82 @@ fn pubproj_physical_source_invalid_key_and_regressed_clock_hold_coverage() {
             .gap_ms
             .is_some()
     );
+}
+
+#[test]
+fn srx3_soulpit_boss_xp_is_rowless_and_never_ordinary_progression() {
+    let ordinary = pending(2, 50, 3, 1);
+    assert_eq!(ordinary.experience(), Some(ExactI64::new(5)));
+    let mut boss = PendingKillSettlement::without_materialization(
+        ordinary.facts,
+        "oteryn:creature.rat".into(),
+        None,
+        ordinary.ground,
+        ordinary.target,
+        ordinary.activity_observed_at,
+    );
+    boss.soulpit_experience = Some(ExactI64::new(140));
+    assert_eq!(
+        boss.experience(),
+        Some(ExactI64::new(140)),
+        "Crystal stack40 grants 28x base XP independently of any corpse qualification"
+    );
+    assert!(boss.row.is_none());
+    assert!(boss.bosstiary_only.is_none());
+    assert!(boss.boss_reward.is_none());
+    assert!(boss.activity_death.is_none());
+    assert!(boss.forge.is_none());
+    assert!(boss.echo.is_none());
+    assert!(boss.grizzly.is_none());
+    boss.soulpit_experience = None;
+    assert_eq!(
+        boss.experience(),
+        None,
+        "ordinary rowless deaths do not invent XP"
+    );
+}
+
+#[test]
+fn srx3_source_death_wait_precedes_loot_capacity_reservation_and_take() {
+    let queue = KillSettlementQueue::default();
+    let mut entry = pending(1, 50, 3, 8);
+    entry.source_death_pending = true;
+    assert!(matches!(queue.append(entry), AppendOutcome::Queued));
+    assert!(
+        matches!(
+            queue.take_ordered(session(50), 3),
+            TakeOutcome::CapacityWait
+        ),
+        "source death has not completed: no old-profile loot MINT capacity or SQL entry may be taken"
+    );
+    assert_eq!(queue.counts(), (1, 0, 0));
+}
+
+#[test]
+fn core_prefix_prunes_departed_head_and_conditionally_takes_its_successor() {
+    let queue = KillSettlementQueue::default();
+    let first = pending(2, 50, 3, 0);
+    let second = pending(3, 51, 3, 0);
+    let first_death = first.facts.death;
+    let second_death = second.facts.death;
+    assert_eq!(queue.append(first), AppendOutcome::Queued);
+    assert_eq!(queue.append(second), AppendOutcome::Queued);
+    queue.discard_gone(session(50), None);
+    assert_eq!(
+        queue
+            .core_head()
+            .map(|head| head.map(|(_, death, _)| death)),
+        Ok(Some(second_death))
+    );
+    assert!(matches!(
+        queue.take_inner(session(51), 3, true, Some(first_death)),
+        TakeOutcome::CapacityWait
+    ));
+    let second = taken(queue.take_inner(session(51), 3, true, Some(second_death)));
+    assert_eq!(
+        second.entry().map(|entry| entry.facts.death),
+        Some(second_death)
+    );
+    second.finish();
+    assert_eq!(queue.core_head(), Ok(None));
 }

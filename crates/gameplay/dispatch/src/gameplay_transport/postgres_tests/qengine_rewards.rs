@@ -26,12 +26,18 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
+            if name.starts_with("qengine-rewards-qworld-phase-") {
+                super::qworld_phase_steps::SOURCE
+            } else if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
                 super::l6_paradox_upper::start(name)
             } else if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
                 super::l6_paradox_story::start()
             } else if name.starts_with("qengine-rewards-questpc4-native-tower-") {
                 super::l6_paradox_native::trigger(name)
+            } else if name == "qengine-rewards-m56-wax" {
+                Position { x: 31942, y: 32936, floor: -10 }
+            } else if matches!(name, "qengine-rewards-m56-wax-corner" | "qengine-rewards-m56-wax-edge-outside") {
+                super::m56_cursed_crystal_wax::trigger(name)
             } else if name.starts_with("qengine-rewards-questpc4-admission-") {
                 super::l6_world_admission::trigger(name)
             } else {
@@ -120,7 +126,7 @@ fn qengine_l1_legacy_decaying_entitlement_remains_selectable() -> TestResult {
     scenario("qengine-rewards-l1-legacy-decaying")
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -155,9 +161,17 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.contains("/l2-cael-tome-") { return &["tome"]; }
+    if key.ends_with("/l2-zalamon-tome") { return &["mission"]; }
+    if key.ends_with("/l2-bone-start") {
+        return &["mission"];
+    }
+
     match key.rsplit('/').next().unwrap_or(key) {
+        "m09-rookie-mission11" => &["yes"],
         "m09-tower" => &["mission"],
         "knight-sword" => &["forge"],
+        "qnpcfx-koshei-start" => &["amulet"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
         "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
@@ -285,6 +299,13 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "deepling-helmet" => &[
             "flou", "explain", "yes", "no", "yes", "yes", "yes", "helmet",
         ],
+        "qnpcfx-oldrak-begin" => &["demon oak"],
+        "qnpcfx-oldrak-hallowed-axe" => &["axe"],
+        "qnpcfx-inquisition-join" => &["join"],
+        "qnpcfx-inquisition-report" => &["mission"],
+        "qnpcfx-inquisition-kulag_guard" | "qnpcfx-inquisition-grof_guard" => &["trouble"],
+        "qnpcfx-inquisition-tim_guard" | "qnpcfx-inquisition-walter_guard" => &["trouble", "authorities", "avoided"],
+        "qnpcfx-inquisition-miles_guard" => &["trouble", "foresight of the authorities", "also for the gods"],
         _ => &[],
     }
 }
@@ -317,11 +338,7 @@ async fn wire_grant(
     admitted: &mut AdmittedSession,
     npc: EntityRef,
     callback: &RewardCallback,
-) -> TestResult<(
-    NpcIntentDisposition,
-    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
-    u64,
-)> {
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
     wire_reward(owner, admitted, npc, callback, true).await
 }
 
@@ -331,11 +348,22 @@ pub(super) async fn wire_reward(
     npc: EntityRef,
     callback: &RewardCallback,
     expect_outfit: bool,
-) -> TestResult<(
-    NpcIntentDisposition,
-    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
-    u64,
-)> {
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
+    let words: Vec<_> = std::iter::once("hi")
+        .chain(offer_words(&callback.key).iter().copied())
+        .chain(std::iter::once(callback.keywords[0].as_str()))
+        .collect();
+    wire_conversation(owner, admitted, npc, callback, expect_outfit, words).await
+}
+
+pub(super) async fn wire_conversation(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    callback: &RewardCallback,
+    expect_outfit: bool,
+    words: Vec<&str>,
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -343,10 +371,6 @@ pub(super) async fn wire_reward(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
-    let words: Vec<_> = std::iter::once("hi")
-        .chain(offer_words(&callback.key).iter().copied())
-        .chain(std::iter::once(callback.keywords[0].as_str()))
-        .collect();
     let last = admitted.continuity.next_command_id + u64::try_from(words.len())? - 1;
     let generation = admitted.continuity.connection_generation;
     let frames = words
@@ -769,11 +793,53 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-m25-galthen-native-deaths" {
+        return super::m25_galthen_native_death::exercise(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-m09-rookie" {
+        return super::m09_rookie_reward::exercise(owner, admitted, h, authority).await;
+    }
+    if name == "qengine-rewards-m37-peter" {
+        return super::questpc8_npc_teleport_story::exercise(owner, admitted, h, authority).await;
+    }
+    if name.starts_with("qengine-rewards-m56-wax") {
+        return super::m56_cursed_crystal_wax::exercise(owner, admitted, h, name.ends_with("-outside")).await;
+    }
     if name.starts_with("qengine-rewards-m09-tower-") {
         return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
     }
+    if name.starts_with("qengine-rewards-qworld-phase-") {
+        return super::qworld_phase_steps::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name == "qengine-rewards-questpc5-personal-map-query" {
+        return super::questpc5_personal_map_marks::exercise(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-m23-last-creep" {
+        return super::m23_last_creep::exercise(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-srvgap-disguise" {
+        return super::srvgap_quest_disguise::exercise(owner, admitted, h).await;
+    }
+    if name.starts_with("qengine-rewards-qworld-phase-") {
+        return super::qworld_phase_steps::exercise(owner, admitted, h, authority, name).await;
+    }
     if name == "qengine-rewards-m39-any-topic" {
         return m39_any_topic::exercise(owner, admitted, h).await;
+    }
+    if name.starts_with("qengine-rewards-m39-tomes") {
+        return super::m39_tomes_journey::exercise(owner, admitted, h, name).await;
+    }
+    if name.starts_with("qengine-rewards-m39-bone") {
+        return super::m39_bone_journey::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name == "qengine-rewards-m39-any-topic" {
+        return m39_any_topic::exercise(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-authored-imported-talk-group" {
+        return super::qengine_m01a_imported_talk::exercise_group(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-m01a-production-pirate-talk" {
+        return super::qengine_m01a_production_talk::exercise(owner, admitted, h).await;
     }
     if name == "qengine-rewards-authored-imported-talk-group" {
         return super::qengine_m01a_imported_talk::exercise_group(owner, admitted, h).await;
@@ -783,6 +849,12 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-m01c-collection" {
         return super::m01c_collection::exercise(owner, admitted, h).await;
+    }
+    if name.starts_with("qengine-rewards-qnpcfx-m10-") {
+        return super::qnpcfx_m10::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-qnpcfx-koshei") {
+        return super::qnpcfx_koshei::exercise(owner, admitted, h, authority, name.ends_with("-bank")).await;
     }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;

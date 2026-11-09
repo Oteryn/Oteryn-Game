@@ -82,7 +82,7 @@ impl CreatureAiState {
         }
         let position = facts.position;
         let targeting = self.profile.targeting();
-        let perceived = targeting::perceive(position, facts.players);
+        let perceived = targeting::perceive_mode(self.profile.is_native(), position, facts.players);
         let eligible = perceived
             .iter()
             .filter(|candidate| targeting::is_eligible(targeting, position, candidate))
@@ -250,7 +250,10 @@ impl CreatureAiState {
                 idle: perceived.is_empty()
                     && target.is_none()
                     && !facts.has_active_condition
-                    && !matches!(goal, MovementGoal::WalkBack { .. }),
+                    && !matches!(goal, MovementGoal::WalkBack { .. })
+                    && !(self.profile.is_native()
+                        && self.is_summon
+                        && self.profile.default_source_faction()),
                 over_budget: false,
                 units,
             },
@@ -399,6 +402,92 @@ fn flee_health_for_maximum(
     u64::try_from(numerator.div_ceil(denominator)).unwrap_or(u64::MAX)
 }
 
+/// A bounded, single-consumption reservation from the current owner's existing
+/// think budget. It describes occurrences; it grants no authority to mutate actors.
+pub struct ReservedNativeThinkBatch {
+    now_us: u64,
+    stamp: crate::foundation::RuntimeWorkStamp,
+    pin: NativeThinkPin,
+    occurrences: Vec<ThinkOccurrence>,
+    entries: Vec<ReservedNativeThink>,
+}
+struct ReservedNativeThink {
+    occurrence: ThinkOccurrence,
+    sequence_before: u64,
+    due_before: Option<u64>,
+}
+type NativeThinkPin = ([u8; 32], [u8; 32], [u8; 32], [u8; 32], u64);
+fn native_think_pin(runtime: &ChannelRuntimeV1) -> NativeThinkPin {
+    let pin = runtime.content_pin();
+    (
+        pin.server_artifact_digest(),
+        pin.client_artifact_digest(),
+        pin.frame_binding_digest(),
+        pin.map_revision_digest(),
+        pin.activation_sequence(),
+    )
+}
+impl ReservedNativeThinkBatch {
+    pub fn occurrences(&self) -> &[ThinkOccurrence] {
+        &self.occurrences
+    }
+    /// Original owner clock, not a newly issued reservation.
+    pub fn observed_at_us(&self) -> u64 {
+        self.now_us
+    }
+    /// Read-only continuity check for a retained original reservation.
+    pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+        runtime
+            .owner_fence()
+            .is_ok_and(|fence| fence.accepts_stamp(self.stamp))
+            && native_think_pin(runtime) == self.pin
+    }
+}
+impl CreatureAiTable {
+    /// Reserve only thinks admitted by the existing bounded owner window, without
+    /// advancing their native schedules or deadlines before source callbacks run.
+    pub fn reserve_current_thinks(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_us: u64,
+    ) -> Option<ReservedNativeThinkBatch> {
+        let stamp = runtime.issue_owner_work().ok()?;
+        let pin = native_think_pin(runtime);
+        let (taken, _) = self.take_due_bounded(now_us);
+        let mut entries = Vec::with_capacity(taken.len());
+        for actor in taken {
+            if runtime.live_creature_health(actor).is_none() {
+                self.remove(actor);
+                continue;
+            }
+            let Ok(position) = runtime.read_actor_position(actor) else {
+                self.remove(actor);
+                continue;
+            };
+            if position.context() != runtime.pinned_movement_context() {
+                continue;
+            }
+            let entry = self.entries.get(&actor.placement_identity())?;
+            let Some(sequence) = entry.sequence.checked_add(1) else {
+                continue;
+            };
+            entries.push(ReservedNativeThink {
+                occurrence: ThinkOccurrence { actor, sequence },
+                sequence_before: entry.sequence,
+                due_before: entry.due_us,
+            });
+        }
+        let occurrences = entries.iter().map(|entry| entry.occurrence).collect();
+        Some(ReservedNativeThinkBatch {
+            now_us,
+            stamp,
+            pin,
+            occurrences,
+            entries,
+        })
+    }
+}
+
 impl CreatureAiTable {
     /// Production one-pass thinking. Awaited Map reads precede sequence/deadline publication.
     #[allow(clippy::too_many_arguments)]
@@ -410,11 +499,55 @@ impl CreatureAiTable {
         revisions: &RevisionSet,
         players: &[TargetCandidate],
         reader: &mut R,
+        consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
+    ) -> Vec<(ExactActorRef, ThinkReport)> {
+        let Some(batch) = self.reserve_current_thinks(runtime, now_us) else {
+            return Vec::new();
+        };
+        self.run_reserved_current_thinks(runtime, batch, root, revisions, players, reader, consume)
+            .await
+    }
+
+    /// Consume the bounded reservation after source onThink callbacks. Every physical
+    /// fact and schedule is read again; callbacks cannot publish a stale actor's think.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn run_reserved_current_thinks<R: MonsterThinkReader>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        batch: ReservedNativeThinkBatch,
+        root: &GameplayDecisionRoot,
+        revisions: &RevisionSet,
+        players: &[TargetCandidate],
+        reader: &mut R,
+        consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
+    ) -> Vec<(ExactActorRef, ThinkReport)> {
+        self.run_reserved_current_thinks_borrowed(
+            runtime, &batch, root, revisions, players, reader, consume,
+        )
+        .await
+    }
+
+    /// Consume the SAME opaque reservation retained by a source continuation.
+    /// All original sequence/deadline, incarnation, stamp and pin guards remain.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn run_reserved_current_thinks_borrowed<R: MonsterThinkReader>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        batch: &ReservedNativeThinkBatch,
+        root: &GameplayDecisionRoot,
+        revisions: &RevisionSet,
+        players: &[TargetCandidate],
+        reader: &mut R,
         mut consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
     ) -> Vec<(ExactActorRef, ThinkReport)> {
-        if runtime.owner_fence().is_err() {
+        if !runtime
+            .owner_fence()
+            .is_ok_and(|fence| fence.accepts_stamp(batch.stamp))
+            || native_think_pin(runtime) != batch.pin
+        {
             return Vec::new();
         }
+        let now_us = batch.now_us;
         // The current pass may have committed player chase before starting these thinks.
         // Preserve the owner's eligibility/vitals facts, refresh only its positioned census.
         let players = players
@@ -429,9 +562,26 @@ impl CreatureAiTable {
                 )
             })
             .collect::<Vec<_>>();
-        let (taken, _) = self.take_due_bounded(now_us);
         let mut reports = Vec::new();
-        for actor in taken {
+        for reserved in &batch.entries {
+            if !runtime
+                .owner_fence()
+                .is_ok_and(|fence| fence.accepts_stamp(batch.stamp))
+            {
+                break;
+            }
+            let actor = reserved.occurrence.actor;
+            if !self
+                .entries
+                .get(&actor.placement_identity())
+                .is_some_and(|entry| {
+                    entry.state.actor() == actor
+                        && entry.sequence == reserved.sequence_before
+                        && entry.due_us == reserved.due_before
+                })
+            {
+                continue;
+            }
             let Some(health) = runtime.live_creature_health(actor) else {
                 self.remove(actor);
                 continue;
@@ -455,9 +605,14 @@ impl CreatureAiTable {
                 );
             }
             let route = self.retained_summon_route(runtime, actor);
-            let Some(mut players) =
-                targeting::with_current_damage(runtime, actor, position.position(), &players)
-            else {
+            let Some(mut players) = targeting::with_current_damage(
+                runtime,
+                actor,
+                position.position(),
+                &players,
+                self.entry(actor)
+                    .is_some_and(|entry| entry.state.profile.is_native()),
+            ) else {
                 continue;
             };
             for player in &mut players {
@@ -467,6 +622,9 @@ impl CreatureAiTable {
             let Some(entry) = self.entry_mut(actor) else {
                 continue;
             };
+            if entry.state.profile.is_native() {
+                entry.state.read_physical_facing(position.facing());
+            }
             let facts = CreatureThinkFacts {
                 position: position.position(),
                 health,
@@ -478,7 +636,7 @@ impl CreatureAiTable {
                 root,
                 revisions,
             };
-            let sequence = entry.sequence.saturating_add(1);
+            let sequence = reserved.occurrence.sequence;
             if let Ok(report) = entry
                 .state
                 .think_current(sequence, &facts, runtime, reader, route)

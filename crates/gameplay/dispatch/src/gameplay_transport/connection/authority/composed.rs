@@ -64,6 +64,86 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .map(|map| map.facts.movement_effects_since(after))
             .unwrap_or_else(|| self.source_volatile_effects(after))
     }
+    async fn observe_current_actor_movement_effects(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+    ) -> Vec<(u64, crate::map::overlay::TilePos, u16)> {
+        use sha2::Digest as _;
+        let Some(map) = self.bundle_map() else {
+            return Vec::new();
+        };
+        let Ok((current, _)) =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_at(session)
+                .await
+        else {
+            return Vec::new();
+        };
+        if current.session_state() != crate::foundation::GameSessionState::Active {
+            return Vec::new();
+        }
+        let runtime = self.runtime.lock().await;
+        let pin = runtime.content_pin();
+        if runtime.owner_fence().is_err()
+            || self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_none_or(|native| native.source_digest() != pin.server_artifact_digest())
+            || self.wire_position_frame(&runtime).is_none()
+            || self.effective_movement_cells().scope().world_id != pin.world_id()
+            || self.effective_movement_cells().scope().generation_digest
+                != pin.server_artifact_digest()
+            || <[u8; 32]>::from(sha2::Sha256::digest(
+                self.effective_movement_cells()
+                    .scope()
+                    .map_revision
+                    .as_str()
+                    .as_bytes(),
+            )) != pin.map_revision_digest()
+        {
+            return Vec::new();
+        }
+        let lease = current.current_character_lease();
+        if let Ok(house) = runtime.house_actor_state(actor, session) {
+            if house.scope != current.current_runtime_scope()
+                || house.generation != current.current_scope_generation()
+                || house.lease != lease
+                || !runtime
+                    .house_player_control_facts(actor, session)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+            {
+                return Vec::new();
+            }
+            return map
+                .facts
+                .scoped_movement_effects_since(house.scope, house.generation, after);
+        }
+        if runtime.binding().runtime_scope() != current.current_runtime_scope()
+            || runtime.binding().scope_generation() != current.current_scope_generation()
+            || runtime.bound_attacker_lease(actor, session).ok() != Some(lease)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return Vec::new();
+        }
+        map.facts.movement_effects_since(after)
+    }
+    fn observe_movement_speech(&self, after: u64) -> Vec<(u64, crate::map::facts::MovementSpeech)> {
+        self.bundle_map()
+            .map(|map| map.facts.movement_speech_since(after))
+            .unwrap_or_default()
+    }
+    fn observe_creature_visuals(
+        &self,
+        after: u64,
+    ) -> Vec<(u64, crate::map::facts::CreatureVisualKind)> {
+        self.bundle_map()
+            .map(|map| map.facts.creature_visuals_since(after))
+            .unwrap_or_default()
+    }
     async fn resolve_native_scope(&self, admitted: AdmittedSession) -> Result<Option<Self>, ()> {
         self.resolve_runtime_view(admitted).await
     }
@@ -494,6 +574,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// the active generation pins a non-empty Item key set. ADMIT0: boot validated
     /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
     /// admission requires it through the authenticated check in `admit`, not here.
+    async fn native_world_presentation_available(&self) -> bool {
+        self.native_map_cue_source_frame().await.is_some()
+    }
+
+    async fn native_map_cue_uses_native_floor(&self) -> Option<bool> {
+        self.native_map_cue_source_frame().await
+    }
+
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
         store::with_store_offer(
             loop_training::offer(
@@ -717,6 +805,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.tutorial_paced_step(actor, session, direction).await
     }
 
+    async fn committed_paced_movement(
+        &self,
+        admitted: AdmittedSession,
+        moved_to: Option<oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation>,
+    ) {
+        if let Some(actor) = admitted.runtime_actor {
+            self.source_boss_exit_after_movement(actor, admitted.game_session_id, moved_to)
+                .await;
+        }
+    }
+
     async fn turn_actor_valid(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
@@ -754,13 +853,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         let facing = match direction {
             StepDirection::North => MovementFacing::North,
-            StepDirection::East => MovementFacing::East,
+            StepDirection::East | StepDirection::NorthEast | StepDirection::SouthEast => {
+                MovementFacing::East
+            }
             StepDirection::South => MovementFacing::South,
-            StepDirection::West => MovementFacing::West,
-            StepDirection::NorthEast => MovementFacing::North,
-            StepDirection::SouthEast => MovementFacing::South,
-            StepDirection::SouthWest => MovementFacing::South,
-            StepDirection::NorthWest => MovementFacing::North,
+            StepDirection::West | StepDirection::NorthWest | StepDirection::SouthWest => {
+                MovementFacing::West
+            }
         };
         movement.commit_turn(expected, facing).is_ok()
     }
@@ -966,6 +1065,30 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             })
     }
 
+    async fn use_quest_tool(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        let corpse = match target {
+            Some(item_view::ItemKey::Instance(id)) if intent.use_with_map_item.is_some() => {
+                Some(id)
+            }
+            _ => None,
+        };
+        if let Some(outcome) = self
+            .use_carried_quest_item(actor, command, &intent, source, corpse)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        self.use_carried_quest_item_with_target(actor, command, &intent, source, target)
+            .await
+    }
+
     async fn use_event_item(
         &self,
         actor: ExactActorRef,
@@ -1001,7 +1124,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
-            .use_carried_quest_item(actor, command, &intent, source)
+            .use_carried_quest_item(actor, command, &intent, source, None)
             .await?
         {
             return Ok(Some(outcome));
@@ -1066,6 +1189,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         definition: std::num::NonZeroU32,
     ) -> UseOutcome {
         self.use_item_definition(actor, command, definition).await
+    }
+
+    async fn use_soul_war_source_items(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.dispatch_soul_war_source_use(actor, command, &intent, source, target)
+            .await
     }
 
     async fn use_soulpit_items(
@@ -1198,6 +1333,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     /// One cast as one Channel-owner work item (`SPELL-RL-01` = 1), under the same runtime lock
     /// `step` and `use_object` take.
+    async fn physical_native_cast_position(
+        &self,
+        position: oteryn_protocol_oteryn::actor_spell::SpellTargetPosition,
+    ) -> Option<oteryn_protocol_oteryn::actor_spell::SpellTargetPosition> {
+        let runtime = self.runtime.lock().await;
+        let physical = self.wire_position_frame(&runtime)?.unproject(
+            oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            },
+        )?;
+        Some(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+            x: physical.x,
+            y: physical.y,
+            floor: physical.floor,
+        })
+    }
+
     async fn cast_spell(
         &self,
         actor: ExactActorRef,

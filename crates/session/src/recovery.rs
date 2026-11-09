@@ -17,6 +17,8 @@ pub fn check_resume_selection(original: &[u32], resumed: &[u32]) -> Result<(), S
 #[derive(Debug, Clone)]
 pub struct RecoveryState {
     pub(super) game_session_id: GameSessionId,
+    pub(super) world_id: [u8; 16],
+    pub(super) activity_scope: Option<activity_scope::ActivityScopeSnapshot>,
     pub(super) connection_generation: u64,
     pub(super) next_command_id: u64,
     pub(super) last_server_sequence: u64,
@@ -37,6 +39,8 @@ impl<S: SessionStream> Session<S> {
     pub fn disconnect(self) -> RecoveryState {
         RecoveryState {
             game_session_id: self.join_snapshot.game_session_id,
+            world_id: self.world_id,
+            activity_scope: self.activity_scope,
             connection_generation: self.connection_generation,
             next_command_id: self.next_command_id,
             last_server_sequence: self.last_server_sequence,
@@ -54,14 +58,11 @@ impl<S: SessionStream> Session<S> {
         self.next_command_id
             .checked_add(1)
             .ok_or(SessionError::CommandIdExhausted)?;
-        let frame = encode_client_command(
-            self.connection_generation,
-            &ClientCommandValue {
-                command_id: self.next_command_id,
-                command_type: world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-                payload: &world_spatial::encode_step_intent(direction),
-            },
-        )?;
+        let frame = self.encode_current_command(&ClientCommandValue {
+            command_id: self.next_command_id,
+            command_type: world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            payload: &world_spatial::encode_step_intent(direction),
+        })?;
         bounded(
             self.deadline,
             "pending step write",
@@ -113,26 +114,50 @@ impl<S: SessionStream> Session<S> {
             &previous.selected_capabilities,
             &accepted.selected_capabilities,
         )?;
-        if accepted.game_session_id != previous.game_session_id
-            || accepted.connection_generation <= previous.connection_generation
-            || accepted.current_server_sequence < previous.last_server_sequence
-            || accepted.next_command_id < previous.next_command_id
-            || accepted.schema_revision != recovery.schema_revision
+        let successor = accepted.game_session_id != previous.game_session_id;
+        if accepted.schema_revision != recovery.schema_revision
+            || if successor {
+                !previous.selected_capabilities.contains(&117)
+                    || accepted.connection_generation != 1
+                    || accepted.current_server_sequence != 1
+                    || accepted.next_command_id != 1
+            } else {
+                accepted.connection_generation <= previous.connection_generation
+                    || accepted.current_server_sequence < previous.last_server_sequence
+                    || accepted.next_command_id < previous.next_command_id
+            }
         {
             return Err(FoundationProtocolError::MalformedEnvelope.into());
         }
-        Self::read_join(
+        // Decode a private temporary session. A changed UUID is never exposed before
+        // its complete first snapshot proves the exact committed source lineage.
+        let resumed = Self::read_join(
             stream,
             recovery.deadline,
             recovery.appearance_items,
             JoinAcceptance {
                 game_session_id: accepted.game_session_id,
+                world_id: previous.world_id,
+                activity_scope: if successor {
+                    None
+                } else {
+                    previous.activity_scope
+                },
                 connection_generation: accepted.connection_generation,
                 next_command_id: accepted.next_command_id,
                 selected_capabilities: accepted.selected_capabilities,
                 recovery_sequence: Some(accepted.current_server_sequence),
             },
         )
-        .await
+        .await?;
+        if successor
+            && !resumed.activity_scope.as_ref().is_some_and(|scope| {
+                scope.source_session == *previous.game_session_id.as_bytes()
+                    && scope.session == *accepted.game_session_id.as_bytes()
+            })
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope.into());
+        }
+        Ok(resumed)
     }
 }

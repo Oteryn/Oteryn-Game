@@ -28,14 +28,22 @@ impl crate::map::floor::CellBlocker for Blockers<'_> {
 }
 
 struct Scene<'a> {
+    room: &'a crate::content::QualifiedNativeEntryRoom,
     cells: &'a NativeEntryMovementCells,
     doors: &'a dyn crate::map::floor::CellBlocker,
     targets: Vec<(ExactActorRef, Option<ExactActorRef>)>,
     attributes: Vec<(ExactActorRef, GameSessionId, i32)>,
 }
 impl ActivityHandoffScene for Scene<'_> {
+    fn emit_spawn_effect(&self, at: MovementLocalPosition, effect: u16) -> bool {
+        super::super::soul_war_scene::emit_effect(self.room, at, effect)
+    }
     fn permits_spawn(&self, at: MovementLocalPosition) -> bool {
         crate::movement::relocate::creature_cell_admissible(self.cells, self.doors, at)
+            && crate::durability::native_world_read::tile::<std::convert::Infallible>(self.room, at)
+                .ok()
+                .flatten()
+                .is_some_and(|tile| !tile.flags().block_projectile)
     }
     fn attack_target(&self, source: ExactActorRef) -> Option<ExactActorRef> {
         self.targets
@@ -161,6 +169,11 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
             },
         };
         let scene = Scene {
+            room: self
+                .admission
+                .rooms()
+                .gate_native_combat_cast()
+                .ok_or(SoulpitRuntimeError::MissingContent)?,
             cells: self.admission.movement_cells(),
             doors: &blockers,
             targets: census

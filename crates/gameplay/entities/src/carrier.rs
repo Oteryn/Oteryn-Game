@@ -34,6 +34,7 @@ pub mod activity_transfer;
 mod actor_memos;
 mod arena_match;
 mod tibiadrome;
+pub mod tibiadrome_modifiers;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -61,6 +62,20 @@ mod continuity;
 mod corpse_views;
 
 mod creature_heal;
+mod native_callback_controls;
+mod native_creature_event_birth;
+mod native_health_change;
+mod native_null_health;
+mod native_retained_caster;
+mod native_retained_teleport;
+mod native_xml_spawns;
+pub use native_creature_event_birth::PreparedNativeCreatureEventBirth;
+pub use native_health_change::{
+    NativeHealthChangeObservation, NativeHealthGuardName, NativeHealthNameRead,
+};
+pub use native_null_health::NativeNullHealthSample;
+pub use native_retained_caster::NativeRetainedCallbackCaster;
+pub use native_retained_teleport::NativeRetainedCallbackTeleport;
 
 mod creature_relocation;
 
@@ -71,15 +86,37 @@ mod damage_contributors_tests;
 
 mod damage_ledger;
 
+#[cfg(test)]
+mod controlled_companion_native_tests;
 #[path = "carrier/echo_warden.rs"]
 pub mod echo_warden;
+pub mod native_source_death;
+pub mod native_translation_events;
+mod primal;
+pub mod rotten_blood;
+mod rotten_blood_presentation;
+pub mod soul_war;
+pub mod soul_war_hatred;
+mod soul_war_health;
+mod soul_war_mirror_runtime;
+pub mod soul_war_native_health_events;
+pub mod soul_war_player_source;
+pub mod soul_war_spite;
 #[path = "carrier/soulpit.rs"]
 pub mod soulpit;
+#[cfg(test)]
+mod w01_health_events_native_tests;
+#[cfg(test)]
+mod w01_health_events_periodic_native_tests;
+#[cfg(test)]
+mod w01_prepare_death_native_tests;
 
 pub mod house_custody;
 
 #[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
+
+mod elemental_boss_spawns;
 
 mod equipment_reflection;
 
@@ -92,6 +129,7 @@ mod hazard;
 #[path = "carrier/monster_summon_admission.rs"]
 mod monster_summon_admission;
 
+mod native_callback_placement;
 mod native_encounter;
 
 mod native_summon;
@@ -107,7 +145,9 @@ mod native_summon_reconciliation_tests;
 #[path = "carrier/npc_actor.rs"]
 pub mod npc_actor;
 
+mod native_hits;
 mod owner_views;
+pub use native_hits::CommittedNativeHit;
 
 #[cfg(test)]
 #[path = "carrier/party_reward_occurrence_tests.rs"]
@@ -118,8 +158,12 @@ pub use platform_displacement::PlatformDisplacement;
 
 mod player_control;
 pub use player_control::RuntimeSessionAbsence;
+mod forced_player_step;
+pub use forced_player_step::ForcedPlayerStepGuard;
 
 mod positions;
+mod source_tile_occupancy;
+mod tile_stack;
 
 mod raid_spawn;
 
@@ -207,6 +251,10 @@ pub use fixtures::CombatDeathFixture;
 pub use fixtures::MovementActorFixture;
 #[cfg(any(test, feature = "test-support"))]
 use fixtures::TEST_ALLOCATION_FAILURE_CAPACITY;
+pub use native_callback_placement::{
+    NativeSourceOccupancyFacts, NativeSourcePlacementOccupant,
+    native_source_monster_occupancy_admits,
+};
 pub use native_encounter::EncounterSpawnError;
 pub use native_encounter::NativeEncounterSpawnSpec;
 pub use native_summon::NativeSummonAdmissionSpec;
@@ -339,12 +387,15 @@ pub struct CurrentOwnerExactActorLookup<'a> {
 /// capability: the carrier checks independent continuity and slot generation
 /// again at the sole write.
 pub struct CurrentOwnerExactActorCommit<'a> {
+    owner_cycle: Option<&'a mut oteryn_gameplay_foundation::foundation::ScopeRuntimeFence>,
     content: Option<&'a ChannelContentPin>,
     carrier: &'a mut ChannelActorCarrier,
     continuity: &'a NamespaceContinuityGuard,
     /// The owner clock (ms) of this turn, recorded on each commit's receipt and contributor.
     /// `None` records no time: such a hit never earns time-windowed credit.
     now_ms: Option<u64>,
+    /// Exact owner precision when supplied by the production ingress.
+    now_us: Option<u64>,
 }
 
 /// Short-lived current-owner authority for the fixed one-creature death
@@ -863,6 +914,7 @@ pub enum Slot {
         position: VersionedPosition,
         /// E12: House custody is attached to the existing NPC slot, never a parallel actor map.
         hireling: Option<Box<npc_actor::HouseHirelingBinding>>,
+        tile_entry_order: u64,
     },
 }
 
@@ -935,6 +987,8 @@ pub struct ChannelActorCarrier {
     scope_generation: ScopeOwnershipGeneration,
     pub slots: Box<[Slot]>,
     free_head: Option<u32>,
+    /// Canonical physical tile insertion ordinal; boxed actor state retains membership order.
+    tile_entry_counter: u64,
     /// AI-2 (GAME-AI-01 §4.1: "the carrier's current one-creature limit ...
     /// is lifted to this envelope in AI-2"): one committed death per creature
     /// generation, keyed by that creature's own `ExactActorRef`. Bounded by
@@ -982,6 +1036,13 @@ pub struct ChannelActorCarrier {
     /// HOUSE-TRANSFER-1 custody metadata only; all actor state stays in `slots`.
     house_custody: Vec<house_custody::HouseResident>,
     activity_transfers: Vec<activity_transfer::ActivityFrozenPlayer>,
+    cloak_blood_events: Vec<soul_war_native_health_events::CommittedCloakBloodEvent>,
+    movement_latest: Vec<native_translation_events::CommittedMovementOccurrence>,
+    movement_observed_us: u64,
+    native_move_sources: Vec<native_translation_events::Registration>,
+    native_move_events:
+        std::collections::VecDeque<native_translation_events::CommittedRottenTranslation>,
+    native_deaths: Vec<native_source_death::SourceCreatureDeathNotice>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1158,6 +1219,7 @@ pub struct ScopeRuntimeV1 {
     /// so the scan runs once per Channel window, not once per drive.
     spawn_drive_window: Option<SpawnDriveWindow>,
     house_owners: std::collections::BTreeMap<String, house_custody::HouseScopeOwner>,
+    forced_player_steps: Vec<std::sync::Weak<forced_player_step::ForcedPlayerStep>>,
     /// Test only: the spawn records the respawn drives read (gone-scan points and deadline
     /// entries), to prove the work per owner window is bounded.
     #[cfg(any(test, feature = "test-support"))]
@@ -1299,6 +1361,7 @@ impl ChannelRuntimeV1 {
             spawn_activation: None,
             spawn_drive_window: None,
             house_owners: std::collections::BTreeMap::new(),
+            forced_player_steps: Vec::new(),
             #[cfg(any(test, feature = "test-support"))]
             spawn_drive_visits: 0,
         })
@@ -1335,10 +1398,12 @@ impl ChannelRuntimeV1 {
     /// immutable current Content pin; registered source encounters revalidate it.
     pub fn borrow_exact_actor_commit(&mut self) -> CurrentOwnerExactActorCommit<'_> {
         CurrentOwnerExactActorCommit {
+            owner_cycle: Some(&mut self.owner_cycle),
             carrier: &mut self.carrier,
             continuity: &self.continuity,
             content: Some(&self.content),
             now_ms: None,
+            now_us: None,
         }
     }
 
@@ -1349,10 +1414,27 @@ impl ChannelRuntimeV1 {
         now_ms: u64,
     ) -> CurrentOwnerExactActorCommit<'_> {
         CurrentOwnerExactActorCommit {
+            owner_cycle: Some(&mut self.owner_cycle),
             carrier: &mut self.carrier,
             continuity: &self.continuity,
             content: Some(&self.content),
             now_ms: Some(now_ms),
+            now_us: None,
+        }
+    }
+
+    /// Exact native owner clock, retaining precision for deferred task order.
+    pub fn borrow_exact_actor_commit_at_us(
+        &mut self,
+        now_us: u64,
+    ) -> CurrentOwnerExactActorCommit<'_> {
+        CurrentOwnerExactActorCommit {
+            owner_cycle: Some(&mut self.owner_cycle),
+            carrier: &mut self.carrier,
+            continuity: &self.continuity,
+            content: Some(&self.content),
+            now_ms: Some(now_us / 1_000),
+            now_us: Some(now_us),
         }
     }
 
@@ -1531,7 +1613,10 @@ impl ChannelRuntimeV1 {
             let timing = self.spawn_timing(point)?;
             let cell = self.spawn_cell(point)?;
             let outcome = match pending.step {
-                RespawnStep::Due | RespawnStep::Retry => {
+                RespawnStep::Due
+                | RespawnStep::Retry
+                | RespawnStep::XmlWarningSecond
+                | RespawnStep::XmlWarningThird => {
                     let blocked = timing.blockable && pending.step == RespawnStep::Due && {
                         let present = match players.take() {
                             Some(present) => present,
@@ -1543,8 +1628,15 @@ impl ChannelRuntimeV1 {
                         players = Some(present);
                         blocked
                     };
-                    self.spawn_schedule
-                        .run_warning_step(point, timing, blocked, now_micros)
+                    if self.current_xml_spawn(point)? {
+                        if timing.blockable {
+                            return Err(CarrierError::InvalidSpawnDefinition);
+                        }
+                        self.spawn_schedule.run_xml_warning_step(point, now_micros)
+                    } else {
+                        self.spawn_schedule
+                            .run_warning_step(point, timing, blocked, now_micros)
+                    }
                 }
                 RespawnStep::Admit => {
                     let local = LocalPosition {
@@ -1699,6 +1791,7 @@ impl ChannelActorCarrier {
             scope_generation: continuity.current_generation,
             slots: slots.into_boxed_slice(),
             free_head: Some(0),
+            tile_entry_counter: 0,
             corpse_projections: Vec::new(),
             death_reward_occurrences: Vec::new(),
             spawns: Vec::new(),
@@ -1714,6 +1807,12 @@ impl ChannelActorCarrier {
             soulpit: None,
             house_custody: Vec::new(),
             activity_transfers: Vec::new(),
+            cloak_blood_events: Vec::new(),
+            movement_latest: Vec::new(),
+            movement_observed_us: 0,
+            native_move_sources: Vec::new(),
+            native_move_events: std::collections::VecDeque::new(),
+            native_deaths: Vec::new(),
         })
     }
 
@@ -1877,6 +1976,9 @@ impl ChannelActorCarrier {
     }
 
     fn assert_slot_spell_unreserved(&self, index: usize) -> Result<(), CarrierError> {
+        if !self.native_move_events.is_empty() {
+            return Err(CarrierError::PlanConflict);
+        }
         match &self.slots[index] {
             Slot::Occupied { spell_combat, .. } | Slot::CreatureOccupied { spell_combat, .. }
                 if spell_combat.pending_owner.is_none()
@@ -1954,6 +2056,10 @@ impl ChannelActorCarrier {
         actor_ref: ActorRef,
     ) -> Result<ActorState, CarrierError> {
         let (actor, index) = self.remove_keeping_indexes(continuity, actor_ref)?;
+        self.native_move_sources
+            .retain(|source| source.actor() != actor_ref);
+        self.movement_latest
+            .retain(|event| event.mover().0 != actor_ref);
         self.unindex_slot(index);
         Ok(actor)
     }

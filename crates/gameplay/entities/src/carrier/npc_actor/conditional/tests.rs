@@ -59,6 +59,42 @@ fn conditional_npc_stale_cleanup_preserves_a_reused_slot() -> Result<(), NpcPlac
     Ok(())
 }
 
+#[test]
+fn conditional_npc_return_waits_for_its_anchor_without_replacing_the_occupant()
+-> Result<(), NpcPlacementError> {
+    let mut runtime = runtime(8);
+    let blocker = runtime.place_dynamic_npc("oteryn:npc.rascalio", placement(101))?;
+    let mut projection = ConditionalNpcActor::new("oteryn:npc.hoaxette".into(), placement(101))?;
+    assert_eq!(projection.reconcile_or_defer(&mut runtime, true)?, None);
+    assert_eq!(runtime.npc_key(blocker), Some("oteryn:npc.rascalio"));
+    runtime.remove_dynamic_npc_actor(blocker)?;
+    let returned = projection
+        .reconcile_or_defer(&mut runtime, true)?
+        .ok_or(NpcPlacementError::NoPlacements)?;
+    assert_eq!(
+        projection.reconcile_or_defer(&mut runtime, true)?,
+        Some(returned)
+    );
+    projection.reconcile_or_defer(&mut runtime, false)?;
+    assert_eq!(runtime.npc_key(returned), None);
+    Ok(())
+}
+
+#[test]
+fn conditional_npc_deferred_return_does_not_hide_capacity_failure() -> Result<(), NpcPlacementError>
+{
+    let mut runtime = runtime(1);
+    runtime.place_dynamic_npc("oteryn:npc.rascalio", placement(102))?;
+    let mut projection = ConditionalNpcActor::new("oteryn:npc.hoaxette".into(), placement(101))?;
+    assert_eq!(
+        projection.reconcile_or_defer(&mut runtime, true),
+        Err(NpcPlacementError::Carrier(
+            super::super::CarrierError::CapacityExceeded
+        ))
+    );
+    Ok(())
+}
+
 use sqlx::{AssertSqlSafe, Executor};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
@@ -97,6 +133,19 @@ fn conditional_npc_postgres_committed_availability_and_independent_occurrences()
                 transaction.commit().await?;
                 let committed: bool = sqlx::query_scalar(AssertSqlSafe(select.as_str())).fetch_one(&pool).await?;
                 if committed != present { return Err("committed availability snapshot missing".into()); }
+                if epoch == 0 {
+                    let blocker = runtime.place_dynamic_npc("oteryn:npc.hoaxette", placement(101))
+                        .map_err(|e| format!("{e:?}"))?;
+                    assert_eq!(projections[0].reconcile_or_defer(&mut runtime, committed)
+                        .map_err(|e| format!("{e:?}"))?, None);
+                    assert_eq!(runtime.npc_key(blocker), Some("oteryn:npc.hoaxette"));
+                    // One blocked return must not stop the other committed occurrences.
+                    for projection in &mut projections[1..] {
+                        assert!(projection.reconcile_or_defer(&mut runtime, committed)
+                            .map_err(|e| format!("{e:?}"))?.is_some());
+                    }
+                    runtime.remove_dynamic_npc_actor(blocker).map_err(|e| format!("{e:?}"))?;
+                }
                 let mut refs = Vec::new();
                 for projection in &mut projections {
                     refs.push(projection.reconcile(&mut runtime, committed).map_err(|e| format!("{e:?}"))?);

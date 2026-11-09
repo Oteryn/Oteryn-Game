@@ -161,6 +161,14 @@ async fn exercise(h: &fixture::Harness, day: i32, expire_offline: bool) -> fixtu
         day == 13,
         "the independent gate still requires the current full moon"
     );
+    let occurrences: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_feroxa_occurrences")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(
+        occurrences,
+        i64::from(day == 13),
+        "only the current full moon may create occurrence state"
+    );
     // The next pass reloads the persisted running set. Close only the ordinary
     // fixture; the real Feroxa firing stays active across both scheduler passes.
     sqlx::query("UPDATE game_world_raid_firings SET state=2 WHERE world_id=encode($1,'hex')::uuid AND raid_key='raid:qn5.ordinary_a'")

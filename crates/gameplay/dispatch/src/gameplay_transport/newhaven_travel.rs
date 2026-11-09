@@ -20,6 +20,7 @@ struct Prompt {
 #[derive(Clone)]
 pub(super) enum Departure {
     Tutorial(NewhavenRoute),
+    Quest(Box<super::npc_command::catalogue::teleport::DepartureProof>),
     Paid(Box<crate::durability::npc_travel::PaidTravelRequest>),
 }
 
@@ -81,6 +82,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use npc_command::NpcConversations;
         let session = command.game_session_id;
         if self.states.newhaven_travel.held(session) {
+            let quest = self
+                .states
+                .newhaven_travel
+                .holds
+                .lock()
+                .ok()
+                .and_then(|h| {
+                    h.get(&session)
+                        .map(|h| matches!(h.route, Departure::Quest(_)))
+                })
+                .unwrap_or(false);
+            if quest {
+                return npc_command::catalogue::resume(self, command)
+                    .await
+                    .unwrap_or_else(|| npc_command::NpcTalkOutcome {
+                        unknown: true,
+                        ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                    });
+            }
             let paid = self
                 .states
                 .newhaven_travel

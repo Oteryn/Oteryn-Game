@@ -100,7 +100,11 @@ pub(super) fn check_inbox(value: &OneItemRewardClaimMintV1) -> Result<(), AuditE
     check_content_key(&source.ruleset_revision)?;
     check_content_key(&source.sim_revision)?;
     check_definition(source.reward_claim.as_ref())?;
-    match (&inbox.house_key, inbox.house_scope_ownership_generation, inbox.house_authority_kind) {
+    match (
+        &inbox.house_key,
+        inbox.house_scope_ownership_generation,
+        inbox.house_authority_kind,
+    ) {
         (None, None, None) => {}
         (Some(house), Some(generation), Some(1 | 2)) if generation > 0 => {
             let world = crate::foundation::WorldId::decode(&inbox.world_id)
@@ -109,9 +113,18 @@ pub(super) fn check_inbox(value: &OneItemRewardClaimMintV1) -> Result<(), AuditE
                 return Err(AuditError::InvalidInput);
             }
             if inbox.house_authority_kind == Some(2)
-                && (inbox.outputs.len() != 1 || inbox.outputs[0].after.as_ref().is_none_or(|item|
-                    item.quantity != 1 || item.key_number != 0 || item.definition != source.reward_claim || item.definition.as_ref().is_none_or(|definition|
-                        definition.family != "Item" || definition.production_key != crate::durability::house_hireling::HIRELING_LAMP_KEY))) {
+                && (inbox.outputs.len() != 1
+                    || inbox.outputs[0].after.as_ref().is_none_or(|item| {
+                        item.quantity != 1
+                            || item.key_number != 0
+                            || item.definition != source.reward_claim
+                            || item.definition.as_ref().is_none_or(|definition| {
+                                definition.family != "Item"
+                                    || definition.production_key
+                                        != crate::durability::house_hireling::HIRELING_LAMP_KEY
+                            })
+                    }))
+            {
                 return Err(AuditError::InvalidInput);
             }
         }

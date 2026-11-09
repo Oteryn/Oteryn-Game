@@ -15,6 +15,18 @@ def source(path, text):
 
 
 class RaidCatalogueTest(unittest.TestCase):
+    def test_feroxa_global_lua_timeline_uses_source_spawn_and_announcements(self):
+        variant = raids.feroxa_raid.variant(raids.ROOT, raids.area_anchor)
+        self.assertEqual([a["delay_ms"] for a in variant["announcements"]], [0, 2_700_000, 3_600_000])
+        self.assertEqual(len(variant["waves"]), 1)
+        wave = variant["waves"][0]
+        self.assertEqual(wave["delay_ms"], 4_500_000)
+        entry = wave["entries"][0]
+        self.assertEqual(entry["area"]["from"], dict(x=33380, y=31537, floor=11))
+        self.assertEqual(entry["area"]["from"], entry["area"]["to"])
+        self.assertEqual(entry["source"]["revision"], raids.feroxa_raid.REVISION)
+        self.assertEqual(entry["source"]["path"], raids.feroxa_raid.LIB)
+
     def test_apply_plan_verifies_every_sha_before_any_output(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -210,7 +210,7 @@ async fn plan_group(
         .sum();
     let base = entry
         .experience()
-        .ok_or(SpellItemError::Rejected("no admitted XP row"))?
+        .ok_or(SpellItemError::Rejected("no admitted XP amount"))?
         .get();
     let contributions = entry
         .damage_shares

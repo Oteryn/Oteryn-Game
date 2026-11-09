@@ -21,7 +21,7 @@ pub fn callback() -> Result<Callback, String> {
             {"track":MISSION,"minimum":4,"maximum":4,"set":5},
             {"track":RAM,"minimum":0,"maximum":0,"set":1}
         ],
-        "offerings":[],"item_on_target":{"item":"oteryn:item.tibia.i53073","count":1,"replacement":null,"target_replacement":null},
+        "offerings":[],"item_on_target":{"selected_instance":true,"item":"oteryn:item.tibia.i53073","count":1,"replacement":null,"target_replacement":null},
         "effects":{"magic":{"position":{"x":31926,"y":31896,"floor":-7},"effect":36},"mount_reward":{"mount":"oteryn:content.mount.reliable_ram","achievement":"oteryn:achievement/a_reliable_friend"}},
         "return_on_failure":false,"failure_message":null,
         "success_message":"The hungry ram enjoyed your gift and is willing to join and assist you on your journey. Take good care of it!",
@@ -41,6 +41,12 @@ mod tests {
     fn srv7_ram_binds_source_earned_turnips_and_map_target() -> Result<(), String> {
         let callback = callback()?;
         assert_eq!(callback.selector.appearance, Some(53439));
+        assert!(
+            callback
+                .item_on_target
+                .as_ref()
+                .is_some_and(|item| item.selected_instance)
+        );
         assert_eq!(
             callback.effects.magic.as_ref().map(|effect| effect.effect),
             Some(36)

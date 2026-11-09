@@ -88,6 +88,7 @@ impl ActivityHandoffOwner {
                         &request,
                         false,
                         Some(context),
+                        &super::super::quest_state::grizzly::NoGrizzlyPremium,
                     )
                     .await?;
                     if !matches!(result, ActivityEnterOutcome::Refused(_)) {

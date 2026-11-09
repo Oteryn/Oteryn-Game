@@ -1,4 +1,4 @@
-"""Import the 17 owned qready1 PG cases into the existing reward USE proof format."""
+"""Import qready1 PG evidence, retaining unchanged proofs on a focused refresh."""
 
 import argparse
 import hashlib
@@ -15,7 +15,7 @@ BINDINGS = (
 )
 
 
-def generate(root, text):
+def generate(root, text, *, selected=None, previous=None):
     source = (root / TEST).read_text()
     functions = re.findall(
         r"fn (qready1_\w+_exact_reward_once)\(\)(.*?)(?=\n#\[test\]|\Z)",
@@ -23,8 +23,19 @@ def generate(root, text):
         re.DOTALL,
     )
     summaries = re.findall(r"test result: (\w+)\. (\d+) passed; (\d+) failed;", text)
-    if len(functions) != 17 or summaries != [("ok", "17", "0")]:
-        raise ValueError("Expected one complete passing 17-case qready1 PostgreSQL run")
+    if len(functions) != 17:
+        raise ValueError("Expected the 17 owned qready1 test functions")
+    names = {name for name, _ in functions}
+    if selected is not None:
+        if not selected or not selected <= names or previous is None:
+            raise ValueError("Focused refresh requires known tests and previous evidence")
+        if (previous.get('schema') != 'OTERYN_QUEST_REWARD_USE_PROOF/v1'
+                or previous.get('test_file') != TEST
+                or previous.get('test_sha256') != hashlib.sha256((root / TEST).read_bytes()).hexdigest()):
+            raise ValueError("Retained test evidence changed; rerun all qready1 cases")
+        functions = [(name, body) for name, body in functions if name in selected]
+    if summaries != [("ok", str(len(functions)), "0")]:
+        raise ValueError(f"Expected one complete passing {len(functions)}-case qready1 PostgreSQL run")
     claims = load_reward_claims(root)
     matrix = json.loads(
         (
@@ -64,6 +75,21 @@ def generate(root, text):
             }
             for key in keys
         )
+    if selected is not None:
+        replacements = {case['claim_key']: case for case in cases}
+        if {case['claim_key'] for case in previous['cases'] if case['test'] in selected} != set(replacements):
+            raise ValueError("Focused refresh changed the selected claim inventory")
+        retained = []
+        for case in previous['cases']:
+            if case['test'] in selected:
+                retained.append(replacements[case['claim_key']])
+            else:
+                if (case['test'] not in names or case['duration_seconds'] < 0.01
+                        or case['claim_sha256'] != digest(claims[case['claim_key']])
+                        or case['marker'] not in source):
+                    raise ValueError("Unselected reward USE evidence is stale")
+                retained.append(case)
+        cases = retained
     expected = {
         row["claim"] for row in json.loads((root / BINDINGS).read_text())["bindings"]
     }
@@ -82,9 +108,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--log", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--test", action="append", help="Refresh only this passing test; retain unchanged output evidence")
     args = parser.parse_args()
-    proof = generate(Path(__file__).resolve().parents[3], args.log.read_text())
+    proof = generate(Path(__file__).resolve().parents[3], args.log.read_text(),
+                     selected=set(args.test) if args.test else None,
+                     previous=json.loads(args.output.read_text()) if args.test else None)
     args.output.write_text(json.dumps(proof, indent=2) + "\n")
     print(
-        f"Qualified {len(proof['cases'])} qready1 reward claims from 17 PostgreSQL cases"
+        f"Qualified {len(proof['cases'])} qready1 reward claims; refreshed {len(args.test) if args.test else 17} PostgreSQL cases"
     )

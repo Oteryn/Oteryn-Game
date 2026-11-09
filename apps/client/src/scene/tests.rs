@@ -1,6 +1,17 @@
 use super::*;
 use oteryn_session::EntityRef;
 
+impl Scene {
+    pub(crate) fn native_own_state(&self) -> (Option<[u8; 16]>, Option<usize>) {
+        (self.own_identity, self.own_draws.as_ref().map(Vec::len))
+    }
+    pub(crate) fn native_own_rendered(&self) -> bool {
+        self.own_draws
+            .as_ref()
+            .is_some_and(|draws| !draws.is_empty())
+    }
+}
+
 fn scene() -> Result<Scene, BatchError> {
     let world = Arc::new(World::builtin()?);
     let markers = [TileCoord::new(3, -1), TileCoord::new(-2, -2)];

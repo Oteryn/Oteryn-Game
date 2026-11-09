@@ -1,3 +1,67 @@
+# Current shared-engine role (2026-11-08)
+
+Work branch: `claude/happy-davinci-ijz3wy-qm-qengine2`. Push only this branch;
+no qmech/main merge, no force/rebase, no shared CLAIMS.md edits. Earlier outfit
+ledger and branch instructions below are historical, not the current queue.
+
+- M01a: grouped TALK admission uses every exact stage operation; the imported,
+  grouped/replay and Smaralda production PG cases passed on 7eb8421d7 in
+  185.28s / 179.39s / 115.22s (PostgreSQL18.6 markers). Native preflight rejects
+  unsupported storage mutations, out-of-bounds counters and non-i64 values.
+  A final consumer audit found that node boot listed source-program NPCs only.
+  This commit adds `authored_bindings::native_dialogue_npcs()` and unions its
+  admitted TALK keys into the real boot greeting list. Carried/world callbacks
+  do not admit NPC greetings. All12 binding units, server compile, clippy and
+  fmt pass. Full physical node-boot qualification is NOT complete: this agent
+  lacks sudo/service-user privileges. `sudo --version` exits127 (command not found).
+  The unmodified node-boot script was attempted; Docker config was redirected
+  to `/tmp/qengine2-node-docker`; obsolete lane target artifacts were removed
+  after the image build filled disk. Do not report every node-boot variant green.
+  Owner decision 2026-11-09: physical node-boot qualification runs in CI;
+  its absence in this container does not hold locally qualified pushes.
+- M02: reused SRV7/SRVWLD ordered Ground predicate and source Nomads window
+  binding. Focused production observer PG case passed6.968s; current checked
+  code is in e50df85aa and later heads. The shared fixture supports a small
+  `-p oteryn-gameplay-durability --features test-support --test m02_nomads_window` target.
+- M03: reused QM03 fenced admission; fixed regular blessings to exclude the two
+  enhanced blessings and Twist. Generic PG61.37s; production anniversary
+  admission/replay/return PG92.46s in9dd896915. Entrance is level20/Premium/
+  promotion/five regular blessings; the source return is ungated and preserves
+  progress. This is mechanic/entrance evidence, NOT whole-quest completion.
+  The generic Premium+minimum_level API also serves Pits of Inferno; its exact
+  hub binding is not authored here. Source evidence is in
+  `docs/reference/content-prep/M03-time-machine-admission.md`.
+
+W15b restored multi-item slices (2026-11-09): reused the bounded reader and
+reference/bundle dispatch from f4b876061, plus real-dispatch cases from
+b1dfcda43, without importing old migrations or the package. Plain claims retain
+1..20 ordered, admitted rewards; key-bound claims remain single-item. Both
+chest paths pass all items into existing atomic RewardClaimMintRequest.
+additional_items. Parser regression ran RED, then both focused tests passed.
+PostgreSQL18.6 real-dispatch proof: multiple roots/replay PASS75.422832551s;
+one-free-slot atomic refusal PASS78.224649992s. Existing Root persistence is
+reused; no new migration/content inputs. Architecture and fmt passed. Changed
+crate clippy follows the owner's immediate-push instruction. The broad content
+unit run was stopped in unrelated native-profile cases; do not call it green.
+This qualifies the multi-item slice, not every repeat/random reward variant.
+
+Royal Costume preserved slice restored (2026-11-09): only the final crown
+exchange now completes the quest. The real-dispatch story starts with no
+seeded progress, checks intermediate non-completion and one terminal receipt,
+and retains its exact-token, appearance and literal-replay assertions.
+PostgreSQL18.6 marker; PASS244.472750797s. An earlier155.17s run failed during
+fixture token minting with Unavailable(Database(RetryableStatement)); the
+unchanged isolated rerun passed, without retries or deadline changes. The new
+producer regression failed before the fix and passed afterward.
+
+All115 authoring unit modules, authoring checks and content-tree validation
+passed after the preflight update. No SQL migrations were added. Current qmech
+INDEX OPEN labels are stale for several implemented/assigned rows: M05 and
+M13 have code and ENGNPC/ENGITEM owners; M16 belongs to questpc5. Do not duplicate.
+Source env.sh for tools/PG without printing credential values.
+
+---
+
 # qengine2-L1
 
 AUTHORING on `claude/happy-davinci-ijz3wy-qengine2`. Owner authorizes commit and

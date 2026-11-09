@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_white_raven_monastery_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/costello.lua:63-93"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "npc": "oteryn:npc.costello",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/costello.lua:63-93"
+      ],
+      "key": "oteryn:quest-npc/the_white_raven_monastery_quest/costello/diary-offer",
+      "keywords": [
+        "diary"
+      ],
+      "exclude_keywords": [
+        "fugio"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Do you want me to inspect a diary?"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "npc": "oteryn:npc.costello",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/costello.lua:63-93"
+      ],
+      "key": "oteryn:quest-npc/the_white_raven_monastery_quest/costello/diary-complete",
+      "keywords": [
+        "yes"
+      ],
+      "exclude_keywords": [
+        "fugio",
+        "diary",
+        "holy water"
+      ],
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3212",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3214",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "By the gods! This is brother Fugio's handwriting and what I read is horrible indeed! You have done our order a great favour by giving this diary to me! Take this blessed Ankh. May it protect you in even your darkest hours."
+      ],
+      "inventory_failure_reply": [
+        "Uhm, as you wish."
+      ],
+      "completes": true
+    }
+  ],
+  "source_files": [
+    {
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/costello.lua",
+      "sha256": "c23199cb756541cd4972e8d156a69b722d775c6f71a05a9acd369b7744b9d5e8"
+    }
+  ]
+}

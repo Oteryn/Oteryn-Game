@@ -1,5 +1,7 @@
 #![allow(clippy::expect_used, clippy::panic)]
 use super::*;
+#[path = "actor_spell_source_creature_dot_owner_tests/drome_native_roles.rs"]
+mod drome_native_roles;
 use crate::spell::combat_batch::{
     OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
 };
@@ -145,6 +147,18 @@ fn fixture_with_phase(
         .stage_owned_test_conditions(&[definition], &native_facts)
         .expect("actual native Player buff owner");
     assert!(states.commit(&runtime, source, session, next));
+    runtime
+        .bind_attacker_lease(
+            source,
+            session,
+            crate::foundation::CharacterLease::new(
+                CharacterId::decode(&[1, 0x90, 0, 0, 0, 5, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 5])
+                    .expect("character"),
+                1,
+            )
+            .expect("lease"),
+        )
+        .expect("current player source lease before the real wound commit");
     let wound = OwnerCombatBatch {
         caster: source,
         attacker: CharacterId::decode(&[1, 0x90, 0, 0, 0, 5, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 5])
@@ -213,18 +227,6 @@ fn current_player_buff_comes_from_canonical_owner_dot_heals_before_scaled_damage
             .instances()
             .is_empty()
     );
-    runtime
-        .bind_attacker_lease(
-            source,
-            session,
-            crate::foundation::CharacterLease::new(
-                CharacterId::decode(&[1, 0x90, 0, 0, 0, 5, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 5])
-                    .expect("character"),
-                1,
-            )
-            .expect("lease"),
-        )
-        .expect("current player source lease");
     assert_eq!(
         states.analyser.snapshot(source, session, 1, None),
         Some(false)

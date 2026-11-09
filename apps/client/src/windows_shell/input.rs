@@ -112,7 +112,11 @@ impl Application {
             if play.view.target_move_input(&play.link, events) {
                 return;
             }
-            if let Some(direction) = arrow_step(events) {
+            if let Some(direction) = play
+                .link
+                .diagonal_input(events)
+                .or_else(|| arrow_step(events).filter(|direction| !direction.is_diagonal()))
+            {
                 play.view.arrow(direction);
             }
             for spell in self.hotkeys.route(events) {

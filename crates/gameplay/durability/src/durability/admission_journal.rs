@@ -1,5 +1,5 @@
-mod prepare;
 pub mod party_target_binding;
+mod prepare;
 pub mod spell_reconnect;
 #[cfg(any(test, feature = "test-support"))]
 use crate::durability::schema;
@@ -249,7 +249,8 @@ impl AdmissionReconnectJournal {
         self.backend
             .run_pass(issued, |holder, deadline| {
                 Box::pin(async move {
-                    prepare::prepare_pass(holder, deadline, request.record(), receipt_authorized).await
+                    prepare::prepare_pass(holder, deadline, request.record(), receipt_authorized)
+                        .await
                 })
             })
             .await
@@ -1978,9 +1979,7 @@ fn encode_record(record: &ReconnectDurabilityRecordV1) -> serde_json::Value {
     })
 }
 
-fn encode_evidence(
-    evidence: &crate::foundation::AuthorityEvidenceFenceV1,
-) -> serde_json::Value {
+fn encode_evidence(evidence: &crate::foundation::AuthorityEvidenceFenceV1) -> serde_json::Value {
     json!({
         "authority": evidence.authority(),
         "purpose": evidence.purpose(),

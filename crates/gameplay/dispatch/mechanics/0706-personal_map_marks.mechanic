@@ -1,0 +1,8 @@
+name=personal_map_marks
+commands=733
+transport=personal_map_marks
+composed=personal_map_marks
+authority=personal_map_marks
+offer=703,personal_map_marks::offered,personal_map_marks_available
+[route]
+routing::personal_map_marks::route(authority, &session.admitted, command).await

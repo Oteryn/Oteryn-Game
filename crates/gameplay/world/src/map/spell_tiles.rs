@@ -165,19 +165,31 @@ impl SpellTilesBuilder {
                     let definition = (entry.family == Family::Item)
                         .then(|| item(&entry.key))
                         .flatten();
+                    let surface = (entry.family == Family::Terrain)
+                        .then(|| crate::content::qualified_static_surface(&entry.key))
+                        .flatten();
                     PaletteSpell {
                         source_id: super::palette_appearance(&entry.key).map(u32::from),
                         // Crystal items.cpp:234: unsight sets blockProjectile;
                         // movement solidity and wall classification are independent.
-                        blocks_projectile: entry.terrain.map_or_else(
-                            || definition.is_none_or(|definition| definition.blocks_projectile),
-                            |terrain| {
-                                terrain.blocks_projectile.unwrap_or(
-                                    terrain.kind == TerrainKind::Wall
-                                        || definition
-                                            .is_some_and(|definition| definition.blocks_projectile),
+                        blocks_projectile: surface.map_or_else(
+                            || {
+                                entry.terrain.map_or_else(
+                                    || {
+                                        definition
+                                            .is_none_or(|definition| definition.blocks_projectile)
+                                    },
+                                    |terrain| {
+                                        terrain.blocks_projectile.unwrap_or(
+                                            terrain.kind == TerrainKind::Wall
+                                                || definition.is_some_and(|definition| {
+                                                    definition.blocks_projectile
+                                                }),
+                                        )
+                                    },
                                 )
                             },
+                            |surface| surface.blocks_projectile,
                         ),
                         pickupable: definition.is_some_and(|definition| definition.pickupable),
                     }
@@ -288,9 +300,10 @@ impl SpellTilesBuilder {
         }
         self.shapes.shrink_to_fit();
         Ok(BundleSpellTiles {
+            phases: Default::default(),
             base: self.base,
-            tiles: self.tiles,
-            shapes: self.shapes,
+            tiles: self.tiles.into(),
+            shapes: self.shapes.into(),
         })
     }
 }
@@ -628,6 +641,7 @@ pub mod tests {
                 ordinal: 1,
                 placement_key: 0,
                 movable: false,
+                openable_source: false,
             },
             facts: wall_facts,
         }];
@@ -656,7 +670,7 @@ pub mod tests {
         // Grass: a walkable ground with its id and stored speed, nothing on top.
         let grass = lookup(1).expect("grass");
         assert_eq!(
-            grass,
+            grass.as_ref(),
             &tile(
                 Some((100, 150)),
                 &[],
@@ -674,7 +688,7 @@ pub mod tests {
         assert!(lookup(2).expect("zone").flags().protection_zone);
         // A non-walkable ground blocks.
         assert_eq!(
-            lookup(3).expect("water"),
+            lookup(3).expect("water").as_ref(),
             &tile(
                 Some((598, 0)),
                 &[],
@@ -683,7 +697,7 @@ pub mod tests {
         );
         // A wall blocks movement and projectiles.
         assert_eq!(
-            lookup(4).expect("wall"),
+            lookup(4).expect("wall").as_ref(),
             &tile(
                 Some((100, 150)),
                 &[1100],
@@ -692,7 +706,7 @@ pub mod tests {
         );
         // A catalogue floor change.
         assert_eq!(
-            lookup(5).expect("stair"),
+            lookup(5).expect("stair").as_ref(),
             &tile(
                 Some((100, 150)),
                 &[1950],
@@ -701,7 +715,7 @@ pub mod tests {
         );
         // An Item without a profile blocks movement and projectiles.
         assert_eq!(
-            lookup(9).expect("unprofiled"),
+            lookup(9).expect("unprofiled").as_ref(),
             &tile(
                 Some((100, 150)),
                 &[2000],
@@ -716,7 +730,7 @@ pub mod tests {
         assert_eq!(groundless.top_source_ids(), &[2000]);
         // A sealed (house) door is a static wall.
         assert_eq!(
-            lookup(12).expect("sealed door"),
+            lookup(12).expect("sealed door").as_ref(),
             &tile(
                 Some((100, 150)),
                 &[1629],
@@ -907,8 +921,8 @@ pub mod tests {
         let (_, cells) = cells(&first);
         let lookup = |x| cells.spell_tiles().lookup(cells.scope(), at(x));
         assert!(std::ptr::eq(
-            lookup(1).expect("x 1"),
-            lookup(13).expect("x 13")
+            lookup(1).expect("x 1").as_ref(),
+            lookup(13).expect("x 13").as_ref()
         ));
     }
 

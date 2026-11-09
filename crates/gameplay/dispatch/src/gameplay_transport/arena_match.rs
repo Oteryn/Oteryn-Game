@@ -6,6 +6,7 @@ use crate::durability::arena_match::{self as durable, MatchState, MatchTransitio
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
+use crate::map::facts::ArenaPillarProjection as PillarProjection;
 use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposition as D};
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -13,6 +14,19 @@ use std::time::{Duration, Instant};
 
 #[path = "arena_match/pit_exit.rs"]
 mod pit_exit;
+
+#[path = "arena_match/death_poll.rs"]
+mod death_poll;
+#[path = "arena_match/departure_poll.rs"]
+mod departure_poll;
+#[path = "arena_match/pillar.rs"]
+mod pillar;
+#[path = "arena_match/pit_reset.rs"]
+mod pit_reset;
+#[path = "arena_match/portal_step.rs"]
+mod portal_step;
+#[path = "arena_match/timeout_poll.rs"]
+mod timeout_poll;
 
 macro_rules! authority_methods {
     () => {
@@ -41,15 +55,42 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
+struct ArenaCaller {
+    actor: ExactActorRef,
+    supplied: crate::durability::item_transfer::CurrentCharacterItemFence,
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+}
+
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct Matches {
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, LiveMatch>>,
+    victory_poll: Mutex<Option<(u64, u64)>>,
+    #[cfg(test)]
+    fixture_pit_ms: std::sync::atomic::AtomicU64,
 }
+impl Matches {
+    fn pit_millis(&self) -> i64 {
+        #[cfg(test)]
+        {
+            let fixture = self
+                .fixture_pit_ms
+                .load(std::sync::atomic::Ordering::Relaxed);
+            if let Ok(millis) = i64::try_from(fixture)
+                && (1..=i64::from(donor::PIT_SECONDS) * 1000).contains(&millis)
+            {
+                return millis;
+            }
+        }
+        i64::from(donor::PIT_SECONDS) * 1000
+    }
+}
+
 #[derive(Clone)]
 struct LiveMatch {
     actor: ExactActorRef,
-    opponent: ExactActorRef,
+    opponent: Option<ExactActorRef>,
     state: MatchState,
     deadline: Instant,
 }
@@ -173,7 +214,7 @@ pub(in crate::gameplay_transport) fn tick(
                 .map(|lease| *lease.character_id().as_bytes());
             if live.state.phase == 1
                 && character.is_some_and(|character| {
-                    credited_victory(runtime, live.opponent, &character).is_some()
+                    live.opponent.is_some_and(|opponent| credited_victory(runtime, opponent, &character).is_some())
                 })
             {
                 live.state.phase = 2;
@@ -183,10 +224,18 @@ pub(in crate::gameplay_transport) fn tick(
             }
             return true;
         }
+        // Retain the run until its fenced native departure reset settles. A
+        // failed database pass must not discard the only retry owner.
+        if present && !inside && !expired && !dead {
+            return true;
+        }
         if let Some(map) = owner.bundle_map() {
             pit_exit::project(map, live.state.pit, false);
         }
-        let _ = runtime.remove_arena_opponent(live.opponent);
+        if let Some(opponent) = live.opponent {
+            let _ = runtime.remove_arena_opponent(opponent);
+        }
+        let _ = pillar::project(owner, &live.state, PillarProjection::Release);
         if present
             && inside
             && expired
@@ -196,6 +245,12 @@ pub(in crate::gameplay_transport) fn tick(
         {
             let _ =
                 runtime.relocate_arena_player(live.actor, *session, before, position(donor::KICK));
+        }
+        if present && expired && !dead {
+            // Physical kick remains timely if persistence fails. Retain the
+            // run/deadline so the next native pass can finish its durable reset.
+            live.opponent = None;
+            return true;
         }
         false
     });
@@ -222,6 +277,24 @@ pub(in crate::gameplay_transport) fn tick(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Exercise real database expiry quickly; production always uses donor600s.
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn regression_arena_pit_time(
+        &self,
+        millis: u64,
+    ) -> Option<()> {
+        if millis == 0
+            || millis > (u64::from(donor::PIT_SECONDS) * 1000)
+            || !self.states.arena_matches.live.lock().ok()?.is_empty()
+        {
+            return None;
+        }
+        self.states
+            .arena_matches
+            .fixture_pit_ms
+            .store(millis, std::sync::atomic::Ordering::Relaxed);
+        Some(())
+    }
     pub(in crate::gameplay_transport) async fn arena_match_wire(
         &self,
         admitted: AdmittedSession,
@@ -229,7 +302,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         payload: &[u8],
     ) -> Option<Vec<u8>> {
         let action = wire::decode_match_request(payload).ok()?;
-        if let A::Drome(action) = action { return self.drome_command(admitted, id, action, payload).await; }
+        if let A::Drome(action) = action {
+            return self.drome_command(admitted, id, action, payload).await;
+        }
         let actor = admitted.runtime_actor?;
         let supplied = admitted.item_fence?;
         let command = CommandRef::new(admitted.game_session_id, CommandId::new(id).ok()?);
@@ -242,18 +317,70 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
+        let bytes = self.arena_match_native(
+            ArenaCaller { actor, supplied, world: admitted.world_id, channel: admitted.channel_id },
+            command.into(), action, payload, None,
+        ).await?;
+        let result = wire::decode_match_result(&bytes).ok()?;
+        if result.state.completed_rank == 3 && result.state.claimed_masks.iter().all(|mask| mask & 8 != 0) {
+            self.finish_arena_quest(supplied, command).await?;
+        }
+        Some(bytes)
+    }
+
+    async fn finish_arena_quest(
+        &self,
+        supplied: crate::durability::item_transfer::CurrentCharacterItemFence,
+        command: CommandRef,
+    ) -> Option<()> {
+        use crate::durability::quest_state::QuestTransitionOutcome;
+        use oteryn_gameplay_quests::quest::{arena_completion, QuestRefusal};
+        let fence = self.current_quest_fence(command.game_session_id()).await.ok()??;
+        if fence.item_fence() != supplied { return None; }
+        let copy = self.root.read_character_quest_state(self.character, fence.character_id).await.ok()?;
+        if copy.states().get(arena_completion::QUEST).is_some_and(|state| state.completed) { return Some(()); }
+        let catalogue = self.quest_catalogue.as_ref()?;
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let outcome = slot.commit_arena_quest_completion(self.root, self.character, self.holder, fence, command,
+            std::sync::Arc::clone(catalogue), &self.premium_coordinator).await.ok()?;
+        drop(slot);
+        match outcome {
+            QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_) => {
+                self.refresh_quest_session(command.game_session_id(), false).await;
+                Some(())
+            }
+            // Earned trophies remain claimed while a required current admission is absent.
+            QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch) => Some(()),
+            _ => None,
+        }
+    }
+
+    async fn arena_match_native(
+        &self,
+        caller: ArenaCaller,
+        cause: durable::MatchCause,
+        action: A,
+        payload: &[u8],
+        expected: Option<crate::foundation::MovementPositionSnapshot>,
+    ) -> Option<Vec<u8>> {
+        let actor = caller.actor;
+        let supplied = caller.supplied;
+        let command = cause.command();
+        let session = command.game_session_id();
+        // Native STEP already holds the spell lane. Arena metadata and pending
+        // combat settlement serialize on the same Character revision slot.
+        if matches!(cause, durable::MatchCause::Command(_)) && !matches!(
+            self.drain_kill_rewards(session).await,
+            super::kill_reward::DrainOutcome::Drained
+        ) {
+            return None;
+        }
         let _gate = self.states.arena_matches.command.lock().await;
         let mut fence = self
-            .current_quest_fence(admitted.game_session_id)
+            .current_quest_fence(session)
             .await
             .ok()??;
         if fence.item_fence() != supplied {
-            return None;
-        }
-        if !matches!(
-            self.drain_kill_rewards(admitted.game_session_id).await,
-            super::kill_reward::DrainOutcome::Drained
-        ) {
             return None;
         }
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
@@ -261,18 +388,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let mut runtime = self.runtime.lock().await;
             let binding = runtime.binding();
-            if binding.world_id() != admitted.world_id
-                || binding.channel_id() != Some(admitted.channel_id)
+            if binding.world_id() != caller.world
+                || binding.channel_id() != Some(caller.channel)
                 || binding.runtime_scope() != fence.runtime_scope
                 || binding.scope_generation() != fence.scope_ownership_generation
                 || runtime.owner_fence().is_err()
                 || runtime
-                    .player_control_facts(actor, admitted.game_session_id)
+                    .player_control_facts(actor, session)
                     .ok()?
                     .control_loss
                     .is_some()
                 || !runtime
-                    .bound_attacker_lease(actor, admitted.game_session_id)
+                    .bound_attacker_lease(actor, session)
                     .is_ok_and(|lease| {
                         lease.character_id().as_bytes() == fence.character_id.as_bytes()
                             && lease.generation() == fence.character_lease_generation
@@ -281,20 +408,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return None;
             }
             tick(self, &mut runtime);
+            if let Some(expected) = expected
+                && (runtime.read_actor_position(actor) != Ok(expected)
+                    || !pit_exit::owns_exit(self, actor, session, expected.position()))
+            { return None; }
         }
         let read = self
             .root
-            .read_arena_match(self.character, self.holder, fence, command, payload)
+            .read_arena_match(self.character, self.holder, fence, cause, payload)
             .await
             .ok()?;
         if !read.dead
+            && read.pit_owned
             && (read.state.rank == 0
-                || (read.state.session == *admitted.game_session_id.as_bytes()
+                || (read.state.session == *session.as_bytes()
                     && read.state.scope_generation == fence.scope_ownership_generation.get()))
         {
             self.restore_arena_projection(
                 actor,
-                admitted.game_session_id,
+                session,
                 &read.state,
                 read.now_ms,
             )
@@ -313,21 +445,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .live
             .lock()
             .ok()?
-            .get(&admitted.game_session_id)
+            .get(&session)
             .cloned();
         let stale = after.rank > 0
-            && (after.session != *admitted.game_session_id.as_bytes()
+            && (after.session != *session.as_bytes()
                 || after.scope_generation != fence.scope_ownership_generation.get()
-                || (read.dead && matches!(after.phase, 1 | 2)));
+                || (read.dead && matches!(after.phase, 1 | 2))
+                || (!read.pit_owned && matches!(after.phase, 1 | 2)));
         let expired = matches!(after.phase, 1 | 2) && after.deadline_ms <= read.now_ms;
         if stale || expired {
             after = after.idle();
             disposition = if expired { D::TimedOut } else { D::WrongState };
         } else if after.phase == 1
             && let Some(current) = &live
+            && let Some(opponent) = current.opponent
         {
             let mut runtime = self.runtime.lock().await;
-            victory = credited_victory(&mut runtime, current.opponent, fence.character_id.as_bytes());
+            victory = credited_victory(&mut runtime, opponent, fence.character_id.as_bytes());
             if victory.is_some() {
                 after.phase = 2;
             }
@@ -338,14 +472,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match action {
                 A::Drome(_) => return None,
                 A::Status => {}
-                A::Enter if self.runtime.lock().await.is_tibiadrome(actor) => {disposition=D::WrongState;}
+                A::Enter if self.runtime.lock().await.is_tibiadrome(actor) => {
+                    disposition = D::WrongState;
+                }
                 A::Enter if after.rank == 0 && after.completed < 3 => {
                     let rank = after.completed + 1;
                     let runtime = self.runtime.lock().await;
                     let at = runtime.read_actor_position(actor).ok()?.position();
                     if !at_entrance(at) {
                         disposition = D::WrongState;
-                    } else if !self.arena_pit_ready(&runtime, rank, 1, admitted.game_session_id) {
+                    } else if !self.arena_pit_ready(&runtime, rank, 1, session) {
                         disposition = D::Busy;
                     } else {
                         after = MatchState {
@@ -357,8 +493,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             rank,
                             pit: 1,
                             phase: 1,
-                            deadline_ms: read.now_ms + i64::from(donor::PIT_SECONDS) * 1000,
-                            session: *admitted.game_session_id.as_bytes(),
+                            deadline_ms: read.now_ms + self.states.arena_matches.pit_millis(),
+                            session: *session.as_bytes(),
                             scope_generation: fence.scope_ownership_generation.get(),
                             run: durable::identity(command, b"run"),
                         };
@@ -388,11 +524,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &runtime,
                         after.rank,
                         after.pit + 1,
-                        admitted.game_session_id,
+                        session,
                     ) {
                         after.pit += 1;
                         after.phase = 1;
-                        after.deadline_ms = read.now_ms + i64::from(donor::PIT_SECONDS) * 1000;
+                        after.deadline_ms = read.now_ms + self.states.arena_matches.pit_millis();
                         spawn = Some((after.rank, after.pit));
                     } else {
                         disposition = D::Busy;
@@ -486,7 +622,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 fence,
                 MatchTransition {
-                    command,
+                    cause,
+                    native_origin: None,
                     payload: payload.to_vec(),
                     before: before.clone(),
                     after: after.clone(),
@@ -520,16 +657,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let result = wire::decode_match_result(&bytes).ok()?;
         // The fee owner can refuse the proposed entry atomically. Project only
         // the state it committed, never the unpaid proposal.
-        if matches!(result.disposition, D::InsufficientGold | D::InventoryFull) {
-            after = before.clone();
-        }
+        after.reconcile_arena_refusal(&before, result.disposition, &result.state);
         if result.disposition != D::Applied
             && !matches!(result.disposition, D::TimedOut)
             && after == before
         {
             return Some(bytes);
         }
-        self.restore_arena_projection(actor, admitted.game_session_id, &after, read.now_ms)
+        self.restore_arena_projection(actor, session, &after, read.now_ms)
             .await?;
         Some(bytes)
     }
@@ -549,13 +684,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?
             .get(&session)
             .cloned();
-        if existing.as_ref().is_some_and(|live| {
-            live.state.run == state.run
-                && live.state.pit == state.pit
-                && matches!(state.phase, 1 | 2)
-        }) {
-            return Some(());
-        }
+        let reusable = existing.as_ref().is_some_and(|live| {
+            live.actor == actor
+                && live.state == *state
+                && state.projection_remaining_ms(now_ms).is_some()
+        });
         let mut runtime = self.runtime.lock().await;
         if runtime.owner_fence().is_err()
             || self
@@ -566,18 +699,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        if matches!(state.phase, 1 | 2) && state.deadline_ms > now_ms {
+        if reusable {
+            let projection = if state.phase == 2 {
+                PillarProjection::Victory
+            } else {
+                PillarProjection::Fighting
+            };
+            let _ = pillar::project(self, state, projection);
+            return Some(());
+        }
+        if let Some(remaining_ms) = state.projection_remaining_ms(now_ms) {
+            if let Some(old) = &existing
+                && (old.state.pit != state.pit || old.state.run != state.run)
+            {
+                let _ = pillar::project(self, &old.state, PillarProjection::Release);
+            }
             let destination = center(state.pit)?;
             if !walkable(self, &runtime, destination) {
                 return None;
             }
             if state.phase == 2 {
+                let _ = pillar::project(self, state, PillarProjection::Victory);
+                // Crystal svargrond_arena.lua:285-313: waiting at the victory
+                // portal still owns the original kick timer, including recovery.
+                if let Some(opponent) = existing.and_then(|old| old.opponent) {
+                    let _ = runtime.remove_arena_opponent(opponent);
+                }
+                self.states.arena_matches.live.lock().ok()?.insert(
+                    session,
+                    LiveMatch {
+                        actor,
+                        opponent: None,
+                        state: state.clone(),
+                        deadline: Instant::now() + Duration::from_millis(remaining_ms),
+                    },
+                );
                 return Some(());
             }
+            let _ = pillar::project(self, state, PillarProjection::Fighting);
             let current = runtime.read_actor_position(actor).ok()?.position();
             if !at_entrance(current) && !(1..=10).any(|pit| in_pit(current, pit)) {
                 return None;
             }
+            pit_reset::reset_monsters(&mut runtime, actor, session, state)?;
             let mut summon = destination;
             summon.y += 2;
             let key = opponent(state.rank, state.pit)?;
@@ -592,25 +756,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = runtime.remove_arena_opponent(target);
                 return None;
             }
-            if let Some(old) = existing {
+            if let Some(old) = existing.as_ref() {
                 if let Some(map) = self.bundle_map() {
                     pit_exit::project(map, old.state.pit, false);
                 }
-                let _ = runtime.remove_arena_opponent(old.opponent);
+                if let Some(opponent) = old.opponent {
+                    let _ = runtime.remove_arena_opponent(opponent);
+                }
             }
             self.states.arena_matches.live.lock().ok()?.insert(
                 session,
                 LiveMatch {
                     actor,
-                    opponent: target,
+                    opponent: Some(target),
                     state: state.clone(),
-                    deadline: Instant::now()
-                        + Duration::from_millis(u64::try_from(state.deadline_ms - now_ms).ok()?),
+                    deadline: Instant::now() + Duration::from_millis(remaining_ms),
                 },
             );
         } else if state.phase == 3 || state.rank == 0 {
             let current = runtime.read_actor_position(actor).ok()?.position();
             let reward_room = position(donor::REWARD_ROOM);
+            if let Some(old) = self.states.arena_matches.live.lock().ok()?.remove(&session) {
+                let _ = pillar::project(self, &old.state, PillarProjection::Release);
+                if let Some(opponent) = old.opponent {
+                    let _ = runtime.remove_arena_opponent(opponent);
+                }
+            }
             if (1..=10).any(|pit| in_pit(current, pit))
                 || (state.rank == 0
                     && current.floor == reward_room.floor
@@ -621,7 +792,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Some(map) = self.bundle_map() {
                         pit_exit::project(map, old.state.pit, false);
                     }
-                    let _ = runtime.remove_arena_opponent(old.opponent);
+                    if let Some(opponent) = old.opponent {
+                        let _ = runtime.remove_arena_opponent(opponent);
+                    }
                 }
                 let before = runtime.read_actor_position(actor).ok()?;
                 runtime
@@ -660,6 +833,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(at) = center(pit) else {
             return false;
         };
+        // Crystal svargrond_arena.lua:193-205,249-256: native spectator
+        // occupancy includes players not present in this process's match registry.
+        let layout = match oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(pit) {
+            Some(pit) => pit.layout(),
+            None => return false,
+        };
+        let Ok(occupants) = runtime.positioned_actor_census() else {
+            return false;
+        };
+        if layout.occupied_by_other(
+            &session,
+            occupants.into_iter().filter_map(|(_, at, player)| {
+                let at = at.position();
+                player.map(|player| (player, [at.x, at.y, -i32::from(at.floor)]))
+            }),
+        ) {
+            return false;
+        }
         let mut summon = at;
         summon.y += 2;
         admits(self, runtime, at)

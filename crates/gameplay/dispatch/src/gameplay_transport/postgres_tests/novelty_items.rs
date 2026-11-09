@@ -35,6 +35,8 @@ enum Case {
     GroundPresent,
     GroundVoodoo,
     PendingLifecycle,
+    FeroxaTrap,
+    FeroxaTrapOutside,
 }
 impl Case {
     fn key(self) -> &'static str {
@@ -50,6 +52,7 @@ impl Case {
             | Self::VoodooFarTarget
             | Self::GroundVoodoo => "oteryn:item.tibia.i3002",
             Self::Present | Self::GroundPresent => "oteryn:item.tibia.i906",
+            Self::FeroxaTrap | Self::FeroxaTrapOutside => "oteryn:item.tibia.i22074",
         }
     }
     fn ground(self) -> bool {
@@ -61,7 +64,17 @@ impl Case {
                 | Self::GroundCostume
                 | Self::GroundPresent
                 | Self::GroundVoodoo
+                | Self::FeroxaTrap
+                | Self::FeroxaTrapOutside
         )
+    }
+    fn feroxa(self) -> bool { matches!(self, Self::FeroxaTrap | Self::FeroxaTrapOutside) }
+    fn origin(self) -> MovementLocalPosition {
+        match self {
+            Self::FeroxaTrap => MovementLocalPosition { x: 33419, y: 31540, floor: 11 },
+            Self::FeroxaTrapOutside => MovementLocalPosition { x: 33420, y: 31540, floor: 11 },
+            _ => MovementLocalPosition { x: 6, y: 0, floor: 7 },
+        }
     }
     fn nested(self) -> bool {
         matches!(self, Self::NestedCostume | Self::NestedTrumpet)
@@ -75,10 +88,14 @@ impl Case {
     fn refused(self) -> bool {
         matches!(
             self,
-            Self::HatInBag | Self::VoodooWithoutTarget | Self::VoodooFarTarget
+            Self::HatInBag | Self::VoodooWithoutTarget | Self::VoodooFarTarget | Self::FeroxaTrapOutside
         )
     }
 }
+#[test]
+fn qn5_feroxa_trap_ground_use_is_fenced_and_replay_safe() -> TestResult { run_case(Case::FeroxaTrap) }
+#[test]
+fn qn5_feroxa_trap_ground_use_checks_actor_room_boundary() -> TestResult { run_case(Case::FeroxaTrapOutside) }
 #[test]
 fn novelty_costume_commits_condition_once() -> TestResult {
     run_case(Case::Costume)
