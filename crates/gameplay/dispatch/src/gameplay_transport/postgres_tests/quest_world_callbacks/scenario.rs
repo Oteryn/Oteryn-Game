@@ -22,7 +22,8 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
-    let m44 = name == "uneasy-alliance-crystal";
+    let m44_children = name == "qn1-children-lever-1/ordinary";
+    let m44 = name == "uneasy-alliance-crystal" || m44_children;
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -59,7 +60,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "unnatural-selection-dance-2" {
+    let start = if m44_children {
+        Position { x: trigger.x + 1, ..trigger }
+    } else if name == "unnatural-selection-dance-2" {
         let (x, y, floor) = oteryn_gameplay_quests::quest::unnatural_selection::TILES[7];
         Position { x, y, floor }
     } else if qm48 || m44 {
@@ -345,7 +348,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m44 {
+        let world = if m44_children {
+            super::super::m44_children_lifecycle::world(
+                generation.native_gameplay().ok_or("children policies")?,
+            )?
+        } else if m44 {
             super::super::m44_source_lifecycle::world(
                 generation.native_gameplay().ok_or("source policies")?,
             )?
@@ -780,6 +787,8 @@ fn scenario_case(
                 source_id,
             )
             .await?;
+        } else if m44_children {
+            super::super::m44_children_lifecycle::exercise(&owner, &mut admitted, &h).await?;
         } else if m44 {
             super::super::m44_source_lifecycle::exercise(&owner, &mut admitted, &h).await?;
         } else if qm48 {

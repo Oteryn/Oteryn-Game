@@ -65,7 +65,7 @@ pub(super) fn catalogue(
                 .track(&state.track)
                 .cloned()
                 .ok_or("source track")?;
-            track.initial = 3;
+            track.initial = state.minimum;
             Ok(track)
         })
         .collect::<Result<Vec<_>, &str>>()?;
@@ -80,6 +80,101 @@ pub(super) fn catalogue(
         ],
     )
     .map_err(debug)
+}
+
+/// Both source projection shapes must start their complete lifetime after SQL commits.
+pub(super) async fn commit_through_barrier(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    use_payload: Vec<u8>,
+    delay_us: u64,
+    lock_key: i64,
+) -> TestResult<(Vec<u8>, u64)> {
+    // A real PostgreSQL lock barrier, released only once the writer reaches it.
+    // No sleep or injected dispatch result substitutes for the durable path.
+    let mut blocker = h.pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(lock_key)
+        .execute(&mut *blocker)
+        .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!("CREATE FUNCTION m44_commit_barrier() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_advisory_xact_lock({lock_key}); RETURN NEW; END $$")))
+        .execute(&h.pool).await?;
+    sqlx::query("CREATE TRIGGER m44_commit_barrier BEFORE INSERT ON game_character_quest_receipts FOR EACH ROW EXECUTE FUNCTION m44_commit_barrier()")
+        .execute(&h.pool).await?;
+    owner
+        .states
+        .test_owner_time
+        .store(5_000_001, std::sync::atomic::Ordering::Relaxed);
+    let release = async {
+        let limit = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        loop {
+            let waiting: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype='advisory' AND objid::bigint=$1 AND NOT granted)")
+                .bind(lock_key).fetch_one(&h.pool).await?;
+            if waiting {
+                break;
+            }
+            if std::time::Instant::now() >= limit {
+                return Err("source never reached commit barrier".into());
+            }
+            tokio::task::yield_now().await;
+        }
+        owner
+            .states
+            .test_owner_time
+            .store(6_000_001, std::sync::atomic::Ordering::Relaxed);
+        let released_at = owner.owner_now().get();
+        blocker.rollback().await?;
+        Ok::<_, Box<dyn std::error::Error>>(released_at)
+    };
+    let (result, released_at) = tokio::join!(
+        super::quest_world_callbacks::wire(owner, admitted, 1, 2, use_payload),
+        release
+    );
+    let released_at = released_at?;
+    let result = result?;
+    assert_eq!(
+        oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
+        UseDisposition::Committed
+    );
+    let due = owner
+        .bundle_map()
+        .ok_or("map")?
+        .facts
+        .next_movement_decay_time()
+        .ok_or("source reset timer")?;
+    assert_eq!(
+        due,
+        released_at + delay_us,
+        "the full source lifetime starts after durable commit"
+    );
+    Ok((result, due))
+}
+
+/// Wait for the live admission condition, rather than a guessed wall-clock sleep.
+pub(super) async fn wait_for_world_action(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("source actor")?;
+    tokio::time::timeout(std::time::Duration::from_secs(2), async {
+        loop {
+            let delay = {
+                let gate = owner
+                    .states
+                    .world_gate
+                    .lock()
+                    .map_err(|_| "world action gate")?;
+                gate.equip_delay(actor, 0, owner.clock_origin.elapsed())
+            };
+            let Some(delay) = delay else {
+                return Ok::<_, Box<dyn std::error::Error>>(());
+            };
+            tokio::time::sleep(delay).await;
+        }
+    })
+    .await??;
+    Ok(())
 }
 
 pub(super) async fn exercise(
@@ -99,61 +194,17 @@ pub(super) async fn exercise(
         })
         .map_err(debug)
     };
-    // A real PostgreSQL lock barrier, released only once the writer reaches it.
-    // No sleep or injected dispatch result substitutes for the durable path.
-    let mut blocker = h.pool.begin().await?;
-    sqlx::query("SELECT pg_advisory_xact_lock(4444001)")
-        .execute(&mut *blocker)
-        .await?;
-    sqlx::query("CREATE FUNCTION m44_commit_barrier() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_advisory_xact_lock(4444001); RETURN NEW; END $$")
-        .execute(&h.pool).await?;
-    sqlx::query("CREATE TRIGGER m44_commit_barrier BEFORE INSERT ON game_character_quest_receipts FOR EACH ROW EXECUTE FUNCTION m44_commit_barrier()")
-        .execute(&h.pool).await?;
     let _clock = owner.freeze_owner_clock_for_test();
-    owner
-        .states
-        .test_owner_time
-        .store(5_000_001, std::sync::atomic::Ordering::Relaxed);
-    let release = async {
-        let limit = std::time::Instant::now() + std::time::Duration::from_secs(30);
-        loop {
-            let waiting: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype='advisory' AND objid=4444001 AND NOT granted)")
-                .fetch_one(&h.pool).await?;
-            if waiting {
-                break;
-            }
-            if std::time::Instant::now() >= limit {
-                return Err("source never reached commit barrier".into());
-            }
-            tokio::task::yield_now().await;
-        }
-        owner
-            .states
-            .test_owner_time
-            .store(6_000_001, std::sync::atomic::Ordering::Relaxed);
-        let released_at = owner.owner_now().get();
-        blocker.rollback().await?;
-        Ok::<_, Box<dyn std::error::Error>>(released_at)
-    };
     let use_payload = payload(0)?;
-    let (result, released_at) = tokio::join!(
-        super::quest_world_callbacks::wire(owner, admitted, 1, 2, use_payload.clone()),
-        release
-    );
-    let released_at = released_at?;
-    let result = result?;
-    assert_eq!(
-        oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
-        UseDisposition::Committed
-    );
-    let due = map
-        .facts
-        .next_movement_decay_time()
-        .ok_or("source reset timer")?;
-    assert!(
-        due >= released_at + 10_000_000,
-        "source must remain transformed for ten seconds after durable commit, due={due}, release={released_at}"
-    );
+    let (result, due) = commit_through_barrier(
+        owner,
+        admitted,
+        h,
+        use_payload.clone(),
+        10_000_000,
+        4_444_001,
+    )
+    .await?;
     assert_eq!(map.facts.object_revision(key), 1);
     let replay = super::quest_world_callbacks::wire(owner, admitted, 1, 2, use_payload).await?;
     assert_eq!(result, replay);
@@ -162,6 +213,7 @@ pub(super) async fn exercise(
         .states
         .test_owner_time
         .store(7_000_001, std::sync::atomic::Ordering::Relaxed);
+    wait_for_world_action(owner, admitted).await?;
     let busy = super::quest_world_callbacks::wire(owner, admitted, 2, 2, payload(1)?).await?;
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&busy).map_err(debug)?,
