@@ -12,6 +12,23 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class WorldAdmissionTests(unittest.TestCase):
+    def test_anniversary_landing_has_source_qualified_nonmaterializable_profiles(self):
+        overlay = json.loads((ROOT / 'tools/content-schema/native-gameplay/floor-assembly-item-profiles.json').read_text())
+        self.assertEqual(overlay['source_revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
+        profiles = {row['production_definition']['production_key']: row for row in overlay['records']}
+        aggregate = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_text())
+        active = {row['production_definition']['production_key']: row for row in aggregate['records']}
+        for item in (15534, 15620, 25100):
+            profile = profiles['oteryn:item.tibia.i' + str(item)]
+            self.assertIs(profile['attributes']['blocks_movement'], False)
+            self.assertIs(profile['admission']['materializable'], False)
+            generated = dict(active[profile['production_definition']['production_key']])
+            generated['attributes'] = dict(generated['attributes'])
+            # Registration adds client stack-order annotations after physical qualification.
+            generated['attributes'].pop('always_on_top')
+            generated['attributes'].pop('always_on_top_order')
+            self.assertEqual(generated, profile)
+
     def callbacks(self):
         return [c for c in qengine_access.document()['callbacks']
                 if c['key'].startswith('oteryn:quest-callback/qm03/')]

@@ -12,6 +12,8 @@ import grizzly_shop_profiles as source
 ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/floor-assembly-item-profiles.json'
 PROJECTION_IDS = {430, 431, 1772, 1791, 1947, 1948, 2772, 2773, 9125, 9126}
+# M03: retained Temporal Tides landing, including its walkable machine piece.
+PROJECTION_IDS |= {15534, 15620, 25100}
 IDS = set(range(3222, 3231)) | set(range(3235, 3242)) | PROJECTION_IDS
 XML_SHA = '8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509'
 CLIENT = 'content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat'
