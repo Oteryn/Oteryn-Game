@@ -1002,8 +1002,9 @@
   "src": "TIBAUD-1",
   "area": "Market",
   "feature": "Coin market / transaction details",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Zwykły market nie dowodzi pełnej historii/detail monet; to nie zakup real-money.",
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/coin_market.rs:35 + coin_market_postgres_real_wire_reserve_partial_fill_replay_restart_and_gold_conservation; apps/client/src/features/0063-market/input/coins/tests.rs:63 + coin_market_session_loop_applies_only_the_confirmed_server_receipt; docs/contracts/COIN_MARKET_GAME_V1.md:1",
   "lane": "cg_ui"
  },
  {
