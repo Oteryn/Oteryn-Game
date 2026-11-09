@@ -3419,16 +3419,15 @@ mod tests {
         let native = controller.active().unwrap().native_gameplay().unwrap();
         let rewards = native.reward_table();
         use crate::content::creature_reward::NoSettlementReason;
-        for (creature, item, private_refusal) in [(
+        let (creature, item, private_refusal) = (
             "oteryn:creature.bakragore",
             "oteryn:item.tibia.i44012",
             NoSettlementReason::LootItemInadmissible,
-        )] {
-            assert_eq!(rewards.row(creature).err(), Some(private_refusal));
-            let corpse = rewards.reward_boss_corpse(creature).unwrap();
-            assert_eq!(corpse.corpse_item.production_key, item);
-            assert!(corpse.loot_table.entries.is_empty());
-        }
+        );
+        assert_eq!(rewards.row(creature).err(), Some(private_refusal));
+        let corpse = rewards.reward_boss_corpse(creature).unwrap();
+        assert_eq!(corpse.corpse_item.production_key, item);
+        assert!(corpse.loot_table.entries.is_empty());
         assert!(rewards.reward_boss_corpse("oteryn:creature.rat").is_none());
         assert!(rewards.reward_boss_corpse("fixture:unknown").is_none());
         assert!(rewards.row("oteryn:creature.the_primal_menace").is_ok());

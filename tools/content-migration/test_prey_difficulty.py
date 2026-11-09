@@ -99,8 +99,8 @@ class PreyDifficultyTests(unittest.TestCase):
                     prey.LOOT: prey.encoded({"tables": [], "items": [],
                         "creature_loot": [{"creature": {"key": key}, "loot": None}]}),
                 })
-                generated[prey.LOOT] = prey.encoded({"tables": [], "creature_loot": [
-                    {"creature": {"key": key}, "loot": None}]})
+                # Keep the complete generated closure, including the item facts;
+                # the merged duplicate assignment dropped them before the model.
                 return generated
 
             def model(task_root, profiles):
