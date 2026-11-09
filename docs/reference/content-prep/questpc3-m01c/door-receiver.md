@@ -19,3 +19,17 @@ target/revision/reach admission, with the pre-action gameplay fence and the exac
 used key instance. Runtime and spell-state locks are released before Root awaits.
 The exact Draconia placement binding is still pending; this change enables no
 production door binding by itself.
+
+The bounded `world-authoring/m01c_key_doors.py` overlay now restores the six
+startup key-number attributes in memory and refuses absent, duplicate or
+conflicting native locked doors. Its normalized capture is
+`tools/content-schema/world-authoring/samples/m01c-key-doors.json`.
+The executable donor table is [Crystal door_key.lua](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_key.lua):
+lines 70–75 bind key 3012 at the two Draconia positions; lines 106–112 bind
+3520 at three positions; lines 168–170 bind 5010 at one position.
+[storages.lua](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/lib/core/storages.lua)
+lines 344, 350 and 368 resolve those storage symbols to the same numbers.
+The capture pins both source hashes. Table comments naming 4193 and 5009
+disagree with the executable entries; the overlay follows the entries.
+Production application, native locked Item profiles 5097/6248 and the Draconia
+binding remain pending. No World bytes or pins change in this tooling slice.
