@@ -49,6 +49,70 @@ pub(super) struct CommitStep {
     fallback_lines: Vec<String>,
 }
 
+pub(super) async fn appearance(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+) -> Option<(std::collections::BTreeMap<u16, u8>, u8)> {
+    use crate::domain::appearance::{AppearanceContent, Sex};
+    let needs = {
+        let runtime = admission.runtime.lock().await;
+        // A greeting establishes engagement later in talk_in. This prefetch is
+        // read-only; prepare rechecks the engaged NPC before using the snapshot.
+        let npc =
+            service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
+        NpcRuleCatalog::runtime()
+            .ok()?
+            .programs()
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .filter(|rule| rule.npc == npc.key)
+            .any(|rule| {
+                rule.guards.iter().any(|guard| {
+                    matches!(
+                        guard,
+                        oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Outfit { .. }
+                            | oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Sex { .. }
+                    )
+                }) || rule.effects.iter().any(|effect| {
+                    matches!(
+                        effect,
+                        NpcRuleEffect::Outfit { .. } | NpcRuleEffect::OutfitAddon { .. }
+                    )
+                })
+            })
+    };
+    if !needs {
+        return Some((Default::default(), 0));
+    }
+    let (_, content) = admission.appearance_context()?;
+    let fence =
+        super::super::character_gameplay_fence::current(admission, command.game_session_id, false)
+            .await?;
+    let state = admission
+        .root
+        .read_current_character_appearance_state(
+            admission.character,
+            admission.holder,
+            fence,
+            content.earned_grant_keys(),
+        )
+        .await
+        .ok()?;
+    Some((
+        crate::durability::character_appearance::npc_outfits::snapshot(&content, &state.earned),
+        match state.sex {
+            Sex::Female => 0,
+            Sex::Male => 1,
+        },
+    ))
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "NPC source preview includes a separately fenced appearance snapshot"
+)]
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -56,6 +120,7 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
     ordinary: &NpcTalkOutcome,
+    appearance: Option<&(std::collections::BTreeMap<u16, u8>, u8)>,
     stag_beaks: Option<&crate::durability::stag_beaks::StagBeakPreview>,
 ) -> Option<Step> {
     let context = admission.states.npc_conversations.current_npc(
@@ -198,13 +263,17 @@ pub(super) fn prepare(
     } else {
         npc_program::NpcEligibility::default()
     };
-    let plan = match npc_program::preview_with_player_name(
+    let Some(appearance) = appearance else {
+        return Some(Step::Refused);
+    };
+    let plan = match npc_program::preview_with_appearance(
         &request,
         &tracks,
         catalogue,
         now,
         &eligibility,
         player_name.as_deref(),
+        (&appearance.0, appearance.1),
     ) {
         Ok(Some(plan)) => plan,
         Ok(None) => {
@@ -224,10 +293,14 @@ pub(super) fn prepare(
     };
     if plan.track_changes.is_empty()
         && !plan.completes
-        && plan
-            .effects
-            .iter()
-            .any(|effect| matches!(effect, NpcRuleEffect::Experience { .. }))
+        && plan.effects.iter().any(|effect| {
+            matches!(
+                effect,
+                NpcRuleEffect::Experience { .. }
+                    | NpcRuleEffect::Outfit { .. }
+                    | NpcRuleEffect::OutfitAddon { .. }
+            )
+        })
     {
         return Some(Step::Refused);
     }
@@ -495,6 +568,29 @@ pub(super) async fn apply(
                         | QuestTransitionOutcome::AlreadyCommitted(_)
                 ) =>
         {
+            if !commit.magic_effects.is_empty() {
+                let runtime = admission.runtime.lock().await;
+                if runtime
+                    .bound_attacker_lease(actor, command.game_session_id)
+                    .is_ok()
+                    && let Ok(at) = runtime.read_actor_position(actor)
+                    && let Some(map) = admission.bundle_map()
+                {
+                    let at = at.position();
+                    if let (Ok(x), Ok(y), Some(floor)) = (
+                        u16::try_from(at.x),
+                        u16::try_from(at.y),
+                        i8::try_from(at.floor).ok().and_then(i8::checked_neg),
+                    ) {
+                        for effect in &commit.magic_effects {
+                            map.facts.emit_movement_effect(
+                                crate::map::overlay::TilePos { x, y, floor },
+                                *effect,
+                            );
+                        }
+                    }
+                }
+            }
             install(
                 admission,
                 command.game_session_id,

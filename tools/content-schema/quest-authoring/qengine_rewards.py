@@ -15,6 +15,7 @@ import tarfile
 import xml.etree.ElementTree as ET
 import taming_cosmetics
 import wizard_cosmetics
+import engoutfit_m36
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -33,7 +34,7 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/mounts.xml', 'data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
+        'morgan', 'navigator', 'rock_steady', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         *wizard_cosmetics.DONOR_NPCS, 'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
     paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
@@ -129,10 +130,10 @@ def build():
         'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.decaying_defender'},
         'compatible_provenance': ['owner-pr2784-decaying-defender-base-v1']})
     for row in outfits:
-        if row['key'] in ('oteryn:outfit.hunter','oteryn:outfit.mage','oteryn:outfit.summoner'):
-            for sex in ('female','male'):
-                for addon in range(row['addon_count']+1):
-                    mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
+        # Source NPCs may grant either sex independently; each mapping is authored.
+        for sex in ('female','male'):
+            for addon in range(row['addon_count']+1):
+                mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
                         'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
@@ -914,6 +915,8 @@ def build():
                 forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
             callbacks[-1]['sources'].append(provenance)
+    engoutfit_m36.append(add, storage, callbacks, offers, declarations,
+        f'crystal:{PIN}:data-global/npc/rock_steady.lua:56-98:sha256:{sha(inputs["data-global/npc/rock_steady.lua"])}')
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)

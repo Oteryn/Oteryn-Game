@@ -295,6 +295,17 @@
       "sources": [
         "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/rock_steady/collection",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
     }
   ],
   "callbacks": [
@@ -8384,6 +8395,167 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m36-rock-steady-confirm",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great! Let me see. Amazing! I will take this, thank you!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m36-rock-steady-first",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i14022",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great! Let me see. Amazing! I will take this, thank you!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m36-rock-steady-second",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i14023",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great! Let me see. Amazing! I will take this, thank you!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m36-rock-steady-start",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "addon",
+        "help"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "If you want anything, you should talk to Old Rock Boy over there. I do {collect} stuff, though. So just ask if you're interested in helping me."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m36-rock-steady-weapon",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i14021",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.deepling",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Have you got anything... what? You want what? A reward? HAHAHAHAAAA!! ...",
+        "No I'm just teasing you. I'm really happy about my collection now. ...",
+        "Well, I found some kind of weapon a long time ago. I believe it may be especially helpful underwater as it is from the deep folk. In any case it is of more use for you than it would be for me."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
       ]
     },
     {

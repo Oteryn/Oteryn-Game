@@ -3458,6 +3458,68 @@
       ]
     },
     {
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I collect everything that reflects light in strange ways. However, I am bored by my collection. And there wasn't anything new to add for years. ...",
+        "I like pearls for example - but I have already enough. I also like shells - but I can't even count how many I already own. ...",
+        "If you find anything of REAL VALUE - bring it to me. I will reward you well. You don't already have something for me by chance?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Have you got anything for me today?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Have you got anything for me today?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.sam",
       "keywords": [
         "old backpack",

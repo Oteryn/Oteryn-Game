@@ -43,6 +43,8 @@ pub struct NpcProgramCommit {
     pub inventory_changed: bool,
     pub end_conversation: bool,
     pub end_delay_ms: u64,
+    /// Fresh-commit presentation only; receipt replays never repeat effects.
+    pub magic_effects: Vec<u16>,
 }
 
 impl NpcProgramRequest {
@@ -97,11 +99,25 @@ pub fn preview_with_player_name(
     now: i64,
     eligibility: &NpcEligibility,
     player_name: Option<&str>,
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
+    preview_with_appearance(request, tracks, catalogue, now, eligibility, player_name, (&BTreeMap::new(), 0))
+}
+
+/// Advisory appearance preview; the writer reloads the locked account snapshot.
+pub fn preview_with_appearance(
+    request: &NpcProgramRequest,
+    tracks: &BTreeMap<String, i64>,
+    catalogue: &QuestStateCatalogue,
+    now: i64,
+    eligibility: &NpcEligibility,
+    player_name: Option<&str>,
+    appearance: (&BTreeMap<u16, u8>, u8),
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
     let facts = NpcEvaluationFacts {
         eligibility,
         player_name,
+        appearance,
     };
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
@@ -127,7 +143,23 @@ pub fn preview_with_player_name(
             Some(&marlin_trophy::optimistic_inventory()),
         ),
         Err(error) => match source
-            .optimistic_item_inventory(&request.npc)
+            .outfit_exchange_keys(&request.npc)
+            .map(|keys| NpcInventorySnapshot {
+                items: keys
+                    .into_iter()
+                    .map(|item| {
+                        (
+                            oteryn_gameplay_quests::quest::npc_rules::NpcItemKey {
+                                item,
+                                subtype: None,
+                            },
+                            100,
+                        )
+                    })
+                    .collect(),
+                ..NpcInventorySnapshot::default()
+            })
+            .or_else(|| source.optimistic_item_inventory(&request.npc))
             .or_else(|| source.optimistic_equipped_inventory(&request.npc))
         {
             Some(inventory) => evaluate_source(
@@ -149,6 +181,7 @@ pub fn preview_with_player_name(
 struct NpcEvaluationFacts<'a> {
     eligibility: &'a NpcEligibility,
     player_name: Option<&'a str>,
+    appearance: (&'a BTreeMap<u16, u8>, u8),
 }
 
 fn evaluate_source(
@@ -207,8 +240,8 @@ fn evaluate_source(
         premium_current: facts.eligibility.premium_current,
         level: facts.eligibility.level,
         vocation: &facts.eligibility.vocation,
-        sex: 0,
-        outfits: &BTreeMap::new(),
+        sex: facts.appearance.1,
+        outfits: facts.appearance.0,
     };
     if hot_cuisine_m42::owns(request) {
         hot_cuisine_m42::plan(source, &input)
@@ -216,6 +249,8 @@ fn evaluate_source(
         source.plan_marlin_items(&input)
     } else if inventory.is_some() && fathers_burden::owns(request) {
         source.plan_father_items(&input)
+    } else if inventory.is_some() && source.outfit_exchange_keys(&request.npc).is_some() {
+        source.plan_outfit_exchange(&input)
     } else if inventory.is_some() && source.equipped_storage_requirements(&request.npc).is_some() {
         source.plan_equipped_storage(&input)
     } else if inventory.is_some() {
@@ -371,6 +406,8 @@ impl DurabilityRoot {
             let marlin_items = marlin_trophy::owns(&request);
             let plain_keys = source.item_exchange_keys(&request.npc);
             let generic_items = !cooking_items && !father_items && !marlin_items && plain_keys.is_some();
+            let plain_keys = source.outfit_exchange_keys(&request.npc).or_else(|| source.item_exchange_keys(&request.npc));
+            let generic_items = !father_items && !marlin_items && plain_keys.is_some();
             let equipped_storage = source.equipped_storage_requirements(&request.npc).is_some();
             let inventory_owned = cooking_items || father_items || marlin_items || generic_items || equipped_storage;
             let inventory = if cooking_items {
@@ -401,12 +438,34 @@ impl DurabilityRoot {
                 vocation: format!("oteryn:vocation.{vocation}"),
                 premium_current: content.wheel_premium_current(account),
             };
+            let native = content.npc_outfit_content();
+            if native.is_some_and(|native| native.source_digest() != content.loop_content_digest()) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let needs_appearance = source.programs().iter().flat_map(|p| &p.document.rules)
+                .filter(|rule| rule.npc == request.npc).any(|rule|
+                    rule.guards.iter().any(|guard| matches!(guard,
+                        oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Outfit { .. } |
+                        oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Sex { .. })) ||
+                    rule.effects.iter().any(|effect| matches!(effect,
+                        oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::Outfit { .. } |
+                        oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::OutfitAddon { .. })));
+            if needs_appearance && native.is_none() { return Ok(Ok(refused(QuestRefusal::StageMismatch))); }
+            let outfits = if let Some(native) = native.filter(|_| needs_appearance) {
+                super::super::character_appearance::npc_outfits::locked_snapshot(&mut tx, character, native).await?
+            } else { BTreeMap::new() };
+            let sex = if needs_appearance {
+                match super::super::character_appearance::item_action_sex(&mut tx, character).await? {
+                    crate::domain::appearance::Sex::Female => 0,
+                    crate::domain::appearance::Sex::Male => 1,
+                }
+            } else { 0 };
             let player_name = if source.programs().iter().flat_map(|p| &p.document.rules)
                 .any(|rule| rule.npc == request.npc && rule.match_player_name) {
                 Some(super::super::character_chat_name::read_character_name_for_share_in_transaction(
                     &mut tx, character.as_bytes()).await?)
             } else { None };
-            let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref() };
+            let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref(), appearance: (&outfits,sex) };
             let teleport_plan = if teleport.is_some() {
                 match teleport::evaluate(&source, &request, &effective_tracks, now, facts) {
                     Ok(Some(plan)) => Some(plan),
@@ -433,8 +492,8 @@ impl DurabilityRoot {
                 }
             }
             let evaluated = match teleport_plan { Some(plan) => Ok(Some(plan.source)), None => evaluate_source(&source,&request,&effective_tracks,&catalogue,now,facts,inventory.as_ref()) };
-            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !plan.completes && !rewards::has_experience(&plan.effects) {
-                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan) };
+            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !plan.completes && !rewards::has_experience(&plan.effects) && !plan.effects.iter().any(|effect| matches!(effect, oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::Outfit { .. } | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::OutfitAddon { .. })) {
+                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan), magic_effects: Vec::new() };
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));
             }
@@ -442,6 +501,12 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && (!plan.track_changes.is_empty() || plan.completes)=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            let outfit_rewards = if plan.effects.iter().any(|effect| matches!(effect,
+                oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::Outfit { .. } |
+                oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::OutfitAddon { .. })) {
+                let Some(native) = native else { return Ok(Ok(refused(QuestRefusal::StageMismatch))); };
+                super::super::character_appearance::npc_outfits::rewards(native, &plan.effects)?
+            } else { Vec::new() };
             let experience = rewards::experience(&plan.effects)?;
             let achievement_keys = achievements::keys(&plan.effects)?;
             if father_items && fathers_burden::experience(&plan)? != experience { return Err(DurabilityError::InvalidStoredState); }
@@ -494,6 +559,11 @@ impl DurabilityRoot {
                     false => return Ok(Ok(refused(QuestRefusal::CapacityExceeded))),
                 }
             }
+            for reward in &outfit_rewards {
+                super::super::character_appearance::grant_content_outfit(
+                    &mut tx, character, &request.binding(character), reward, native.ok_or(DurabilityError::InvalidStoredState)?,
+                ).await?;
+            }
             let revision=root.revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
             let original=root.revision.to_string();let committed=revision.to_string();
             for query in ["UPDATE game_character_roots SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric", "UPDATE game_character_progression_state SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric"] {
@@ -523,7 +593,7 @@ impl DurabilityRoot {
             let receipt=load_receipt(&mut tx,character,&q).await?.ok_or(DurabilityError::InvalidStoredState)?;
             let receipt=decode_receipt(&receipt)?;
             tx.commit(deadline).await?;
-            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),end_conversation:items::ends(&plan),end_delay_ms:items::end_delay(&plan),reply:plan.reply,next_topic:plan.next_topic,read_only:false,inventory_changed:item_action}))
+            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),end_conversation:items::ends(&plan),end_delay_ms:items::end_delay(&plan),magic_effects:plan.effects.iter().filter_map(|effect| match effect { oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::MagicEffect { effect } if effect == "CONST_ME_MAGIC_BLUE" => Some(13), _ => None }).collect(),reply:plan.reply,next_topic:plan.next_topic,read_only:false,inventory_changed:item_action}))
         })).await?
     }
 }
@@ -537,6 +607,7 @@ fn refused(refusal: QuestRefusal) -> NpcProgramCommit {
         inventory_changed: false,
         end_conversation: false,
         end_delay_ms: 0,
+        magic_effects: Vec::new(),
     }
 }
 
@@ -562,6 +633,7 @@ async fn load(
         end_conversation: response.try_get("end_conversation")?,
         end_delay_ms: u64::try_from(response.try_get::<i32, _>("end_delay_ms")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
+        magic_effects: Vec::new(),
     })))
 }
 

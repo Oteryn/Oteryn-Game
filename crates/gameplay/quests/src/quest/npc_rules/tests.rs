@@ -922,6 +922,81 @@ fn shipped_npc_source_does_not_claim_an_unbound_native_catalogue() -> Result<(),
 }
 
 #[test]
+fn durable_outfit_exchange_uses_owned_snapshot_and_keeps_unknown_effects_closed()
+-> Result<(), NpcRuleError> {
+    let mut rule = fixture_rule(
+        "outfit",
+        serde_json::json!([
+            {"kind":"take_item","item":"oteryn:item.tibia.i5890","count":1},
+            {"kind":"outfit_addon","look_type":128,"addon":1},
+            {"kind":"set","track":"oteryn:quest-progress/test/value","value":1}
+        ]),
+    );
+    rule["guards"] = serde_json::json!([{"kind":"outfit","look_type":128,"addon":0}]);
+    let catalogue = fixture_catalog(&fixture_document(vec![rule.clone()]))?;
+    let mut facts = Facts::empty();
+    facts.inventory.items.insert(
+        NpcItemKey {
+            item: "oteryn:item.tibia.i5890".into(),
+            subtype: None,
+        },
+        1,
+    );
+    assert!(
+        catalogue
+            .plan_item_exchange(&facts.input("oteryn:npc.test", "mission", 0))?
+            .is_none()
+    );
+    facts.outfits.insert(128, 0);
+    let plan = catalogue
+        .plan_item_exchange(&facts.input("oteryn:npc.test", "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing outfit hand-in".into()))?;
+    assert_eq!(plan.track_changes.len(), 1);
+    assert!(plan.effects.iter().any(|effect| matches!(
+        effect,
+        NpcRuleEffect::OutfitAddon {
+            look_type: 128,
+            addon: 1
+        }
+    )));
+    rule["effects"]
+        .as_array_mut()
+        .ok_or_else(|| NpcRuleError::Invalid("effects".into()))?
+        .push(serde_json::json!({"kind":"give_money","amount":1}));
+    assert!(
+        fixture_catalog(&fixture_document(vec![rule]))?
+            .plan_item_exchange(&facts.input("oteryn:npc.test", "mission", 0))
+            .is_err()
+    );
+    Ok(())
+}
+
+#[test]
+fn native_yalahar_outfit_branch_has_a_durable_source_plan() -> Result<(), NpcRuleError> {
+    let mut facts = Facts::empty();
+    facts.tracks.insert(
+        "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline".into(),
+        52,
+    );
+    let plan = NpcRuleCatalog::runtime()?
+        .plan_outfit_exchange(&facts.input("oteryn:npc.palimuth", "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing native outfit branch".into()))?;
+    assert_eq!(
+        plan.selected_rule_keys,
+        vec!["oteryn:quest-npc/in_service_of_yalahar_quest/palimuth/conversation-244-27-1-1"]
+    );
+    assert_eq!(plan.track_changes.len(), 3);
+    assert_eq!(
+        plan.effects
+            .iter()
+            .filter(|effect| matches!(effect, NpcRuleEffect::Outfit { .. }))
+            .count(),
+        2
+    );
+    Ok(())
+}
+
+#[test]
 fn live_eligibility_guards_refuse_below_level_wrong_vocation_and_expired_premium()
 -> Result<(), NpcRuleError> {
     let mut rule = fixture_rule(

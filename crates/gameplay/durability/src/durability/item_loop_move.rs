@@ -183,6 +183,10 @@ pub struct LoopGroundItem {
 /// The admitted Content generation the move is decided against: the facts of every touched
 /// definition and their unit weights, bound to the active Content digest.
 pub trait ItemLoopContent: ItemWeightLookup {
+    /// The same admitted generation used for source outfit grants; absent is fail-closed.
+    fn npc_outfit_content(&self) -> Option<&crate::content::native_gameplay::NativeGameplayState> {
+        None
+    }
     fn loop_content_digest(&self) -> [u8; 32];
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts>;
     fn loop_definition(&self, _reference: u32) -> Option<TypedDefinitionRef> {

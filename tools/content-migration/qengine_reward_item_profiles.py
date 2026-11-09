@@ -22,6 +22,8 @@ CUSTODY_PROMOTIONS = {5805, 5806}
 IDS |= {21291}
 # Retain questpc4's qualified native offerings and source tool through this owner.
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
+# M36: exact Rock Steady collection hand-ins from the pinned NPC source.
+IDS |= {14021, 14022, 14023}
 # QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
 IDS |= {21504, 21505}
 # M56: exact carried Molten Wax consumption through the existing quest input owner.

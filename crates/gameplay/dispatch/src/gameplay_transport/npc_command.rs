@@ -689,6 +689,7 @@ pub(super) async fn npc_bank_talk(
         Ok(proof) => proof,
         Err(()) => return unknown(),
     };
+    let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -868,6 +869,7 @@ pub(super) async fn npc_bank_talk(
         &runtime,
         &ordinary,
         stag_beaks.as_ref(),
+        source_appearance.as_ref(),
     ) {
         drop(runtime);
         drop(_trade_permit);
