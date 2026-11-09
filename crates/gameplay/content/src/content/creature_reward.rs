@@ -60,8 +60,8 @@ pub enum NoSettlementReason {
     LootTableMissing,
     /// The creature profile names no corpse Item.
     CorpseItemMissing,
-    /// The corpse Item is not an admitted, materializable container of capacity 1 to
-    /// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES`.
+    /// The corpse Item is not an admitted, materializable container, or an ordinary
+    /// corpse exceeds `GAMEITEM01-CORPSE-CONTAINER-ENTRIES`.
     CorpseItemInadmissible,
     /// A loot table entry names an Item that is not admitted and materializable.
     LootItemInadmissible,
@@ -615,7 +615,15 @@ fn row(
     admitted(&corpse)
         .and_then(|facts| facts.container_capacity)
         .filter(|capacity| {
-            (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u64).contains(&u64::from(*capacity))
+            // Private rewards settle into personal custody, so the physical
+            // corpse's slot count is not their loot budget. The corpse must
+            // still be a materializable container; loot plans keep their own bounds.
+            (*capacity > 0
+                && profile.details.as_ref().is_some_and(|details| {
+                    details.system_eligibility.reward_boss
+                }))
+                || (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u64)
+                    .contains(&u64::from(*capacity))
                 // Exact retained Seacrest source capacity is36. This value is not
                 // retained in the reward row or used as a runtime loot budget;
                 // actual planned/minted entries keep their independent30limit.
@@ -715,6 +723,97 @@ mod encounter_source_tests {
                 Some(native)
             );
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod private_loot_tests {
+    use super::*;
+
+    #[test]
+    fn private_boss_corpse_capacity_does_not_admit_ordinary_or_unmaterializable_corpses()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut profile: ProjectV2CreatureAuthoring = serde_json::from_value(serde_json::json!({
+            "details": {
+                "display_name": "fixture", "inspection": "", "defense": 0, "critical_chance_ppm": 0,
+                "flags": {"attackable": true, "illusionable": false, "health_hidden": false},
+                "summoning": {"summonable": false, "convinceable": false, "is_familiar": false},
+                "system_eligibility": {"prey": false, "exclusive_prey": false, "forge": false, "reward_boss": true},
+                "spawn_eligibility": {"period": "All", "ignore_period_underground": false, "blocked_by_nearby_players": false},
+                "corpse_item": {"family": "Item", "key": "oteryn:item.fixture", "revision": "definition-r1"}
+            }
+        }))?;
+        let corpse = SectionRef {
+            family: "Item".into(),
+            key: "oteryn:item.fixture".into(),
+            revision: "definition-r1".into(),
+        };
+        let mut facts = SectionItemFacts {
+            item: corpse.clone(),
+            materializable: true,
+            container_capacity: Some(64),
+            charges: None,
+            stackable: false,
+            creature_product: false,
+        };
+        assert!(
+            row(
+                &profile,
+                None,
+                &HashMap::new(),
+                &HashMap::from([(&corpse, &facts)]),
+                None
+            )
+            .is_ok()
+        );
+        profile
+            .details
+            .as_mut()
+            .ok_or("details")?
+            .system_eligibility
+            .reward_boss = false;
+        assert_eq!(
+            row(
+                &profile,
+                None,
+                &HashMap::new(),
+                &HashMap::from([(&corpse, &facts)]),
+                None
+            ),
+            Err(NoSettlementReason::CorpseItemInadmissible)
+        );
+        profile
+            .details
+            .as_mut()
+            .ok_or("details")?
+            .system_eligibility
+            .reward_boss = true;
+        for capacity in [None, Some(0)] {
+            facts.container_capacity = capacity;
+            assert_eq!(
+                row(
+                    &profile,
+                    None,
+                    &HashMap::new(),
+                    &HashMap::from([(&corpse, &facts)]),
+                    None
+                ),
+                Err(NoSettlementReason::CorpseItemInadmissible)
+            );
+        }
+        facts.container_capacity = Some(64);
+        facts.materializable = false;
+        assert_eq!(
+            row(
+                &profile,
+                None,
+                &HashMap::new(),
+                &HashMap::from([(&corpse, &facts)]),
+                None
+            ),
+            Err(NoSettlementReason::CorpseItemInadmissible)
+        );
         Ok(())
     }
 }

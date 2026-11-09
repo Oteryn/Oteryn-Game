@@ -22,6 +22,7 @@ macro_rules! authority_methods {
             _actor: $crate::foundation::ExactActorRef,
             _command: $crate::gameplay_transport::connection::UseCommand,
             _request: oteryn_protocol_oteryn::hotkey_equip::Request,
+            _queued_for: std::time::Duration,
         ) -> impl std::future::Future<Output = Option<std::time::Duration>> {
             async { None }
         }
@@ -51,9 +52,12 @@ macro_rules! composed_methods {
             actor: $crate::foundation::ExactActorRef,
             command: $crate::gameplay_transport::connection::UseCommand,
             request: oteryn_protocol_oteryn::hotkey_equip::Request,
+            queued_for: std::time::Duration,
         ) -> Option<std::time::Duration> {
-            $crate::gameplay_transport::hotkey_equip::ordinary_delay(self, actor, command, request)
-                .await
+            $crate::gameplay_transport::hotkey_equip::ordinary_delay(
+                self, actor, command, request, queued_for,
+            )
+            .await
         }
         async fn hotkey_equip_carried(
             &self,
@@ -84,6 +88,7 @@ pub(super) async fn ordinary_delay(
     actor: ExactActorRef,
     command: UseCommand,
     request: Request,
+    queued_for: std::time::Duration,
 ) -> Option<std::time::Duration> {
     let runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
@@ -117,7 +122,11 @@ pub(super) async fn ordinary_delay(
                 .world_gate
                 .lock()
                 .ok()?
-                .equip_delay(actor, 6, owner.clock_origin.elapsed())
+                .equip_delay(
+                    actor,
+                    6,
+                    owner.clock_origin.elapsed().saturating_sub(queued_for),
+                )
                 .unwrap_or_default(),
         );
     }
@@ -135,7 +144,11 @@ pub(super) async fn ordinary_delay(
             .world_gate
             .lock()
             .ok()?
-            .equip_delay(actor, *slot, owner.clock_origin.elapsed())
+            .equip_delay(
+                actor,
+                *slot,
+                owner.clock_origin.elapsed().saturating_sub(queued_for),
+            )
             .unwrap_or_default(),
     )
 }
