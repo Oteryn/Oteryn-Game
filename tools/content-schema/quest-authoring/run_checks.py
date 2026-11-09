@@ -148,6 +148,7 @@ def main():
         ['quest_v2_export.py', '--check'],
         ['quest_state_lowering.py', '--check'],
         ['source_lowered_binding_plan.py', '--check'],
+        ['m01a_talk_routes.py', '--check'],
         ['quest_completion_import.py', '--check'],
         ['quest_native_binding_preflight.py', '--check'],
         ['quest_reward_only_binding_candidates.py', '--check'],

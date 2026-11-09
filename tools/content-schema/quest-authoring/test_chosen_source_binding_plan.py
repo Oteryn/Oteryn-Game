@@ -1,10 +1,20 @@
 import json
 import pathlib
 import unittest
+from native_talk_binding_evidence import canonical_definitions
+from quest_native_binding_preflight import verify_stage_runtime
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 PLAN = ROOT / "content/quests/missions/completion-binding-plan.json"
 SOURCE = ROOT / "tools/content-schema/quest-authoring/samples/server-completion/chosen-source-events-rewards/packet.json"
+
+
+REGISTERED_TALK_QUESTS = {
+    "oteryn:quest.authored.a_pirate_s_death_to_me",
+    "oteryn:quest.goblin_merchant_quest",
+    "oteryn:quest.machinery_of_war_quest",
+    "oteryn:quest.authored.annual_autumn_vintage",
+}
 
 
 class ChosenSourceBindingPlanTest(unittest.TestCase):
@@ -30,8 +40,12 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
             self.assertFalse(row["runtime_enabled"])
             self.assertIsNone(row["native_reward_delivery_binding"])
             for stage in row["stages"]:
-                self.assertFalse(stage["runtime_enabled"])
-                self.assertIsNone(stage["native_dispatch_binding"])
+                if key in REGISTERED_TALK_QUESTS and stage["stage_key"] == "s1":
+                    self.assertTrue(stage["runtime_enabled"])
+                    verify_stage_runtime(ROOT, canonical_definitions(ROOT)[key], stage)
+                else:
+                    self.assertFalse(stage["runtime_enabled"])
+                    self.assertIsNone(stage["native_dispatch_binding"])
                 self.assertIsNone(stage["selected_NPC_branch"])
                 self.assertIsNone(stage["NPC_dialogue_candidates"])
 
@@ -58,12 +72,13 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
     def test_only_registered_native_talk_stage_is_enabled(self):
         bound = [(row["quest"], stage) for row in self.plan["records"]
                  for stage in row["stages"] if stage["native_dispatch_binding"] is not None]
-        self.assertEqual(1, len(bound))
-        quest, stage = bound[0]
-        self.assertEqual("oteryn:quest.authored.a_pirate_s_death_to_me", quest)
-        self.assertEqual("s1", stage["stage_key"])
-        self.assertTrue(stage["runtime_enabled"])
-        self.assertEqual("npc_dialogue", stage["native_dispatch_binding"]["kind"])
+        self.assertEqual({(key, "s1") for key in REGISTERED_TALK_QUESTS},
+                         {(key, stage["stage_key"]) for key, stage in bound})
+        self.assertEqual(len(REGISTERED_TALK_QUESTS), len(bound))
+        for quest, stage in bound:
+            self.assertTrue(stage["runtime_enabled"])
+            self.assertEqual("npc_dialogue", stage["native_dispatch_binding"]["kind"])
+            verify_stage_runtime(ROOT, canonical_definitions(ROOT)[quest], stage)
         self.assertEqual(
             0,
             sum(row["native_reward_delivery_binding"] is not None for row in self.plan["records"]),

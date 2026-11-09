@@ -4,6 +4,18 @@ Work branch: `claude/happy-davinci-ijz3wy-qm-qengine2`. Push only this branch;
 no qmech/main merge, no force/rebase, no shared CLAIMS.md edits. Earlier outfit
 ledger and branch instructions below are historical, not the current queue.
 
+M01a starter slice (2026-11-09): production Rafzan/Goblin Merchant,
+Baxter/Machinery of War and Emilie/Annual Autumn Vintage briefings are bound.
+Replies derive from the selected recipe's next objective. Native focus without
+literal greeting no longer emits an invalid empty protocol line. Its unit
+regression ran RED (Malformed), then GREEN. Real-dispatch PostgreSQL18.6
+`m01a_rafzan_baxter_emilie_production_talk_routes_postgres` PASS144.819819498s:
+wrong NPC leaves every track/receipt unchanged, Baxter level50 is enforced,
+fresh repeats refuse, and all three progress rows persist without completion.
+All116 authoring unit modules pass; authoring checks, content-tree validation,
+12 authored-binding units and architecture pass. This is three starter routes,
+NOT full M01a/whole-quest completion; remaining TALK routes still need wiring.
+
 - M01a: grouped TALK admission uses every exact stage operation; the imported,
   grouped/replay and Smaralda production PG cases passed on 7eb8421d7 in
   185.28s / 179.39s / 115.22s (PostgreSQL18.6 markers). Native preflight rejects

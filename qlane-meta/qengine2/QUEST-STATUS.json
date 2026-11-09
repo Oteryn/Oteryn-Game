@@ -2263,5 +2263,15 @@
     "source_facts": "Pinned Crystal9f5a72c:Knight Morgan+Gregor+Sam exactore/crudeiron;ApeCity>15 gate;100fangs/helmet/sweat/royalsteel and strict2h Samtimer. Druid Ustan paws plusCeiron completehat objectives/gifts/language thenWarwolf. AssassinVescu7ingredients/base,Erayo6cloth+yarn/ownedbase/Shipwrecked2,Atradclaw+ring;Vescuinitial greeting requiresDrunk,Atrad greeting requiresFire. Generic current actor-condition support is ours;implement/reuse,never defer.",
     "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l7_ -- --nocapture --test-threads=2",
     "red_log": "/tmp/qengine2-batch7-red.log"
+  },
+  "current_mechanic_batch": {
+    "mechanic": "M01a",
+    "status": "PARTIAL",
+    "scope": "Three production TALK starters: Goblin Merchant (Rafzan), Machinery of War (Baxter), Annual Autumn Vintage (Emilie); no whole-quest promotion.",
+    "postgres_test": "m01a_rafzan_baxter_emilie_production_talk_routes_postgres",
+    "postgres_version": "18.6",
+    "postgres_duration_seconds": 144.819819498,
+    "remaining": "Cover all remaining assigned TALK routes, including later Goblin Merchant TALK stages.",
+    "engine_fix": "Native focus without literal greeting emits no empty wire line; regression ran red then green."
   }
 }

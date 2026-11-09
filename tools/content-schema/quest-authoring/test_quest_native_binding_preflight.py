@@ -3,6 +3,7 @@ from pathlib import Path
 import unittest
 
 import quest_native_binding_preflight as preflight
+from test_chosen_source_binding_plan import REGISTERED_TALK_QUESTS
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -42,11 +43,13 @@ class QuestNativeBindingPreflightTest(unittest.TestCase):
     def test_every_stage_has_real_owner_and_only_registered_talk_is_bound(self):
         summary = self.report["summary"]
         self.assertEqual(1887, summary["plan_stages"])
-        self.assertEqual(1886, summary["unbound_dispatch_stages"])
-        self.assertEqual(1, summary["native_dispatch_bindings"])
+        self.assertEqual(1887 - len(REGISTERED_TALK_QUESTS), summary["unbound_dispatch_stages"])
+        self.assertEqual(len(REGISTERED_TALK_QUESTS), summary["native_dispatch_bindings"])
         bound = [row for row in self.report["records"] if row["native_dispatch_binding_count"]]
-        self.assertEqual(["oteryn:quest.authored.a_pirate_s_death_to_me"], [row["quest"] for row in bound])
-        self.assertEqual(1, bound[0]["native_dispatch_binding_count"])
+        self.assertEqual(REGISTERED_TALK_QUESTS, {row["quest"] for row in bound})
+        self.assertEqual(len(REGISTERED_TALK_QUESTS), len(bound))
+        for row in bound:
+            self.assertEqual(1, row["native_dispatch_binding_count"])
         self.assertEqual(0, summary["native_reward_delivery_bindings"])
         self.assertEqual(
             {

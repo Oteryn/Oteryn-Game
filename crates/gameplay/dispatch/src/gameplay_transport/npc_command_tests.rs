@@ -76,6 +76,45 @@ fn intent(npc_actor: EntityRef, text: &str) -> NpcTalkIntent {
 }
 
 #[test]
+fn native_focus_without_literal_greeting_is_wire_encodable() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let conversations = NpcConversations::default();
+    let chat = ChatRuntime::default();
+    chat.admit(session, "Aela", at(BASE));
+    chat.set_npc_service(session);
+    chat.install_npc_talk(Arc::new(NpcTalkBook::default().with(
+        "oteryn:npc.alice",
+        NpcTalkEntry::new("Alice", Some("Ask me about a task.")).with_source_greeting(""),
+    )));
+    let greeting = conversations.talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "hi"),
+        at(BASE),
+    );
+    assert_eq!(greeting.disposition, NpcIntentDisposition::Ok);
+    let focus = greeting.conversation.expect("focus is still opened");
+    assert_eq!(focus.open, Some((npc, NpcConversationState::Open)));
+    oteryn_protocol_oteryn::npc_service::encode_npc_conversation(&focus)
+        .expect("a focus-only native greeting must be valid on the real wire");
+    assert!(focus.lines.is_empty(), "no source greeting is invented");
+    let next = conversations.talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "job"),
+        at(BASE + 1),
+    );
+    assert_eq!(next.disposition, NpcIntentDisposition::Ok);
+    let answer = next.conversation.expect("conversation remains usable");
+    assert_eq!(answer.lines, ["Ask me about a task."]);
+    oteryn_protocol_oteryn::npc_service::encode_npc_conversation(&answer).expect("normal reply");
+}
+
+#[test]
 fn a_conversation_opens_answers_and_closes() {
     let (runtime, actor, session, npc) = fixture(2);
     let conversations = NpcConversations::default();
