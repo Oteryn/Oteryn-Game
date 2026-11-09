@@ -6,6 +6,7 @@ use crate::foundation::ChannelRuntimeV1;
 use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
+mod bloodjaw_targeting;
 pub(super) mod physical_spell;
 pub(super) mod rotten_waves;
 mod source_items;
@@ -75,6 +76,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 let root = GameplayDecisionRoot::from_bytes(native.source_digest());
+                let bloodjaw_players = if wave_enabled {
+                    bloodjaw_targeting::current_players(runtime, states)
+                } else { None };
                 let table = &mut states.monster_melee.creature_ai;
                 let empty = std::collections::BTreeSet::new();
                 let doors = if matches!(
@@ -199,6 +203,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             );
                             summons
                                 .consume_report(runtime, table, native, actor, report, reader, now);
+                            if wave_enabled && !report.over_budget && bloodjaw_targeting::retarget(runtime, table,
+                                actor, bloodjaw_players.as_deref(), now).is_err() {
+                                eprintln!("oteryn-game-server event=bloodjaw_target_refused current_owner=true");
+                            }
                             if wave_enabled && waves.consume(runtime, table, native, actor, report,
                                 reader.map.view(), room, &wave_taints, now).is_err() {
                                 eprintln!("oteryn-game-server event=rotten_wave_refused current_owner=true");

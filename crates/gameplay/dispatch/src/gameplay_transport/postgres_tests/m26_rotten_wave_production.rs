@@ -215,6 +215,84 @@ pub(super) async fn check(
                 "source Game.createMonster remains masterless"
             );
         }
+        if tick > 0 {
+            let bloodjaws = runtime.positioned_melee_census().map_err(debug)?;
+            for (bloodjaw, _, _) in bloodjaws {
+                if runtime.companion_snapshot(bloodjaw).is_ok_and(|row| {
+                    row.state.policy.definition_key == "oteryn:creature.elder_bloodjaw"
+                }) {
+                    assert_eq!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .state(bloodjaw)
+                            .ok_or("native Bloodjaw AI")?
+                            .target(),
+                        Some(player),
+                        "source onThink selects the real participant independently of generic target search"
+                    );
+                    assert!(
+                        states.monster_melee.creature_ai.due(bloodjaw).is_some(),
+                        "source setTarget keeps the native think clock awake"
+                    );
+                    let stamp = runtime.issue_owner_work().map_err(debug)?;
+                    let binding = runtime.binding();
+                    let generation = crate::foundation::ScopeOwnershipGeneration::new(
+                        binding
+                            .scope_generation()
+                            .get()
+                            .checked_add(1)
+                            .ok_or("scope generation overflow")?,
+                    )
+                    .map_err(debug)?;
+                    let (_, foreign_stamp) = crate::foundation::crystal_timer_fixture(
+                        binding.runtime_scope(),
+                        generation,
+                    )
+                    .map_err(debug)?;
+                    assert!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .set_current_bloodjaw_target(
+                                &runtime,
+                                foreign_stamp,
+                                bloodjaw,
+                                player,
+                                tick_now
+                            )
+                            .is_err(),
+                        "foreign owner generation refused"
+                    );
+
+                    assert!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .set_current_bloodjaw_target(&runtime, stamp, boss, player, tick_now)
+                            .is_err(),
+                        "wrong source creature refused"
+                    );
+                    assert!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .set_current_bloodjaw_target(&runtime, stamp, bloodjaw, boss, tick_now)
+                            .is_err(),
+                        "non-player target refused"
+                    );
+                    assert_eq!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .state(bloodjaw)
+                            .ok_or("native Bloodjaw AI after refusals")?
+                            .target(),
+                        Some(player)
+                    );
+                }
+            }
+        }
     }
     assert!(
         first_wave
@@ -303,7 +381,7 @@ pub(super) async fn check(
         );
     }
     eprintln!(
-        "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true orphan_cleanup=true bloodjaw_cleanup=true"
+        "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true orphan_cleanup=true bloodjaw_cleanup=true source_bloodjaw_target=true"
     );
     Ok(())
 }
