@@ -11079,5 +11079,17 @@
     "migration_check": "staged duplicate scan and embedded migrator/directory equality PASS",
     "pin_check": "PASS",
     "remaining": "Authoring JSON schema still needs the new operator (RED test held outside checkout); native Lion offering PG/wiring and rest of M07 remain PARTIAL"
+  },
+  "m07_floor_authoring_schema": {
+    "state": "TESTED_AUTHORING_SLICE",
+    "own_tests": "3/3 PASS0.004s; RED unknown operator before schema extension",
+    "checks": "PASS429.691s",
+    "tree": "PASS220.034s",
+    "workspace": "PASS6m29s",
+    "fmt": "PASS",
+    "pin_check": "PASS",
+    "pg": "unchanged qualified binary; PostgreSQL180006 success marker14.685194148s",
+    "scope": "authoring representation only; no additional quest completion claim",
+    "unit_runner": "115 modules PASS580.943s"
   }
 }

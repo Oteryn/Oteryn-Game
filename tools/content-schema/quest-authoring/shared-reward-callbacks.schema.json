@@ -743,6 +743,30 @@
               "type": "object",
               "additionalProperties": false,
               "required": [
+                "kind",
+                "value",
+                "minimum"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "add_at_least"
+                },
+                "value": {
+                  "type": "integer",
+                  "minimum": -9223372036854775808,
+                  "maximum": 9223372036854775807
+                },
+                "minimum": {
+                  "type": "integer",
+                  "minimum": -9223372036854775808,
+                  "maximum": 9223372036854775807
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
                 "kind"
               ],
               "properties": {
