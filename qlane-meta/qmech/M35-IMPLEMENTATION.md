@@ -375,3 +375,41 @@ with `-D warnings`; content decoder12; container authoring16 (RED before the fix
 GREEN after regeneration); variant authoring13; callback generator14; existing
 authoring29; native-only generation/reproducibility. The live case passed
 in128.99 seconds with `M35_DRACONIA_POSTGRES_CASE_COMPLETED`. No local node boot.
+
+
+## Goblin Temple complete water bag and caller proof
+
+The new authoring regression was RED because UID6119's complete bag was held
+on its source WATER vial. The existing native fluid MINT now admits this exact
+claim alongside Dreamer's already-qualified water claim. It requires UID6119,
+`quest_kv/goblintemple2`, vial2874 count1 and subtype1; missing or substituted
+subtypes remain rejected by the content decoder. The immutable donor capture
+and canonical vial definition remain unchanged.
+
+Crystal 201189f binds UID6118 at(31973,32209,12) and UID6119
+at(31977,32209,12), both appearance2472. Their bag2853 contents are sandals3551
+x1, small stones1781 x5 and gold3031 x50; and pan3466 x1, snowballs2992 x4
+and WATER vial2874 x1. The caller case exercises both orders and checks all
+six quantities, root bags, fluid subtype and same-root/same-child transaction
+proofs, completion only after both claims, replay, duplicate refusal and
+track reload between chests.
+
+Complete native recipes increase73->74, held shapes32->31 and callback child
+closure144->146. The native provider adds only pan3466 (5802->5803 identities).
+The earlier callback generator now seeds Snowball2992 from its retained
+seasonal profile, preserving every existing known semantic and attribute;
+its canonical trade policy becomes known through the existing admission pass.
+No migration, protocol or source quantity changes.
+
+Fresh checks passed: formatting; content+dispatch all-features/all-target clippy
+with `-D warnings`; content decoder12; container authoring17 (RED before the
+fix, GREEN after regeneration); variant authoring13; callback generator15;
+existing authoring29; native-only generation and reproducibility. The live
+caller passed in134.43 seconds and printed
+`M35_GOBLIN_TEMPLE_POSTGRES_CASE_COMPLETED`. Local node boot remains skipped
+as instructed. The previously recorded final-binding, partial-charge and
+remaining caller-proof gaps still prevent a complete26-quest DONE claim.
+The full pinned-production equipment/attribute check also passed in76.86
+seconds with the exact5803 profile union. Self-review covered all handwritten
+changes and semantic generated deltas; no significant finding. Independent
+coordinator review and CI are not claimed by this lane.

@@ -68,6 +68,7 @@ enum Case {
     FireAxeAll,
     EmperorCookies,
     Draconia,
+    GoblinTemple,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -87,6 +88,24 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+#[test]
+fn m35_goblin_temple_dispatch_requires_both_complete_bags_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::GoblinTemple).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Goblin Temple scenario panicked")??;
+    println!("M35_GOBLIN_TEMPLE_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 #[test]
@@ -217,6 +236,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
         ),
+        Case::GoblinTemple => (
+            (31973, 32209, -12),
+            2472,
+            "oteryn:quest.goblin_temple_quest",
+            &[(31973, 6118), (31977, 6119)],
+        ),
         Case::Draconia => (
             (32803, 31582, -2),
             2472,
@@ -338,6 +363,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     | Case::FireAxeAll
                     | Case::EmperorCookies
                     | Case::Draconia
+                    | Case::GoblinTemple
             ) {
                 2
             } else {
@@ -586,7 +612,67 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::FireAxeAll
                                 | Case::EmperorCookies
                                 | Case::Draconia
+                                | Case::GoblinTemple
                         ) && index == 1
+                );
+            }
+            if matches!(case, Case::GoblinTemple) {
+                let children: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 7")
+                    .fetch_all(&h.pool).await?;
+                let mut expected = Vec::new();
+                for selected in 0..=index {
+                    let pos = if reverse {
+                        choices.len() - selected - 1
+                    } else {
+                        selected
+                    };
+                    let source_items = if pos == 0 {
+                        [
+                            ("oteryn:item.tibia.i3551", 1),
+                            ("oteryn:item.tibia.i1781", 5),
+                            ("oteryn:item.tibia.i3031", 50),
+                        ]
+                    } else {
+                        [
+                            ("oteryn:item.tibia.i3466", 1),
+                            ("oteryn:item.tibia.i2992", 4),
+                            ("oteryn:item.tibia.i2874", 1),
+                        ]
+                    };
+                    expected.extend(
+                        source_items
+                            .into_iter()
+                            .map(|(key, qty)| (key.to_owned(), qty)),
+                    );
+                }
+                expected.sort();
+                assert_eq!(children, expected);
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(
+                    roots,
+                    vec![("oteryn:item.tibia.i2853".to_owned(), 1); index + 1]
+                );
+                let fluids: Vec<(i64,i16,bool,bool)> = sqlx::query_as(
+                    "SELECT i.quantity,f.fluid_subtype,m.root_transaction_id=r.transaction_id, \
+                     f.last_transaction_id=m.transaction_id FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_nested_entries e ON e.parent_item_instance_id=r.item_instance_id \
+                     JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id \
+                     JOIN game_item_fluid_states f ON f.item_instance_id=i.item_instance_id \
+                     JOIN game_item_fluid_reward_mints m ON m.item_instance_id=i.item_instance_id \
+                     WHERE i.definition_production_key='oteryn:item.tibia.i2874' LIMIT 2")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(
+                    fluids,
+                    if reverse || index == 1 {
+                        vec![(1, 1, true, true)]
+                    } else {
+                        Vec::new()
+                    }
                 );
             }
             if matches!(case, Case::Draconia) {

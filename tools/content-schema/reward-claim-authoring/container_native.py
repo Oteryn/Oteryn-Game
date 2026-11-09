@@ -30,6 +30,13 @@ CHARGED_QUEST_CLAIMS = {
     'canary:reward-claim/kv/trollcave1': 3083,
     'canary:reward-claim/kv/weddingring1': 3085,
 }
+WATER_QUEST_CLAIMS = {
+    'canary:reward-claim/kv/goblintemple2': (
+        (6119,), {'kind': 'quest_kv', 'key': 'goblintemple2'}),
+    'canary:reward-claim/quest/u7_9/dreamers_challenge/chests_wine': (
+        (6197, 6198, 6199, 6200),
+        {'kind': 'storage', 'key': 'Storage.Quest.U7_9.DreamersChallenge.ChestsWine'}),
+}
 FULL_CHARGE_LEAVES = {
     'canary:reward-claim/kv/madmageroom3': (6082, 3081, 5),
     'canary:reward-claim/kv/timering3': (6051, 3082, 50),
@@ -78,7 +85,7 @@ def native_charge_item(item, profile):
 
 
 def native_water_vial(item, profile):
-    """Use the existing native empty-vial definition, scoped to Dreamer's source claim."""
+    """Use the existing native empty-vial definition, scoped to exact water-bearing source claims."""
     if item is None or profile is None:
         return item
     identity = item['identity']
@@ -114,7 +121,7 @@ def native_water_vial(item, profile):
 
 
 def claim_items(pilot_key, items):
-    water = pilot_key == 'canary:reward-claim/quest/u7_9/dreamers_challenge/chests_wine'
+    water = pilot_key in WATER_QUEST_CLAIMS
     item = 2874 if water else CHARGED_QUEST_CLAIMS.get(pilot_key)
     if item is None:
         return items
@@ -318,9 +325,9 @@ def derive(definition, items, stack_problem):
             # A source fluid argument is a subtype, never a stack count. The
             # immutable source compiler records those separately; do not erase it.
             fluid = known(item.get('semantics', {}).get('fluid')) is not None
+            water = WATER_QUEST_CLAIMS.get(definition.get('provenance', {}).get('pilot_key'))
             if fluid and (source_id != 2874 or raw_count != 1 or count != 1
-                          or ids[0] not in (6197, 6198, 6199, 6200)
-                          or completion != {'kind': 'storage', 'key': 'Storage.Quest.U7_9.DreamersChallenge.ChestsWine'}):
+                          or water is None or ids[0] not in water[0] or completion != water[1]):
                 return None
             child = copy.deepcopy(quantity)
             if fluid:

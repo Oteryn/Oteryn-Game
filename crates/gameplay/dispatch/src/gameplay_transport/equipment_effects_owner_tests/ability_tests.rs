@@ -333,6 +333,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("M35-CLAIM-SETS", 5),
     // Crystal UID5018 Fanfare access key; exact numbered-key claim qualification.
     ("M35-FANFARE-KEY", 1),
+    // Crystal UID6119 complete Goblin Temple bag: canonical pan3466.
+    ("M35-GOBLIN-TEMPLE", 1),
 ];
 
 #[test]
