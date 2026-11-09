@@ -1,5 +1,6 @@
-mod entry;
-pub use entry::run;
+mod capture;
+#[path = "features/local-reference-preferences/frame_native.rs"]
+mod frame_native;
 #[path = "features/local-spell-action-bar/native.rs"]
 mod hud;
 mod input;
@@ -59,6 +60,8 @@ impl Display for ShellError {
 }
 impl std::error::Error for ShellError {}
 struct Application {
+    frame_timing: frame_native::FrameTiming,
+    captures: capture::Captures,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -79,7 +82,6 @@ struct Application {
     input: InputPlatformAdapter,
     actions: MouseActions,
     hotkeys: SpellHotkeys,
-    next_frame: std::time::Instant,
     fatal_error: Option<ShellError>,
 }
 /// The view of an admitted session and the link to its task on the client runtime.
@@ -98,6 +100,8 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            frame_timing: frame_native::FrameTiming::default(),
+            captures: Default::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -116,7 +120,6 @@ impl Application {
             input: InputPlatformAdapter::new(),
             actions: MouseActions::new().map_err(|_error| ShellError::InputInitialization)?,
             hotkeys: SpellHotkeys::new().map_err(|_error| ShellError::InputInitialization)?,
-            next_frame: std::time::Instant::now(),
             fatal_error: None,
         })
     }
@@ -153,6 +156,10 @@ impl Application {
     }
 
     fn leave_play(&mut self, message: &str) {
+        if let Some(renderer) = &mut self.renderer {
+            renderer.cancel_capture();
+        }
+        self.captures = Default::default();
         self.audio.stop();
         self.play = None;
         if let Some(entry) = &mut self.entry {
@@ -192,204 +199,25 @@ const fn redraw_eligible(phase: Option<SurfacePhase>) -> bool {
     matches!(phase, Some(SurfacePhase::Configured))
 }
 
-impl ApplicationHandler for Application {
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        if let (Some(window), Some(renderer)) = (&self.window, &mut self.renderer) {
-            let size = window.inner_size();
-            if renderer
-                .resume(self.generation, size.width, size.height)
-                .is_err()
-            {
-                self.fail(event_loop, ShellError::RendererResume);
-            }
-            return;
-        }
-        if self.window.is_some() {
-            return;
-        }
-        let attributes = WindowAttributes::default()
-            .with_title("Oteryn — Enter: connection and sign-in")
-            .with_active(self.smoke)
-            .with_inner_size(LogicalSize::new(960.0, 540.0));
-        let Ok(window) = event_loop.create_window(attributes) else {
-            self.fail(event_loop, ShellError::WindowCreation);
-            return;
-        };
-        let window = Arc::new(window);
-        if self.smoke {
-            self.window = Some(window);
-            event_loop.exit();
-            return;
-        }
-        self.hud = hud::Hud::new(&window);
-        self.settings.attach(&window);
-        if self.hud.is_none() {
-            self.fail(event_loop, ShellError::WindowCreation);
-            return;
-        }
-        let size = window.inner_size();
-        // The map is loaded on the first resume and kept across suspends.
-        let center = self
-            .play
-            .as_ref()
-            .map_or((START.0, START.1, 7), |play| play.view.map_center());
-        let world = if let Some(world) = &self.world
-            && world.center() == center
-        {
-            Arc::clone(world)
-        } else {
-            let (world, reason) = World::from_env(center);
-            if let Some(reason) = reason {
-                println!("Oteryn: drawing without map sprites: {reason}");
-            }
-            let Ok(world) = world.map(Arc::new) else {
-                self.fail(event_loop, ShellError::RendererInitialization);
-                return;
-            };
-            self.world = Some(Arc::clone(&world));
-            world
-        };
-        let shown = match &mut self.play {
-            Some(_) => Ok(()),
-            None => self.rebuild_offline(),
-        };
-        if shown.is_err() {
-            self.fail(event_loop, ShellError::RendererInitialization);
-            return;
-        }
-        let Ok(mut renderer) = WindowsRenderer::new(
-            Arc::clone(&window),
-            self.generation,
-            size.width,
-            size.height,
-        ) else {
-            self.fail(event_loop, ShellError::RendererInitialization);
-            return;
-        };
-        renderer.set_atlas(world.atlas().clone());
-        self.atlas = Some(world.atlas().clone());
-        window.request_redraw();
-        self.window = Some(window);
-        self.renderer = Some(renderer);
-    }
+#[path = "windows_shell/application_handler.rs"]
+mod application_handler;
 
-    fn suspended(&mut self, event_loop: &ActiveEventLoop) {
-        if let Some(renderer) = &mut self.renderer
-            && renderer.suspend(self.generation).is_err()
-        {
-            self.fail(event_loop, ShellError::RendererSuspend);
-        }
+pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
+    let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
+    let smoke = std::env::args().any(|argument| argument == "--smoke");
+    let mut application = Application::new(smoke, client)?;
+    let run_result = event_loop
+        .run_app(&mut application)
+        .map_err(|_error| ShellError::EventLoopRun);
+    drop(application.play.take());
+    if let Some(entry) = application.entry.take() {
+        entry.shutdown();
     }
-
-    fn device_event(
-        &mut self,
-        event_loop: &ActiveEventLoop,
-        _device_id: DeviceId,
-        event: DeviceEvent,
-    ) {
-        if let Ok(events) = self.input.process_device_event(&event) {
-            self.handle_input(event_loop, &events);
-        }
+    if let Some(error) = application.fatal_error {
+        return Err(error);
     }
-
-    fn window_event(
-        &mut self,
-        event_loop: &ActiveEventLoop,
-        _window_id: WindowId,
-        event: WindowEvent,
-    ) {
-        // Every window event goes through the adapter and router first; select or walk is
-        // triggered only by the routed gameplay action.
-        if let Ok(events) = self.input.process_window_event(&event) {
-            self.handle_input(event_loop, &events);
-        }
-        match event {
-            WindowEvent::CloseRequested => {
-                if let Some(renderer) = &mut self.renderer
-                    && renderer.close(self.generation).is_err()
-                {
-                    self.fail(event_loop, ShellError::RendererClose);
-                    return;
-                }
-                event_loop.exit();
-            }
-            WindowEvent::Resized(size) => {
-                if let Some(renderer) = &mut self.renderer
-                    && renderer
-                        .resize(self.generation, size.width, size.height)
-                        .is_err()
-                {
-                    self.fail(event_loop, ShellError::RendererResize);
-                }
-            }
-            WindowEvent::RedrawRequested => {
-                let scene = self
-                    .play
-                    .as_ref()
-                    .map(|play| play.view.scene())
-                    .or(self.scene.as_ref());
-                if let (Some(renderer), Some(scene)) = (&mut self.renderer, scene)
-                    && redraw_eligible(Some(renderer.state().phase()))
-                {
-                    if self.atlas.as_ref() != Some(scene.atlas()) {
-                        renderer.set_atlas(scene.atlas().clone());
-                        self.atlas = Some(scene.atlas().clone());
-                    }
-                    if renderer
-                        .render_batches(self.generation, scene.tiles(), scene.sprites())
-                        .is_err()
-                    {
-                        self.fail(event_loop, ShellError::RendererRender);
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        let menu_events = self.settings.take_window_events(self.play.is_some());
-        if !menu_events.is_empty() && self.play.is_some() {
-            self.handle_input(event_loop, &menu_events);
-        }
-        self.poll_entry();
-        if let Some(play) = &mut self.play {
-            self.settings.restore(&mut play.view, &play.link);
-        }
-        if let Some(play) = &mut self.play
-            && let Err(end) = play.view.tick(&play.link)
-        {
-            match end {
-                PlayEnd::Ended(class) => self.return_to_login(class),
-                PlayEnd::LoggedOut => self.return_to_character_selection(),
-            }
-        }
-        if let (Some(play), Some(window)) = (&self.play, &self.window) {
-            play.link.item_drag_tick(&play.view, window);
-        }
-        self.update_hud();
-        if let Some(window) = &self.window
-            && redraw_eligible(
-                self.renderer
-                    .as_ref()
-                    .map(|renderer| renderer.state().phase()),
-            )
-        {
-            let now = std::time::Instant::now();
-            if now >= self.next_frame {
-                let interval = self
-                    .play
-                    .as_ref()
-                    .map_or(std::time::Duration::from_millis(16), |play| {
-                        play.view.preferences().frame_interval(window.has_focus())
-                    });
-                self.next_frame = now + interval;
-                window.request_redraw();
-            }
-            event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(
-                self.next_frame
-                    .min(now + std::time::Duration::from_millis(20)),
-            ));
-        }
-    }
+    run_result
 }
+
+#[cfg(test)]
+mod tests;

@@ -1,3 +1,4 @@
+//! Session outbox delivery and command lifecycle; state remains owned by the mailbox.
 use super::*;
 impl Outbox {
     pub(in crate::play) fn stepped(&self, outcome: StepOutcome) {
@@ -18,17 +19,20 @@ impl Outbox {
         self.inventory_events(&events);
         self.container_events(&events);
         let mut mailbox = lock(&self.0);
-        crate::play::feature_0060_player_trade::protocol::reduce(
+        super::super::feature_0060_player_trade::protocol::reduce(
             &mut mailbox.player_trade,
             &events,
         );
-        crate::play::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
+        super::super::feature_local_spell_action_bar::protocol::vitals_events(
+            &mut mailbox,
+            &events,
+        );
         mailbox.death_protection_events(&events);
         mailbox.dialogue_events(&events);
         mailbox.npc_shop_events(&events);
         for event in &events {
             if let SessionEvent::ContainerViews(update) = event {
-                crate::play::feature_0230_browse_field::protocol::replace_views(
+                super::super::feature_0230_browse_field::protocol::replace_views(
                     &mut mailbox.browse_field,
                     update.value.clone(),
                 );
@@ -40,13 +44,13 @@ impl Outbox {
                 );
             }
         }
-        crate::play::feature_0010_analyser::protocol::reduce(&mut mailbox, &events);
-        crate::play::feature_0134_party_skull::protocol::reduce(
+        super::super::feature_0010_analyser::protocol::reduce(&mut mailbox, &events);
+        super::super::feature_0134_party_skull::protocol::reduce(
             &mut mailbox.properties.party_skull,
             &events,
         );
-        crate::play::feature_0287_actor_spell_catalog::protocol::reduce(&mut mailbox, &events);
-        crate::play::feature_0291_cast_chat::protocol::reduce(&mut mailbox, &events);
+        super::super::feature_0287_actor_spell_catalog::protocol::reduce(&mut mailbox, &events);
+        super::super::feature_0291_cast_chat::protocol::reduce(&mut mailbox, &events);
         mailbox.coalesce_events(events);
         mailbox.check_server_messages();
         let notices = std::mem::take(&mut mailbox.pushed.achievements);
@@ -64,8 +68,8 @@ impl Outbox {
                 .apply(oteryn_client_runtime::tutorial_notices::Notice::ServerSave { minutes });
         }
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
-        crate::play::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
-        crate::play::feature_0240_chat_party_room::protocol::reset_if_replaced(&mut mailbox);
+        super::super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
+        super::super::feature_0240_chat_party_room::protocol::reset_if_replaced(&mut mailbox);
         for line in std::mem::take(&mut mailbox.pushed.chat_lines) {
             oteryn_client_ui::party::push_feedback(&mut mailbox.party, &line);
             oteryn_client_ui::chat_party_room::push_line(&mut mailbox.chat_party_room, line);
@@ -116,6 +120,7 @@ impl Outbox {
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
+        mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();
@@ -163,6 +168,7 @@ impl Outbox {
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
+        mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();
@@ -194,5 +200,125 @@ impl Outbox {
         mailbox.party_effects = Default::default();
         mailbox.potion_durations = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::LoggedOut);
+    }
+}
+
+/// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
+#[derive(Debug)]
+pub struct PlayLink {
+    pub(in crate::play) commands: UnboundedSender<PlayCommand>,
+    pub(in crate::play) mailbox: SharedMailbox,
+}
+
+impl PlayLink {
+    pub fn request(&self, direction: StepDir) {
+        let mailbox = lock(&self.mailbox);
+        if mailbox.world_input_blocked() {
+            return;
+        }
+        // A closed task has already reported or will report `Ended`.
+        let _ = self.commands.send(PlayCommand::Step(direction));
+    }
+
+    pub fn request_combat(&self, command: CombatCommand) {
+        let mailbox = lock(&self.mailbox);
+        if !mailbox.world_input_blocked() {
+            let _ = self.commands.send(PlayCommand::Combat(command));
+        }
+    }
+
+    pub fn request_logout(&self) {
+        let _ = self.commands.send(PlayCommand::Logout);
+    }
+
+    /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
+    pub fn poll(&self) -> Option<PlayEvent> {
+        #[cfg(windows)]
+        super::super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.before != Pushed::default() {
+            return Some(PlayEvent::Pushed(Box::new(std::mem::take(
+                &mut mailbox.before,
+            ))));
+        }
+        if let Some(outcome) = mailbox.stepped.take() {
+            return Some(PlayEvent::Stepped(outcome));
+        }
+        if mailbox.pushed != Pushed::default() {
+            return Some(PlayEvent::Pushed(Box::new(std::mem::take(
+                &mut mailbox.pushed,
+            ))));
+        }
+        if let Some(feedback) = mailbox.action_feedback.take() {
+            return Some(PlayEvent::ActionFeedback(feedback));
+        }
+        if let Some(report) = mailbox.combat.pop_front() {
+            return Some(PlayEvent::Combat(report));
+        }
+        if let Some(result) = mailbox.logout_refused.take() {
+            return Some(PlayEvent::LogoutRefused(result));
+        }
+        mailbox.ended.take()
+    }
+}
+
+/// The channel pair between the shell and `run_session`.
+pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
+    let (commands, command_rx) = tokio::sync::mpsc::unbounded_channel();
+    let mailbox = SharedMailbox::default();
+    (
+        PlayLink {
+            commands,
+            mailbox: Arc::clone(&mailbox),
+        },
+        command_rx,
+        Outbox(mailbox),
+    )
+}
+
+impl Drop for PlayLink {
+    fn drop(&mut self) {
+        let mut mailbox = lock(&self.mailbox);
+        if let Some(launcher) = &mailbox.coin_shop {
+            launcher.end();
+        }
+        mailbox.properties.end();
+        mailbox.weapon_proficiency = Default::default();
+        mailbox.imbue = Default::default();
+        mailbox.analyser = Default::default();
+        mailbox.cast_chat = Default::default();
+        mailbox.cast_control = Default::default();
+        mailbox.spellbook_details = Default::default();
+        mailbox.spell_catalog = Default::default();
+        mailbox.spell_bar = Default::default();
+        mailbox.boss_encounter_end();
+        mailbox.player_trade = Default::default();
+        mailbox.world_event_shutdown = true;
+        mailbox.highscores_shutdown = true;
+        mailbox.npc_shop = Default::default();
+        mailbox.dialogue = Default::default();
+        mailbox.dialogue_shutdown = true;
+        mailbox.vip.open = false;
+        mailbox.inventory_shutdown = true;
+        mailbox.containers.end();
+        mailbox.browse_field.open = false;
+        mailbox.item_forge.open = false;
+        mailbox.quest_shutdown = true;
+        mailbox.wheel_shutdown = true;
+        mailbox.prey_shutdown = true;
+        mailbox.depot_shutdown = true;
+        mailbox.imbue_shutdown = true;
+        mailbox.market_shutdown = true;
+        mailbox.hireling_shutdown = true;
+        mailbox.cyclopedia_character_shutdown = true;
+        // CL26s1
+        mailbox.chat_public_shutdown = true;
+        // CL26s2: stop the player-typing native panel with the session.
+        mailbox.player_typing_shutdown = true;
+        // CL26s3
+        mailbox.daily_reward_shutdown = true;
+        // CL26s4
+        mailbox.boss_encounter_shutdown = true;
+        mailbox.boss_rewards_shutdown = true;
     }
 }

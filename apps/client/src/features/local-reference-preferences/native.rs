@@ -1,5 +1,5 @@
 //! Native settings controls and menu, with preferences shared only on the shell thread boundary.
-// SAFETY: HWNDs and subclass data are created, used and destroyed on their owning thread.
+// SAFETY: Owned HWND lifetimes stay on their creating thread; cross-panel geometry and font changes are posted to their owners.
 #![allow(unsafe_code)]
 use oteryn_client::play::{
     PlayView, PreferenceStore, SettingsPage, SettingsState, preference_bindings,
@@ -22,7 +22,29 @@ use winit::{
     window::Window,
 };
 
+#[path = "native_tooltips.rs"]
+mod native_tooltips;
+#[path = "native_ui_scale.rs"]
+mod native_ui_scale;
+
 type Shared = SettingsState;
+#[path = "basic_native.rs"]
+mod basic_window;
+#[path = "controls_native.rs"]
+mod controls_window;
+#[path = "frames_native.rs"]
+mod frames_window;
+#[path = "help_native.rs"]
+mod help_window;
+#[path = "minimap_native.rs"]
+mod minimap_window;
+#[path = "profiles_native.rs"]
+mod profile_window;
+
+#[path = "shortcuts_native.rs"]
+mod shortcuts_window;
+#[path = "subpages.rs"]
+mod subpages;
 fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
     shared
         .lock()
@@ -36,6 +58,8 @@ fn wide(text: &str) -> Vec<u16> {
 }
 
 pub(super) struct Settings {
+    ui_scaler: std::cell::RefCell<native_ui_scale::UiScaler>,
+    tooltip: std::cell::RefCell<native_tooltips::NativeTooltip>,
     // Win32 borrows the Arc handle address; Box keeps it stable when Settings moves.
     #[allow(clippy::redundant_allocation)]
     shared: Box<Arc<Mutex<Shared>>>,
@@ -46,6 +70,8 @@ pub(super) struct Settings {
 impl Settings {
     pub(super) fn new() -> Self {
         Self {
+            ui_scaler: std::cell::RefCell::new(native_ui_scale::UiScaler::default()),
+            tooltip: std::cell::RefCell::new(native_tooltips::NativeTooltip::default()),
             shared: Box::new(Arc::new(Mutex::new(SettingsState::new(
                 PreferenceStore::path(),
             )))),
@@ -116,8 +142,10 @@ impl Settings {
         unsafe {
             let mut rect: RECT = std::mem::zeroed();
             GetClientRect(self.parent, &mut rect);
-            let x = (rect.right - 160).max(0);
-            MoveWindow(self.collapse, x, 64, 150, 26, 1);
+            let percentage = state.preferences.interface_scale;
+            let row = oteryn_client::play::scale_ui_rect([0, 64, 150, 26], percentage);
+            let x = (rect.right - row[2] - 10).max(0);
+            MoveWindow(self.collapse, x, row[1], row[2], row[3], 1);
             ShowWindow(self.collapse, if playing { SW_SHOW } else { SW_HIDE });
             SetWindowTextW(
                 self.collapse,
@@ -136,7 +164,11 @@ impl Settings {
                     .iter()
                     .position(|key| key == id);
                 if let Some(position) = position {
-                    MoveWindow(*handle, x, 94 + position as i32 * 28, 150, 26, 1);
+                    let row = oteryn_client::play::scale_ui_rect(
+                        [0, 94 + position as i32 * 28, 150, 26],
+                        percentage,
+                    );
+                    MoveWindow(*handle, x, row[1], row[2], row[3], 1);
                 }
                 ShowWindow(
                     *handle,
@@ -148,13 +180,32 @@ impl Settings {
                 );
             }
         }
-        state.take_window_events()
+        let percentage = state.preferences.interface_scale;
+        let events = state.take_window_events();
+        drop(state);
+        self.ui_scaler.borrow_mut().refresh(self.parent, percentage);
+        events
+    }
+    pub(super) fn control_events(
+        &self,
+        events: &[oteryn_input_actions::NormalizedInputEvent],
+        link: Option<&oteryn_client::play::PlayLink>,
+    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        lock(&self.shared)
+            .control_events(events, link.is_some_and(|link| link.preference_chat_open()))
     }
     pub(super) fn input(
         &mut self,
         events: &[oteryn_input_actions::NormalizedInputEvent],
+        link: Option<&oteryn_client::play::PlayLink>,
     ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
-        let (events, requested) = lock(&self.shared).input(events);
+        let mut state = lock(&self.shared);
+        state.open_help_report(link);
+        let (events, requested) = match link {
+            Some(link) => state.input_from_play(events, link),
+            None => state.input_in_context(events, false),
+        };
+        drop(state);
         if requested {
             spawn_window(Arc::clone(&self.shared));
         }
@@ -169,10 +220,26 @@ impl Settings {
             }
         }
         let mut state = lock(&self.shared);
+        state.select_character(view.preference_character());
+        state.open_help_report(Some(link));
+        state.sync_skills_layout(link);
+        state.sync_item_hotkeys(link);
+        state.sync_spellbook_filter(link);
+        state.sync_archive_bindings(link);
+        state.sync_chat_context(link);
         state.sync_battle_lists(link);
+        state.sync_local_preferences(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
         }
+        let enabled = state.preferences.tooltips_enabled;
+        let delay = state.preferences.tooltip_delay_ms;
+        let percentage = state.preferences.interface_scale;
+        drop(state);
+        let font = self.ui_scaler.borrow_mut().font(percentage);
+        self.tooltip
+            .borrow_mut()
+            .refresh(self.parent, view, enabled, delay, font);
     }
     pub(super) fn capture(&self, view: &mut PlayView) {
         let mut state = lock(&self.shared);
@@ -259,7 +326,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233)
+                && matches!(id, 103 | 106 | 110..=113 | 160..=166 | 223 | 225..=227 | 231..=233 | 241..=244)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -321,11 +388,30 @@ unsafe fn settings_window() -> HWND {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             760,
-            540,
+            650,
             null_mut(),
             null_mut(),
             null_mut(),
             null(),
         )
+    }
+}
+
+unsafe fn refresh_hud_checks(
+    hud_checks: &[HWND],
+    preferences: &oteryn_client::play::ReferencePreferences,
+) {
+    unsafe {
+        for (control, checked) in hud_checks.iter().zip([
+            preferences.hud_bars,
+            preferences.show_harmony,
+            preferences.show_serene,
+            preferences.show_lights,
+            preferences.show_effects,
+            preferences.creature_bars,
+            preferences.health_circle,
+        ]) {
+            SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
+        }
     }
 }

@@ -20,6 +20,8 @@ pub(crate) mod audit;
 mod dust_limit;
 #[path = "item_forge_live/inventory.rs"]
 mod inventory;
+#[path = "item_forge_live/preview.rs"]
+pub(super) mod preview;
 #[path = "item_forge_live/storage.rs"]
 mod storage;
 #[cfg(test)]

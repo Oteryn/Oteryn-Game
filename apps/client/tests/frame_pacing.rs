@@ -23,3 +23,14 @@ fn frame_limits_select_focus_and_reject_zero() -> Result<(), Box<dyn std::error:
     assert!(oteryn_client::play::PreferenceStore::export_to(&preferences, &path).is_err());
     Ok(())
 }
+
+#[test]
+fn merged_frame_pacer_preserves_existing_500_fps_limit() {
+    let preferences = oteryn_client::play::FramePreferences {
+        foreground: 500,
+        ..Default::default()
+    };
+    let mut pacer = oteryn_client::play::FramePacer::default();
+    assert!(preferences.valid());
+    assert_eq!(pacer.request(0, preferences, true), (true, 2_000_000));
+}

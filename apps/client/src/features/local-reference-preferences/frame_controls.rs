@@ -63,6 +63,8 @@ impl FrameControls {
                     .parse()
                     .map_err(|_| "Enter effect opacity from 0 to 100")?;
             }
+            preferences.frames.foreground = preferences.foreground_fps;
+            preferences.frames.background = preferences.background_fps;
             Ok(())
         }
     }

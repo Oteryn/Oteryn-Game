@@ -111,6 +111,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) local_preferences: crate::play::ReferencePreferences,
     pub(super) ui_sounds: Vec<super::UiSound>,
     pub(super) ui_vip_status: std::collections::BTreeMap<u64, oteryn_session::VipPresenceStatus>,
     pub(super) battle_lists: super::feature_0017_attack::view::BattleListsState,
@@ -122,6 +123,7 @@ pub(super) struct Mailbox {
     pub(super) arena: oteryn_client_ui::arena::ArenaPanel,
     pub(super) cast_chat: oteryn_client_ui::cast_chat::Panel,
     pub(super) cast_control: oteryn_client_ui::cast_control::Panel,
+    pub(super) spellbook_details: super::feature_0287_actor_spell_catalog::view::SpellbookState,
     pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
     pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,
     pub(super) served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
@@ -183,6 +185,7 @@ pub(super) struct Mailbox {
     pub(super) skill_progress: oteryn_client_ui::skill_progress::SkillProgressPanel,
     pub(super) party_effects: oteryn_client_ui::party_effects::PartyEffectsPanel,
     pub(super) loyalty_skills: oteryn_client_ui::loyalty_skills::LoyaltySkillsPanel,
+    pub(super) skills_layout: super::feature_0274_loyalty_skills::view::SkillsLayoutState,
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
     pub(super) quest_shutdown: bool,
@@ -276,123 +279,6 @@ pub(super) fn lock(mailbox: &SharedMailbox) -> MutexGuard<'_, Mailbox> {
 #[derive(Debug, Clone)]
 pub struct Outbox(pub(super) SharedMailbox);
 
-mod outbox;
-
-/// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
-#[derive(Debug)]
-pub struct PlayLink {
-    pub(super) commands: UnboundedSender<PlayCommand>,
-    pub(super) mailbox: SharedMailbox,
-}
-
-impl PlayLink {
-    pub fn request(&self, direction: StepDir) {
-        let mailbox = lock(&self.mailbox);
-        if mailbox.world_input_blocked() {
-            return;
-        }
-        // A closed task has already reported or will report `Ended`.
-        let _ = self.commands.send(PlayCommand::Step(direction));
-    }
-
-    pub fn request_combat(&self, command: CombatCommand) {
-        let mailbox = lock(&self.mailbox);
-        if !mailbox.world_input_blocked() {
-            let _ = self.commands.send(PlayCommand::Combat(command));
-        }
-    }
-
-    pub fn request_logout(&self) {
-        let _ = self.commands.send(PlayCommand::Logout);
-    }
-
-    /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
-    pub fn poll(&self) -> Option<PlayEvent> {
-        #[cfg(windows)]
-        super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
-        let mut mailbox = lock(&self.mailbox);
-        if mailbox.before != Pushed::default() {
-            return Some(PlayEvent::Pushed(Box::new(std::mem::take(
-                &mut mailbox.before,
-            ))));
-        }
-        if let Some(outcome) = mailbox.stepped.take() {
-            return Some(PlayEvent::Stepped(outcome));
-        }
-        if mailbox.pushed != Pushed::default() {
-            return Some(PlayEvent::Pushed(Box::new(std::mem::take(
-                &mut mailbox.pushed,
-            ))));
-        }
-        if let Some(feedback) = mailbox.action_feedback.take() {
-            return Some(PlayEvent::ActionFeedback(feedback));
-        }
-        if let Some(report) = mailbox.combat.pop_front() {
-            return Some(PlayEvent::Combat(report));
-        }
-        if let Some(result) = mailbox.logout_refused.take() {
-            return Some(PlayEvent::LogoutRefused(result));
-        }
-        mailbox.ended.take()
-    }
-}
-
-/// The channel pair between the shell and `run_session`.
-pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
-    let (commands, command_rx) = tokio::sync::mpsc::unbounded_channel();
-    let mailbox = SharedMailbox::default();
-    (
-        PlayLink {
-            commands,
-            mailbox: Arc::clone(&mailbox),
-        },
-        command_rx,
-        Outbox(mailbox),
-    )
-}
-
-impl Drop for PlayLink {
-    fn drop(&mut self) {
-        let mut mailbox = lock(&self.mailbox);
-        if let Some(launcher) = &mailbox.coin_shop {
-            launcher.end();
-        }
-        mailbox.properties.end();
-        mailbox.weapon_proficiency = Default::default();
-        mailbox.imbue = Default::default();
-        mailbox.analyser = Default::default();
-        mailbox.cast_chat = Default::default();
-        mailbox.cast_control = Default::default();
-        mailbox.spell_catalog = Default::default();
-        mailbox.spell_bar = Default::default();
-        mailbox.boss_encounter_end();
-        mailbox.player_trade = Default::default();
-        mailbox.world_event_shutdown = true;
-        mailbox.highscores_shutdown = true;
-        mailbox.npc_shop = Default::default();
-        mailbox.dialogue = Default::default();
-        mailbox.dialogue_shutdown = true;
-        mailbox.vip.open = false;
-        mailbox.inventory_shutdown = true;
-        mailbox.containers.end();
-        mailbox.browse_field.open = false;
-        mailbox.item_forge.open = false;
-        mailbox.quest_shutdown = true;
-        mailbox.wheel_shutdown = true;
-        mailbox.prey_shutdown = true;
-        mailbox.depot_shutdown = true;
-        mailbox.imbue_shutdown = true;
-        mailbox.market_shutdown = true;
-        mailbox.hireling_shutdown = true;
-        mailbox.cyclopedia_character_shutdown = true;
-        // CL26s1
-        mailbox.chat_public_shutdown = true;
-        // CL26s2: stop the player-typing native panel with the session.
-        mailbox.player_typing_shutdown = true;
-        // CL26s3
-        mailbox.daily_reward_shutdown = true;
-        // CL26s4
-        mailbox.boss_encounter_shutdown = true;
-        mailbox.boss_rewards_shutdown = true;
-    }
-}
+#[path = "mailbox/operations.rs"]
+mod operations;
+pub use operations::{PlayLink, play_channel};

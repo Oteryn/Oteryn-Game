@@ -2,6 +2,7 @@
 //! oteryn-choice: donors have no Oteryn revisioned catalogue; retain validated replacements in the existing domain store.
 use crate::*;
 pub use oteryn_protocol_oteryn::actor_spell_catalog::*;
+pub use oteryn_protocol_oteryn::spellbook_details;
 
 fn malformed() -> SessionError {
     SessionError::Protocol(FoundationProtocolError::MalformedFrame)

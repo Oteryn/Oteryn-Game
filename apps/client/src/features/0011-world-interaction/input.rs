@@ -6,7 +6,7 @@ impl PlayView {
     /// A click on `tile`: a drawn object or actor is selected, any other tile becomes the walk
     /// goal.
     pub fn click(&mut self, tile: TileCoord) -> Result<(), BatchError> {
-        if self.death.dead {
+        if self.death.dead || crate::play::feature_0450_server_modal::view::active() {
             return Ok(());
         }
         if self.cast_at_cursor(tile) {

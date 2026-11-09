@@ -1,3 +1,5 @@
+#[path = "input/catalogue.rs"]
+pub(in crate::play) mod catalogue;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn inspect(&self, request: oteryn_client_ui::inspection::Request) -> bool {
@@ -62,3 +64,7 @@ impl PlayLink {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "tests/catalogue.rs"]
+mod catalogue_tests;

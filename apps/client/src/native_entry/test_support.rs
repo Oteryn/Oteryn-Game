@@ -17,40 +17,9 @@ const WORLD: &str = "01890a5d-ac96-774b-bcce-b302099a8059";
 const CHANNEL: &str = "01890a5d-ac96-774b-bcce-b302099a805a";
 const JWS: &str = "eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl";
 
-/// Minimal FND-02 accepted + core join snapshot fixture. Like the refusal fixture below,
-/// this is test-only wire data; the client still decodes it through the production session.
-pub(super) fn admitted_frames() -> Vec<Vec<u8>> {
-    fn bytes(tag: u8, value: &[u8]) -> Vec<u8> {
-        let mut out = vec![tag, value.len() as u8];
-        out.extend_from_slice(value);
-        out
-    }
-    let id = [
-        1, 147, 79, 16, 124, 0, 112, 1, 128, 91, 59, 17, 34, 51, 68, 1,
-    ];
-    let mut accepted = bytes(10, &id);
-    accepted.extend(bytes(18, &id));
-    accepted.extend(bytes(26, &id));
-    accepted.extend([32, 1, 40, 0, 48, 1, 56, 1, 64, 1, 72, 1]);
-    let mut accepted_frame = vec![8, 2];
-    accepted_frame.extend(bytes(34, &accepted));
-    let mut spatial = bytes(10, &[17; 32]);
-    spatial.extend(bytes(18, &[8, 0, 16, 0, 24, 0]));
-    let mut domain = vec![8, 1, 16, 1, 24, 1];
-    domain.extend(bytes(34, &spatial));
-    let mut body = bytes(10, &domain);
-    body.extend(bytes(10, &[8, 2, 16, 1, 24, 1, 34, 0]));
-    let begin = vec![8, 1, 16, 1, 24, body.len() as u8, 32, 0];
-    let mut chunk = vec![8, 1];
-    chunk.extend(bytes(26, &body));
-    let mut frames = vec![accepted_frame];
-    for (kind, payload) in [(11, begin), (12, chunk), (13, vec![8, 1])] {
-        let mut frame = vec![8, kind, 16, 1];
-        frame.extend(bytes(34, &payload));
-        frames.push(frame);
-    }
-    frames
-}
+#[path = "test_support/admitted.rs"]
+mod admitted;
+pub(super) use admitted::admitted_frames;
 
 /// A local Platform + Gateway (one response per connection) and a TLS game endpoint
 /// that answers with scripted refusals or joins and drops each admitted stream.
@@ -159,7 +128,15 @@ impl Stack {
         servers.spawn(async move {
             let mut verifier = challenge.then(MockChallengeVerifier::default);
             while let Ok((stream, _peer)) = http.accept().await {
-                serve_http(stream, game_port, &log, empty, verifier.as_mut()).await;
+                serve_http(
+                    stream,
+                    game_port,
+                    &log,
+                    empty,
+                    hold_joined,
+                    verifier.as_mut(),
+                )
+                .await;
             }
         })?;
         Ok(Self {
@@ -187,6 +164,7 @@ impl Stack {
             account_services: Arc::new(crate::account_services::present),
             coin_shop: Arc::new(crate::coin_shop::present),
             premium: Arc::new(crate::premium::present),
+            training_queue: Default::default(),
             select_character: Arc::new(|rows, _, _| {
                 crate::character_selection::SelectionAction::Play {
                     character_id: rows[0].character.character_id.clone(),
@@ -261,6 +239,7 @@ async fn serve_http(
     game_port: u16,
     log: &Mutex<Vec<String>>,
     empty: bool,
+    training: bool,
     verifier: Option<&mut MockChallengeVerifier>,
 ) {
     let mut request = Vec::new();
@@ -307,6 +286,7 @@ async fn serve_http(
             r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"Alpha","channels":[{{"id":"{CHANNEL}","name":"First"}}],"characters":[]}}]}}"#
         ),
         "GET /api/v1/game-auth/native-characters" if empty => r#"{"protocol_version":2,"characters":[]}"#.to_owned(),
+        "GET /api/v1/game-auth/native-characters" if training => super::training_batch_tests::roster(),
         "GET /api/v1/game-auth/native-characters" => format!(
             r#"{{"protocol_version":2,"characters":[{{"character_id":"{CHARACTER}","world_id":"{WORLD}","name":"Ari","availability":"AVAILABLE"}}]}}"#
         ),
