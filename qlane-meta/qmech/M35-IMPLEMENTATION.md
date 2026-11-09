@@ -71,4 +71,8 @@ Source qualification is complete; runtime validation is pending and this documen
   The same `ca68476c…` versus `ce91fb47…` mismatch reproduces with the original
   one-set qmech input. Its assertion is unchanged.
 - World pin refresh completed with the same pin digest.
+- Affected claim-set tests: 3 passed, 0 failed.
+- Affected content `world_reward_claims` tests: 11 passed, 0 failed.
 - Live dispatch regression: RED on the base's missing Alawar binding; GREEN run pending.
+  The reconstructed caller must retain the Channel's command-ingress state while
+  clearing its quest cache; a fresh ingress correctly refuses continuation at command 3.
